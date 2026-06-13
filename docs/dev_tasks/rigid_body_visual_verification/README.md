@@ -2,17 +2,18 @@
 
 ## Current Handoff (2026-06-12)
 
-Remote publication checkpoint: after the explicit `push to origin` instruction,
-`origin/feature/rigid-body-gui-visual-verification` points to
-`21702f9960d Clarify rigid workflow publication state`. A fresh
-`gh pr list --head "$(git branch --show-current)"` still returned no PR for the
-branch. The most recent pre-push target-branch merge was
+Remote publication checkpoint: after the explicit `push to origin` instruction
+and the final local handoff amend, `origin/feature/rigid-body-gui-visual-verification`
+points to `d44031e7040 Refresh rigid workflow review handoff`. Fresh
+`gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
+still report no PR for the branch. The most recent pre-push target-branch merge was
 `git fetch origin main && git merge --no-edit origin/main`, and Git reported
 `Already up to date`, so the branch remained aligned with the PR #2986 DART 7
-architecture/work-packet harness at publication time. This docs-only
-review-prep refresh may be local; rerun `git status -sb` before acting. The
-push approval did not approve PR creation, milestone mutation, CI reruns,
-review comments, thread resolution, or other GitHub review-state changes.
+architecture/work-packet harness at publication time. This current-state docs
+correction may be an unpublished local commit on top of that remote checkpoint;
+rerun `git status -sb` before acting. The push approval did not approve PR
+creation, milestone mutation, CI reruns, review comments, thread resolution, or
+other GitHub review-state changes.
 
 Latest local continuation: a read-only artifact audit rechecked the current
 review packet manifests and static review indexes. The full rows 01-36 packet
@@ -67,7 +68,7 @@ validation-evidence commit `84897c2fde5 Record rigid workflow validation
 evidence`, the local branch was ahead of
 `origin/feature/rigid-body-gui-visual-verification` and `gh pr list --head
 "$(git branch --show-current)"` returned no PR. That is superseded by the
-current pushed `21702f9960d` state above.
+current pushed `d44031e7040` state above.
 
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest

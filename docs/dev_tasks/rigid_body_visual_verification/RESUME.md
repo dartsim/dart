@@ -2,17 +2,18 @@
 
 ## Current Handoff (2026-06-12)
 
-Remote publication checkpoint: after the explicit `push to origin` instruction,
-`origin/feature/rigid-body-gui-visual-verification` points to
-`21702f9960d Clarify rigid workflow publication state`. A fresh
-`gh pr list --head "$(git branch --show-current)"` still returned no PR for the
-branch. The latest pre-push `git fetch origin main && git merge --no-edit
-origin/main` reported `Already up to date`, so the branch remained aligned with
-the PR #2986 DART 7 architecture/work-packet harness at publication time. This
-docs-only review-prep refresh may be local; rerun `git status -sb` before
-acting. The approved push did not approve PR creation, milestone mutation, CI
-reruns, review comments, thread resolution, or other GitHub review-state
-changes.
+Remote publication checkpoint: after the explicit `push to origin` instruction
+and the final local handoff amend, `origin/feature/rigid-body-gui-visual-verification`
+points to `d44031e7040 Refresh rigid workflow review handoff`. Fresh
+`gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
+still report no PR for the branch. The latest pre-push
+`git fetch origin main && git merge --no-edit origin/main` reported
+`Already up to date`, so the branch remained aligned with the PR #2986 DART 7
+architecture/work-packet harness at publication time. This current-state docs
+correction may be an unpublished local commit on top of that remote checkpoint;
+rerun `git status -sb` before acting. The approved push did not approve PR
+creation, milestone mutation, CI reruns, review comments, thread resolution, or
+other GitHub review-state changes.
 
 Latest local continuation: a read-only artifact audit rechecked the current
 review packet manifests and static review indexes. The full rows 01-36 packet
@@ -63,7 +64,7 @@ Historical publication state before the latest approved push: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
 ahead of `origin/feature/rigid-body-gui-visual-verification`, and
 `gh pr list --head "$(git branch --show-current)"` returned no PR. That is now
-superseded by the pushed `21702f9960d` state above. Future sessions must rerun
+superseded by the pushed `d44031e7040` state above. Future sessions must rerun
 `git status -sb` and must get explicit approval before pushing newer local
 commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
 mutating GitHub review state.
@@ -207,9 +208,10 @@ latest signals into the workflow review index.
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
-- Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
+- Expect branch `feature/rigid-body-gui-visual-verification` to have no PR and
+  possibly one unpublished docs-only handoff correction ahead of origin.
 - Latest pushed checkpoint is
-  `21702f9960d Clarify rigid workflow publication state`.
+  `d44031e7040 Refresh rigid workflow review handoff`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
