@@ -1550,6 +1550,24 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "--output docs/background/lcp/figures "
         "--benchmark-timeout 900"
     )
+    assert info["performance_profile_smoke_command"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--allow-partial "
+        "--benchmark-filter BM_LcpCompare/Standard/Dantzig/12 "
+        "--benchmark-min-time 0.01 "
+        "--cache build/lcp_profile_smoke.json "
+        "--output build/lcp_profile_smoke "
+        "--benchmark-timeout 120"
+    )
+    assert "--allow-partial" in info["performance_profile_smoke_command"]
+    assert (
+        "--output build/lcp_profile_smoke"
+        in info["performance_profile_smoke_command"]
+    )
+    assert (
+        "docs/background/lcp/figures"
+        not in info["performance_profile_smoke_command"]
+    )
     profile_by_surface = {
         row["surface"]: row for row in info["performance_profile_rows"]
     }
@@ -1870,6 +1888,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert (
         "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
         "Current leaders,Current laggards,Takeaway"
+        in builder.events
+    )
+    assert (
+        f"text:profile smoke: {lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND}"
         in builder.events
     )
     assert (

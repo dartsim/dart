@@ -136,6 +136,19 @@ pixi run python scripts/lcp_performance_profile.py --run \
     --output docs/background/lcp/figures
 ```
 
+For a quick profile-pipeline smoke that allows partial native solver coverage
+without rewriting checked artifacts, write to a scratch output directory:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run \
+    --allow-partial \
+    --benchmark-filter BM_LcpCompare/Standard/Dantzig/12 \
+    --benchmark-min-time 0.01 \
+    --cache build/lcp_profile_smoke.json \
+    --output build/lcp_profile_smoke \
+    --benchmark-timeout 120
+```
+
 Run the benchmark smoke with:
 
 ```bash

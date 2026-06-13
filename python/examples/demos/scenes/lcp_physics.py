@@ -259,6 +259,15 @@ _PERFORMANCE_PROFILE_REFRESH_COMMAND = (
     "--output docs/background/lcp/figures "
     "--benchmark-timeout 900"
 )
+_PERFORMANCE_PROFILE_SMOKE_COMMAND = (
+    "pixi run python scripts/lcp_performance_profile.py --run "
+    "--allow-partial "
+    "--benchmark-filter BM_LcpCompare/Standard/Dantzig/12 "
+    "--benchmark-min-time 0.01 "
+    "--cache build/lcp_profile_smoke.json "
+    "--output build/lcp_profile_smoke "
+    "--benchmark-timeout 120"
+)
 _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT = (
     "docs/background/lcp/figures/performance_profile_evidence.csv"
 )
@@ -2448,6 +2457,7 @@ def build() -> SceneSetup:
 
         if builder.collapsing_header("Performance profiles", default_open=False):
             builder.text(f"profile refresh: {_PERFORMANCE_PROFILE_REFRESH_COMMAND}")
+            builder.text(f"profile smoke: {_PERFORMANCE_PROFILE_SMOKE_COMMAND}")
             if builder.begin_table(
                 "lcp_performance_profiles",
                 [
@@ -2707,6 +2717,7 @@ def build() -> SceneSetup:
             "performance_profile_refresh_command": (
                 _PERFORMANCE_PROFILE_REFRESH_COMMAND
             ),
+            "performance_profile_smoke_command": _PERFORMANCE_PROFILE_SMOKE_COMMAND,
             "representative_benchmark_filter": _REPRESENTATIVE_BENCHMARK_FILTER,
             "representative_benchmark_command": _REPRESENTATIVE_BENCHMARK_COMMAND,
             "standalone_lcp_solvers_exposed_in_dartpy": (
