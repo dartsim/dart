@@ -187,7 +187,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "SceneRuntimeNonlinearEqualityConvergence|SparseResidual|"
         "SceneRuntimeSparseResidual|SparseJacobiSolve|SceneRuntimeSparseJacobiSolve|"
         "SparseCgSolve|SceneRuntimeSparseCgSolve|DirectSparseSolve|"
-        "EqualityReducedSolve)(Cpu|Cuda)"
+        "SceneRuntimeDirectSparseSolve|EqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
     )
     command = [
@@ -304,6 +304,12 @@ def _representative_rows(
         "scene_sparse_cg_gpu": (f"BM_NewtonSceneRuntimeSparseCgSolveCuda/{row_count}"),
         "direct_sparse_cpu": f"BM_NewtonDirectSparseSolveCpu/{row_count}",
         "direct_sparse_gpu": f"BM_NewtonDirectSparseSolveCuda/{row_count}",
+        "scene_direct_sparse_cpu": (
+            f"BM_NewtonSceneRuntimeDirectSparseSolveCpu/{row_count}"
+        ),
+        "scene_direct_sparse_gpu": (
+            f"BM_NewtonSceneRuntimeDirectSparseSolveCuda/{row_count}"
+        ),
         "equality_cpu": f"BM_NewtonEqualityReducedSolveCpu/{row_count}",
         "equality_gpu": f"BM_NewtonEqualityReducedSolveCuda/{row_count}",
     }
@@ -407,6 +413,8 @@ def make_packet(
     scene_sparse_cg_gpu_row = representative_rows["scene_sparse_cg_gpu"]
     direct_sparse_cpu_row = representative_rows["direct_sparse_cpu"]
     direct_sparse_gpu_row = representative_rows["direct_sparse_gpu"]
+    scene_direct_sparse_cpu_row = representative_rows["scene_direct_sparse_cpu"]
+    scene_direct_sparse_gpu_row = representative_rows["scene_direct_sparse_gpu"]
     equality_cpu_row = representative_rows["equality_cpu"]
     equality_gpu_row = representative_rows["equality_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
@@ -451,6 +459,8 @@ def make_packet(
     scene_sparse_cg_gpu_ns = benchmark_timing_ns(scene_sparse_cg_gpu_row)
     direct_sparse_cpu_ns = benchmark_timing_ns(direct_sparse_cpu_row)
     direct_sparse_gpu_ns = benchmark_timing_ns(direct_sparse_gpu_row)
+    scene_direct_sparse_cpu_ns = benchmark_timing_ns(scene_direct_sparse_cpu_row)
+    scene_direct_sparse_gpu_ns = benchmark_timing_ns(scene_direct_sparse_gpu_row)
     equality_cpu_ns = benchmark_timing_ns(equality_cpu_row)
     equality_gpu_ns = benchmark_timing_ns(equality_gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
@@ -603,6 +613,20 @@ def make_packet(
         raise NewtonAssemblySolvePacketError(
             "direct sparse GPU benchmark timing is not positive"
         )
+    if (
+        not math.isfinite(scene_direct_sparse_cpu_ns)
+        or scene_direct_sparse_cpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse CPU benchmark timing is not positive"
+        )
+    if (
+        not math.isfinite(scene_direct_sparse_gpu_ns)
+        or scene_direct_sparse_gpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse GPU benchmark timing is not positive"
+        )
     if not math.isfinite(equality_cpu_ns) or equality_cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
             "equality-reduced CPU benchmark timing is not positive"
@@ -645,6 +669,9 @@ def make_packet(
         scene_sparse_cg_gpu_row, "max_result_abs_error"
     )
     direct_sparse_max_error = _counter(direct_sparse_gpu_row, "max_result_abs_error")
+    scene_direct_sparse_max_error = _counter(
+        scene_direct_sparse_gpu_row, "max_result_abs_error"
+    )
     equality_max_error = _counter(equality_gpu_row, "max_result_abs_error")
     max_error = max(
         diagonal_max_error,
@@ -662,6 +689,7 @@ def make_packet(
         sparse_cg_max_error,
         scene_sparse_cg_max_error,
         direct_sparse_max_error,
+        scene_direct_sparse_max_error,
         equality_max_error,
     )
     if max_error > tolerance:
@@ -680,6 +708,9 @@ def make_packet(
         scene_sparse_cg_gpu_row, "gpu_residual_norm"
     )
     direct_sparse_residual_norm = _counter(direct_sparse_gpu_row, "gpu_residual_norm")
+    scene_direct_sparse_residual_norm = _counter(
+        scene_direct_sparse_gpu_row, "gpu_residual_norm"
+    )
     equality_residual_norm = _counter(equality_gpu_row, "gpu_residual_norm")
     max_residual_norm = max(
         residual_norm,
@@ -689,6 +720,7 @@ def make_packet(
         sparse_cg_residual_norm,
         scene_sparse_cg_residual_norm,
         direct_sparse_residual_norm,
+        scene_direct_sparse_residual_norm,
         equality_residual_norm,
     )
     if max_residual_norm > residual_tolerance:
@@ -1838,6 +1870,141 @@ def make_packet(
     direct_sparse_max_residual_abs = _counter(
         direct_sparse_gpu_row, "gpu_max_residual_abs"
     )
+    scene_direct_sparse_rows = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "rows",
+        "gpu_rows",
+    )
+    scene_direct_sparse_scene_bodies = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "scene_bodies",
+        "gpu_scene_bodies",
+    )
+    scene_direct_sparse_scene_nodes = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "scene_nodes",
+        "gpu_scene_nodes",
+    )
+    scene_direct_sparse_scene_triangles = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "scene_triangles",
+        "gpu_scene_triangles",
+    )
+    scene_direct_sparse_selected_nodes = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "selected_scene_nodes",
+        "gpu_selected_scene_nodes",
+    )
+    scene_direct_sparse_selected_edge_pairs = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "selected_scene_edge_pairs",
+        "gpu_selected_scene_edge_pairs",
+    )
+    scene_direct_sparse_bodies = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "bodies",
+        "gpu_bodies",
+    )
+    if scene_direct_sparse_selected_nodes != scene_direct_sparse_bodies:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse selected node count "
+            f"{scene_direct_sparse_selected_nodes} != bodies "
+            f"{scene_direct_sparse_bodies}"
+        )
+    scene_direct_sparse_dofs = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "dofs",
+        "gpu_dofs",
+    )
+    if scene_direct_sparse_dofs > DIRECT_SPARSE_MAX_DOF_COUNT:
+        raise NewtonAssemblySolvePacketError(
+            f"scene runtime direct sparse dofs {scene_direct_sparse_dofs} "
+            f"exceed {DIRECT_SPARSE_MAX_DOF_COUNT}"
+        )
+    scene_direct_sparse_blocks = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "blocks",
+        "gpu_blocks",
+    )
+    if scene_direct_sparse_selected_edge_pairs != scene_direct_sparse_blocks:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse selected edge-pair count "
+            f"{scene_direct_sparse_selected_edge_pairs} != blocks "
+            f"{scene_direct_sparse_blocks}"
+        )
+    scene_direct_sparse_active_dofs = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "active_dofs",
+        "gpu_active_dofs",
+    )
+    scene_direct_sparse_factorized = _matching_int_counter(
+        scene_direct_sparse_cpu_row,
+        scene_direct_sparse_gpu_row,
+        "factorized",
+        "factorized",
+    )
+    if scene_direct_sparse_factorized != 1:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse row did not factorize"
+        )
+    scene_direct_sparse_block_entries = int(
+        _counter(scene_direct_sparse_cpu_row, "block_entries")
+    )
+    scene_direct_sparse_regularization = _counter(
+        scene_direct_sparse_cpu_row, "regularization"
+    )
+    scene_direct_sparse_gpu_regularization = _counter(
+        scene_direct_sparse_gpu_row, "gpu_regularization"
+    )
+    if (
+        abs(scene_direct_sparse_regularization - scene_direct_sparse_gpu_regularization)
+        > 1e-15
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse regularization mismatch"
+        )
+    scene_direct_sparse_min_factor_pivot = _counter(
+        scene_direct_sparse_gpu_row, "gpu_min_factor_pivot"
+    )
+    if scene_direct_sparse_min_factor_pivot <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse GPU minimum factor pivot is not positive"
+        )
+    scene_direct_sparse_cpu_min_factor_pivot = _counter(
+        scene_direct_sparse_cpu_row, "min_factor_pivot"
+    )
+    if (
+        abs(
+            scene_direct_sparse_min_factor_pivot
+            - scene_direct_sparse_cpu_min_factor_pivot
+        )
+        > tolerance
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse GPU minimum factor pivot does not match CPU"
+        )
+    if scene_direct_sparse_residual_norm > residual_tolerance:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse residual norm "
+            f"{scene_direct_sparse_residual_norm:.3g} exceeds "
+            f"{residual_tolerance:.3g}"
+        )
+    scene_direct_sparse_step_norm = _counter(
+        scene_direct_sparse_gpu_row, "gpu_step_norm"
+    )
+    scene_direct_sparse_max_residual_abs = _counter(
+        scene_direct_sparse_gpu_row, "gpu_max_residual_abs"
+    )
     equality_rows = _matching_int_counter(
         equality_cpu_row, equality_gpu_row, "rows", "gpu_rows"
     )
@@ -1893,6 +2060,9 @@ def make_packet(
     sparse_cg_speedup = sparse_cg_cpu_ns / sparse_cg_gpu_ns
     scene_sparse_cg_speedup = scene_sparse_cg_cpu_ns / scene_sparse_cg_gpu_ns
     direct_sparse_speedup = direct_sparse_cpu_ns / direct_sparse_gpu_ns
+    scene_direct_sparse_speedup = (
+        scene_direct_sparse_cpu_ns / scene_direct_sparse_gpu_ns
+    )
     equality_speedup = equality_cpu_ns / equality_gpu_ns
     speedup = min(
         diagonal_speedup,
@@ -1910,6 +2080,7 @@ def make_packet(
         sparse_cg_speedup,
         scene_sparse_cg_speedup,
         direct_sparse_speedup,
+        scene_direct_sparse_speedup,
         equality_speedup,
     )
     timing_ns = {
@@ -2162,6 +2333,23 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"direct sparse packet timing is missing {sorted(missing)}"
+        )
+    scene_direct_sparse_timing_ns = {
+        "setup": _counter(scene_direct_sparse_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(scene_direct_sparse_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(scene_direct_sparse_gpu_row, "assembly_kernel_ns"),
+        "dense_matrix": _counter(scene_direct_sparse_gpu_row, "dense_matrix_kernel_ns"),
+        "factor_solve": _counter(scene_direct_sparse_gpu_row, "factor_solve_kernel_ns"),
+        "final_residual": _counter(
+            scene_direct_sparse_gpu_row, "final_residual_kernel_ns"
+        ),
+        "device_to_host": _counter(scene_direct_sparse_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = DIRECT_SPARSE_TIMING_KEYS - scene_direct_sparse_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"scene runtime direct sparse packet timing is missing {sorted(missing)}"
         )
     equality_timing_ns = {
         "setup": _counter(equality_gpu_row, "host_setup_ns"),
@@ -2556,6 +2744,35 @@ def make_packet(
                 "timing_ns": direct_sparse_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(direct_sparse_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(direct_sparse_gpu_row),
+            },
+            "scene_runtime_direct_sparse_factor_solve": {
+                "row_count": scene_direct_sparse_rows,
+                "nominal_row_count": row_count,
+                "scene_body_count": scene_direct_sparse_scene_bodies,
+                "scene_node_count": scene_direct_sparse_scene_nodes,
+                "scene_triangle_count": scene_direct_sparse_scene_triangles,
+                "selected_scene_node_count": scene_direct_sparse_selected_nodes,
+                "selected_scene_edge_pair_count": (
+                    scene_direct_sparse_selected_edge_pairs
+                ),
+                "body_count": scene_direct_sparse_bodies,
+                "dof_count": scene_direct_sparse_dofs,
+                "max_supported_dof_count": DIRECT_SPARSE_MAX_DOF_COUNT,
+                "block_count": scene_direct_sparse_blocks,
+                "block_entry_count": scene_direct_sparse_block_entries,
+                "active_dof_count": scene_direct_sparse_active_dofs,
+                "regularization": scene_direct_sparse_regularization,
+                "factorized": bool(scene_direct_sparse_factorized),
+                "minimum_factor_pivot": scene_direct_sparse_min_factor_pivot,
+                "max_result_abs_error": scene_direct_sparse_max_error,
+                "residual_norm": scene_direct_sparse_residual_norm,
+                "max_residual_abs": scene_direct_sparse_max_residual_abs,
+                "step_norm": scene_direct_sparse_step_norm,
+                "speedup": scene_direct_sparse_speedup,
+                "meets_speedup_gate": scene_direct_sparse_speedup >= speedup_gate,
+                "timing_ns": scene_direct_sparse_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(scene_direct_sparse_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(scene_direct_sparse_gpu_row),
             },
             "equality_reduced_diagonal_solve": {
                 "row_count": row_count,

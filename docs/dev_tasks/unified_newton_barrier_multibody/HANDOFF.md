@@ -1,5 +1,40 @@
 # Unified Newton-Barrier Handoff
 
+## Scene-Derived Bounded Direct Sparse Factor Solve Packet Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned bounded direct sparse factor solve row. The benchmark builds the
+same DART `World` deformable surface used by the scene-owned sparse graph
+packets, selects one connected three-node surface-triangle subset, remaps that
+subset into 18 capped DOFs and three 6x6 sparse blocks, and runs the existing
+in-kernel dense Cholesky direct sparse solve. This is reduced packet evidence
+only; it does not prove production sparse Hessian graph deduplication, full
+runtime sparse Hessian construction/assembly, unbounded production
+direct/global sparse factorization, production nonlinear equality convergence
+policy/solving, GPU `World::step` assembly/solve integration, or a top-level
+speedup claim.
+
+Fresh packet evidence records a scene-derived direct sparse factor row with
+`scene_node_count=2560`, `scene_triangle_count=768`,
+`selected_scene_node_count=3`, `selected_scene_edge_pair_count=3`,
+`dof_count=18`, `block_count=3`, `block_entry_count=108`,
+`minimum_factor_pivot=0.9617692030835673`,
+`max_result_abs_error=1.580969625257288e-18`,
+`residual_norm=3.061659904040655e-17`,
+`max_residual_abs=1.9734344004336875e-17`,
+`step_norm=0.061746963682577156`, and
+`speedup=0.007412172587967598x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records `max_result_abs_error=3.2741809263825417e-11`,
+`residual_norm=3.707781567402575e-13`, and
+`speedup=0.007412172587967598x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
 ## Bounded Direct Sparse Factor Solve Packet Checkpoint (2026-06-13)
 
 work continued

@@ -779,6 +779,70 @@ def _benchmark_data(**overrides):
         final_residual_kernel_ns=6.0,
         device_to_host_ns=7.0,
     )
+    scene_direct_sparse_cpu = _row(
+        "BM_NewtonSceneRuntimeDirectSparseSolveCpu/1024",
+        rows=3,
+        bodies=3,
+        dofs=18,
+        blocks=3,
+        block_entries=108,
+        active_dofs=18,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        selected_scene_nodes=3,
+        selected_scene_edge_pairs=3,
+        regularization=0.25,
+        factorized=1,
+        min_factor_pivot=3.5,
+        max_diagonal=9.5,
+        max_gradient_abs=1.25,
+        step_norm=0.65,
+        residual_norm=3e-14,
+        max_residual_abs=8e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_direct_sparse_gpu = _row(
+        "BM_NewtonSceneRuntimeDirectSparseSolveCuda/1024",
+        real_time=4.5,
+        cpu_time=4.5,
+        rows=3,
+        bodies=3,
+        dofs=18,
+        blocks=3,
+        block_entries=108,
+        active_dofs=18,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        selected_scene_nodes=3,
+        selected_scene_edge_pairs=3,
+        regularization=0.25,
+        factorized=1,
+        gpu_rows=3,
+        gpu_bodies=3,
+        gpu_dofs=18,
+        gpu_blocks=3,
+        gpu_active_dofs=18,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_selected_scene_nodes=3,
+        gpu_selected_scene_edge_pairs=3,
+        gpu_regularization=0.25,
+        gpu_min_factor_pivot=3.5,
+        gpu_step_norm=0.65,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=8e-15,
+        max_result_abs_error=9e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        dense_matrix_kernel_ns=4.0,
+        factor_solve_kernel_ns=5.0,
+        final_residual_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     equality_cpu = _row(
         "BM_NewtonEqualityReducedSolveCpu/1024",
         rows=1024,
@@ -853,6 +917,8 @@ def _benchmark_data(**overrides):
             scene_sparse_cg_gpu,
             direct_sparse_cpu,
             direct_sparse_gpu,
+            scene_direct_sparse_cpu,
+            scene_direct_sparse_gpu,
             equality_cpu,
             equality_gpu,
         ]
@@ -1123,6 +1189,30 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert direct["timing_ns"]["dense_matrix"] == 4.0
     assert direct["timing_ns"]["factor_solve"] == 5.0
     assert direct["timing_ns"]["final_residual"] == 6.0
+    scene_direct = row["scene_runtime_direct_sparse_factor_solve"]
+    assert scene_direct["row_count"] == 3
+    assert scene_direct["nominal_row_count"] == 1024
+    assert scene_direct["scene_body_count"] == 1
+    assert scene_direct["scene_node_count"] == 320
+    assert scene_direct["scene_triangle_count"] == 96
+    assert scene_direct["selected_scene_node_count"] == 3
+    assert scene_direct["selected_scene_edge_pair_count"] == 3
+    assert scene_direct["body_count"] == 3
+    assert scene_direct["dof_count"] == 18
+    assert scene_direct["max_supported_dof_count"] == 48
+    assert scene_direct["block_count"] == 3
+    assert scene_direct["block_entry_count"] == 108
+    assert scene_direct["active_dof_count"] == 18
+    assert scene_direct["regularization"] == 0.25
+    assert scene_direct["factorized"] is True
+    assert scene_direct["minimum_factor_pivot"] == 3.5
+    assert scene_direct["max_result_abs_error"] == 9e-12
+    assert scene_direct["residual_norm"] == 3e-14
+    assert scene_direct["max_residual_abs"] == 8e-15
+    assert scene_direct["step_norm"] == 0.65
+    assert scene_direct["timing_ns"]["dense_matrix"] == 4.0
+    assert scene_direct["timing_ns"]["factor_solve"] == 5.0
+    assert scene_direct["timing_ns"]["final_residual"] == 6.0
     equality = row["equality_reduced_diagonal_solve"]
     assert equality["body_count"] == 128
     assert equality["full_dof_count"] == 768
