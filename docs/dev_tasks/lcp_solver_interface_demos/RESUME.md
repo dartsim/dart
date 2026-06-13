@@ -1,9 +1,59 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality - 2026-06-12 LcpProblem Contact Metadata
+## Current Reality - 2026-06-12 Stop Handoff And Push Prep
 
 This is the latest hand-off. Older sections below are historical checkpoints
 and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Latest `origin/main` refresh:
+  - `git fetch origin main` failed because SSH to `github.com:22` is not
+    reachable in this environment.
+  - `git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main`
+    succeeded.
+  - `git merge --no-edit origin/main` reported `Already up to date`.
+- Current branch relationship before this docs-only hand-off checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 90]`
+- Current tip before this docs-only hand-off checkpoint:
+  `8b571a91031 Expose LCP problem contact metadata`
+- Local branch cleanup check found only `feature/lcp-solver-interface-demos`
+  and `main`; no extra local branches created by this session remain to delete.
+- The current branch is the consolidated resume branch.
+- The user requested no further implementation work. Keep future work stopped
+  unless explicitly resumed.
+- The user approved pushing this branch after the hand-off docs are updated.
+
+Latest completed implementation checkpoint:
+
+- `8b571a91031 Expose LCP problem contact metadata` is committed locally.
+- It exposes `LcpProblem::getFrictionIndexRowCount()` and
+  `LcpProblem::getFrictionIndexContactCount()`, dartpy bindings for both, Python
+  representative-suite metadata/table columns, benchmark `contact_count`
+  emission from `LcpProblem`, and focused tests for the new metadata.
+- Verification for that checkpoint already passed before this stop hand-off:
+  focused C++ LCP type test, dartpy rebuild, focused Python LCP/demo tests, LCP
+  benchmark target compile, `pixi run lint`, and `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+Continue only if the user explicitly resumes implementation. The latest
+bounded next area inspected, but not implemented, was DART 7 harness-aligned LCP
+solver identity/support metadata in benchmark/demo evidence. Avoid retrying the
+rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path probe
+without a materially different hypothesis.
+
+## Current Reality - 2026-06-12 LcpProblem Contact Metadata
+
+Historical checkpoint section. It was the latest hand-off before
+`8b571a91031` was committed.
 
 Current branch:
 
