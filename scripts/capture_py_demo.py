@@ -629,6 +629,77 @@ def _write_json(path: pathlib.Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
+_SOLVER_IDENTITY_KEYS = (
+    "solver",
+    "solver_pair",
+    "contact_solver_method",
+    "same_solver",
+    "executor",
+    "executor_pair",
+    "held_fixed",
+)
+
+
+def _json_like_value(value: object) -> object | None:
+    if value is None or isinstance(value, str | bool | int | float):
+        return value
+    if isinstance(value, list):
+        converted = [_json_like_value(item) for item in value]
+        return converted if all(item is not None for item in converted) else None
+    if isinstance(value, dict):
+        converted_dict: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                continue
+            converted_item = _json_like_value(item)
+            if converted_item is not None:
+                converted_dict[key] = converted_item
+        return converted_dict or None
+    return None
+
+
+def _resolved_solver_identity_from_metrics(
+    metrics: dict[str, object],
+) -> dict[str, object] | None:
+    identity: dict[str, object] = {}
+    for key in _SOLVER_IDENTITY_KEYS:
+        if key not in metrics:
+            continue
+        value = _json_like_value(metrics[key])
+        if value is not None:
+            identity[key] = value
+    if not any(
+        key in identity for key in ("solver", "solver_pair", "contact_solver_method")
+    ):
+        return None
+    identity["source"] = "scene_capture_metrics.latest.metrics"
+    return identity
+
+
+def _read_scene_resolved_solver_identity(
+    manifest_path: pathlib.Path,
+) -> dict[str, object] | None:
+    if not manifest_path.is_file():
+        return None
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    identity = payload.get("resolved_solver_identity")
+    if isinstance(identity, dict):
+        return {key: value for key, value in identity.items() if isinstance(key, str)}
+    scene_metrics = payload.get("scene_metrics")
+    if isinstance(scene_metrics, dict):
+        latest = scene_metrics.get("latest")
+        if isinstance(latest, dict):
+            metrics = latest.get("metrics")
+            if isinstance(metrics, dict):
+                return _resolved_solver_identity_from_metrics(metrics)
+    return None
+
+
 def _append_event(
     path: pathlib.Path, start_time: float, event: str, **fields: object
 ) -> None:
@@ -684,13 +755,25 @@ def _read_scene_metrics_summary(path: pathlib.Path) -> dict[str, object] | None:
 
     if latest is None:
         return None
-    return {
+    latest_metrics: dict[str, object] | None = None
+    if isinstance(latest, dict):
+        metrics = latest.get("metrics")
+        if isinstance(metrics, dict):
+            latest_metrics = metrics
+    summary: dict[str, object] = {
         "event_count": event_count,
         "first": first,
         "latest": latest,
         "metric_key_counts": dict(sorted(metric_key_counts.items())),
         "numeric_ranges": dict(sorted(numeric_ranges.items())),
     }
+    if latest_metrics is not None:
+        resolved_solver_identity = _resolved_solver_identity_from_metrics(
+            latest_metrics
+        )
+        if resolved_solver_identity is not None:
+            summary["resolved_solver_identity"] = resolved_solver_identity
+    return summary
 
 
 def _read_scene_metadata(path: pathlib.Path) -> dict[str, object] | None:
@@ -1261,8 +1344,23 @@ def _workflow_scene_manifest_summary(
             )
             summary["video_href"] = _workflow_href(video_path, output_dir)
 
+    top_level_identity = payload.get("resolved_solver_identity")
+    if isinstance(top_level_identity, dict):
+        summary["resolved_solver_identity"] = {
+            key: value
+            for key, value in top_level_identity.items()
+            if isinstance(key, str)
+        }
+
     scene_metrics = payload.get("scene_metrics")
     if isinstance(scene_metrics, dict):
+        resolved_solver_identity = scene_metrics.get("resolved_solver_identity")
+        if isinstance(resolved_solver_identity, dict):
+            summary["resolved_solver_identity"] = {
+                key: value
+                for key, value in resolved_solver_identity.items()
+                if isinstance(key, str)
+            }
         metric_key_counts = scene_metrics.get("metric_key_counts")
         if isinstance(metric_key_counts, dict):
             summary["metric_keys"] = sorted(
@@ -1288,6 +1386,12 @@ def _workflow_scene_manifest_summary(
                 metric_highlights = _workflow_metric_highlights(metrics)
                 if metric_highlights:
                     summary["metric_highlights"] = metric_highlights
+                if "resolved_solver_identity" not in summary:
+                    resolved_solver_identity = _resolved_solver_identity_from_metrics(
+                        metrics
+                    )
+                    if resolved_solver_identity is not None:
+                        summary["resolved_solver_identity"] = resolved_solver_identity
 
     scene_metadata = payload.get("scene_metadata")
     if isinstance(scene_metadata, dict):
@@ -1649,6 +1753,48 @@ def _workflow_failed_rows(
     return failed_rows
 
 
+def _attach_workflow_resolved_solver_identities(
+    captures: list[dict[str, object]],
+) -> None:
+    for capture in captures:
+        if capture.get("status") != "captured":
+            capture.pop("resolved_solver_identity", None)
+            continue
+        manifest_value = capture.get("manifest")
+        if not isinstance(manifest_value, str):
+            capture.pop("resolved_solver_identity", None)
+            continue
+        identity = _read_scene_resolved_solver_identity(pathlib.Path(manifest_value))
+        if identity is None:
+            capture.pop("resolved_solver_identity", None)
+        else:
+            capture["resolved_solver_identity"] = identity
+
+
+def _workflow_missing_solver_identity_rows(
+    captures: list[dict[str, object]], *, dry_run: bool
+) -> list[dict[str, object]]:
+    if dry_run:
+        return []
+    missing_rows: list[dict[str, object]] = []
+    for capture in captures:
+        if capture.get("status") != "captured":
+            continue
+        if isinstance(capture.get("resolved_solver_identity"), dict):
+            continue
+        missing_rows.append(
+            {
+                "order": capture.get("order"),
+                "count": capture.get("count"),
+                "scene": capture.get("scene"),
+                "workflow_group": capture.get("workflow_group"),
+                "workflow_label": capture.get("workflow_label"),
+                "manifest": capture.get("manifest"),
+            }
+        )
+    return missing_rows
+
+
 def _workflow_failure_summary(failed_rows: list[dict[str, object]]) -> str:
     if not failed_rows:
         return ""
@@ -1768,6 +1914,19 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     comparison_axis = summary.get("comparison_axis")
     if isinstance(comparison_axis, str):
         details.append(_workflow_detail("axis", comparison_axis))
+    resolved_solver_identity = summary.get("resolved_solver_identity")
+    if isinstance(resolved_solver_identity, dict):
+        identity_values = _workflow_metric_key_values(
+            {
+                key: value
+                for key, value in resolved_solver_identity.items()
+                if key != "source"
+            }
+        )
+        if identity_values:
+            details.append(
+                _workflow_detail("resolved solver", ", ".join(identity_values[:6]))
+            )
     held_fixed_values = summary.get("held_fixed_values")
     if isinstance(held_fixed_values, list) and held_fixed_values:
         details.append(_workflow_detail("held fixed", ", ".join(held_fixed_values)))
@@ -2127,6 +2286,7 @@ def _write_workflow_manifest(
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "manifest.json"
+    _attach_workflow_resolved_solver_identities(captures)
     review_index = _write_workflow_review_index(
         output_dir,
         dry_run=dry_run,
@@ -2169,6 +2329,14 @@ def _write_workflow_manifest(
     )
     guidance_missing = _workflow_guidance_missing(captures)
     failed_rows = _workflow_failed_rows(captures)
+    solver_identity_missing = _workflow_missing_solver_identity_rows(
+        captures, dry_run=dry_run
+    )
+    solver_identity_count = sum(
+        1
+        for capture in captures
+        if isinstance(capture.get("resolved_solver_identity"), dict)
+    )
     _write_json(
         manifest,
         {
@@ -2194,6 +2362,18 @@ def _write_workflow_manifest(
             "guidance_complete": not guidance_missing,
             "guidance_missing_count": len(guidance_missing),
             "guidance_missing_rows": guidance_missing,
+            "resolved_solver_identity_complete": (
+                None
+                if dry_run
+                else (
+                    completed == len(captures)
+                    and failed == 0
+                    and not solver_identity_missing
+                )
+            ),
+            "resolved_solver_identity_count": solver_identity_count,
+            "resolved_solver_identity_missing_count": len(solver_identity_missing),
+            "resolved_solver_identity_missing_rows": solver_identity_missing,
             "elapsed_s": round(time.monotonic() - started_at, 3),
             "output_dir": str(output_dir),
             "artifacts": {
@@ -2427,6 +2607,7 @@ def main(argv: list[str] | None = None) -> int:
             "video": None,
         },
         "capture": capture_metadata,
+        "resolved_solver_identity": None,
         "scene_metrics": None,
         "scene_metadata": None,
         "show_ui": args.show_ui,
@@ -2463,8 +2644,12 @@ def main(argv: list[str] | None = None) -> int:
     visual_evidence["first_frame"] = (
         ppm_image_evidence(frame_paths[0]) if frame_paths else None
     )
-    manifest_payload["scene_metrics"] = _read_scene_metrics_summary(
-        scene_metrics_events
+    scene_metrics_summary = _read_scene_metrics_summary(scene_metrics_events)
+    manifest_payload["scene_metrics"] = scene_metrics_summary
+    manifest_payload["resolved_solver_identity"] = (
+        scene_metrics_summary.get("resolved_solver_identity")
+        if isinstance(scene_metrics_summary, dict)
+        else None
     )
     manifest_payload["scene_metadata"] = _read_scene_metadata(scene_metrics_events)
     manifest_payload["artifacts"]["scene_metrics_events"] = (

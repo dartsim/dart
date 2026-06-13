@@ -239,6 +239,7 @@ def test_visual_capture_manifest_records_image_evidence(
                             "frame": 1,
                             "metrics": {
                                 "contact_count": 0,
+                                "solver": "sequential_impulse",
                                 "status": "settling",
                                 "step_ms": 1.2,
                             },
@@ -251,7 +252,11 @@ def test_visual_capture_manifest_records_image_evidence(
                         {
                             "event": "scene_capture_metrics",
                             "frame": 3,
-                            "metrics": {"step_ms": 2.4, "status": "standing"},
+                            "metrics": {
+                                "solver": "sequential_impulse",
+                                "status": "standing",
+                                "step_ms": 2.4,
+                            },
                             "scene": "rigid_body",
                             "source": "py-demo-scene",
                         },
@@ -310,6 +315,10 @@ def test_visual_capture_manifest_records_image_evidence(
     assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
     assert pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).is_file()
     assert len(list((output / "png_frames").glob("frame_*.png"))) == 2
+    assert manifest["resolved_solver_identity"] == {
+        "solver": "sequential_impulse",
+        "source": "scene_capture_metrics.latest.metrics",
+    }
     assert manifest["scene_metrics"] == {
         "event_count": 2,
         "first": {
@@ -317,6 +326,7 @@ def test_visual_capture_manifest_records_image_evidence(
             "frame": 1,
             "metrics": {
                 "contact_count": 0,
+                "solver": "sequential_impulse",
                 "status": "settling",
                 "step_ms": 1.2,
             },
@@ -326,18 +336,27 @@ def test_visual_capture_manifest_records_image_evidence(
         "latest": {
             "event": "scene_capture_metrics",
             "frame": 3,
-            "metrics": {"status": "standing", "step_ms": 2.4},
+            "metrics": {
+                "solver": "sequential_impulse",
+                "status": "standing",
+                "step_ms": 2.4,
+            },
             "scene": "rigid_body",
             "source": "py-demo-scene",
         },
         "metric_key_counts": {
             "contact_count": 1,
+            "solver": 2,
             "status": 2,
             "step_ms": 2,
         },
         "numeric_ranges": {
             "contact_count": {"max": 0.0, "min": 0.0},
             "step_ms": {"max": 2.4, "min": 1.2},
+        },
+        "resolved_solver_identity": {
+            "solver": "sequential_impulse",
+            "source": "scene_capture_metrics.latest.metrics",
         },
     }
     evidence = manifest["visual_evidence"]
@@ -1079,10 +1098,22 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     )
     assert manifest["completed_count"] == len(specs)
     assert manifest["failed_count"] == 0
+    assert manifest["resolved_solver_identity_complete"] is True
+    assert manifest["resolved_solver_identity_count"] == len(specs)
+    assert manifest["resolved_solver_identity_missing_rows"] == []
     assert [capture["status"] for capture in manifest["captures"]] == [
         "captured",
         "captured",
     ]
+    assert manifest["captures"][0]["resolved_solver_identity"] == {
+        "executor_pair": ["Sequential", "Parallel (2 workers)"],
+        "held_fixed": {
+            "executor": "Sequential",
+            "solver": "si",
+        },
+        "solver_pair": ["SEQUENTIAL_IMPULSE", "IPC"],
+        "source": "scene_capture_metrics.latest.metrics",
+    }
     assert all(capture["manifest_exists"] for capture in manifest["captures"])
     review_index = pathlib.Path(manifest["artifacts"]["review_index"])
     assert review_index.is_file()
@@ -1098,6 +1129,8 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "comparison_axis, controls, divergence, executor_pair" in review_html
     assert "executor=Sequential, solver=si" in review_html
     assert "friction=0.72, solver index=1" in review_html
+    assert "resolved solver" in review_html
+    assert "solver pair=SEQUENTIAL_IMPULSE / IPC" in review_html
     assert "latest signals" in review_html
     assert "solver pair: SEQUENTIAL_IMPULSE / IPC" in review_html
     assert "executor pair: Sequential / Parallel (2 workers)" in review_html

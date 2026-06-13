@@ -92,7 +92,12 @@ healthy signal, and scope instead of only exposing a workflow group label.
 The manifest records `guidance_complete`, `guidance_missing_count`, and
 `guidance_missing_rows`, and the review index mirrors that state with a
 guidance badge plus a warning block for any selected row missing required
-self-description fields.
+self-description fields. Successful scene captures also promote a
+machine-readable `resolved_solver_identity` block from
+`scene_metrics.latest.metrics` into each per-scene manifest, and workflow
+manifests record `resolved_solver_identity_complete`,
+`resolved_solver_identity_count`, and missing-row details so DART 7 review
+packets can prove which solver/contact/executor configuration actually ran.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
@@ -443,6 +448,19 @@ Evidence recorded for this slice:
   The generated review indexes include top-level workflow commands and a
   read-only HTML asset audit found 0 missing local assets: 181/181 links for
   rows 01-36 and 81/81 links for rows 37-52.
+
+- Latest DART 7 harness alignment: `py-demo-capture` now writes
+  `resolved_solver_identity` into successful per-scene manifests, attaches it
+  to captured workflow rows, summarizes identity completeness in workflow
+  manifests, and shows the resolved solver summary in `review_index.html`.
+  Focused guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds -q`
+  reported `4 passed`. A full GUI packet regeneration attempt under
+  `build/captures/rigid_workflow_rows_01_36_1781311276` failed at row 1 with
+  `return_code=-7` before scene metrics were written, so the complete packet
+  paths above remain the latest successful visual artifacts and should be
+  regenerated on a working GUI capture host before claiming the explicit
+  identity-complete packet field.
 
 - Latest review-index provenance/link guard: the workflow manifest and
   `review_index.html` now record the exact top-level workflow packet command,

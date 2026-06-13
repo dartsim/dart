@@ -1327,6 +1327,7 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
 
 
 def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
+    capture_py_demo = _capture_py_demo_module()
     scenes = make_demo_scenes()
     by_id = {scene.id: scene for scene in scenes}
     workflow_ids = [scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()]
@@ -1340,6 +1341,7 @@ def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
         metrics = capture_metrics()
         assert metrics["row"] == scene_id
         assert len(metrics) > 1
+        assert capture_py_demo._resolved_solver_identity_from_metrics(metrics), scene_id
 
     for source_scene_id, target_scene_id, shelf, _label, _scope in related_rows:
         setup = by_id[target_scene_id].build()
@@ -1350,6 +1352,9 @@ def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
         assert metrics["related_source_row"] == source_scene_id
         assert by_id[target_scene_id].category == shelf
         assert target_scene_id not in workflow_ids
+        assert capture_py_demo._resolved_solver_identity_from_metrics(
+            metrics
+        ), target_scene_id
 
     for scene_id, _question, _signals, _command, _scope in capture_first_rows:
         setup = by_id[scene_id].build()
@@ -1359,6 +1364,7 @@ def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
         assert metrics["row"] == scene_id
         assert metrics["capture_first"] is True
         assert scene_id not in workflow_ids
+        assert capture_py_demo._resolved_solver_identity_from_metrics(metrics), scene_id
 
 
 def test_rigid_visual_workflow_capture_metric_docs_match_hooks() -> None:
@@ -3009,6 +3015,7 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_collision_query_options"
+    assert capture_metrics["solver"] == "collision_query"
     assert capture_metrics["ignored_pair_key"] == "rigid_link"
     assert capture_metrics["ignored_pair_count"] == 1
     assert capture_metrics["ignored_contact_count"] == 1

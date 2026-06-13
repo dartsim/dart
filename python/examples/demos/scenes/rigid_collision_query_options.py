@@ -469,6 +469,7 @@ class _RigidCollisionQueryOptions:
                 metrics["option_filtered_contact_count"]
             ),
             "row": "rigid_collision_query_options",
+            "solver": "collision_query",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
         }

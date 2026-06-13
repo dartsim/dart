@@ -171,9 +171,14 @@ scene-owned Replay timeline metadata also write a JSON-safe
 review card names the Replay track plus whether it has signal and marker
 tracks. The top-level manifest and review header record the exact workflow
 packet command that produced the artifact, so a reviewer can rerun the same
-selected packet. The panel also includes a current-row motion packet command;
-workflow packets pass `--video --fps` through to the selected row captures and
-the review index links MP4 artifacts when `ffmpeg` is available.
+selected packet. Successful scene captures also promote a machine-readable
+`resolved_solver_identity` block from the latest scene metrics into the
+per-scene manifest; workflow manifests count those identities and list any
+captured row missing one, while the review cards show the resolved solver
+summary beside the row's axis and controls. The panel also includes a
+current-row motion packet command; workflow packets pass `--video --fps`
+through to the selected row captures and the review index links MP4 artifacts
+when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
@@ -1037,17 +1042,18 @@ routes, and optional direct Rigid IPC shelf routes by
 For scenes that expose `SceneSetup.info["capture_metrics"]`,
 `py-demo-capture` also writes `scene_metrics.jsonl` and summarizes the full
 scene-owned physics/runtime stream in `manifest.json`: first and latest events,
-per-key presence counts, and numeric ranges for top-level metrics. The step
-diagnostics and contact-scale budget rows use that path for profiling, memory,
-contact, and frame-budget evidence; the IPC no-tunneling route uses it for
-clearance and through-wall margin evidence; and the stack packet uses it for
-clearance, drift, wall time, and benchmark metadata. The differentiable
-contact-gradient route uses it for target/rest height, analytic versus
-complementarity-aware thrust/final-height/loss values, height and target-error
-gaps, fallback status, and compact history summaries. The AVBD related routes
-use it for fixed-joint contact offset/clearance/contact counts, spherical
-breakage anchor/orientation drift, and free-rigid revolute/prismatic motor
-tracking. The early numbered rigid workflow rows use it for body-mode flags,
+per-key presence counts, numeric ranges for top-level metrics, and the
+`resolved_solver_identity` derived from the latest solver/contact/executor
+metrics. The step diagnostics and contact-scale budget rows use that path for
+profiling, memory, contact, and frame-budget evidence; the IPC no-tunneling
+route uses it for clearance and through-wall margin evidence; and the stack
+packet uses it for clearance, drift, wall time, and benchmark metadata. The
+differentiable contact-gradient route uses it for target/rest height, analytic
+versus complementarity-aware thrust/final-height/loss values, height and
+target-error gaps, fallback status, and compact history summaries. The AVBD
+related routes use it for fixed-joint contact offset/clearance/contact counts,
+spherical breakage anchor/orientation drift, and free-rigid revolute/prismatic
+motor tracking. The early numbered rigid workflow rows use it for body-mode flags,
 free-flight momentum/energy residuals, frame-transform residuals,
 force/torque accumulator response, point-load lever-arm response,
 time-step error ratios, restitution rebound, and pair-material mixing fields,

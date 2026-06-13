@@ -2,6 +2,24 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: after merging `origin/main` (already up to date with
+PR #2986), the rigid workflow capture path now follows the DART 7 harness
+evidence rule by promoting a machine-readable `resolved_solver_identity` block
+from `scene_metrics.latest.metrics` into successful per-scene manifests,
+attaching that identity to captured workflow rows, summarizing
+`resolved_solver_identity_complete` / count / missing rows in workflow
+manifests, and showing the resolved solver summary in `review_index.html`.
+`rigid_collision_query_options` now reports `solver="collision_query"` so every
+numbered row, related route, and capture-first packet has a derivable solver
+identity. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds -q`
+reported `4 passed`. A full GUI packet regeneration attempt under
+`build/captures/rigid_workflow_rows_01_36_1781311276` failed on row 1 with
+`return_code=-7` before scene metrics were written, so do not treat that path as
+review evidence; the complete packet paths below remain the latest successful
+visual artifacts until a working GUI capture host regenerates them with the new
+identity-complete fields.
+
 Latest local follow-up: regenerated the current-HEAD review packets after the
 workflow-command provenance and review-index link-normalization fix. The full
 numbered packet

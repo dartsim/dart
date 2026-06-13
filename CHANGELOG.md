@@ -299,12 +299,15 @@
   - Added scene-owned capture metrics to `py-demo-capture` manifests for
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
-    manifest. The baseline, contact-inspection, solver-comparison,
-    contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
-    multibody solver-family, loop-closure family, broader floating-base and
-    two-link arm related routes, no-tunneling IPC, differentiable
-    contact-gradient route, AVBD fixed contact, AVBD spherical breakage, and
-    AVBD revolute/prismatic motor related routes,
+    manifest. Successful captures now also promote a
+    `resolved_solver_identity` block from those metrics into the per-scene
+    manifest, workflow manifests summarize identity completeness, and workflow
+    review cards show the resolved solver summary. The baseline,
+    contact-inspection, solver-comparison, contact-policy, multibody
+    link-contact, link center-of-mass, link Jacobian, multibody solver-family,
+    loop-closure family, broader floating-base and two-link arm related routes,
+    no-tunneling IPC, differentiable contact-gradient route, AVBD fixed contact,
+    AVBD spherical breakage, and AVBD revolute/prismatic motor related routes,
     step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
     it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
