@@ -19,14 +19,14 @@
     "benchmark_policy": "Performance rows require CPU benchmark/profile packet paths before landing."
   },
   "summary": {
-    "row_count": 26,
+    "row_count": 27,
     "status_counts": {
-      "in-progress": 25,
+      "in-progress": 26,
       "not-applicable": 1
     },
     "target_type_counts": {
       "benchmark-manifest": 1,
-      "benchmark-report": 1,
+      "benchmark-report": 2,
       "comparison-benchmark": 9,
       "not-applicable": 1,
       "py-demo": 1,
@@ -277,6 +277,23 @@
       "expected_invariant": "Reduced Table 2 packet reports finite body, dynamic-body, contact, friction, articulation, solver-iteration, residual, and timing counters for runnable reduced rows.",
       "limitation_status": "Reduced setup/statistics packet only; paper body/node/contact counts, paper timesteps, and paper timing rows remain planned.",
       "notes_or_gap": "bm-plan083-cpu-table2-packet covers reduced lying flat, hanging bridge, pulley, umbrella, terrain vehicle, ragdoll, windmill, candy, and precession rows through World::step."
+    },
+    {
+      "row_id": "unb-alg-barriers",
+      "source_ref": "Sections 4.3/6",
+      "dart_target_type": "benchmark-report",
+      "priority": "P1",
+      "status": "in-progress",
+      "py_demo_category": "not-required",
+      "py_demo_scene_ids": [],
+      "smoke_command": "not-required",
+      "long_horizon_visual_command": "not-required",
+      "visual_evidence_artifact": "not-required",
+      "benchmark_command": "pixi run bm-plan083-cpu-external-surface-ccd-packet",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/external_surface_ccd.json",
+      "expected_invariant": "Reduced CPU packet reports positive inter-body deformable, static-rigid, and moving-rigid surface CCD candidate/check/hit/limited-step counters through built-in deformable IPC World::step diagnostics.",
+      "limitation_status": "Reduced external surface CCD diagnostic packet only; paper-scale external contact, runtime scene filtering, GPU World::step, analytic curved CCD, and speedup evidence remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-external-surface-ccd-packet runs three tiny World::step scenes that reuse the built-in inter-body, static-rigid, and moving-rigid surface CCD limiter paths and serialize their nonzero counters under unb-alg-barriers. The latest median packet records 33 inter-body hits, 68 static-rigid hits, and 76 moving-rigid hits with failed_steps=0."
     },
     {
       "row_id": "abd-vs-rigid-wreck",

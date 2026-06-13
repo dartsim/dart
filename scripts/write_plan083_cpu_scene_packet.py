@@ -147,6 +147,7 @@ SCENE_IDS = {
     "abd_house_of_cards": "plan083_abd_house_of_cards",
     "abd_wrecking_ball": "plan083_abd_wrecking_ball",
     "candy": "plan083_candy",
+    "external_surface_ccd": "plan083_external_surface_ccd",
     "hanging_bridge": "plan083_hanging_bridge",
     "lying_flat": "plan083_lying_flat",
     "nunchaku_single": "plan083_nunchaku",
@@ -172,6 +173,7 @@ SCENE_ROW_IDS = {
     "abd_house_of_cards": "abd-vs-rigid-cards",
     "abd_wrecking_ball": "abd-vs-rigid-wreck",
     "candy": "unb-fig-22",
+    "external_surface_ccd": "unb-alg-barriers",
     "hanging_bridge": "unb-fig-02",
     "lying_flat": "unb-fig-01",
     "nunchaku_single": "unb-fig-13",
@@ -197,6 +199,7 @@ SCENE_ROWS = {
     "abd_house_of_cards": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step",
     "abd_wrecking_ball": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step",
     "candy": "BM_Plan083CpuScene_candy_reduced_world_step",
+    "external_surface_ccd": "BM_Plan083CpuScene_external_surface_ccd_diagnostics",
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "lying_flat": "BM_Plan083CpuScene_lying_flat_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
@@ -247,6 +250,9 @@ SCENE_BENCHMARK_OUTPUTS = {
         ".benchmark_results/plan083/cpu_scene_corpus/abd_wrecking_ball_benchmark.json"
     ),
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy_benchmark.json"),
+    "external_surface_ccd": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/external_surface_ccd_benchmark.json"
+    ),
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "lying_flat": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/lying_flat_benchmark.json"
@@ -313,6 +319,9 @@ SCENE_PACKET_OUTPUTS = {
         ".benchmark_results/plan083/cpu_scene_corpus/abd_wrecking_ball.json"
     ),
     "candy": Path(".benchmark_results/plan083/cpu_scene_corpus/candy.json"),
+    "external_surface_ccd": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/external_surface_ccd.json"
+    ),
     "hanging_bridge": DEFAULT_PACKET_OUTPUT,
     "lying_flat": Path(".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json"),
     "nunchaku_single": Path(
@@ -515,6 +524,33 @@ DEFORMABLE_RUNTIME_CONTACT_COUNTER_KEYS = (
     SURFACE_CONTACT_RUNTIME_COUNTER_KEYS + EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS
 )
 
+EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS = (
+    "inter_body_surface_contact_candidate_builds",
+    "inter_body_surface_contact_point_triangle_candidates",
+    "inter_body_surface_contact_ccd_point_triangle_checks",
+    "inter_body_surface_contact_ccd_hits",
+    "inter_body_surface_contact_ccd_limited_steps",
+    "static_rigid_surface_ccd_snapshot_builds",
+    "static_rigid_surface_ccd_box_count",
+    "static_rigid_surface_ccd_triangle_count",
+    "static_rigid_surface_ccd_edge_count",
+    "static_rigid_surface_ccd_candidate_builds",
+    "static_rigid_surface_ccd_point_triangle_candidates",
+    "static_rigid_surface_ccd_point_triangle_checks",
+    "static_rigid_surface_ccd_hits",
+    "static_rigid_surface_ccd_limited_steps",
+    "moving_rigid_surface_ccd_snapshot_builds",
+    "moving_rigid_surface_ccd_box_count",
+    "moving_rigid_surface_ccd_sample_count",
+    "moving_rigid_surface_ccd_triangle_count",
+    "moving_rigid_surface_ccd_edge_count",
+    "moving_rigid_surface_ccd_candidate_builds",
+    "moving_rigid_surface_ccd_point_triangle_candidates",
+    "moving_rigid_surface_ccd_point_triangle_checks",
+    "moving_rigid_surface_ccd_hits",
+    "moving_rigid_surface_ccd_limited_steps",
+)
+
 
 def _surface_contact_runtime_counters(row: Mapping[str, Any]) -> dict[str, int]:
     counters = {
@@ -657,6 +693,8 @@ def make_packet(
         return _make_abd_fem_coupling_packet(row, rows, timing_ns=timing_ns)
     if scene in ABD_COMPARISON_SCENES:
         return _make_abd_comparison_packet(scene, row, rows, timing_ns=timing_ns)
+    if scene == "external_surface_ccd":
+        return _make_external_surface_ccd_packet(row, rows, timing_ns=timing_ns)
 
     final_residual = _finite_number(row, "final_equality_residual_norm")
     if final_residual > max_equality_residual:
@@ -880,6 +918,85 @@ def _make_candy_packet(
                 "Reduced deformable-cloth/static-shell smoke packet only; "
                 "affine body packing, twisted shell, and cloth self-contact "
                 "parity remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_external_surface_ccd_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    scene_count = int(_finite_number(row, "external_surface_ccd_scene_count"))
+    deformable_body_count = int(_finite_number(row, "deformable_body_count"))
+    deformable_node_count = int(_finite_number(row, "deformable_node_count"))
+    deformable_edge_count = int(_finite_number(row, "deformable_edge_count"))
+    surface_triangle_count = int(_finite_number(row, "surface_triangle_count"))
+    rigid_obstacle_count = int(_finite_number(row, "rigid_obstacle_count"))
+    static_rigid_obstacle_count = int(
+        _finite_number(row, "static_rigid_obstacle_count")
+    )
+    moving_rigid_obstacle_count = int(
+        _finite_number(row, "moving_rigid_obstacle_count")
+    )
+    if scene_count != 3:
+        raise Plan083CpuScenePacketError(
+            f"expected 3 external surface CCD diagnostic scenes, got {scene_count}"
+        )
+    if deformable_body_count != 4:
+        raise Plan083CpuScenePacketError(
+            f"expected 4 deformable bodies across external CCD scenes, got {deformable_body_count}"
+        )
+    if deformable_node_count < 9:
+        raise Plan083CpuScenePacketError(
+            "expected at least 9 deformable nodes across external CCD scenes"
+        )
+    if surface_triangle_count < 2:
+        raise Plan083CpuScenePacketError(
+            "expected at least 2 deformable surface triangles across external CCD scenes"
+        )
+    if rigid_obstacle_count != 2:
+        raise Plan083CpuScenePacketError(
+            f"expected 2 rigid surface CCD obstacles, got {rigid_obstacle_count}"
+        )
+    if static_rigid_obstacle_count != 1 or moving_rigid_obstacle_count != 1:
+        raise Plan083CpuScenePacketError(
+            "expected one static-rigid and one moving-rigid surface CCD obstacle"
+        )
+
+    counters = _surface_contact_runtime_counters(row)
+    for key in EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS:
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                f"external surface CCD diagnostic row requires positive {key}"
+            )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-alg-barriers",
+            "scene_id": "plan083_external_surface_ccd",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "deformable IPC World::step external surface CCD diagnostics",
+            "step_count": scene_count,
+            "wall_time_ns": timing_ns,
+            "external_surface_ccd_scene_count": scene_count,
+            "rigid_obstacle_count": rigid_obstacle_count,
+            "static_rigid_obstacle_count": static_rigid_obstacle_count,
+            "moving_rigid_obstacle_count": moving_rigid_obstacle_count,
+            "deformable_body_count": deformable_body_count,
+            "deformable_node_count": deformable_node_count,
+            "deformable_edge_count": deformable_edge_count,
+            "surface_triangle_count": surface_triangle_count,
+            **counters,
+            "limitation_status": (
+                "Reduced three-scene external surface CCD diagnostic packet "
+                "only; paper-scale external contact, runtime scene filtering, "
+                "GPU World::step, analytic curved CCD, and speedup evidence "
+                "remain planned."
             ),
         },
         "benchmarks": rows,

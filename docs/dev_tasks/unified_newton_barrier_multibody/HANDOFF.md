@@ -1,5 +1,29 @@
 # Unified Newton-Barrier Handoff
 
+## External Surface CCD CPU Packet Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint adds a dedicated reduced `unb-alg-barriers` CPU packet row for
+external surface CCD diagnostics. `bm_plan083_cpu_scene_corpus` now runs three
+tiny built-in deformable IPC `World::step` scenes that exercise inter-body
+deformable, deformable-vs-static-rigid, and deformable-vs-moving-rigid surface
+CCD limiter paths. `scripts/write_plan083_cpu_scene_packet.py` serializes the
+new row as `plan083_external_surface_ccd` and requires positive candidate, CCD
+check, hit, and limited-step counters for all three external families. The
+latest median packet records 33 inter-body hits, 68 static-rigid hits, and 76
+moving-rigid hits with `failed_steps=0`.
+
+This is a reduced CPU diagnostic packet only. It does not prove paper-scale
+external contact, production runtime scene filtering, analytic curved CCD, GPU
+`World::step`, full runtime affine/FEM coupling, or any speedup gate. The
+broader reduced scene rows still have zero external candidate/check/hit counts
+in their mixed fixtures.
+
 ## CPU Scene External Surface-Contact Packet Counters Checkpoint (2026-06-13)
 
 Work continued locally on

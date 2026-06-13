@@ -2801,7 +2801,9 @@ Capsule Rod (IPC)` py-demos scene.
     line-search path without exposing internal solver state or device/backend
     APIs. The PLAN-083 reduced CPU scene packet rows now serialize and validate
     those external surface CCD counters alongside the existing self-surface
-    counters.
+    counters, and the dedicated `unb-alg-barriers` CPU packet row exercises
+    nonzero inter-body/static-rigid/moving-rigid surface CCD counter evidence
+    through built-in `World::step`.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`

@@ -349,6 +349,70 @@ def _lying_flat_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _external_surface_ccd_packet(**overrides):
+    counters = {key: 0 for key in _surface_contact_counters()}
+    counters.update(
+        {
+            "line_search_trials": 3,
+            "inter_body_surface_contact_candidate_builds": 1,
+            "inter_body_surface_contact_point_triangle_candidates": 1,
+            "inter_body_surface_contact_edge_edge_candidates": 0,
+            "inter_body_surface_contact_ccd_point_triangle_checks": 1,
+            "inter_body_surface_contact_ccd_edge_edge_checks": 0,
+            "inter_body_surface_contact_ccd_hits": 1,
+            "inter_body_surface_contact_ccd_limited_steps": 1,
+            "inter_body_surface_contact_ccd_zero_step_count": 0,
+            "static_rigid_surface_ccd_snapshot_builds": 1,
+            "static_rigid_surface_ccd_box_count": 1,
+            "static_rigid_surface_ccd_sphere_count": 0,
+            "static_rigid_surface_ccd_triangle_count": 12,
+            "static_rigid_surface_ccd_edge_count": 12,
+            "static_rigid_surface_ccd_candidate_builds": 1,
+            "static_rigid_surface_ccd_point_triangle_candidates": 1,
+            "static_rigid_surface_ccd_edge_edge_candidates": 0,
+            "static_rigid_surface_ccd_point_triangle_checks": 1,
+            "static_rigid_surface_ccd_edge_edge_checks": 0,
+            "static_rigid_surface_ccd_hits": 1,
+            "static_rigid_surface_ccd_limited_steps": 1,
+            "static_rigid_surface_ccd_zero_step_count": 0,
+            "moving_rigid_surface_ccd_snapshot_builds": 1,
+            "moving_rigid_surface_ccd_box_count": 1,
+            "moving_rigid_surface_ccd_sample_count": 2,
+            "moving_rigid_surface_ccd_inflated_box_count": 1,
+            "moving_rigid_surface_ccd_triangle_count": 24,
+            "moving_rigid_surface_ccd_edge_count": 24,
+            "moving_rigid_surface_ccd_candidate_builds": 1,
+            "moving_rigid_surface_ccd_point_triangle_candidates": 1,
+            "moving_rigid_surface_ccd_edge_edge_candidates": 0,
+            "moving_rigid_surface_ccd_point_triangle_checks": 1,
+            "moving_rigid_surface_ccd_edge_edge_checks": 0,
+            "moving_rigid_surface_ccd_hits": 1,
+            "moving_rigid_surface_ccd_limited_steps": 1,
+            "moving_rigid_surface_ccd_zero_step_count": 0,
+        }
+    )
+    row = {
+        "name": "BM_Plan083CpuScene_external_surface_ccd_diagnostics_median",
+        "run_name": "BM_Plan083CpuScene_external_surface_ccd_diagnostics",
+        "aggregate_name": "median",
+        "real_time": 12.0,
+        "cpu_time": 12.0,
+        "time_unit": "ms",
+        "external_surface_ccd_scene_count": 3,
+        "rigid_obstacle_count": 2,
+        "static_rigid_obstacle_count": 1,
+        "moving_rigid_obstacle_count": 1,
+        "deformable_body_count": 4,
+        "deformable_node_count": 9,
+        "deformable_edge_count": 0,
+        "surface_triangle_count": 2,
+        "failed_steps": 0,
+        **counters,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _nunchaku_scaling_packet(**overrides):
     rows = []
     for size in (20, 40, 60, 80, 100):
@@ -901,6 +965,38 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["wall_time_ns"] == 11.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_external_surface_ccd() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _external_surface_ccd_packet(),
+        max_equality_residual=1e-8,
+        scene="external_surface_ccd",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-alg-barriers"
+    assert row["scene_id"] == "plan083_external_surface_ccd"
+    assert row["paper_scale"] is False
+    assert row["external_surface_ccd_scene_count"] == 3
+    assert row["deformable_body_count"] == 4
+    assert row["deformable_node_count"] == 9
+    assert row["surface_triangle_count"] == 2
+    assert row["rigid_obstacle_count"] == 2
+    assert row["static_rigid_obstacle_count"] == 1
+    assert row["moving_rigid_obstacle_count"] == 1
+    assert row["surface_contact_candidate_builds"] == 0
+    assert row["inter_body_surface_contact_candidate_builds"] == 1
+    assert row["inter_body_surface_contact_ccd_hits"] == 1
+    assert row["static_rigid_surface_ccd_box_count"] == 1
+    assert row["static_rigid_surface_ccd_triangle_count"] == 12
+    assert row["static_rigid_surface_ccd_hits"] == 1
+    assert row["moving_rigid_surface_ccd_box_count"] == 1
+    assert row["moving_rigid_surface_ccd_sample_count"] == 2
+    assert row["moving_rigid_surface_ccd_hits"] == 1
+    assert row["wall_time_ns"] == 12.0e6
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku_scaling() -> None:
     module = _load_module()
 
@@ -1245,6 +1341,54 @@ def test_plan083_cpu_scene_packet_rejects_lying_flat_without_obstacles() -> None
             _lying_flat_packet(rigid_obstacle_count=2),
             max_equality_residual=1e-8,
             scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_external_surface_ccd_without_inter_body_hit() -> (
+    None
+):
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="positive inter_body_surface_contact_ccd_hits",
+    ):
+        module.make_packet(
+            _external_surface_ccd_packet(inter_body_surface_contact_ccd_hits=0),
+            max_equality_residual=1e-8,
+            scene="external_surface_ccd",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_external_surface_ccd_without_static_hit() -> (
+    None
+):
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="positive static_rigid_surface_ccd_hits",
+    ):
+        module.make_packet(
+            _external_surface_ccd_packet(static_rigid_surface_ccd_hits=0),
+            max_equality_residual=1e-8,
+            scene="external_surface_ccd",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_external_surface_ccd_without_moving_hit() -> (
+    None
+):
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="positive moving_rigid_surface_ccd_hits",
+    ):
+        module.make_packet(
+            _external_surface_ccd_packet(moving_rigid_surface_ccd_hits=0),
+            max_equality_residual=1e-8,
+            scene="external_surface_ccd",
         )
 
 

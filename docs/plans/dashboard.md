@@ -374,8 +374,10 @@ its own line so status updates remain git-history friendly.
   self-surface candidate/CCD diagnostics in the reduced lying-flat, Candy, and
   ABD/FEM CPU scene packets, and public built-in inter-body/static-rigid/
   moving-rigid surface CCD diagnostics, then serializes those external counters
-  into the reduced deformable CPU scene packet rows with zero external
-  candidate/check/hit counts in the current fixtures. It still keeps runtime
+  into the reduced deformable CPU scene packet rows and adds a dedicated reduced
+  external surface CCD CPU diagnostic packet with nonzero inter-body/static-rigid/
+  moving-rigid counters. The broader reduced scene fixtures still have
+  zero external candidate/check/hit counts. It still keeps runtime
   scene filtering, analytic curved CCD, production scene-level line search inside
   `World::step`, full runtime
   sparse Hessian graph construction and assembly beyond the reduced dedup row,
