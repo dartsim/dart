@@ -805,21 +805,24 @@ def _make_lying_flat_packet(
         raise Plan083CpuScenePacketError(
             f"expected at least 4 reduced lying-flat obstacles, got {rigid_obstacle_count}"
         )
-    if deformable_body_count != 1:
+    if deformable_body_count != 3:
         raise Plan083CpuScenePacketError(
-            f"expected 1 deformable cloth body, got {deformable_body_count}"
+            "expected reduced lying-flat cloth plus two inter-body witness "
+            f"deformable bodies, got {deformable_body_count}"
         )
-    if deformable_node_count != 24:
+    if deformable_node_count != 31:
         raise Plan083CpuScenePacketError(
-            f"expected 24 deformable nodes, got {deformable_node_count}"
+            "expected 24 cloth nodes plus 7 inter-body witness nodes, "
+            f"got {deformable_node_count}"
         )
     if deformable_edge_count < 68:
         raise Plan083CpuScenePacketError(
             "expected structural and shear spring edges for reduced lying-flat cloth"
         )
-    if surface_triangle_count != 30:
+    if surface_triangle_count != 32:
         raise Plan083CpuScenePacketError(
-            f"expected 30 cloth surface triangles, got {surface_triangle_count}"
+            "expected 30 cloth surface triangles plus 2 inter-body witness "
+            f"triangles, got {surface_triangle_count}"
         )
 
     min_cloth_height = _finite_number(row, "min_cloth_height_m")
@@ -834,6 +837,18 @@ def _make_lying_flat_packet(
             "reduced lying-flat cloth span is not positive"
         )
     counters = _surface_contact_runtime_counters(row)
+    for key in (
+        "inter_body_surface_contact_candidate_builds",
+        "inter_body_surface_contact_point_triangle_candidates",
+        "inter_body_surface_contact_ccd_point_triangle_checks",
+        "inter_body_surface_contact_ccd_hits",
+        "inter_body_surface_contact_ccd_limited_steps",
+    ):
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced lying-flat packet needs positive inter-body "
+                f"surface CCD witness counter {key}"
+            )
     if counters["static_rigid_surface_ccd_box_count"] <= 0:
         raise Plan083CpuScenePacketError(
             "reduced lying-flat packet needs a static-rigid surface CCD witness box"
@@ -893,10 +908,10 @@ def _make_lying_flat_packet(
             "cloth_span_x_m": cloth_span_x,
             "cloth_span_y_m": cloth_span_y,
             "limitation_status": (
-                "Reduced deformable-cloth/static and moving obstacle smoke "
-                "packet only; rigid rings, deformable tori, rods, articulated "
-                "ragdoll, inter-body external contact, cloth self-contact, "
-                "and paper-scale mixed coupling remain planned."
+                "Reduced deformable-cloth/inter-body/static and moving "
+                "obstacle smoke packet only; rigid rings, deformable tori, "
+                "rods, articulated ragdoll, cloth self-contact, production "
+                "mixed coupling, and paper-scale mixed coupling remain planned."
             ),
         },
         "benchmarks": rows,

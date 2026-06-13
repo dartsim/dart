@@ -249,6 +249,37 @@ sx::DeformableBodyOptions makePlan083StationaryTriangleObstacleOptions()
   return options;
 }
 
+sx::DeformableBodyOptions transformPlan083InterBodyWitnessOptions(
+    sx::DeformableBodyOptions options,
+    const Eigen::Vector3d& offset,
+    const double scale)
+{
+  for (auto& position : options.positions) {
+    position = offset + scale * position;
+  }
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083LyingFlatInterBodyMovingPointOptions(
+    const Eigen::Vector3d& offset)
+{
+  auto options = transformPlan083InterBodyWitnessOptions(
+      makePlan083InterBodyMovingPointOptions(), offset, 0.04);
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.velocities[3] = Eigen::Vector3d(0.0, 0.0, -20.0);
+  options.masses.assign(options.positions.size(), 0.02);
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083LyingFlatInterBodyObstacleOptions(
+    const Eigen::Vector3d& offset)
+{
+  auto options = transformPlan083InterBodyWitnessOptions(
+      makePlan083StationaryTriangleObstacleOptions(), offset, 0.04);
+  options.masses.assign(options.positions.size(), 0.02);
+  return options;
+}
+
 sx::RigidBody addPlan083StaticSurfaceCcdBox(
     sx::World& world,
     const std::string& name,
@@ -289,6 +320,13 @@ struct BodySnapshot
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
 };
 
+struct DeformableBodySnapshot
+{
+  sx::DeformableBody body;
+  std::vector<Eigen::Vector3d> positions;
+  std::vector<Eigen::Vector3d> velocities;
+};
+
 void snapshotBody(
     std::vector<BodySnapshot>& snapshots, const sx::RigidBody& body)
 {
@@ -297,6 +335,21 @@ void snapshotBody(
        body.getTransform(),
        body.getLinearVelocity(),
        body.getAngularVelocity()});
+}
+
+void snapshotDeformableBody(
+    std::vector<DeformableBodySnapshot>& snapshots,
+    const sx::DeformableBody& body)
+{
+  DeformableBodySnapshot snapshot;
+  snapshot.body = body;
+  snapshot.positions.reserve(body.getNodeCount());
+  snapshot.velocities.reserve(body.getNodeCount());
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    snapshot.positions.push_back(body.getPosition(node));
+    snapshot.velocities.push_back(body.getVelocity(node));
+  }
+  snapshots.push_back(std::move(snapshot));
 }
 
 struct HangingBridgeFixture
@@ -682,6 +735,16 @@ struct LyingFlatFixture
     cloth.emplace(world.addDeformableBody(
         "plan083_lying_flat_deformable_cloth", clothOptions));
 
+    const Eigen::Vector3d interBodyOffset(0.0, halfDepth + 0.20, 0.10);
+    interBodyMoving.emplace(world.addDeformableBody(
+        "plan083_lying_flat_inter_body_moving_witness",
+        makePlan083LyingFlatInterBodyMovingPointOptions(interBodyOffset)));
+    interBodyObstacle.emplace(world.addDeformableBody(
+        "plan083_lying_flat_inter_body_obstacle_witness",
+        makePlan083LyingFlatInterBodyObstacleOptions(interBodyOffset)));
+    snapshotDeformableBody(deformableSnapshots, *interBodyMoving);
+    snapshotDeformableBody(deformableSnapshots, *interBodyObstacle);
+
     world.enterSimulationMode();
   }
 
@@ -729,6 +792,12 @@ struct LyingFlatFixture
       snapshot.body.setLinearVelocity(snapshot.linearVelocity);
       snapshot.body.setAngularVelocity(snapshot.angularVelocity);
     }
+    for (auto& snapshot : deformableSnapshots) {
+      for (std::size_t node = 0; node < snapshot.positions.size(); ++node) {
+        snapshot.body.setPosition(node, snapshot.positions[node]);
+        snapshot.body.setVelocity(node, snapshot.velocities[node]);
+      }
+    }
     for (std::size_t node = 0; node < initialPositions.size(); ++node) {
       cloth->setPosition(node, initialPositions[node]);
       cloth->setVelocity(node, initialVelocities[node]);
@@ -768,11 +837,26 @@ struct LyingFlatFixture
     return maxY - minY;
   }
 
+  std::size_t totalSurfaceTriangleCount() const
+  {
+    std::size_t count = cloth->getSurfaceTriangleCount();
+    if (interBodyMoving.has_value()) {
+      count += interBodyMoving->getSurfaceTriangleCount();
+    }
+    if (interBodyObstacle.has_value()) {
+      count += interBodyObstacle->getSurfaceTriangleCount();
+    }
+    return count;
+  }
+
   sx::World world;
   std::vector<sx::RigidBody> obstacles;
   std::vector<BodySnapshot> obstacleSnapshots;
+  std::vector<DeformableBodySnapshot> deformableSnapshots;
   std::optional<sx::RigidBody> movingCcdWitness;
   std::optional<sx::DeformableBody> cloth;
+  std::optional<sx::DeformableBody> interBodyMoving;
+  std::optional<sx::DeformableBody> interBodyObstacle;
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
 };
@@ -2221,7 +2305,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
 
     fixture.world.step(executor);
     lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount == 0u
         || !std::isfinite(fixture.minClothHeight())) {
       ++failedSteps;
     }
@@ -2244,7 +2328,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
   state.counters["deformable_edge_count"]
       = static_cast<double>(lastDiagnostics.edgeCount);
   state.counters["surface_triangle_count"]
-      = static_cast<double>(fixture.cloth->getSurfaceTriangleCount());
+      = static_cast<double>(fixture.totalSurfaceTriangleCount());
   state.counters["solver_iterations"]
       = static_cast<double>(lastDiagnostics.solverIterations);
   state.counters["active_contact_count"]
