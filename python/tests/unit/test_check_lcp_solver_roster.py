@@ -101,6 +101,41 @@ def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
         module.check_demo_profile_evidence_required_columns()
 
 
+def test_lcp_solver_roster_rejects_missing_math_stub_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_solver_classes",
+        lambda: {"DantzigSolver"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="python/stubs/dartpy/math\\.pyi is missing solver classes",
+    ):
+        module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
+
+
+def test_lcp_solver_roster_rejects_missing_init_stub_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_solver_classes",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+    monkeypatch.setattr(module, "_read", lambda path: "DantzigSolver\n")
+
+    with pytest.raises(
+        AssertionError,
+        match="python/stubs/dartpy/__init__\\.pyi is missing solver classes",
+    ):
+        module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
+
+
 def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
     tmp_path: Path,
 ) -> None:

@@ -338,6 +338,28 @@ def parse_math_stub_solver_classes() -> set[str]:
     return set(pattern.findall(_read(DARTPY_MATH_STUB_PATH)))
 
 
+def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
+    math_stub_classes = parse_math_stub_solver_classes()
+    missing_math_stub = sorted(set(manifest_classes) - math_stub_classes)
+    if missing_math_stub:
+        raise AssertionError(
+            "python/stubs/dartpy/math.pyi is missing solver classes: "
+            f"{missing_math_stub}"
+        )
+
+    init_stub_text = _read(DARTPY_INIT_STUB_PATH)
+    missing_init_stub = [
+        class_name
+        for class_name in manifest_classes
+        if class_name not in init_stub_text
+    ]
+    if missing_init_stub:
+        raise AssertionError(
+            "python/stubs/dartpy/__init__.pyi is missing solver classes: "
+            f"{missing_init_stub}"
+        )
+
+
 def assert_unique(values: list[str], label: str) -> None:
     seen: set[str] = set()
     duplicates: list[str] = []
@@ -734,25 +756,7 @@ def check_roster() -> None:
                 f"dartpy binding mismatch for {entry.class_name}: {bound_name!r}"
             )
 
-    math_stub_classes = parse_math_stub_solver_classes()
-    missing_math_stub = sorted(set(manifest_classes) - math_stub_classes)
-    if missing_math_stub:
-        raise AssertionError(
-            "python/stubs/dartpy/math.pyi is missing solver classes: "
-            f"{missing_math_stub}"
-        )
-
-    init_stub_text = _read(DARTPY_INIT_STUB_PATH)
-    missing_init_stub = [
-        class_name
-        for class_name in manifest_classes
-        if class_name not in init_stub_text
-    ]
-    if missing_init_stub:
-        raise AssertionError(
-            "python/stubs/dartpy/__init__.pyi is missing solver classes: "
-            f"{missing_init_stub}"
-        )
+    check_python_stub_solver_classes(manifest_classes)
 
 
 def main() -> int:
