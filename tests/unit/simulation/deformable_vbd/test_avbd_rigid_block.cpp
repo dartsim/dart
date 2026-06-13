@@ -580,6 +580,77 @@ TEST(AvbdRigidBlock, PointPairDistanceSpringStepReducesStretch)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidDistanceSpringBuilderUsesScratchForLargeInputs)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(1.5, 0.3, -0.2);
+
+  constexpr std::size_t kActiveSprings
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springs(
+      kActiveSprings + 1u);
+  for (std::size_t i = 0; i < kActiveSprings; ++i) {
+    auto& spring = springs[i];
+    spring.bodyA = 0;
+    spring.bodyB = 1;
+    spring.endpointA
+        = {11u + static_cast<std::uint32_t>(i),
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i))};
+    spring.endpointB
+        = {23u,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i + 1u))};
+    spring.rowIndex = static_cast<std::uint32_t>(i);
+    spring.row.localPointA = Vec3(0.01 * static_cast<double>(i), 0.0, 0.0);
+    spring.row.localPointB = Vec3(0.0, 0.02 * static_cast<double>(i), 0.0);
+    spring.row.restLength = 0.75 + 0.01 * static_cast<double>(i);
+    spring.row.materialStiffness = 20.0 + static_cast<double>(i);
+    spring.startStiffness = 2.0;
+    spring.maxStiffness = 80.0;
+  }
+  springs.back() = springs.front();
+  springs.back().bodyB = 99u;
+
+  vbd::AvbdScalarRowInventory springInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springRows;
+  vbd::AvbdRigidDistanceSpringRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStart);
+
+  ASSERT_EQ(scratch.activeRows.size(), kActiveSprings);
+  ASSERT_EQ(springInventory.size(), kActiveSprings);
+  ASSERT_EQ(springRows.size(), kActiveSprings);
+  EXPECT_EQ(springRows.back().rowIndex, kActiveSprings - 1u);
+  EXPECT_EQ(
+      springInventory[0].descriptor.key.role,
+      vbd::AvbdScalarRowRole::RigidDistanceSpring);
+  EXPECT_DOUBLE_EQ(springRows[0].row.materialStiffness, 20.0);
+  EXPECT_DOUBLE_EQ(
+      springRows.back().row.materialStiffness,
+      20.0 + static_cast<double>(kActiveSprings - 1u));
+
+  springInventory[0].state.stiffness = 30.0;
+  springInventory[0].state.lambda = 3.0;
+  springs[0].row.materialStiffness = 25.0;
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStart);
+
+  ASSERT_EQ(springInventory.size(), kActiveSprings);
+  ASSERT_EQ(springRows.size(), kActiveSprings);
+  EXPECT_DOUBLE_EQ(springInventory[0].state.stiffness, 25.0);
+  EXPECT_DOUBLE_EQ(springInventory[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(springRows[0].row.materialStiffness, 25.0);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, ContactNormalPointPairUsesGapOffsetAndBounds)
 {
   vbd::AvbdRigidBodyState stateA;
