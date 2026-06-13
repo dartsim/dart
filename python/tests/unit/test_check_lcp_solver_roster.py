@@ -1054,6 +1054,35 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
         module.check_python_stub_lcp_api_surface()
 
 
+def test_lcp_solver_roster_rejects_missing_math_all_lcp_api_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_parameter_members",
+        lambda: {"PgsSolverParameters": {"epsilon_for_division"}},
+    )
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(module, "parse_math_stub_all_names", lambda: {"LcpProblem"})
+
+    def fake_class_members(class_name: str) -> set[str]:
+        if class_name == "PgsSolverParameters":
+            return {"epsilon_for_division"}
+        return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match=(
+            "python/stubs/dartpy/math\\.pyi __all__ is missing "
+            "LCP API classes: \\['PgsSolverParameters'\\]"
+        ),
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
 def test_lcp_solver_roster_rejects_missing_parameter_class_for_parameterized_solver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

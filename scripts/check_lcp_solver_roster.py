@@ -1571,6 +1571,18 @@ def check_python_stub_lcp_api_surface() -> None:
         if missing_members:
             errors.append(f"{class_name} is missing members {missing_members}")
 
+    math_stub_all_names = parse_math_stub_all_names()
+    missing_math_all_names = sorted(
+        class_name
+        for class_name in required_members
+        if class_name not in math_stub_all_names
+    )
+    if missing_math_all_names:
+        errors.append(
+            "python/stubs/dartpy/math.pyi __all__ is missing LCP API classes: "
+            f"{missing_math_all_names}"
+        )
+
     for _, solver_name in parse_bound_parameterized_solver_classes().items():
         expected_parameter_class = f"{solver_name}Parameters"
         if expected_parameter_class not in parameter_members:
