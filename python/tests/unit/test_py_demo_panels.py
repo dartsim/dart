@@ -1506,6 +1506,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_elapsed_us"] >= 0.0
         assert summary_row["fastest_native_solver"] in solver_by_name
         assert summary_row["fastest_native_elapsed_us"] >= 0.0
+        case_rows = [row for row in problem_rows if row["case"] == case_name]
+        native_case_rows = [row for row in case_rows if row["native_supported"]]
+        fastest_row = min(case_rows, key=lambda row: row["elapsed_us"])
+        fastest_native_row = min(native_case_rows, key=lambda row: row["elapsed_us"])
+        assert summary_row["fastest_solver"] == fastest_row["solver"]
+        assert summary_row["fastest_elapsed_us"] == pytest.approx(
+            fastest_row["elapsed_us"]
+        )
+        assert summary_row["fastest_native_solver"] == fastest_native_row["solver"]
+        assert summary_row["fastest_native_elapsed_us"] == pytest.approx(
+            fastest_native_row["elapsed_us"]
+        )
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
         expected_native_case_count = (
