@@ -87,6 +87,10 @@ BOUND_LCP_CORE_CLASS_NAMES = (
     "LcpProblem",
     "LcpSolver",
 )
+BOUND_LCP_ENUM_NAMES = (
+    "LcpSolverStatus",
+    "LcpProblemType",
+)
 REQUIRED_DARTPY_MATH_STUB_MEMBERS = {
     "LcpProblem": {
         "size",
@@ -1373,14 +1377,11 @@ def parse_bound_parameterized_solver_classes() -> dict[str, str]:
     }
 
 
-def _extract_bound_class_body(source: str, class_name: str) -> str:
-    pattern = re.compile(
-        r'nb::class_<[^>]+>\(\s*m\s*,\s*"' + re.escape(class_name) + r'"\s*\)'
-    )
+def _extract_bound_named_body(source: str, name: str, pattern: re.Pattern[str]) -> str:
     match = pattern.search(source)
     if not match:
         raise AssertionError(
-            f"{_display_path(DARTPY_BINDING_PATH)} is missing bound class {class_name}"
+            f"{_display_path(DARTPY_BINDING_PATH)} is missing bound symbol {name}"
         )
 
     paren_depth = 0
@@ -1435,9 +1436,22 @@ def _extract_bound_class_body(source: str, class_name: str) -> str:
         index += 1
 
     raise AssertionError(
-        f"{_display_path(DARTPY_BINDING_PATH)} has unterminated bound class "
-        f"{class_name}"
+        f"{_display_path(DARTPY_BINDING_PATH)} has unterminated bound symbol {name}"
     )
+
+
+def _extract_bound_class_body(source: str, class_name: str) -> str:
+    pattern = re.compile(
+        r'nb::class_<[^>]+>\(\s*m\s*,\s*"' + re.escape(class_name) + r'"\s*\)'
+    )
+    return _extract_bound_named_body(source, class_name, pattern)
+
+
+def _extract_bound_enum_body(source: str, enum_name: str) -> str:
+    pattern = re.compile(
+        r'nb::enum_<[^>]+>\(\s*m\s*,\s*"' + re.escape(enum_name) + r'"\s*\)'
+    )
+    return _extract_bound_named_body(source, enum_name, pattern)
 
 
 def parse_bound_lcp_core_class_members() -> dict[str, set[str]]:
@@ -1458,6 +1472,22 @@ def parse_bound_lcp_core_class_members() -> dict[str, set[str]]:
             if not (member.startswith("__") and member.endswith("__"))
         }
     return members
+
+
+def parse_bound_lcp_enum_members() -> dict[str, set[str]]:
+    source = _read(DARTPY_BINDING_PATH)
+    value_pattern = re.compile(r'\.value\(\s*"(?P<member>[A-Za-z_][A-Za-z0-9_]*)"')
+    return {
+        enum_name: set(
+            value_pattern.findall(_extract_bound_enum_body(source, enum_name))
+        )
+        for enum_name in BOUND_LCP_ENUM_NAMES
+    }
+
+
+def parse_bound_lcp_free_functions() -> set[str]:
+    pattern = re.compile(r'\bm\.def\(\s*"(?P<name>[A-Za-z_][A-Za-z0-9_]*)"')
+    return set(pattern.findall(_read(DARTPY_BINDING_PATH)))
 
 
 def parse_bound_lcp_parameter_members() -> dict[str, set[str]]:
@@ -1538,6 +1568,15 @@ def _parse_stub_all_names(path: Path) -> set[str]:
 
 def parse_math_stub_all_names() -> set[str]:
     return _parse_stub_all_names(DARTPY_MATH_STUB_PATH)
+
+
+def parse_math_stub_function_names() -> set[str]:
+    module = _parse_stub(DARTPY_MATH_STUB_PATH)
+    return {
+        node.name
+        for node in module.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
 
 
 def parse_math_stub_class_members(class_name: str) -> set[str]:
@@ -1653,10 +1692,13 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
 
 def check_python_stub_lcp_api_surface() -> None:
     errors: list[str] = []
+    enum_members = parse_bound_lcp_enum_members()
+    free_functions = parse_bound_lcp_free_functions()
     parameter_members = parse_bound_lcp_parameter_members()
     required_members = parse_bound_lcp_core_class_members()
     for class_name, expected_members in REQUIRED_DARTPY_MATH_STUB_MEMBERS.items():
         required_members.setdefault(class_name, set()).update(expected_members)
+    required_members.update(enum_members)
     required_members.update(parameter_members)
     for class_name, expected_members in required_members.items():
         actual_members = parse_math_stub_class_members(class_name)
@@ -1664,16 +1706,43 @@ def check_python_stub_lcp_api_surface() -> None:
         if missing_members:
             errors.append(f"{class_name} is missing members {missing_members}")
 
+    math_stub_function_names = parse_math_stub_function_names()
+    missing_math_functions = sorted(free_functions - math_stub_function_names)
+    if missing_math_functions:
+        errors.append(
+            "python/stubs/dartpy/math.pyi is missing LCP functions: "
+            f"{missing_math_functions}"
+        )
+
     math_stub_all_names = parse_math_stub_all_names()
     missing_math_all_names = sorted(
-        class_name
-        for class_name in required_members
-        if class_name not in math_stub_all_names
+        name
+        for name in set(required_members) | free_functions
+        if name not in math_stub_all_names
     )
     if missing_math_all_names:
         errors.append(
-            "python/stubs/dartpy/math.pyi __all__ is missing LCP API classes: "
+            "python/stubs/dartpy/math.pyi __all__ is missing LCP API names: "
             f"{missing_math_all_names}"
+        )
+
+    top_level_lcp_names = (
+        set(BOUND_LCP_CORE_CLASS_NAMES) | set(enum_members) | free_functions
+    )
+    init_stub_math_imports = parse_init_stub_math_imports()
+    missing_init_imports = sorted(top_level_lcp_names - init_stub_math_imports)
+    if missing_init_imports:
+        errors.append(
+            "python/stubs/dartpy/__init__.pyi is missing LCP .math imports: "
+            f"{missing_init_imports}"
+        )
+
+    init_stub_all_names = parse_init_stub_all_names()
+    missing_init_all_names = sorted(top_level_lcp_names - init_stub_all_names)
+    if missing_init_all_names:
+        errors.append(
+            "python/stubs/dartpy/__init__.pyi __all__ is missing LCP API names: "
+            f"{missing_init_all_names}"
         )
 
     for _, solver_name in parse_bound_parameterized_solver_classes().items():

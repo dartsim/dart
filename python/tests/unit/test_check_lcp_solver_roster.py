@@ -869,6 +869,21 @@ def test_lcp_solver_roster_reads_bound_lcp_core_class_members() -> None:
     assert "__repr__" not in members["LcpResult"]
 
 
+def test_lcp_solver_roster_reads_bound_lcp_enums_and_free_functions() -> None:
+    module = _load_module()
+
+    enum_members = module.parse_bound_lcp_enum_members()
+    assert {"SUCCESS", "FAILED", "INVALID_PROBLEM"} <= enum_members[
+        "LcpSolverStatus"
+    ]
+    assert {"STANDARD", "BOXED", "FRICTION_INDEX"} <= enum_members["LcpProblemType"]
+
+    assert module.parse_bound_lcp_free_functions() == {
+        "lcp_problem_type_to_string",
+        "lcp_solver_status_to_string",
+    }
+
+
 def test_lcp_solver_roster_rejects_missing_math_stub_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1017,6 +1032,8 @@ def test_lcp_solver_roster_rejects_missing_math_stub_lcp_api_member(
 
     monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
     monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_core_class_members",
@@ -1056,6 +1073,8 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
         "parse_bound_parameterized_solver_classes",
         lambda: {"BoxedSemiSmoothNewtonSolver": "BoxedSemiSmoothNewtonSolver"},
     )
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_core_class_members",
@@ -1090,6 +1109,8 @@ def test_lcp_solver_roster_rejects_missing_math_all_lcp_api_class(
             "LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
         },
     )
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_parameter_members",
@@ -1109,7 +1130,7 @@ def test_lcp_solver_roster_rejects_missing_math_all_lcp_api_class(
         AssertionError,
         match=(
             "python/stubs/dartpy/math\\.pyi __all__ is missing "
-            "LCP API classes: \\['PgsSolverParameters'\\]"
+            "LCP API names: \\['PgsSolverParameters'\\]"
         ),
     ):
         module.check_python_stub_lcp_api_surface()
@@ -1126,6 +1147,8 @@ def test_lcp_solver_roster_rejects_missing_bound_core_lcp_api_member(
     )
     monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
     monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module, "parse_math_stub_all_names", lambda: {"LcpOptions", "LcpProblem"}
     )
@@ -1144,10 +1167,148 @@ def test_lcp_solver_roster_rejects_missing_bound_core_lcp_api_member(
         module.check_python_stub_lcp_api_surface()
 
 
+def test_lcp_solver_roster_rejects_missing_bound_enum_lcp_api_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    core_names = set(module.BOUND_LCP_CORE_CLASS_NAMES)
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {
+            "LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_enum_members",
+        lambda: {"LcpSolverStatus": {"SUCCESS"}},
+    )
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(
+        module, "parse_math_stub_all_names", lambda: {"LcpProblem", "LcpSolverStatus"}
+    )
+    monkeypatch.setattr(
+        module, "parse_init_stub_math_imports", lambda: core_names | {"LcpSolverStatus"}
+    )
+    monkeypatch.setattr(
+        module, "parse_init_stub_all_names", lambda: core_names | {"LcpSolverStatus"}
+    )
+
+    def fake_class_members(class_name: str) -> set[str]:
+        if class_name == "LcpProblem":
+            return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        return set()
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match="LcpSolverStatus is missing members \\['SUCCESS'\\]",
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
+def test_lcp_solver_roster_rejects_missing_bound_lcp_free_function(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    core_names = set(module.BOUND_LCP_CORE_CLASS_NAMES)
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {
+            "LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        },
+    )
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_free_functions",
+        lambda: {"lcp_solver_status_to_string"},
+    )
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(module, "parse_math_stub_function_names", lambda: set())
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_all_names",
+        lambda: {"LcpProblem", "lcp_solver_status_to_string"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_math_imports",
+        lambda: core_names | {"lcp_solver_status_to_string"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_all_names",
+        lambda: core_names | {"lcp_solver_status_to_string"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match=(
+            "python/stubs/dartpy/math\\.pyi is missing LCP functions: "
+            "\\['lcp_solver_status_to_string'\\]"
+        ),
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
+def test_lcp_solver_roster_rejects_missing_init_lcp_api_export(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    core_names = set(module.BOUND_LCP_CORE_CLASS_NAMES)
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {
+            "LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_enum_members",
+        lambda: {"LcpSolverStatus": {"SUCCESS"}},
+    )
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(
+        module, "parse_math_stub_all_names", lambda: {"LcpProblem", "LcpSolverStatus"}
+    )
+    monkeypatch.setattr(module, "parse_init_stub_math_imports", lambda: core_names)
+    monkeypatch.setattr(
+        module, "parse_init_stub_all_names", lambda: core_names | {"LcpSolverStatus"}
+    )
+
+    def fake_class_members(class_name: str) -> set[str]:
+        if class_name == "LcpProblem":
+            return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        return {"SUCCESS"}
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match=(
+            "python/stubs/dartpy/__init__\\.pyi is missing LCP \\.math imports: "
+            "\\['LcpSolverStatus'\\]"
+        ),
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
 def test_lcp_solver_roster_rejects_missing_parameter_class_for_parameterized_solver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_core_class_members",
@@ -1176,6 +1337,8 @@ def test_lcp_solver_roster_rejects_wrong_solver_parameter_stub_annotation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(module, "parse_bound_lcp_enum_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_lcp_free_functions", lambda: set())
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_core_class_members",
