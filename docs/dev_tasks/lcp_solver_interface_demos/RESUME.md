@@ -11,7 +11,7 @@ Fresh AI session start here:
    `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
 2. Treat current repository state as authoritative. The latest completed local
    tip before this checkpoint was
-   `5d493f4ac68c Update LCP SAP verification handoff`; if this section is
+   `9995094ed3c Validate LCP profile native evidence rows`; if this section is
    committed, inspect `git log --oneline --decorate -8` for the new exact tip.
 3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
    checker hardening does not complete the broad objective.
@@ -22,10 +22,10 @@ Current branch before this checkpoint commit:
 
 - `feature/lcp-solver-interface-demos`
 - Current local tip before this edit:
-  `5d493f4ac68c Update LCP SAP verification handoff`
+  `9995094ed3c Validate LCP profile native evidence rows`
 - Current relationship before this edit:
   `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
-  with the local branch ahead by one commit.
+  with the local branch ahead by two commits.
 - There is no associated PR. Do not push, open a PR, or mutate GitHub state
   without explicit maintainer/user approval.
 
@@ -34,8 +34,13 @@ What this checkpoint changes:
 - `scripts/check_lcp_solver_roster.py` rejects performance-profile evidence
   rows whose solver/category pair is not native-supported, even if the row's
   `solver_supports_problem` counter is `0`.
+- `scripts/lcp_performance_profile.py` rejects non-native solver/category rows
+  during coverage checks even when legacy benchmark JSON lacks the concrete
+  `solver_supports_problem` counter.
 - `python/tests/unit/test_check_lcp_solver_roster.py` adds a boxed `Lemke`
   regression row for that stale-evidence case.
+- `python/tests/unit/test_lcp_performance_profile.py` adds the corresponding
+  boxed `Lemke` historical-row regression.
 - No benchmark registrations, solver predicates, profile CSVs, public APIs, or
   performance timings were intentionally changed.
 
@@ -48,7 +53,7 @@ PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
 
 Result:
 
-- Focused roster/profile tests: 15 tests passed.
+- Focused roster/profile tests: 16 tests passed.
 - LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
   16 findex.
 - Repository lint: passed, including `lint-lcp-solver-roster` and

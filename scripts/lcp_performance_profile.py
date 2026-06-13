@@ -270,6 +270,11 @@ def check_native_profile_coverage(
         expected = native_support_by_category[category]
         unknown = sorted(observed - manifest_names)
         missing = sorted(expected - observed)
+        non_native_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), _ in results.get(category, {}).items()
+            if solver in manifest_names and solver not in expected
+        )
         unsupported_rows = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -340,6 +345,11 @@ def check_native_profile_coverage(
             )
         if missing:
             errors.append(f"{category}: missing native solvers {missing}")
+        if non_native_rows:
+            errors.append(
+                f"{category}: benchmark JSON contains non-native rows "
+                f"{non_native_rows}"
+            )
         if unsupported_rows:
             errors.append(
                 f"{category}: current-schema rows report "

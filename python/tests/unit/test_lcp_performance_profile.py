@@ -122,6 +122,32 @@ def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() 
     )
 
 
+def test_lcp_profile_coverage_rejects_historical_non_native_rows() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Boxed/Lemke/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="non-native rows"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Lemke"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_rejects_problem_type_name_mismatches() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
