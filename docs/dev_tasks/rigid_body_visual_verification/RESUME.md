@@ -79,9 +79,9 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-- Latest committed local checkpoint before the current uncommitted packet
-  evidence docs is `1cae9f769cc Record rigid workflow review provenance`;
-  inspect any newer diff first.
+- Latest committed local checkpoint is
+  `08f710b793b Record regenerated rigid workflow evidence`; inspect any newer
+  diff first.
 - Do not push without explicit approval in the session that performs the push.
 - Use the current-HEAD full row-01-through-row-36 packet plus the optional rows
   37-52 packet above as the current review-index scan artifacts. Treat older
@@ -1135,17 +1135,15 @@ recorded below.
 
 Current snapshot:
 
-- The latest local evidence commit before this docs refresh was
-  `082f8c6e7b4 Record optional rigid workflow capture evidence`, which records
-  the fresh optional rows 37-52 capture evidence after the row-36 implementation
-  and full rows 01-36 capture evidence commits.
+- The latest local checkpoint is
+  `08f710b793b Record regenerated rigid workflow evidence`, which records the
+  current-HEAD packet refresh and review-index link audit.
 - The latest implementation commit for the row-15-through-row-36 pass remains
   `608a8792afa Surface loop closure workflow signals`.
-- Before this docs refresh, the branch was clean and 33 commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification`; expect this handoff
-  refresh to add one local docs-only commit if it has been committed.
-- `gh pr list --head "$(git branch --show-current)"` reported no pull request
-  for this branch at checkpoint time.
+- At the latest recon, the branch was clean, had no associated pull request,
+  and was 38 commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`.
+- `gh pr list --head "$(git branch --show-current)"` reported no pull request.
 - No push was performed for this slice. Do not push without explicit approval in
   the session that performs the push.
 
@@ -1153,8 +1151,8 @@ Current snapshot:
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
 first. Expect the latest evidence commit to be
-`Record optional rigid workflow capture evidence`, possibly followed by a newer
-handoff-only docs refresh or cleanup commit.
+`08f710b793b Record regenerated rigid workflow evidence`, unless a newer
+handoff or cleanup commit has been added.
 
 If the tree is clean with that slice present, the next concrete unblocked step
 is maintainer review/acceptance of the current scope or final cleanup in the

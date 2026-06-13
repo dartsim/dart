@@ -984,11 +984,13 @@ removes this working folder in the same change.
 
 Evidence supporting readiness:
 
-- Before this handoff refresh, the latest local evidence commit was
-  `082f8c6e7b4 Record optional rigid workflow capture evidence`, and the
-  branch was 33 commits ahead of
+- The latest local checkpoint is
+  `08f710b793b Record regenerated rigid workflow evidence`, which records the
+  current-HEAD packet refresh and review-index link audit. At the latest recon,
+  the branch was clean, had no associated pull request, and was 38 commits
+  ahead of
   `origin/feature/rigid-body-gui-visual-verification`; a `gh pr list` query for
-  the current branch reported no pull request during the latest recon.
+  the current branch reported no pull request.
 - The durable sidecar
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
   curated 36-row workflow, optional related/IPC-shelf/packet rows, public
@@ -1057,9 +1059,9 @@ Acceptance decision packet:
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Latest committed local checkpoint before the current uncommitted packet
-  evidence docs is `1cae9f769cc Record rigid workflow review provenance`; the
-  branch had no associated pull request and was 37 commits ahead of
+- Latest committed local checkpoint is
+  `08f710b793b Record regenerated rigid workflow evidence`; the branch had no
+  associated pull request and was 38 commits ahead of
   `origin/feature/rigid-body-gui-visual-verification`.
 - Earlier branch snapshots below are historical archaeology from the
   multi-session implementation and should not override the current handoff,
@@ -2447,12 +2449,15 @@ passed and `git diff --check` was clean.
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. If the workflow command/link-provenance slice is uncommitted, inspect
-   `scripts/capture_py_demo.py`, `python/tests/unit/test_capture_py_demo.py`,
-   this handoff, the PLAN-103 sidecar, and `python/examples/demos/README.md`.
-3. Regenerate the 36-row workflow packet and optional rows 37-52 packet from
-   current HEAD before using the static `review_index.html` artifacts for final
-   maintainer review.
+2. Expect the current local checkpoint to be
+   `08f710b793b Record regenerated rigid workflow evidence`, with no PR for
+   `feature/rigid-body-gui-visual-verification` unless one was created after
+   this handoff.
+3. Use
+   `build/captures/rigid_workflow_rows_01_36_1781309127/review_index.html` and
+   `build/captures/rigid_workflow_optional_rows_37_52_1781309448/review_index.html`
+   as the current static review artifacts; both were regenerated from current
+   HEAD and passed local asset-link audits.
 4. Do not add new numbered rows unless a public API gap has been resolved and
    the durable PLAN-103 scope is updated first.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
