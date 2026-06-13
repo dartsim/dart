@@ -138,7 +138,11 @@ configuration. Workflow manifests also record `scene_metrics_complete`,
 look green while a captured row lacks runtime metrics. Non-dry-run workflow
 packets return failure status if any captured row misses scene metrics or
 resolved solver identity evidence, and `review_index.html` highlights those
-rows alongside missing guidance or failed-row summaries.
+rows alongside missing guidance or failed-row summaries. Review cards also
+promote nested step-diagnostics lane metrics into a compact
+backend-diagnostics line, so backend activity, accelerated-stage counts,
+worker counts, top stages, and stage timings are visible without opening the
+raw manifest JSON.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
@@ -547,6 +551,15 @@ Evidence recorded for this slice:
   headless engine-creation fix, the rows 01-36 packet and the current rows
   37-53 optional packet both regenerated successfully with explicit
   identity-complete and scene-metrics-complete fields.
+
+- Latest backend-diagnostics review-card slice: workflow review cards now
+  promote nested `rigid_step_diagnostics` lane profile data into a compact
+  `backend diagnostics` line. Focused capture-helper guards reported
+  `2 passed`, and the real row-8 packet
+  `build/captures/rigid_workflow_backend_diagnostics_1781335057` completed
+  with `status=complete`, `scene_metrics_complete=true`,
+  `resolved_solver_identity_complete=true`, and a review card containing the
+  backend/fallback/timing summary.
 
 - Latest review-index provenance/link guard: the workflow manifest and
   `review_index.html` now record the exact top-level workflow packet command,

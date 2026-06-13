@@ -1192,6 +1192,98 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "divergence: current x=0.125, max x=0.25, samples=2" in review_html
 
 
+def test_rigid_workflow_review_summarizes_backend_diagnostics(
+    tmp_path: pathlib.Path,
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    scene_dir = output / "scenes" / "08_rigid_step_diagnostics"
+    scene_dir.mkdir(parents=True)
+    screenshot = scene_dir / "rigid_step_diagnostics.png"
+    screenshot.write_bytes(b"fake-png")
+    manifest = scene_dir / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "artifacts": {
+                    "screenshot": str(screenshot),
+                },
+                "scene_metrics": {
+                    "latest": {
+                        "metrics": {
+                            "comparison_axis": "workload_shape",
+                            "controls": {
+                                "executor_index": 0,
+                                "solver_index": 0,
+                            },
+                            "executor": "Sequential",
+                            "lanes": {
+                                "contact": {
+                                    "accelerated_backend_active": True,
+                                    "accelerated_stage_count": 2.0,
+                                    "max_workers": 4.0,
+                                    "profile_status": "profiled",
+                                    "stage_ms": 0.013,
+                                    "top_stage": "rigid_body_contact",
+                                    "top_stage_ms": 0.01104,
+                                },
+                                "single": {
+                                    "accelerated_backend_active": False,
+                                    "accelerated_stage_count": 0.0,
+                                    "max_workers": 1.0,
+                                    "profile_status": "profiled",
+                                    "stage_ms": 0.02,
+                                    "top_stage": "free_motion",
+                                    "top_stage_ms": 0.00818,
+                                },
+                            },
+                            "row": "rigid_step_diagnostics",
+                            "solver": "Sequential impulse",
+                        }
+                    },
+                    "metric_key_counts": {
+                        "comparison_axis": 1,
+                        "controls": 1,
+                        "executor": 1,
+                        "lanes": 1,
+                        "row": 1,
+                        "solver": 1,
+                    },
+                },
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+    review_html = capture_py_demo._workflow_review_card(
+        {
+            "command": "pixi run py-demo-capture -- --scene rigid_step_diagnostics",
+            "count": 36,
+            "frames": 72,
+            "height": 540,
+            "manifest": str(manifest),
+            "order": 8,
+            "scene": "rigid_step_diagnostics",
+            "show_ui": True,
+            "status": "captured",
+            "width": 960,
+            "workflow_group": "numbered",
+            "workflow_label": "Step diagnostics",
+        },
+        output,
+    )
+
+    assert "<dt>backend diagnostics</dt>" in review_html
+    assert (
+        "single: profiled, backend inactive, 0 accelerated stages, workers 1, "
+        "top free_motion 0.00818 ms, stage 0.02 ms"
+    ) in review_html
+    assert (
+        "contact: profiled, backend active, 2 accelerated stages, workers 4, "
+        "top rigid_body_contact 0.01104 ms, stage 0.013 ms"
+    ) in review_html
+
+
 def test_rigid_workflow_review_warns_when_scene_metrics_are_missing(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

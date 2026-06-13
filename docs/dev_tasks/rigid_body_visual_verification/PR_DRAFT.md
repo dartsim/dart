@@ -89,6 +89,10 @@ rigid-body visual verification surface for the current cycle.
   `parallel backend` route to `rigid_step_diagnostics`, while executor terms
   such as `compute executor`, `executor comparison`, and `Taskflow executor`
   route to the same-solver `rigid_executor_equivalence` row.
+- Promotes row-8 nested step-profile lane metrics into workflow review cards as
+  `backend diagnostics`, so backend activity, accelerated-stage counts, worker
+  counts, top stages, and stage timings are visible from the static review
+  packet.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -123,6 +127,9 @@ rigid-body visual verification surface for the current cycle.
   reported `2 passed`.
 - Focused backend/executor workflow-search guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
+  reported `2 passed`.
+- Focused backend-diagnostics review-card guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_summarizes_backend_diagnostics python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
   reported `2 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
@@ -163,6 +170,12 @@ rigid-body visual verification surface for the current cycle.
 - Adjacent rigid workflow docs consistency guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `3 passed`.
+- Fresh row-8 single-row workflow evidence:
+  `build/captures/rigid_workflow_backend_diagnostics_1781335057` captured
+  `rigid_step_diagnostics` at 72 requested UI frames, wrote 71 PNG frames plus
+  `rigid_step_diagnostics.png`, reported `scene_metrics_complete=true` and
+  `resolved_solver_identity_complete=true`, and generated a review card with
+  the new `backend diagnostics` field.
 - Fresh row-2 single-scene visual evidence:
   `build/captures/rigid_body_modes_comparison_axis_1781325323` captured
   `rigid_body_modes` at 72 requested UI frames, wrote 71 PNG frames plus

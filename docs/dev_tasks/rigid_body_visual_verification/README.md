@@ -1,16 +1,30 @@
 # Rigid Body Visual Verification - Dev Task
 
-## Current Handoff (2026-06-12)
+## Current Handoff (2026-06-13)
 
 Current branch snapshot after this slice:
 `feature/rigid-body-gui-visual-verification` matched
-`origin/feature/rigid-body-gui-visual-verification` at `691d38f7b99` before
-the backend/executor search-routing commit `75d8689abe9`. After this
-artifact-refresh slice is committed, expect two local commits ahead of origin
-until a maintainer approves another push. There is still no PR for this branch.
-Do not push, create a PR, set a milestone, rerun CI, comment on reviews,
-resolve threads, or mutate any other GitHub state without explicit
-maintainer/user approval.
+`origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before
+the backend-diagnostics review-card slice. After this slice is committed,
+expect one local commit ahead of origin until a maintainer approves another
+push. There is still no PR for this branch. Do not push, create a PR, set a
+milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
+GitHub state without explicit maintainer/user approval.
+
+Latest local continuation: workflow review cards now promote nested
+`rigid_step_diagnostics` lane profile data into a compact
+`backend diagnostics` line. The row-8 card names each workload lane's profile
+status, accelerated-backend status, accelerated-stage count, max worker count,
+top stage, top-stage time, and total stage time, so static review packets show
+the backend/fallback/timing story without requiring reviewers to open the raw
+manifest JSON. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_summarizes_backend_diagnostics python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
+reported `2 passed`. Fresh single-row workflow evidence:
+`build/captures/rigid_workflow_backend_diagnostics_1781335057` captured row 8
+with `status=complete`, `capture_count=1`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` containing
+the new `backend diagnostics` field.
 
 Latest local continuation: rigid workflow search now separates backend-status
 queries from executor-equivalence queries. Backend terms such as

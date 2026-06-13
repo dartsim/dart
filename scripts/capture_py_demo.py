@@ -1436,6 +1436,9 @@ def _workflow_scene_manifest_summary(
                     control_values = _workflow_metric_key_values(controls)
                     if control_values:
                         summary["control_values"] = control_values
+                backend_diagnostics = _workflow_backend_diagnostics(metrics)
+                if backend_diagnostics:
+                    summary["backend_diagnostics"] = backend_diagnostics
                 metric_highlights = _workflow_metric_highlights(metrics)
                 if metric_highlights:
                     summary["metric_highlights"] = metric_highlights
@@ -1646,6 +1649,101 @@ def _workflow_metric_key_values(values: dict[object, object]) -> list[str]:
             continue
         pairs.append(f"{_workflow_metric_label(key)}={_workflow_metric_value(value)}")
     return pairs[:8]
+
+
+_WORKFLOW_BACKEND_DIAGNOSTIC_LANE_ORDER = (
+    "single",
+    "contact",
+    "stack",
+)
+
+
+def _workflow_numeric_metric(value: object) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return value
+    return None
+
+
+def _workflow_lane_backend_diagnostics(label: str, metrics: object) -> str | None:
+    if not isinstance(metrics, dict):
+        return None
+    if not any(
+        key in metrics
+        for key in (
+            "profile_status",
+            "accelerated_backend_active",
+            "accelerated_stage_count",
+            "max_workers",
+            "top_stage",
+            "stage_ms",
+        )
+    ):
+        return None
+
+    parts: list[str] = []
+    profile_status = metrics.get("profile_status")
+    if isinstance(profile_status, str) and profile_status:
+        parts.append(profile_status)
+
+    accelerated = metrics.get("accelerated_backend_active")
+    if isinstance(accelerated, bool):
+        parts.append(f"backend {'active' if accelerated else 'inactive'}")
+    accelerated_stage_count = _workflow_numeric_metric(
+        metrics.get("accelerated_stage_count")
+    )
+    if accelerated_stage_count is not None:
+        parts.append(
+            f"{_workflow_metric_value(accelerated_stage_count)} accelerated stages"
+        )
+
+    max_workers = _workflow_numeric_metric(metrics.get("max_workers"))
+    if max_workers is not None:
+        parts.append(f"workers {_workflow_metric_value(max_workers)}")
+
+    top_stage = metrics.get("top_stage")
+    top_stage_ms = _workflow_numeric_metric(metrics.get("top_stage_ms"))
+    if isinstance(top_stage, str) and top_stage and top_stage != "none":
+        top_stage_text = f"top {top_stage}"
+        if top_stage_ms is not None:
+            top_stage_text = (
+                f"{top_stage_text} {_workflow_metric_value(top_stage_ms)} ms"
+            )
+        parts.append(top_stage_text)
+
+    stage_ms = _workflow_numeric_metric(metrics.get("stage_ms"))
+    if stage_ms is not None:
+        parts.append(f"stage {_workflow_metric_value(stage_ms)} ms")
+
+    if not parts:
+        return None
+    return f"{label}: {', '.join(parts[:6])}"
+
+
+def _workflow_backend_diagnostics(metrics: dict[str, object]) -> list[str]:
+    lanes = metrics.get("lanes")
+    if not isinstance(lanes, dict):
+        return []
+    ordered_keys = [
+        key for key in _WORKFLOW_BACKEND_DIAGNOSTIC_LANE_ORDER if key in lanes
+    ]
+    ordered_keys.extend(
+        sorted(
+            key
+            for key in lanes
+            if isinstance(key, str)
+            and key not in _WORKFLOW_BACKEND_DIAGNOSTIC_LANE_ORDER
+        )
+    )
+    diagnostics: list[str] = []
+    for key in ordered_keys:
+        if not isinstance(key, str):
+            continue
+        diagnostic = _workflow_lane_backend_diagnostics(key, lanes.get(key))
+        if diagnostic is not None:
+            diagnostics.append(diagnostic)
+    return diagnostics[:4]
 
 
 def _workflow_nested_metric_highlight(label: str, value: object) -> str | None:
@@ -2115,6 +2213,10 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
         if len(control_values) > 6:
             shown = f"{shown}, +{len(control_values) - 6} more"
         details.append(_workflow_detail("controls", shown))
+    backend_diagnostics = summary.get("backend_diagnostics")
+    if isinstance(backend_diagnostics, list) and backend_diagnostics:
+        shown = " / ".join(str(item) for item in backend_diagnostics[:4])
+        details.append(_workflow_detail("backend diagnostics", shown))
     replay_timeline_label = summary.get("replay_timeline_label")
     if isinstance(replay_timeline_label, str):
         replay_tracks: list[str] = []

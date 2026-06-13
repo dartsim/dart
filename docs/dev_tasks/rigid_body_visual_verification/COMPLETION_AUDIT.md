@@ -1,11 +1,24 @@
 # Rigid Body Visual Verification Completion Audit
 
-Date: 2026-06-12
+Date: 2026-06-13
 
 This audit maps the active rigid-body GUI visual-verification objective to
 current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
+
+Latest local implementation slice: workflow review cards now summarize nested
+`rigid_step_diagnostics` lane profile data as `backend diagnostics`. The static
+row-8 card now names each workload lane's profile status, accelerated-backend
+status, accelerated-stage count, max worker count, top stage, top-stage time,
+and total stage time, making backend/fallback/timing status reviewable without
+opening raw manifest JSON. Focused capture-helper guards reported `2 passed`.
+Fresh single-row workflow evidence lives at
+`build/captures/rigid_workflow_backend_diagnostics_1781335057`: row 8 captured
+with `status=complete`, `capture_count=1`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` containing
+the new `backend diagnostics` field.
 
 Latest local implementation slice: rigid workflow search now separates
 backend-status discovery from executor-equivalence discovery. Backend terms
@@ -169,10 +182,10 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The branch matched
-`origin/feature/rigid-body-gui-visual-verification` at `691d38f7b99` before the
-local backend/executor search-routing commit `75d8689abe9`; after this
-artifact-refresh slice is committed, expect two local commits ahead of origin
-until a maintainer approves another push. Fresh
+`origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before the
+local backend-diagnostics review-card slice; after this slice is committed,
+expect one local commit ahead of origin until a maintainer approves another
+push. Fresh
 `gh pr list --head "$(git branch --show-current)"` still reported no PR for
 the branch. The latest pre-push `git fetch origin main && git merge --no-ff
 origin/main` reported `Already up to date`, so the branch remained aligned with

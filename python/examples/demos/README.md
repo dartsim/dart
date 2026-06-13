@@ -186,7 +186,11 @@ Workflow manifests also count rows with latest scene metrics and list any
 captured row missing metrics. Non-dry-run workflow packets return failure status
 when a captured row misses scene metrics or solver identity evidence, and the
 review index highlights those rows before a reviewer treats the packet as
-complete. The panel also includes a current-row motion packet command; workflow
+complete. Review cards also promote nested step-diagnostics lane metrics into
+a compact backend-diagnostics line, so backend activity, accelerated-stage
+counts, worker counts, top stages, and stage timings are visible without
+opening the raw manifest JSON. The panel also includes a current-row motion
+packet command; workflow
 packets pass `--video --fps` through to the selected row captures and the review
 index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
