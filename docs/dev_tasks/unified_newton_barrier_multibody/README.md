@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Latest scene-owned sparse residual checkpoint (2026-06-12): work continued
+Latest scene-owned sparse Jacobi checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -10,25 +10,27 @@ branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned sparse residual row. The benchmark builds one DART `World` with a
-deformable surface, derives deterministic scene-owned diagonal rows and
-surface-edge 6x6 sparse blocks from the scene triangles, seeds a scene-derived
-step vector, and runs the existing CPU/CUDA sparse residual parity path. This
-is reduced packet evidence only; it does not prove production sparse Hessian
-graph construction, full runtime sparse Hessian assembly, direct/global sparse
-factorization, nonlinear equality constraints, GPU `World::step`
-assembly/solve integration, or a speedup claim.
+scene-owned sparse Jacobi solve row. The benchmark builds one DART `World` with
+a deformable surface, derives deterministic scene-owned diagonal rows and
+surface-edge 6x6 sparse blocks from the scene triangles, and runs the existing
+CPU/CUDA fixed-iteration sparse Jacobi parity path. This is reduced packet
+evidence only; it does not prove production sparse Hessian graph construction,
+full runtime sparse Hessian assembly, direct/global sparse factorization,
+nonlinear equality constraints, GPU `World::step` assembly/solve integration,
+or a speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
 surface-edge pair slots, 2,304 active sparse blocks, 82,944 6x6 block entries,
-and 15,360 dofs with
-`max_result_abs_error=1.7763568394002505e-15`,
-`output_norm=362.5686732647404`, `max_output_abs=11.860337533880076`, and
-`speedup=0.3059471712145572x` for the scene-owned sparse residual row. The
+15,360 dofs, and 16 Jacobi iterations with
+`max_result_abs_error=8.488678059065104e-16`,
+`residual_norm=1.006438037430595e-14`,
+`max_residual_abs=4.429143354475515e-16`,
+`step_norm=91.86904088929664`, and `speedup=0.08581635974771464x` for the
+scene-owned sparse Jacobi row. The
 top-level assembly/solve packet records
 `max_result_abs_error=3.552713678800501e-15`,
-`residual_norm=9.931593818515565e-14`, and
-`speedup=0.094416960926111x` (`meets_speedup_gate=false`), so the durable GPU
+`residual_norm=9.93293956582685e-14`, and
+`speedup=0.024422829022123102x` (`meets_speedup_gate=false`), so the durable GPU
 packet row remains `in-progress`.
 
 Latest validation passed:
@@ -936,8 +938,9 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         diagonal assembly/solve, pair-slot off-diagonal sparse-block assembly,
         reduced scene-owned sparse off-diagonal surface-edge assembly, sparse
         block residual matvec, reduced scene-owned sparse residual matvec,
-        fixed-iteration sparse Jacobi solve, capped sparse CG solve, and
-        sparse equality-reduced diagonal solve packets with exact CPU/GPU
+        fixed-iteration sparse Jacobi solve, reduced scene-owned sparse Jacobi
+        solve, capped sparse CG solve, and sparse equality-reduced diagonal
+        solve packets with exact CPU/GPU
         local-output parity; keep the row in-progress because full runtime
         sparse Hessian graph construction and assembly, direct/global sparse
         factorization, nonlinear equality constraints, GPU `World::step`

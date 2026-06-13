@@ -172,6 +172,14 @@ struct SparseJacobiSolveFixture
   CpuSparseJacobiSolveResult cpu;
 };
 
+struct SceneRuntimeSparseJacobiSolveFixture : SparseJacobiSolveFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sceneEdgePairCount = 0;
+};
+
 struct CpuSparseCgSolveResult
 {
   std::vector<double> assembledDiagonal;
@@ -366,6 +374,51 @@ std::vector<double> makeSceneRuntimeSparseStep(const sx::DeformableBody& body)
     }
   }
   return step;
+}
+
+cuda::NewtonAssemblySolveRowInput makeSceneRuntimeAssemblyRow(
+    const sx::DeformableBody& body,
+    std::size_t nodeIndex,
+    std::size_t incidentTriangleCount);
+
+template <typename Fixture>
+void populateSceneRuntimeSparseGraphFixture(
+    Fixture& fixture, const sx::World& world, const sx::DeformableBody& body)
+{
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.sceneNodeCount = body.getNodeCount();
+  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
+  fixture.bodyCount = fixture.sceneNodeCount;
+
+  std::vector<std::size_t> incidentTriangleCounts(fixture.sceneNodeCount, 0u);
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
+    ++incidentTriangleCounts[surfaceTriangle.nodeA];
+    ++incidentTriangleCounts[surfaceTriangle.nodeB];
+    ++incidentTriangleCounts[surfaceTriangle.nodeC];
+  }
+
+  fixture.rows.reserve(fixture.sceneNodeCount);
+  for (std::size_t node = 0; node < fixture.sceneNodeCount; ++node) {
+    fixture.rows.push_back(
+        makeSceneRuntimeAssemblyRow(body, node, incidentTriangleCounts[node]));
+  }
+
+  fixture.blocks.reserve(3u * fixture.sceneTriangleCount);
+  const auto appendSparseBlock
+      = [&fixture, &body](const std::size_t nodeA, const std::size_t nodeB) {
+          fixture.blocks.push_back(
+              makeSceneRuntimeSparseBlock(body, nodeA, nodeB));
+          ++fixture.sceneEdgePairCount;
+        };
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
+    appendSparseBlock(surfaceTriangle.nodeA, surfaceTriangle.nodeB);
+    appendSparseBlock(surfaceTriangle.nodeB, surfaceTriangle.nodeC);
+    appendSparseBlock(surfaceTriangle.nodeC, surfaceTriangle.nodeA);
+  }
 }
 
 cuda::NewtonEqualityReductionEntry makeEqualityReductionEntry(
@@ -1006,41 +1059,7 @@ SceneRuntimeSparseResidualFixture makeSceneRuntimeSparseResidualFixture(
       makeSceneRuntimeAssemblyBodyOptions(rowCount));
 
   SceneRuntimeSparseResidualFixture fixture;
-  fixture.sceneBodyCount = world.getDeformableBodyCount();
-  fixture.sceneNodeCount = body.getNodeCount();
-  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
-  fixture.bodyCount = fixture.sceneNodeCount;
-
-  std::vector<std::size_t> incidentTriangleCounts(fixture.sceneNodeCount, 0u);
-  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
-       ++triangle) {
-    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
-    ++incidentTriangleCounts[surfaceTriangle.nodeA];
-    ++incidentTriangleCounts[surfaceTriangle.nodeB];
-    ++incidentTriangleCounts[surfaceTriangle.nodeC];
-  }
-
-  fixture.rows.reserve(fixture.sceneNodeCount);
-  for (std::size_t node = 0; node < fixture.sceneNodeCount; ++node) {
-    fixture.rows.push_back(
-        makeSceneRuntimeAssemblyRow(body, node, incidentTriangleCounts[node]));
-  }
-
-  fixture.blocks.reserve(3u * fixture.sceneTriangleCount);
-  const auto appendSparseBlock
-      = [&fixture, &body](const std::size_t nodeA, const std::size_t nodeB) {
-          fixture.blocks.push_back(
-              makeSceneRuntimeSparseBlock(body, nodeA, nodeB));
-          ++fixture.sceneEdgePairCount;
-        };
-  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
-       ++triangle) {
-    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
-    appendSparseBlock(surfaceTriangle.nodeA, surfaceTriangle.nodeB);
-    appendSparseBlock(surfaceTriangle.nodeB, surfaceTriangle.nodeC);
-    appendSparseBlock(surfaceTriangle.nodeC, surfaceTriangle.nodeA);
-  }
-
+  populateSceneRuntimeSparseGraphFixture(fixture, world, body);
   fixture.step = makeSceneRuntimeSparseStep(body);
   evaluateCpuSparseResidual(
       fixture.rows,
@@ -1048,6 +1067,22 @@ SceneRuntimeSparseResidualFixture makeSceneRuntimeSparseResidualFixture(
       fixture.blocks,
       fixture.step,
       fixture.cpu);
+  return fixture;
+}
+
+SceneRuntimeSparseJacobiSolveFixture makeSceneRuntimeSparseJacobiSolveFixture(
+    const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_sparse_jacobi",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeSparseJacobiSolveFixture fixture;
+  populateSceneRuntimeSparseGraphFixture(fixture, world, body);
+  evaluateCpuSparseJacobiSolve(
+      fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
   return fixture;
 }
 
@@ -1366,6 +1401,20 @@ void recordSparseJacobiSolveCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordSceneRuntimeSparseJacobiSolveCounters(
+    benchmark::State& state,
+    const SceneRuntimeSparseJacobiSolveFixture& fixture,
+    const double maxError)
+{
+  recordSparseJacobiSolveCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
 }
 
 void recordSparseCgSolveCounters(
@@ -1846,6 +1895,82 @@ static void BM_NewtonSparseJacobiSolveCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSparseJacobiSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseJacobiSolveCpu(benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeSparseJacobiSolveFixture(
+      static_cast<int>(state.range(0)));
+  CpuSparseJacobiSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSparseJacobiSolve(
+        fixture.rows, fixture.bodyCount, fixture.blocks, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeSparseJacobiSolveCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseJacobiSolveCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseJacobiSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeSparseJacobiSolveFixture(
+      static_cast<int>(state.range(0)));
+  cuda::NewtonSparseJacobiSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSparseJacobiSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.blocks,
+        kSparseJacobiIterations,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeSparseJacobiSolveCounters(
+      state, fixture, maxSparseJacobiSolveOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_iterations"] = static_cast<double>(result.iterationCount);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["gpu_max_residual_abs"] = result.maxResidualAbs;
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"]
+      = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["iteration_kernel_ns"] = result.timing.iterationKernelNs;
+  state.counters["final_residual_kernel_ns"]
+      = result.timing.finalResidualKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseJacobiSolveCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonSparseCgSolveCpu(benchmark::State& state)

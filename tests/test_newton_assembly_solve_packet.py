@@ -311,6 +311,62 @@ def _benchmark_data(**overrides):
         final_residual_kernel_ns=5.0,
         device_to_host_ns=6.0,
     )
+    scene_sparse_jacobi_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseJacobiSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        iterations=16,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=2.5,
+        residual_norm=3e-14,
+        max_residual_abs=7e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_jacobi_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseJacobiSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        iterations=16,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_iterations=16,
+        gpu_active_dofs=1920,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_step_norm=2.5,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=7e-15,
+        max_result_abs_error=6e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
     sparse_cg_cpu = _row(
         "BM_NewtonSparseCgSolveCpu/1024",
         rows=1024,
@@ -424,6 +480,8 @@ def _benchmark_data(**overrides):
             scene_sparse_residual_gpu,
             sparse_jacobi_cpu,
             sparse_jacobi_gpu,
+            scene_sparse_jacobi_cpu,
+            scene_sparse_jacobi_gpu,
             sparse_cg_cpu,
             sparse_cg_gpu,
             equality_cpu,
@@ -519,6 +577,25 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert jacobi["step_norm"] == 0.5
     assert jacobi["timing_ns"]["iterations"] == 4.0
     assert jacobi["timing_ns"]["final_residual"] == 5.0
+    scene_jacobi = row["scene_runtime_sparse_jacobi_solve"]
+    assert scene_jacobi["row_count"] == 320
+    assert scene_jacobi["nominal_row_count"] == 1024
+    assert scene_jacobi["scene_body_count"] == 1
+    assert scene_jacobi["scene_node_count"] == 320
+    assert scene_jacobi["scene_triangle_count"] == 96
+    assert scene_jacobi["scene_edge_pair_count"] == 288
+    assert scene_jacobi["body_count"] == 320
+    assert scene_jacobi["dof_count"] == 1920
+    assert scene_jacobi["block_count"] == 288
+    assert scene_jacobi["block_entry_count"] == 10368
+    assert scene_jacobi["iteration_count"] == 16
+    assert scene_jacobi["active_dof_count"] == 1920
+    assert scene_jacobi["max_result_abs_error"] == 6e-12
+    assert scene_jacobi["residual_norm"] == 3e-14
+    assert scene_jacobi["max_residual_abs"] == 7e-15
+    assert scene_jacobi["step_norm"] == 2.5
+    assert scene_jacobi["timing_ns"]["iterations"] == 4.0
+    assert scene_jacobi["timing_ns"]["final_residual"] == 5.0
     cg = row["sparse_block_cg_solve"]
     assert cg["body_count"] == 128
     assert cg["dof_count"] == 768
