@@ -48,8 +48,6 @@ constexpr double kDebugGridSpacingMin = 0.1;
 constexpr double kDebugGridSpacingMax = 2.0;
 constexpr double kDebugAxisLengthMin = 0.05;
 constexpr double kDebugAxisLengthMax = 1.5;
-constexpr double kDebugVelocityScaleMin = 0.01;
-constexpr double kDebugVelocityScaleMax = 1.0;
 constexpr double kDebugForceScaleMin = 0.0001;
 constexpr double kDebugForceScaleMax = 0.02;
 
