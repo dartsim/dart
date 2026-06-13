@@ -142,15 +142,18 @@ rows alongside missing guidance or failed-row summaries.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
-`contact solver policy`, `Taskflow executor`, `backend/executor`,
-`worker count`, `accelerated backend`, `direct rigid body impulse`,
-`sleep wake`, `island activation`, and `loop closure compliance` before scope
-caveats, so intent searches such as `contact`, `solver`, `step profile`,
-`backend comparison`, or `sequential impulse` surface the relevant debugging
-rows instead of early rows that only say what not to infer. Deferred public-API
-queries route to the closest current row while preserving the row's caveat, so
-the workflow remains searchable without claiming unsupported impulse,
-activation, or compliance behavior.
+`contact solver policy`, `worker count`, `accelerated backend`,
+`compute backend`, `backend comparison`, `Taskflow executor`,
+`executor comparison`, `direct rigid body impulse`, `sleep wake`,
+`island activation`, and `loop closure compliance` before scope caveats, so
+intent searches such as `contact`, `solver`, `step profile`,
+`backend comparison`, `executor comparison`, or `sequential impulse` surface
+the relevant debugging rows instead of early rows that only say what not to
+infer. Backend-status terms route to `rigid_step_diagnostics`, while executor
+terms route to the same-solver `rigid_executor_equivalence` row. Deferred
+public-API queries route to the closest current row while preserving the row's
+caveat, so the workflow remains searchable without claiming unsupported
+impulse, activation, or compliance behavior.
 
 | Order | Scene id                         | User question                                                            | Solver(s)                        | Controls and diagnostics                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Capture command                                                                                                      | Automated evidence                                                                                                                                                                                                                                                                                                                 | Known limitation                                                                                         |
 | ----- | -------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -1822,9 +1825,9 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
 - Local count-drift gate: the focused navigator-count guard reported
   `4 passed`, and `pixi run lint` passed after adding the guard.
 - CUDA evidence: `pixi run -e cuda test-all` passed all 7 groups on a host with
-  an NVIDIA RTX 4080 Laptop GPU before later Python demo replay, scene, focused
-  test, and docs follow-ups. Re-run CUDA validation before merging if a later
-  slice touches CUDA-facing code.
+  an NVIDIA RTX 4080 Laptop GPU before the latest backend/executor search
+  routing follow-up. Re-run CUDA validation before merging if a later slice
+  touches CUDA-facing code.
 
 ## Follow-Ups
 
@@ -1848,6 +1851,10 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   workflow rows.
 - Keep new rigid visual rows in this packet, `python/examples/demos/README.md`,
   and the ordered demo registry in sync.
+- Regenerate the rows 01-36 and optional rows 37-53 static packets before final
+  maintainer review if the review cards must show the latest control-metadata
+  and backend/executor search-routing wording exactly. The existing packets
+  remain broad visual evidence, but they predate those latest metadata slices.
 - Keep motor/limit wording on the World multibody joint actuator path until
   rigid-body joint motors have equally stable public behavior.
 - Add future point-force or impulse rows only if the public API supports a

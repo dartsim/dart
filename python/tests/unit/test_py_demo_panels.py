@@ -2093,18 +2093,21 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
     ][:1] == ["rigid_step_diagnostics"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("backend comparison")
-    ][:1] == ["rigid_executor_equivalence"]
+    ][:1] == ["rigid_step_diagnostics"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("parallel backend")
-    ][:1] == ["rigid_executor_equivalence"]
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("compute backend")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("backend/executor")
+    ][:1] == ["rigid_step_diagnostics"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("compute executor")
     ][:1] == ["rigid_executor_equivalence"]
     assert [
-        guide.scene_id for guide in _workflow_matching_guides("compute backend")
-    ][:1] == ["rigid_executor_equivalence"]
-    assert [
-        guide.scene_id for guide in _workflow_matching_guides("backend/executor")
+        guide.scene_id for guide in _workflow_matching_guides("executor comparison")
     ][:1] == ["rigid_executor_equivalence"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("same physics solver")

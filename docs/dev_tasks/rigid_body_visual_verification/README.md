@@ -3,15 +3,44 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and two
-local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Capture world related shelf controls` after
-`Capture rigid IPC shelf controls`. The pushed origin branch is at
-`Capture rigid query option controls`. There is still no PR for this branch. Do
-not push, create a PR, set a milestone, rerun CI, or mutate review state
-without explicit maintainer/user approval.
+`feature/rigid-body-gui-visual-verification` matched
+`origin/feature/rigid-body-gui-visual-verification` at
+`691d38f7b99` before this local slice. That commit is the latest merge of
+`origin/main` into this feature branch. After this slice is committed, expect
+one local commit ahead of origin until a maintainer approves another push.
+There is still no PR for this branch. Do not push, create a PR, set a
+milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
+GitHub state without explicit maintainer/user approval.
 
-Latest local continuation: non-numbered World related shelf rows now publish
+Latest local continuation: rigid workflow search now separates backend-status
+queries from executor-equivalence queries. Backend terms such as
+`compute backend`, `backend comparison`, `parallel backend`, and
+`backend/executor` route to `rigid_step_diagnostics`, where the panel and
+capture metrics expose backend status, acceleration masks, worker count, ECS,
+scratch, contact, and profile-stage diagnostics. Executor terms such as
+`compute executor`, `executor comparison`, `parallel executor`, and
+`Taskflow executor` still route to the same-solver
+`rigid_executor_equivalence` row, so users do not mistake an executor timing
+comparison for an accelerated-backend comparison. The py-demos README and
+PLAN-103 sidecar describe the split. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
+reported `2 passed`. No new visual packet was generated in this slice.
+
+Latest pushed validation: after the previous approved push, current-head
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
+ran on an `NVIDIA GeForce RTX 4080 Laptop GPU` host and passed all seven CUDA
+wrapper gates: linting, build, unit tests, simulation tests, Python tests,
+documentation, and CUDA tests. This CUDA run predates the backend/executor
+search-routing slice above, which is limited to workflow search/docs/tests.
+
+Known handoff gap: the existing full rows 01-36 packet and optional rows 37-53
+packet predate the latest control-metadata and backend/executor search-routing
+slices. They remain useful broad visual evidence, but do not claim their
+manifests or review cards show every newest `controls` field or search-label
+wording. Regenerate both packets before final maintainer review if the static
+HTML artifacts need to reflect the newest metadata exactly.
+
+Previous pushed continuation: non-numbered World related shelf rows now publish
 their user-editable controls in capture metrics. `floating_base` records
 `controls.spin_command` from the live floating-joint velocity, and
 `articulated` records `controls.shoulder_damping` plus
@@ -256,9 +285,9 @@ completed with all six wrapper gates passing: linting, build, unit tests,
 simulation tests, Python tests, and documentation, ending with
 `All tests passed`. The default run reported the two long simulation tests as
 green: `test_world` in 147.17 seconds and `test_rigid_ipc_paper_experiments`
-in 298.43 seconds. The same wrapper detected a CUDA runtime and warned to run
-`pixi run -e cuda test-all`; current-head CUDA validation is still pending
-until that command is rerun after this evidence refresh.
+in 298.43 seconds. A later CUDA follow-up on a visible RTX 4080 Laptop GPU ran
+`pixi run -e cuda test-all` and passed all seven wrapper gates. Both broad
+wrapper runs predate the current backend/executor search-routing slice.
 
 Historical publication state before the later approved pushes: after the
 validation-evidence commit `84897c2fde5 Record rigid workflow validation

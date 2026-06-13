@@ -147,16 +147,20 @@ numbered rows, a restart command, a direct row selector, a per-row
 live `py-demos --scene` open command, a paired `py-demo-capture` command with
 frame/resolution/UI settings, and a ranked text filter over row ids, scene ids,
 labels, questions, signals, and explicit aliases such as `RigidBodySolver`,
-`SI`, `boxed LCP`, `ContactSolverMethod`, `Taskflow executor`,
-`backend/executor`, `worker count`, `accelerated backend`,
-`direct rigid body impulse`, `sleep wake`, `island activation`, and
-`loop closure compliance` that request in-viewer scene switches. Scope caveats
+`SI`, `boxed LCP`, `ContactSolverMethod`, `worker count`,
+`accelerated backend`, `compute backend`, `backend comparison`,
+`Taskflow executor`, `executor comparison`, `direct rigid body impulse`,
+`sleep wake`, `island activation`, and `loop closure compliance` that request
+in-viewer scene switches. Backend-status terms route to
+`rigid_step_diagnostics`, while executor terms route to the same-solver
+`rigid_executor_equivalence` row. Scope caveats
 remain visible in the row, so deferred public-API searches route to the closest
 current row without claiming unsupported impulse, activation, or compliance
 behavior. The filter ranks positive intent matches first so searches such as
-`contact`, `solver`, `step profile`, `backend comparison`, and
-`sequential impulse` do not get dominated by early rows that only mention what
-not to infer. Related-evidence searches such as `rigid_ipc_tunnel`,
+`contact`, `solver`, `step profile`, `backend comparison`,
+`executor comparison`, and `sequential impulse` do not get dominated by early
+rows that only mention what not to infer. Related-evidence searches such as
+`rigid_ipc_tunnel`,
 `rigid_ipc_edge_drop`, or `avbd prismatic` open the related shelf scene directly
 through the maintained route table. Comparison and parameter rows also label the
 comparison axis and held-fixed controls in the panel and capture metrics so

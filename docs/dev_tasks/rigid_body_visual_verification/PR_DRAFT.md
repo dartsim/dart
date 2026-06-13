@@ -84,6 +84,11 @@ rigid-body visual verification surface for the current cycle.
   records `controls.spin_command`, and `articulated` records
   `controls.shoulder_damping` plus `controls.wrist_damping` from live joint
   state.
+- Separates backend-status workflow search from executor-equivalence search:
+  backend terms such as `compute backend`, `backend comparison`, and
+  `parallel backend` route to `rigid_step_diagnostics`, while executor terms
+  such as `compute executor`, `executor comparison`, and `Taskflow executor`
+  route to the same-solver `rigid_executor_equivalence` row.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -115,6 +120,9 @@ rigid-body visual verification surface for the current cycle.
   reported `7 passed`.
 - Focused World related-shelf control guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_world_related_shelf_panel_edits_capture_controls python/tests/integration/test_demos_cycle.py::test_world_related_evidence_routes_report_capture_metrics -q`
+  reported `2 passed`.
+- Focused backend/executor workflow-search guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
   reported `2 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
@@ -178,14 +186,16 @@ rigid-body visual verification surface for the current cycle.
   with default `rest_length=0.45`, `soft_stiffness=45.0`,
   `stiff_stiffness=220.0`, and `offset_stiffness=120.0` controls in latest
   scene metrics.
-- Current-head broad default validation:
+- Latest broad default validation before the backend/executor search slice:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,
   Python tests, and documentation.
-- Earlier branch-level CUDA validation on a visible
+- Latest branch-level CUDA validation before the backend/executor search slice,
+  on a visible
   `NVIDIA GeForce RTX 4080 Laptop GPU` host:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-  exited successfully. This predates the latest continuation commits.
+  passed all seven wrapper gates. This predates the workflow search/docs/test
+  slice above.
 - Focused docs/API drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented -q`
 - Focused scene-metrics/docs guard:
@@ -220,6 +230,11 @@ rigid-body visual verification surface for the current cycle.
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=17`, 1027 PNG frames).
+- Static packet freshness note: both broad packet directories above predate the
+  latest control-metadata and backend/executor search-routing slices. They
+  remain useful broad visual evidence, but regenerate them before final
+  maintainer review if the review cards must display every newest `controls`
+  field and search-label wording.
 - Read-only per-scene metrics audit: both current packet directories have
   latest scene metrics for every captured row (36/36 and 17/17).
 - Static review-index asset audit: 0 missing local assets for both current
