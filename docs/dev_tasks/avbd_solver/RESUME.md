@@ -12,16 +12,59 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact path now skips
-inverse world-inertia factorization for centered, frictionless normal contacts
-whose angular contact Jacobian is exactly zero. Frictional contacts and
-off-center normal contacts still compute inverse world inertia through the
-existing path. This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0`
-source-shaped row, where the 11 zero-friction boxes contact the ground through
-centered normal rows. This does not refresh the tracked friction-sweep packet,
-close the frictionless source-row CPU gap, or claim GPU parity.
+Latest local slice: the default sequential-impulse normal contact solve now
+stores each contact's `arm x normal` angular Jacobian terms and reuses them for
+normal effective mass, restitution approach, and per-iteration normal approach
+velocity. This avoids rebuilding full contact-point velocities with angular
+cross products inside the normal loop. The frictional tangent solve still uses
+the existing full contact-point velocity path. This targets the
+`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row, where the centered
+frictionless contacts have zero angular normal Jacobian terms. This does not
+refresh the tracked friction-sweep packet, close the frictionless source-row CPU
+gap, or claim GPU parity.
 
 Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-before-normal-approach-cache.json --benchmark_out_format=json'`
+  passed before the edit. It recorded a 20.84 us median CPU step under load
+  average `23.49, 18.35, 13.20` with CPU scaling enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-normal-approach-cache.json --benchmark_out_format=json'`
+  passed after the edit. It recorded a 20.27 us median CPU step under load
+  average `25.51, 23.40, 16.85` with CPU scaling enabled. This is local path
+  smoke only because same-source native timing and visual captures were not
+  rerun, and the host was busy with another CUDA test-all.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The run passed lint, Release and Debug builds, 207 non-simulation C++ tests,
+  69 simulation C++ tests, Python tests, docs, and CUDA test/benchmark smoke.
+  The simulation stage was slow under concurrent host load
+  (`test_rigid_ipc_paper_experiments` 645.92 s, `test_world` 187.55 s,
+  `test_lcp_jacobi_batch_cuda` 438.38 s), and the final CUDA smoke reran
+  `test_lcp_jacobi_batch_cuda` in 768.61 s before passing benchmark smoke. The
+  documentation stage emitted four existing autodoc warnings about the
+  generated `dartpy._world_render_bridge` stub import, but the command passed.
+
+Next preferred bounded work: continue the per-step frictionless max-friction-0
+CPU audit under cleaner host load, or switch to GPU parity preparation if the
+CPU path has no safe bounded next cut.
+
+Previous local checkpoint: commit `2cfdc455ee3` records the default
+sequential-impulse rigid contact path skipping inverse world-inertia
+factorization for centered, frictionless normal contacts whose angular contact
+Jacobian is exactly zero. Frictional contacts and off-center normal contacts
+still compute inverse world inertia through the existing path. This targets the
+`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row, where the 11
+zero-friction boxes contact the ground through centered normal rows. This does
+not refresh the tracked friction-sweep packet, close the frictionless
+source-row CPU gap, or claim GPU parity.
+
+Validation for commit `2cfdc455ee3`:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
   passed.
@@ -42,10 +85,6 @@ Validation for the latest local slice:
 - `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
   The documentation stage emitted four existing autodoc warnings about the
   generated `dartpy._world_render_bridge` stub import, but the command passed.
-
-Next preferred bounded work: continue the per-step frictionless max-friction-0
-CPU audit under cleaner host load, or switch to GPU parity preparation if the
-CPU path has no safe bounded next cut.
 
 Previous local checkpoint: commit `b1e7402d1fa` records simulation-bake cache
 prewarming without prepare-time contact row generation. `RigidBodyContactStage`

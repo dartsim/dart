@@ -9,6 +9,21 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse
+  normal contact solve now stores each contact's `arm x normal` terms and
+  reuses them for normal effective mass, restitution approach, and per-iteration
+  normal approach velocity instead of rebuilding full contact-point velocities
+  with angular cross products inside the normal loop. This targets the same
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a high-load `/0` benchmark
+  smoke recorded median CPU step time moving from 20.84 us before the edit to
+  20.27 us after under load averages above 23 with CPU scaling enabled. This is
+  local path evidence only. Full validation passed `pixi run lint`,
+  `pixi run build`, `pixi run test-unit`, and `pixi run -e cuda test-all` on
+  the visible NVIDIA RTX 5000 Ada host, with the existing four
+  `dartpy._world_render_bridge` autodoc warnings during docs. This does not
+  refresh the tracked friction-sweep packet, close the frictionless source-row
+  CPU gap, or claim GPU parity.
 - Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
   contact path now skips inverse world-inertia factorization for centered,
   frictionless normal contacts whose angular contact Jacobian is exactly zero.

@@ -9400,6 +9400,8 @@ struct RigidBodyContactStage::ContactScratch
     double depth;
     double restitutionVelocity;
     double normalImpulse;
+    Eigen::Vector3d normalArmCrossA;
+    Eigen::Vector3d normalArmCrossB;
     Eigen::Vector3d normalLinearDeltaA;
     Eigen::Vector3d normalLinearDeltaB;
     Eigen::Vector3d normalAngularDeltaA;
@@ -9758,6 +9760,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     }
     return velocity.linear + velocity.angular.cross(arm);
   };
+  const auto normalPointVelocity = [](const comps::Velocity& velocity,
+                                      const Eigen::Vector3d& normal,
+                                      const Eigen::Vector3d& normalArmCross,
+                                      bool isStatic) -> double {
+    if (isStatic) {
+      return 0.0;
+    }
+    return velocity.linear.dot(normal) + velocity.angular.dot(normalArmCross);
+  };
 
   if (m_contactScratch == nullptr) {
     m_contactScratch = std::make_unique<ContactScratch>();
@@ -9803,25 +9814,33 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     constraint.friction = std::sqrt(
         frictionOf(registry, entityA) * frictionOf(registry, entityB));
 
-    const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
-    const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
-    constraint.invInertiaA
-        = !staticA && needsContactInverseInertia(crossA, constraint.friction)
-              ? inverseWorldInertia(massA, transformA)
-              : Eigen::Matrix3d::Zero();
-    constraint.invInertiaB
-        = !staticB && needsContactInverseInertia(crossB, constraint.friction)
-              ? inverseWorldInertia(massB, transformB)
-              : Eigen::Matrix3d::Zero();
+    constraint.normalArmCrossA = constraint.armA.cross(constraint.normal);
+    constraint.normalArmCrossB = constraint.armB.cross(constraint.normal);
+    const bool needsInverseInertiaA
+        = !staticA
+          && needsContactInverseInertia(
+              constraint.normalArmCrossA, constraint.friction);
+    const bool needsInverseInertiaB
+        = !staticB
+          && needsContactInverseInertia(
+              constraint.normalArmCrossB, constraint.friction);
+    constraint.invInertiaA = needsInverseInertiaA
+                                 ? inverseWorldInertia(massA, transformA)
+                                 : Eigen::Matrix3d::Zero();
+    constraint.invInertiaB = needsInverseInertiaB
+                                 ? inverseWorldInertia(massB, transformB)
+                                 : Eigen::Matrix3d::Zero();
     constraint.normalLinearDeltaA = -constraint.invMassA * constraint.normal;
     constraint.normalLinearDeltaB = constraint.invMassB * constraint.normal;
-    constraint.normalAngularDeltaA = -constraint.invInertiaA * crossA;
-    constraint.normalAngularDeltaB = constraint.invInertiaB * crossB;
+    constraint.normalAngularDeltaA
+        = -constraint.invInertiaA * constraint.normalArmCrossA;
+    constraint.normalAngularDeltaB
+        = constraint.invInertiaB * constraint.normalArmCrossB;
     const double angular
-        = constraint.normal.dot(
-              (constraint.invInertiaA * crossA).cross(constraint.armA))
-          + constraint.normal.dot(
-              (constraint.invInertiaB * crossB).cross(constraint.armB));
+        = constraint.normalArmCrossA.dot(
+              constraint.invInertiaA * constraint.normalArmCrossA)
+          + constraint.normalArmCrossB.dot(
+              constraint.invInertiaB * constraint.normalArmCrossB);
     constraint.effectiveMass
         = constraint.invMassA + constraint.invMassB + angular;
     if (constraint.effectiveMass <= 0.0) {
@@ -9837,11 +9856,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     auto& velocityB = registry.get<comps::Velocity>(entityB);
     constraint.velocityA = &velocityA;
     constraint.velocityB = &velocityB;
-    const double initialApproach
-        = (contactPointVelocity(velocityB, constraint.armB, constraint.staticB)
-           - contactPointVelocity(
-               velocityA, constraint.armA, constraint.staticA))
-              .dot(constraint.normal);
+    const double initialApproach = normalPointVelocity(
+                                       velocityB,
+                                       constraint.normal,
+                                       constraint.normalArmCrossB,
+                                       constraint.staticB)
+                                   - normalPointVelocity(
+                                       velocityA,
+                                       constraint.normal,
+                                       constraint.normalArmCrossA,
+                                       constraint.staticA);
     constexpr double restitutionThreshold = 1e-3;
     constraint.restitutionVelocity
         = (restitution > 0.0 && initialApproach < -restitutionThreshold)
@@ -9886,12 +9910,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         auto& velocityA = *constraint.velocityA;
         auto& velocityB = *constraint.velocityB;
 
-        const Eigen::Vector3d pointVelocityA = contactPointVelocity(
-            velocityA, constraint.armA, constraint.staticA);
-        const Eigen::Vector3d pointVelocityB = contactPointVelocity(
-            velocityB, constraint.armB, constraint.staticB);
-        const double approach
-            = (pointVelocityB - pointVelocityA).dot(constraint.normal);
+        const double approach = normalPointVelocity(
+                                    velocityB,
+                                    constraint.normal,
+                                    constraint.normalArmCrossB,
+                                    constraint.staticB)
+                                - normalPointVelocity(
+                                    velocityA,
+                                    constraint.normal,
+                                    constraint.normalArmCrossA,
+                                    constraint.staticA);
 
         double lambda = -(approach - constraint.restitutionVelocity)
                         * constraint.inverseEffectiveMass;
