@@ -247,18 +247,18 @@ rigid-body visual verification surface for the current cycle.
   with default `rest_length=0.45`, `soft_stiffness=45.0`,
   `stiff_stiffness=220.0`, and `offset_stiffness=120.0` controls in latest
   scene metrics.
-- Latest broad default validation recorded before the backend/executor search
-  and latest-signal review-card slices:
+- Latest broad default validation for pushed commit `7829d9b0487`:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,
-  Python tests, and documentation.
-- Latest branch-level CUDA validation recorded before the backend/executor
-  search and latest-signal review-card slices, on a visible
-  `NVIDIA GeForce RTX 4080 Laptop GPU` host:
+  Python tests, and documentation. The default CTest log recorded `test_world`
+  at `00:02:24` and `test_rigid_ipc_paper_experiments` at `00:04:52`.
+- Latest branch-level CUDA validation for pushed commit `7829d9b0487`, on a
+  visible `NVIDIA GeForce RTX 4080 Laptop GPU` host:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-  passed all seven wrapper gates. Rerun broad default and CUDA validation
-  before PR publication if maintainers require current-head wrapper proof after
-  the final review-card and handoff refresh slices.
+  passed all seven wrapper gates. The final CUDA CTest log recorded
+  `test_lcp_jacobi_batch_cuda` at `00:03:48`. Rerun broad default and CUDA
+  validation only if maintainers require proof that includes the final
+  docs-only evidence refresh commit.
 - Focused docs/API drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented -q`
 - Focused scene-metrics/docs guard:
@@ -317,10 +317,12 @@ rigid-body visual verification surface for the current cycle.
 
 - [x] None
 
-## Related Issues / PRs
+## Related Issues / PRs (backports)
 
 - Follows the DART 7 architecture/work-packet harness from PR #2986.
-- Target milestone: DART 7.0.
+- Target milestone: DART 7.0 (`gh` milestone number 84 in the current
+  repository milestone list).
+- Backports: not applicable; this is DART 7 `main` work.
 
 ---
 
@@ -329,7 +331,8 @@ rigid-body visual verification surface for the current cycle.
 - [ ] Milestone set to DART 7.0
 - [x] CHANGELOG.md updated if required
 - [x] Unit/integration tests added or updated for workflow behavior
+- [x] Document new methods and classes where applicable
+- [x] Add Python bindings if applicable
 - [x] User-facing py-demos documentation updated
-- [x] Python GUI/capture workflow updated
 - [ ] Maintainer accepts the current 36-row workflow plus optional 53-row
       packet as the completed scope for this dev task

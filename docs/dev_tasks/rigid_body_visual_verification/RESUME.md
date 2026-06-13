@@ -3,12 +3,13 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-`feature/rigid-body-gui-visual-verification` is clean at `7c9d28b21013` and
-matches `origin/feature/rigid-body-gui-visual-verification` after the latest
-user-approved push. `origin/main` is already an ancestor of the branch; the
-latest local `git fetch origin main` plus `git merge --no-edit origin/main`
-check reported `Already up to date`, and the follow-up `git push origin HEAD`
-reported `Everything up-to-date`. There is still no PR for this branch. Do not
+`feature/rigid-body-gui-visual-verification` has a clean worktree after this
+docs-only evidence refresh, but it is intentionally one local commit ahead of
+`origin/feature/rigid-body-gui-visual-verification` until a future explicit
+push approval. The latest user-approved push advanced the remote branch from
+`7c9d28b2101` to `7829d9b0487`; `origin/main` was already an ancestor of the
+branch, and `git fetch origin main` plus `git merge --no-edit origin/main`
+reported `Already up to date`. There is still no PR for this branch. Do not
 push, create a PR, set a milestone, rerun CI, comment on reviews, resolve
 threads, or mutate any other GitHub state without explicit maintainer/user
 approval.
@@ -118,16 +119,18 @@ PLAN-103 sidecar describe the split. Focused guard:
 reported `2 passed`. No new visual packet was generated in this slice.
 
 Latest broad validation recorded for this task state: after a local
-`origin/main` merge check reported `Already up to date`,
+`origin/main` merge check reported `Already up to date`, pushed commit
+`7829d9b0487` passed both wrapper suites with the DART safe parallelism cap:
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 passed all six default wrapper gates, and
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
 passed all seven CUDA wrapper gates on an `NVIDIA GeForce RTX 4080 Laptop GPU`
-host. These broad runs are recorded evidence for the branch but predate the
-latest backend/executor search-routing and review-card latest-signal slices,
-which have focused guards recorded above. Rerun broad default and CUDA
-validation before PR publication if maintainers require current-head proof
-after this handoff refresh.
+host. The default CTest log records `test_world` at `00:02:24` and
+`test_rigid_ipc_paper_experiments` at `00:04:52`; the CUDA CTest log records
+`test_lcp_jacobi_batch_cuda` at `00:03:48`. This docs-only evidence refresh
+postdates those broad wrapper runs, so rerun broad default and CUDA validation
+only if maintainers require proof that includes this exact documentation
+commit.
 
 Latest artifact refresh: after the backend/executor search-routing,
 backend-diagnostics, contact-query review-card, and optional-signal slices, the
@@ -375,17 +378,20 @@ reported `6 passed`.
 
 Latest validation follow-up: after merging latest `origin/main` (`Already up
 to date`), broad default validation was rerun from branch
-`feature/rigid-body-gui-visual-verification` with `DART_SAFE_JOBS=5`. The
+`feature/rigid-body-gui-visual-verification` at pushed commit `7829d9b0487`
+with `DART_SAFE_JOBS=5`. The
 default command
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed successfully: linting, build, unit tests, simulation tests, Python
-tests, and documentation all passed. The default run reported
-`test_world` in 147.17 seconds and `test_rigid_ipc_paper_experiments` in
-298.43 seconds. A later CUDA follow-up on a visible RTX 4080 Laptop GPU ran
-`pixi run -e cuda test-all` and passed all seven wrapper gates. Both broad
-wrapper runs predate the current backend/executor search-routing slice. The
-previous stopped validation attempt remains useful archaeology only; do not
-report it as the latest state.
+tests, and documentation all passed. The default CTest log recorded
+`test_world` in `00:02:24` and `test_rigid_ipc_paper_experiments` in
+`00:04:52`. A later CUDA follow-up on a visible RTX 4080 Laptop GPU ran
+`pixi run -e cuda test-all` and passed all seven wrapper gates; its final
+CUDA-labeled CTest log recorded `test_lcp_jacobi_batch_cuda` in `00:03:48`.
+These broad wrapper runs cover the current implementation state at
+`7829d9b0487`; this docs-only evidence refresh postdates them. The previous
+stopped validation attempt remains useful archaeology only; do not report it
+as the latest state.
 
 Historical publication state before the later approved pushes: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was

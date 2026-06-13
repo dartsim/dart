@@ -1857,11 +1857,11 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
 - Local count-drift gate: the focused navigator-count guard reported
   `4 passed`, and `pixi run lint` passed after adding the guard.
 - Broad validation evidence: default `pixi run test-all` passed all 6 wrapper
-  groups, and CUDA `pixi run -e cuda test-all` passed all 7 groups on a host
-  with an NVIDIA RTX 4080 Laptop GPU before the latest backend/executor
-  search-routing and latest-signal review-card follow-ups. Re-run broad default
-  and CUDA validation before PR publication if maintainers require current-head
-  wrapper proof after those final review-prep slices.
+  groups at pushed commit `7829d9b0487`, and CUDA
+  `pixi run -e cuda test-all` passed all 7 groups at the same implementation
+  state on a host with an NVIDIA RTX 4080 Laptop GPU. Re-run broad default and
+  CUDA validation only if maintainers require proof that includes the final
+  docs-only evidence refresh commit.
 
 ## Follow-Ups
 
