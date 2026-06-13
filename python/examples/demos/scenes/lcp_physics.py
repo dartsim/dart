@@ -9,10 +9,12 @@ path.
 
 from __future__ import annotations
 
+import csv
 import math
 import time
 from collections import deque
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
 import dartpy as dart
@@ -222,6 +224,10 @@ _PERFORMANCE_PROFILE_REFRESH_COMMAND = (
 _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT = (
     "docs/background/lcp/figures/performance_profile_evidence.csv"
 )
+_SOURCE_ROOT = Path(__file__).resolve().parents[4]
+_PERFORMANCE_PROFILE_EVIDENCE_PATH = (
+    _SOURCE_ROOT / _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT
+)
 _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
     {
         "fields": "solver_identity_schema_version, solver_manifest_index",
@@ -333,6 +339,111 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
     },
 )
+
+
+def _format_evidence_int_values(values: set[int]) -> str:
+    if not values:
+        return "-"
+    return ", ".join(str(value) for value in sorted(values))
+
+
+def _as_int_counter(row: dict[str, str], name: str) -> int | None:
+    value = row.get(name, "")
+    if not value:
+        return None
+    return int(float(value))
+
+
+def _as_float_counter(row: dict[str, str], name: str) -> float:
+    value = row.get(name, "")
+    if not value:
+        return 0.0
+    return float(value)
+
+
+def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
+    if not _PERFORMANCE_PROFILE_EVIDENCE_PATH.is_file():
+        return (
+            {
+                "surface": "unavailable",
+                "rows": "0",
+                "solvers": "0",
+                "dimensions": "-",
+                "contacts": "-",
+                "contract_ok": "0/0",
+                "max_iterations": "0",
+                "max_residual": "0.00e+00",
+                "max_complementarity": "0.00e+00",
+                "max_bound_violation": "0.00e+00",
+            },
+        )
+
+    summaries: dict[str, dict[str, Any]] = {}
+    with _PERFORMANCE_PROFILE_EVIDENCE_PATH.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            surface = row["category"]
+            summary = summaries.setdefault(
+                surface,
+                {
+                    "rows": 0,
+                    "solvers": set(),
+                    "dimensions": set(),
+                    "contacts": set(),
+                    "contract_ok": 0,
+                    "max_iterations": 0,
+                    "max_residual": 0.0,
+                    "max_complementarity": 0.0,
+                    "max_bound_violation": 0.0,
+                },
+            )
+            summary["rows"] += 1
+            summary["solvers"].add(row["solver"])
+            lcp_dimension = _as_int_counter(row, "lcp_dimension")
+            if lcp_dimension is not None:
+                summary["dimensions"].add(lcp_dimension)
+            contact_count = _as_int_counter(row, "contact_count")
+            if contact_count is not None:
+                summary["contacts"].add(contact_count)
+            if row.get("contract_ok") == "1":
+                summary["contract_ok"] += 1
+            summary["max_iterations"] = max(
+                summary["max_iterations"],
+                _as_int_counter(row, "iterations") or 0,
+            )
+            summary["max_residual"] = max(
+                summary["max_residual"],
+                _as_float_counter(row, "residual"),
+            )
+            summary["max_complementarity"] = max(
+                summary["max_complementarity"],
+                _as_float_counter(row, "complementarity"),
+            )
+            summary["max_bound_violation"] = max(
+                summary["max_bound_violation"],
+                _as_float_counter(row, "bound_violation"),
+            )
+
+    rows: list[dict[str, str]] = []
+    for surface in ("Standard", "Boxed", "FrictionIndex"):
+        summary = summaries.get(surface)
+        if summary is None:
+            continue
+        row_count = summary["rows"]
+        rows.append(
+            {
+                "surface": surface,
+                "rows": str(row_count),
+                "solvers": str(len(summary["solvers"])),
+                "dimensions": _format_evidence_int_values(summary["dimensions"]),
+                "contacts": _format_evidence_int_values(summary["contacts"]),
+                "contract_ok": f"{summary['contract_ok']}/{row_count}",
+                "max_iterations": str(summary["max_iterations"]),
+                "max_residual": f"{summary['max_residual']:.2e}",
+                "max_complementarity": f"{summary['max_complementarity']:.2e}",
+                "max_bound_violation": f"{summary['max_bound_violation']:.2e}",
+            }
+        )
+    return tuple(rows)
 
 _SOLVER_SUPPORT_ROWS: tuple[dict[str, Any], ...] = (
     {
@@ -1694,6 +1805,9 @@ def build() -> SceneSetup:
         standalone_problem_rows
     )
     advanced_solver_parameter_rows = _advanced_solver_parameter_rows()
+    performance_profile_evidence_summary_rows = (
+        _performance_profile_evidence_summary_rows()
+    )
 
     def reset() -> None:
         state["cases"] = _make_cases()
@@ -1911,6 +2025,34 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["fields"])
                     _write_table_cell(builder, row["meaning"])
                 builder.end_table()
+            if builder.begin_table(
+                "lcp_performance_profile_evidence_summary",
+                [
+                    "Surface",
+                    "Rows",
+                    "Solvers",
+                    "LCP dimensions",
+                    "Contacts",
+                    "OK",
+                    "Max it",
+                    "Max residual",
+                    "Max comp",
+                    "Max bound",
+                ],
+            ):
+                for row in performance_profile_evidence_summary_rows:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["surface"])
+                    _write_table_cell(builder, row["rows"])
+                    _write_table_cell(builder, row["solvers"])
+                    _write_table_cell(builder, row["dimensions"])
+                    _write_table_cell(builder, row["contacts"])
+                    _write_table_cell(builder, row["contract_ok"])
+                    _write_table_cell(builder, row["max_iterations"])
+                    _write_table_cell(builder, row["max_residual"])
+                    _write_table_cell(builder, row["max_complementarity"])
+                    _write_table_cell(builder, row["max_bound_violation"])
+                builder.end_table()
 
         if builder.collapsing_header("Standalone solver smoke", default_open=False):
             if builder.begin_table(
@@ -2058,6 +2200,9 @@ def build() -> SceneSetup:
             "performance_profile_evidence_schema_rows": _copy_rows(
                 _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
             ),
+            "performance_profile_evidence_summary_rows": [
+                dict(row) for row in performance_profile_evidence_summary_rows
+            ],
             "solver_rows": _copy_rows(_SOLVER_SUPPORT_ROWS),
             "standalone_solver_rows": [dict(row) for row in standalone_solver_rows],
             "standalone_problem_rows": [

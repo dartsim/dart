@@ -1488,6 +1488,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `lcp_physics` panel so the roster identity, native-support, problem-form,
     dimension, iteration, and feasibility counters are visible with the checked
     CSV artifact.
+  - Summarized checked LCP performance-profile evidence rows in the Python
+    `lcp_physics` panel, including row counts, solver counts, LCP dimensions,
+    FrictionIndex contact counts, contract pass counts, and max feasibility
+    metrics per profile surface.
   - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
     Jacobian solve before falling back to regularized least squares, and kept
     friction-index moving-bound updates local to accepted line-search trials.

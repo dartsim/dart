@@ -1046,6 +1046,32 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "residual, complementarity, bound_violation"
         in evidence_schema_by_fields
     )
+    evidence_summary_by_surface = {
+        row["surface"]: row
+        for row in info["performance_profile_evidence_summary_rows"]
+    }
+    assert set(evidence_summary_by_surface) == {
+        "Standard",
+        "Boxed",
+        "FrictionIndex",
+    }
+    assert evidence_summary_by_surface["Standard"]["rows"] == "90"
+    assert evidence_summary_by_surface["Standard"]["solvers"] == "23"
+    assert evidence_summary_by_surface["Standard"]["dimensions"] == (
+        "2, 3, 12, 24, 48, 96"
+    )
+    assert evidence_summary_by_surface["Standard"]["contract_ok"] == "90/90"
+    assert evidence_summary_by_surface["Boxed"]["rows"] == "45"
+    assert evidence_summary_by_surface["Boxed"]["solvers"] == "15"
+    assert evidence_summary_by_surface["Boxed"]["dimensions"] == "12, 24, 48"
+    assert evidence_summary_by_surface["Boxed"]["contract_ok"] == "45/45"
+    assert evidence_summary_by_surface["FrictionIndex"]["rows"] == "48"
+    assert evidence_summary_by_surface["FrictionIndex"]["solvers"] == "16"
+    assert evidence_summary_by_surface["FrictionIndex"]["dimensions"] == (
+        "12, 48, 192"
+    )
+    assert evidence_summary_by_surface["FrictionIndex"]["contacts"] == "4, 16, 64"
+    assert evidence_summary_by_surface["FrictionIndex"]["contract_ok"] == "48/48"
     assert profile_by_surface["Standard"]["artifact"].endswith(
         "performance_profile_standard.csv"
     )
@@ -1302,6 +1328,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "residual, complementarity, bound_violation",
     ):
         assert any(evidence_field in event for event in builder.events)
+    assert (
+        "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
+        "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
+        in builder.events
+    )
+    assert any("text:90/90" == event for event in builder.events)
+    assert any("text:48/48" == event for event in builder.events)
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Challenge,Native,"
         "Delegated,Max residual,Fastest native"
