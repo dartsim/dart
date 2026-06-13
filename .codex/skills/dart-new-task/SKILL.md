@@ -63,12 +63,18 @@ Read these files first:
 - **Bugfix**: Requires PRs to BOTH `release-6.17` AND `main`
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **New solver/paper implementation**: Derive an evidence matrix from the
+- **New solver/paper implementation**: Before any implementation starts,
+  record the full solver-family intake checklist in
+  `docs/plans/solver-family-intake.md` — including its solver-contract
+  conformance and solver-identity/metrics items; the standing rule in
+  `docs/design/dart7_architecture_assessment.md` applies, and new families
+  must not bypass the PLAN-091 contracts. Derive an evidence matrix from the
   paper, project page, reference source, videos, and demos. Do not call the task
   complete until DART implements all algorithms/features on required CPU and GPU
   backends, ports all experiments/demos into tests/benchmarks/py-demos, records
   benchmark JSON proving DART beats reference and paper numbers for every
-  claimed case, and performs any clean API/pipeline refactor needed for the
+  claimed case (with the resolved solver configuration machine-recorded in
+  every packet), and performs any clean API/pipeline refactor needed for the
   long-term DART 7/8 architecture. For multi-session work, keep the active
   `docs/dev_tasks/<task>/README.md` and `RESUME.md` explicit about the latest
   completed slice, the next missing paper-parity gap, and why focused green

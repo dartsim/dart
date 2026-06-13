@@ -45,7 +45,7 @@ Use `--base main --milestone "DART 7.0"` for main PRs and
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
-Use `.github/PULL_REQUEST_TEMPLATE.md` and ensure the PR description covers Summary, Motivation, Changes, Testing, Breaking Changes, and Related Issues.
+Use `.github/PULL_REQUEST_TEMPLATE.md` and keep DART's default order: Summary, Motivation / Problem, Changes / Key Changes, optional Before / After, Testing, Breaking Changes, and Related Issues / PRs. Keep Summary first as the reviewer skim target. If the motivation is necessary to understand the outcome, make the first Summary sentence problem-oriented, then put the fuller why in Motivation / Problem rather than moving Motivation above Summary.
 
 Write PR descriptions for a user or downstream maintainer who is not already familiar with the implementation. Lead Summary and Motivation with what changes for them, what stays compatible, how they opt in or migrate, and why the evidence matters; keep implementation mechanics in Changes unless they explain user-visible risk.
 

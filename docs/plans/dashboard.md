@@ -15,6 +15,29 @@ own the referenced scope until a detailed initiative file is added.
 Priority order follows document order. Keep each frequently changed field on
 its own line so status updates remain git-history friendly.
 
+### PLAN-091: DART 7 Architecture Hardening
+
+- Owner doc:
+  [`091-architecture-hardening.md`](091-architecture-hardening.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Execute all five WS0 evidence-integrity packets first, in plan
+  document order (WP-091.1 solver-identity recording and AVBD relabel,
+  WP-091.2 golden trajectories, WP-091.3 architecture-claim lint, WP-091.4
+  legacy freeze, WP-091.5 plan-ID renumber), then open WS1 with WP-091.10
+  (virtual finalize/prepare on the stage contract). Packets are
+  orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
+  and picked up via `dart-execute-packet`; availability follows each packet's
+  own Dependencies line. The standing rule applies now: new solver-family
+  work routes through [`solver-family-intake.md`](solver-family-intake.md)
+  and does not bypass the contracts this plan is landing.
+- Gate: A packet is done only when its named acceptance evidence exists and
+  its listed `pixi run ...` gates pass, with availability governed by the
+  per-packet Dependencies lines; plan completion follows the acceptance
+  criteria in the owner doc, including one new solver-family intake exercised
+  through the strengthened checklist without bypass.
+
 ### PLAN-001: Living Plan System
 
 - Owner doc: [`README.md#plan-update-workflow`](README.md#plan-update-workflow)
