@@ -2074,6 +2074,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "text:solver manifest: 24 solvers, 23 standard, 15 boxed, "
         "16 friction-index"
     ) in builder.events
+    assert (
+        "table:lcp_live_packet_cards:Packet,Metric,Benchmark analog"
+        in builder.events
+    )
+    for live_packet_row in info["live_packet_rows"]:
+        assert f"text:{live_packet_row['packet']}" in builder.events
+        assert f"text:{live_packet_row['metric']}" in builder.events
+        assert f"text:{live_packet_row['benchmark']}" in builder.events
     assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
     assert "text:std + boxed + findex" in builder.events
     assert "text:std only; boxed/findex delegate" in builder.events
