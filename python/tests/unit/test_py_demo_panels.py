@@ -2560,48 +2560,70 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_live_packet_cards:Packet,Metric,Benchmark analog"
         in builder.events
     )
-    for live_packet_row in info["live_packet_rows"]:
-        assert f"text:{live_packet_row['packet']}" in builder.events
-        assert f"text:{live_packet_row['metric']}" in builder.events
-        assert f"text:{live_packet_row['benchmark']}" in builder.events
+    assert _table_rows(builder.events, "lcp_live_packet_cards") == [
+        [
+            live_packet_row["packet"],
+            live_packet_row["metric"],
+            live_packet_row["benchmark"],
+        ]
+        for live_packet_row in info["live_packet_rows"]
+    ]
     assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
-    for solver_row in solver_rows:
-        assert f"text:{solver_row['name']}" in builder.events
-        assert f"text:{solver_row['family']}" in builder.events
-        assert f"text:{lcp_physics._coverage_label(solver_row)}" in builder.events
+    assert _table_rows(builder.events, "lcp_solver_manifest") == [
+        [
+            solver_row["name"],
+            solver_row["family"],
+            lcp_physics._coverage_label(solver_row),
+        ]
+        for solver_row in solver_rows
+    ]
     assert (
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events
     )
-    for benchmark_row in info["benchmark_packet_rows"]:
-        assert f"text:{benchmark_row['packet']}" in builder.events
-        assert f"text:{benchmark_row['surface']}" in builder.events
-        assert f"text:{benchmark_row['benchmark_filter']}" in builder.events
-        assert f"text:{benchmark_row['coverage']}" in builder.events
+    assert _table_rows(builder.events, "lcp_benchmark_packets") == [
+        [
+            benchmark_row["packet"],
+            benchmark_row["surface"],
+            benchmark_row["benchmark_filter"],
+            benchmark_row["coverage"],
+        ]
+        for benchmark_row in info["benchmark_packet_rows"]
+    ]
     assert (
         "table:lcp_representative_requirement_coverage:Requirement,Live packet,"
         "Benchmark packet,Metrics,Evidence"
         in builder.events
     )
-    for requirement_row in info["representative_requirement_rows"]:
-        assert f"text:{requirement_row['requirement']}" in builder.events
-        assert f"text:{requirement_row['live_packet']}" in builder.events
-        assert f"text:{requirement_row['benchmark_packet']}" in builder.events
-        assert f"text:{requirement_row['metrics']}" in builder.events
-        assert f"text:{requirement_row['evidence']}" in builder.events
+    assert _table_rows(
+        builder.events, "lcp_representative_requirement_coverage"
+    ) == [
+        [
+            requirement_row["requirement"],
+            requirement_row["live_packet"],
+            requirement_row["benchmark_packet"],
+            requirement_row["metrics"],
+            requirement_row["evidence"],
+        ]
+        for requirement_row in info["representative_requirement_rows"]
+    ]
     assert (
         "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
         "Current leaders,Current laggards,Takeaway"
         in builder.events
     )
-    for profile_row in info["performance_profile_rows"]:
-        assert f"text:{profile_row['surface']}" in builder.events
-        assert f"text:{profile_row['artifact']}" in builder.events
-        assert f"text:{profile_row['evidence_artifact']}" in builder.events
-        assert f"text:{profile_row['problem_sizes']}" in builder.events
-        assert f"text:{profile_row['current_leaders']}" in builder.events
-        assert f"text:{profile_row['current_laggards']}" in builder.events
-        assert f"text:{profile_row['takeaway']}" in builder.events
+    assert _table_rows(builder.events, "lcp_performance_profiles") == [
+        [
+            profile_row["surface"],
+            profile_row["artifact"],
+            profile_row["evidence_artifact"],
+            profile_row["problem_sizes"],
+            profile_row["current_leaders"],
+            profile_row["current_laggards"],
+            profile_row["takeaway"],
+        ]
+        for profile_row in info["performance_profile_rows"]
+    ]
     assert (
         f"text:profile smoke: {lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND}"
         in builder.events
@@ -2610,31 +2632,34 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_performance_profile_evidence_schema:Field(s),Meaning"
         in builder.events
     )
-    for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
-        assert f"text:{schema_row['fields']}" in builder.events
-        assert f"text:{schema_row['meaning']}" in builder.events
+    assert _table_rows(
+        builder.events, "lcp_performance_profile_evidence_schema"
+    ) == [
+        [schema_row["fields"], schema_row["meaning"]]
+        for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    ]
     assert (
         "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
         "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
         in builder.events
     )
-    for evidence_summary_row in info["performance_profile_evidence_summary_rows"]:
-        assert f"text:{evidence_summary_row['surface']}" in builder.events
-        assert f"text:{evidence_summary_row['rows']}" in builder.events
-        assert f"text:{evidence_summary_row['solvers']}" in builder.events
-        assert f"text:{evidence_summary_row['dimensions']}" in builder.events
-        assert f"text:{evidence_summary_row['contacts']}" in builder.events
-        assert f"text:{evidence_summary_row['contract_ok']}" in builder.events
-        assert f"text:{evidence_summary_row['max_iterations']}" in builder.events
-        assert f"text:{evidence_summary_row['max_residual']}" in builder.events
-        assert (
-            f"text:{evidence_summary_row['max_complementarity']}"
-            in builder.events
-        )
-        assert (
-            f"text:{evidence_summary_row['max_bound_violation']}"
-            in builder.events
-        )
+    assert _table_rows(
+        builder.events, "lcp_performance_profile_evidence_summary"
+    ) == [
+        [
+            evidence_summary_row["surface"],
+            evidence_summary_row["rows"],
+            evidence_summary_row["solvers"],
+            evidence_summary_row["dimensions"],
+            evidence_summary_row["contacts"],
+            evidence_summary_row["contract_ok"],
+            evidence_summary_row["max_iterations"],
+            evidence_summary_row["max_residual"],
+            evidence_summary_row["max_complementarity"],
+            evidence_summary_row["max_bound_violation"],
+        ]
+        for evidence_summary_row in info["performance_profile_evidence_summary_rows"]
+    ]
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
@@ -2642,21 +2667,19 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Status,Error,Residual,Complementarity"
         in builder.events
     )
-    for smoke_row in info["standalone_solver_rows"]:
-        assert f"text:{smoke_row['name']}" in builder.events
-        assert f"text:{smoke_row['family']}" in builder.events
-        assert (
-            f"text:{lcp_physics._smoke_coverage_label(smoke_row)}"
-            in builder.events
-        )
-        assert f"text:{smoke_row['solve_route']}" in builder.events
-        assert (
-            f"text:{smoke_row['status']} ({smoke_row['iterations']} it)"
-            in builder.events
-        )
-        assert f"text:{smoke_row['solution_error']:.2e}" in builder.events
-        assert f"text:{smoke_row['residual']:.2e}" in builder.events
-        assert f"text:{smoke_row['complementarity']:.2e}" in builder.events
+    assert _table_rows(builder.events, "lcp_standalone_solver_smoke") == [
+        [
+            smoke_row["name"],
+            smoke_row["family"],
+            lcp_physics._smoke_coverage_label(smoke_row),
+            smoke_row["solve_route"],
+            f"{smoke_row['status']} ({smoke_row['iterations']} it)",
+            f"{smoke_row['solution_error']:.2e}",
+            f"{smoke_row['residual']:.2e}",
+            f"{smoke_row['complementarity']:.2e}",
+        ]
+        for smoke_row in info["standalone_solver_rows"]
+    ]
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
         "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
