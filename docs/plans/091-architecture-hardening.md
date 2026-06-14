@@ -225,18 +225,24 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   by a meta-test; orphaned-feature disposition recorded.
 - Gates: `pixi run lint`, `pixi run check-lint`.
 - Dependencies: maintainer direction on Decision 5 options. **BLOCKED as of
-  2026-06-13:** Decision 5 is still listed under PLAN-042's "Decisions To
-  Make" with no recorded maintainer choice, and
+  2026-06-13:** "Decision 5" is item 5 ("Classic simulation and dynamics
+  boundary") in the numbered `## Decisions To Make` list of
+  `docs/plans/042-dart7-public-api-and-source-layout.md`, still open with no
+  recorded maintainer choice; the same unresolved state is mirrored in
   `042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`
-  records `dart/dynamics` only as an unresolved "compatibility/quarantine
-  lane; decide remove, wrap, or quarantine per concept". Unblock by recording
-  Decision 5 in that file (a `## Decision 5` section enumerating, per DART 6
-  surface — World, Skeleton, BodyNode, the constraint concepts, the orphaned
-  cylindrical joint — whether each is removed, quarantined, wrapped, or
-  promoted) and flipping the open marker in
-  `042-dart7-public-api-and-source-layout/api-source-layout-audit.md`. The
-  quarantine lane this packet's freeze check must enforce is undefined until
-  that decision exists, so do not start the check before then.
+  (the "Legacy dynamics boundary" bullet under `## Required Follow-Up
+Decisions`, and the `dart/dynamics` row of `## Current Folder
+Classification`, marked "compatibility/quarantine lane; surviving concepts
+  need explicit DART 7 names") and in
+  `042-dart7-public-api-and-source-layout/api-source-layout-audit.md` (the
+  `dart/dynamics` row, whose disposition cell still reads "Decide remove,
+  wrap, or quarantine per concept"). Unblock by recording the Decision 5
+  outcome — per DART 6 surface (World, Skeleton, BodyNode, the constraint
+  concepts, the orphaned cylindrical joint), whether each is removed,
+  quarantined, wrapped, or promoted — and resolving those three open anchors
+  in place (no new `## Decision 5` heading is needed; the anchors already
+  exist). The quarantine lane this packet's freeze check must enforce is
+  undefined until that decision exists, so do not start the check before then.
 
 #### WP-091.5 Renumber colliding plan IDs
 

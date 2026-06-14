@@ -35,7 +35,8 @@ its own line so status updates remain git-history friendly.
   (acceptance-criteria clarified — adds test citations to the marked rows
   before linting them), WP-091.4 legacy freeze (blocked: PLAN-042 Decision 5
   has no recorded maintainer direction yet), WP-091.5 plan-ID renumber
-  (PLAN-080 and PLAN-082 collisions confirmed real across ~53 files). Then
+  (PLAN-080 and PLAN-082 collisions confirmed real; the packet hazard owns the
+  exact `git grep` scope across docs and code). Then
   open WS1 with WP-091.10 (virtual finalize/prepare on the stage contract).
   Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
