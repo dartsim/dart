@@ -280,7 +280,7 @@ def _counter_to_int(value) -> int | None:
         return None
     try:
         numeric = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     if not math.isfinite(numeric):
         return None
@@ -296,7 +296,7 @@ def _finite_float(value) -> float | None:
         return None
     try:
         numeric = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     if not math.isfinite(numeric):
         return None

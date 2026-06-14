@@ -204,7 +204,7 @@ def _tracked_files(root: Path) -> list[Path]:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
         )
-    except (OSError, subprocess.CalledProcessError):
+    except OSError, subprocess.CalledProcessError:
         result = None
 
     if result is not None:
@@ -244,7 +244,7 @@ def _git_refnames(root: Path) -> tuple[str, ...]:
             stderr=subprocess.DEVNULL,
             text=True,
         )
-    except (OSError, subprocess.CalledProcessError):
+    except OSError, subprocess.CalledProcessError:
         return ()
     return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
 

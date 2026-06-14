@@ -9,7 +9,7 @@ Use your preferred package manager to add ``dartpy`` to an existing environment:
 .. code-block:: bash
 
    uv add dartpy                 # uv (recommended for Python-first projects)
-   pip install dartpy --pre      # PyPI wheels (Linux x86_64, CPython 3.12–3.14)
+   pip install dartpy --pre      # PyPI wheels (Linux x86_64, CPython 3.14)
    pixi add dartpy               # Pixi environment
    conda install -c conda-forge dartpy
 
@@ -24,7 +24,7 @@ Pre-built wheels on PyPI currently cover the following configurations:
 
    * - Platform / Python
      - Status
-   * - Linux x86_64 / CPython 3.12–3.14
+   * - Linux x86_64 / CPython 3.14
      - ✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)
    * - Other CPython versions and platforms
      - ⚠️ Use conda-forge, pixi, or build from source (no recent wheels yet)

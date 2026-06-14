@@ -93,7 +93,8 @@ LcpResult DantzigSolver::solve(
 
   Eigen::VectorXd fastW;
   bool exactFastPath = false;
-  if (problem.size() > 0 && !options.warmStart) {
+  if (problem.size() > 0 && !options.warmStart
+      && !scratch.usesProvidedAllocator) {
     const double validationTolerance = std::max(absTol, compTol);
     if (problem.isStandardLcp(absTol)) {
       exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(

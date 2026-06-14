@@ -771,10 +771,11 @@ its own line so status updates remain git-history friendly.
   `avbd-demo2d` Spring and Spring Ratio source rows over public free-rigid
   distance springs, plus `BM_AvbdDemo2dSpringStep` and
   `BM_AvbdDemo2dSpringRatioStep`. Their tracked
-  visual/DART-benchmark/native-timing packets record DART about 5.09x slower
-  than the native Spring runner and about 4.25x slower than the native Spring
-  Ratio runner on this host, so CPU performance resolution and GPU parity
-  remain open. The next `avbd-demo2d` source row is now visible through
+  visual/DART-benchmark/native-timing packets now record the spring-connected
+  ignored-pair counts and DART about 4.02x slower than the native Spring runner
+  and about 4.48x slower than the native Spring Ratio runner on this host, so
+  CPU performance resolution and GPU parity remain open. The next
+  `avbd-demo2d` source row is now visible through
   `avbd_demo2d_fracture`, which matches the `avbd-demo2d` Fracture source
   revision, scene index, 11 chain links, two dynamic supports, 15 falling
   blocks, 10 breakable fixed joints, and 29 collision shapes, plus
@@ -1031,10 +1032,11 @@ its own line so status updates remain git-history friendly.
   Ratio source rows over public free-rigid distance springs, plus
   `BM_AvbdDemo3dSpringStep` and
   `BM_AvbdDemo3dSpringRatioStep`. Their tracked
-  visual/DART-benchmark/native-timing packets record DART about 1.96x slower
-  than the native Spring runner and about 3.70x slower than the native Spring
-  Ratio runner on this host, so CPU performance resolution and GPU parity
-  remain open. Other missing corpus items include Spring and Spring Ratio GPU
+  visual/DART-benchmark/native-timing packets now record the spring-connected
+  ignored-pair counts and DART about 2.47x slower than the native Spring runner
+  and about 3.57x slower than the native Spring Ratio runner on this host, so
+  CPU performance resolution and GPU parity remain open. Other missing corpus
+  items include Spring and Spring Ratio GPU
   gates, the 2D Motor, Hanging Rope, 2D Cards, 2D Rod, 2D Joint Grid,
   2D Rope, 2D Heavy Rope, 2D Net, 3D Rope, and 3D Heavy Rope CPU gaps, remaining
   CPU reference wins, broad 2D stack variants, and GPU packets remain missing.
