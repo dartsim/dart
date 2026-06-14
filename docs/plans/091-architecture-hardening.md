@@ -467,7 +467,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
     of by hand). Each slice is one commit with its own focused tests; the packet
     is done when slice 4 lands and a previously-silent-substitution scene errors
     (strict) or records the substitution in a packet.
-- Evidence (slices 1–3 of 4 landed): **Slice 1** —
+- Evidence (slices 1–4 of 4 landed): **Slice 1** —
   `compute::ResolvedSolverConfiguration` and `compute::ResolvedConfigurationNote`
   value types (plain strings — no ECS, solver, or backend leak;
   `check-api-boundaries` green) added to `world_step_profile.hpp`;
@@ -499,8 +499,29 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   schedule is identical for every existing scene: `test_world_step_schedule`
   (16 pinned scenes) and the WP-091.2 golden trajectories
   (`test_world_default_step_golden` 3/3) are **unchanged**; `pixi run lint`,
-  `pixi run check-api-boundaries` green. Slice 4 (packet serialization)
-  remains.
+  `pixi run check-api-boundaries` green. **Slice 4** — the AVBD packet writers
+  no longer hand-type the `resolved_solver_identity` object:
+  `scripts/avbd_packet_schema.py` gains `make_resolved_solver_identity(...)`,
+  which derives the packet's `rigid_contact_solver` enum from the C++ report's
+  rigid-contact family string through one mapping
+  (`resolved_rigid_contact_solver_from_report`: `sequential-impulse` →
+  `sequential_impulse`, `boxed-lcp` → `boxed_lcp`, an `avbd` opt-in marker →
+  `avbd`) and validates the result against the existing schema contract. The
+  four writers (`write_avbd_{breakable_joint_scale, breakable_motor_scale,
+  friction_coefficient_sweep, paper_scale_high_ratio_iteration_sweep}_packet`)
+  now construct their identity through the builder; the output is byte-identical
+  to the committed packets (verified field-by-field against all four committed
+  JSONs), so no packet is regenerated. `tests/test_avbd_packet_schema.py` (13
+  cases) locks the builder against the committed identities and the report →
+  enum mapping. Gates: `pixi run check-avbd-packets` (52 packets), `pixi run
+  python -m pytest tests/test_check_avbd_packets.py
+  tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
+  per-benchmark emission (a benchmark `SetLabel` carrying
+  `World::getResolvedConfiguration()` consumed in place of the per-scene family
+  argument) is adopted the next time each packet is regenerated, per this
+  module's standing writer-adoption convention; the packet's core acceptance —
+  a previously-silent-substitution scene erroring under strict resolution —
+  already landed in slice 2 (`StrictResolutionRejectsSubstitution`).
 
 #### WP-091.12 Single selection idiom
 

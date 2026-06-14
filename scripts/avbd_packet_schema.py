@@ -127,3 +127,91 @@ def resolved_solver_identity_errors(
         )
 
     return errors
+
+
+# --- Deriving the packet identity from the resolved-configuration report -----
+#
+# PLAN-091 WP-091.11 slice 4: the C++ resolved-configuration report
+# (``dart::simulation::World::recordResolvedConfiguration``, slices 1-2) is the
+# engine's own account of which solver family resolved each domain. These
+# mappings translate the report's rigid-contact family strings onto the
+# packet's ``rigid_contact_solver`` enum so the packet identity is *derived
+# from the report's contract* through one place, rather than each writer
+# hand-typing the enum. The report-family strings below mirror the C++ report;
+# ``tests/test_world_resolved_configuration.cpp`` pins them on the engine side.
+
+# Report rigid-contact ``resolved`` family strings → packet enum values.
+_REPORT_RIGID_CONTACT_FAMILY_TO_PACKET = {
+    "sequential-impulse": "sequential_impulse",
+    "boxed-lcp": "boxed_lcp",
+}
+
+# The report appends this marker to the resolved rigid-contact family when a
+# body carries the internal AVBD rigid-contact opt-in (the WP-091.1 silent
+# substitution, made explicit in slice 2).
+_REPORT_AVBD_CONTACT_MARKER = "avbd"
+
+
+def resolved_rigid_contact_solver_from_report(resolved_family: str) -> str:
+    """Map a report rigid-contact ``resolved`` family string to the packet enum.
+
+    ``resolved_family`` is the string the C++ report records for the
+    ``rigid-contact`` domain (e.g. ``"sequential-impulse"``, ``"boxed-lcp"``,
+    or a ``"... + avbd (opt-in)"`` substitution). Raises ``ValueError`` for an
+    empty or unrecognized family so a report-vocabulary change cannot silently
+    produce an out-of-contract packet enum.
+    """
+    text = resolved_family.strip().lower()
+    if not text:
+        raise ValueError("resolved rigid-contact family must be non-empty")
+    if _REPORT_AVBD_CONTACT_MARKER in text:
+        return "avbd"
+    try:
+        return _REPORT_RIGID_CONTACT_FAMILY_TO_PACKET[text]
+    except KeyError:
+        raise ValueError(
+            f"unrecognized resolved rigid-contact family {resolved_family!r}; "
+            f"known: {sorted(_REPORT_RIGID_CONTACT_FAMILY_TO_PACKET)} "
+            f"(plus an '{_REPORT_AVBD_CONTACT_MARKER}' substitution marker)"
+        ) from None
+
+
+def make_resolved_solver_identity(
+    *,
+    resolved_rigid_contact_family: str | None,
+    rigid_point_joint_solver: str,
+    avbd_rigid_contact_config_emplaced: bool,
+    recorded_from: str,
+) -> dict[str, Any]:
+    """Build a validated ``resolved_solver_identity`` object from the report.
+
+    ``resolved_rigid_contact_family`` is the report's rigid-contact family
+    string for a scene that resolves rigid-rigid contacts, or ``None`` for a
+    contact-free scene (recorded as ``"none"``). The returned object is
+    validated against the schema contract before it is handed back, so a writer
+    cannot emit an identity the checker would reject.
+    """
+    if resolved_rigid_contact_family is None:
+        rigid_contact_solver = "none"
+    else:
+        rigid_contact_solver = resolved_rigid_contact_solver_from_report(
+            resolved_rigid_contact_family
+        )
+
+    identity: dict[str, Any] = {
+        "avbd_rigid_contact_config_emplaced": bool(avbd_rigid_contact_config_emplaced),
+        "recorded_from": recorded_from,
+        "rigid_contact_solver": rigid_contact_solver,
+        "rigid_point_joint_solver": rigid_point_joint_solver,
+    }
+
+    errors = resolved_solver_identity_errors(
+        {
+            "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+            RESOLVED_SOLVER_IDENTITY_KEY: identity,
+        },
+        "make_resolved_solver_identity",
+    )
+    if errors:
+        raise ValueError("; ".join(errors))
+    return identity
