@@ -82,6 +82,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #include <cctype>
@@ -688,7 +689,7 @@ dynamics::SkeletonPtr readSkeleton(
       } else {
         DART_WARN(
             "Unsupported root joint type [{}]. Using FLOATING by default.",
-            static_cast<int>(options.defaultRootJointType));
+            std::to_underlying(options.defaultRootJointType));
         rootJoint.properties = dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", body->second.initTransform));
         rootJoint.type = "free";
