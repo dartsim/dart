@@ -7,20 +7,6 @@ project(dart)
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
-# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
-# became default in CMake 3.0. Explicitly setting this policy is necessary to
-# suppress a warning in CMake 3.0 and above.
-if(POLICY CMP0042)
-  cmake_policy(SET CMP0042 NEW)
-endif()
-
-# Simplify variable reference and escape sequence evaluation. This was added in
-# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
-# in CMake 3.1 and above.
-if(POLICY CMP0053)
-  cmake_policy(SET CMP0053 NEW)
-endif()
-
 # Use DART_SOURCE/BINARY_DIR instead of CMAKE_SOURCE/BINARY_DIR to support the
 # case that DART is built as a sub-project in another project.
 set(DART_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -224,11 +210,9 @@ if(MSVC)
     CATEGORY msvc
   )
 
-  if(
-    DART_MSVC_FORCE_RELEASE_RUNTIME
-    AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.15"
-  )
-    # Use modern CMake 3.15+ approach with CMAKE_MSVC_RUNTIME_LIBRARY
+  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
+    # Use CMAKE_MSVC_RUNTIME_LIBRARY so all configurations match pre-built
+    # package-manager dependencies.
     # This sets /MD for all configurations (Debug, Release, RelWithDebInfo, MinSizeRel)
     set(
       CMAKE_MSVC_RUNTIME_LIBRARY
