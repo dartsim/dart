@@ -443,21 +443,28 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
     of by hand). Each slice is one commit with its own focused tests; the packet
     is done when slice 4 lands and a previously-silent-substitution scene errors
     (strict) or records the substitution in a packet.
-- Evidence (slice 1 of 4 landed): `compute::ResolvedSolverConfiguration` and
-  `compute::ResolvedConfigurationNote` value types (plain strings — no ECS,
-  solver, or backend leak; `check-api-boundaries` green) added to
-  `world_step_profile.hpp`; `World::getResolvedConfiguration()` exposes them
-  alongside `getLastStepProfile()`. `World::recordResolvedConfiguration()` is
-  called from the bake (`prepareStepPipelineCacheForCurrentConfiguration`) and
-  records the resolved rigid-body, rigid-contact, and multibody families
-  (requested == resolved today, reason "as requested"; `hasSubstitution()`
-  false). Additive only — the WP-091.2 golden trajectories are **unchanged**
-  (`test_world_default_step_golden` 3/3). New
-  `tests/unit/simulation/world/test_world_resolved_configuration.cpp` (3 cases:
-  empty before finalize, default families recorded, the report reflects a
-  `WorldOptions`-requested contact method) passes. Gates: `pixi run lint`,
-  `pixi run check-api-boundaries` green. Slices 2–4 (explicit substitution
-  decisions / capability-derived schedule / packet serialization) remain.
+- Evidence (slices 1–2 of 4 landed): **Slice 1** —
+  `compute::ResolvedSolverConfiguration` and `compute::ResolvedConfigurationNote`
+  value types (plain strings — no ECS, solver, or backend leak;
+  `check-api-boundaries` green) added to `world_step_profile.hpp`;
+  `World::getResolvedConfiguration()` exposes them alongside
+  `getLastStepProfile()`. `World::recordResolvedConfiguration()` is called from
+  the bake (`prepareStepPipelineCacheForCurrentConfiguration`) and records the
+  resolved rigid-body, rigid-contact, and multibody families. **Slice 2** —
+  the known silent substitution is now explicit: when the internal AVBD
+  rigid-contact opt-in is present (not facade-selectable; PLAN-091 WP-091.1),
+  the rigid-contact note records a substitution (`requested` =
+  `sequential-impulse`, `resolved` = `… + avbd (opt-in)`, with the reason),
+  and a new `WorldOptions::strictSolverResolution` flag makes
+  `enterSimulationMode` throw on any substitution instead of recording it
+  (default false = record). Additive on the default path — the WP-091.2 golden
+  trajectories are **unchanged** (`test_world_default_step_golden` 3/3) and the
+  126 AVBD/contact cases in `test_world` are unaffected.
+  `tests/unit/simulation/world/test_world_resolved_configuration.cpp` (5 cases:
+  empty before finalize, default families, requested-method reflection, AVBD
+  substitution recorded, strict mode rejects) passes. Gates: `pixi run lint`,
+  `pixi run check-api-boundaries` green. Slices 3–4 (capability-derived
+  schedule / packet serialization) remain.
 
 #### WP-091.12 Single selection idiom
 

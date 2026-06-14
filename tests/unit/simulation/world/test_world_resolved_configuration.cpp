@@ -35,10 +35,16 @@
 // alongside the step profile. Today requested == resolved (no substitution);
 // later slices classify the known silent substitutions.
 
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/comps/rigid_body.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
+#include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <string_view>
@@ -103,4 +109,49 @@ TEST(ResolvedConfiguration, ReflectsRequestedContactMethod)
       = findNote(world.getResolvedConfiguration(), "rigid-contact");
   ASSERT_NE(contact, nullptr);
   EXPECT_EQ(contact->resolved, "boxed-lcp");
+}
+
+namespace {
+
+// Emplace the internal AVBD rigid-contact opt-in on a body. The opt-in is not
+// facade-selectable (PLAN-091 WP-091.1), so the resolved contact path then
+// differs from the requested ContactSolverMethod.
+sx::RigidBody addBodyWithAvbdContactConfig(sx::World& world)
+{
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto body = world.addRigidBody("avbd_body", options);
+  body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  auto& registry = sx::detail::registryOf(world);
+  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(body.getEntity()));
+  return body;
+}
+
+} // namespace
+
+TEST(ResolvedConfiguration, RecordsAvbdContactSubstitution)
+{
+  sx::World world;
+  addBodyWithAvbdContactConfig(world);
+  world.enterSimulationMode();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_TRUE(config.hasSubstitution());
+
+  const auto* contact = findNote(config, "rigid-contact");
+  ASSERT_NE(contact, nullptr);
+  EXPECT_TRUE(contact->isSubstitution());
+  EXPECT_EQ(contact->requested, "sequential-impulse");
+  EXPECT_NE(contact->resolved.find("avbd"), std::string::npos);
+}
+
+TEST(ResolvedConfiguration, StrictResolutionRejectsSubstitution)
+{
+  sx::WorldOptions options;
+  options.strictSolverResolution = true;
+  sx::World world(options);
+  addBodyWithAvbdContactConfig(world);
+
+  EXPECT_THROW(world.enterSimulationMode(), std::exception);
 }

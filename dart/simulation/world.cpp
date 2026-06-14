@@ -2562,6 +2562,7 @@ World::World(const WorldOptions& options)
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
+    m_strictSolverResolution(options.strictSolverResolution),
     m_stepPipelineCache(std::make_unique<StepPipelineCache>())
 {
   DART_SIMULATION_THROW_T_IF(
@@ -2847,10 +2848,10 @@ void World::prepareStepPipelineCacheForCurrentConfiguration()
 //==============================================================================
 void World::recordResolvedConfiguration()
 {
-  // PLAN-091 WP-091.11 slice 1: snapshot the resolved per-domain method
-  // families. Today requested == resolved; later slices record the known
-  // silent substitutions (for example AVBD rigid contact running sequential
-  // impulse) as decisions or strict-mode errors.
+  // PLAN-091 WP-091.11: snapshot the resolved per-domain method families
+  // (requested -> resolved, with reasons). Known silent substitutions are
+  // recorded as substitution notes; under strictSolverResolution they become an
+  // error instead.
   m_resolvedConfiguration.reset();
 
   const char* rigidSolver = "unknown";
@@ -2874,8 +2875,27 @@ void World::recordResolvedConfiguration()
       contactMethod = "boxed-lcp";
       break;
   }
-  m_resolvedConfiguration.notes.push_back(
-      {"rigid-contact", contactMethod, contactMethod, "as requested"});
+  // The internal AVBD rigid-contact opt-in is not facade-selectable (it is
+  // emplaced per body), so when it is present the resolved contact path differs
+  // from the requested `ContactSolverMethod`: configured contacts run AVBD and
+  // the rest fall back to sequential impulse (PLAN-091 WP-091.1). Record that
+  // substitution explicitly instead of letting it happen silently.
+  const detail::WorldRegistry& registry = m_storage->registry;
+  const auto* avbdStorage = registry.storage<comps::RigidAvbdContactConfig>();
+  const bool hasAvbdContactConfigs
+      = avbdStorage != nullptr && avbdStorage->size() != 0u;
+  if (hasAvbdContactConfigs) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact",
+         contactMethod,
+         std::string(contactMethod) + " + avbd (opt-in)",
+         "internal AVBD rigid-contact opt-in active on some bodies; configured "
+         "contacts run AVBD, the rest run sequential impulse (not "
+         "facade-selectable -- PLAN-091 WP-091.1)"});
+  } else {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact", contactMethod, contactMethod, "as requested"});
+  }
 
   const char* multibody = "unknown";
   switch (m_multibodyIntegrationMethod) {
@@ -2888,6 +2908,13 @@ void World::recordResolvedConfiguration()
   }
   m_resolvedConfiguration.notes.push_back(
       {"multibody", multibody, multibody, "as requested"});
+
+  DART_SIMULATION_THROW_T_IF(
+      m_strictSolverResolution && m_resolvedConfiguration.hasSubstitution(),
+      InvalidArgumentException,
+      "strict solver resolution is enabled and the World substituted a solver "
+      "method it did not request; inspect getResolvedConfiguration() for the "
+      "recorded substitution");
 }
 
 //==============================================================================

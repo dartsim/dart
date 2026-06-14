@@ -1050,6 +1050,7 @@ private:
   ContactSolverMethod m_contactSolverMethod{
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
+  bool m_strictSolverResolution{false};
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};
