@@ -6,6 +6,13 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
+Current verified branch state: `avbd/source-row-extraction-precheck` is clean at
+local merge commit `5c43ed6f843`, ahead of
+`origin/avbd/source-row-extraction-precheck` by four commits. PR #2991 still
+reports `DIRTY` on GitHub because the local merge and review-fix commits have
+not been pushed. Pushes, review-thread resolution, PR comments, and review
+re-triggers still require explicit maintainer approval.
+
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
 claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
@@ -29,11 +36,11 @@ The panel label now derives from `max_friction`, the value is recorded in
 retrigger has been performed.
 
 Merge state: `origin/main` at `c4c5ed87eae4` has been merged locally into the
-PR branch after the review-fix commit. The only manual conflict was
-`scripts/capture_py_demo.py`; it was resolved by preserving this branch's
-`--env`/`--metadata` capture overrides and `main`'s visual-verification
-resolved-solver-identity / scene-metrics manifest support. No push has been
-performed.
+PR branch after the review-fix commit and committed as `5c43ed6f843`. The only
+manual conflict was `scripts/capture_py_demo.py`; it was resolved by preserving
+this branch's `--env`/`--metadata` capture overrides and `main`'s
+visual-verification resolved-solver-identity / scene-metrics manifest support.
+No push has been performed.
 
 Validation for the latest local slice:
 
@@ -83,6 +90,18 @@ Post-merge validation after resolving `origin/main`:
 - `pixi run build` passed.
 - `pixi run test-unit` passed, 161 tests.
 - `pixi run lint` passed.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The run
+  overlapped other local DART/CUDA work; slow stages included
+  `test_rigid_ipc_paper_experiments` at 476.51 s, `test_world` at 239.15 s,
+  the simulation-label `test_lcp_jacobi_batch_cuda` at 379.81 s, and the final
+  CUDA smoke `test_lcp_jacobi_batch_cuda` at 380.93 s. The documentation stage
+  retained the existing four `dartpy._world_render_bridge` autodoc warnings but
+  passed.
+- `pixi run pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py::test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env -q`
+  passed, 1 test. This keeps the older numeric-equivalent env Codex review
+  thread covered locally without replying to the bot.
 
 Previous static-position checkpoint validation, before this local slice, is
 retained for context:

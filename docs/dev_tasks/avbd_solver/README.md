@@ -9,6 +9,12 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up (2026-06-14): local branch
+  `avbd/source-row-extraction-precheck` is clean at merge commit
+  `5c43ed6f843`, ahead of `origin/avbd/source-row-extraction-precheck` by four
+  commits. GitHub PR #2991 still shows `DIRTY` because this local merge and the
+  review-fix commit have not been pushed; pushes, review-thread resolution, and
+  review retriggers still require explicit maintainer approval.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
   contact assembly now skips prescribed/static endpoint arm and tangent
   effective-mass work while preserving dynamic endpoint impulse math. This
@@ -32,8 +38,9 @@ Corpus matrix:
   passed `pixi run python -m py_compile scripts/capture_py_demo.py`, focused
   capture and Dynamic Friction Python regressions with explicit build
   `PYTHONPATH`, the focused contact/allocator `test_world` filter,
-  `pixi run build`, `pixi run test-unit`, and `pixi run lint`. No push has
-  been performed.
+  `pixi run build`, `pixi run test-unit`, `pixi run lint`,
+  `pixi run -e cuda test-all`, and the focused numeric-equivalent friction-env
+  packet regression. No push has been performed.
 - Latest local follow-up: PLAN-091 WP-091.1 relabels the AVBD contact-scene
   evidence rows: no `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene
   emplaces the internal AVBD rigid-contact opt-in config
