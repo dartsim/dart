@@ -5693,6 +5693,32 @@ void World::updateDeactivationAfterStep()
     }
   }
 
+  // A contact island may sleep only once its penetration correction has
+  // essentially converged. Mirrors DART 6 (#2920): keep an island awake while
+  // any of its contacts still overlaps beyond this tolerance so bodies are
+  // never frozen mid-interpenetration, including penetration against static
+  // geometry.
+  constexpr double kSleepContactPenetrationTolerance = 1e-3;
+  std::vector<bool> rootPenetrationBlocked(participants.size(), false);
+  for (const auto& contact : contacts) {
+    if (contact.depth <= kSleepContactPenetrationTolerance) {
+      continue;
+    }
+    const auto entityA = deactivationEntityForContactBody(
+        registry, contact.bodyA, rigidSupported, multibodySupported);
+    const auto entityB = deactivationEntityForContactBody(
+        registry, contact.bodyB, rigidSupported, multibodySupported);
+    for (const auto entity : {entityA, entityB}) {
+      if (entity == entt::null) {
+        continue;
+      }
+      const auto index = participantIndex(entity);
+      if (index < participants.size()) {
+        rootPenetrationBlocked[findRoot(index)] = true;
+      }
+    }
+  }
+
   std::map<std::size_t, int> groupIndices;
   int nextGroupIndex = 0;
   std::vector<bool> ready(participants.size(), false);
@@ -5807,7 +5833,7 @@ void World::updateDeactivationAfterStep()
   }
 
   for (const auto& [root, groupIndex] : groupIndices) {
-    bool groupReady = true;
+    bool groupReady = !rootPenetrationBlocked[root];
     std::vector<entt::entity> groupMembers;
     for (std::size_t i = 0; i < participants.size(); ++i) {
       if (findRoot(i) != root) {
