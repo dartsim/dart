@@ -1219,7 +1219,6 @@ class _StandaloneProblemCase:
     name: str
     label: str
     surface: str
-    support_key: str
     challenge: str
     make_problem: Callable[[], tuple[dart.LcpProblem, np.ndarray]]
     tolerance: float = 1e-4
@@ -1852,7 +1851,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="standard_spd",
         label="Standard SPD",
         surface="standard",
-        support_key="standard",
         challenge="well-conditioned exact baseline",
         make_problem=_make_standard_spd_case,
     ),
@@ -1860,7 +1858,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="ill_conditioned_standard",
         label="Ill-conditioned standard",
         surface="standard",
-        support_key="standard",
         challenge="large mass-ratio style conditioning",
         make_problem=_make_ill_conditioned_standard_case,
         tolerance=2e-4,
@@ -1869,7 +1866,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="near_singular_standard",
         label="Near-singular standard",
         surface="standard",
-        support_key="standard",
         challenge="weakly constrained mode with regularization pressure",
         make_problem=_make_near_singular_standard_case,
         tolerance=2e-4,
@@ -1878,7 +1874,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="boxed_active_bounds",
         label="Boxed active bounds",
         surface="boxed",
-        support_key="boxed",
         challenge="mixed lower, interior, and upper active sets",
         make_problem=_make_boxed_active_bounds_case,
         tolerance=2e-4,
@@ -1887,7 +1882,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="mass_ratio_boxed",
         label="Mass-ratio boxed",
         surface="boxed",
-        support_key="boxed",
         challenge="large mass-ratio conditioning with active bounds",
         make_problem=_make_mass_ratio_boxed_case,
         tolerance=5e-4,
@@ -1896,7 +1890,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="singular_degenerate_boxed",
         label="Singular degenerate boxed",
         surface="boxed",
-        support_key="boxed",
         challenge="rank-deficient complementarity with opposing active bounds",
         make_problem=_make_singular_degenerate_boxed_case,
         tolerance=2e-4,
@@ -1905,7 +1898,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="friction_index_contact",
         label="Friction-index contact",
         surface="findex",
-        support_key="findex",
         challenge="normal-scaled tangential friction bounds",
         make_problem=_make_friction_index_contact_case,
     ),
@@ -1913,7 +1905,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="active_friction_index_contact",
         label="Active friction-index contact",
         surface="findex",
-        support_key="findex",
         challenge="two-contact active tangential bounds with coupled normals",
         make_problem=_make_active_friction_index_contact_case,
         tolerance=2e-4,
@@ -1922,7 +1913,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="moderate_scale_standard",
         label="Moderate-scale standard",
         surface="standard",
-        support_key="standard",
         challenge="scalability smoke with banded coupling",
         make_problem=_make_moderate_scale_standard_case,
         tolerance=2e-4,

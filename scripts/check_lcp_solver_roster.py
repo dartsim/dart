@@ -607,7 +607,6 @@ def parse_demo_standalone_problem_case_rows() -> list[dict[str, Any]]:
             "name",
             "label",
             "surface",
-            "support_key",
             "challenge",
             "make_problem",
         )
@@ -631,7 +630,6 @@ def parse_demo_standalone_problem_case_rows() -> list[dict[str, Any]]:
                 "name": _evaluate_demo_expression(keywords["name"], {}),
                 "label": _evaluate_demo_expression(keywords["label"], {}),
                 "surface": _evaluate_demo_expression(keywords["surface"], {}),
-                "support_key": _evaluate_demo_expression(keywords["support_key"], {}),
                 "challenge": _evaluate_demo_expression(keywords["challenge"], {}),
                 "make_problem": make_problem_node.id,
                 "tolerance": (
@@ -944,7 +942,6 @@ def check_demo_standalone_problem_cases() -> None:
         "name",
         "label",
         "surface",
-        "support_key",
         "challenge",
         "make_problem",
         "tolerance",
@@ -976,17 +973,8 @@ def check_demo_standalone_problem_cases() -> None:
             errors.append(f"{case}: missing fields {missing_fields}")
 
         surface = str(row.get("surface", ""))
-        support_key = str(row.get("support_key", ""))
         if surface and surface not in expected_surfaces:
             errors.append(f"{case}: unknown surface {surface!r}")
-        if support_key and support_key not in expected_surfaces:
-            errors.append(f"{case}: unknown support_key {support_key!r}")
-        if surface in expected_surfaces and support_key in expected_surfaces:
-            if surface != support_key:
-                errors.append(
-                    f"{case}: surface {surface!r} does not match "
-                    f"support_key {support_key!r}"
-                )
 
         make_problem = str(row.get("make_problem", ""))
         if make_problem and make_problem not in function_names:

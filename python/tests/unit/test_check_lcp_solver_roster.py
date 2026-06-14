@@ -495,12 +495,11 @@ def test_lcp_solver_roster_reads_demo_standalone_problem_cases() -> None:
 
     assert cases_by_name["standard_spd"]["label"] == "Standard SPD"
     assert cases_by_name["standard_spd"]["surface"] == "standard"
-    assert cases_by_name["standard_spd"]["support_key"] == "standard"
     assert cases_by_name["standard_spd"]["make_problem"] == "_make_standard_spd_case"
     assert cases_by_name["standard_spd"]["tolerance"] == pytest.approx(1e-4)
     assert cases_by_name["mass_ratio_boxed"]["surface"] == "boxed"
     assert cases_by_name["mass_ratio_boxed"]["tolerance"] == pytest.approx(5e-4)
-    assert cases_by_name["friction_index_contact"]["support_key"] == "findex"
+    assert cases_by_name["friction_index_contact"]["surface"] == "findex"
     assert cases_by_name["active_friction_index_contact"]["challenge"] == (
         "two-contact active tangential bounds with coupled normals"
     )
@@ -516,7 +515,6 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
             "name": "duplicate_case",
             "label": "Duplicate case",
             "surface": "standard",
-            "support_key": "boxed",
             "challenge": "",
             "make_problem": "_missing_case",
             "tolerance": 0.0,
@@ -525,7 +523,6 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
             "name": "duplicate_case",
             "label": "Duplicate case",
             "surface": "mystery",
-            "support_key": "unknown",
             "challenge": "stale metadata",
             "make_problem": "_make_standard_spd_case",
             "tolerance": float("nan"),
@@ -554,10 +551,8 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
     assert "duplicate standalone problem names ['duplicate_case']" in message
     assert "duplicate standalone problem labels ['Duplicate case']" in message
     assert "duplicate_case: missing fields ['challenge']" in message
-    assert "surface 'standard' does not match support_key 'boxed'" in message
     assert "unknown make_problem function '_missing_case'" in message
     assert "unknown surface 'mystery'" in message
-    assert "unknown support_key 'unknown'" in message
     assert "tolerance must be positive and finite" in message
     assert "missing representative surfaces ['boxed', 'findex']" in message
 
