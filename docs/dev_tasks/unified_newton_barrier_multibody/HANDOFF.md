@@ -1,5 +1,44 @@
 # Unified Newton-Barrier Handoff
 
+## Interval-Reference CCD Line-Search Follow-up (2026-06-13)
+
+Work now continues locally on
+`simx/plan083-rigid-curved-ccd-worldstep-followup`, branched from local
+checkpoint branch `simx/plan083-curved-ccd-reference-packet`. The checkpoint
+branch remains available as the potential milestone PR branch; this follow-up
+branch is local-only and has not been pushed. Keep all remaining PLAN-083
+follow-up work consolidated on the follow-up branch unless the maintainer
+chooses to publish the checkpoint branch first; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This slice adds parameter-box interval reference counters beside the existing
+continuous curved rigid IPC ACCD prefix counters for sampled rigid-curved
+point-triangle and edge-edge CCD/line-search rows. The full CUDA packet run
+records 512 interval reference prefix pairs, 384 interval reference hits, zero
+hit mismatches, zero sampled-interval-reference overshoot, and
+`max_sampled_interval_reference_conservative_gap=0.041665077209472656`. The
+top-level packet still covers 266,240 pairs and 1,183,744 sampled/evaluated
+segments with `max_result_abs_error=5.551115123125783e-17` and
+`speedup=0.43369838227282087x` (`meets_speedup_gate=false`).
+
+This is still reduced packet/reference evidence only. It does not prove a
+production analytic curved CCD backend, production scene-level line search
+inside `World::step`, GPU `World::step`, or any runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_ccd_line_search_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `git diff --check`
+- `pixi run -e cuda python scripts/write_plan083_gpu_ccd_line_search_packet.py --benchmark-min-time 0.01s --benchmark-repetitions 3 --benchmark-json .benchmark_results/plan083/gpu/ccd_line_search_benchmark.json --output .benchmark_results/plan083/gpu/ccd_line_search_parity.json`
+- `pixi run lint`
+- `pixi run test-all`
+- `pixi run -e cuda test-all`
+
 ## Curved-Reference CCD Line-Search Packet Checkpoint (2026-06-13)
 
 After PR #2978 merged into `origin/main` at `5bf908100da4` and the remote

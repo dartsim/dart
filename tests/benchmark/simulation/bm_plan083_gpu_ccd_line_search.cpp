@@ -133,6 +133,12 @@ struct RigidCurvedCcdFixture
   double analyticReferenceMinStepBound = 1.0;
   double maxSampledReferenceOvershoot = 0.0;
   double maxSampledReferenceConservativeGap = 0.0;
+  std::size_t intervalReferencePairCount = 0;
+  std::size_t intervalReferenceHitCount = 0;
+  std::size_t intervalReferenceHitMismatchCount = 0;
+  double intervalReferenceMinStepBound = 1.0;
+  double maxSampledIntervalReferenceOvershoot = 0.0;
+  double maxSampledIntervalReferenceConservativeGap = 0.0;
 };
 
 void setVec3(double values[3], const Eigen::Vector3d& vector)
@@ -426,6 +432,40 @@ void recordRigidCurvedAnalyticReference(
       fixture.maxSampledReferenceConservativeGap, reference - sampledStepBound);
 }
 
+template <typename Pair>
+void recordRigidCurvedIntervalReference(
+    RigidCurvedCcdFixture<Pair>& fixture,
+    const bool referenceHit,
+    const double referenceStepBound)
+{
+  const std::size_t referenceIndex = fixture.intervalReferencePairCount;
+  ++fixture.intervalReferencePairCount;
+
+  const bool sampledHit = fixture.cpuHits[referenceIndex] != 0u;
+  if (referenceHit) {
+    ++fixture.intervalReferenceHitCount;
+    fixture.intervalReferenceMinStepBound = std::min(
+        fixture.intervalReferenceMinStepBound,
+        std::clamp(referenceStepBound, 0.0, 1.0));
+  }
+  if (sampledHit != referenceHit) {
+    ++fixture.intervalReferenceHitMismatchCount;
+    return;
+  }
+  if (!referenceHit) {
+    return;
+  }
+
+  const double sampledStepBound = fixture.cpuStepBounds[referenceIndex];
+  const double reference = std::clamp(referenceStepBound, 0.0, 1.0);
+  fixture.maxSampledIntervalReferenceOvershoot = std::max(
+      fixture.maxSampledIntervalReferenceOvershoot,
+      sampledStepBound - reference);
+  fixture.maxSampledIntervalReferenceConservativeGap = std::max(
+      fixture.maxSampledIntervalReferenceConservativeGap,
+      reference - sampledStepBound);
+}
+
 sx::DeformableBodyOptions makeSceneRuntimeCcdBodyOptions(const int sampleCount)
 {
   const int groupCount = std::max(1, static_cast<int>(std::sqrt(sampleCount)));
@@ -685,6 +725,21 @@ makeRigidCurvedPointTriangleFixture(const int trajectoryCount)
         reference);
     recordRigidCurvedAnalyticReference(
         fixture, referenceHit, reference.timeOfImpact);
+
+    native::CcdPrimitiveResult intervalReference;
+    const bool intervalReferenceHit = rigid::rigidIpcPointTriangleIntervalCcd(
+        localPoint,
+        pointPoseStart,
+        pointPoseEnd,
+        a,
+        b,
+        c,
+        trianglePose,
+        trianglePose,
+        referenceOption,
+        intervalReference);
+    recordRigidCurvedIntervalReference(
+        fixture, intervalReferenceHit, intervalReference.timeOfImpact);
   }
 
   return fixture;
@@ -767,6 +822,21 @@ makeRigidCurvedEdgeEdgeFixture(const int trajectoryCount)
         reference);
     recordRigidCurvedAnalyticReference(
         fixture, referenceHit, reference.timeOfImpact);
+
+    native::CcdPrimitiveResult intervalReference;
+    const bool intervalReferenceHit = rigid::rigidIpcEdgeEdgeIntervalCcd(
+        localA0,
+        localA1,
+        edgePoseStart,
+        edgePoseEnd,
+        staticB0,
+        staticB1,
+        staticPose,
+        staticPose,
+        referenceOption,
+        intervalReference);
+    recordRigidCurvedIntervalReference(
+        fixture, intervalReferenceHit, intervalReference.timeOfImpact);
   }
 
   return fixture;
@@ -896,6 +966,18 @@ void recordRigidCurvedCounters(
       = fixture.maxSampledReferenceOvershoot;
   state.counters["max_sampled_reference_conservative_gap"]
       = fixture.maxSampledReferenceConservativeGap;
+  state.counters["interval_reference_pairs"]
+      = static_cast<double>(fixture.intervalReferencePairCount);
+  state.counters["interval_reference_hits"]
+      = static_cast<double>(fixture.intervalReferenceHitCount);
+  state.counters["interval_reference_hit_mismatches"]
+      = static_cast<double>(fixture.intervalReferenceHitMismatchCount);
+  state.counters["interval_reference_min_step_bound"]
+      = fixture.intervalReferenceMinStepBound;
+  state.counters["max_sampled_interval_reference_overshoot"]
+      = fixture.maxSampledIntervalReferenceOvershoot;
+  state.counters["max_sampled_interval_reference_conservative_gap"]
+      = fixture.maxSampledIntervalReferenceConservativeGap;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(
           state.iterations() * fixture.segmentPairs.size()));
