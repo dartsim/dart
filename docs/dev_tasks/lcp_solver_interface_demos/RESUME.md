@@ -1,5 +1,72 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Profile Evidence Support Diagnostics
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`; do not add it to the checkpoint PR
+   unless the maintainer explicitly chooses that scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   diagnostics cleanup does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `c7f26bce76b Clarify LCP evidence form support schema`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+
+What this checkpoint changes:
+
+- `scripts/lcp_performance_profile.py` now distinguishes invalid native form
+  support counters from an invalid concrete `solver_supports_problem` counter
+  when writing profile evidence CSV rows.
+- `python/tests/unit/test_lcp_performance_profile.py` now locks both diagnostic
+  paths so future profile-writer changes cannot collapse them back into a
+  generic solver-support error.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, demo runtime
+  behavior, bindings, stubs, or public APIs.
+
+Verification completed for this checkpoint:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q -k current_schema_counters
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+```
+
+Result:
+
+- Focused current-schema counter diagnostics passed with 6 tests and 62
+  deselected.
+- Full LCP performance profile unit test file passed with 68 tests.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Evidence Schema Form Support Naming
 
 This is the latest hand-off. Older sections below are historical checkpoints
