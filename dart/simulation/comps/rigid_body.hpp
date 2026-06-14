@@ -48,7 +48,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct RigidBodyTag
 {
-  DART_SIMULATION_TAG_COMPONENT(RigidBodyTag);
+  DART_SIMULATION_TAG_COMPONENT(RigidBodyTag, "comps.RigidBodyTag");
 };
 
 /// Tag marking a rigid body as static (immovable): no gravity, no integration,
@@ -57,7 +57,7 @@ struct RigidBodyTag
 /// **Internal Implementation Detail** - Not exposed in public API
 struct StaticBodyTag
 {
-  DART_SIMULATION_TAG_COMPONENT(StaticBodyTag);
+  DART_SIMULATION_TAG_COMPONENT(StaticBodyTag, "comps.StaticBodyTag");
 };
 
 /// Tag marking a rigid body as kinematic (prescribed motion): the rigid IPC

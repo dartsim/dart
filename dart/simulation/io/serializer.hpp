@@ -276,6 +276,8 @@ public:
     } else {
       registry.emplace<ComponentT>(entity, std::move(component));
     }
+
+    postLoadComponent(entity, registry, formatVersion);
   }
 
   bool hasComponent(
@@ -299,6 +301,21 @@ protected:
   {
     (void)formatVersion;
     loadComponent(in, component);
+  }
+
+  // Hook run after the component has been emplaced, with access to the owning
+  // entity and registry. Used by migrations that need to materialize sibling
+  // components from legacy in-record fields (e.g. moving the Joint AVBD
+  // stiffness into a separate AvbdJointStiffness component). The default is a
+  // no-op.
+  virtual void postLoadComponent(
+      entt::entity entity,
+      ::dart::simulation::detail::WorldRegistry& registry,
+      std::uint32_t formatVersion) const
+  {
+    (void)entity;
+    (void)registry;
+    (void)formatVersion;
   }
 };
 

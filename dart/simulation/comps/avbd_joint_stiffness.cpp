@@ -30,23 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/simulation/comps/component_category.hpp>
+#include "dart/simulation/io/category_serializer.hpp"
+#include "joint.hpp"
 
 namespace dart::simulation::comps {
 
-/// Per-body contact material parameters consumed by the contact solver.
-///
-/// **Internal Implementation Detail** - Not exposed in public API. The public
-/// surface is the rigid-body restitution/friction accessors. Defaults match the
-/// behavior of a body with no material attached: no bounce, friction one.
-struct ContactMaterial
-{
-  DART_SIMULATION_PROPERTY_COMPONENT(ContactMaterial, "comps.ContactMaterial");
-
-  double restitution = 0.0;
-  double friction = 1.0;
-};
+DART_SIMULATION_REGISTER_COMPONENT(AvbdJointStiffness)
 
 } // namespace dart::simulation::comps

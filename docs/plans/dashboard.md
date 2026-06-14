@@ -33,16 +33,18 @@ its own line so status updates remain git-history friendly.
   `test_world_default_step_golden` locks the default `World::step` over a
   three-scene matrix with a two-oracle design (analytical closed-form/physical
   invariants plus the committed-snapshot behavior lock), so the refactor-heavy
-  WS1+ packets now have behavior-lock evidence to diff against. Execute the
-  remaining WS0 evidence-integrity packets in plan document order: WP-091.3
-  architecture-claim lint (next available; acceptance-criteria clarified —
-  adds test citations to the marked rows before linting them), WP-091.4 legacy
-  freeze (blocked: PLAN-042 Decision 5 has no recorded maintainer direction
-  yet), WP-091.5 plan-ID renumber (PLAN-080 and PLAN-082 collisions confirmed
-  real; the packet hazard owns the exact `git grep` scope across docs and
-  code). Then
-  open WS1 with WP-091.10 (virtual finalize/prepare on the stage contract).
-  Packets are
+  WS1+ packets now have behavior-lock evidence to diff against. WP-091.3
+  architecture-claim lint (PR #2999) cites a DART-owned test for every
+  ✅-available architecture-page claim and adds `check-architecture-page` to
+  enforce it. WP-091.5 plan-ID renumber resolved the collisions: the
+  Linear-Time Variational Integrator is now `PLAN-084` and the Performance
+  Dashboard `PLAN-092`, guarded by a `check_plan_id_uniqueness` docs-policy
+  check. The remaining WS0 packet is WP-091.4 legacy freeze, which stays
+  **blocked**: PLAN-042 Decision 5 (which DART 6 surfaces are
+  removed/quarantined/wrapped/promoted) has no recorded maintainer direction
+  yet, so it needs a maintainer decision before it can be executed. With WS0
+  otherwise closed, open WS1 with WP-091.10 (virtual finalize/prepare on the
+  stage contract). Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
   and picked up via `dart-execute-packet`; availability follows each packet's
   own Dependencies line. The standing rule applies now: new solver-family
@@ -1238,10 +1240,10 @@ its own line so status updates remain git-history friendly.
   `pixi run lint`, `pixi run build`, focused C++/Python tests, benchmark smokes,
   `check-api-boundaries`, and relevant CUDA gates green.
 
-### PLAN-082: Linear-Time Variational Integrator
+### PLAN-084: Linear-Time Variational Integrator
 
 - Owner doc:
-  [`082-variational-integrator-solver.md`](082-variational-integrator-solver.md)
+  [`084-variational-integrator-solver.md`](084-variational-integrator-solver.md)
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
@@ -1303,7 +1305,7 @@ its own line so status updates remain git-history friendly.
   group/mask filtering, broad-phase overlays, focused registry/debug-snapshot
   tests, and CTest-gated headless screenshot smoke coverage.
 
-### PLAN-080: Performance Dashboard
+### PLAN-092: Performance Dashboard
 
 - Owner doc:
   [`../readthedocs/community/performance_dashboard.rst`](../readthedocs/community/performance_dashboard.rst)

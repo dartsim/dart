@@ -1,8 +1,8 @@
-# PLAN-082 Sidecar: Contact, Friction & Inequality-Constraint Roadmap
+# PLAN-084 Sidecar: Contact, Friction & Inequality-Constraint Roadmap
 
-Roadmap for extending the variational integrator (PLAN-082) to contact and
+Roadmap for extending the variational integrator (PLAN-084) to contact and
 friction. The source paper (`lee-vi-2016`) handles only joint equality
-constraints; closed loops are PLAN-082 Phase B2. The original Phase C work was
+constraints; closed loops are PLAN-084 Phase B2. The original Phase C work was
 go/no-go gated; the current status is that C1-C3 landed for the scoped envelope
 (ground points, lagged friction, augmented-Lagrangian centering, and a
 sphere-sphere link slice), while arbitrary link geometry and the optional C4 hard
@@ -47,7 +47,7 @@ the main prerequisite before broadening the envelope.
 | **C4** | **Hard IPC log-barrier** (only if a guaranteed intersection-free articulated solver is required). Reuse DART's `barrier_kernel.hpp`, `primitive_distance.hpp`, tangent stencils, CCD; inject per-contact barrier curvature as local articulated stiffness into the ABI pass + mandatory CCD-filtered line search. | Symplectic (smooth potential) but step sizes shrink near contact. | **High / research.** No published precedent for an IPC barrier inside an O(n) recursive articulated quasi-Newton VI. Prototype on sparse contact and measure before committing. |
 
 Equality constraints (loop closures) are **not** a contact rung — they are
-PLAN-082 Phase B2 (a constraint Jacobian + impulse-based constraint solve), the
+PLAN-084 Phase B2 (a constraint Jacobian + impulse-based constraint solve), the
 natural precursor that proves the "constraints-as-impulses-in-RIQN" mechanism
 before inequality contact builds on it.
 

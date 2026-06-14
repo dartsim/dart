@@ -27,9 +27,9 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/multibody/link.hpp>
@@ -5727,7 +5727,6 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
-  joint.hasAvbdStiffnessState = false;
 
   ASSERT_TRUE(
       vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(

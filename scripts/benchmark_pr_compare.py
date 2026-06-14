@@ -7,10 +7,10 @@ baseline (the ``data.js`` that ``benchmark-action/github-action-benchmark`` writ
 to the ``gh-pages`` branch). Emits a Markdown comment with a stable marker so the
 PR workflow can create-or-update a single comment in the review thread.
 
-This is a read-only consumer of the dashboard's gh-pages history (PLAN-080); it
+This is a read-only consumer of the dashboard's gh-pages history (PLAN-092); it
 never writes benchmark history. The reconciliation decision behind it (extend the
 dashboard infra rather than stand up a parallel pipeline) lives in
-``docs/plans/dashboard.md`` (PLAN-080).
+``docs/plans/dashboard.md`` (PLAN-092).
 """
 
 from __future__ import annotations

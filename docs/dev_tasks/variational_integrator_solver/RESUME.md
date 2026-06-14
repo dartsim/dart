@@ -1,10 +1,10 @@
-# Resume: Variational Integrator Solver (PLAN-082)
+# Resume: Variational Integrator Solver (PLAN-084)
 
 > **Canonical roadmap is the [README North Star + Gaps](README.md#north-star).**
 > This file is the fast-resume snapshot; the README is the source of truth for
 > _what_ is done and _what_ remains. Graduation status lives in
 > [`graduation-criteria.md`](graduation-criteria.md); the contact sequencing in
-> [`../../plans/082-variational-integrator-solver/contact-roadmap.md`](../../plans/082-variational-integrator-solver/contact-roadmap.md).
+> [`../../plans/084-variational-integrator-solver/contact-roadmap.md`](../../plans/084-variational-integrator-solver/contact-roadmap.md).
 
 Branch/PR details below are historical handoff evidence, not current checkout
 instructions. Live status should be read from the README, the graduation

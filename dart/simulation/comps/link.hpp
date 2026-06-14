@@ -51,7 +51,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Link
 {
-  DART_SIMULATION_STATE_COMPONENT(Link);
+  DART_SIMULATION_STATE_COMPONENT(Link, "comps.Link");
 
   using EntityVector
       = std::vector<entt::entity, dart::common::StlAllocator<entt::entity>>;
