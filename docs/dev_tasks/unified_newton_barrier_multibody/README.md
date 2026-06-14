@@ -2,6 +2,510 @@
 
 ## Current Status
 
+Latest edge-edge Hessian PSD checkpoint (2026-06-12): the latest
+`origin/main` has been merged into
+`simx/plan083-gpu-contact-candidate-packet`, bringing in the DART 7
+architecture hardening/work-packet harness from PR #2986. Continue to keep
+PLAN-083 follow-up work consolidated on PR #2978; do not push, PR-comment,
+resolve review threads, trigger CI, open or close PRs, delete branches, or
+claim unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private barrier/friction packet with the missing
+edge-edge Hessian PSD-projection benchmark row. Fresh packet evidence records
+59,578 active edge-edge PSD-projection barriers with
+`max_result_abs_error=4.334310688136611e-13`,
+`psd_projection_ns=121906741.0`, and `speedup=2.045170785242439x`. The
+conditioned edge-edge primitive Hessian row remains covered with
+`max_result_abs_error=3.623767952376511e-13`; the scene-owned edge-edge runtime
+row still consumes 1,536 runtime edge-edge candidates from one DART `World`
+deformable surface and records 1,280 active barriers with
+`max_result_abs_error=2.220446049250313e-15`. The top-level barrier/friction
+packet records `speedup=0.17984862275960234x`
+(`meets_speedup_gate=false`), so the durable GPU packet row remains
+`in-progress`.
+
+Resumed barrier-Hessian packet checkpoint (2026-06-12): the maintainer gave a
+fresh `continue` instruction after the stop-only handoff. Work may resume
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, while
+keeping all remaining PLAN-083 work consolidated on this single branch/PR. Do
+not push, PR-comment, resolve review threads, trigger CI, open or close PRs,
+delete branches, or clean branches without explicit maintainer approval.
+
+This resume validated the uncommitted scene-owned point-triangle, point-edge,
+and point-point barrier-Hessian packet checkpoint and refreshed the packet
+evidence. The latest generated packet records 512 scene-owned point-triangle
+candidates, 1,536 scene-derived point-edge candidates, and 1,536
+scene-derived point-point candidates from one deformable scene body with 2,560
+nodes and 768 surface triangles. CPU/GPU barrier-Hessian parity holds within
+`1.7763568394002505e-15` for the point-triangle runtime row,
+`8.881784197001252e-16` for the point-edge runtime row, and `0` for the
+point-point runtime row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2016402329495093x` (`meets_speedup_gate=false`).
+
+Stop-only handoff (2026-06-12): the maintainer explicitly stopped further
+implementation and verification here. Do not continue work, run validation,
+push, PR-comment, resolve review threads, trigger CI, open or close PRs,
+delete branches, or clean branches unless the maintainer gives a new resume
+instruction. Resume context remains
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978; the working tree
+intentionally contains uncommitted handoff/state changes plus the latest
+scene-owned point-triangle barrier-Hessian packet work.
+
+Scene-owned runtime barrier-Hessian checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on that single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval.
+
+This checkpoint adds reduced scene-owned point-triangle, point-edge, and
+point-point barrier-Hessian runtime rows to the private GPU barrier/friction
+packet. The benchmark builds one DART `World` deformable surface, extracts
+motion-aware point-triangle contact candidates from the runtime scene surface,
+expands each candidate over its three triangle edges for the point-edge row and
+over its three triangle vertices for the point-point row, evaluates the
+candidate barrier Hessians on CPU and CUDA, and records scene body/node/triangle
+counts.
+
+Fresh packet evidence records 512 scene-owned point-triangle candidates, 1,536
+scene-derived point-edge candidates, and 1,536 scene-derived point-point
+candidates from one deformable scene body with 2,560 nodes and 768 surface
+triangles. CPU/GPU barrier-Hessian parity holds within
+`1.7763568394002505e-15` for the point-triangle runtime row,
+`8.881784197001252e-16` for the point-edge runtime row, and `0` for the
+point-point runtime row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2016402329495093x` (`meets_speedup_gate=false`). This is reduced
+scene-owned point-triangle, point-edge, and point-point barrier-Hessian evidence
+only: broader sparse Hessian assembly, additional runtime rows, full GPU
+`World::step`, and speedup-gate completion remain future work.
+
+Latest validation passed:
+
+- focused barrier/friction packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
+Scene-owned runtime sweep checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on that single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval.
+
+This checkpoint adds reduced scene-owned point-triangle and edge-edge runtime
+sweep broad-phase packet rows. The benchmark builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, runs private device-sorted swept-AABB
+sweep-and-prune rows on that scene-owned surface, and records `scene_body_count`
+for the CPU/GPU rows.
+
+Fresh packet evidence records exact CPU/GPU endpoint-distance parity within
+`5.551115123125783e-17`. The point-triangle scene sweep covers 1,966,080
+possible pairs over 2,560 points and 768 triangles, emits 512 compact
+candidates, and records `speedup=0.07057754068474563x`. The edge-edge scene
+sweep covers 5,308,416 possible pairs over 2,304 surface edges, emits 1,536
+compact candidates, and records `speedup=0.06350297113311432x`. The top-level
+contact-candidate packet now records `candidate_pair_count=7667712` and
+`speedup=0.024497841563440446x` (`meets_speedup_gate=false`). This is reduced
+scene-owned sweep evidence only: full runtime scene filtering, GPU
+`World::step` contact candidate construction, and speedup-gate completion
+remain future work.
+
+Latest validation passed:
+
+- focused contact-candidate packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit` (161/161)
+
+Current continuation handoff (2026-06-12): work has resumed after the prior
+maintainer stop-only handoff. Continue only from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083 work
+consolidated on that branch/PR, and inspect `HANDOFF.md`, `git status -sb`,
+and the local commit log before doing anything else. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, or delete branches
+without explicit maintainer approval.
+
+Resumed continuation handoff (2026-06-12): work resumed after the prior
+stop-only handoff. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083
+follow-up consolidated there, and read `HANDOFF.md` first. Do not push,
+PR-comment, resolve review threads, trigger CI, open another PLAN-083 PR, or
+delete branches without explicit maintainer approval.
+
+Validated sweep broad-phase checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added private CUDA
+swept-AABB sweep-and-prune packets for point-triangle and edge-edge candidate
+construction. The packet now device-builds swept primitive AABBs, device-sorts
+them by the CPU sweep key, and deterministically counts/scatters compact
+overlap candidates in CPU sweep order.
+
+Fresh packet evidence records `candidate_pair_count=393216`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.03107190750809115x` (`meets_speedup_gate=false`). The
+point-triangle sweep broad-phase row covers 65,536 pair capacity over 256
+points and 256 triangles, emits 256 compact candidates, and records
+`speedup=0.03107190750809115x`; the edge-edge sweep broad-phase row covers
+65,536 pair capacity over 256 edges, emits 128 compact candidates, and records
+`speedup=0.03286696141763437x`. This is private reduced broad-phase evidence
+only: scene-owned GPU candidate buffers, runtime scene filtering, and the
+speedup gate remain future work.
+
+Scene-owned runtime candidate-buffer checkpoint (2026-06-12): work continued on
+the same consolidated branch/PR and added reduced scene-owned runtime
+candidate-buffer packet rows. The benchmark now builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, reuses the CPU motion-aware sweep builder for
+candidate keys, and evaluates the compact point-triangle and edge-edge
+candidate buffers on CPU and CUDA.
+
+Fresh packet evidence records one scene body, 512 point-triangle candidates
+over 2,560 points and 768 triangles, and 1,536 edge-edge candidates over 2,304
+surface edges. CPU/GPU endpoint-distance parity remains exact within
+`5.551115123125783e-17`, but the top-level packet speedup is
+`0.017259032907863573x` (`meets_speedup_gate=false`). This is reduced
+scene-owned runtime-buffer evidence only: runtime scene filtering, GPU
+`World::step`, and speedup-gate completion remain future work.
+
+Latest validation passed:
+
+- focused contact-candidate packet pytest
+- focused contact-candidate/GPU-parity/audit pytest trio (18 passed)
+- `git diff --check`
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- PLAN-083 GPU parity/completion-audit checkers
+- `pixi run build`
+- `pixi run test-unit` (161/161)
+
+Validated runtime sweep-buffer checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added private CUDA
+evaluators for compact point-triangle and edge-edge candidate buffers produced
+by the CPU motion-aware sweep builder. The packet rows recompute endpoint
+squared-distance metadata on the GPU for compact runtime sweep candidate keys:
+512 point-triangle candidates over 2,560 points and 768 triangles, plus 1,536
+edge-edge candidates over 2,304 surface edges.
+
+Fresh local packet evidence records `candidate_pair_count=262144`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.11821712677569206x` (`meets_speedup_gate=false`). The runtime
+point-triangle sweep-buffer row records `speedup=0.11821712677569206x`; the
+runtime edge-edge sweep-buffer row records `speedup=0.28057906386249953x`.
+This is runtime-buffer parity evidence only: GPU sweep-and-prune broad-phase
+sorting, scene-owned GPU candidate buffers, runtime scene filtering, and the
+speedup gate remain future work.
+
+Validation passed: focused contact-candidate packet pytest, PLAN-083 GPU
+parity/completion-audit checkers, focused contact-candidate/GPU-parity/audit
+pytest trio, `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run check-api-boundaries`, `pixi run -e cuda build-cuda Release`,
+`pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
+Latest compacted-distance candidate-buffer checkpoint (2026-06-12): work
+resumed after the stop-only handoff. Keep all remaining PLAN-083 work
+consolidated on `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). This checkpoint
+builds on `f7ee131c457 Add swept contact candidate packet parity` and adds
+compacted per-candidate distance metadata to the private GPU
+contact-candidate buffers. Static point-triangle and edge-edge candidate-mask
+packets now compact squared-distance metadata next to accepted primitive ids;
+swept point-triangle and edge-edge candidate-list packets now compact endpoint
+squared-distance metadata next to accepted primitive ids.
+
+The regenerated contact-candidate packet records `compacted_distance_count`
+for all four candidate-construction rows: 192 static point-triangle candidates,
+96 static edge-edge candidates, 256 swept point-triangle candidates, and 128
+swept edge-edge candidates. The top-level packet still has
+`candidate_pair_count=262144`, `max_result_abs_error=0`, and
+`speedup=0.32965959230892933x` (`meets_speedup_gate=false`), so the row stays
+`in-progress`. This is runtime-buffer prerequisite evidence, not
+sweep-and-prune broad-phase sorting, runtime scene filtering, or speedup-gate
+completion.
+
+Validation for this checkpoint passed focused contact-candidate packet pytest,
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest,
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`, the PLAN-083 GPU
+parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio, `pixi run lint`,
+`pixi run build`, and `pixi run test-unit` (161/161).
+
+Before any future push, merge latest `origin/main` into this published branch,
+rerun the required gates, and push only with explicit maintainer approval.
+
+Resumed swept-AABB validation checkpoint (2026-06-12): after the stop-only
+handoff, this session resumed under the active PLAN-083 goal and validated the
+swept-AABB contact-candidate packet slice locally. Keep all remaining PLAN-083
+work consolidated on `simx/plan083-gpu-contact-candidate-packet` / PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+comment on PRs, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+Validation for the resumed checkpoint passed focused packet pytest (7 tests),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. Before
+any future push, merge latest `origin/main` into this published branch, rerun
+required gates, and get explicit maintainer approval.
+
+Latest swept-AABB candidate-list checkpoint (2026-06-12): implementation
+continued on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added
+private motion-aware point-triangle and edge-edge swept-AABB candidate-list
+packets. The checkpoint adds
+`buildSweptPointTriangleContactCandidateMaskCuda()` and
+`buildSweptEdgeEdgeContactCandidateMaskCuda()`, rejects incident/duplicate
+pairs, records minimum endpoint squared-distance metadata, and compacts
+accepted pair ids on the device before readback. This moves the
+contact-candidate packet beyond static all-pairs distance masks while keeping
+sweep-and-prune sorting and runtime scene candidate buffers as future work.
+
+The regenerated packet records exact parity for the existing stencil and
+all-pairs rows plus 65,536 swept-AABB point-triangle pairs and 65,536
+swept-AABB edge-edge pairs. The swept point-triangle row records
+`accepted_count=256`, `compacted_count=256`,
+`compacted_triangle_count=256`, `max_result_abs_error=0`, and
+`speedup=0.5141495691008232x`. The swept edge-edge row records
+`accepted_count=128`, `compacted_edge_a_count=128`,
+`compacted_edge_b_count=128`, `max_result_abs_error=0`, and
+`speedup=0.2686885092103126x`. The top-level contact-candidate packet records
+`candidate_pair_count=262144` and `speedup=0.2686885092103126x`
+(`meets_speedup_gate=false`). This remains reduced private packet evidence
+only; sweep-and-prune broad-phase sorting, runtime candidate buffers, and the
+speedup gate remain future work.
+
+Latest edge-edge candidate-mask checkpoint (2026-06-12): implementation
+resumed on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and
+validated the private edge-edge all-pairs contact-candidate mask packet. The
+checkpoint adds `buildEdgeEdgeContactCandidateMaskCuda()`, rejects
+self/duplicate/incident edge pairs, compacts accepted edge-slot pairs on the
+device, extends focused CUDA unit coverage, and updates the contact-candidate
+benchmark/packet writer to require
+`candidate_construction.edge_edge_all_pairs_mask`.
+
+The regenerated packet records exact parity for 65,536 point-triangle stencils,
+65,536 edge-edge stencils, a 65,536-pair point-triangle all-pairs mask, and a
+65,536-pair edge-edge all-pairs mask. The edge-edge mask row records
+`edge_count=256`, `accepted_count=96`, `compacted_edge_a_count=96`,
+`compacted_edge_b_count=96`, `max_result_abs_error=0`, and
+`speedup=0.6679555059736084x`; the top-level contact-candidate packet records
+`speedup=0.37765557710841663x` (`meets_speedup_gate=false`). This remains
+reduced private packet evidence only; sweep broad-phase construction, runtime
+candidate-list construction, and the speedup gate remain future work.
+
+Validation for this checkpoint passed focused packet pytest (7 tests), the
+PLAN-083 GPU parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio (16 passed),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
+Latest continuation checkpoint (2026-06-12): implementation resumed on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this consolidated branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+The latest checkpoint replaces the committed serial device compaction kernel
+with deterministic block-prefix CUDA compaction for the private point-triangle
+all-pairs candidate-mask packet. It uses block-local accepted counts, a small
+block-offset prefix pass, and a stable block-local scatter so compacted
+point/triangle lists stay in deterministic pair order. This is reduced private
+packet evidence only: it does not claim sweep broad-phase construction,
+runtime candidate-list construction, or a top-level contact-candidate
+speedup-gate completion.
+
+Validation for this checkpoint passed `pixi run lint`, `pixi run build`,
+`pixi run test-unit` (161/161), `pixi run build-simulation-tests`,
+`pixi run test-simulation` (65/65), `pixi run check-api-boundaries`, the
+PLAN-083 GPU parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio (15 passed),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
+packet records `accepted_count=192`, `compacted_count=192`,
+`compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
+`speedup=0.9911014836006811x`, and top-level contact-candidate packet
+`speedup=0.4065799369175524x` (`meets_speedup_gate=false`). Before any future
+push, merge latest `origin/main` into this published branch, rerun required
+gates, and push only with explicit maintainer approval.
+
+Previous readback-compaction checkpoint (2026-06-11): implementation resumed on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this consolidated branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+That checkpoint builds on
+`bed8ab7569b Add point-triangle candidate mask packet parity` by adding
+compacted point-triangle candidate-pair metadata after GPU mask readback. The
+contact-candidate CUDA result now records accepted point/triangle index lists,
+the benchmark emits `gpu_compacted_count`, and the packet writer/test require
+the compacted count to match the accepted count. This is reduced private packet
+evidence only: it does not claim sweep broad-phase construction, runtime
+candidate-list construction, or a contact-candidate speedup-gate completion.
+
+Validation for this checkpoint passed focused contact-candidate packet pytest
+(5 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
+packet records `accepted_count=192`, `compacted_count=192`,
+`max_result_abs_error=0`, candidate-mask `speedup=1.5943055078570016x`, and
+top-level contact-candidate packet `speedup=0.35669978298935295x`
+(`meets_speedup_gate=false`). Before any future push, merge latest
+`origin/main` into this published branch, rerun required gates, and push only
+with explicit maintainer approval.
+
+Earlier continuation state (2026-06-11): implementation resumed after the
+stop-only handoff. Resume only from
+`simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+PR-comment, resolve review threads, or trigger CI without explicit maintainer
+approval.
+
+Current branch shape for a fresh session:
+
+- Last observed pushed head:
+  `6746b63973d Record point-point barrier Hessian packet evidence`.
+- Local committed checkpoints ahead of origin:
+  `48dcfb515cf Add point-edge barrier Hessian packet parity`,
+  `1dfb21b24da Add point-triangle barrier Hessian packet parity`,
+  `1022b609f8c Add point-triangle Hessian PSD packet parity`, and
+  `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`,
+  followed by
+  `e41941db91c Add off-diagonal sparse block assembly packet parity`.
+- The preceding committed checkpoint adds a reduced pair-slot off-diagonal
+  sparse-block assembly packet under the private Newton assembly/solve CUDA
+  packet. The current checkpoint adds a private CUDA
+  point-triangle all-pairs candidate mask to the contact-candidate packet. It is
+  not sweep broad-phase construction, not compacted runtime scene candidate
+  list construction, and not a speedup-gate claim.
+
+Focused evidence gathered for the current assembly checkpoint passed packet
+pytest, CUDA build, focused `test_newton_assembly_solve_cuda` CTest, and
+`pixi run -e cuda bm-newton-assembly-solve-packet`. The generated packet
+measured top-level `speedup=0.26051227540244215x` with
+`meets_speedup_gate=false`, so the row stays `in-progress`. `HANDOFF.md` is
+the authoritative fresh-session handoff.
+
+Focused evidence gathered for the earlier candidate-mask checkpoint passed the
+contact-candidate packet pytest, focused packet/audit pytest trio, lint, build,
+unit tests, CUDA build, `pixi run -e cuda test-cuda`, and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The generated
+packet measured exact parity for 65,536 point-triangle all-pairs candidates
+with `accepted_count=192`, `compacted_count=192`,
+`speedup=1.5943055078570016x`, and `meets_speedup_gate=true`; the top-level
+contact-candidate packet measured `speedup=0.35669978298935295x`, so the row
+stays `in-progress`.
+
+Fresh-session branch discipline: all remaining PLAN-083 follow-up work is
+consolidated on `simx/plan083-gpu-contact-candidate-packet` and PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not open or
+revive per-packet/per-phase PRs. Former stacked PRs #2979-#2983 were folded into
+#2978; earlier runtime/corpus follow-ups #2970, #2971, #2974, and #2976 are
+merged into `main`. A fresh Claude/Codex session should resume from #2978,
+check hosted CI/review state, and keep any remaining PLAN-083 commits on the
+same branch.
+
+Current continuation (2026-06-11): the formerly dirty point-point and
+point-edge primitive barrier-Hessian PSD-projection WIP on #2978 has been
+completed as packet evidence on the same consolidated branch. The branch is
+still unpublished beyond
+`origin/simx/plan083-gpu-contact-candidate-packet`; treat `HANDOFF.md` as the
+authoritative fresh-session entry point before any future edit or push.
+
+Current #2978 checkpoint (2026-06-11): the active branch now carries private
+CUDA point-triangle primitive barrier-gradient parity plus point-triangle,
+edge-edge, point-edge, and point-point tangent-stencil parity in the
+barrier/friction packet, and the current package adds private CUDA
+point-triangle, point-point, and point-edge primitive barrier-Hessian rows plus
+point-triangle, point-point, and point-edge primitive barrier-Hessian
+PSD-projection parity. The latest packet measured
+`max_result_abs_error=7.844391802791506e-12` across those local rows;
+point-triangle barrier-Hessian speedup was `1.3792236932217794x`,
+point-triangle Hessian PSD-projection speedup was `2.4324816046452007x`,
+point-point barrier-Hessian speedup was `1.3681853755001632x`, point-point
+Hessian PSD-projection speedup was `2.6247434778815464x`, point-edge
+barrier-Hessian speedup was `1.8065117930616938x`, and point-edge Hessian
+PSD-projection speedup was `4.388364832151794x`. The top-level packet still
+measured `speedup=0.3604503271533569x` with `meets_speedup_gate=false`, so the
+row remains `in-progress` because broader sparse Hessian assembly, runtime
+contact rows, and the top-level speedup gate remain future evidence.
+
+Historical stop-only handoff (2026-06-11): the maintainer previously asked for
+handoff only with no further verification. That left uncommitted PSD-coupling
+WIP on this same branch. The WIP has since been resumed as the
+point-triangle, point-point, and point-edge Hessian PSD-projection packet
+slices; keep `HANDOFF.md` synchronized for fresh sessions.
+
+Latest validation checkpoint (2026-06-11): the point-edge barrier-Hessian slice
+is committed locally as
+`48dcfb515cf Add point-edge barrier Hessian packet parity` and is not yet
+pushed. The follow-on point-triangle barrier-Hessian slice is committed locally
+as `1dfb21b24da Add point-triangle barrier Hessian packet parity` and is not
+yet pushed. It was validated locally on the same branch with private CUDA
+implementation, focused unit parity, benchmark packet rows, packet writer/test
+coverage, and durable sidecar updates. The current point-triangle Hessian
+PSD-projection slice adds unit parity, benchmark rows, packet writer/test
+coverage, and sidecar updates on top of those commits. The follow-on
+point-point/point-edge Hessian PSD-projection slice adds the same evidence
+shape for the remaining primitive Hessian packet families. `HANDOFF.md` is the
+authoritative fresh-session entry point.
+
+Validation for the current PSD-projection checkpoint passed `pixi run lint`,
+`pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest,
+`pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+(4 passed), `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`, the
+PLAN-083 GPU parity/completion-audit checker pair, and the focused packet/audit
+pytest trio (13 passed).
+
+Validation for the point-point/point-edge Hessian PSD-projection checkpoint
+passed `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest,
+`pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+(4 passed), `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`, the
+PLAN-083 GPU parity/completion-audit checker pair, and the focused packet/audit
+pytest trio (13 passed).
+
+Validated hand-off checkpoint (2026-06-11): the formerly unverified
+point-edge/point-point tangent-stencil WIP has now passed lint, CUDA build,
+focused CUDA CTest, the barrier/friction benchmark packet, and packet/audit
+checks. Durable packet docs record it as parity evidence while keeping the row
+`in-progress`.
+
+Historical critical stop hand-off (2026-06-11): the maintainer then instructed
+the agent to stop implementation and focus only on hand-off, with no further
+verification. Continuation later resumed on the same consolidated branch; use
+`HANDOFF.md` plus `RESUME.md` as the fresh-session entry point.
+
+Durable sidecar sync (2026-06-11): `gpu-parity-packet.json`,
+`completion-audit.md`, `paper-deck-manifest.md`, and `docs/plans/dashboard.md`
+now record the point-triangle, point-point, and point-edge barrier-Hessian
+packets plus point-triangle, point-point, and point-edge Hessian PSD-projection
+packets as in-progress evidence.
+
+Fresh-session continuation: first inspect `git status -sb`, the local diff,
+#2978, the branch head, hosted CI, and new review comments. Then continue with
+broader sparse Hessian assembly, additional runtime contact rows, or
+speedup-gate work on the same PR. Do not open another PLAN-083 PR.
+
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
   - [x] Add `detail/newton_barrier` owners for primitive distances, clamped-log
@@ -160,14 +664,48 @@
   - [x] Add the measured private PSD projection packet generator and benchmark
         row; keep it scoped to local-kernel evidence, not scene-level GPU
         parity.
+  - [x] Add private point-triangle and edge-edge contact-stencil filter packets
+        plus brute-force all-pairs point-triangle and edge-edge candidate-mask
+        packets plus motion-aware swept-AABB point-triangle and edge-edge
+        candidate-list packets with exact CPU/GPU parity and device-side
+        compacted candidate ids plus distance metadata, and compact runtime
+        sweep-buffer endpoint-distance packets that consume CPU sweep candidate
+        keys plus reduced scene-owned runtime candidate-buffer packets from one
+        DART `World` deformable surface plus scene-owned runtime sweep
+        broad-phase packets from that same surface; keep the row in-progress
+        because full runtime scene filtering, GPU `World::step` contact
+        candidate construction, and speedup remain unproven.
+  - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
+        packets with exact CPU/GPU step-bound parity; keep the row in-progress
+        because rigid curved trajectories, runtime candidate sets, and
+        scene-level line-search feasibility remain unproven.
+  - [x] Add private scalar barrier/friction local-kernel, point-triangle
+        primitive barrier-gradient, point-triangle/edge-edge/point-edge/
+        point-point tangent-stencil, and point-triangle/point-point/point-edge/
+        edge-edge primitive barrier-Hessian packets, plus point-triangle/
+        point-point/point-edge Hessian PSD-projection parity, plus reduced
+        scene-owned point-triangle/point-edge/point-point/edge-edge
+        barrier-Hessian runtime rows, with exact CPU/GPU local-output parity;
+        keep the row in-progress because broader sparse Hessian assembly,
+        additional runtime contact rows, full GPU `World::step`, and runtime
+        speedup remain unproven.
+  - [x] Add private reduced diagonal assembly/solve and pair-slot off-diagonal
+        sparse-block assembly packets with exact CPU/GPU local-output parity;
+        keep the row in-progress because equality reduction, global sparse
+        factorization, runtime scene rows, and speedup remain unproven.
+  - [x] Add a private reduced scene state-batch parity packet with exact
+        CPU/GPU rollout parity and speedup; keep the row in-progress because
+        GPU `World::step`, contact candidate construction, CCD,
+        barrier/friction assembly, sparse equality reduction, and global Newton
+        solving remain unproven.
 - [ ] Implementation-roadmap Phase 8: complete the PLAN-083 audit and retire
       temporary task state.
   - [x] Add a checked completion audit sidecar that records the current
         manifest, CPU corpus, and GPU packet status counts.
-  - [x] Record that PLAN-083 is not complete while planned CPU/GPU/scene rows
-        remain.
+  - [x] Record that PLAN-083 is not complete while reduced in-progress
+        CPU/GPU/scene rows remain.
   - [ ] Retire the temporary dev-task folder only after maintainer direction;
-        material planned work remains.
+        material in-progress work remains.
 - [x] Runtime wiring follow-up: consume landed Newton-barrier contracts from
       rigid IPC runtime paths without opening per-slice PRs.
   - [x] Route point-connection/fixed-joint and hinge-axis constraints through
@@ -214,6 +752,13 @@
         residual, sparse free-coordinate basis, and KKT solve-equivalence tests
         and route the rigid IPC equality step through it while keeping
         paper-scale pulley/sliding scenes future work.
+  - [x] Add a reduced ABD complex-geometry CPU packet using generated affine
+        point-triangle pair runtime steps while keeping the 1.2M-triangle scene
+        asset and contact-force visualization future work.
+  - [x] Add a reduced ABD/FEM CPU packet that combines affine pair runtime
+        steps, a deformable IPC smoke step, mixed candidate diagnostics, and a
+        coupled affine/deformable contact micro-solve while keeping full
+        runtime affine/FEM coupling future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -238,7 +783,7 @@ storage, or backend resources as public API.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
 - No public or `World`-integrated ABD runtime stage.
-- No GPU speedup claim.
+- No full scene-level or paper-scale GPU speedup claim.
 
 ## Key Decisions
 
@@ -248,6 +793,17 @@ storage, or backend resources as public API.
   internal phases into one PR when that keeps review clearer. Commits within the
   branch stay atomic and self-describing. Split only for public-API boundaries,
   unrelated CI/build infrastructure, or reviewability.
+- For the remaining PLAN-083 follow-up work, PR #2978 is the consolidated
+  review unit; keep additional packet/runtime slices on that branch instead of
+  opening per-packet PRs.
+- Current PR #2978 head includes the CUDA CCD review fix plus the private
+  barrier/friction point-triangle gradient, all four primitive-family
+  tangent-stencil packet rows, point-triangle/point-point/point-edge/edge-edge
+  primitive barrier-Hessian, point-triangle/point-point/point-edge Hessian
+  PSD-projection, and reduced scene-owned point-triangle/point-edge/
+  point-point/edge-edge barrier-Hessian runtime packet evidence. Continue
+  monitoring CI/review on the same branch and keep further PLAN-083 slices
+  consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -278,23 +834,25 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
-   work; do not reopen the old phase-scoped stack.
-2. Continue Phase 6 CPU corpus evidence on
-   `simx/plan083-phase-6-abd-comparison-packets` by adding reduced ABD
-   gears/Bullet comparison packets only where runtime evidence exists; do not
-   mark paper-scale rows complete without paper-scale scene assets and
-   comparison evidence. The reduced packets may move only row-specific runtime
-   smoke evidence; analytical force comparison, paper-scale rope/rod coupling,
-   affine packing, twisted shell, self-contact parity, accepted Bullet
-   baselines, and GPU parity remain planned.
-3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
-   broader ABD CPU packets still require scene-level runtime residuals, scene
-   assets, and comparison baselines.
+1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
+   and keep remaining work in consolidated PR #2978 instead of reopening the
+   old phase-scoped stack. A fresh session should resume the branch/PR context
+   first, check hosted #2978 CI/review state for actionable failures, then
+   continue runtime scene filtering, speedup-gate work, downstream
+   additional primitive-family/runtime contact evidence, broader sparse
+   Hessian assembly, or assembly/solve evidence on the same PR.
+2. Keep private GPU scene-level parity limited to reduced scene state-batch
+   rollout parity; do not mark the row measured until GPU `World::step`,
+   contact candidate construction, CCD, barrier/friction assembly, sparse
+   equality reduction, and global Newton solving have concrete evidence.
+3. Use the reduced ABD runtime-step, ABD/FEM coupled micro-solve, and GPU
+   contact-stencil packets only as internal runtime evidence; broader ABD CPU
+   packets still require scene-level runtime residuals, scene assets, full
+   runtime affine/FEM coupling, and comparison baselines.
 4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
-   that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
-   called complete yet.
+   that PLAN-083 still has in-progress CPU/GPU/scene rows and cannot honestly
+   be called complete yet.
 5. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
 6. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
@@ -318,6 +876,7 @@ GPU-backed path:
 
 ```bash
 pixi run -e cuda test-cuda
+pixi run -e cuda bm-plan083-gpu-contact-candidates-packet
 ```
 
 Phase 8 local evidence:
@@ -332,6 +891,46 @@ Phase 7 PSD packet evidence:
 - `pixi run python -m pytest tests/test_plan083_gpu_psd_packet.py`
 - `pixi run -e cuda build-cuda`
 - `pixi run -e cuda bm-plan083-gpu-psd-packet`
+
+Phase 7 contact-candidate packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+
+Phase 7 CCD/line-search packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
+
+Latest PR #2978 CUDA CCD review-fix evidence:
+
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_ccd_line_search_cuda$'`
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet` (point-triangle and
+  edge-edge parity for 131,072 total pairs; minimum primitive-family speedup
+  2.057x)
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py && pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+  (13 passed)
+
+Phase 7 barrier/friction local-kernel packet evidence:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py`
+- `pixi run -e cuda build-cuda Release`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_barrier_friction_kernel_cuda$'`
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
+Phase 7 reduced assembly/solve packet evidence:
+
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
 
 Phase 1 local evidence:
 

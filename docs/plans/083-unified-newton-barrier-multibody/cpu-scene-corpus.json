@@ -444,11 +444,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_abd_complex_geometry --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_abd_complex_geometry --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/abd_complex_geometry/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=abd_complex_geometry",
+      "benchmark_command": "pixi run bm-plan083-cpu-abd-complex-geometry-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/abd_complex_geometry.json",
-      "expected_invariant": "ABD complex-geometry scene reports finite contact energy and runtime residuals.",
-      "limitation_status": "Launchable placeholder only; waiting for ABD runtime stepping beyond primitive/oracle rows.",
-      "notes_or_gap": "Primitive ABD micro-packet exists, but scene stepping does not."
+      "expected_invariant": "Reduced ABD complex-geometry packet reports valid generated affine point-triangle pair runtime steps, convergence, active barriers, objective decrease, and velocity updates.",
+      "limitation_status": "Reduced 29-pair affine runtime-step packet only; 1.2M-triangle complex-geometry assets, contact-force visualization, and paper-scale reproduction remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-abd-complex-geometry-packet records internal ABD runtime-step evidence but does not reproduce the deck complex-geometry scene."
     },
     {
       "row_id": "abd-fem-coupling",
@@ -463,11 +463,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_abd_fem_coupling --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_abd_fem_coupling --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/abd_fem_coupling/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=abd_fem_coupling",
+      "benchmark_command": "pixi run bm-plan083-cpu-abd-fem-coupling-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/abd_fem_coupling.json",
-      "expected_invariant": "ABD/FEM coupling scene reports finite energy, deterministic restart, and no inversion.",
-      "limitation_status": "Launchable placeholder only; waiting for ABD/FEM mixed runtime coupling.",
-      "notes_or_gap": "No performance claim until matched scene packet lands."
+      "expected_invariant": "Reduced ABD/FEM packet reports valid affine pair runtime steps, a finite deformable IPC smoke step, active affine/deformable mixed candidate diagnostics, and a converged coupled affine/deformable contact micro-solve.",
+      "limitation_status": "Reduced affine runtime-step, deformable IPC smoke, and affine/deformable coupled contact micro-solve evidence only; full runtime affine/FEM coupling, 1.1M-triangle assets, and paper-scale reproduction remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-abd-fem-coupling-packet records bounded ABD/FEM micro-solve evidence but does not run a full runtime affine/FEM World::step path or reproduce the deck timing."
     },
     {
       "row_id": "abd-demo-suite",

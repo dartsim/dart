@@ -42,9 +42,13 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
+#include <dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp>
+#include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
+#include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
@@ -60,6 +64,7 @@
 
 namespace sx = dart::simulation;
 namespace sxdetail = dart::simulation::detail;
+namespace nb = dart::simulation::detail::newton_barrier;
 
 namespace {
 
@@ -110,6 +115,8 @@ constexpr std::size_t kAbdReducedGearsPairCount = 28;
 constexpr std::size_t kAbdReducedBulletSmallPairCount = 16;
 constexpr std::size_t kAbdReducedBulletMediumPairCount = 48;
 constexpr std::size_t kAbdReducedBulletLargePairCount = 96;
+constexpr std::size_t kAbdReducedComplexGeometryPairCount = 29;
+constexpr std::size_t kAbdReducedFemCouplingPairCount = 27;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -2176,6 +2183,516 @@ static void BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step(
       11'000.0);
 }
 BENCHMARK(BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state,
+      kAbdReducedComplexGeometryPairCount,
+      "row_abd_complex_geometry",
+      29.0,
+      1'200'000.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+struct ReducedAffineFemMixedDiagnostics
+{
+  std::size_t candidateCount = 0;
+  std::size_t activeBarrierCount = 0;
+  double minSquaredDistance = std::numeric_limits<double>::infinity();
+  double barrierValue = 0.0;
+  bool finite = false;
+};
+
+using ReducedAffineFemVector21d = Eigen::Matrix<double, 21, 1>;
+using ReducedAffineFemMatrix21d = Eigen::Matrix<double, 21, 21>;
+
+struct ReducedAffineFemCoupledEvaluation
+{
+  double value = 0.0;
+  ReducedAffineFemVector21d gradient = ReducedAffineFemVector21d::Zero();
+  ReducedAffineFemMatrix21d hessian = ReducedAffineFemMatrix21d::Zero();
+  double squaredDistance = std::numeric_limits<double>::infinity();
+  bool valid = false;
+  bool barrierActive = false;
+};
+
+struct ReducedAffineFemCoupledSolve
+{
+  double initialValue = 0.0;
+  double finalValue = 0.0;
+  double initialGradientNorm = 0.0;
+  double finalGradientNorm = 0.0;
+  double initialSquaredDistance = std::numeric_limits<double>::infinity();
+  double finalSquaredDistance = std::numeric_limits<double>::infinity();
+  double affineDisplacementNorm = 0.0;
+  double deformableDisplacementNorm = 0.0;
+  int iterations = 0;
+  bool valid = false;
+  bool converged = false;
+  bool barrierActive = false;
+};
+
+ReducedAffineFemMixedDiagnostics evaluateReducedAffineFemMixedDiagnostics(
+    const LyingFlatFixture& deformableFixture)
+{
+  sxdetail::AffineSurfaceAdapter affineAdapter;
+  affineAdapter.restVertices
+      = {Eigen::Vector3d(-0.035, -0.025, 0.0),
+         Eigen::Vector3d(0.045, -0.025, 0.0),
+         Eigen::Vector3d(-0.035, 0.055, 0.0)};
+  affineAdapter.triangles = {Eigen::Vector3i(0, 1, 2)};
+
+  sxdetail::AffineBodyState affineState;
+  affineState.translation = deformableFixture.cloth->getPosition(0)
+                            + Eigen::Vector3d(0.035, 0.025, -0.018);
+  affineState.linearMap
+      = Eigen::AngleAxisd(0.03, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+  std::vector<Eigen::Vector3d> affineVertices;
+  affineVertices.reserve(affineAdapter.restVertices.size());
+  for (std::size_t vertex = 0; vertex < affineAdapter.restVertices.size();
+       ++vertex) {
+    affineVertices.push_back(
+        sxdetail::affineSurfaceVertexWorld(affineAdapter, affineState, vertex));
+  }
+  auto affineSurface = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Affine,
+      0,
+      std::move(affineVertices),
+      affineAdapter.triangles);
+  affineSurface.frictionCoefficient = 0.45;
+
+  const std::vector<Eigen::Vector3d> deformableVertices{
+      deformableFixture.cloth->getPosition(0),
+      deformableFixture.cloth->getPosition(1),
+      deformableFixture.cloth->getPosition(kLyingFlatGridColumns)};
+  auto deformableSurface = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Deformable,
+      0,
+      deformableVertices,
+      {Eigen::Vector3i(0, 1, 2)});
+  deformableSurface.frictionCoefficient = 0.35;
+
+  const std::array<nb::MixedDomainSurface, 2> surfaces{
+      affineSurface, deformableSurface};
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 0.08;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+  const auto diagnostics = nb::evaluateMixedDomainBarrierDiagnostics(
+      surfaces, candidates, 0.08, 1.0);
+
+  return ReducedAffineFemMixedDiagnostics{
+      candidates.candidates.size(),
+      diagnostics.activeBarrierCount,
+      diagnostics.minSquaredDistance,
+      diagnostics.value,
+      diagnostics.finite};
+}
+
+ReducedAffineFemVector21d packReducedAffineFemState(
+    const sxdetail::AffineBodyState& affineState,
+    const std::array<Eigen::Vector3d, 3>& deformableVertices)
+{
+  ReducedAffineFemVector21d vector;
+  vector.head<12>() = sxdetail::affineBodyStateToVector(affineState);
+  for (int vertex = 0; vertex < 3; ++vertex) {
+    vector.segment<3>(12 + 3 * vertex) = deformableVertices[vertex];
+  }
+  return vector;
+}
+
+ReducedAffineFemCoupledEvaluation evaluateReducedAffineFemCoupledSolve(
+    const ReducedAffineFemVector21d& vector,
+    const ReducedAffineFemVector21d& target,
+    const Eigen::Vector3d& affineLocalPoint,
+    const double squaredActivationDistance,
+    const double barrierStiffness)
+{
+  constexpr double kAffineInertialWeight = 1.0;
+  constexpr double kDeformableInertialWeight = 1.0;
+  constexpr double kOrthogonalityStiffness = 0.25;
+
+  ReducedAffineFemCoupledEvaluation evaluation;
+  if (!vector.allFinite() || !target.allFinite()) {
+    return evaluation;
+  }
+
+  const sxdetail::AffineBodyState affineState
+      = sxdetail::affineBodyStateFromVector(vector.head<12>());
+  const Eigen::Vector3d triangleA = vector.segment<3>(12);
+  const Eigen::Vector3d triangleB = vector.segment<3>(15);
+  const Eigen::Vector3d triangleC = vector.segment<3>(18);
+
+  const ReducedAffineFemVector21d displacement = vector - target;
+  evaluation.value
+      = 0.5 * kAffineInertialWeight * displacement.head<12>().squaredNorm()
+        + 0.5 * kDeformableInertialWeight
+              * displacement.tail<9>().squaredNorm();
+  evaluation.gradient.head<12>()
+      = kAffineInertialWeight * displacement.head<12>();
+  evaluation.gradient.tail<9>()
+      = kDeformableInertialWeight * displacement.tail<9>();
+  evaluation.hessian.topLeftCorner<12, 12>()
+      = kAffineInertialWeight * sxdetail::AffineMatrix12d::Identity();
+  evaluation.hessian.bottomRightCorner<9, 9>()
+      = kDeformableInertialWeight * Eigen::Matrix<double, 9, 9>::Identity();
+
+  const Eigen::Vector3d affinePoint
+      = sxdetail::affineWorldPoint(affineState, affineLocalPoint);
+  const auto barrier = nb::pointTriangleBarrier(
+      affinePoint,
+      triangleA,
+      triangleB,
+      triangleC,
+      squaredActivationDistance,
+      barrierStiffness);
+
+  Eigen::Matrix<double, 12, 21> primitiveJacobian
+      = Eigen::Matrix<double, 12, 21>::Zero();
+  primitiveJacobian.block<3, 12>(0, 0)
+      = sxdetail::affinePointJacobian(affineLocalPoint);
+  primitiveJacobian.block<3, 3>(3, 12) = Eigen::Matrix3d::Identity();
+  primitiveJacobian.block<3, 3>(6, 15) = Eigen::Matrix3d::Identity();
+  primitiveJacobian.block<3, 3>(9, 18) = Eigen::Matrix3d::Identity();
+
+  evaluation.value += barrier.value;
+  evaluation.gradient += primitiveJacobian.transpose() * barrier.gradient;
+  ReducedAffineFemMatrix21d barrierHessian
+      = primitiveJacobian.transpose() * barrier.hessian * primitiveJacobian;
+  barrierHessian = 0.5
+                   * (barrierHessian
+                      + ReducedAffineFemMatrix21d(barrierHessian.transpose()));
+  evaluation.hessian += nb::projectSymmetricMatrixToPsd<21>(barrierHessian);
+  evaluation.squaredDistance = barrier.squaredDistance;
+  evaluation.barrierActive = barrier.active;
+
+  const auto orthogonality = sxdetail::affineOrthogonalityEnergy(
+      affineState, kOrthogonalityStiffness, true);
+  if (orthogonality.active) {
+    evaluation.value += orthogonality.value;
+    evaluation.gradient.head<12>() += orthogonality.gradient;
+    evaluation.hessian.topLeftCorner<12, 12>() += orthogonality.hessian;
+  }
+
+  evaluation.hessian
+      = 0.5
+        * (evaluation.hessian
+           + ReducedAffineFemMatrix21d(evaluation.hessian.transpose()));
+  evaluation.valid = std::isfinite(evaluation.value)
+                     && evaluation.gradient.allFinite()
+                     && evaluation.hessian.allFinite()
+                     && std::isfinite(evaluation.squaredDistance);
+  return evaluation;
+}
+
+ReducedAffineFemVector21d makeReducedAffineFemStep(
+    const ReducedAffineFemCoupledEvaluation& evaluation,
+    const double maxStepNorm)
+{
+  ReducedAffineFemVector21d step = -evaluation.gradient;
+  Eigen::LDLT<ReducedAffineFemMatrix21d> solver(evaluation.hessian);
+  if (solver.info() == Eigen::Success && solver.isPositive()) {
+    const ReducedAffineFemVector21d newtonStep
+        = solver.solve(-evaluation.gradient);
+    if (newtonStep.allFinite() && evaluation.gradient.dot(newtonStep) < 0.0) {
+      step = newtonStep;
+    }
+  }
+
+  const double norm = step.norm();
+  if (std::isfinite(norm) && norm > maxStepNorm) {
+    step *= maxStepNorm / norm;
+  }
+  return step.allFinite() ? step : ReducedAffineFemVector21d::Zero();
+}
+
+ReducedAffineFemCoupledSolve solveReducedAffineFemCoupledContact(
+    const LyingFlatFixture& deformableFixture)
+{
+  constexpr double kActivationDistance = 0.08;
+  constexpr double kSquaredActivationDistance
+      = kActivationDistance * kActivationDistance;
+  constexpr double kBarrierStiffness = 0.015;
+  constexpr double kGradientTolerance = 1e-5;
+  constexpr double kMaxStepNorm = 0.025;
+  constexpr int kMaxIterations = 32;
+  constexpr int kMaxLineSearchIterations = 24;
+
+  ReducedAffineFemCoupledSolve result;
+  const std::array<Eigen::Vector3d, 3> deformableVertices{
+      deformableFixture.cloth->getPosition(0),
+      deformableFixture.cloth->getPosition(1),
+      deformableFixture.cloth->getPosition(kLyingFlatGridColumns)};
+  const Eigen::Vector3d centroid
+      = (deformableVertices[0] + deformableVertices[1] + deformableVertices[2])
+        / 3.0;
+
+  sxdetail::AffineBodyState affineState;
+  affineState.translation = centroid + Eigen::Vector3d(0.016, 0.012, -0.018);
+  affineState.linearMap
+      = Eigen::AngleAxisd(0.04, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+  const Eigen::Vector3d affineLocalPoint = Eigen::Vector3d::Zero();
+  const ReducedAffineFemVector21d initial
+      = packReducedAffineFemState(affineState, deformableVertices);
+  ReducedAffineFemVector21d target = initial;
+  target.head<3>() += Eigen::Vector3d(0.0, 0.0, -0.010);
+  for (int vertex = 0; vertex < 3; ++vertex) {
+    target.segment<3>(12 + 3 * vertex) += Eigen::Vector3d(0.0, 0.0, -0.002);
+  }
+
+  ReducedAffineFemVector21d vector = initial;
+  auto evaluation = evaluateReducedAffineFemCoupledSolve(
+      vector,
+      target,
+      affineLocalPoint,
+      kSquaredActivationDistance,
+      kBarrierStiffness);
+  if (!evaluation.valid) {
+    return result;
+  }
+
+  result.valid = true;
+  result.initialValue = evaluation.value;
+  result.initialGradientNorm = evaluation.gradient.norm();
+  result.initialSquaredDistance = evaluation.squaredDistance;
+
+  const double tolerance
+      = nb::sanitizeProjectedNewtonTolerance(kGradientTolerance);
+  for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
+    const double gradientNorm = evaluation.gradient.norm();
+    if (nb::projectedNewtonResidualConverged(gradientNorm, tolerance)) {
+      result.converged = true;
+      break;
+    }
+
+    const ReducedAffineFemVector21d step
+        = makeReducedAffineFemStep(evaluation, kMaxStepNorm);
+    const double directionalDerivative = evaluation.gradient.dot(step);
+    if (!(step.squaredNorm() > 0.0) || !(directionalDerivative < 0.0)) {
+      break;
+    }
+
+    bool accepted = false;
+    double stepScale = 1.0;
+    for (int lineSearch = 0; lineSearch < kMaxLineSearchIterations;
+         ++lineSearch) {
+      const ReducedAffineFemVector21d candidateVector
+          = vector + stepScale * step;
+      const auto candidate = evaluateReducedAffineFemCoupledSolve(
+          candidateVector,
+          target,
+          affineLocalPoint,
+          kSquaredActivationDistance,
+          kBarrierStiffness);
+      if (candidate.valid
+          && nb::satisfiesSufficientDecrease(
+              evaluation.value,
+              candidate.value,
+              stepScale * directionalDerivative,
+              nb::kDefaultSufficientDecreaseFactor)) {
+        vector = candidateVector;
+        evaluation = candidate;
+        accepted = true;
+        break;
+      }
+
+      stepScale *= nb::kDefaultBacktrackingScale;
+    }
+
+    if (!accepted) {
+      break;
+    }
+    result.iterations = iteration + 1;
+  }
+
+  result.finalValue = evaluation.value;
+  result.finalGradientNorm = evaluation.gradient.norm();
+  result.finalSquaredDistance = evaluation.squaredDistance;
+  result.barrierActive = evaluation.barrierActive;
+  result.converged = result.converged
+                     || nb::projectedNewtonResidualConverged(
+                         result.finalGradientNorm, tolerance);
+  result.affineDisplacementNorm
+      = (vector.head<12>() - initial.head<12>()).norm();
+  result.deformableDisplacementNorm
+      = (vector.tail<9>() - initial.tail<9>()).norm();
+  return result;
+}
+
+//==============================================================================
+static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
+    benchmark::State& state)
+{
+  AbdChainNetFixture affineFixture(kAbdReducedFemCouplingPairCount);
+  LyingFlatFixture deformableFixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> lastResults;
+  sx::DeformableSolverDiagnostics lastDiagnostics;
+  ReducedAffineFemMixedDiagnostics mixedDiagnostics;
+  ReducedAffineFemCoupledSolve coupledSolve;
+  std::size_t failedDeformableSteps = 0;
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    deformableFixture.reset();
+    state.ResumeTiming();
+
+    lastResults = affineFixture.stepAll();
+    deformableFixture.world.step(executor);
+    lastDiagnostics
+        = deformableFixture.world.getLastDeformableSolverDiagnostics();
+    mixedDiagnostics
+        = evaluateReducedAffineFemMixedDiagnostics(deformableFixture);
+    coupledSolve = solveReducedAffineFemCoupledContact(deformableFixture);
+    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+        || !std::isfinite(deformableFixture.minClothHeight())
+        || !mixedDiagnostics.finite || mixedDiagnostics.candidateCount == 0u
+        || mixedDiagnostics.activeBarrierCount == 0u || !coupledSolve.valid
+        || !coupledSolve.converged || !coupledSolve.barrierActive
+        || !(coupledSolve.finalValue < coupledSolve.initialValue)
+        || !(coupledSolve.affineDisplacementNorm > 0.0)
+        || !(coupledSolve.deformableDisplacementNorm > 0.0)) {
+      ++failedDeformableSteps;
+    }
+    for (const auto& result : lastResults) {
+      benchmark::DoNotOptimize(result.solve.pointState.translation.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.translation.data());
+      benchmark::DoNotOptimize(result.solve.pointState.linearMap.data());
+      benchmark::DoNotOptimize(result.solve.triangleState.linearMap.data());
+    }
+    benchmark::DoNotOptimize(deformableFixture.cloth->getPosition(0).data());
+    benchmark::ClobberMemory();
+  }
+
+  std::size_t convergedSolveCount = 0;
+  std::size_t barrierActiveCount = 0;
+  std::size_t validStepCount = 0;
+  std::size_t failedStepCount = failedDeformableSteps;
+  std::size_t solverIterations = 0;
+  double totalObjectiveDecrease = 0.0;
+  double maxFinalGradientNorm = 0.0;
+  double minTargetSquaredDistance = std::numeric_limits<double>::infinity();
+  double minFinalSquaredDistance = std::numeric_limits<double>::infinity();
+  double maxLinearSpeed = 0.0;
+  double maxAffineVelocityNorm = 0.0;
+  double maxDisplacementNorm = 0.0;
+
+  for (std::size_t index = 0; index < lastResults.size(); ++index) {
+    const auto& result = lastResults[index];
+    const auto& pair = affineFixture.pairs[index];
+    if (result.valid) {
+      ++validStepCount;
+    }
+    if (result.converged) {
+      ++convergedSolveCount;
+    }
+    if (result.solve.barrierActive) {
+      ++barrierActiveCount;
+    }
+    if (!result.valid || !result.converged || !result.solve.barrierActive) {
+      ++failedStepCount;
+    }
+    solverIterations += static_cast<std::size_t>(result.solve.iterations);
+    totalObjectiveDecrease
+        += result.solve.initialValue - result.solve.finalValue;
+    maxFinalGradientNorm
+        = std::max(maxFinalGradientNorm, result.solve.finalGradientNorm);
+    maxLinearSpeed = std::max(maxLinearSpeed, result.maxLinearSpeed);
+    maxAffineVelocityNorm
+        = std::max(maxAffineVelocityNorm, result.maxAffineVelocityNorm);
+    maxDisplacementNorm = std::max(
+        maxDisplacementNorm,
+        std::max(
+            result.pointDisplacementNorm, result.triangleDisplacementNorm));
+    const auto targetBarrier = sxdetail::affinePointTriangleBarrier(
+        result.pointInertialTarget,
+        pair.point,
+        result.triangleInertialTarget,
+        pair.triangleA,
+        pair.triangleB,
+        pair.triangleC,
+        affineFixture.options.solve.barrier);
+    minTargetSquaredDistance = std::min(
+        minTargetSquaredDistance, targetBarrier.primitive.squaredDistance);
+    minFinalSquaredDistance
+        = std::min(minFinalSquaredDistance, result.solve.finalSquaredDistance);
+  }
+
+  state.counters["row_abd_fem_coupling"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_body_count"]
+      = static_cast<double>(2u * kAbdReducedFemCouplingPairCount);
+  state.counters["dynamic_pair_count"]
+      = static_cast<double>(kAbdReducedFemCouplingPairCount);
+  state.counters["reduced_pair_count"]
+      = static_cast<double>(kAbdReducedFemCouplingPairCount);
+  state.counters["paper_body_count"] = 27.0;
+  state.counters["paper_triangle_count"] = 1'100'000.0;
+  state.counters["reference_baseline_measured"] = 0.0;
+  state.counters["valid_step_count"] = static_cast<double>(validStepCount);
+  state.counters["failed_steps"] = static_cast<double>(failedStepCount);
+  state.counters["converged_solve_count"]
+      = static_cast<double>(convergedSolveCount);
+  state.counters["barrier_active_count"]
+      = static_cast<double>(barrierActiveCount);
+  state.counters["solver_iterations"] = static_cast<double>(solverIterations);
+  state.counters["total_objective_decrease"] = totalObjectiveDecrease;
+  state.counters["max_final_gradient_norm"] = maxFinalGradientNorm;
+  state.counters["min_target_squared_distance"] = minTargetSquaredDistance;
+  state.counters["min_final_squared_distance"] = minFinalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = affineFixture.options.solve.barrier.squaredActivationDistance;
+  state.counters["max_linear_speed_m_s"] = maxLinearSpeed;
+  state.counters["max_affine_velocity_norm"] = maxAffineVelocityNorm;
+  state.counters["max_displacement_norm_m"] = maxDisplacementNorm;
+  state.counters["deformable_body_count"]
+      = static_cast<double>(lastDiagnostics.bodyCount);
+  state.counters["deformable_node_count"]
+      = static_cast<double>(lastDiagnostics.nodeCount);
+  state.counters["deformable_edge_count"]
+      = static_cast<double>(lastDiagnostics.edgeCount);
+  state.counters["surface_triangle_count"]
+      = static_cast<double>(deformableFixture.cloth->getSurfaceTriangleCount());
+  state.counters["deformable_solver_iterations"]
+      = static_cast<double>(lastDiagnostics.solverIterations);
+  state.counters["min_cloth_height_m"] = deformableFixture.minClothHeight();
+  state.counters["affine_fem_candidate_diagnostics_measured"] = 1.0;
+  state.counters["affine_fem_mixed_candidate_count"]
+      = static_cast<double>(mixedDiagnostics.candidateCount);
+  state.counters["affine_fem_mixed_active_barrier_count"]
+      = static_cast<double>(mixedDiagnostics.activeBarrierCount);
+  state.counters["affine_fem_mixed_min_squared_distance"]
+      = mixedDiagnostics.minSquaredDistance;
+  state.counters["affine_fem_mixed_barrier_value"]
+      = mixedDiagnostics.barrierValue;
+  state.counters["affine_fem_coupled_contact_measured"] = 1.0;
+  state.counters["affine_fem_coupled_solve_converged"]
+      = coupledSolve.converged ? 1.0 : 0.0;
+  state.counters["affine_fem_coupled_solve_iterations"]
+      = static_cast<double>(coupledSolve.iterations);
+  state.counters["affine_fem_coupled_objective_decrease"]
+      = coupledSolve.initialValue - coupledSolve.finalValue;
+  state.counters["affine_fem_coupled_initial_gradient_norm"]
+      = coupledSolve.initialGradientNorm;
+  state.counters["affine_fem_coupled_final_gradient_norm"]
+      = coupledSolve.finalGradientNorm;
+  state.counters["affine_fem_coupled_initial_squared_distance"]
+      = coupledSolve.initialSquaredDistance;
+  state.counters["affine_fem_coupled_final_squared_distance"]
+      = coupledSolve.finalSquaredDistance;
+  state.counters["affine_fem_coupled_affine_displacement_norm"]
+      = coupledSolve.affineDisplacementNorm;
+  state.counters["affine_fem_coupled_deformable_displacement_norm"]
+      = coupledSolve.deformableDisplacementNorm;
+}
+BENCHMARK(BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================
