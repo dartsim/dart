@@ -2123,7 +2123,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Status,Error,Residual,Complementarity"
         in builder.events
     )
-    assert f"text:{smoke_by_name['Dantzig']['family']}" in builder.events
+    for smoke_row in info["standalone_solver_rows"]:
+        assert f"text:{smoke_row['family']}" in builder.events
+        assert (
+            f"text:{lcp_physics._smoke_coverage_label(smoke_row)}"
+            in builder.events
+        )
     assert "text:delegated" in builder.events
     assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
     assert (
