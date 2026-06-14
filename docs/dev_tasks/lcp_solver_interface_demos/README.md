@@ -1,5 +1,84 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Milestone PR #3001 Merged; Follow-up Rebased Onto Main
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state — in particular, the older
+"draft PR" / "no associated PR" wording is now SUPERSEDED: PR #3001 merged.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. The milestone is DONE: PR #3001
+   ("Add standalone LCP solver interface, comparison demos, and benchmarks")
+   was squash-merged into `main` as `07fd0c9315a`. The standalone LCP interface,
+   `lcp_physics` demo, dartpy bindings, roster checker, performance-profile
+   pipeline, benchmarks, and docs are now on `main`. The
+   `feature/lcp-solver-interface-demos` branch was auto-deleted on merge.
+3. This `followup/lcp-solver-demo-panel-guards` branch was rebased `--onto`
+   `origin/main` (base was the now-deleted feature tip `7ab2546ebd7`). Its 29
+   follow-up commits replayed with zero conflicts; the net follow-up diff is
+   byte-identical to before the rebase and all 29 commits are preserved verbatim
+   (range-diff: 29 `=`). It is a clean linear stack of 29 commits on
+   `origin/main`, ready to become the next PR when approved, or to keep
+   accumulating bounded audit gaps.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Branch state at this hand-off:
+
+- `followup/lcp-solver-demo-panel-guards` rebased onto `origin/main`
+  (`07fd0c9315a`): 29 follow-up commits ahead, 0 merge commits (clean linear
+  history); same 10 follow-up files as before the rebase.
+- Local safety backup of the pre-rebase tip: branch
+  `backup/followup-pre-rebase-d5f408` and tag `backup-followup-pre-rebase` at
+  `d5f408ee764`. Delete once the rebase is confirmed good.
+
+Verification after the rebase (on the merged-`main` base), all green:
+
+- `pixi run build` → 89/89, no errors.
+- `pixi run python scripts/check_lcp_solver_roster.py` → 24 solvers.
+- `test_lcp.py` + `test_py_demo_panels.py` → 237 passed.
+- `BM_LCP_COMPARE` parameter-sweep rows → 160 ran, 0 skipped, `contract_ok=1`.
+- An independent adversarial audit confirmed the reconciliation is correct (no
+  commits lost, no feature scaffolding re-added), the parameter-sweep guard
+  commit is complete for its scope, and the new `main` commits (Eigen5 #2997,
+  GUI #2984, ASan #3006, CI #2999) pose no rebase risk.
+
+Remaining audit gaps (next concrete steps, one bounded gap per checkpoint):
+
+- The threading benchmarks (`BM_LcpJacobiSolverThreading*`,
+  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard`,
+  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard`) — Standard SPD only;
+  guards would be purely defensive.
+- The StandardSpd-conditioning sweeps `RunMprgpSpdCheckSweepBenchmark` and
+  `RunInteriorPointPathSweepBenchmark`. MPRGP needs a PARAMETER-AWARE guard
+  (`supportsProblem` honours `Parameters::checkPositiveDefinite`, default
+  `true`, so a default-solver guard would skip near-singular rows the sweep
+  intends to time). `InteriorPointSolver` does not override `supportsProblem`
+  (not parameter-dependent), so it can take a plain guard; it is deferred with
+  MPRGP as the coherent conditioning-sweep follow-up.
+- The scaled/smoke template benchmarks (`BM_LcpCompare_Dantzig_Scaled`,
+  `BM_LcpCompare_Pgs_Scaled`, `BM_LCP_COMPARE_SMOKE`).
+- The `RunStaggeringContactPipelineSweepBenchmark` sweep.
+- Separate categories needing their own design (do NOT fit the standalone
+  "supportsProblem-before-solve" pattern): the `BM_LcpValidation_*` micro-
+  benchmarks (time `computeEffectiveBounds`), the `BM_LcpWorld*Step_BoxedLcp`
+  World-step benchmarks (boxed-LCP contact pipeline via `World::step`), and the
+  CUDA batch runners (GPU kernels rather than the `LcpSolver` interface).
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+4. Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Solver Parameter Sweep Runtime Guards
 
 This is the latest hand-off state. Sections below are historical checkpoints
