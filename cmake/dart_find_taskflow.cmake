@@ -11,16 +11,15 @@ find_package(Taskflow QUIET CONFIG)
 if(NOT Taskflow_FOUND AND NOT TARGET Taskflow::Taskflow)
   include(FetchContent)
 
-  FetchContent_Declare(
-    taskflow
-    GIT_REPOSITORY https://github.com/taskflow/taskflow.git
-    GIT_TAG v4.0.0
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
   FetchContent_GetProperties(taskflow)
   if(NOT taskflow_POPULATED)
-    FetchContent_Populate(taskflow)
+    FetchContent_Populate(
+      taskflow
+      GIT_REPOSITORY https://github.com/taskflow/taskflow.git
+      GIT_TAG v4.0.0
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
   endif()
 
   # Taskflow is header-only. Avoid add_subdirectory(), which would configure the

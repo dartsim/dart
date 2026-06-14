@@ -17,8 +17,6 @@
 #   ui/      panel layer bridging the engine to the dart-gui visualization lib
 #   app/     thin executable entry point
 
-cmake_minimum_required(VERSION 3.22.1)
-
 # The headless engine has no GUI dependency, so it always builds (and is
 # unit-tested by tests/unit/dartsim_engine) whenever the DART 7 World is
 # available.

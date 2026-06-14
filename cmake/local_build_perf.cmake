@@ -61,17 +61,9 @@ function(dart_configure_linker)
     endif()
   endif()
 
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.29")
-    # First-class linker selection; propagates to all targets defined later.
-    set(CMAKE_LINKER_TYPE MOLD PARENT_SCOPE)
-    message(
-      STATUS
-      "Linker: mold via CMAKE_LINKER_TYPE [${DART_MOLD_EXECUTABLE}]"
-    )
-  else()
-    add_link_options("-fuse-ld=mold")
-    message(STATUS "Linker: mold via -fuse-ld=mold [${DART_MOLD_EXECUTABLE}]")
-  endif()
+  # First-class linker selection; propagates to all targets defined later.
+  set(CMAKE_LINKER_TYPE MOLD PARENT_SCOPE)
+  message(STATUS "Linker: mold via CMAKE_LINKER_TYPE [${DART_MOLD_EXECUTABLE}]")
 endfunction()
 
 # Normalize the per-clone absolute source root in emitted objects so sccache/
