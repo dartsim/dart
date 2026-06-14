@@ -168,6 +168,11 @@ struct WorldStepSurfaceContactCounters
   std::size_t rejectedPairs = 0;
   std::size_t pointTriangleCandidates = 0;
   std::size_t edgeEdgeCandidates = 0;
+  std::size_t ccdPointTriangleChecks = 0;
+  std::size_t ccdEdgeEdgeChecks = 0;
+  std::size_t ccdHits = 0;
+  std::size_t ccdLimitedSteps = 0;
+  std::size_t ccdZeroStepCount = 0;
 };
 
 struct RuntimeSweepCandidateBufferFixture
@@ -990,6 +995,15 @@ RuntimeSweepCandidateBufferFixture makeSceneRuntimeCandidateBufferFixture(
         = diagnostics.surfaceContactPointTriangleCandidates;
     fixture.worldStepSurfaceContact.edgeEdgeCandidates
         = diagnostics.surfaceContactEdgeEdgeCandidates;
+    fixture.worldStepSurfaceContact.ccdPointTriangleChecks
+        = diagnostics.surfaceContactCcdPointTriangleChecks;
+    fixture.worldStepSurfaceContact.ccdEdgeEdgeChecks
+        = diagnostics.surfaceContactCcdEdgeEdgeChecks;
+    fixture.worldStepSurfaceContact.ccdHits = diagnostics.surfaceContactCcdHits;
+    fixture.worldStepSurfaceContact.ccdLimitedSteps
+        = diagnostics.surfaceContactCcdLimitedSteps;
+    fixture.worldStepSurfaceContact.ccdZeroStepCount
+        = diagnostics.surfaceContactCcdZeroStepCount;
   }
   return fixture;
 }
@@ -1340,6 +1354,17 @@ void recordFilteredCombinedCandidateBufferCounters(
           fixture.worldStepSurfaceContact.pointTriangleCandidates);
   state.counters["world_step_surface_contact_edge_edge_candidates"]
       = static_cast<double>(fixture.worldStepSurfaceContact.edgeEdgeCandidates);
+  state.counters["world_step_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.ccdPointTriangleChecks);
+  state.counters["world_step_surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.ccdEdgeEdgeChecks);
+  state.counters["world_step_surface_contact_ccd_hits"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.ccdHits);
+  state.counters["world_step_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.ccdLimitedSteps);
+  state.counters["world_step_surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.ccdZeroStepCount);
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * pairCapacity));

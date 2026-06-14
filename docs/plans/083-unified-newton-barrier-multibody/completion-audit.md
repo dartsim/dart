@@ -17,17 +17,21 @@ moves entirely into durable plan sidecars.
 ## Evidence Snapshot
 
 Latest branch-local delta (2026-06-14): the private GPU contact-candidate
-packet's reduced scene-owned filtered candidate-buffer row now carries a
-matching `World::step` self-surface contact-filter diagnostic witness from the
-same generated DART `World` surface. The packet writer rejects missing or
-mismatched runtime diagnostic counters and requires the runtime per-build pair
-capacity to match the reduced filtered packet capacity. Fresh CUDA evidence
-records 33 runtime candidate builds, 7,274,496 candidate pairs per build,
-240,058,368 total runtime candidate pairs, and 239,908,992 rejected runtime
-pairs, while the filtered GPU row still covers 7,274,496 possible pairs, keeps
-2,048 candidates, and rejects 7,272,448 pairs. This improves the reduced
-packet bridge between private GPU candidate filtering and `World::step`
-runtime filter-pressure evidence, but it is still not production runtime scene
+packet's reduced scene-owned filtered candidate-buffer row's `World::step`
+self-surface witness now also carries the matching self-surface
+continuous-collision (CCD) counters from the same generated DART `World::step`.
+The packet writer CPU/GPU-parity-checks the runtime CCD point-triangle checks,
+edge-edge checks, hits, limited steps, and zero-step counts, requires nonzero CCD
+checks, and rejects CCD hits exceeding total checks. Fresh CUDA evidence records
+47,488 CCD point-triangle checks, 101,888 CCD edge-edge checks, 39,168 CCD hits,
+1 limited step, and 16,384 zero-step counts, alongside the prior filter-pressure
+counters (33 runtime candidate builds, 240,058,368 total runtime candidate pairs,
+239,908,992 rejected runtime pairs; the filtered GPU row still covers 7,274,496
+possible pairs, keeps 2,048 candidates, and rejects 7,272,448 pairs). The earlier
+slice opened the milestone checkpoint PR #3000 for
+`simx/plan083-worldstep-contact-filter-stats` against `main`. This improves the
+reduced packet bridge between private GPU candidate filtering and `World::step`
+runtime self-surface CCD evidence, but it is still not production runtime scene
 filtering inside `World::step`, GPU `World::step` contact-candidate
 construction, a speedup gate, or paper-scale scene behavior.
 

@@ -2,6 +2,36 @@
 
 ## Current Status
 
+Latest `World::step` self-surface CCD witness follow-up (2026-06-14): the
+checkpoint branch `simx/plan083-worldstep-contact-filter-stats` has been pushed
+and opened as the milestone checkpoint **PR #3000** against `main` (with explicit
+maintainer approval); it is an honest work-in-progress checkpoint, not a
+completion claim. Work continues locally on
+`simx/plan083-worldstep-gpu-candidate-bridge` (local-only, no PR). This slice
+extends the private GPU contact-candidate packet's reduced scene-owned filtered
+candidate-buffer `world_step_surface_contact` witness with the matching
+self-surface continuous-collision (CCD) counters from the same generated DART
+`World::step`. The packet writer now CPU/GPU-parity-checks the runtime CCD
+point-triangle checks, edge-edge checks, hits, limited steps, and zero-step
+counts, requires nonzero CCD checks, and rejects CCD hits exceeding total checks.
+Fresh CUDA packet evidence records
+`world_step_surface_contact.ccd_point_triangle_checks=47488`,
+`ccd_edge_edge_checks=101888`, `ccd_hits=39168`, `ccd_limited_steps=1`, and
+`ccd_zero_step_count=16384`; the recorded `max_result_abs_error` and sub-1x
+speedup (`meets_speedup_gate=false`) are unchanged by this slice. This proves a
+richer reduced packet-level bridge between GPU filtered candidate construction
+evidence and a same-scene runtime `World::step` self-surface CCD witness only. It
+does not prove production runtime scene filtering inside `World::step`, GPU
+`World::step` contact-candidate construction, or a top-level runtime speedup
+claim. Validation passed: `pixi run python -m pytest
+tests/test_plan083_gpu_contact_candidate_packet.py
+tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py
+-q`, the CUDA build + `pixi run -e cuda python
+scripts/write_plan083_gpu_contact_candidate_packet.py`,
+`scripts/check_plan083_gpu_parity_packet.py`,
+`scripts/check_plan083_completion_audit.py`, `pixi run lint`, and
+`git diff --check`.
+
 Latest `World::step` GPU contact-candidate bridge follow-up (2026-06-14):
 work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`,
 stacked on the clean checkpoint branch

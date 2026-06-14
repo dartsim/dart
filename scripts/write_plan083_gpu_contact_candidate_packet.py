@@ -1405,6 +1405,37 @@ def _validate_world_step_surface_contact_counters(
             f"{edge_edge_candidates}/{gpu_edge_edge_candidates}"
         )
 
+    ccd_counters: dict[str, int] = {}
+    for suffix in (
+        "ccd_point_triangle_checks",
+        "ccd_edge_edge_checks",
+        "ccd_hits",
+        "ccd_limited_steps",
+        "ccd_zero_step_count",
+    ):
+        counter_name = f"world_step_surface_contact_{suffix}"
+        cpu_value = int(_counter(cpu_row, counter_name))
+        gpu_value = int(_counter(gpu_row, counter_name))
+        if cpu_value != gpu_value:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU World::step {suffix} mismatch: "
+                f"{cpu_value}/{gpu_value}"
+            )
+        ccd_counters[suffix] = cpu_value
+
+    ccd_checks = (
+        ccd_counters["ccd_point_triangle_checks"] + ccd_counters["ccd_edge_edge_checks"]
+    )
+    if ccd_checks <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record World::step surface-contact CCD checks"
+        )
+    if ccd_counters["ccd_hits"] > ccd_checks:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} World::step CCD hits {ccd_counters['ccd_hits']} exceed "
+            f"checks {ccd_checks}"
+        )
+
     return {
         "line_search_trials": line_search_trials,
         "candidate_builds": candidate_builds,
@@ -1413,6 +1444,11 @@ def _validate_world_step_surface_contact_counters(
         "rejected_pairs": rejected_pairs,
         "point_triangle_candidates": point_triangle_candidates,
         "edge_edge_candidates": edge_edge_candidates,
+        "ccd_point_triangle_checks": ccd_counters["ccd_point_triangle_checks"],
+        "ccd_edge_edge_checks": ccd_counters["ccd_edge_edge_checks"],
+        "ccd_hits": ccd_counters["ccd_hits"],
+        "ccd_limited_steps": ccd_counters["ccd_limited_steps"],
+        "ccd_zero_step_count": ccd_counters["ccd_zero_step_count"],
     }
 
 
