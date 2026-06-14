@@ -436,6 +436,50 @@ void RigidBody::clearTorque()
 }
 
 //==============================================================================
+void RigidBody::applyLinearImpulse(const Eigen::Vector3d& impulse)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(impulse, "linear impulse");
+
+  if (isStatic() || isKinematic()) {
+    return;
+  }
+
+  auto& registry = dart::simulation::detail::registryOf(*getWorld());
+  const auto entity = detail::toRegistryEntity(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  auto& velocity = registry.get<comps::Velocity>(entity);
+  velocity.linear += impulse / mass.mass;
+}
+
+//==============================================================================
+void RigidBody::applyAngularImpulse(const Eigen::Vector3d& impulse)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(impulse, "angular impulse");
+
+  if (isStatic() || isKinematic()) {
+    return;
+  }
+
+  auto& registry = dart::simulation::detail::registryOf(*getWorld());
+  const auto entity = detail::toRegistryEntity(getEntity());
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  const auto& transform = registry.get<comps::Transform>(entity);
+  auto& velocity = registry.get<comps::Velocity>(entity);
+
+  const Eigen::Matrix3d rotation
+      = transform.orientation.normalized().toRotationMatrix();
+  const Eigen::Matrix3d worldInertia
+      = rotation * mass.inertia * rotation.transpose();
+  velocity.angular += worldInertia.ldlt().solve(impulse);
+}
+
+//==============================================================================
 Eigen::Vector3d RigidBody::getLinearMomentum() const
 {
   DART_SIMULATION_THROW_T_IF(

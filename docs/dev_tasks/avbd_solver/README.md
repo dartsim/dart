@@ -25,7 +25,15 @@ Corpus matrix:
   the visible NVIDIA RTX 5000 Ada host. This is local path and review-fix
   evidence only. It does not refresh the tracked friction-sweep packet, close
   the frictionless source-row CPU gap, resolve the GitHub review thread, or
-  claim GPU parity.
+  claim GPU parity. Afterward, `origin/main` at `c4c5ed87eae4` was merged
+  locally; the only conflict was `scripts/capture_py_demo.py`, resolved by
+  preserving both the PR branch's capture env/metadata overrides and `main`'s
+  visual-verification scene-metrics manifest support. Post-merge validation
+  passed `pixi run python -m py_compile scripts/capture_py_demo.py`, focused
+  capture and Dynamic Friction Python regressions with explicit build
+  `PYTHONPATH`, the focused contact/allocator `test_world` filter,
+  `pixi run build`, `pixi run test-unit`, and `pixi run lint`. No push has
+  been performed.
 - Latest local follow-up: PLAN-091 WP-091.1 relabels the AVBD contact-scene
   evidence rows: no `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene
   emplaces the internal AVBD rigid-contact opt-in config

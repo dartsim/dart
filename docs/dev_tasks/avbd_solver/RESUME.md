@@ -28,6 +28,13 @@ The panel label now derives from `max_friction`, the value is recorded in
 `Friction 5 speed` label. No GitHub reply, thread resolution, push, or review
 retrigger has been performed.
 
+Merge state: `origin/main` at `c4c5ed87eae4` has been merged locally into the
+PR branch after the review-fix commit. The only manual conflict was
+`scripts/capture_py_demo.py`; it was resolved by preserving this branch's
+`--env`/`--metadata` capture overrides and `main`'s visual-verification
+resolved-solver-identity / scene-metrics manifest support. No push has been
+performed.
+
 Validation for the latest local slice:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
@@ -59,6 +66,23 @@ Validation for the latest local slice:
   `dartpy._world_render_bridge` stub import, but the command passed. Final
   CUDA benchmark smokes also passed under CPU-scaling warnings and load
   averages around 20-26, so treat those timings as smoke evidence only.
+
+Post-merge validation after resolving `origin/main`:
+
+- `pixi run python -m py_compile scripts/capture_py_demo.py` passed.
+- `PYTHONPATH=build/default/cpp/Release/python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run pytest python/tests/unit/test_capture_py_demo.py -q`
+  passed, 76 tests. The ambient command without the explicit build
+  `PYTHONPATH` failed only on
+  `test_visual_capture_default_scene_matches_py_demos_front_door` when it
+  imported demo scenes and could not resolve the in-tree `dartpy._dartpy`
+  extension.
+- `PYTHONPATH=build/default/cpp/Release/python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env -q`
+  passed, 1 test.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests in 116.58 s.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run lint` passed.
 
 Previous static-position checkpoint validation, before this local slice, is
 retained for context:

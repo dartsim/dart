@@ -200,6 +200,10 @@ def build_hubo() -> SceneSetup:
 
 
 def build_g1_placeholder() -> SceneSetup:
+    current_route = "Atlas Puppet and Hubo Puppet for current loaded robot models"
+    target = "tracked Unitree G1 asset and World model loader"
+    unblocker = "tracked Unitree G1 model asset and loader mapping"
+    retire_when = "the G1 puppet loads as a World scene with pose controls"
     world = dart.gui.DescriptorRenderScene(dart.World(), "g1_puppet_planned")
     world.set_time_step(1.0 / 60.0)
     frame = dart.SimpleFrame(
@@ -211,17 +215,25 @@ def build_g1_placeholder() -> SceneSetup:
 
     def build_panel(builder: object, context: object) -> None:
         builder.text("status: planned World demo")
+        builder.text(f"try now: {current_route}")
         builder.text("legacy seed: g1_puppet")
         builder.separator()
-        builder.text("target: tracked Unitree G1 asset and World model loader")
+        builder.text(f"target: {target}")
+        builder.text(f"blocked on: {unblocker}")
+        builder.text(f"replace when: {retire_when}")
 
     return SceneSetup(
         world=world,
         panels=[ScenePanel("G1 Puppet", build_panel)],
         info={
             "planned_world_port": "g1_puppet",
+            "planned_status": "planned World demo",
             "legacy_seeds": ("g1_puppet",),
             "asset_policy": "missing tracked Unitree G1 model",
+            "current_route": current_route,
+            "target": target,
+            "unblocker": unblocker,
+            "retire_when": retire_when,
         },
     )
 

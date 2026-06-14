@@ -154,6 +154,20 @@ bool hasEntityWithName(const auto& registry, std::string_view name)
   return false;
 }
 
+template <typename Component>
+entt::entity findEntityWithName(const auto& registry, std::string_view name)
+{
+  auto view
+      = registry.template view<Component, dart::simulation::comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.template get<dart::simulation::comps::Name>(entity);
+    if (info.name == name) {
+      return entity;
+    }
+  }
+  return entt::null;
+}
+
 } // namespace
 
 namespace dart::simulation {
@@ -3795,6 +3809,64 @@ void World::addRigidBodyDistanceSpringImpl(
     config.localAnchorA = *parentAnchor;
     config.localAnchorB = *childAnchor;
   }
+  config.restLength = restLength;
+  config.startStiffness = stiffness;
+  config.materialStiffness = stiffness;
+  config.maxStiffness = stiffness;
+}
+
+//==============================================================================
+bool World::hasRigidBodyDistanceSpring(std::string_view name) const
+{
+  return hasEntityWithName<
+      detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig>(
+      m_storage->registry, name);
+}
+
+//==============================================================================
+std::pair<double, double> World::getRigidBodyDistanceSpringParameters(
+    std::string_view name) const
+{
+  using DistanceSpringConfig
+      = detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig;
+
+  const entt::entity entity
+      = findEntityWithName<DistanceSpringConfig>(m_storage->registry, name);
+  DART_SIMULATION_THROW_T_IF(
+      entity == entt::null,
+      InvalidArgumentException,
+      "Rigid-body distance spring '{}' does not exist",
+      name);
+
+  const auto& config = m_storage->registry.get<DistanceSpringConfig>(entity);
+  return {config.restLength, config.materialStiffness};
+}
+
+//==============================================================================
+void World::setRigidBodyDistanceSpringParameters(
+    std::string_view name, double restLength, double stiffness)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(restLength) || restLength < 0.0,
+      InvalidArgumentException,
+      "Rigid-body distance spring rest length must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(stiffness) || stiffness <= 0.0,
+      InvalidArgumentException,
+      "Rigid-body distance spring stiffness must be finite and positive");
+
+  using DistanceSpringConfig
+      = detail::deformable_vbd::AvbdRigidWorldDistanceSpringConfig;
+
+  const entt::entity entity
+      = findEntityWithName<DistanceSpringConfig>(m_storage->registry, name);
+  DART_SIMULATION_THROW_T_IF(
+      entity == entt::null,
+      InvalidArgumentException,
+      "Rigid-body distance spring '{}' does not exist",
+      name);
+
+  auto& config = m_storage->registry.get<DistanceSpringConfig>(entity);
   config.restLength = restLength;
   config.startStiffness = stiffness;
   config.materialStiffness = stiffness;

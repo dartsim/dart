@@ -23,19 +23,22 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: WP-091.1 (solver-identity recording and AVBD relabel) is
-  `[claimed]` — implemented and awaiting an independent/maintainer acceptance
-  pass. The AVBD packet family now has a shared schema contract that
-  machine-records resolved solver identity at schema version 2, enforced for
-  new packet files by `pixi run check-avbd-packets` in the `check-lint`
-  aggregate, and the six mirrored contact-scene claim sites are relabeled;
-  writer-script migration to emit the new field is a recorded follow-up (see
-  the packet Evidence bullet). After WP-091.1 is accepted, execute the
-  remaining four WS0 evidence-integrity packets in plan document order:
-  WP-091.2 golden trajectories (next; behavior-lock guardrail that hard-gates
-  the refactor-heavy packets), WP-091.3 architecture-claim lint, WP-091.4
-  legacy freeze (blocked on maintainer Decision 5 direction), WP-091.5
-  plan-ID renumber. Then open WS1 with WP-091.10 (virtual finalize/prepare on
-  the stage contract). Packets are
+  `[done]` (PR #2990, merged 2026-06-13) — the AVBD packet family has a shared
+  schema contract that machine-records resolved solver identity at schema
+  version 2, enforced for new packet files by `pixi run check-avbd-packets` in
+  both the `lint` and `check-lint` aggregates, and the six mirrored
+  contact-scene claim sites are relabeled; writer-script migration to emit the
+  new field is a recorded follow-up (see the packet Evidence bullet). Execute
+  the remaining four WS0 evidence-integrity packets in plan document order:
+  WP-091.2 golden trajectories (next available; behavior-lock guardrail that
+  hard-gates the refactor-heavy packets), WP-091.3 architecture-claim lint
+  (acceptance-criteria clarified — adds test citations to the marked rows
+  before linting them), WP-091.4 legacy freeze (blocked: PLAN-042 Decision 5
+  has no recorded maintainer direction yet), WP-091.5 plan-ID renumber
+  (PLAN-080 and PLAN-082 collisions confirmed real; the packet hazard owns the
+  exact `git grep` scope across docs and code). Then
+  open WS1 with WP-091.10 (virtual finalize/prepare on the stage contract).
+  Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
   and picked up via `dart-execute-packet`; availability follows each packet's
   own Dependencies line. The standing rule applies now: new solver-family
@@ -1455,8 +1458,9 @@ check-dart7-final-world-promotion`.
   with `rigid_body`, `deformable_body`, and `vbd_deformable` runtime-switchable
   scenes plus lightweight `Planned World Ports` placeholders for high-value DART
   6 concepts that still need World-native ports (IK, SIMBICON walking,
-  operational-space control, robot puppets, collision sandbox, mobile
-  manipulation); tooling/docs/CHANGELOG updated. The
+  operational-space control, robot puppets, mobile manipulation); the retired
+  collision sandbox route now points to concrete Python collision-debugging rows
+  instead of a C++ placeholder. The
   `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
   decision), so PLAN-101's `--scene` smoke gate is unaffected.
@@ -1481,9 +1485,10 @@ check-dart7-final-world-promotion`.
   and cross-language golden parity fixtures are removed from the demo surfaces.
   The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
   are tracked in PLAN-103's Landed State + retire-later checklist.
-- Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
-  the notebook imports (not copies) the scene modules; C++ `dart-demos` cycles
-  its World scenes; `pixi run lint` and `check-docs-policy` green.
+- Gate: `pixi run py-demos -- --cycle-scenes --headless --frames 1` cycles all
+  scenes (exit 0, with per-scene progress); the notebook imports (not copies)
+  the scene modules; C++ `dart-demos` cycles its World scenes; `pixi run lint`
+  and `check-docs-policy` green.
 
 ### PLAN-110: Differentiable Simulation
 
