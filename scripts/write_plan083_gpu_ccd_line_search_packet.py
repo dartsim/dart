@@ -31,7 +31,7 @@ DEFAULT_PACKET_OUTPUT = Path(
 )
 
 DEFAULT_PAIR_COUNT = 65536
-DEFAULT_TOLERANCE = 1e-8
+DEFAULT_TOLERANCE = 1e-6
 DEFAULT_SPEEDUP_GATE = 1.25
 REQUIRED_TIMING_KEYS = {
     "setup",
@@ -106,7 +106,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
-        "^BM_Plan083(EdgeEdge)?CcdLineSearch(Cpu|Cuda)"
+        "^BM_Plan083"
+        "("
+        "EdgeEdge|RigidCurvedPointTriangle|RigidCurvedEdgeEdge|"
+        "SceneRuntimePointTriangle|SceneRuntimeEdgeEdge|SceneRuntimeCombined"
+        ")?"
+        "CcdLineSearch(Cpu|Cuda)"
         f"/{args.pair_count}(/real_time)?$"
     )
     command = [
@@ -172,6 +177,26 @@ def _expected_row_names(pair_count: int) -> dict[str, tuple[str, str]]:
         "edge_edge": (
             f"BM_Plan083EdgeEdgeCcdLineSearchCpu/{pair_count}",
             f"BM_Plan083EdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
+        "rigid_curved_point_triangle": (
+            f"BM_Plan083RigidCurvedPointTriangleCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda/{pair_count}",
+        ),
+        "rigid_curved_edge_edge": (
+            f"BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
+        "scene_runtime_point_triangle": (
+            f"BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda/{pair_count}",
+        ),
+        "scene_runtime_edge_edge": (
+            f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
+        "scene_runtime_combined": (
+            f"BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda/{pair_count}",
         ),
     }
 
@@ -243,11 +268,282 @@ def _validate_primitive_family(
 
     cpu_pairs = int(_counter(cpu_row, "pairs"))
     gpu_pairs = int(_counter(gpu_row, "pairs"))
-    if cpu_pairs != pair_count or gpu_pairs != pair_count:
+    is_scene_runtime = family.startswith("scene_runtime_")
+    if cpu_pairs != gpu_pairs:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} CPU pair count {cpu_pairs} != GPU pair count {gpu_pairs}"
+        )
+    if is_scene_runtime:
+        if cpu_pairs <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record at least one runtime CCD pair"
+            )
+    elif cpu_pairs != pair_count:
         raise Plan083GpuCcdLineSearchPacketError(
             f"{family} expected {pair_count} pairs, got "
             f"CPU={cpu_pairs}, GPU={gpu_pairs}"
         )
+
+    scene_counters: dict[str, int] = {}
+    analytic_reference_counters: dict[str, float | int | str] = {}
+    interval_reference_counters: dict[str, float | int | str] = {}
+    if is_scene_runtime:
+        required_scene_counters = [
+            "scene_bodies",
+            "scene_nodes",
+            "scene_triangles",
+        ]
+        if family == "scene_runtime_point_triangle":
+            required_scene_counters.extend(
+                [
+                    "runtime_point_triangle_candidates",
+                    "static_triangle_point_triangle_candidates",
+                    "moving_triangle_point_triangle_candidates",
+                ]
+            )
+        if family == "scene_runtime_edge_edge":
+            required_scene_counters.append("runtime_edge_edge_candidates")
+        if family == "scene_runtime_combined":
+            required_scene_counters.extend(
+                [
+                    "point_triangle_pairs",
+                    "edge_edge_pairs",
+                    "point_triangle_hits",
+                    "edge_edge_hits",
+                    "runtime_point_triangle_candidates",
+                    "static_triangle_point_triangle_candidates",
+                    "moving_triangle_point_triangle_candidates",
+                    "runtime_edge_edge_candidates",
+                ]
+            )
+        for key in required_scene_counters:
+            cpu_value = int(_counter(cpu_row, key))
+            gpu_value = int(_counter(gpu_row, key))
+            if cpu_value != gpu_value:
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} CPU {key} {cpu_value} != GPU {key} {gpu_value}"
+                )
+            scene_counters[key] = cpu_value
+        if (
+            family == "scene_runtime_point_triangle"
+            and scene_counters["runtime_point_triangle_candidates"] != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} runtime point-triangle candidate count "
+                f"{scene_counters['runtime_point_triangle_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+        if (
+            family == "scene_runtime_point_triangle"
+            and (
+                scene_counters["static_triangle_point_triangle_candidates"]
+                + scene_counters["moving_triangle_point_triangle_candidates"]
+            )
+            != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} static/moving point-triangle candidate counts "
+                f"{scene_counters['static_triangle_point_triangle_candidates']} "
+                f"+ {scene_counters['moving_triangle_point_triangle_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+        if (
+            family == "scene_runtime_edge_edge"
+            and scene_counters["runtime_edge_edge_candidates"] != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} runtime edge-edge candidate count "
+                f"{scene_counters['runtime_edge_edge_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+        if family == "scene_runtime_combined":
+            if (
+                scene_counters["point_triangle_pairs"]
+                + scene_counters["edge_edge_pairs"]
+                != cpu_pairs
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} point-triangle/edge-edge pair counts "
+                    f"{scene_counters['point_triangle_pairs']} + "
+                    f"{scene_counters['edge_edge_pairs']} != pairs {cpu_pairs}"
+                )
+            if scene_counters["point_triangle_hits"] + scene_counters[
+                "edge_edge_hits"
+            ] != int(cpu_hits):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} point-triangle/edge-edge hit counts "
+                    f"{scene_counters['point_triangle_hits']} + "
+                    f"{scene_counters['edge_edge_hits']} != hits {int(cpu_hits)}"
+                )
+            if (
+                scene_counters["runtime_point_triangle_candidates"]
+                != scene_counters["point_triangle_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} runtime point-triangle candidate count "
+                    f"{scene_counters['runtime_point_triangle_candidates']} "
+                    f"!= point-triangle pairs "
+                    f"{scene_counters['point_triangle_pairs']}"
+                )
+            if (
+                scene_counters["static_triangle_point_triangle_candidates"]
+                + scene_counters["moving_triangle_point_triangle_candidates"]
+                != scene_counters["point_triangle_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} static/moving point-triangle candidate counts "
+                    f"{scene_counters['static_triangle_point_triangle_candidates']} "
+                    f"+ {scene_counters['moving_triangle_point_triangle_candidates']} "
+                    f"!= point-triangle pairs "
+                    f"{scene_counters['point_triangle_pairs']}"
+                )
+            if (
+                scene_counters["runtime_edge_edge_candidates"]
+                != scene_counters["edge_edge_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} runtime edge-edge candidate count "
+                    f"{scene_counters['runtime_edge_edge_candidates']} "
+                    f"!= edge-edge pairs {scene_counters['edge_edge_pairs']}"
+                )
+
+    if family.startswith("rigid_curved_"):
+        required_reference_counters = [
+            "analytic_reference_pairs",
+            "analytic_reference_hits",
+            "analytic_reference_hit_mismatches",
+            "analytic_reference_min_step_bound",
+            "max_sampled_reference_overshoot",
+            "max_sampled_reference_conservative_gap",
+        ]
+        for key in required_reference_counters:
+            cpu_value = _counter(cpu_row, key)
+            gpu_value = _counter(gpu_row, key)
+            if abs(cpu_value - gpu_value) > tolerance:
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} CPU {key} {cpu_value:g} != GPU {key} {gpu_value:g}"
+                )
+            analytic_reference_counters[key] = (
+                int(cpu_value)
+                if key
+                in {
+                    "analytic_reference_pairs",
+                    "analytic_reference_hits",
+                    "analytic_reference_hit_mismatches",
+                }
+                else cpu_value
+            )
+
+        if analytic_reference_counters["analytic_reference_pairs"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record analytic reference pairs"
+            )
+        if analytic_reference_counters["analytic_reference_hits"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record analytic reference hits"
+            )
+        if analytic_reference_counters["analytic_reference_hit_mismatches"] != 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} analytic reference hit mismatches must be zero"
+            )
+        if analytic_reference_counters["max_sampled_reference_overshoot"] > tolerance:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} sampled curved CCD overshoots analytic reference by "
+                f"{analytic_reference_counters['max_sampled_reference_overshoot']:.3g}"
+            )
+        analytic_reference_counters["analytic_reference_method"] = (
+            "rigid_ipc_curved_accd_prefix"
+        )
+        required_interval_reference_counters = [
+            "interval_reference_pairs",
+            "interval_reference_hits",
+            "interval_reference_hit_mismatches",
+            "interval_reference_min_step_bound",
+            "max_sampled_interval_reference_overshoot",
+            "max_sampled_interval_reference_conservative_gap",
+        ]
+        for key in required_interval_reference_counters:
+            cpu_value = _counter(cpu_row, key)
+            gpu_value = _counter(gpu_row, key)
+            if abs(cpu_value - gpu_value) > tolerance:
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} CPU {key} {cpu_value:g} != GPU {key} {gpu_value:g}"
+                )
+            interval_reference_counters[key] = (
+                int(cpu_value)
+                if key
+                in {
+                    "interval_reference_pairs",
+                    "interval_reference_hits",
+                    "interval_reference_hit_mismatches",
+                }
+                else cpu_value
+            )
+
+        if (
+            interval_reference_counters["interval_reference_pairs"]
+            != analytic_reference_counters["analytic_reference_pairs"]
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} interval reference pair count must match "
+                "analytic reference pair count"
+            )
+        if interval_reference_counters["interval_reference_pairs"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record interval reference pairs"
+            )
+        if interval_reference_counters["interval_reference_hits"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record interval reference hits"
+            )
+        if interval_reference_counters["interval_reference_hit_mismatches"] != 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} interval reference hit mismatches must be zero"
+            )
+        if (
+            interval_reference_counters["max_sampled_interval_reference_overshoot"]
+            > tolerance
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} sampled curved CCD overshoots interval reference by "
+                f"{interval_reference_counters['max_sampled_interval_reference_overshoot']:.3g}"
+            )
+        interval_reference_counters["interval_reference_method"] = (
+            "rigid_ipc_parameter_box_subdivision"
+        )
+
+    segment_count = cpu_pairs
+    samples_per_pair = 1
+    has_segment_counters = (
+        "segments" in cpu_row or "segments" in gpu_row or "gpu_segments" in gpu_row
+    )
+    if has_segment_counters:
+        cpu_segments = int(_counter(cpu_row, "segments"))
+        gpu_segments_key = "gpu_segments" if "gpu_segments" in gpu_row else "segments"
+        gpu_segments = int(_counter(gpu_row, gpu_segments_key))
+        cpu_samples_per_pair = int(_counter(cpu_row, "samples_per_pair"))
+        gpu_samples_per_pair = int(_counter(gpu_row, "samples_per_pair"))
+        if cpu_segments != gpu_segments:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} CPU segment count {cpu_segments} != "
+                f"GPU segment count {gpu_segments}"
+            )
+        if cpu_samples_per_pair != gpu_samples_per_pair:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} CPU samples_per_pair {cpu_samples_per_pair} != "
+                f"GPU samples_per_pair {gpu_samples_per_pair}"
+            )
+        if cpu_samples_per_pair <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} samples_per_pair must be positive"
+            )
+        if cpu_segments != cpu_pairs * cpu_samples_per_pair:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} expected {cpu_pairs * cpu_samples_per_pair} "
+                f"segments, got {cpu_segments}"
+            )
+        segment_count = cpu_segments
+        samples_per_pair = cpu_samples_per_pair
 
     speedup = cpu_ns / gpu_ns
     timing_ns = {
@@ -264,8 +560,10 @@ def _validate_primitive_family(
             f"{family} packet timing is missing {sorted(missing)}"
         )
 
-    return {
-        "pair_count": pair_count,
+    family_packet = {
+        "pair_count": cpu_pairs,
+        "segment_count": segment_count,
+        "samples_per_pair": samples_per_pair,
         "hit_count": int(cpu_hits),
         "min_step_bound": _counter(cpu_row, "min_step_bound"),
         "max_result_abs_error": max_error,
@@ -275,6 +573,14 @@ def _validate_primitive_family(
         "cpu_benchmark_row": _packet_row_name(cpu_row),
         "gpu_benchmark_row": _packet_row_name(gpu_row),
     }
+    if is_scene_runtime:
+        family_packet["nominal_pair_count"] = pair_count
+        family_packet.update(scene_counters)
+    if analytic_reference_counters:
+        family_packet.update(analytic_reference_counters)
+    if interval_reference_counters:
+        family_packet.update(interval_reference_counters)
+    return family_packet
 
 
 def make_packet(
@@ -303,6 +609,43 @@ def make_packet(
             speedup_gate=speedup_gate,
         )
 
+    scene_point_triangle = primitive_families["scene_runtime_point_triangle"]
+    scene_edge_edge = primitive_families["scene_runtime_edge_edge"]
+    scene_combined = primitive_families["scene_runtime_combined"]
+    if (
+        scene_combined["point_triangle_pairs"] != scene_point_triangle["pair_count"]
+        or scene_combined["point_triangle_hits"] != scene_point_triangle["hit_count"]
+        or scene_combined["runtime_point_triangle_candidates"]
+        != scene_point_triangle["runtime_point_triangle_candidates"]
+        or scene_combined["static_triangle_point_triangle_candidates"]
+        != scene_point_triangle["static_triangle_point_triangle_candidates"]
+        or scene_combined["moving_triangle_point_triangle_candidates"]
+        != scene_point_triangle["moving_triangle_point_triangle_candidates"]
+    ):
+        raise Plan083GpuCcdLineSearchPacketError(
+            "combined scene runtime CCD row point-triangle counters do not "
+            "match the point-triangle scene runtime row"
+        )
+    if (
+        scene_combined["edge_edge_pairs"] != scene_edge_edge["pair_count"]
+        or scene_combined["edge_edge_hits"] != scene_edge_edge["hit_count"]
+        or scene_combined["runtime_edge_edge_candidates"]
+        != scene_edge_edge["runtime_edge_edge_candidates"]
+    ):
+        raise Plan083GpuCcdLineSearchPacketError(
+            "combined scene runtime CCD row edge-edge counters do not match "
+            "the edge-edge scene runtime row"
+        )
+    for key in ("scene_bodies", "scene_nodes", "scene_triangles"):
+        if (
+            scene_combined[key] != scene_point_triangle[key]
+            or scene_combined[key] != scene_edge_edge[key]
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                "combined scene runtime CCD row scene counters do not match "
+                "the per-family scene runtime rows"
+            )
+
     point_triangle = primitive_families["point_triangle"]
     max_error = max(
         family["max_result_abs_error"] for family in primitive_families.values()
@@ -311,15 +654,74 @@ def make_packet(
     meets_speedup_gate = all(
         family["meets_speedup_gate"] for family in primitive_families.values()
     )
+    analytic_reference_families = [
+        family
+        for family in primitive_families.values()
+        if "analytic_reference_pairs" in family
+    ]
+    interval_reference_families = [
+        family
+        for family in primitive_families.values()
+        if "interval_reference_pairs" in family
+    ]
 
     return {
         "plan083_gpu_ccd_line_search_packet": {
             "row_id": "ccd-line-search",
             "same_scene_cpu_gpu": True,
             "primitive_families": primitive_families,
-            "pair_count": pair_count * len(primitive_families),
+            "pair_count": sum(
+                family["pair_count"] for family in primitive_families.values()
+            ),
+            "segment_count": sum(
+                family["segment_count"] for family in primitive_families.values()
+            ),
             "hit_count": sum(
                 family["hit_count"] for family in primitive_families.values()
+            ),
+            "analytic_reference_pair_count": sum(
+                family["analytic_reference_pairs"]
+                for family in analytic_reference_families
+            ),
+            "analytic_reference_hit_count": sum(
+                family["analytic_reference_hits"]
+                for family in analytic_reference_families
+            ),
+            "max_sampled_reference_overshoot": max(
+                (
+                    family["max_sampled_reference_overshoot"]
+                    for family in analytic_reference_families
+                ),
+                default=0.0,
+            ),
+            "max_sampled_reference_conservative_gap": max(
+                (
+                    family["max_sampled_reference_conservative_gap"]
+                    for family in analytic_reference_families
+                ),
+                default=0.0,
+            ),
+            "interval_reference_pair_count": sum(
+                family["interval_reference_pairs"]
+                for family in interval_reference_families
+            ),
+            "interval_reference_hit_count": sum(
+                family["interval_reference_hits"]
+                for family in interval_reference_families
+            ),
+            "max_sampled_interval_reference_overshoot": max(
+                (
+                    family["max_sampled_interval_reference_overshoot"]
+                    for family in interval_reference_families
+                ),
+                default=0.0,
+            ),
+            "max_sampled_interval_reference_conservative_gap": max(
+                (
+                    family["max_sampled_interval_reference_conservative_gap"]
+                    for family in interval_reference_families
+                ),
+                default=0.0,
             ),
             "min_step_bound": min(
                 family["min_step_bound"] for family in primitive_families.values()

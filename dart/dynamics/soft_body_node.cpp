@@ -971,19 +971,20 @@ void SoftBodyNode::aggregateAugMassMatrix(
 
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0) {
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
+    Eigen::VectorXd K = Eigen::VectorXd::Zero(dof);
+    Eigen::VectorXd D = Eigen::VectorXd::Zero(dof);
     for (std::size_t i = 0; i < dof; ++i) {
-      K(i, i) = mParentJoint->getSpringStiffness(i);
-      D(i, i) = mParentJoint->getDampingCoefficient(i);
+      K[i] = mParentJoint->getSpringStiffness(i);
+      D[i] = mParentJoint->getDampingCoefficient(i);
     }
     int iStart = mParentJoint->getIndexInTree(0);
 
     // TODO(JS): Not recommended to use Joint::getAccelerations
     _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getAccelerations())
-          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
+          + D.asDiagonal() * (_timeStep * mParentJoint->getAccelerations())
+          + K.asDiagonal()
+                * (_timeStep * _timeStep * mParentJoint->getAccelerations());
   }
 }
 
