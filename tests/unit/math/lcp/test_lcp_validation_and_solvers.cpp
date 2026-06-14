@@ -79,7 +79,32 @@ LcpProblem makeBoxedProblem()
       std::move(findex));
 }
 
-LcpProblem makeFrictionProblem()
+LcpProblem makeBoxedActiveProblem(Eigen::VectorXd* expected = nullptr)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(3, 3);
+  A.diagonal() << 4.0, 3.0, 2.0;
+  Eigen::VectorXd lo(3);
+  lo << -1.0, -0.5, -0.25;
+  Eigen::VectorXd hi(3);
+  hi << 0.75, 1.0, 0.75;
+  Eigen::VectorXd target(3);
+  target << lo[0], hi[1], 0.2;
+  Eigen::VectorXd w(3);
+  w << 0.5, -0.5, 0.0;
+  Eigen::VectorXd b = A * target - w;
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  if (expected) {
+    *expected = target;
+  }
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeFrictionProblem(Eigen::VectorXd* expected = nullptr)
 {
   Eigen::MatrixXd A(3, 3);
   A << 3.0, 0.1, 0.0, 0.1, 2.5, 0.05, 0.0, 0.05, 2.0;
@@ -94,6 +119,9 @@ LcpProblem makeFrictionProblem()
   hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
   Eigen::VectorXi findex(3);
   findex << -1, 0, 0;
+  if (expected) {
+    *expected = target;
+  }
   return LcpProblem(
       std::move(A),
       std::move(b),
@@ -241,9 +269,9 @@ LcpProblem makeTwoBlockStandardProblem()
       std::move(findex));
 }
 
-LcpProblem makeFrictionBlockProblem()
+LcpProblem makeFrictionBlockProblem(
+    int contacts = 3, Eigen::VectorXd* expected = nullptr)
 {
-  const int contacts = 3;
   const int blockSize = 3;
   const int n = contacts * blockSize;
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
@@ -258,10 +286,14 @@ LcpProblem makeFrictionBlockProblem()
     A(base + 2, base + 1) = 0.08;
   }
 
-  A(0, 3) = 0.02;
-  A(3, 0) = 0.02;
-  A(3, 6) = 0.02;
-  A(6, 3) = 0.02;
+  if (contacts > 1) {
+    A(0, 3) = 0.02;
+    A(3, 0) = 0.02;
+  }
+  if (contacts > 2) {
+    A(3, 6) = 0.02;
+    A(6, 3) = 0.02;
+  }
 
   Eigen::VectorXd target(n);
   for (int c = 0; c < contacts; ++c) {
@@ -271,6 +303,9 @@ LcpProblem makeFrictionBlockProblem()
     target[base + 2] = -0.05;
   }
   Eigen::VectorXd b = A * target;
+  if (expected) {
+    *expected = target;
+  }
 
   Eigen::VectorXd lo(n);
   Eigen::VectorXd hi(n);
@@ -441,6 +476,12 @@ void expectRowMajorDataNear(
   }
 }
 
+void expectInvalidParameter(const LcpResult& result, const char* token)
+{
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(result.message.find(token), std::string::npos) << result.message;
+}
+
 } // namespace
 
 TEST(LcpValidationCoverage, DetectsDimensionMismatch)
@@ -484,6 +525,36 @@ TEST(LcpValidationCoverage, DetectsBoundsDimensionMismatch)
   std::string message;
   EXPECT_FALSE(detail::validateProblem(problem, &message));
   EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, DetectsNonFiniteMatrixEntries)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  A(0, 1) = std::numeric_limits<double>::quiet_NaN();
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("Matrix"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, DetectsNonFiniteRhsEntries)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  b[1] = std::numeric_limits<double>::infinity();
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("Vector b"), std::string::npos);
 }
 
 TEST(LcpValidationCoverage, DetectsFindexDimensionMismatch)
@@ -561,6 +632,23 @@ TEST(LcpValidationCoverage, DetectsFrictionWithInfiniteHi)
   std::string message;
   EXPECT_FALSE(detail::validateProblem(problem, &message));
   EXPECT_FALSE(message.empty());
+}
+
+TEST(LcpValidationCoverage, DetectsFrictionWithNegativeHi)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), -0.5;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("non-negative"), std::string::npos);
 }
 
 TEST(LcpValidationCoverage, DetectsLowerBoundAboveUpperBound)
@@ -882,6 +970,26 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNonFiniteMu)
       detail::computeEffectiveBounds(
           lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("Invalid friction coefficient"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNegativeMu)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), -0.5;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+  Eigen::VectorXd x(2);
+  x << 0.2, 0.0;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("negative"), std::string::npos);
 }
 
 TEST(LcpValidationCoverage, ValidateSolutionRejectsDimensionMismatchWithMessage)
@@ -1468,6 +1576,44 @@ TEST(MprgpSolverCoverage, SolvesShiftedProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(MprgpSolverCoverage, StalledDirectionReportsFiniteResult)
+{
+  constexpr int n = 12;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  for (int i = 0; i + 1 < n; ++i) {
+    A(i, i + 1) = 0.08;
+    A(i + 1, i) = 0.08;
+  }
+  for (int i = 0; i + 2 < n; ++i) {
+    A(i, i + 2) = 0.025;
+    A(i + 2, i) = 0.025;
+  }
+
+  Eigen::VectorXd target(n);
+  for (int i = 0; i < n; ++i) {
+    target[i]
+        = 0.15
+          + (0.50 - 0.15) * static_cast<double>(i) / static_cast<double>(n - 1);
+  }
+
+  LcpProblem problem(A, A * target);
+  MprgpSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  LcpOptions options = LcpOptions::highAccuracy();
+  options.maxIterations = 1000;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(
+      result.status == LcpSolverStatus::Success
+      || result.status == LcpSolverStatus::MaxIterations)
+      << result.message;
+  EXPECT_TRUE(std::isfinite(result.residual));
+  EXPECT_TRUE(std::isfinite(result.complementarity));
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_LT((x - target).lpNorm<Eigen::Infinity>(), 1e-6);
+}
+
 TEST(MprgpSolverCoverage, RejectsInvalidDivisionEpsilon)
 {
   MprgpSolver solver;
@@ -1541,6 +1687,668 @@ TEST(LemkeSolverCoverage, SolvesMultipleSizes)
     const Eigen::VectorXd expected = Eigen::VectorXd::Constant(size, 0.25);
     EXPECT_TRUE(x.isApprox(expected, 1e-6));
   }
+}
+
+TEST(StandardStrictInteriorFastPath, PivotAndBarrierSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    DantzigSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    auto options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    LemkeSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    BaraffSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    InteriorPointSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
+TEST(StandardStrictInteriorFastPath, NewtonSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    BoxedSemiSmoothNewtonSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    auto options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    FischerBurmeisterNewtonSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    PenalizedFischerBurmeisterNewtonSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    MinimumMapNewtonSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
+TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    ApgdSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    BgsSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    BlockedJacobiSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    NncgSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    JacobiSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    RedBlackGaussSeidelSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    ShockPropagationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SymmetricPsorSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SubspaceMinimizationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
+TEST(StandardStrictInteriorFastPath, HighOverheadSolversUseLargeLinearSolve)
+{
+  auto problem = makeStandardProblem(96, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(96, 0.35);
+
+  {
+    BgsSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    NncgSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SymmetricPsorSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SubspaceMinimizationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
+TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    AdmmSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    MprgpSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SapSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
+TEST(BoxedProjectedActiveSetFastPath, AdmmUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  AdmmSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, DantzigUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  DantzigSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, ApgdUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  ApgdSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, ShockPropagationUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  ShockPropagationSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, NncgUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  NncgSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, BlockedJacobiUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  BlockedJacobiSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, BgsUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  BgsSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, BoxedSemiSmoothNewtonUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  BoxedSemiSmoothNewtonSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, SapUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  SapSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(BoxedProjectedActiveSetFastPath, SubspaceMinimizationUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  SubspaceMinimizationSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, HighOverheadSolversUseLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionProblem(&expected);
+
+  const auto expectFastPath = [&](auto& solver) {
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    options.maxIterations = 1;
+
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  };
+
+  {
+    DantzigSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    JacobiSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    RedBlackGaussSeidelSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BlockedJacobiSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BgsSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    NncgSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    SubspaceMinimizationSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    ShockPropagationSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    SymmetricPsorSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    StaggeringSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    AdmmSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    ApgdSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BoxedSemiSmoothNewtonSolver solver;
+    expectFastPath(solver);
+  }
+}
+
+TEST(FrictionIndexInteriorFastPath, ApgdUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  ApgdSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, SymmetricPsorUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  SymmetricPsorSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, ShockPropagationUsesLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  ShockPropagationSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, JacobiUsesLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  JacobiSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, RedBlackGaussSeidelUsesLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  RedBlackGaussSeidelSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, BgsUsesLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  BgsSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, AdmmUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  AdmmSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, BoxedSemiSmoothNewtonUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  BoxedSemiSmoothNewtonSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(
+    FrictionIndexInteriorFastPath,
+    BoxedSemiSmoothNewtonUsesConfiguredLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  BoxedSemiSmoothNewtonSolver solver;
+  BoxedSemiSmoothNewtonSolver::Parameters params;
+  params.maxFrictionIndexExactSolveDimension = static_cast<int>(problem.size());
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.customOptions = &params;
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(
+    BoxedSemiSmoothNewtonSolverCoverage,
+    WarmStartAcceptsConvergedLineSearchStep)
+{
+  auto problem = makeStandardProblem(3);
+  BoxedSemiSmoothNewtonSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = true;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 1);
+  EXPECT_TRUE(
+      x.isApprox(Eigen::VectorXd::Constant(problem.size(), 0.25), 1e-8));
 }
 
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
@@ -1743,7 +2551,7 @@ TEST(BlockedJacobiSolverCoverage, ReportsMaxIterationsWhenNotConverged)
   Eigen::MatrixXd A(2, 2);
   A << 2.0, 1.5, 1.0, 2.5;
   Eigen::VectorXd target(2);
-  target << 0.4, 0.25;
+  target << 0.0, 0.25;
   Eigen::VectorXd b = A * target;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
   Eigen::VectorXd hi
@@ -1807,6 +2615,28 @@ TEST(BgsSolverCoverage, SolvesStandardProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(BgsSolverCoverage, SolvesSingletonBoxedBlocksWithProjection)
+{
+  BgsSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, 2);
+  A(0, 0) = 2.0;
+  A(1, 1) = 4.0;
+  Eigen::Vector2d b(3.0, -8.0);
+  Eigen::Vector2d lo(0.0, -1.0);
+  Eigen::Vector2d hi(1.0, 2.0);
+  LcpProblem problem(A, b, lo, hi);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_NEAR(x[0], 1.0, 1e-12);
+  EXPECT_NEAR(x[1], -1.0, 1e-12);
 }
 
 TEST(BgsSolverCoverage, SolvesAutoBlockPartition)
@@ -1899,6 +2729,21 @@ TEST(PgsSolverCoverage, RejectsInvalidRelaxation)
   options.relaxation = 3.0;
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(PgsSolverCoverage, RejectsInvalidDivisionEpsilon)
+{
+  PgsSolver solver;
+  PgsSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  expectInvalidParameter(result, "epsilon_for_division");
 }
 
 TEST(PgsSolverCoverage, SolvesWarmStartWithRandomOrder)
@@ -2086,8 +2931,35 @@ TEST(ShockPropagationSolverCoverage, SolvesWithCustomLayers)
   auto problem = makeStandardProblem(3);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
   const auto result = solver.solve(problem, x, options);
-  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
-  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(Eigen::VectorXd::Constant(3, 0.25), 1e-8));
+}
+
+TEST(ShockPropagationSolverCoverage, SolvesFeasibleBoxedBlockDirectly)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {3};
+  params.layers = {{0}};
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3) * 2.0;
+  Eigen::Vector3d target(0.25, 0.5, 0.75);
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(3);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Success) << result.message;
+  ASSERT_EQ(x.size(), target.size());
+  EXPECT_TRUE(x.isApprox(target, 1e-12));
 }
 
 TEST(ShockPropagationSolverCoverage, SolvesSimpleThreeByThreeProblem)
@@ -2244,7 +3116,7 @@ TEST(MprgpSolverCoverage, FallsBackForIndefiniteProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
-TEST(MprgpSolverCoverage, ReportsProjectedGradientFailure)
+TEST(MprgpSolverCoverage, ReportsProjectedGradientStallWithFiniteMetrics)
 {
   MprgpSolver solver;
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
@@ -2263,27 +3135,31 @@ TEST(MprgpSolverCoverage, ReportsProjectedGradientFailure)
   options.customOptions = &params;
   options.maxIterations = 5;
   const auto result = solver.solve(problem, x, options);
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
+  EXPECT_TRUE(std::isfinite(result.residual));
+  EXPECT_TRUE(std::isfinite(result.complementarity));
   EXPECT_FALSE(result.message.empty());
 }
 
-TEST(InteriorPointSolverCoverage, SolvesWithClampedParameters)
+TEST(InteriorPointSolverCoverage, RejectsInvalidParameters)
 {
-  InteriorPointSolver solver;
-  auto problem = makeStandardProblem(6);
-  Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.2);
+  auto solve = [](InteriorPointSolver::Parameters params) {
+    InteriorPointSolver solver;
+    LcpOptions options;
+    options.customOptions = &params;
+
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
 
   InteriorPointSolver::Parameters params;
   params.sigma = 1.5;
-  params.stepScale = 1.5;
+  expectInvalidParameter(solve(params), "sigma");
 
-  LcpOptions options;
-  options.customOptions = &params;
-  options.maxIterations = 3;
-  options.warmStart = true;
-  const auto result = solver.solve(problem, x, options);
-  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
-  EXPECT_TRUE(x.array().isFinite().all());
+  params = {};
+  params.stepScale = 1.5;
+  expectInvalidParameter(solve(params), "step_scale");
 }
 
 TEST(InteriorPointSolverCoverage, SolvesSimpleThreeByThreeProblem)
@@ -2485,6 +3361,22 @@ TEST(ShockPropagationSolverCoverage, RejectsInvalidBlockSizes)
 
   auto problem = makeStandardProblem(4);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(
+    ShockPropagationSolverCoverage, RejectsInvalidBoxedBlockSizesBeforeFastPath)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 1};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
@@ -3240,6 +4132,26 @@ TEST(ApgdSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
+TEST(ApgdSolverCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](ApgdSolver::Parameters params) {
+    ApgdSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  ApgdSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+  expectInvalidParameter(solve(params), "epsilon_for_division");
+
+  params = {};
+  params.restartCheckInterval = -1;
+  expectInvalidParameter(solve(params), "restart_check_interval");
+}
+
 TEST(TgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
 {
   TgsSolver defaultSolver;
@@ -3285,6 +4197,21 @@ TEST(TgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
+TEST(TgsSolverCoverage, RejectsInvalidDivisionEpsilon)
+{
+  TgsSolver solver;
+  TgsSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+
+  LcpOptions options = solver.getDefaultOptions();
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  expectInvalidParameter(result, "epsilon_for_division");
+}
+
 TEST(SubspaceMinimizationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
 {
   SubspaceMinimizationSolver defaultSolver;
@@ -3326,6 +4253,105 @@ TEST(SubspaceMinimizationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
   EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
   EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(MinimumMapNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](MinimumMapNewtonSolver::Parameters params) {
+    MinimumMapNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
+}
+
+TEST(FischerBurmeisterNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](FischerBurmeisterNewtonSolver::Parameters params) {
+    FischerBurmeisterNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 0.0;
+  expectInvalidParameter(solve(params), "smoothing_epsilon");
+  params = {};
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
 }
 
 TEST(FischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
@@ -3426,6 +4452,60 @@ TEST(MinimumMapNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
+TEST(PenalizedFischerBurmeisterNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](PenalizedFischerBurmeisterNewtonSolver::Parameters params) {
+    PenalizedFischerBurmeisterNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 0.0;
+  expectInvalidParameter(solve(params), "smoothing_epsilon");
+  params = {};
+  params.lambda = 1.5;
+  expectInvalidParameter(solve(params), "lambda");
+  params = {};
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
+}
+
 TEST(PenalizedFischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
 {
   PenalizedFischerBurmeisterNewtonSolver defaultSolver;
@@ -3495,6 +4575,9 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   params.sufficientDecrease = 1e-3;
   params.minStep = 1e-6;
   params.jacobianRegularization = 1e-7;
+  params.maxPgsWarmStartIterations = 3;
+  params.pgsWarmStartRelaxation = 0.9;
+  params.maxFrictionIndexExactSolveDimension = 96;
   customSolver.setParameters(params);
   EXPECT_EQ(
       customSolver.getParameters().maxLineSearchSteps,
@@ -3508,6 +4591,15 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_DOUBLE_EQ(
       customSolver.getParameters().jacobianRegularization,
       params.jacobianRegularization);
+  EXPECT_EQ(
+      customSolver.getParameters().maxPgsWarmStartIterations,
+      params.maxPgsWarmStartIterations);
+  EXPECT_DOUBLE_EQ(
+      customSolver.getParameters().pgsWarmStartRelaxation,
+      params.pgsWarmStartRelaxation);
+  EXPECT_EQ(
+      customSolver.getParameters().maxFrictionIndexExactSolveDimension,
+      params.maxFrictionIndexExactSolveDimension);
 
   LcpOptions options = customSolver.getDefaultOptions();
   options.customOptions = &params;
@@ -3546,22 +4638,51 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
-TEST(BoxedSemiSmoothNewtonSolverCoverage, FailureAndValidationBranches)
+TEST(BoxedSemiSmoothNewtonSolverCoverage, ParameterAndValidationBranches)
 {
   BoxedSemiSmoothNewtonSolver solver;
 
-  BoxedSemiSmoothNewtonSolver::Parameters failParams;
-  failParams.maxLineSearchSteps = 0;
-  LcpOptions failOptions = solver.getDefaultOptions();
-  failOptions.customOptions = &failParams;
-  failOptions.maxIterations = 1;
-  failOptions.validateSolution = false;
+  BoxedSemiSmoothNewtonSolver::Parameters invalidParams;
+  invalidParams.maxLineSearchSteps = 0;
+  LcpOptions invalidOptions = solver.getDefaultOptions();
+  invalidOptions.customOptions = &invalidParams;
+  invalidOptions.maxIterations = 1;
+  invalidOptions.validateSolution = false;
 
   auto standard = makeStandardProblem(2);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
-  const auto failedResult = solver.solve(standard, x, failOptions);
-  EXPECT_EQ(failedResult.status, LcpSolverStatus::Failed);
-  EXPECT_FALSE(failedResult.message.empty());
+  const auto invalidResult = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidResult.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidResult.message.find("max_line_search_steps"), std::string::npos);
+
+  invalidParams = {};
+  invalidParams.maxPgsWarmStartIterations = -1;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidWarmStartIterations = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidWarmStartIterations.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidWarmStartIterations.message.find("max_pgs_warm_start_iterations"),
+      std::string::npos);
+
+  invalidParams = {};
+  invalidParams.pgsWarmStartRelaxation = 0.0;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidWarmStartRelaxation = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidWarmStartRelaxation.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidWarmStartRelaxation.message.find("pgs_warm_start_relaxation"),
+      std::string::npos);
+
+  invalidParams = {};
+  invalidParams.maxFrictionIndexExactSolveDimension = -1;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidExactSolveDimension = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidExactSolveDimension.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidExactSolveDimension.message.find(
+          "max_friction_index_exact_solve_dimension"),
+      std::string::npos);
 
   LcpOptions validationOptions = solver.getDefaultOptions();
   validationOptions.validateSolution = true;
@@ -3674,6 +4795,7 @@ TEST(AdmmSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(defaults.maxIterations, 200);
   EXPECT_TRUE(defaults.validateSolution);
   EXPECT_TRUE(defaults.warmStart);
+  EXPECT_DOUBLE_EQ(defaultSolver.getParameters().rhoInit, 4.0);
 
   auto standard = makeStandardProblem(3);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
@@ -3718,7 +4840,7 @@ TEST(AdmmSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_FALSE(invalidResult.message.empty());
 
   AdmmSolver::Parameters singularParams;
-  singularParams.rhoInit = 0.0;
+  singularParams.rhoInit = 1e-9;
   singularParams.muProx = 0.0;
   singularParams.adaptiveRho = false;
   LcpOptions singularOptions = customSolver.getDefaultOptions();

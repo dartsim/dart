@@ -42,9 +42,12 @@ struct PointTriangleCcdLineSearchPair
 {
   double pointStart[3]{};
   double pointEnd[3]{};
-  double triangleA[3]{};
-  double triangleB[3]{};
-  double triangleC[3]{};
+  double triangleAStart[3]{};
+  double triangleAEnd[3]{};
+  double triangleBStart[3]{};
+  double triangleBEnd[3]{};
+  double triangleCStart[3]{};
+  double triangleCEnd[3]{};
 };
 
 struct EdgeEdgeCcdLineSearchPair
@@ -89,9 +92,9 @@ using EdgeEdgeCcdLineSearchResult = CcdLineSearchResult;
 
 /// Evaluate a private endpoint-linear point-triangle CCD line-search packet.
 ///
-/// The CUDA packet covers point trajectories against static triangles and is
-/// intentionally narrower than the full CPU line-search surface. It is private
-/// staged GPU evidence, not a public CCD backend.
+/// The CUDA packet covers linear point and triangle vertex trajectories through
+/// the same additive conservative-advancement contract as the CPU helper. It is
+/// private staged GPU evidence, not a public CCD backend.
 void evaluatePointTriangleCcdLineSearchCuda(
     const std::vector<PointTriangleCcdLineSearchPair>& pairs,
     const CcdLineSearchOptions& options,

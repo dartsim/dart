@@ -29,7 +29,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/body/deformable_body.hpp>
+#include <dart/simulation/body/deformable_body_options.hpp>
+#include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/deformable_contact/continuous_collision_step.hpp>
+#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/world.hpp>
+
+#include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
@@ -44,8 +51,18 @@
 
 namespace cuda = dart::simulation::compute::cuda;
 namespace dc = dart::simulation::detail::deformable_contact;
+namespace native = dart::collision::native;
+namespace rigid = dart::simulation::detail;
+namespace sx = dart::simulation;
 
 namespace {
+
+constexpr std::size_t kRigidCurvedSegmentCount = 8;
+constexpr std::size_t kRigidCurvedAnalyticReferenceCount = 256;
+constexpr double kRigidCurvedReferenceTolerance = 1e-6;
+constexpr double kPi = 3.14159265358979323846264338327950288;
+constexpr double kSceneRuntimeCandidateActivationDistance = 0.05;
+constexpr double kSceneRuntimeCcdTimeStep = 1.0;
 
 struct CcdFixture
 {
@@ -65,6 +82,65 @@ struct EdgeEdgeCcdFixture
   double minStepBound = 1.0;
 };
 
+struct SceneRuntimeCcdSurface
+{
+  std::vector<Eigen::Vector3d> start;
+  std::vector<Eigen::Vector3d> end;
+  std::vector<sx::DeformableSurfaceTriangle> triangles;
+  dc::ContactCandidateSet candidates;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+};
+
+struct ScenePointTriangleCcdFixture : CcdFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sourcePointTriangleCandidateCount = 0;
+  std::size_t staticTrianglePointTriangleCandidateCount = 0;
+  std::size_t movingTrianglePointTriangleCandidateCount = 0;
+};
+
+struct SceneEdgeEdgeCcdFixture : EdgeEdgeCcdFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sourceEdgeEdgeCandidateCount = 0;
+};
+
+struct CombinedSceneRuntimeCcdFixture
+{
+  ScenePointTriangleCcdFixture pointTriangle;
+  SceneEdgeEdgeCcdFixture edgeEdge;
+};
+
+template <typename Pair>
+struct RigidCurvedCcdFixture
+{
+  std::vector<Pair> segmentPairs;
+  std::vector<double> cpuStepBounds;
+  std::vector<std::uint8_t> cpuHits;
+  std::size_t trajectoryCount = 0;
+  std::size_t segmentCount = kRigidCurvedSegmentCount;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  std::size_t analyticReferencePairCount = 0;
+  std::size_t analyticReferenceHitCount = 0;
+  std::size_t analyticReferenceHitMismatchCount = 0;
+  double analyticReferenceMinStepBound = 1.0;
+  double maxSampledReferenceOvershoot = 0.0;
+  double maxSampledReferenceConservativeGap = 0.0;
+  std::size_t intervalReferencePairCount = 0;
+  std::size_t intervalReferenceHitCount = 0;
+  std::size_t intervalReferenceHitMismatchCount = 0;
+  double intervalReferenceMinStepBound = 1.0;
+  double maxSampledIntervalReferenceOvershoot = 0.0;
+  double maxSampledIntervalReferenceConservativeGap = 0.0;
+};
+
 void setVec3(double values[3], const Eigen::Vector3d& vector)
 {
   for (int i = 0; i < 3; ++i) {
@@ -80,17 +156,33 @@ Eigen::Vector3d vec3(const double values[3])
 cuda::PointTriangleCcdLineSearchPair makePair(
     const Eigen::Vector3d& pointStart,
     const Eigen::Vector3d& pointEnd,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aEnd,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bEnd,
+    const Eigen::Vector3d& cStart,
+    const Eigen::Vector3d& cEnd)
 {
   cuda::PointTriangleCcdLineSearchPair pair;
   setVec3(pair.pointStart, pointStart);
   setVec3(pair.pointEnd, pointEnd);
-  setVec3(pair.triangleA, a);
-  setVec3(pair.triangleB, b);
-  setVec3(pair.triangleC, c);
+  setVec3(pair.triangleAStart, aStart);
+  setVec3(pair.triangleAEnd, aEnd);
+  setVec3(pair.triangleBStart, bStart);
+  setVec3(pair.triangleBEnd, bEnd);
+  setVec3(pair.triangleCStart, cStart);
+  setVec3(pair.triangleCEnd, cEnd);
   return pair;
+}
+
+cuda::PointTriangleCcdLineSearchPair makePair(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointEnd,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  return makePair(pointStart, pointEnd, a, a, b, b, c, c);
 }
 
 cuda::EdgeEdgeCcdLineSearchPair makeEdgeEdgePair(
@@ -121,12 +213,12 @@ dc::ContinuousCollisionStepResult cpuResult(
   return dc::pointTriangleStepBound(
       vec3(pair.pointStart),
       vec3(pair.pointEnd),
-      vec3(pair.triangleA),
-      vec3(pair.triangleA),
-      vec3(pair.triangleB),
-      vec3(pair.triangleB),
-      vec3(pair.triangleC),
-      vec3(pair.triangleC));
+      vec3(pair.triangleAStart),
+      vec3(pair.triangleAEnd),
+      vec3(pair.triangleBStart),
+      vec3(pair.triangleBEnd),
+      vec3(pair.triangleCStart),
+      vec3(pair.triangleCEnd));
 }
 
 dc::ContinuousCollisionStepResult cpuResult(
@@ -141,6 +233,108 @@ dc::ContinuousCollisionStepResult cpuResult(
       vec3(pair.edgeB0End),
       vec3(pair.edgeB1Start),
       vec3(pair.edgeB1End));
+}
+
+template <typename Fixture>
+void populateCpuPairResults(Fixture& fixture)
+{
+  fixture.cpuStepBounds.clear();
+  fixture.cpuHits.clear();
+  fixture.cpuStepBounds.reserve(fixture.pairs.size());
+  fixture.cpuHits.reserve(fixture.pairs.size());
+  fixture.hitCount = 0;
+  fixture.minStepBound = 1.0;
+
+  for (const auto& pair : fixture.pairs) {
+    const auto result = cpuResult(pair);
+    fixture.cpuStepBounds.push_back(result.stepBound);
+    fixture.cpuHits.push_back(result.hit ? 1u : 0u);
+    if (result.hit) {
+      ++fixture.hitCount;
+      fixture.minStepBound = std::min(fixture.minStepBound, result.stepBound);
+    }
+  }
+}
+
+template <typename Pair>
+void evaluateTrajectorySegments(
+    const std::vector<Pair>& segmentPairs,
+    const std::size_t trajectoryCount,
+    const std::size_t segmentCount,
+    std::vector<double>& stepBounds,
+    std::vector<std::uint8_t>& hits,
+    std::size_t& hitCount,
+    double& minStepBound)
+{
+  stepBounds.assign(trajectoryCount, 1.0);
+  hits.assign(trajectoryCount, 0u);
+  hitCount = 0;
+  minStepBound = 1.0;
+
+  for (std::size_t trajectory = 0; trajectory < trajectoryCount; ++trajectory) {
+    for (std::size_t segment = 0; segment < segmentCount; ++segment) {
+      const std::size_t pairIndex = trajectory * segmentCount + segment;
+      const auto result = cpuResult(segmentPairs[pairIndex]);
+      if (!result.hit) {
+        continue;
+      }
+
+      // A segment-local endpoint-linear CCD result approximates a curved rigid
+      // trajectory. Use the segment lower bound as the conservative trajectory
+      // step for the sampled curved row; the analytic-reference counters below
+      // verify the prefix against the continuous curved rigid IPC ACCD query.
+      const double trajectoryStep
+          = static_cast<double>(segment) / static_cast<double>(segmentCount);
+      stepBounds[trajectory] = trajectoryStep;
+      hits[trajectory] = 1u;
+      ++hitCount;
+      minStepBound = std::min(minStepBound, trajectoryStep);
+      break;
+    }
+  }
+}
+
+template <typename Result>
+void reduceGpuTrajectorySegments(
+    const Result& result,
+    const std::size_t trajectoryCount,
+    const std::size_t segmentCount,
+    std::vector<double>& stepBounds,
+    std::vector<std::uint8_t>& hits,
+    std::size_t& hitCount,
+    double& minStepBound)
+{
+  stepBounds.assign(trajectoryCount, 1.0);
+  hits.assign(trajectoryCount, 0u);
+  hitCount = 0;
+  minStepBound = 1.0;
+
+  for (std::size_t trajectory = 0; trajectory < trajectoryCount; ++trajectory) {
+    for (std::size_t segment = 0; segment < segmentCount; ++segment) {
+      const std::size_t pairIndex = trajectory * segmentCount + segment;
+      if (result.hits[pairIndex] == 0u) {
+        continue;
+      }
+
+      const double trajectoryStep
+          = static_cast<double>(segment) / static_cast<double>(segmentCount);
+      stepBounds[trajectory] = trajectoryStep;
+      hits[trajectory] = 1u;
+      ++hitCount;
+      minStepBound = std::min(minStepBound, trajectoryStep);
+      break;
+    }
+  }
+}
+
+double maxAbsDifference(
+    const std::vector<double>& lhs, const std::vector<double>& rhs)
+{
+  double maxError = 0.0;
+  for (std::size_t i = 0; i < lhs.size(); ++i) {
+    maxError = std::max(maxError, std::abs(lhs[i] - rhs[i]));
+  }
+  return maxError;
 }
 
 CcdFixture makeCcdFixture(const int pairCount)
@@ -166,16 +360,7 @@ CcdFixture makeCcdFixture(const int pairCount)
     }
   }
 
-  for (const auto& pair : fixture.pairs) {
-    const auto result = cpuResult(pair);
-    fixture.cpuStepBounds.push_back(result.stepBound);
-    fixture.cpuHits.push_back(result.hit ? 1u : 0u);
-    if (result.hit) {
-      ++fixture.hitCount;
-      fixture.minStepBound = std::min(fixture.minStepBound, result.stepBound);
-    }
-  }
-
+  populateCpuPairResults(fixture);
   return fixture;
 }
 
@@ -203,14 +388,455 @@ EdgeEdgeCcdFixture makeEdgeEdgeCcdFixture(const int pairCount)
         b1));
   }
 
-  for (const auto& pair : fixture.pairs) {
-    const auto result = cpuResult(pair);
-    fixture.cpuStepBounds.push_back(result.stepBound);
-    fixture.cpuHits.push_back(result.hit ? 1u : 0u);
-    if (result.hit) {
-      ++fixture.hitCount;
-      fixture.minStepBound = std::min(fixture.minStepBound, result.stepBound);
+  populateCpuPairResults(fixture);
+  return fixture;
+}
+
+native::CcdOption makeRigidCurvedReferenceOption()
+{
+  native::CcdOption option = native::CcdOption::precise();
+  option.tolerance = kRigidCurvedReferenceTolerance;
+  option.maxIterations = 256;
+  return option;
+}
+
+template <typename Pair>
+void recordRigidCurvedAnalyticReference(
+    RigidCurvedCcdFixture<Pair>& fixture,
+    const bool referenceHit,
+    const double referenceStepBound)
+{
+  const std::size_t referenceIndex = fixture.analyticReferencePairCount;
+  ++fixture.analyticReferencePairCount;
+
+  const bool sampledHit = fixture.cpuHits[referenceIndex] != 0u;
+  if (referenceHit) {
+    ++fixture.analyticReferenceHitCount;
+    fixture.analyticReferenceMinStepBound = std::min(
+        fixture.analyticReferenceMinStepBound,
+        std::clamp(referenceStepBound, 0.0, 1.0));
+  }
+  if (sampledHit != referenceHit) {
+    ++fixture.analyticReferenceHitMismatchCount;
+    return;
+  }
+  if (!referenceHit) {
+    return;
+  }
+
+  const double sampledStepBound = fixture.cpuStepBounds[referenceIndex];
+  const double reference = std::clamp(referenceStepBound, 0.0, 1.0);
+  fixture.maxSampledReferenceOvershoot = std::max(
+      fixture.maxSampledReferenceOvershoot, sampledStepBound - reference);
+  fixture.maxSampledReferenceConservativeGap = std::max(
+      fixture.maxSampledReferenceConservativeGap, reference - sampledStepBound);
+}
+
+template <typename Pair>
+void recordRigidCurvedIntervalReference(
+    RigidCurvedCcdFixture<Pair>& fixture,
+    const bool referenceHit,
+    const double referenceStepBound)
+{
+  const std::size_t referenceIndex = fixture.intervalReferencePairCount;
+  ++fixture.intervalReferencePairCount;
+
+  const bool sampledHit = fixture.cpuHits[referenceIndex] != 0u;
+  if (referenceHit) {
+    ++fixture.intervalReferenceHitCount;
+    fixture.intervalReferenceMinStepBound = std::min(
+        fixture.intervalReferenceMinStepBound,
+        std::clamp(referenceStepBound, 0.0, 1.0));
+  }
+  if (sampledHit != referenceHit) {
+    ++fixture.intervalReferenceHitMismatchCount;
+    return;
+  }
+  if (!referenceHit) {
+    return;
+  }
+
+  const double sampledStepBound = fixture.cpuStepBounds[referenceIndex];
+  const double reference = std::clamp(referenceStepBound, 0.0, 1.0);
+  fixture.maxSampledIntervalReferenceOvershoot = std::max(
+      fixture.maxSampledIntervalReferenceOvershoot,
+      sampledStepBound - reference);
+  fixture.maxSampledIntervalReferenceConservativeGap = std::max(
+      fixture.maxSampledIntervalReferenceConservativeGap,
+      reference - sampledStepBound);
+}
+
+sx::DeformableBodyOptions makeSceneRuntimeCcdBodyOptions(const int sampleCount)
+{
+  const int groupCount = std::max(1, static_cast<int>(std::sqrt(sampleCount)));
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.velocities.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.masses.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.surfaceTriangles.reserve(static_cast<std::size_t>(3 * groupCount));
+
+  const auto appendSceneNode =
+      [&options](const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+        options.positions.push_back(start);
+        options.velocities.push_back((end - start) / kSceneRuntimeCcdTimeStep);
+        options.masses.push_back(1.0);
+      };
+
+  for (int i = 0; i < groupCount; ++i) {
+    const double x = static_cast<double>(i % 64) * 4.0;
+    const double y = static_cast<double>(i / 64) * 4.0;
+    const std::size_t base = options.positions.size();
+
+    appendSceneNode({x, y, 0.0}, {x, y, 0.0});
+    appendSceneNode({x + 1.0, y, 0.0}, {x + 1.0, y, 0.0});
+    appendSceneNode({x, y + 1.0, 0.0}, {x, y + 1.0, 0.0});
+    appendSceneNode({x + 0.25, y + 0.25, 0.20}, {x + 0.25, y + 0.25, -0.20});
+    options.surfaceTriangles.push_back({base, base + 1u, base + 2u});
+
+    appendSceneNode({x + 2.0, y, 0.0}, {x + 2.0, y, 0.0});
+    appendSceneNode({x + 3.0, y, 0.0}, {x + 3.0, y, 0.0});
+    appendSceneNode({x + 2.0, y + 1.0, 0.0}, {x + 2.0, y + 1.0, 0.0});
+    options.surfaceTriangles.push_back({base + 4u, base + 5u, base + 6u});
+
+    appendSceneNode({x + 2.25, y + 0.20, -0.5}, {x + 2.25, y - 0.20, -0.5});
+    appendSceneNode({x + 2.25, y + 0.20, 0.5}, {x + 2.25, y - 0.20, 0.5});
+    appendSceneNode({x + 3.25, y + 1.25, 0.0}, {x + 3.25, y + 1.25, 0.0});
+    options.surfaceTriangles.push_back({base + 7u, base + 8u, base + 9u});
+  }
+
+  return options;
+}
+
+SceneRuntimeCcdSurface makeSceneRuntimeCcdSurface(const int sampleCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeCcdTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_ccd", makeSceneRuntimeCcdBodyOptions(sampleCount));
+
+  SceneRuntimeCcdSurface surface;
+  surface.sceneBodyCount = world.getDeformableBodyCount();
+  surface.sceneNodeCount = body.getNodeCount();
+  surface.sceneTriangleCount = body.getSurfaceTriangleCount();
+  surface.start.reserve(body.getNodeCount());
+  surface.end.reserve(body.getNodeCount());
+  surface.triangles.reserve(body.getSurfaceTriangleCount());
+
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    surface.start.push_back(body.getPosition(node));
+    surface.end.push_back(
+        surface.start.back() + world.getTimeStep() * body.getVelocity(node));
+  }
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    surface.triangles.push_back(body.getSurfaceTriangle(triangle));
+  }
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = kSceneRuntimeCandidateActivationDistance;
+  surface.candidates = dc::buildMotionAwareContactCandidatesSweep(
+      surface.start, surface.end, surface.triangles, options);
+  return surface;
+}
+
+bool isStaticTriangle(
+    const SceneRuntimeCcdSurface& surface,
+    const sx::DeformableSurfaceTriangle& triangle);
+
+void populateSceneRuntimePointTriangleCcdFixture(
+    const SceneRuntimeCcdSurface& surface,
+    ScenePointTriangleCcdFixture& fixture)
+{
+  fixture.sceneBodyCount = surface.sceneBodyCount;
+  fixture.sceneNodeCount = surface.sceneNodeCount;
+  fixture.sceneTriangleCount = surface.sceneTriangleCount;
+  fixture.sourcePointTriangleCandidateCount
+      = surface.candidates.pointTriangleCandidates.size();
+  fixture.pairs.reserve(surface.candidates.pointTriangleCandidates.size());
+
+  for (const auto& candidate : surface.candidates.pointTriangleCandidates) {
+    const auto& triangle = surface.triangles[candidate.triangle];
+    if (isStaticTriangle(surface, triangle)) {
+      ++fixture.staticTrianglePointTriangleCandidateCount;
+    } else {
+      ++fixture.movingTrianglePointTriangleCandidateCount;
     }
+
+    fixture.pairs.push_back(makePair(
+        surface.start[candidate.point],
+        surface.end[candidate.point],
+        surface.start[triangle.nodeA],
+        surface.end[triangle.nodeA],
+        surface.start[triangle.nodeB],
+        surface.end[triangle.nodeB],
+        surface.start[triangle.nodeC],
+        surface.end[triangle.nodeC]));
+  }
+
+  populateCpuPairResults(fixture);
+}
+
+void populateSceneRuntimeEdgeEdgeCcdFixture(
+    const SceneRuntimeCcdSurface& surface, SceneEdgeEdgeCcdFixture& fixture)
+{
+  fixture.sceneBodyCount = surface.sceneBodyCount;
+  fixture.sceneNodeCount = surface.sceneNodeCount;
+  fixture.sceneTriangleCount = surface.sceneTriangleCount;
+  fixture.sourceEdgeEdgeCandidateCount
+      = surface.candidates.edgeEdgeCandidates.size();
+  fixture.pairs.reserve(surface.candidates.edgeEdgeCandidates.size());
+
+  for (const auto& candidate : surface.candidates.edgeEdgeCandidates) {
+    const auto& edgeA = surface.candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = surface.candidates.surfaceEdges[candidate.edgeB];
+    fixture.pairs.push_back(makeEdgeEdgePair(
+        surface.start[edgeA.nodeA],
+        surface.end[edgeA.nodeA],
+        surface.start[edgeA.nodeB],
+        surface.end[edgeA.nodeB],
+        surface.start[edgeB.nodeA],
+        surface.end[edgeB.nodeA],
+        surface.start[edgeB.nodeB],
+        surface.end[edgeB.nodeB]));
+  }
+
+  populateCpuPairResults(fixture);
+}
+
+bool isStaticNode(
+    const SceneRuntimeCcdSurface& surface, const std::size_t nodeIndex)
+{
+  return (surface.end[nodeIndex] - surface.start[nodeIndex]).squaredNorm()
+         <= 1e-24;
+}
+
+bool isStaticTriangle(
+    const SceneRuntimeCcdSurface& surface,
+    const sx::DeformableSurfaceTriangle& triangle)
+{
+  return isStaticNode(surface, triangle.nodeA)
+         && isStaticNode(surface, triangle.nodeB)
+         && isStaticNode(surface, triangle.nodeC);
+}
+
+ScenePointTriangleCcdFixture makeSceneRuntimePointTriangleCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  ScenePointTriangleCcdFixture fixture;
+  populateSceneRuntimePointTriangleCcdFixture(surface, fixture);
+  return fixture;
+}
+
+SceneEdgeEdgeCcdFixture makeSceneRuntimeEdgeEdgeCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  SceneEdgeEdgeCcdFixture fixture;
+  populateSceneRuntimeEdgeEdgeCcdFixture(surface, fixture);
+  return fixture;
+}
+
+CombinedSceneRuntimeCcdFixture makeSceneRuntimeCombinedCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  CombinedSceneRuntimeCcdFixture fixture;
+  populateSceneRuntimePointTriangleCcdFixture(surface, fixture.pointTriangle);
+  populateSceneRuntimeEdgeEdgeCcdFixture(surface, fixture.edgeEdge);
+  return fixture;
+}
+
+RigidCurvedCcdFixture<cuda::PointTriangleCcdLineSearchPair>
+makeRigidCurvedPointTriangleFixture(const int trajectoryCount)
+{
+  RigidCurvedCcdFixture<cuda::PointTriangleCcdLineSearchPair> fixture;
+  fixture.trajectoryCount = static_cast<std::size_t>(trajectoryCount);
+  fixture.segmentPairs.reserve(fixture.trajectoryCount * fixture.segmentCount);
+
+  const Eigen::Vector3d a(-1.0, -1.0, 0.0);
+  const Eigen::Vector3d b(1.0, -1.0, 0.0);
+  const Eigen::Vector3d c(0.0, 1.0, 0.0);
+  const Eigen::Vector3d localPoint(0.5, 0.0, 0.0);
+  for (int i = 0; i < trajectoryCount; ++i) {
+    const double baseX = 0.0;
+    const double baseY = 0.0;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose pointPoseStart;
+    pointPoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose pointPoseEnd = pointPoseStart;
+    pointPoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose trianglePose;
+    for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
+      const double alpha0 = static_cast<double>(segment)
+                            / static_cast<double>(fixture.segmentCount);
+      const double alpha1 = static_cast<double>(segment + 1)
+                            / static_cast<double>(fixture.segmentCount);
+      const Eigen::Vector3d pointStart = rigid::transformRigidIpcPoint(
+          localPoint, pointPoseStart, pointPoseEnd, alpha0);
+      const Eigen::Vector3d pointEnd = rigid::transformRigidIpcPoint(
+          localPoint, pointPoseStart, pointPoseEnd, alpha1);
+      if ((i % 2) == 0) {
+        fixture.segmentPairs.push_back(makePair(pointStart, pointEnd, a, b, c));
+      } else {
+        fixture.segmentPairs.push_back(makePair(pointStart, pointEnd, a, c, b));
+      }
+    }
+  }
+
+  evaluateTrajectorySegments(
+      fixture.segmentPairs,
+      fixture.trajectoryCount,
+      fixture.segmentCount,
+      fixture.cpuStepBounds,
+      fixture.cpuHits,
+      fixture.hitCount,
+      fixture.minStepBound);
+
+  const auto referenceLimit
+      = std::min(fixture.trajectoryCount, kRigidCurvedAnalyticReferenceCount);
+  const native::CcdOption referenceOption = makeRigidCurvedReferenceOption();
+  for (std::size_t i = 0; i < referenceLimit; ++i) {
+    const double baseX = 0.0;
+    const double baseY = 0.0;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose pointPoseStart;
+    pointPoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose pointPoseEnd = pointPoseStart;
+    pointPoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose trianglePose;
+    native::CcdPrimitiveResult reference;
+    const bool referenceHit = rigid::rigidIpcPointTriangleCcd(
+        localPoint,
+        pointPoseStart,
+        pointPoseEnd,
+        a,
+        b,
+        c,
+        trianglePose,
+        trianglePose,
+        referenceOption,
+        reference);
+    recordRigidCurvedAnalyticReference(
+        fixture, referenceHit, reference.timeOfImpact);
+
+    native::CcdPrimitiveResult intervalReference;
+    const bool intervalReferenceHit = rigid::rigidIpcPointTriangleIntervalCcd(
+        localPoint,
+        pointPoseStart,
+        pointPoseEnd,
+        a,
+        b,
+        c,
+        trianglePose,
+        trianglePose,
+        referenceOption,
+        intervalReference);
+    recordRigidCurvedIntervalReference(
+        fixture, intervalReferenceHit, intervalReference.timeOfImpact);
+  }
+
+  return fixture;
+}
+
+RigidCurvedCcdFixture<cuda::EdgeEdgeCcdLineSearchPair>
+makeRigidCurvedEdgeEdgeFixture(const int trajectoryCount)
+{
+  RigidCurvedCcdFixture<cuda::EdgeEdgeCcdLineSearchPair> fixture;
+  fixture.trajectoryCount = static_cast<std::size_t>(trajectoryCount);
+  fixture.segmentPairs.reserve(fixture.trajectoryCount * fixture.segmentCount);
+
+  const Eigen::Vector3d localA0(0.5, -0.21, 0.0);
+  const Eigen::Vector3d localA1(0.5, 0.21, 0.0);
+  for (int i = 0; i < trajectoryCount; ++i) {
+    const double baseX = static_cast<double>((i % 16) - 8) * 0.006;
+    const double baseY = static_cast<double>((i % 8) - 4) * 0.006;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose edgePoseStart;
+    edgePoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose edgePoseEnd = edgePoseStart;
+    edgePoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    const Eigen::Vector3d staticB0(baseX + 0.2, baseY, 0.0);
+    const Eigen::Vector3d staticB1(baseX + 0.8, baseY, 0.0);
+    for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
+      const double alpha0 = static_cast<double>(segment)
+                            / static_cast<double>(fixture.segmentCount);
+      const double alpha1 = static_cast<double>(segment + 1)
+                            / static_cast<double>(fixture.segmentCount);
+      fixture.segmentPairs.push_back(makeEdgeEdgePair(
+          rigid::transformRigidIpcPoint(
+              localA0, edgePoseStart, edgePoseEnd, alpha0),
+          rigid::transformRigidIpcPoint(
+              localA0, edgePoseStart, edgePoseEnd, alpha1),
+          rigid::transformRigidIpcPoint(
+              localA1, edgePoseStart, edgePoseEnd, alpha0),
+          rigid::transformRigidIpcPoint(
+              localA1, edgePoseStart, edgePoseEnd, alpha1),
+          staticB0,
+          staticB0,
+          staticB1,
+          staticB1));
+    }
+  }
+
+  evaluateTrajectorySegments(
+      fixture.segmentPairs,
+      fixture.trajectoryCount,
+      fixture.segmentCount,
+      fixture.cpuStepBounds,
+      fixture.cpuHits,
+      fixture.hitCount,
+      fixture.minStepBound);
+
+  const auto referenceLimit
+      = std::min(fixture.trajectoryCount, kRigidCurvedAnalyticReferenceCount);
+  const native::CcdOption referenceOption = makeRigidCurvedReferenceOption();
+  for (std::size_t i = 0; i < referenceLimit; ++i) {
+    const double baseX = static_cast<double>((i % 16) - 8) * 0.006;
+    const double baseY = static_cast<double>((i % 8) - 4) * 0.006;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose edgePoseStart;
+    edgePoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose edgePoseEnd = edgePoseStart;
+    edgePoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose staticPose;
+    const Eigen::Vector3d staticB0(baseX + 0.2, baseY, 0.0);
+    const Eigen::Vector3d staticB1(baseX + 0.8, baseY, 0.0);
+    native::CcdPrimitiveResult reference;
+    const bool referenceHit = rigid::rigidIpcEdgeEdgeCcd(
+        localA0,
+        localA1,
+        edgePoseStart,
+        edgePoseEnd,
+        staticB0,
+        staticB1,
+        staticPose,
+        staticPose,
+        referenceOption,
+        reference);
+    recordRigidCurvedAnalyticReference(
+        fixture, referenceHit, reference.timeOfImpact);
+
+    native::CcdPrimitiveResult intervalReference;
+    const bool intervalReferenceHit = rigid::rigidIpcEdgeEdgeIntervalCcd(
+        localA0,
+        localA1,
+        edgePoseStart,
+        edgePoseEnd,
+        staticB0,
+        staticB1,
+        staticPose,
+        staticPose,
+        referenceOption,
+        intervalReference);
+    recordRigidCurvedIntervalReference(
+        fixture, intervalReferenceHit, intervalReference.timeOfImpact);
   }
 
   return fixture;
@@ -238,6 +864,123 @@ void recordSharedCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.pairs.size()));
+}
+
+void recordSceneRuntimeCounters(
+    benchmark::State& state,
+    const ScenePointTriangleCcdFixture& fixture,
+    const double maxError)
+{
+  recordSharedCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["runtime_point_triangle_candidates"]
+      = static_cast<double>(fixture.sourcePointTriangleCandidateCount);
+  state.counters["static_triangle_point_triangle_candidates"]
+      = static_cast<double>(fixture.staticTrianglePointTriangleCandidateCount);
+  state.counters["moving_triangle_point_triangle_candidates"]
+      = static_cast<double>(fixture.movingTrianglePointTriangleCandidateCount);
+}
+
+void recordSceneRuntimeCounters(
+    benchmark::State& state,
+    const SceneEdgeEdgeCcdFixture& fixture,
+    const double maxError)
+{
+  recordSharedCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["runtime_edge_edge_candidates"]
+      = static_cast<double>(fixture.sourceEdgeEdgeCandidateCount);
+}
+
+void recordCombinedSceneRuntimeCounters(
+    benchmark::State& state,
+    const CombinedSceneRuntimeCcdFixture& fixture,
+    const double maxError)
+{
+  const auto& pointTriangle = fixture.pointTriangle;
+  const auto& edgeEdge = fixture.edgeEdge;
+  const std::size_t totalPairCount
+      = pointTriangle.pairs.size() + edgeEdge.pairs.size();
+  const std::size_t totalHitCount = pointTriangle.hitCount + edgeEdge.hitCount;
+
+  state.counters["pairs"] = static_cast<double>(totalPairCount);
+  state.counters["point_triangle_pairs"]
+      = static_cast<double>(pointTriangle.pairs.size());
+  state.counters["edge_edge_pairs"]
+      = static_cast<double>(edgeEdge.pairs.size());
+  state.counters["hits"] = static_cast<double>(totalHitCount);
+  state.counters["point_triangle_hits"]
+      = static_cast<double>(pointTriangle.hitCount);
+  state.counters["edge_edge_hits"] = static_cast<double>(edgeEdge.hitCount);
+  state.counters["min_step_bound"]
+      = std::min(pointTriangle.minStepBound, edgeEdge.minStepBound);
+  state.counters["max_result_abs_error"] = maxError;
+  state.counters["scene_bodies"]
+      = static_cast<double>(pointTriangle.sceneBodyCount);
+  state.counters["scene_nodes"]
+      = static_cast<double>(pointTriangle.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(pointTriangle.sceneTriangleCount);
+  state.counters["runtime_point_triangle_candidates"]
+      = static_cast<double>(pointTriangle.sourcePointTriangleCandidateCount);
+  state.counters["static_triangle_point_triangle_candidates"]
+      = static_cast<double>(
+          pointTriangle.staticTrianglePointTriangleCandidateCount);
+  state.counters["moving_triangle_point_triangle_candidates"]
+      = static_cast<double>(
+          pointTriangle.movingTrianglePointTriangleCandidateCount);
+  state.counters["runtime_edge_edge_candidates"]
+      = static_cast<double>(edgeEdge.sourceEdgeEdgeCandidateCount);
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * totalPairCount));
+}
+
+template <typename Pair>
+void recordRigidCurvedCounters(
+    benchmark::State& state,
+    const RigidCurvedCcdFixture<Pair>& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.trajectoryCount);
+  state.counters["segments"] = static_cast<double>(fixture.segmentPairs.size());
+  state.counters["samples_per_pair"]
+      = static_cast<double>(fixture.segmentCount);
+  state.counters["hits"] = static_cast<double>(fixture.hitCount);
+  state.counters["min_step_bound"] = fixture.minStepBound;
+  state.counters["max_result_abs_error"] = maxError;
+  state.counters["analytic_reference_pairs"]
+      = static_cast<double>(fixture.analyticReferencePairCount);
+  state.counters["analytic_reference_hits"]
+      = static_cast<double>(fixture.analyticReferenceHitCount);
+  state.counters["analytic_reference_hit_mismatches"]
+      = static_cast<double>(fixture.analyticReferenceHitMismatchCount);
+  state.counters["analytic_reference_min_step_bound"]
+      = fixture.analyticReferenceMinStepBound;
+  state.counters["max_sampled_reference_overshoot"]
+      = fixture.maxSampledReferenceOvershoot;
+  state.counters["max_sampled_reference_conservative_gap"]
+      = fixture.maxSampledReferenceConservativeGap;
+  state.counters["interval_reference_pairs"]
+      = static_cast<double>(fixture.intervalReferencePairCount);
+  state.counters["interval_reference_hits"]
+      = static_cast<double>(fixture.intervalReferenceHitCount);
+  state.counters["interval_reference_hit_mismatches"]
+      = static_cast<double>(fixture.intervalReferenceHitMismatchCount);
+  state.counters["interval_reference_min_step_bound"]
+      = fixture.intervalReferenceMinStepBound;
+  state.counters["max_sampled_interval_reference_overshoot"]
+      = fixture.maxSampledIntervalReferenceOvershoot;
+  state.counters["max_sampled_interval_reference_conservative_gap"]
+      = fixture.maxSampledIntervalReferenceConservativeGap;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations() * fixture.segmentPairs.size()));
 }
 
 } // namespace
@@ -364,6 +1107,401 @@ static void BM_Plan083EdgeEdgeCcdLineSearchCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083EdgeEdgeCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimePointTriangleCcdFixture(
+      static_cast<int>(state.range(0)));
+
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    hitCount = 0;
+    minStepBound = 1.0;
+    for (const auto& pair : fixture.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordSceneRuntimeCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimePointTriangleCcdFixture(
+      static_cast<int>(state.range(0)));
+  cuda::PointTriangleCcdLineSearchResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleCcdLineSearchCuda(
+        fixture.pairs, cuda::CcdLineSearchOptions{}, result);
+    benchmark::DoNotOptimize(result.stepBounds.data());
+    benchmark::DoNotOptimize(result.hits.data());
+  }
+
+  maxError = maxAbsDifference(result.stepBounds, fixture.cpuStepBounds);
+  recordSceneRuntimeCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(result.hitCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeSceneRuntimeEdgeEdgeCcdFixture(static_cast<int>(state.range(0)));
+
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    hitCount = 0;
+    minStepBound = 1.0;
+    for (const auto& pair : fixture.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordSceneRuntimeCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSceneRuntimeEdgeEdgeCcdFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeCcdLineSearchResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluateEdgeEdgeCcdLineSearchCuda(
+        fixture.pairs, cuda::CcdLineSearchOptions{}, result);
+    benchmark::DoNotOptimize(result.stepBounds.data());
+    benchmark::DoNotOptimize(result.hits.data());
+  }
+
+  maxError = maxAbsDifference(result.stepBounds, fixture.cpuStepBounds);
+  recordSceneRuntimeCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(result.hitCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeSceneRuntimeCombinedCcdFixture(static_cast<int>(state.range(0)));
+
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    hitCount = 0;
+    minStepBound = 1.0;
+    for (const auto& pair : fixture.pointTriangle.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+    for (const auto& pair : fixture.edgeEdge.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordCombinedSceneRuntimeCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSceneRuntimeCombinedCcdFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleCcdLineSearchResult pointTriangleResult;
+  cuda::EdgeEdgeCcdLineSearchResult edgeEdgeResult;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleCcdLineSearchCuda(
+        fixture.pointTriangle.pairs,
+        cuda::CcdLineSearchOptions{},
+        pointTriangleResult);
+    cuda::evaluateEdgeEdgeCcdLineSearchCuda(
+        fixture.edgeEdge.pairs, cuda::CcdLineSearchOptions{}, edgeEdgeResult);
+    benchmark::DoNotOptimize(pointTriangleResult.stepBounds.data());
+    benchmark::DoNotOptimize(pointTriangleResult.hits.data());
+    benchmark::DoNotOptimize(edgeEdgeResult.stepBounds.data());
+    benchmark::DoNotOptimize(edgeEdgeResult.hits.data());
+  }
+
+  maxError = std::max(
+      maxAbsDifference(
+          pointTriangleResult.stepBounds, fixture.pointTriangle.cpuStepBounds),
+      maxAbsDifference(
+          edgeEdgeResult.stepBounds, fixture.edgeEdge.cpuStepBounds));
+  recordCombinedSceneRuntimeCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(
+      pointTriangleResult.hitCount + edgeEdgeResult.hitCount);
+  state.counters["gpu_point_triangle_hits"]
+      = static_cast<double>(pointTriangleResult.hitCount);
+  state.counters["gpu_edge_edge_hits"]
+      = static_cast<double>(edgeEdgeResult.hitCount);
+  state.counters["gpu_min_step_bound"]
+      = std::min(pointTriangleResult.minStepBound, edgeEdgeResult.minStepBound);
+  state.counters["host_setup_ns"]
+      = pointTriangleResult.timing.setupNs + edgeEdgeResult.timing.setupNs;
+  state.counters["host_to_device_ns"]
+      = pointTriangleResult.timing.hostToDeviceNs
+        + edgeEdgeResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"]
+      = pointTriangleResult.timing.kernelNs + edgeEdgeResult.timing.kernelNs;
+  state.counters["device_to_host_ns"]
+      = pointTriangleResult.timing.deviceToHostNs
+        + edgeEdgeResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedPointTriangleCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeRigidCurvedPointTriangleFixture(static_cast<int>(state.range(0)));
+
+  std::vector<double> stepBounds;
+  std::vector<std::uint8_t> hits;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    evaluateTrajectorySegments(
+        fixture.segmentPairs,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        stepBounds,
+        hits,
+        hitCount,
+        minStepBound);
+    benchmark::DoNotOptimize(stepBounds.data());
+    benchmark::DoNotOptimize(hits.data());
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordRigidCurvedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083RigidCurvedPointTriangleCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeRigidCurvedPointTriangleFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleCcdLineSearchResult segmentResult;
+  std::vector<double> gpuStepBounds;
+  std::vector<std::uint8_t> gpuHits;
+  std::size_t gpuHitCount = 0;
+  double gpuMinStepBound = 1.0;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleCcdLineSearchCuda(
+        fixture.segmentPairs, cuda::CcdLineSearchOptions{}, segmentResult);
+    reduceGpuTrajectorySegments(
+        segmentResult,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        gpuStepBounds,
+        gpuHits,
+        gpuHitCount,
+        gpuMinStepBound);
+    benchmark::DoNotOptimize(gpuStepBounds.data());
+    benchmark::DoNotOptimize(gpuHits.data());
+  }
+
+  maxError = maxAbsDifference(gpuStepBounds, fixture.cpuStepBounds);
+  recordRigidCurvedCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(gpuHitCount);
+  state.counters["gpu_segments"]
+      = static_cast<double>(segmentResult.hits.size());
+  state.counters["gpu_min_step_bound"] = gpuMinStepBound;
+  state.counters["host_setup_ns"] = segmentResult.timing.setupNs;
+  state.counters["host_to_device_ns"] = segmentResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = segmentResult.timing.kernelNs;
+  state.counters["device_to_host_ns"] = segmentResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeRigidCurvedEdgeEdgeFixture(static_cast<int>(state.range(0)));
+
+  std::vector<double> stepBounds;
+  std::vector<std::uint8_t> hits;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    evaluateTrajectorySegments(
+        fixture.segmentPairs,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        stepBounds,
+        hits,
+        hitCount,
+        minStepBound);
+    benchmark::DoNotOptimize(stepBounds.data());
+    benchmark::DoNotOptimize(hits.data());
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordRigidCurvedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeRigidCurvedEdgeEdgeFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeCcdLineSearchResult segmentResult;
+  std::vector<double> gpuStepBounds;
+  std::vector<std::uint8_t> gpuHits;
+  std::size_t gpuHitCount = 0;
+  double gpuMinStepBound = 1.0;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluateEdgeEdgeCcdLineSearchCuda(
+        fixture.segmentPairs, cuda::CcdLineSearchOptions{}, segmentResult);
+    reduceGpuTrajectorySegments(
+        segmentResult,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        gpuStepBounds,
+        gpuHits,
+        gpuHitCount,
+        gpuMinStepBound);
+    benchmark::DoNotOptimize(gpuStepBounds.data());
+    benchmark::DoNotOptimize(gpuHits.data());
+  }
+
+  maxError = maxAbsDifference(gpuStepBounds, fixture.cpuStepBounds);
+  recordRigidCurvedCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(gpuHitCount);
+  state.counters["gpu_segments"]
+      = static_cast<double>(segmentResult.hits.size());
+  state.counters["gpu_min_step_bound"] = gpuMinStepBound;
+  state.counters["host_setup_ns"] = segmentResult.timing.setupNs;
+  state.counters["host_to_device_ns"] = segmentResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = segmentResult.timing.kernelNs;
+  state.counters["device_to_host_ns"] = segmentResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

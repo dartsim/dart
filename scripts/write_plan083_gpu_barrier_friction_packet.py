@@ -114,6 +114,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "|SceneRuntimePointEdgeBarrierHessian(Cpu|Cuda)"
         "|SceneRuntimePointPointBarrierHessian(Cpu|Cuda)"
         "|SceneRuntimeEdgeEdgeBarrierHessian(Cpu|Cuda)"
+        "|SceneRuntimeCombinedBarrierHessian(Cpu|Cuda)"
         "|PointTriangleBarrierHessianPsd(Cpu|Cuda)"
         "|PointPointBarrierHessian(Cpu|Cuda)"
         "|PointPointBarrierHessianPsd(Cpu|Cuda)"
@@ -224,6 +225,12 @@ def _representative_rows(
         ),
         "scene_runtime_edge_edge_hessian_gpu": (
             f"BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCuda/{sample_count}"
+        ),
+        "scene_runtime_combined_hessian_cpu": (
+            f"BM_Plan083SceneRuntimeCombinedBarrierHessianCpu/{sample_count}"
+        ),
+        "scene_runtime_combined_hessian_gpu": (
+            f"BM_Plan083SceneRuntimeCombinedBarrierHessianCuda/{sample_count}"
         ),
         "point_triangle_hessian_psd_cpu": (
             f"BM_Plan083PointTriangleBarrierHessianPsdCpu/{sample_count}"
@@ -383,6 +390,12 @@ def make_packet(
     scene_runtime_edge_edge_hessian_gpu_row = representative_rows[
         "scene_runtime_edge_edge_hessian_gpu"
     ]
+    scene_runtime_combined_hessian_cpu_row = representative_rows[
+        "scene_runtime_combined_hessian_cpu"
+    ]
+    scene_runtime_combined_hessian_gpu_row = representative_rows[
+        "scene_runtime_combined_hessian_gpu"
+    ]
     point_triangle_hessian_psd_cpu_row = representative_rows[
         "point_triangle_hessian_psd_cpu"
     ]
@@ -440,6 +453,12 @@ def make_packet(
     scene_runtime_edge_edge_hessian_gpu_ns = benchmark_timing_ns(
         scene_runtime_edge_edge_hessian_gpu_row
     )
+    scene_runtime_combined_hessian_cpu_ns = benchmark_timing_ns(
+        scene_runtime_combined_hessian_cpu_row
+    )
+    scene_runtime_combined_hessian_gpu_ns = benchmark_timing_ns(
+        scene_runtime_combined_hessian_gpu_row
+    )
     point_triangle_hessian_psd_cpu_ns = benchmark_timing_ns(
         point_triangle_hessian_psd_cpu_row
     )
@@ -493,6 +512,8 @@ def make_packet(
         ),
         "scene-runtime edge-edge Hessian CPU": (scene_runtime_edge_edge_hessian_cpu_ns),
         "scene-runtime edge-edge Hessian GPU": (scene_runtime_edge_edge_hessian_gpu_ns),
+        "scene-runtime combined Hessian CPU": scene_runtime_combined_hessian_cpu_ns,
+        "scene-runtime combined Hessian GPU": scene_runtime_combined_hessian_gpu_ns,
         "point-triangle Hessian PSD CPU": point_triangle_hessian_psd_cpu_ns,
         "point-triangle Hessian PSD GPU": point_triangle_hessian_psd_gpu_ns,
         "point-point Hessian CPU": point_point_hessian_cpu_ns,
@@ -538,6 +559,9 @@ def make_packet(
     scene_runtime_edge_edge_hessian_max_error = _counter(
         scene_runtime_edge_edge_hessian_gpu_row, "max_result_abs_error"
     )
+    scene_runtime_combined_hessian_max_error = _counter(
+        scene_runtime_combined_hessian_gpu_row, "max_result_abs_error"
+    )
     point_triangle_hessian_psd_max_error = _counter(
         point_triangle_hessian_psd_gpu_row, "max_result_abs_error"
     )
@@ -579,6 +603,7 @@ def make_packet(
         scene_runtime_point_edge_hessian_max_error,
         scene_runtime_point_point_hessian_max_error,
         scene_runtime_edge_edge_hessian_max_error,
+        scene_runtime_combined_hessian_max_error,
         point_triangle_hessian_psd_max_error,
         point_point_hessian_max_error,
         point_point_hessian_psd_max_error,
@@ -1080,6 +1105,177 @@ def make_packet(
             "the point-triangle runtime row"
         )
 
+    scene_runtime_combined_cpu_active = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "active_barriers")
+    )
+    scene_runtime_combined_gpu_active = int(
+        _counter(scene_runtime_combined_hessian_gpu_row, "gpu_active_barriers")
+    )
+    if scene_runtime_combined_cpu_active != scene_runtime_combined_gpu_active:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined Hessian active_barriers count "
+            f"{scene_runtime_combined_cpu_active} != gpu_active_barriers count "
+            f"{scene_runtime_combined_gpu_active}"
+        )
+    scene_runtime_combined_point_triangle_candidates = int(
+        _counter(
+            scene_runtime_combined_hessian_cpu_row,
+            "runtime_point_triangle_candidates",
+        )
+    )
+    scene_runtime_combined_point_edge_candidates = int(
+        _counter(
+            scene_runtime_combined_hessian_cpu_row,
+            "runtime_point_edge_candidates",
+        )
+    )
+    scene_runtime_combined_point_point_candidates = int(
+        _counter(
+            scene_runtime_combined_hessian_cpu_row,
+            "runtime_point_point_candidates",
+        )
+    )
+    scene_runtime_combined_edge_edge_candidates = int(
+        _counter(
+            scene_runtime_combined_hessian_cpu_row,
+            "runtime_edge_edge_candidates",
+        )
+    )
+    scene_runtime_combined_total_candidates = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "samples")
+    )
+    scene_runtime_combined_gpu_total_candidates = int(
+        _counter(scene_runtime_combined_hessian_gpu_row, "samples")
+    )
+    if (
+        scene_runtime_combined_total_candidates
+        != scene_runtime_combined_gpu_total_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined total candidate count "
+            f"{scene_runtime_combined_total_candidates} != "
+            f"{scene_runtime_combined_gpu_total_candidates}"
+        )
+    if (
+        scene_runtime_combined_total_candidates
+        != scene_runtime_combined_point_triangle_candidates
+        + scene_runtime_combined_point_edge_candidates
+        + scene_runtime_combined_point_point_candidates
+        + scene_runtime_combined_edge_edge_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined total candidate count does not match "
+            "the primitive-family candidate sum"
+        )
+    combined_candidate_pairs = {
+        "runtime_point_triangle_candidates": (
+            scene_runtime_point_triangle_candidates,
+            scene_runtime_combined_point_triangle_candidates,
+        ),
+        "runtime_point_edge_candidates": (
+            scene_runtime_point_edge_candidates,
+            scene_runtime_combined_point_edge_candidates,
+        ),
+        "runtime_point_point_candidates": (
+            scene_runtime_point_point_candidates,
+            scene_runtime_combined_point_point_candidates,
+        ),
+        "runtime_edge_edge_candidates": (
+            scene_runtime_edge_edge_candidates,
+            scene_runtime_combined_edge_edge_candidates,
+        ),
+    }
+    for label, (expected, actual) in combined_candidate_pairs.items():
+        if expected != actual:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"scene-runtime combined {label} count {actual} != {expected}"
+            )
+        gpu_actual = int(_counter(scene_runtime_combined_hessian_gpu_row, label))
+        if actual != gpu_actual:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"scene-runtime combined {label} CPU/GPU count "
+                f"{actual} != {gpu_actual}"
+            )
+    scene_runtime_combined_source_point_triangle_candidates = int(
+        _counter(
+            scene_runtime_combined_hessian_cpu_row,
+            "source_point_triangle_candidates",
+        )
+    )
+    scene_runtime_combined_source_edge_edge_candidates = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "source_edge_edge_candidates")
+    )
+    if (
+        scene_runtime_combined_source_point_triangle_candidates
+        != scene_runtime_point_triangle_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined source point-triangle candidate count "
+            f"{scene_runtime_combined_source_point_triangle_candidates} != "
+            f"{scene_runtime_point_triangle_candidates}"
+        )
+    if (
+        scene_runtime_combined_source_edge_edge_candidates
+        != scene_runtime_edge_edge_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined source edge-edge candidate count "
+            f"{scene_runtime_combined_source_edge_edge_candidates} != "
+            f"{scene_runtime_edge_edge_candidates}"
+        )
+    scene_runtime_combined_body_count = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "scene_bodies")
+    )
+    scene_runtime_combined_node_count = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "scene_nodes")
+    )
+    scene_runtime_combined_triangle_count = int(
+        _counter(scene_runtime_combined_hessian_cpu_row, "scene_triangles")
+    )
+    if (
+        scene_runtime_combined_body_count != scene_runtime_body_count
+        or scene_runtime_combined_node_count != scene_runtime_node_count
+        or scene_runtime_combined_triangle_count != scene_runtime_triangle_count
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined scene topology does not match "
+            "the per-family runtime rows"
+        )
+    for label in ("scene_bodies", "scene_nodes", "scene_triangles"):
+        cpu_count = int(_counter(scene_runtime_combined_hessian_cpu_row, label))
+        gpu_count = int(_counter(scene_runtime_combined_hessian_gpu_row, label))
+        if cpu_count != gpu_count:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"scene-runtime combined {label} count {cpu_count} != {gpu_count}"
+            )
+    combined_active_pairs = {
+        "point_triangle_active_barriers": scene_runtime_point_triangle_hessian_cpu_active,
+        "point_edge_active_barriers": scene_runtime_point_edge_hessian_cpu_active,
+        "point_point_active_barriers": scene_runtime_point_point_hessian_cpu_active,
+        "edge_edge_active_barriers": scene_runtime_edge_edge_hessian_cpu_active,
+    }
+    combined_active_total = 0
+    for label, expected in combined_active_pairs.items():
+        cpu_count = int(_counter(scene_runtime_combined_hessian_cpu_row, label))
+        gpu_count = int(
+            _counter(scene_runtime_combined_hessian_gpu_row, f"gpu_{label}")
+        )
+        if cpu_count != expected:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"scene-runtime combined {label} count {cpu_count} != {expected}"
+            )
+        if cpu_count != gpu_count:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"scene-runtime combined {label} CPU/GPU count "
+                f"{cpu_count} != {gpu_count}"
+            )
+        combined_active_total += cpu_count
+    if scene_runtime_combined_cpu_active != combined_active_total:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime combined active_barriers total "
+            f"{scene_runtime_combined_cpu_active} != {combined_active_total}"
+        )
+
     point_triangle_hessian_psd_cpu_active = int(
         _counter(point_triangle_hessian_psd_cpu_row, "active_barriers")
     )
@@ -1280,6 +1476,9 @@ def make_packet(
     scene_runtime_edge_edge_hessian_speedup = (
         scene_runtime_edge_edge_hessian_cpu_ns / scene_runtime_edge_edge_hessian_gpu_ns
     )
+    scene_runtime_combined_hessian_speedup = (
+        scene_runtime_combined_hessian_cpu_ns / scene_runtime_combined_hessian_gpu_ns
+    )
     point_triangle_hessian_psd_speedup = (
         point_triangle_hessian_psd_cpu_ns / point_triangle_hessian_psd_gpu_ns
     )
@@ -1313,6 +1512,7 @@ def make_packet(
         scene_runtime_point_edge_hessian_speedup,
         scene_runtime_point_point_hessian_speedup,
         scene_runtime_edge_edge_hessian_speedup,
+        scene_runtime_combined_hessian_speedup,
         point_triangle_hessian_psd_speedup,
         point_point_hessian_speedup,
         point_point_hessian_psd_speedup,
@@ -1339,6 +1539,9 @@ def make_packet(
     )
     scene_runtime_edge_edge_hessian_timing_ns = _timing_ns(
         scene_runtime_edge_edge_hessian_gpu_row
+    )
+    scene_runtime_combined_hessian_timing_ns = _timing_ns(
+        scene_runtime_combined_hessian_gpu_row
     )
     point_triangle_hessian_psd_timing_ns = _timing_ns(
         point_triangle_hessian_psd_gpu_row
@@ -1522,6 +1725,59 @@ def make_packet(
                 ),
                 "gpu_benchmark_row": _packet_row_name(
                     scene_runtime_edge_edge_hessian_gpu_row
+                ),
+            },
+            "combined_scene_runtime_barrier_hessian": {
+                "candidate_count": scene_runtime_combined_total_candidates,
+                "source_point_triangle_candidate_count": (
+                    scene_runtime_combined_source_point_triangle_candidates
+                ),
+                "source_edge_edge_candidate_count": (
+                    scene_runtime_combined_source_edge_edge_candidates
+                ),
+                "point_triangle_candidate_count": (
+                    scene_runtime_combined_point_triangle_candidates
+                ),
+                "point_edge_candidate_count": (
+                    scene_runtime_combined_point_edge_candidates
+                ),
+                "point_point_candidate_count": (
+                    scene_runtime_combined_point_point_candidates
+                ),
+                "edge_edge_candidate_count": (
+                    scene_runtime_combined_edge_edge_candidates
+                ),
+                "active_barrier_count": scene_runtime_combined_cpu_active,
+                "point_triangle_active_barrier_count": (
+                    scene_runtime_point_triangle_hessian_cpu_active
+                ),
+                "point_edge_active_barrier_count": (
+                    scene_runtime_point_edge_hessian_cpu_active
+                ),
+                "point_point_active_barrier_count": (
+                    scene_runtime_point_point_hessian_cpu_active
+                ),
+                "edge_edge_active_barrier_count": (
+                    scene_runtime_edge_edge_hessian_cpu_active
+                ),
+                "scene_body_count": scene_runtime_combined_body_count,
+                "scene_node_count": scene_runtime_combined_node_count,
+                "scene_triangle_count": scene_runtime_combined_triangle_count,
+                "max_barrier_value": _counter(
+                    scene_runtime_combined_hessian_cpu_row,
+                    "max_barrier_value",
+                ),
+                "max_result_abs_error": scene_runtime_combined_hessian_max_error,
+                "speedup": scene_runtime_combined_hessian_speedup,
+                "meets_speedup_gate": (
+                    scene_runtime_combined_hessian_speedup >= speedup_gate
+                ),
+                "timing_ns": scene_runtime_combined_hessian_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(
+                    scene_runtime_combined_hessian_cpu_row
+                ),
+                "gpu_benchmark_row": _packet_row_name(
+                    scene_runtime_combined_hessian_gpu_row
                 ),
             },
             "point_triangle_barrier_hessian_psd_projection": {

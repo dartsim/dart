@@ -43,6 +43,35 @@
 
 namespace dart::math {
 
+namespace {
+
+bool validateParameters(
+    const AdmmSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.rhoInit) || params.rhoInit <= 0.0) {
+    if (message) {
+      *message = "ADMM rho_init must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.muProx) || params.muProx < 0.0) {
+    if (message) {
+      *message = "ADMM mu_prox must be non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.adaptiveRhoTolerance)
+      || params.adaptiveRhoTolerance <= 1.0) {
+    if (message) {
+      *message = "ADMM adaptive_rho_tolerance must be greater than 1";
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
+
 AdmmSolver::AdmmSolver()
 {
   mDefaultOptions.maxIterations = 200;
@@ -95,6 +124,12 @@ LcpResult AdmmSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,
@@ -103,6 +138,63 @@ LcpResult AdmmSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    if (problem.isStandardLcp(absTolerance)) {
+      const double strictInteriorTolerance = std::max(0.0, absTolerance);
+      Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+      if (exactFactorization.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = exactFactorization.solve(b);
+        if (candidate.allFinite()
+            && candidate.minCoeff() > strictInteriorTolerance) {
+          fastW = A * candidate - b;
+          if (detail::validateSolution(
+                  candidate, fastW, lo, hi, validationTolerance)) {
+            x = std::move(candidate);
+            exactFastPath = true;
+          }
+        }
+      }
+
+      if (!exactFastPath) {
+        exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+            problem, absTolerance, validationTolerance, x, &fastW);
+      }
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex() && problem.size() <= 48) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolerance);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   double rho = params->rhoInit;
   const double muProx = params->muProx;
@@ -115,8 +207,9 @@ LcpResult AdmmSolver::solve(
 
   Eigen::VectorXd z = x;
   Eigen::VectorXd y = Eigen::VectorXd::Zero(n);
-  Eigen::VectorXd xPrev = x;
   Eigen::VectorXd zPrev = z;
+  Eigen::VectorXd rhs(n);
+  Eigen::VectorXd xTilde(n);
 
   Eigen::MatrixXd M = A;
   M.diagonal().array() += rho + muProx;
@@ -133,15 +226,14 @@ LcpResult AdmmSolver::solve(
 
   for (int iter = 0; iter < maxIterations; ++iter) {
     ++iterationsUsed;
-    xPrev = x;
     zPrev = z;
 
     // x-update: x = (A + (rho + muProx)*I)^{-1} * (rho*z - y + b)
-    Eigen::VectorXd rhs = rho * z - y + b;
+    rhs.noalias() = rho * z - y + b;
     x = llt.solve(rhs);
 
     // z-update: z = clamp(x + y/rho, lo, hi) with findex handling
-    Eigen::VectorXd xTilde = x + y / rho;
+    xTilde.noalias() = x + y / rho;
     for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       double loVal = lo[i];
       double hiVal = hi[i];
@@ -211,10 +303,7 @@ LcpResult AdmmSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(

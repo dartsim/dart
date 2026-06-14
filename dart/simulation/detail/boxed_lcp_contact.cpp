@@ -42,6 +42,7 @@
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
@@ -364,9 +365,21 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
   math::LcpOptions options;
   options.warmStart = false;
   options.validateSolution = false;
+  // Degenerate flat contact stacks can hit a non-positive pivot; return early
+  // and let the bounded iterative fallback below handle the contact packet.
+  options.earlyTermination = true;
   Eigen::VectorXd f = Eigen::VectorXd::Zero(rows);
   const math::LcpProblem problem(A, b, lo, hi, findex);
-  solver.solve(problem, f, options);
+  const math::LcpResult result = solver.solve(problem, f, options);
+  if (!result.succeeded() || !f.allFinite()) {
+    math::PgsSolver fallback;
+    math::LcpOptions fallbackOptions = math::LcpOptions::realTime();
+    fallbackOptions.maxIterations = 120;
+    fallbackOptions.relativeTolerance = 1e-6;
+    fallbackOptions.validateSolution = false;
+    fallbackOptions.warmStart = f.allFinite();
+    fallback.solve(problem, f, fallbackOptions);
+  }
   for (Eigen::Index i = 0; i < n; ++i) {
     // Normal impulses are push-only; sanitize non-finite/negative values.
     if (!std::isfinite(f[i]) || f[i] < 0.0) {

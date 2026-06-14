@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "tests/common/lcpsolver/lcp_problem_factory.hpp"
+
 #include <dart/math/lcp/lcp_validation.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
@@ -369,6 +371,34 @@ TEST(DantzigSolver, SolvesBoxedLcpWithFrictionIndex)
   EXPECT_NEAR(x[1], target[1], 1e-6);
   EXPECT_NEAR(x[2], target[2], 1e-6);
   ExpectValidSolution(problem, x, 1e-6);
+}
+
+//==============================================================================
+TEST(DantzigSolver, RefinesActiveFrictionIndexBounds)
+{
+  const auto factoryProblem
+      = dart::test::LcpProblemFactory::activeFrictionIndexContact();
+  ASSERT_TRUE(factoryProblem.expectedSolution.has_value());
+  const auto& problem = factoryProblem.problem;
+  const auto& target = *factoryProblem.expectedSolution;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.absoluteTolerance = 1e-8;
+  options.complementarityTolerance = 1e-8;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_FALSE(result.validated);
+  EXPECT_GT(result.iterations, 1);
+  EXPECT_LE(result.residual, 1e-8);
+  EXPECT_LE(result.complementarity, 1e-8);
+  EXPECT_NEAR((x - target).lpNorm<Eigen::Infinity>(), 0.0, 1e-8);
+  ExpectValidSolution(problem, x, 1e-8);
 }
 
 //==============================================================================
