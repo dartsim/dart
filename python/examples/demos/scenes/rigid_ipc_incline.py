@@ -12,18 +12,20 @@ from __future__ import annotations
 
 import math
 from collections import deque
+import time
 
 import dartpy as dart
 import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _RAMP_HALF = (2.0, 1.0, 0.1)
 _BOX_HALF = (0.2, 0.2, 0.2)
 _TILT_RAD = math.radians(20.0)
 _FRICTION = 0.2
+_HISTORY = 120
 
 
 def _full(half: tuple[float, float, float]) -> np.ndarray:
@@ -84,16 +86,103 @@ def build() -> SceneSetup:
     bridge.sync()
 
     down_slope = _down_slope_axis()
-    speed_history: deque[float] = deque(maxlen=120)
+    initial_position = np.asarray(box.translation, dtype=float)
+    ramp_normal = np.array([math.sin(_TILT_RAD), 0.0, math.cos(_TILT_RAD)])
+    contact_offset = _RAMP_HALF[2] + _BOX_HALF[2]
+    speed_history: deque[float] = deque(maxlen=_HISTORY)
+    gap_history: deque[float] = deque(maxlen=_HISTORY)
+    travel_history: deque[float] = deque(maxlen=_HISTORY)
+    contact_history: deque[float] = deque(maxlen=_HISTORY)
+    step_ms_history: deque[float] = deque(maxlen=_HISTORY)
+    last_metrics: dict[str, object] = {}
 
-    def build_panel(builder: object, context: object) -> None:
+    def sample_metrics(step_ms: float | None = None) -> dict[str, object]:
+        translation = np.asarray(box.translation, dtype=float)
         velocity = np.asarray(box.linear_velocity, dtype=float)
         down_slope_speed = float(np.dot(velocity, down_slope))
-        speed_history.append(down_slope_speed)
+        down_slope_travel = float(np.dot(translation - initial_position, down_slope))
+        ramp_gap = float(np.dot(translation, ramp_normal) - contact_offset)
+        contact_count = float(len(world.collide()))
+        if ramp_gap <= 0.01 and down_slope_speed > 0.05:
+            status = "barrier-slide"
+        elif ramp_gap <= 0.01:
+            status = "barrier-held"
+        elif down_slope_speed > 0.05:
+            status = "sliding"
+        else:
+            status = "released"
+        return {
+            "box_x": float(translation[0]),
+            "box_z": float(translation[2]),
+            "contact_count": contact_count,
+            "down_slope_speed": down_slope_speed,
+            "down_slope_travel": down_slope_travel,
+            "ramp_gap": ramp_gap,
+            "status": status,
+            "step_ms": float(step_ms or 0.0),
+        }
+
+    def record_metrics(step_ms: float | None = None) -> dict[str, object]:
+        metrics = sample_metrics(step_ms)
+        last_metrics.clear()
+        last_metrics.update(metrics)
+        speed_history.append(float(metrics["down_slope_speed"]))
+        gap_history.append(float(metrics["ramp_gap"]))
+        travel_history.append(float(metrics["down_slope_travel"]))
+        contact_history.append(float(metrics["contact_count"]))
+        step_ms_history.append(float(metrics["step_ms"]))
+        return metrics
+
+    record_metrics(0.0)
+
+    def pre_step() -> None:
+        start = time.perf_counter()
+        bridge.pre_step()
+        record_metrics((time.perf_counter() - start) * 1000.0)
+
+    def capture_metrics() -> dict[str, object]:
+        metrics = dict(last_metrics or sample_metrics())
+        speeds = list(speed_history)
+        gaps = list(gap_history)
+        travels = list(travel_history)
+        contacts = list(contact_history)
+        step_values = list(step_ms_history)
+        return {
+            "row": "rigid_ipc_incline",
+            "solver": "rigid_ipc",
+            "executor": "World.step default",
+            "scope": "tilted_face_friction_slide",
+            "time_step_ms": float(world.time_step) * 1000.0,
+            "world_time": float(world.time),
+            "controls": {
+                "friction": float(box.friction),
+            },
+            "friction": float(box.friction),
+            "tilt_deg": math.degrees(_TILT_RAD),
+            **metrics,
+            "history_samples": float(len(speeds)),
+            "min_ramp_gap": min(gaps, default=float(metrics["ramp_gap"])),
+            "max_down_slope_speed": max(
+                speeds, default=float(metrics["down_slope_speed"])
+            ),
+            "max_down_slope_travel": max(
+                travels, default=float(metrics["down_slope_travel"])
+            ),
+            "max_contact_count": max(contacts, default=0.0),
+            "max_step_ms": max(step_values, default=0.0),
+        }
+
+    def build_panel(builder: object, context: object) -> None:
+        metrics = dict(last_metrics or sample_metrics())
         builder.text("solver: rigid IPC")
         builder.text(f"tilt: {math.degrees(_TILT_RAD):.1f} deg")
         builder.text(f"world time: {world.time:.3f} s")
-        builder.text(f"down-slope speed: {down_slope_speed:.3f} m/s")
+        builder.text(
+            f"down-slope speed: {float(metrics['down_slope_speed']):.3f} m/s"
+        )
+        builder.text(f"ramp gap: {float(metrics['ramp_gap']):.4f} m")
+        builder.text(f"travel: {float(metrics['down_slope_travel']):.3f} m")
+        builder.text(f"status: {metrics['status']}")
         changed, friction = builder.slider("Friction", float(box.friction), 0.0, 1.0)
         if changed:
             box.friction = float(friction)
@@ -104,10 +193,16 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=pre_step,
         force_drag=bridge.force_drag,
         panels=[ScenePanel("Rigid IPC Incline", build_panel)],
-        info={"sx_world": world, "rigid_body_solver": "ipc"},
+        info={
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
+            "sx_world": world,
+            "rigid_body_solver": "ipc",
+        },
     )
 
 

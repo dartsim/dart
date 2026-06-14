@@ -391,12 +391,32 @@ void defGuiPanels(nb::module_& m)
             }
           },
           nb::arg("paused"))
-      .def("request_single_step", [](PanelContextView& self) {
-        auto* lifecycle = self.context().lifecycle;
-        if (lifecycle != nullptr) {
-          dart::gui::requestSingleStep(*lifecycle);
-        }
-      });
+      .def(
+          "request_single_step",
+          [](PanelContextView& self) {
+            auto* lifecycle = self.context().lifecycle;
+            if (lifecycle != nullptr) {
+              dart::gui::requestSingleStep(*lifecycle);
+            }
+          })
+      .def(
+          "request_scene_switch",
+          [](PanelContextView& self, const std::string& sceneId) {
+            auto* lifecycle = self.context().lifecycle;
+            if (lifecycle != nullptr) {
+              dart::gui::requestSceneSwitch(*lifecycle, sceneId);
+            }
+          },
+          nb::arg("scene_id"))
+      .def(
+          "request_scene_replay",
+          [](PanelContextView& self, const std::string& sceneId) {
+            auto* lifecycle = self.context().lifecycle;
+            if (lifecycle != nullptr) {
+              dart::gui::requestSceneReplay(*lifecycle, sceneId);
+            }
+          },
+          nb::arg("scene_id"));
 }
 
 dart::gui::Panel makeGuiPanelFromPython(nb::handle panelLike)

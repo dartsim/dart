@@ -8,11 +8,14 @@ covered by `pixi run -e cuda py-demos`.
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import dartpy as dart
 import pytest
 from examples.demos.runner import (
+    CAPTURE_METRICS_EVENT_NAME,
+    CAPTURE_METRICS_INFO_KEY,
     PythonDemoScene,
     SceneSetup,
     _configure_gpu_compute,
@@ -20,6 +23,7 @@ from examples.demos.runner import (
     _make_gpu_panel,
     _make_world_factory,
     _strip_gpu_flags,
+    _strip_runner_local_flags,
 )
 
 
@@ -89,6 +93,28 @@ def test_strip_gpu_flags():
     assert _strip_gpu_flags(["--scene", "y"]) == ["--scene", "y"]
 
 
+def test_strip_runner_local_flags():
+    assert _strip_runner_local_flags(
+        [
+            "--scene",
+            "x",
+            "--gpu",
+            "--capture-metrics-event-log",
+            "/tmp/metrics.jsonl",
+            "--frames",
+            "4",
+        ]
+    ) == [
+        "--scene",
+        "x",
+        "--frames",
+        "4",
+    ]
+    assert _strip_runner_local_flags(
+        ["--capture-metrics-event-log=/tmp/metrics.jsonl", "--no-gpu"]
+    ) == []
+
+
 def test_configure_gpu_compute_cpu_build_is_noop(monkeypatch, capsys):
     monkeypatch.delenv("DART_PY_DEMOS_GPU", raising=False)
     sx = _FakeSx(available=False)
@@ -150,6 +176,52 @@ def test_world_factory_without_gpu_panel_is_unchanged():
     )
     # No callbacks, no panels, no renderable provider.
     assert _make_world_factory(scene)() == (None, None, None, None)
+
+
+def test_world_factory_records_capture_metrics(tmp_path):
+    state = {"frame": 0}
+
+    def pre_step() -> None:
+        state["frame"] += 1
+
+    def capture_metrics() -> dict[str, object]:
+        return {
+            "frame": state["frame"],
+            "infinite": float("inf"),
+            "tuple": (1, 2.5),
+        }
+
+    scene = PythonDemoScene(
+        id="metrics_scene",
+        title="Metrics",
+        category="C",
+        summary="s",
+        build=lambda: SceneSetup(
+            pre_step=pre_step,
+            info={CAPTURE_METRICS_INFO_KEY: capture_metrics},
+        ),
+    )
+    log = tmp_path / "scene_metrics.jsonl"
+    factory_pre_step, _force_drag, _panels, _provider = _make_world_factory(
+        scene,
+        capture_metrics_event_log=str(log),
+    )()
+
+    assert factory_pre_step is not None
+    factory_pre_step()
+    factory_pre_step()
+
+    events = [json.loads(line) for line in log.read_text().splitlines()]
+    assert len(events) == 2
+    assert events[-1]["event"] == CAPTURE_METRICS_EVENT_NAME
+    assert events[-1]["frame"] == 2
+    assert events[-1]["scene"] == "metrics_scene"
+    assert events[-1]["source"] == "py-demo-scene"
+    assert events[-1]["metrics"] == {
+        "frame": 2,
+        "infinite": None,
+        "tuple": [1, 2.5],
+    }
 
 
 def test_dartpy_gpu_bindings_are_safe_noops_without_cuda():
