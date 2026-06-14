@@ -36,6 +36,9 @@
 #include <dart/collision/contact.hpp>
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -523,6 +526,115 @@ std::vector<DebugLineDescriptor> makeSupportPolygonDebugLines(
           rgba(0.16, 0.78, 0.58, 0.9),
           labelPrefix,
           "support_centroid");
+    }
+  }
+
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> makeJointAxisDebugLines(
+    const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options,
+    const std::string& labelPrefix)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawJointAxes || options.jointAxisLength <= 0.0
+      || !std::isfinite(options.jointAxisLength)) {
+    return lines;
+  }
+
+  const dynamics::Joint* joint = bodyNode.getParentJoint();
+  if (joint == nullptr) {
+    return lines;
+  }
+
+  // The single-DOF axis is expressed in the joint frame; map it to world via
+  // the joint frame's world transform (child body world * child->joint).
+  const Eigen::Isometry3d jointWorld
+      = bodyNode.getWorldTransform() * joint->getTransformFromChildBodyNode();
+  if (!jointWorld.matrix().allFinite()) {
+    return lines;
+  }
+  const Eigen::Vector3d anchor = jointWorld.translation();
+
+  const std::string label
+      = labelPrefix.empty() ? "joint.axis" : labelPrefix + ".joint_axis";
+  const Eigen::Vector4d axisColor = rgba(0.96, 0.62, 0.12, 0.95);
+
+  if (joint->getType() == dynamics::RevoluteJoint::getStaticType()) {
+    const auto* revolute = static_cast<const dynamics::RevoluteJoint*>(joint);
+    const Eigen::Vector3d worldAxis
+        = (jointWorld.linear() * revolute->getAxis()).normalized();
+    if (!worldAxis.allFinite()) {
+      return lines;
+    }
+    appendLine(
+        lines,
+        anchor - worldAxis * options.jointAxisLength,
+        anchor + worldAxis * options.jointAxisLength,
+        axisColor,
+        label);
+  } else if (joint->getType() == dynamics::PrismaticJoint::getStaticType()) {
+    const auto* prismatic = static_cast<const dynamics::PrismaticJoint*>(joint);
+    const Eigen::Vector3d worldAxis
+        = (jointWorld.linear() * prismatic->getAxis()).normalized();
+    if (!worldAxis.allFinite()) {
+      return lines;
+    }
+    appendArrowLines(
+        lines,
+        anchor,
+        anchor + worldAxis * options.jointAxisLength,
+        axisColor,
+        label);
+  }
+
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> makeVelocityDebugLines(
+    const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options,
+    const std::string& labelPrefix)
+{
+  std::vector<DebugLineDescriptor> lines;
+
+  const auto scaledLength = [&](double magnitude, double scale) {
+    return std::clamp(
+        magnitude * scale,
+        options.velocityMinLength,
+        options.velocityMaxLength);
+  };
+
+  if (options.drawLinearVelocities && options.linearVelocityScale > 0.0) {
+    const Eigen::Vector3d velocity = bodyNode.getCOMLinearVelocity();
+    const double magnitude = velocity.norm();
+    if (velocity.allFinite() && magnitude > 1e-9) {
+      const Eigen::Vector3d origin = bodyNode.getCOM();
+      appendArrowLines(
+          lines,
+          origin,
+          origin
+              + velocity.normalized()
+                    * scaledLength(magnitude, options.linearVelocityScale),
+          rgba(0.32, 0.74, 0.98, 0.95),
+          labelPrefix.empty() ? "vel.linear" : labelPrefix + ".vel_linear");
+    }
+  }
+
+  if (options.drawAngularVelocities && options.angularVelocityScale > 0.0) {
+    const Eigen::Vector3d velocity = bodyNode.getAngularVelocity();
+    const double magnitude = velocity.norm();
+    if (velocity.allFinite() && magnitude > 1e-9) {
+      const Eigen::Vector3d origin = bodyNode.getWorldTransform().translation();
+      appendArrowLines(
+          lines,
+          origin,
+          origin
+              + velocity.normalized()
+                    * scaledLength(magnitude, options.angularVelocityScale),
+          rgba(0.74, 0.52, 0.98, 0.95),
+          labelPrefix.empty() ? "vel.angular" : labelPrefix + ".vel_angular");
     }
   }
 

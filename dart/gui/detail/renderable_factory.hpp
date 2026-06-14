@@ -58,6 +58,12 @@ std::optional<Renderable> createDebugLineRenderable(
     const std::vector<dart::gui::DebugLineDescriptor>& lines,
     const std::vector<dart::gui::DebugTriangleDescriptor>& triangles);
 
+/// True for shapes rendered with a lit material that exposes
+/// metallic/roughness/reflectance parameters and does not supply its own
+/// per-part asset materials (asset meshes and unlit line/point/voxel
+/// renderables are excluded).
+DART_GUI_API bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
+
 std::optional<Renderable> createRenderableFromDescriptor(
     ::filament::Engine& engine,
     const MaterialSet& materials,

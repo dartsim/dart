@@ -1425,7 +1425,10 @@ check-dart7-final-world-promotion`.
   [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
   when extending the renderer; the latter is the seam to implement for
   offline/high-fidelity sensor rendering (egocentric views, lens distortion,
-  depth/segmentation outputs).
+  depth/segmentation outputs). For material/lighting/texture fidelity and for
+  promoting debug visuals into the GUI component (per-shape PBR, IBL reflections,
+  texture mipmaps, an app `debugProvider`, richer debug primitives), see
+  [`../design/renderer_fidelity_and_debug_visuals.md`](../design/renderer_fidelity_and_debug_visuals.md).
 - Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
   CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
   `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type

@@ -50,9 +50,11 @@
 
 #include <algorithm>
 #include <array>
+#include <string_view>
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 
 namespace dart::gui::detail {
 namespace {
@@ -79,6 +81,19 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
 }
 
 } // namespace
+
+bool highFidelityHeadlessRequested()
+{
+  // Keep the accepted token set in sync with isTruthyEnvironmentVariable in
+  // detail/application.cpp so all DART_GUI_* switches parse identically.
+  const char* value = std::getenv("DART_GUI_HIGH_FIDELITY");
+  if (value == nullptr) {
+    return false;
+  }
+  const std::string_view text(value);
+  return text == "1" || text == "true" || text == "TRUE" || text == "on"
+         || text == "ON" || text == "yes" || text == "YES";
+}
 
 ::filament::ColorGrading* createDebugColorGrading(::filament::Engine& engine)
 {

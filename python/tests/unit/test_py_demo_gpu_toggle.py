@@ -157,12 +157,14 @@ def test_world_factory_injects_gpu_panel():
         build=lambda: SceneSetup(world=sentinel_world),
     )
     result = _make_world_factory(scene, gpu_panel)()
-    # The viewer factory returns (pre_step, force_drag, panels, provider).
-    assert isinstance(result, tuple) and len(result) == 4
+    # The viewer factory returns
+    # (pre_step, force_drag, panels, renderable_provider, debug_provider).
+    assert isinstance(result, tuple) and len(result) == 5
     assert result[0] is None
     assert result[1] is None
     assert result[2] == [gpu_panel]
     assert result[3] is None
+    assert result[4] is None
 
 
 def test_world_factory_without_gpu_panel_is_unchanged():
@@ -175,7 +177,7 @@ def test_world_factory_without_gpu_panel_is_unchanged():
         build=lambda: SceneSetup(world=sentinel_world),
     )
     # No callbacks, no panels, no renderable provider.
-    assert _make_world_factory(scene)() == (None, None, None, None)
+    assert _make_world_factory(scene)() == (None, None, None, None, None)
 
 
 def test_world_factory_records_capture_metrics(tmp_path):
@@ -202,10 +204,12 @@ def test_world_factory_records_capture_metrics(tmp_path):
         ),
     )
     log = tmp_path / "scene_metrics.jsonl"
-    factory_pre_step, _force_drag, _panels, _provider = _make_world_factory(
-        scene,
-        capture_metrics_event_log=str(log),
-    )()
+    factory_pre_step, _force_drag, _panels, _provider, _debug_provider = (
+        _make_world_factory(
+            scene,
+            capture_metrics_event_log=str(log),
+        )()
+    )
 
     assert factory_pre_step is not None
     factory_pre_step()
