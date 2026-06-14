@@ -12,8 +12,6 @@
 # main.cpp by dart_gui_add_application. See
 # docs/design/dartsim_gui_simulator.md.
 
-cmake_minimum_required(VERSION 3.22.1)
-
 set(target_name dartsim_ui)
 
 find_package(nfd CONFIG REQUIRED)

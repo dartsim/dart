@@ -226,12 +226,19 @@ def _abd_chain_packet(scene: str, pair_count: int, **overrides):
 
 
 def _abd_comparison_packet(scene: str, pair_count: int, **overrides):
-    row_name = f"BM_Plan083CpuScene_{scene}_reduced_pair_runtime_step"
+    suffix = (
+        "reduced_side_by_side_step"
+        if scene == "abd_fem_coupling"
+        else "reduced_pair_runtime_step"
+    )
+    row_name = f"BM_Plan083CpuScene_{scene}_{suffix}"
     paper_counts = {
         "abd_gears": (28, 2_500_000),
         "abd_bullet_small": (16, 1_200),
         "abd_bullet_medium": (142, 3_500),
         "abd_bullet_large": (562, 11_000),
+        "abd_complex_geometry": (29, 1_200_000),
+        "abd_fem_coupling": (27, 1_100_000),
     }
     paper_body_count, paper_triangle_count = paper_counts[scene]
     row = {
@@ -653,6 +660,13 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_chain(
             96,
             562,
         ),
+        (
+            "abd_complex_geometry",
+            "abd-complex-geometry",
+            "plan083_abd_complex_geometry",
+            29,
+            29,
+        ),
     ],
 )
 def test_plan083_cpu_scene_packet_accepts_reduced_abd_comparison(
@@ -682,6 +696,56 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_comparison(
     assert row["reference_baseline_measured"] is False
     assert row["converged_solve_count"] == pair_count
     assert row["barrier_active_count"] == pair_count
+    assert row["wall_time_ns"] == 6.0e6
+
+
+def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _abd_comparison_packet(
+            "abd_fem_coupling",
+            27,
+            deformable_body_count=1,
+            deformable_node_count=24,
+            deformable_edge_count=68,
+            surface_triangle_count=30,
+            deformable_solver_iterations=4,
+            min_cloth_height_m=0.055,
+            affine_fem_candidate_diagnostics_measured=1,
+            affine_fem_mixed_candidate_count=12,
+            affine_fem_mixed_active_barrier_count=4,
+            affine_fem_mixed_min_squared_distance=1e-4,
+            affine_fem_mixed_barrier_value=0.3,
+            affine_fem_coupled_contact_measured=1,
+            affine_fem_coupled_solve_converged=1,
+            affine_fem_coupled_objective_decrease=0.2,
+            affine_fem_coupled_initial_gradient_norm=0.4,
+            affine_fem_coupled_final_gradient_norm=0.02,
+            affine_fem_coupled_affine_displacement_norm=0.01,
+            affine_fem_coupled_deformable_displacement_norm=0.002,
+        ),
+        max_equality_residual=1e-8,
+        scene="abd_fem_coupling",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "abd-fem-coupling"
+    assert row["scene_id"] == "plan083_abd_fem_coupling"
+    assert row["paper_scale"] is False
+    assert (
+        row["runtime_path"]
+        == "detail affine point-triangle runtime step plus deformable IPC World::step"
+    )
+    assert row["affine_body_count"] == 54
+    assert row["dynamic_pair_count"] == 27
+    assert row["deformable_body_count"] == 1
+    assert row["deformable_node_count"] == 24
+    assert row["affine_fem_candidate_diagnostics_measured"] is True
+    assert row["affine_fem_mixed_candidate_count"] == 12
+    assert row["affine_fem_mixed_active_barrier_count"] == 4
+    assert row["affine_fem_coupled_contact_measured"] is True
+    assert row["affine_fem_coupled_solve_converged"] is True
     assert row["wall_time_ns"] == 6.0e6
 
 
@@ -1006,6 +1070,38 @@ def test_plan083_cpu_scene_packet_rejects_abd_comparison_wrong_pair_count() -> N
             _abd_comparison_packet("abd_gears", 28, dynamic_pair_count=27),
             max_equality_residual=1e-8,
             scene="abd_gears",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_fem_without_coupled_contact() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="coupled"):
+        module.make_packet(
+            _abd_comparison_packet(
+                "abd_fem_coupling",
+                27,
+                deformable_body_count=1,
+                deformable_node_count=24,
+                deformable_edge_count=68,
+                surface_triangle_count=30,
+                deformable_solver_iterations=4,
+                min_cloth_height_m=0.055,
+                affine_fem_candidate_diagnostics_measured=1,
+                affine_fem_mixed_candidate_count=12,
+                affine_fem_mixed_active_barrier_count=4,
+                affine_fem_mixed_min_squared_distance=1e-4,
+                affine_fem_mixed_barrier_value=0.3,
+                affine_fem_coupled_contact_measured=0,
+                affine_fem_coupled_solve_converged=1,
+                affine_fem_coupled_objective_decrease=0.2,
+                affine_fem_coupled_initial_gradient_norm=0.4,
+                affine_fem_coupled_final_gradient_norm=0.02,
+                affine_fem_coupled_affine_displacement_norm=0.01,
+                affine_fem_coupled_deformable_displacement_norm=0.002,
+            ),
+            max_equality_residual=1e-8,
+            scene="abd_fem_coupling",
         )
 
 

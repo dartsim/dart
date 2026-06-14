@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.22.1)
-
 project(dart-demos)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../gui_scene_example.cmake")
