@@ -730,6 +730,72 @@ public:
   void computeImpulseForwardDynamics();
 
   //----------------------------------------------------------------------------
+  /// \{ \name Automatic deactivation ("sleeping")
+  //----------------------------------------------------------------------------
+
+  /// Returns whether this skeleton is currently flagged as resting (asleep). A
+  /// resting skeleton has its forward dynamics, constraint solve, and position
+  /// integration skipped each step until it is disturbed. The resting flag is
+  /// managed by World::step; it is never set while automatic deactivation is
+  /// disabled.
+  bool isResting() const;
+
+  /// Sets the island-atomic frozen (asleep) flag. This is set by the constraint
+  /// solver each step from the island's collective sleep candidacy; it does not
+  /// touch the dwell timer (dwell is owned by the per-skeleton candidacy).
+  void setResting(bool _resting);
+
+  /// Returns whether this skeleton individually qualifies for sleep (it has
+  /// stayed quiet for the full dwell). The island only freezes when every
+  /// member is a candidate.
+  bool isSleepCandidate() const;
+
+  /// Sets the per-skeleton sleep candidacy. Passing \c false also resets the
+  /// accumulated dwell time, so a freshly-woken skeleton must stay quiet for
+  /// the full dwell duration again before it can become a candidate.
+  void setSleepCandidate(bool _candidate);
+
+  /// Smoothed (EMA) max body speed accessors, used by the rest-detection pass.
+  double getSmoothedLinearSpeed() const;
+  void setSmoothedLinearSpeed(double _speed);
+  double getSmoothedAngularSpeed() const;
+  void setSmoothedAngularSpeed(double _speed);
+
+  /// Returns the index of the solver island (constrained group) this skeleton
+  /// belonged to on the most recent step, or -1 if it was not in any island.
+  /// Populated by the constraint solver only when automatic deactivation is
+  /// enabled (otherwise -1). Intended for visualization/diagnostics.
+  int getIslandIndex() const;
+
+  /// Sets the island index. Called by the constraint solver each step.
+  void setIslandIndex(int _index);
+
+  /// Returns the accumulated time (seconds) this skeleton has remained quiet
+  /// without yet being put to sleep.
+  double getRestDwellTime() const;
+
+  /// Sets the accumulated quiet-dwell time (seconds). Used by the World's
+  /// rest-detection pass to accumulate or reset dwell.
+  void setRestDwellTime(double _dwellTime);
+
+  /// Returns true if this skeleton currently has any user-applied actuation
+  /// pending this step: a nonzero external force, a nonzero generalized
+  /// (internal/command) force, or a nonzero command. Gravity is NOT treated as
+  /// a disturbance. This is used to keep an actuated skeleton awake (or to wake
+  /// a resting one) so applied forces are never silently dropped.
+  bool hasExternalDisturbance() const;
+
+  /// Returns the largest linear speed (m/s), in world coordinates, among this
+  /// skeleton's body nodes, using their cached velocities.
+  double computeMaxBodyLinearSpeed() const;
+
+  /// Returns the largest angular speed (rad/s), in world coordinates, among
+  /// this skeleton's body nodes, using their cached velocities.
+  double computeMaxBodyAngularSpeed() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   /// \{ \name Jacobians
   //----------------------------------------------------------------------------
 
@@ -1319,6 +1385,35 @@ protected:
   bool mIsImpulseApplied;
 
   mutable std::mutex mMutex;
+
+  /// Whether this skeleton is currently FROZEN (asleep): its forward dynamics,
+  /// island constraint solve, and position integration are skipped this step.
+  /// This is the island-atomic freeze flag, set by the constraint solver to the
+  /// AND of every island member's sleep candidacy, so a body is never frozen
+  /// while a constraint-coupled neighbour is still moving.
+  bool mIsResting = false;
+
+  /// Whether this skeleton individually qualifies for sleep (it has stayed
+  /// quiet for the full dwell). Candidacy is per-skeleton; the island freezes
+  /// (mIsResting) only when every member is a candidate. Managed by
+  /// World::step's rest-detection pass.
+  bool mSleepCandidate = false;
+
+  /// Index of the solver island (constrained group) this skeleton belonged to
+  /// on the most recent step, or -1 if it was not in any island. Stamped by the
+  /// constraint solver when automatic deactivation is enabled; useful for
+  /// visualizing/debugging the island partition. -1 when the feature is off.
+  int mIslandIndex = -1;
+
+  /// Accumulated time (seconds) this skeleton has remained quiet without yet
+  /// being put to sleep. Reset to zero whenever it is disturbed or woken.
+  double mRestDwellTime = 0.0;
+
+  /// Exponentially-smoothed max body linear/angular speed, used by the
+  /// rest-detection pass so transient resting-contact jitter does not keep
+  /// resetting the dwell timer.
+  double mSmoothedLinearSpeed = 0.0;
+  double mSmoothedAngularSpeed = 0.0;
 
 public:
   //--------------------------------------------------------------------------

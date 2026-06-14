@@ -44,13 +44,27 @@
 #include "dart/gui/osg/IncludeImGui.hpp"
 
 #include <osg/Camera>
+#include <osg/GLExtensions>
 #include <osg/RenderInfo>
 
 #include <algorithm>
+#include <vector>
 
 namespace dart {
 namespace gui {
 namespace osg {
+
+#ifdef GL_ACTIVE_TEXTURE
+constexpr GLenum kGLActiveTexture = GL_ACTIVE_TEXTURE;
+#else
+constexpr GLenum kGLActiveTexture = 0x84E0;
+#endif
+
+#ifdef GL_CLIENT_ACTIVE_TEXTURE
+constexpr GLenum kGLClientActiveTexture = GL_CLIENT_ACTIVE_TEXTURE;
+#else
+constexpr GLenum kGLClientActiveTexture = 0x84E1;
+#endif
 
 #if IMGUI_VERSION_NUM < 19150
 
@@ -237,8 +251,122 @@ private:
 };
 
 //==============================================================================
+class ScopedOpenGL2RenderState
+{
+public:
+  struct TextureUnitState
+  {
+    bool mTexture2DEnabled = false;
+    bool mTextureGenSEnabled = false;
+    bool mTextureGenTEnabled = false;
+    bool mTextureGenREnabled = false;
+    bool mTextureGenQEnabled = false;
+  };
+
+  explicit ScopedOpenGL2RenderState(::osg::RenderInfo& renderInfo)
+  {
+    mExtensions = ::osg::GLExtensions::Get(renderInfo.getContextID(), true);
+    if (!mExtensions)
+      return;
+
+    if (mExtensions->glUseProgram) {
+      mPreviousProgram = mExtensions->getCurrentProgram();
+      if (mPreviousProgram != 0)
+        mExtensions->glUseProgram(0);
+    }
+
+    if (mExtensions->glActiveTexture) {
+      glGetIntegerv(kGLActiveTexture, &mPreviousActiveTexture);
+
+      GLint maxTextureUnits = 1;
+      glGetIntegerv(GL_MAX_TEXTURE_UNITS, &maxTextureUnits);
+      maxTextureUnits = std::max(1, maxTextureUnits);
+      mTextureUnits.resize(static_cast<std::size_t>(maxTextureUnits));
+
+      for (GLint i = 0; i < maxTextureUnits; ++i) {
+        const GLenum unit = static_cast<GLenum>(GL_TEXTURE0 + i);
+        mExtensions->glActiveTexture(unit);
+
+        auto& state = mTextureUnits[static_cast<std::size_t>(i)];
+        state.mTexture2DEnabled = (glIsEnabled(GL_TEXTURE_2D) == GL_TRUE);
+        state.mTextureGenSEnabled = (glIsEnabled(GL_TEXTURE_GEN_S) == GL_TRUE);
+        state.mTextureGenTEnabled = (glIsEnabled(GL_TEXTURE_GEN_T) == GL_TRUE);
+        state.mTextureGenREnabled = (glIsEnabled(GL_TEXTURE_GEN_R) == GL_TRUE);
+        state.mTextureGenQEnabled = (glIsEnabled(GL_TEXTURE_GEN_Q) == GL_TRUE);
+
+        if (i > 0)
+          glDisable(GL_TEXTURE_2D);
+        glDisable(GL_TEXTURE_GEN_S);
+        glDisable(GL_TEXTURE_GEN_T);
+        glDisable(GL_TEXTURE_GEN_R);
+        glDisable(GL_TEXTURE_GEN_Q);
+      }
+
+      mExtensions->glActiveTexture(GL_TEXTURE0);
+    }
+
+    if (mExtensions->glClientActiveTexture) {
+      glGetIntegerv(kGLClientActiveTexture, &mPreviousClientActiveTexture);
+      mExtensions->glClientActiveTexture(GL_TEXTURE0);
+    }
+  }
+
+  ~ScopedOpenGL2RenderState()
+  {
+    if (!mExtensions)
+      return;
+
+    if (mExtensions->glActiveTexture) {
+      for (std::size_t i = 0; i < mTextureUnits.size(); ++i) {
+        const GLenum unit = static_cast<GLenum>(GL_TEXTURE0 + i);
+        mExtensions->glActiveTexture(unit);
+        const auto& state = mTextureUnits[i];
+        if (state.mTexture2DEnabled)
+          glEnable(GL_TEXTURE_2D);
+        else
+          glDisable(GL_TEXTURE_2D);
+
+        if (state.mTextureGenSEnabled)
+          glEnable(GL_TEXTURE_GEN_S);
+        else
+          glDisable(GL_TEXTURE_GEN_S);
+        if (state.mTextureGenTEnabled)
+          glEnable(GL_TEXTURE_GEN_T);
+        else
+          glDisable(GL_TEXTURE_GEN_T);
+        if (state.mTextureGenREnabled)
+          glEnable(GL_TEXTURE_GEN_R);
+        else
+          glDisable(GL_TEXTURE_GEN_R);
+        if (state.mTextureGenQEnabled)
+          glEnable(GL_TEXTURE_GEN_Q);
+        else
+          glDisable(GL_TEXTURE_GEN_Q);
+      }
+      mExtensions->glActiveTexture(mPreviousActiveTexture);
+    }
+
+    if (mExtensions->glClientActiveTexture)
+      mExtensions->glClientActiveTexture(mPreviousClientActiveTexture);
+
+    if (mExtensions->glUseProgram && mPreviousProgram != 0)
+      mExtensions->glUseProgram(mPreviousProgram);
+  }
+
+private:
+  ::osg::GLExtensions* mExtensions = nullptr;
+  GLuint mPreviousProgram = 0;
+  GLint mPreviousActiveTexture = GL_TEXTURE0;
+  GLint mPreviousClientActiveTexture = GL_TEXTURE0;
+  std::vector<TextureUnitState> mTextureUnits;
+};
+
+//==============================================================================
 ImGuiHandler::ImGuiHandler()
-  : mTime{0.0}, mMousePressed{false, false, false}, mMouseWheel{0.0f}
+  : mTime{0.0},
+    mMousePressed{false, false, false},
+    mMouseDown{false, false, false},
+    mMouseWheel{0.0f}
 {
   ImGui::CreateContext();
 
@@ -421,17 +549,21 @@ bool ImGuiHandler::handle(
       if (eventAdapter.getButtonMask()
           == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
         mMousePressed[0] = true;
+        mMouseDown[0] = true;
       } else if (
           eventAdapter.getButtonMask()
           == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) {
         mMousePressed[1] = true;
+        mMouseDown[1] = true;
       } else if (
           eventAdapter.getButtonMask()
           == osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) {
         mMousePressed[2] = true;
+        mMouseDown[2] = true;
       } else {
         // Shouldn't be reached to here. Mark left button by default.
         mMousePressed[0] = true;
+        mMouseDown[0] = true;
       }
 
       return wantCaptureMouse;
@@ -446,9 +578,9 @@ bool ImGuiHandler::handle(
     case osgGA::GUIEventAdapter::RELEASE: {
       // When a mouse button is released no button mask is set. So we mark all
       // the buttons are released.
-      mMousePressed[0] = false;
-      mMousePressed[1] = false;
-      mMousePressed[2] = false;
+      mMouseDown[0] = false;
+      mMouseDown[1] = false;
+      mMouseDown[2] = false;
 
       return wantCaptureMouse;
     }
@@ -500,8 +632,10 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   mTime = currentTime;
   DART_ASSERT(mTime >= 0.0);
 
-  for (auto i = 0u; i < mMousePressed.size(); ++i)
-    io.MouseDown[i] = mMousePressed[i];
+  for (auto i = 0u; i < mMousePressed.size(); ++i) {
+    io.MouseDown[i] = mMouseDown[i] || mMousePressed[i];
+    mMousePressed[i] = false;
+  }
 
   io.MouseWheel = mMouseWheel;
   mMouseWheel = 0.0f;
@@ -510,7 +644,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 }
 
 //==============================================================================
-void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
+void ImGuiHandler::render(::osg::RenderInfo& renderInfo)
 {
   for (const auto& widget : mWidgets) {
     if (widget->isVisible())
@@ -520,6 +654,25 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui::Render();
 
   auto* drawData = ImGui::GetDrawData();
+#ifdef IMGUI_HAS_TEXTURES
+  if (drawData->Textures) {
+    for (ImTextureData* texture : *drawData->Textures) {
+      if (texture->Status != ImTextureStatus_OK)
+        ImGui_ImplOpenGL2_UpdateTexture(texture);
+    }
+  }
+#endif
+
+  // The legacy OpenGL2 backend renders through the fixed pipeline. OSG may
+  // leave a GLSL program bound after drawing the 3D scene; if so, text glyphs
+  // are drawn as solid quads because the active shader ignores the font atlas.
+  //
+  // OSG shadow/render passes may also leave a nonzero active texture unit with
+  // other fixed-pipeline texture units or texture-coordinate generation
+  // enabled. The backend assumes texture unit 0 with caller-provided UVs, so
+  // force that state for the duration of the ImGui draw and restore it
+  // afterwards.
+  ScopedOpenGL2RenderState gl2State(renderInfo);
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 

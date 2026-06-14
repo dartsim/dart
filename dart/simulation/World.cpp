@@ -99,6 +99,7 @@ WorldPtr World::clone() const
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
+  worldClone->setDeactivationOptions(mDeactivationOptions);
 
   auto cd = getConstraintSolver()->getCollisionDetector();
   worldClone->getConstraintSolver()->setCollisionDetector(
@@ -174,12 +175,51 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
+  const bool deactivationEnabled = mDeactivationOptions.mEnabled;
+
+  // Mirror the enable flag onto the solver so its island rest-detection / LCP
+  // skipping runs only when the feature is on (otherwise it is a strict no-op).
+  mConstraintSolver->setDeactivationActive(deactivationEnabled);
+
+  // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
+  // step so the post-step rest-detection pass can treat it as non-quiet even
+  // after _resetCommand clears the actuation vectors below. Disturbance
+  // tracking is only needed while contact islands exist; unconstrained active
+  // scenes cannot sleep.
+  std::vector<bool> disturbedThisStep;
+  const bool trackDisturbances
+      = deactivationEnabled
+        && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
+  if (trackDisturbances)
+    disturbedThisStep.assign(mSkeletons.size(), false);
+
   // Integrate velocity for unconstrained skeletons
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
-    for (auto& skel : mSkeletons) {
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      auto& skel = mSkeletons[i];
       if (!skel->isMobile())
         continue;
+
+      const bool externallyDisturbed
+          = deactivationEnabled && (trackDisturbances || skel->isResting())
+            && skel->hasExternalDisturbance();
+      if (externallyDisturbed && !disturbedThisStep.empty())
+        disturbedThisStep[i] = true;
+
+      // A resting skeleton skips forward dynamics (including gravity) unless a
+      // user-applied force/command is pending this step, in which case it is
+      // woken so the actuation is integrated rather than silently dropped.
+      // Gravity alone is not a disturbance, so a body resting on its support
+      // stays asleep.
+      if (deactivationEnabled && skel->isResting()) {
+        if (externallyDisturbed) {
+          skel->setResting(false);
+          skel->setSleepCandidate(false);
+        } else {
+          continue;
+        }
+      }
 
       skel->computeForwardDynamics();
       skel->integrateVelocities(mTimeStep);
@@ -193,9 +233,27 @@ void World::step(bool _resetCommand)
   }
 
   // Compute velocity changes given constraint impulses
-  for (auto& skel : mSkeletons) {
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    auto& skel = mSkeletons[i];
     if (!skel->isMobile())
       continue;
+
+    // A resting skeleton skips both the impulse-based forward dynamics and the
+    // position integration. The only exception is when an impulse was applied
+    // to it this step: that means a moving body contacted this island (the
+    // solver united them so the group was not all-resting and was solved),
+    // delivering an impulse. Such a skeleton must wake and be processed
+    // normally so the impulse is applied and the position is advanced.
+    if (deactivationEnabled && skel->isResting()) {
+      if (skel->isImpulseApplied()) {
+        skel->setResting(false);
+        skel->setSleepCandidate(false);
+        if (!disturbedThisStep.empty())
+          disturbedThisStep[i] = true;
+      } else {
+        continue;
+      }
+    }
 
     if (skel->isImpulseApplied()) {
       skel->computeImpulseForwardDynamics();
@@ -211,8 +269,81 @@ void World::step(bool _resetCommand)
     }
   }
 
+  // Rest-detection pass: decide which mobile skeletons are quiet enough to
+  // sleep, and wake any that have started moving again. This is a deterministic
+  // function of post-step cached speeds, dwell time, and the configured
+  // thresholds, so it does not depend on container or iteration order.
+  if (deactivationEnabled
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
+    updateRestStates(disturbedThisStep);
+
   mTime += mTimeStep;
   mFrame++;
+}
+
+//==============================================================================
+void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
+{
+  DART_PROFILE_SCOPED_N("World::step - Rest detection");
+
+  const double linSleep = mDeactivationOptions.mLinearSpeedThreshold;
+  const double angSleep = mDeactivationOptions.mAngularSpeedThreshold;
+  const double scale = mDeactivationOptions.mWakeThresholdScale;
+  const double linWake = scale * linSleep;
+  const double angWake = scale * angSleep;
+
+  // EMA weight for the speed smoothing. Resting-contact solves emit small
+  // per-step velocity jitter; smoothing the speed lets a genuinely settled
+  // island fall below the sleep band and accumulate dwell, while a body in real
+  // sustained motion keeps a high smoothed speed and never qualifies.
+  const double alpha = 0.2;
+
+  // This pass updates per-skeleton sleep CANDIDACY only. The island-atomic
+  // freeze flag (isResting) is derived from candidacy by the constraint solver,
+  // so a body is never frozen unless its whole island qualifies.
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    auto& skel = mSkeletons[i];
+    if (!skel->isMobile())
+      continue;
+
+    if (skel->getIslandIndex() < 0) {
+      skel->setSleepCandidate(false);
+      continue;
+    }
+
+    const double linInstant = skel->computeMaxBodyLinearSpeed();
+    const double angInstant = skel->computeMaxBodyAngularSpeed();
+    const double linSpeed
+        = (1.0 - alpha) * skel->getSmoothedLinearSpeed() + alpha * linInstant;
+    const double angSpeed
+        = (1.0 - alpha) * skel->getSmoothedAngularSpeed() + alpha * angInstant;
+    skel->setSmoothedLinearSpeed(linSpeed);
+    skel->setSmoothedAngularSpeed(angSpeed);
+
+    const bool disturbed
+        = (i < disturbedThisStep.size() && disturbedThisStep[i])
+          || skel->hasExternalDisturbance();
+
+    if (skel->isSleepCandidate()) {
+      // Stay a candidate unless the body clearly started moving again (beyond
+      // the wider wake band) or was disturbed/impulsed this step. The wake band
+      // is larger than the sleep band (hysteresis) to avoid candidacy
+      // thrashing.
+      if (disturbed || linSpeed > linWake || angSpeed > angWake)
+        skel->setSleepCandidate(false);
+    } else {
+      const bool quiet
+          = (linSpeed < linSleep) && (angSpeed < angSleep) && !disturbed;
+      if (quiet) {
+        const double dwell = skel->getRestDwellTime() + mTimeStep;
+        skel->setRestDwellTime(dwell);
+        if (dwell >= mDeactivationOptions.mTimeUntilSleep)
+          skel->setSleepCandidate(true);
+      } else {
+        skel->setRestDwellTime(0.0);
+      }
+    }
+  }
 }
 
 //==============================================================================
@@ -594,6 +725,29 @@ constraint::ConstraintSolver* World::getConstraintSolver()
 const constraint::ConstraintSolver* World::getConstraintSolver() const
 {
   return mConstraintSolver.get();
+}
+
+//==============================================================================
+void World::setDeactivationOptions(const DeactivationOptions& options)
+{
+  mDeactivationOptions = options;
+
+  // If the feature is being disabled, clear any resting/candidacy state so
+  // subsequent steps process every skeleton normally and behavior is identical
+  // to the feature being absent.
+  if (!mDeactivationOptions.mEnabled) {
+    for (auto& skel : mSkeletons) {
+      skel->setResting(false);
+      skel->setSleepCandidate(false);
+      skel->setIslandIndex(-1);
+    }
+  }
+}
+
+//==============================================================================
+const DeactivationOptions& World::getDeactivationOptions() const
+{
+  return mDeactivationOptions;
 }
 
 //==============================================================================

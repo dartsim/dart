@@ -39,6 +39,7 @@
 #ifndef DART_SIMULATION_WORLD_HPP_
 #define DART_SIMULATION_WORLD_HPP_
 
+#include <dart/simulation/DeactivationOptions.hpp>
 #include <dart/simulation/Recording.hpp>
 #include <dart/simulation/SmartPointer.hpp>
 
@@ -261,6 +262,19 @@ public:
   /// Get the constraint solver
   const constraint::ConstraintSolver* getConstraintSolver() const;
 
+  //--------------------------------------------------------------------------
+  // Automatic deactivation ("sleeping")
+  //--------------------------------------------------------------------------
+
+  /// Sets the options controlling automatic body deactivation. If the new
+  /// options disable the feature, any skeleton currently flagged as resting is
+  /// cleared so that subsequent steps behave identically to the feature being
+  /// absent.
+  void setDeactivationOptions(const DeactivationOptions& options);
+
+  /// Returns the options controlling automatic body deactivation.
+  const DeactivationOptions& getDeactivationOptions() const;
+
   /// Bake simulated current state and store it into mRecording
   void bake();
 
@@ -332,6 +346,13 @@ public:
   /// \}
 
 protected:
+  /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
+  /// sleep after the configured dwell time and wakes skeletons that have begun
+  /// moving again. \p disturbedThisStep marks skeletons that were woken or kept
+  /// awake during this step (by a pending force/command or an applied impulse),
+  /// indexed in parallel with mSkeletons.
+  void updateRestStates(const std::vector<bool>& disturbedThisStep);
+
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
@@ -389,6 +410,9 @@ protected:
 
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
+
+  /// Options controlling automatic body deactivation ("sleeping")
+  simulation::DeactivationOptions mDeactivationOptions;
 
   ///
   Recording* mRecording;

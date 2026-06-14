@@ -20,6 +20,13 @@
     benchmarks, dartpy bindings, and an ImGui-based GUI example:
     [#2985](https://github.com/dartsim/dart/pull/2985)
 
+* Simulation
+
+  * Add automatic body deactivation ("sleeping") for resting solver islands,
+    enabled by default with an opt-out option, including wake-on-contact/force
+    handling and island-index diagnostics:
+    [#2920](https://github.com/dartsim/dart/pull/2920)
+
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 
 DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and

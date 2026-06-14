@@ -3819,6 +3819,152 @@ bool Skeleton::isImpulseApplied() const
 }
 
 //==============================================================================
+bool Skeleton::isResting() const
+{
+  return mIsResting;
+}
+
+//==============================================================================
+void Skeleton::setResting(bool _resting)
+{
+  const bool wasResting = mIsResting;
+
+  // Island-atomic frozen flag only. The dwell timer belongs to the per-skeleton
+  // candidacy (setSleepCandidate), not here, because the solver sets this every
+  // step and must not reset dwell while a skeleton is merely held awake by a
+  // still-moving island neighbour.
+  mIsResting = _resting;
+
+  // On the transition into the frozen state, snap the (already sub-threshold)
+  // generalized velocity to exactly zero. The body is at rest, so this is the
+  // steady state friction/contact would have reached; it also makes a slept
+  // body report zero velocity and keeps post-wake resumes independent of the
+  // exact velocity it happened to carry at sleep time. It is only ever applied
+  // to an island the solver is freezing this step (whose constraint solve is
+  // skipped), so the cleared velocity is not consumed by that step's solve.
+  if (_resting && !wasResting && getNumDofs() > 0)
+    setVelocities(Eigen::VectorXd::Zero(static_cast<int>(getNumDofs())));
+}
+
+//==============================================================================
+bool Skeleton::isSleepCandidate() const
+{
+  return mSleepCandidate;
+}
+
+//==============================================================================
+void Skeleton::setSleepCandidate(bool _candidate)
+{
+  mSleepCandidate = _candidate;
+
+  // Losing candidacy (disturbed or started moving) restarts the quiet-dwell
+  // accumulation so it must remain quiet for the full duration again.
+  if (!_candidate)
+    mRestDwellTime = 0.0;
+}
+
+//==============================================================================
+double Skeleton::getSmoothedLinearSpeed() const
+{
+  return mSmoothedLinearSpeed;
+}
+
+//==============================================================================
+void Skeleton::setSmoothedLinearSpeed(double _speed)
+{
+  mSmoothedLinearSpeed = _speed;
+}
+
+//==============================================================================
+double Skeleton::getSmoothedAngularSpeed() const
+{
+  return mSmoothedAngularSpeed;
+}
+
+//==============================================================================
+void Skeleton::setSmoothedAngularSpeed(double _speed)
+{
+  mSmoothedAngularSpeed = _speed;
+}
+
+//==============================================================================
+int Skeleton::getIslandIndex() const
+{
+  return mIslandIndex;
+}
+
+//==============================================================================
+void Skeleton::setIslandIndex(int _index)
+{
+  mIslandIndex = _index;
+}
+
+//==============================================================================
+double Skeleton::getRestDwellTime() const
+{
+  return mRestDwellTime;
+}
+
+//==============================================================================
+void Skeleton::setRestDwellTime(double _dwellTime)
+{
+  mRestDwellTime = _dwellTime;
+}
+
+//==============================================================================
+bool Skeleton::hasExternalDisturbance() const
+{
+  // A disturbance is any user-applied actuation pending this step. Gravity is
+  // intentionally excluded: it is applied internally during forward dynamics
+  // and is not represented in any of these vectors, so a body resting under
+  // gravity alone reports no disturbance.
+  if (getNumDofs() == 0)
+    return false;
+
+  // Small epsilon so floating-point dust in a command/force vector (e.g. a
+  // servo writing ~1e-16 at its target) does not count as a real disturbance
+  // and defeat sleeping.
+  const double tolerance = 1e-9;
+
+  if (getExternalForces().cwiseAbs().maxCoeff() > tolerance)
+    return true;
+
+  if (getForces().cwiseAbs().maxCoeff() > tolerance)
+    return true;
+
+  if (getCommands().cwiseAbs().maxCoeff() > tolerance)
+    return true;
+
+  return false;
+}
+
+//==============================================================================
+double Skeleton::computeMaxBodyLinearSpeed() const
+{
+  double maxSpeed = 0.0;
+  for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+    // getLinearVelocity() defaults to the classical linear velocity in world
+    // coordinates, computed from cached state (no extra kinematics pass).
+    const double speed = bodyNode->getLinearVelocity().norm();
+    if (speed > maxSpeed)
+      maxSpeed = speed;
+  }
+  return maxSpeed;
+}
+
+//==============================================================================
+double Skeleton::computeMaxBodyAngularSpeed() const
+{
+  double maxSpeed = 0.0;
+  for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+    const double speed = bodyNode->getAngularVelocity().norm();
+    if (speed > maxSpeed)
+      maxSpeed = speed;
+  }
+  return maxSpeed;
+}
+
+//==============================================================================
 void Skeleton::computeImpulseForwardDynamics()
 {
   // Skip immobile or 0-dof skeleton
