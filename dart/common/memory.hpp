@@ -47,15 +47,15 @@ namespace common {
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
+// NOTE: Kept as thin aliases for source stability. Under C++17+ over-alignment
+// the compiler provides aligned new/delete, so fixed-size vectorizable Eigen
+// types no longer require a custom over-aligned allocator in standard
+// containers.
 template <typename _Tp>
-using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
+using aligned_vector = std::vector<_Tp>;
 
 template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
-using aligned_map = std::map<
-    _Key,
-    _Tp,
-    _Compare,
-    Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
+using aligned_map = std::map<_Key, _Tp, _Compare>;
 
 } // namespace common
 } // namespace dart
@@ -150,7 +150,7 @@ public:                                                                        \
 
 // Define static creator function that returns std::unique_ptr to the object
 #define DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)                          \
-  duke /*! Create unique instance of this class */                             \
+  /*! Create unique instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR(                                                 \
       class_name,                                                              \
       DART_UNIQUE_PTR_CREATOR_NAME,                                            \
@@ -179,29 +179,6 @@ public:                                                                        \
 #define DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(X)                      \
   DART_DEFINE_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)                      \
   DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)
-
-// Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to the object
-#if DART_ENABLE_SIMD
-  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
-    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                      \
-    DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)
-#else
-  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
-    DART_DEFINE_OBJECT_CREATORS(class_name)
-#endif
-
-// Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to the object where the constructor is
-// protected
-#if DART_ENABLE_SIMD
-  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
-    DART_DEFINE_CREATE_ALIGNED_PTR_SHARED_FOR_PROTECTED_CTOR(class_name)       \
-    DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)
-#else
-  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
-    DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)
-#endif
 
 #include <dart/common/detail/memory-impl.hpp>
 

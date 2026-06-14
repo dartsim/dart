@@ -11,6 +11,7 @@ pixi run py-demos                                # default: open rigid_body
 pixi run py-demos -- --scene rigid_solver_compare # compare SI vs IPC visually
 pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
 pixi run py-demos -- --scene articulated         # select any scene by id
+pixi run py-demos -- --scene gui_fidelity_debug_visuals
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```

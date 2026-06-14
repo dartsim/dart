@@ -172,7 +172,24 @@ def test_make_world_factory_returns_panels_tuple() -> None:
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    assert result == (None, None, [panel], None)
+    assert result == (None, None, [panel], None, None)
+
+
+def test_make_world_factory_returns_debug_provider() -> None:
+    def debug_provider() -> object:
+        return object()
+
+    scene = PythonDemoScene(
+        id="debug_provider_scene",
+        title="Debug Provider Scene",
+        category="Tests",
+        summary="Has a custom debug provider.",
+        build=lambda: SceneSetup(world=object(), debug_provider=debug_provider),
+    )
+
+    result = _make_world_factory(scene)()
+
+    assert result == (None, None, None, None, debug_provider)
 
 
 def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
@@ -201,8 +218,9 @@ def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> No
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    pre_step, force_drag, panels, renderable_provider = result
+    pre_step, force_drag, panels, renderable_provider, debug_provider = result
     assert renderable_provider is None
+    assert debug_provider is None
     assert force_drag is None
     assert [panel.title for panel in panels] == ["Replay"]
     assert replay_world.replay_recording_enabled is True
@@ -623,6 +641,7 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "planned_simbicon_walking",
         "planned_operational_space_control",
         "planned_mobile_manipulation",
+        "gui_fidelity_debug_visuals",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
         "diff_throw_to_target",
@@ -3254,7 +3273,7 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             summary="Workflow guidance test.",
             build=lambda: SceneSetup(),
         )
-        _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+        _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
         assert panels is not None
         workflow_panels = [panel for panel in panels if panel.title == "Rigid Workflow"]
         assert len(workflow_panels) == 1
@@ -3394,7 +3413,7 @@ def test_rigid_workflow_panel_route_rows_request_scene_switches() -> None:
         summary="Workflow route test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3430,7 +3449,7 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
         summary="Related floating-base route test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(
         free_flight_scene
     )()
     assert panels is not None
@@ -3465,7 +3484,7 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
         summary="Related evidence route test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(solver_scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(solver_scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3521,7 +3540,7 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
         summary="Related differentiable route test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(
         contact_policy_scene
     )()
     assert panels is not None
@@ -3581,7 +3600,7 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
         summary="Related AVBD motor route test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(motor_scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(motor_scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3619,7 +3638,7 @@ def test_rigid_workflow_panel_jump_selector_requests_scene_switch() -> None:
         summary="Workflow jump test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3640,7 +3659,7 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
         summary="Workflow search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3676,7 +3695,7 @@ def test_rigid_workflow_panel_summarizes_limited_search_results() -> None:
         summary="Workflow broad search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3704,7 +3723,7 @@ def test_rigid_workflow_panel_explains_focus_axis_search_matches() -> None:
         summary="Workflow focus-axis search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3740,7 +3759,7 @@ def test_rigid_workflow_panel_explains_workflow_phase_search_matches() -> None:
         summary="Workflow phase search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -3776,7 +3795,7 @@ def test_rigid_workflow_panel_explains_deferred_api_search_matches() -> None:
         summary="Workflow deferred API search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -4144,7 +4163,7 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
         summary="Workflow row-id search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -4182,7 +4201,7 @@ def test_rigid_workflow_panel_explains_empty_search_results() -> None:
         summary="Workflow empty search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -4205,7 +4224,7 @@ def test_rigid_workflow_panel_opens_related_evidence_search_matches() -> None:
         summary="Workflow related-search test.",
         build=lambda: SceneSetup(),
     )
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
     assert panels is not None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
@@ -4275,7 +4294,7 @@ def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
         build=lambda: SceneSetup(),
     )
 
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(scene)()
 
     assert panels is None
 
@@ -4283,7 +4302,7 @@ def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
 def test_numbered_rigid_workflow_factory_combines_panels() -> None:
     _require_simulation_symbols("World")
 
-    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+    _pre_step, _force_drag, panels, _provider, _debug_provider = _make_world_factory(
         rigid_contact_scale_budget.SCENE
     )()
 

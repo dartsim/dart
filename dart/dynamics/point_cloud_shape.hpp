@@ -172,8 +172,7 @@ protected:
   ColorMode mColorMode;
 
   /// List of colors
-  std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
-      mColors;
+  std::vector<Eigen::Vector4d> mColors;
 
   /// The size of visual object that represents each point.
   double mVisualSize;

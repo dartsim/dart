@@ -41,7 +41,6 @@
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
 #include <ranges>
 #include <span>
@@ -566,9 +565,7 @@ template <
     typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
-    std::vector<
-        Eigen::Matrix<Index, 3, 1>,
-        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+    std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
     std::span<const Eigen::Matrix<S, 3, 1>> vertices, bool optimize = true);
 
@@ -587,9 +584,7 @@ template <
     typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
-    std::vector<
-        Eigen::Matrix<Index, 3, 1>,
-        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+    std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
     bool optimize = true);
@@ -652,8 +647,6 @@ DART_API Eigen::Vector2d computeClosestPointOnSupportPolygon(
 class BoundingBox
 {
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   BoundingBox();
   BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
 

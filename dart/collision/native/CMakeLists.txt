@@ -77,10 +77,10 @@ dart_add_library(${target_name} ${collision_native_sources})
 if(NOT TARGET Eigen3::Eigen)
   dart_find_package(Eigen3)
 endif()
-if(Eigen3_VERSION VERSION_LESS 3.4)
+if(Eigen3_VERSION VERSION_LESS 5.0)
   message(
     FATAL_ERROR
-    "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}"
+    "Eigen version>=5.0 is required, but found ${Eigen3_VERSION}"
   )
 endif()
 
