@@ -21,6 +21,11 @@ Corpus matrix:
   `test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env`.
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
+- Latest local follow-up (2026-06-14): the local branch is now ahead of
+  `origin/avbd/source-row-extraction-precheck` by two unpushed CI-fix commits:
+  `000c1ccb535` disables CMake C++ module scanning, and the second local commit
+  fixes the GUI smoke runner's runtime library path. The PR remote head remains
+  `fffb5bf45ba`; any further push still requires explicit maintainer approval.
 - Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
   exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
   CMake 4.3 emitted C++20 module dependency-scanning rules that invoked missing
@@ -33,6 +38,15 @@ Corpus matrix:
   `.o` compilation for `dart-collision-native`; local Clang 22 then failed on
   missing standard C++ header `cmath`, which is a local toolchain issue rather
   than the hosted scanner failure. This CI fix is local only until another
+  maintainer-approved push.
+- Latest local follow-up (2026-06-14): while validating the GUI smoke path
+  locally, `pixi run test-dart-gui-smoke` initially failed every generated
+  smoke test because `scripts/run_cpp_example.py` prepended a relative build
+  library path to `LD_LIBRARY_PATH`; each CTest smoke test runs from a nested
+  working directory, so the loader could fall back to an installed DART library
+  that required unavailable `libfcl.so.0.7`. The runner now prepends the
+  absolute build-library path, and `pixi run test-dart-gui-smoke` passes
+  31/31 smoke tests. This second CI-smoke fix is local only until another
   maintainer-approved push.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
   contact friction solve now returns when a clamped tangent impulse delta is

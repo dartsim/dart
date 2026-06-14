@@ -8,9 +8,12 @@ stop-only snapshot lower in this file.
 
 Current verified branch state: after explicit maintainer approval, PR #2991
 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-`fffb5bf45ba` after merging the latest `origin/main`. Review-thread
-resolution, PR comments, review re-triggers, and any further push still require
-explicit maintainer approval.
+`fffb5bf45ba` after merging the latest `origin/main`. The local branch is now
+ahead of `origin/avbd/source-row-extraction-precheck` by two unpushed CI-fix
+commits: `000c1ccb535` disables CMake C++ module scanning, and the second local
+commit fixes the GUI smoke runner's runtime library path. Review-thread resolution,
+PR comments, review re-triggers, and any further push still require explicit
+maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -67,6 +70,16 @@ changelog note. `pixi run lint`, `pixi run build`, and the post-push
 missing standard C++ header `cmath`, which is a local toolchain issue rather
 than the hosted scanner failure. This CI fix is local only until another
 maintainer-approved push.
+
+Second local CI-smoke follow-up: while validating the GUI smoke path locally,
+`pixi run test-dart-gui-smoke` initially failed every generated smoke test
+because `scripts/run_cpp_example.py` prepended a relative build library path to
+`LD_LIBRARY_PATH`; each CTest smoke test runs from a nested working directory,
+so the loader could fall back to an installed DART library that required
+unavailable `libfcl.so.0.7`. The runner now prepends the absolute
+build-library path, and `pixi run test-dart-gui-smoke` passes 31/31 smoke
+tests. This second CI-smoke fix is local only until another maintainer-approved
+push.
 
 Validation for the latest friction tangent no-op slice:
 
