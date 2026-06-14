@@ -58,7 +58,7 @@ contracts this plan is landing.
 
 ### WS0 — Evidence integrity and guardrails
 
-#### WP-091.1 Solver-identity recording and AVBD evidence relabel [claimed]
+#### WP-091.1 Solver-identity recording and AVBD evidence relabel [done — PR #2990, merged 2026-06-13]
 
 - Objective: every benchmark evidence packet machine-records the resolved
   solver configuration, and the AVBD contact-scene rows that timed the
@@ -141,11 +141,10 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   follow-up work, not done here — track it as a follow-up packet before the
   next AVBD evidence refresh; until then, the contract binds new packet files
   via the checker rather than via the writers. Acceptance status: implemented
-  by this session with the focused gates above green; per
-  `docs/ai/orchestration.md` the implementing session does not self-approve,
-  so the packet stays `[claimed]` awaiting an independent/maintainer
-  acceptance pass (a critic subagent self-review run this session found no
-  blocking issues but is not the independent acceptance check).
+  with the focused gates above green and accepted by the maintainer via the
+  merge of PR #2990 (2026-06-13) — the implementing session did not
+  self-approve; the maintainer merge is the independent acceptance recorded by
+  the `[done]` heading marker.
 
 #### WP-091.2 Golden trajectories for the default step
 
@@ -161,20 +160,54 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   evidence).
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: none. Later refactor packets declare this packet in their own
-  Dependencies lines, which are the source of truth.
+  Dependencies lines, which are the source of truth. Handoff notes (verified
+  2026-06-13): no golden/reference-trajectory fixture exists under `tests/`
+  yet, so this seeds the first; follow the committed fixture convention —
+  tab-separated `.tsv` under `tests/fixtures/` (pattern:
+  `tests/fixtures/rigid_ipc/wrecking_ball_ccd.tsv`), not JSON; model the
+  regression test on
+  `tests/unit/simulation/world/test_world_contact_parity.cpp` (the `world/`
+  directory is auto-registered via `dart_add_unit_test_dir(world …)` in
+  `tests/unit/simulation/CMakeLists.txt`, so no per-directory CMake edit is
+  needed); record per-step state (position, velocity, contact count, time)
+  and the tolerance policy in the fixture/test.
 
 #### WP-091.3 Architecture-page claim lint
 
 - Objective: every ✅/available claim in `docs/readthedocs/architecture.md`
   is CI-checkable: each marked row cites a header symbol and a test.
-- Scope: a `scripts/check_*.py` following the completion-audit checker
-  pattern, registered in `pixi.toml` lint/check aggregates, plus a meta-test.
+- Scope: (a) the marked-availability rows do not yet carry test citations and
+  the tables (Physics domains, Solver method families, Cross-domain coupling,
+  Collision/contacts, Compute backends — ~23 marked rows) have no test column,
+  so the executor first adds, to each ✅/available row, a citation to a
+  DART-owned test that exercises that claim (a new `Test` column or an inline
+  citation in the existing `Owner`/`Selected by` cell — pick one form and
+  apply it consistently across both table shapes); the existing
+  header-symbol/entry-point citation stays. (b) a `scripts/check_*.py`
+  following the completion-audit checker pattern
+  (`scripts/check_plan083_completion_audit.py`) that, for every marked row,
+  asserts the cited header symbol resolves in an installed public header and
+  the cited test file exists under `tests/`; registered in `pixi.toml`
+  `lint`/`check-lint` aggregates (add both a `lint-*` and a `check-*` task,
+  mirroring the `lint-plan083-*`/`check-plan083-*` pairing); plus a meta-test.
+  The added citations are the judgment work and the checker is mechanical, but
+  they share one verification story (the checker passing on the now-cited doc),
+  so they stay in this one packet.
 - Non-goals: re-grading the markers themselves (done with this plan's
-  creation); generating the tables.
-- Acceptance evidence: checker passes on current docs; meta-test proves it
-  catches an injected unsupported claim.
+  creation); generating the tables; changing any claim's ✅/available status
+  (a marked row with no real test is a finding to report back, not a marker to
+  silently downgrade here).
+- Acceptance evidence: every ✅/available row in `architecture.md` carries a
+  header-symbol citation and a test citation; the new checker passes on the
+  amended docs; a meta-test proves it rejects an injected unsupported claim (a
+  marked row whose cited test does not exist, and one whose cited symbol does
+  not resolve).
 - Gates: `pixi run lint`, `pixi run check-lint`, new checker meta-test.
-- Dependencies: none.
+- Dependencies: none. Hazards: the two solver tables use different column
+  layouts (Physics domains: Domain/Status/Public entry point/Owner; Solver
+  method families: Domain/Method option/Status/Selected by), so the citation
+  form must fit both; `architecture.md` cites `PLAN-082`, so coordinate with
+  WP-091.5 if both are in flight (the renumber rewrites that citation).
 
 #### WP-091.4 Legacy freeze gate and Decision 5
 
@@ -191,23 +224,68 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
 - Acceptance evidence: decision recorded in PLAN-042; freeze check exercised
   by a meta-test; orphaned-feature disposition recorded.
 - Gates: `pixi run lint`, `pixi run check-lint`.
-- Dependencies: maintainer direction on Decision 5 options.
+- Dependencies: maintainer direction on Decision 5 options. **BLOCKED as of
+  2026-06-13:** "Decision 5" is item 5 ("Classic simulation and dynamics
+  boundary") in the numbered `## Decisions To Make` list of
+  `docs/plans/042-dart7-public-api-and-source-layout.md`, still open with no
+  recorded maintainer choice; the same unresolved state is mirrored in
+  `042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`
+  (the "Legacy dynamics boundary" bullet under `## Required Follow-Up
+Decisions`, and the `dart/dynamics` row of `## Current Folder
+Classification`, marked "compatibility/quarantine lane; surviving concepts
+  need explicit DART 7 names") and in
+  `042-dart7-public-api-and-source-layout/api-source-layout-audit.md` (the
+  `dart/dynamics` row, whose disposition cell still reads "Decide remove,
+  wrap, or quarantine per concept"). Unblock by recording the Decision 5
+  outcome — per DART 6 surface (World, Skeleton, BodyNode, the constraint
+  concepts, the orphaned cylindrical joint), whether each is removed,
+  quarantined, wrapped, or promoted — and resolving those three open anchors
+  in place (no new `## Decision 5` heading is needed; the anchors already
+  exist). The quarantine lane this packet's freeze check must enforce is
+  undefined until that decision exists, so do not start the check before then.
 
 #### WP-091.5 Renumber colliding plan IDs
 
 - Objective: `PLAN-080` and `PLAN-082` each identify exactly one initiative.
 - Scope: assign fresh IDs to the Performance Dashboard and Linear-Time
   Variational Integrator entries; `git mv` the affected plan files/sidecars;
-  update every cross-reference (the design docs, dev-task folders,
-  `docs/readthedocs/papers.md`, `docs/readthedocs/architecture.md` (its
-  multibody solver table cites PLAN-082), and `solver-family-intake.md` all
-  cite these IDs); add a plan-ID uniqueness check to the docs-policy script.
+  update every cross-reference, in docs **and** in code/tests/scripts/CI — the
+  design docs, dev-task folders, `docs/readthedocs/papers.md`,
+  `docs/readthedocs/architecture.md` (its multibody solver table cites
+  PLAN-082), and `solver-family-intake.md` all cite these IDs, and so do
+  non-docs surfaces (for example `dart/simulation/compute/world_step_stage.cpp`
+  and other `dart/simulation/**` headers, `tests/unit/simulation/**` and
+  `tests/benchmark/simulation/**`, `python/examples/demos/**`,
+  `scripts/run_performance_dashboard_benchmarks.py` and other `scripts/**`, and
+  `.github/workflows/benchmark_pr_comparison.yml`); add a plan-ID uniqueness
+  check to the docs-policy script. Disambiguate per reference: only the two
+  renumbered initiatives change ID; references to the kept initiatives
+  (Rigid-Body Dynamics Solver under PLAN-080, Rigid Implicit-Barrier Contact
+  under PLAN-082) must not be rewritten.
 - Non-goals: changing any plan's content or status.
-- Acceptance evidence: one dashboard block per ID; link checker / docs policy
-  green; uniqueness check has a meta-test.
+- Acceptance evidence: one dashboard block per ID (today `dashboard.md` has
+  two PLAN-080 blocks — Rigid-Body Dynamics Solver and Performance Dashboard —
+  and two PLAN-082 blocks — Rigid Implicit-Barrier Contact and Linear-Time
+  Variational Integrator); link checker / docs policy green; a plan-ID
+  uniqueness check added to `scripts/check_docs_policy.py` (extend the plan
+  lifecycle/lint logic to reject a dashboard with two blocks claiming one
+  PLAN-ID) with a meta-test under `tests/` proving it rejects a duplicate-ID
+  fixture.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`.
-- Dependencies: none. Hazards: 20+ cross-referencing files; grep-by-ID hits
-  the wrong block while duplicates exist — fix the duplicates in one packet.
+- Dependencies: none. Hazards: the collision is real and confirmed (verified
+  2026-06-13 by `git grep -l` over tracked files) — `git grep -l PLAN-080`
+  matches 29 files and `git grep -l PLAN-082` matches 54 files, for **71
+  unique tracked files** referencing one or both IDs (42 under `docs/` and 29
+  outside it: `dart/simulation/**`, `tests/**`, `python/examples/demos/**`,
+  `scripts/**`, and one `.github/workflows/**`). Re-run those two `git grep`
+  commands at execution time for the live list rather than trusting these
+  counts. The hazard is that grep-by-ID hits both the kept and the renumbered
+  initiative while duplicates exist, so disambiguate every hit; fix the
+  duplicates in one packet and renumber the file plus its sidecar folder in
+  tandem (`080-*`, `082-rigid-implicit-barrier-contact{,/}`,
+  `082-variational-integrator-solver{,/}` all exist on disk). Coordinate with
+  WP-091.3 if both are in flight (both rewrite the `architecture.md` PLAN-082
+  citation).
 
 ### WS1 — Internal solver contract and selection
 
