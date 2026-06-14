@@ -218,7 +218,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   Systematic energy/momentum-conservation and order-of-convergence validation
   across the scene corpus is deferred to WP-091.24.
 
-#### WP-091.3 Architecture-page claim lint
+#### WP-091.3 Architecture-page claim lint [claimed]
 
 - Objective: every ✅/available claim in `docs/readthedocs/architecture.md`
   is CI-checkable: each marked row cites a header symbol and a test.
@@ -254,6 +254,30 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   method families: Domain/Method option/Status/Selected by), so the citation
   form must fit both; `architecture.md` cites `PLAN-082`, so coordinate with
   WP-091.5 if both are in flight (the renumber rewrites that citation).
+- Evidence: all eight ✅-available rows in `docs/readthedocs/architecture.md`
+  now carry an inline test citation (a `tests/...` link) alongside their
+  header symbol — Rigid bodies → `test_world.cpp`; Articulated multibody and
+  Multibody semi-implicit → `test_world_contact_parity.cpp`; Rigid
+  sequential-impulse → `test_world_default_step_golden.cpp`; Native collision
+  world → `test_collision_world.cpp`; CCD casts (symbol
+  `CollisionGroup::sphereCast`/`capsuleCast` added — the row had none) →
+  `test_ccd.cpp`; `SequentialExecutor`/`ParallelExecutor` →
+  `test_compute_graph.cpp`. `scripts/check_architecture_page_lint.py`
+  (`pixi run check-architecture-page`/`lint-architecture-page`, registered in
+  both the `lint` and `check-lint` aggregates) parses every table row marked
+  ✅ available and asserts (a) at least one cited backtick symbol resolves in
+  `dart/**/*.hpp` and (b) every cited `tests/...` file exists; the ASCII
+  pipeline diagram (box-drawing chars + `[A]` markers) is not matched, so
+  exactly the eight real rows are checked. `tests/test_check_architecture_page_lint.py`
+  (8 pytest cases via `pixi run python -m pytest`) proves the checker passes
+  on the real doc and rejects an injected unsupported claim — a marked row
+  whose cited test file does not exist, and one whose cited symbol does not
+  resolve — plus the no-symbol, no-test, and no-available-rows failure modes.
+  Gates: `pixi run lint`, `pixi run check-architecture-page` (and its inclusion
+  in `check-lint`), `pixi run check-docs-policy`, and the meta-test all green;
+  the only `check-lint` aggregate failure is the pre-existing, unrelated
+  `check-dartpy-import-layout` stale-runtime drift (this packet changes no
+  dartpy files).
 
 #### WP-091.4 Legacy freeze gate and Decision 5
 
