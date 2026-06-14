@@ -54,9 +54,26 @@ def _running_ci() -> bool:
     return bool(os.getenv("GITHUB_ACTIONS") or os.getenv("CI"))
 
 
-def resolve_build_dir(build_type: str) -> Path:
+def resolve_build_dir(build_type: str) -> tuple[Path, str | None]:
+    """Return ``(test_dir, build_config)`` for the configured generator layout.
+
+    Single-config generators (Ninja/Make, used on Linux/macOS) place the cache
+    in ``build/<env>/cpp/<BuildType>``. Multi-config generators (Visual Studio,
+    Xcode) place it in ``build/<env>/cpp`` and choose the configuration at test
+    time via ``--build-config``. Detect which is configured and mirror the
+    per-platform ``test`` / ``test-simulation`` tasks, so the tiered runners
+    work under both layouts -- otherwise a multi-config tree (e.g. win-64), which
+    has no ``/<BuildType>`` subdirectory, looks unbuilt to this script.
+    """
     env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
-    return Path("build") / env_name / "cpp" / build_type
+    base = Path("build") / env_name / "cpp"
+    single_config = base / build_type
+    if (single_config / "CMakeCache.txt").is_file():
+        return single_config, None
+    if (base / "CMakeCache.txt").is_file():
+        return base, build_type
+    # Nothing configured yet: keep the single-config layout for a clear error.
+    return single_config, None
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -88,13 +105,15 @@ def resolve_jobs(explicit: int | None) -> int | None:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    build_dir = resolve_build_dir(args.build_type)
+    build_dir, build_config = resolve_build_dir(args.build_type)
     if not build_dir.exists():
         raise SystemExit(
             f"Build directory {build_dir} does not exist. Build the tests first."
         )
 
     cmd = ["ctest", "--test-dir", str(build_dir), "--output-on-failure"]
+    if build_config:
+        cmd += ["--build-config", build_config]
 
     jobs = resolve_jobs(args.jobs)
     if jobs:

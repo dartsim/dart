@@ -2240,6 +2240,22 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --ex
     "Release",
   ] },
 ] }
+# Tier 2 simulation scope — every simulation test INCLUDING the long poles,
+# run parallel + load-aware. This is what the authoritative verify-full gate
+# (scripts/test_all.py) uses for its simulation phase so the
+# test_rigid_ipc_paper_experiments long pole overlaps the rest of the suite
+# instead of bounding a serial run (runtimes:
+# docs/design/local_verification_pipeline.md).
+test-simulation-full = { cmd = "python scripts/ctest_tier.py -L simulation", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+  { task = "build-simulation-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
 # Uses read-only check-lint (not autofix lint): a gate must not mutate sources
 # while builds run in parallel. Run `pixi run lint` first to auto-fix.
 verify = { depends-on = [

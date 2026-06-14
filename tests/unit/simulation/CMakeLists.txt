@@ -85,6 +85,33 @@ if(DART_SIMULATION_BUILD_TESTS)
     endif()
   endif()
 
+  # Keep the simulation long poles balanced -- and unbroken -- under the
+  # parallel, load-aware test runners (scripts/ctest_tier.py, used by the
+  # verify-full / test-all gate). Per-test runtimes live in
+  # docs/design/local_verification_pipeline.md (the single source of truth):
+  # test_rigid_ipc_paper_experiments and test_world dominate the Release suite,
+  # so they get two properties:
+  #   * COST -- ctest's -j scheduler launches the highest-COST tests first, so
+  #     these two overlap the cheap bulk instead of stranding cores at the tail
+  #     of a cold run that has no CTestCostData.txt yet.
+  #   * TIMEOUT -- the runners pass a 600 s default --timeout as a hung-test
+  #     guard; these poles legitimately exceed it under CPU contention (concurrent
+  #     clones plus the rest of the parallel suite), so they get explicit
+  #     headroom. A per-test TIMEOUT property overrides the command-line --timeout
+  #     default, so the guard still protects every other test.
+  # The block is ungated (COST/TIMEOUT are harmless in every configuration, and
+  # CI never runs these two under a -L simulation selection). The DART_CODECOV
+  # block below runs after it and wins under coverage instrumentation. The other
+  # doc-listed long poles need no Release headroom: test_variational_integration
+  # already gets TIMEOUT 3600 above, while test_rigid_ipc_fixture and
+  # test_deformable_body run in ~3 s in Release and are only long under coverage,
+  # which the DART_CODECOV block handles.
+  foreach(_dart_long_pole test_rigid_ipc_paper_experiments test_world)
+    if(TEST ${_dart_long_pole})
+      set_tests_properties(${_dart_long_pole} PROPERTIES COST 360 TIMEOUT 3600)
+    endif()
+  endforeach()
+
   # These rigid IPC and deformable gates remain active in normal CI, but
   # coverage instrumentation can make their long runtime corpora exceed the
   # default ctest timeout. Keep compiling the targets under Codecov, then skip
