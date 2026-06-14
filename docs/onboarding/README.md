@@ -127,7 +127,7 @@ DART addresses the need for:
 | Category                | Technology         | Purpose                   |
 | ----------------------- | ------------------ | ------------------------- |
 | **Core Language**       | C++20              | Main implementation       |
-| **Build System**        | CMake 3.22.1+      | Cross-platform builds     |
+| **Build System**        | CMake 4.2.3+       | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x     | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+       | Math operations           |
 | **Collision Detection** | FCL 0.7.0+         | Primary collision backend |

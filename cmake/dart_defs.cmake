@@ -2071,39 +2071,20 @@ function(dart_build_tests)
         set(_dart_lib_path_var "LD_LIBRARY_PATH")
       endif()
 
-      if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-        # CTest applies path_list_prepend entries in order, so add lower
-        # priority paths first and the build-tree DART library last.
-        set(
-          _dart_env_mods
-          "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>"
-        )
-        list(
-          APPEND _dart_env_mods
-          "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
-        )
-        set_tests_properties(
-          ${target_name}
-          PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
-        )
-      else()
-        if(WIN32)
-          set(_dart_test_path_sep "\\;")
-        else()
-          set(_dart_test_path_sep ":")
-        endif()
-        set(
-          _dart_lib_paths
-          "$<TARGET_FILE_DIR:dart>${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>"
-        )
-        set_property(
-          TEST ${target_name}
-          PROPERTY
-            ENVIRONMENT
-              "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
-        )
-        unset(_dart_test_path_sep)
-      endif()
+      # CTest applies path_list_prepend entries in order, so add lower priority
+      # paths first and the build-tree DART library last.
+      set(
+        _dart_env_mods
+        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>"
+      )
+      list(
+        APPEND _dart_env_mods
+        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+      )
+      set_tests_properties(
+        ${target_name}
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
+      )
       unset(_dart_lib_path_var)
     endif()
 
@@ -2582,55 +2563,27 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
       set(_dart_lib_path_var "LD_LIBRARY_PATH")
     endif()
 
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-      # CTest applies path_list_prepend entries in order, so add lower
-      # priority paths first and the tested build-tree libraries last.
-      set(
-        _dart_env_mods
-        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>"
-      )
-      # Also include main dart library path (some tests link against it transitively)
-      if(TARGET dart)
-        list(
-          APPEND _dart_env_mods
-          "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
-        )
-      endif()
+    # CTest applies path_list_prepend entries in order, so add lower priority
+    # paths first and the tested build-tree libraries last.
+    set(
+      _dart_env_mods
+      "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>"
+    )
+    # Also include main dart library path (some tests link against it transitively)
+    if(TARGET dart)
       list(
         APPEND _dart_env_mods
-        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:${ARG_LIBRARY}>"
+        "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
       )
-      set_tests_properties(
-        ${TEST_NAME}
-        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
-      )
-    else()
-      if(WIN32)
-        # Escape the semicolon so CMake does not treat it as a list separator.
-        set(_dart_test_path_sep "\\;")
-      else()
-        set(_dart_test_path_sep ":")
-      endif()
-      set(_dart_lib_paths "$<TARGET_FILE_DIR:${ARG_LIBRARY}>")
-      # Also include main dart library path
-      if(TARGET dart)
-        set(
-          _dart_lib_paths
-          "${_dart_lib_paths}${_dart_test_path_sep}$<TARGET_FILE_DIR:dart>"
-        )
-      endif()
-      set(
-        _dart_lib_paths
-        "${_dart_lib_paths}${_dart_test_path_sep}$<TARGET_FILE_DIR:GTest::gtest>"
-      )
-      set_property(
-        TEST ${TEST_NAME}
-        PROPERTY
-          ENVIRONMENT
-            "${_dart_lib_path_var}=${_dart_lib_paths}${_dart_test_path_sep}$ENV{${_dart_lib_path_var}}"
-      )
-      unset(_dart_test_path_sep)
     endif()
+    list(
+      APPEND _dart_env_mods
+      "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:${ARG_LIBRARY}>"
+    )
+    set_tests_properties(
+      ${TEST_NAME}
+      PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_env_mods}"
+    )
     unset(_dart_lib_path_var)
   endif()
 
