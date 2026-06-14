@@ -16,6 +16,15 @@ moves entirely into durable plan sidecars.
 
 ## Evidence Snapshot
 
+Latest branch-local delta (2026-06-14): runtime deformable `World::step`
+diagnostics now expose candidate pair capacity and rejected pair counts for
+self-surface, inter-body deformable, static rigid surface CCD, and moving rigid
+surface CCD candidate paths. The counters are serialized by the PLAN-083 CPU
+scene packet writer and validated for capacity/rejection consistency. This
+improves CPU runtime evidence for contact-filter pressure, but it is still not
+GPU `World::step` contact-candidate construction, a production GPU runtime
+filtering path, a speedup gate, or paper-scale scene behavior.
+
 | Artifact                 | Row count | Status counts                          |
 | ------------------------ | --------- | -------------------------------------- |
 | `paper-deck-manifest.md` | 48        | `in-progress`: 48                      |

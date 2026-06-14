@@ -55,6 +55,8 @@ def _surface_contact_counters() -> dict[str, object]:
         "surface_contact_candidate_builds": 6,
         "surface_contact_point_triangle_candidates": 4,
         "surface_contact_edge_edge_candidates": 2,
+        "surface_contact_candidate_pair_capacity": 12,
+        "surface_contact_candidate_rejected_pairs": 6,
         "surface_contact_ccd_point_triangle_checks": 4,
         "surface_contact_ccd_edge_edge_checks": 2,
         "surface_contact_ccd_hits": 1,
@@ -63,6 +65,8 @@ def _surface_contact_counters() -> dict[str, object]:
         "inter_body_surface_contact_candidate_builds": 0,
         "inter_body_surface_contact_point_triangle_candidates": 0,
         "inter_body_surface_contact_edge_edge_candidates": 0,
+        "inter_body_surface_contact_candidate_pair_capacity": 0,
+        "inter_body_surface_contact_candidate_rejected_pairs": 0,
         "inter_body_surface_contact_ccd_point_triangle_checks": 0,
         "inter_body_surface_contact_ccd_edge_edge_checks": 0,
         "inter_body_surface_contact_ccd_hits": 0,
@@ -76,6 +80,8 @@ def _surface_contact_counters() -> dict[str, object]:
         "static_rigid_surface_ccd_candidate_builds": 0,
         "static_rigid_surface_ccd_point_triangle_candidates": 0,
         "static_rigid_surface_ccd_edge_edge_candidates": 0,
+        "static_rigid_surface_ccd_candidate_pair_capacity": 0,
+        "static_rigid_surface_ccd_candidate_rejected_pairs": 0,
         "static_rigid_surface_ccd_point_triangle_checks": 0,
         "static_rigid_surface_ccd_edge_edge_checks": 0,
         "static_rigid_surface_ccd_hits": 0,
@@ -90,6 +96,8 @@ def _surface_contact_counters() -> dict[str, object]:
         "moving_rigid_surface_ccd_candidate_builds": 0,
         "moving_rigid_surface_ccd_point_triangle_candidates": 0,
         "moving_rigid_surface_ccd_edge_edge_candidates": 0,
+        "moving_rigid_surface_ccd_candidate_pair_capacity": 0,
+        "moving_rigid_surface_ccd_candidate_rejected_pairs": 0,
         "moving_rigid_surface_ccd_point_triangle_checks": 0,
         "moving_rigid_surface_ccd_edge_edge_checks": 0,
         "moving_rigid_surface_ccd_hits": 0,
@@ -106,12 +114,16 @@ def _external_surface_ccd_sidecar_counters() -> dict[str, object]:
             "surface_contact_candidate_builds": 68,
             "surface_contact_point_triangle_candidates": 660,
             "surface_contact_edge_edge_candidates": 1224,
+            "surface_contact_candidate_pair_capacity": 2048,
+            "surface_contact_candidate_rejected_pairs": 164,
             "surface_contact_ccd_point_triangle_checks": 660,
             "surface_contact_ccd_edge_edge_checks": 1224,
             "surface_contact_ccd_hits": 1,
             "surface_contact_ccd_limited_steps": 0,
             "inter_body_surface_contact_candidate_builds": 67,
             "inter_body_surface_contact_point_triangle_candidates": 33,
+            "inter_body_surface_contact_candidate_pair_capacity": 64,
+            "inter_body_surface_contact_candidate_rejected_pairs": 31,
             "inter_body_surface_contact_ccd_point_triangle_checks": 33,
             "inter_body_surface_contact_ccd_hits": 33,
             "inter_body_surface_contact_ccd_limited_steps": 1,
@@ -123,6 +135,8 @@ def _external_surface_ccd_sidecar_counters() -> dict[str, object]:
             "static_rigid_surface_ccd_candidate_builds": 35,
             "static_rigid_surface_ccd_point_triangle_candidates": 68,
             "static_rigid_surface_ccd_edge_edge_candidates": 102,
+            "static_rigid_surface_ccd_candidate_pair_capacity": 256,
+            "static_rigid_surface_ccd_candidate_rejected_pairs": 86,
             "static_rigid_surface_ccd_point_triangle_checks": 68,
             "static_rigid_surface_ccd_edge_edge_checks": 102,
             "static_rigid_surface_ccd_hits": 34,
@@ -136,6 +150,8 @@ def _external_surface_ccd_sidecar_counters() -> dict[str, object]:
             "moving_rigid_surface_ccd_candidate_builds": 3,
             "moving_rigid_surface_ccd_point_triangle_candidates": 2,
             "moving_rigid_surface_ccd_edge_edge_candidates": 41,
+            "moving_rigid_surface_ccd_candidate_pair_capacity": 64,
+            "moving_rigid_surface_ccd_candidate_rejected_pairs": 21,
             "moving_rigid_surface_ccd_point_triangle_checks": 2,
             "moving_rigid_surface_ccd_edge_edge_checks": 41,
             "moving_rigid_surface_ccd_hits": 1,
@@ -257,6 +273,8 @@ def _candy_packet(**overrides):
         "surface_contact_candidate_builds": 3,
         "surface_contact_point_triangle_candidates": 64,
         "surface_contact_edge_edge_candidates": 207,
+        "surface_contact_candidate_pair_capacity": 288,
+        "surface_contact_candidate_rejected_pairs": 17,
         "surface_contact_ccd_point_triangle_checks": 64,
         "surface_contact_ccd_edge_edge_checks": 207,
         "surface_contact_ccd_hits": 0,
@@ -269,6 +287,8 @@ def _candy_packet(**overrides):
         "static_rigid_surface_ccd_candidate_builds": 69,
         "static_rigid_surface_ccd_point_triangle_candidates": 72,
         "static_rigid_surface_ccd_edge_edge_candidates": 0,
+        "static_rigid_surface_ccd_candidate_pair_capacity": 144,
+        "static_rigid_surface_ccd_candidate_rejected_pairs": 72,
         "static_rigid_surface_ccd_point_triangle_checks": 72,
         "static_rigid_surface_ccd_edge_edge_checks": 0,
         "static_rigid_surface_ccd_hits": 72,
@@ -283,6 +303,8 @@ def _candy_packet(**overrides):
         "moving_rigid_surface_ccd_candidate_builds": 37,
         "moving_rigid_surface_ccd_point_triangle_candidates": 184,
         "moving_rigid_surface_ccd_edge_edge_candidates": 0,
+        "moving_rigid_surface_ccd_candidate_pair_capacity": 216,
+        "moving_rigid_surface_ccd_candidate_rejected_pairs": 32,
         "moving_rigid_surface_ccd_point_triangle_checks": 184,
         "moving_rigid_surface_ccd_edge_edge_checks": 0,
         "moving_rigid_surface_ccd_hits": 184,
@@ -452,6 +474,8 @@ def _lying_flat_packet(**overrides):
         "surface_contact_candidate_builds": 68,
         "surface_contact_point_triangle_candidates": 660,
         "surface_contact_edge_edge_candidates": 1224,
+        "surface_contact_candidate_pair_capacity": 2048,
+        "surface_contact_candidate_rejected_pairs": 164,
         "surface_contact_ccd_point_triangle_checks": 660,
         "surface_contact_ccd_edge_edge_checks": 1224,
         "surface_contact_ccd_hits": 1,
@@ -459,6 +483,8 @@ def _lying_flat_packet(**overrides):
         "inter_body_surface_contact_candidate_builds": 67,
         "inter_body_surface_contact_point_triangle_candidates": 33,
         "inter_body_surface_contact_edge_edge_candidates": 0,
+        "inter_body_surface_contact_candidate_pair_capacity": 64,
+        "inter_body_surface_contact_candidate_rejected_pairs": 31,
         "inter_body_surface_contact_ccd_point_triangle_checks": 33,
         "inter_body_surface_contact_ccd_edge_edge_checks": 0,
         "inter_body_surface_contact_ccd_hits": 33,
@@ -472,6 +498,8 @@ def _lying_flat_packet(**overrides):
         "static_rigid_surface_ccd_candidate_builds": 35,
         "static_rigid_surface_ccd_point_triangle_candidates": 68,
         "static_rigid_surface_ccd_edge_edge_candidates": 102,
+        "static_rigid_surface_ccd_candidate_pair_capacity": 256,
+        "static_rigid_surface_ccd_candidate_rejected_pairs": 86,
         "static_rigid_surface_ccd_point_triangle_checks": 68,
         "static_rigid_surface_ccd_edge_edge_checks": 102,
         "static_rigid_surface_ccd_hits": 34,
@@ -486,6 +514,8 @@ def _lying_flat_packet(**overrides):
         "moving_rigid_surface_ccd_candidate_builds": 3,
         "moving_rigid_surface_ccd_point_triangle_candidates": 2,
         "moving_rigid_surface_ccd_edge_edge_candidates": 41,
+        "moving_rigid_surface_ccd_candidate_pair_capacity": 64,
+        "moving_rigid_surface_ccd_candidate_rejected_pairs": 21,
         "moving_rigid_surface_ccd_point_triangle_checks": 2,
         "moving_rigid_surface_ccd_edge_edge_checks": 41,
         "moving_rigid_surface_ccd_hits": 1,
@@ -504,6 +534,8 @@ def _external_surface_ccd_packet(**overrides):
             "inter_body_surface_contact_candidate_builds": 2,
             "inter_body_surface_contact_point_triangle_candidates": 2,
             "inter_body_surface_contact_edge_edge_candidates": 0,
+            "inter_body_surface_contact_candidate_pair_capacity": 4,
+            "inter_body_surface_contact_candidate_rejected_pairs": 2,
             "inter_body_surface_contact_ccd_point_triangle_checks": 2,
             "inter_body_surface_contact_ccd_edge_edge_checks": 0,
             "inter_body_surface_contact_ccd_hits": 2,
@@ -517,6 +549,8 @@ def _external_surface_ccd_packet(**overrides):
             "static_rigid_surface_ccd_candidate_builds": 2,
             "static_rigid_surface_ccd_point_triangle_candidates": 2,
             "static_rigid_surface_ccd_edge_edge_candidates": 0,
+            "static_rigid_surface_ccd_candidate_pair_capacity": 4,
+            "static_rigid_surface_ccd_candidate_rejected_pairs": 2,
             "static_rigid_surface_ccd_point_triangle_checks": 2,
             "static_rigid_surface_ccd_edge_edge_checks": 0,
             "static_rigid_surface_ccd_hits": 2,
@@ -531,6 +565,8 @@ def _external_surface_ccd_packet(**overrides):
             "moving_rigid_surface_ccd_candidate_builds": 2,
             "moving_rigid_surface_ccd_point_triangle_candidates": 2,
             "moving_rigid_surface_ccd_edge_edge_candidates": 0,
+            "moving_rigid_surface_ccd_candidate_pair_capacity": 4,
+            "moving_rigid_surface_ccd_candidate_rejected_pairs": 2,
             "moving_rigid_surface_ccd_point_triangle_checks": 2,
             "moving_rigid_surface_ccd_edge_edge_checks": 0,
             "moving_rigid_surface_ccd_hits": 2,
@@ -903,12 +939,16 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["surface_contact_candidate_builds"] == 3
     assert row["surface_contact_point_triangle_candidates"] == 64
     assert row["surface_contact_edge_edge_candidates"] == 207
+    assert row["surface_contact_candidate_pair_capacity"] == 288
+    assert row["surface_contact_candidate_rejected_pairs"] == 17
     assert row["surface_contact_ccd_hits"] == 0
     assert row["surface_contact_ccd_limited_steps"] == 0
     assert row["inter_body_surface_contact_candidate_builds"] == 0
     assert row["static_rigid_surface_ccd_box_count"] == 1
     assert row["static_rigid_surface_ccd_candidate_builds"] == 69
     assert row["static_rigid_surface_ccd_point_triangle_candidates"] == 72
+    assert row["static_rigid_surface_ccd_candidate_pair_capacity"] == 144
+    assert row["static_rigid_surface_ccd_candidate_rejected_pairs"] == 72
     assert row["static_rigid_surface_ccd_point_triangle_checks"] == 72
     assert row["static_rigid_surface_ccd_hits"] == 72
     assert row["static_rigid_surface_ccd_limited_steps"] == 1
@@ -916,6 +956,8 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["moving_rigid_surface_ccd_sample_count"] == 6
     assert row["moving_rigid_surface_ccd_candidate_builds"] == 37
     assert row["moving_rigid_surface_ccd_point_triangle_candidates"] == 184
+    assert row["moving_rigid_surface_ccd_candidate_pair_capacity"] == 216
+    assert row["moving_rigid_surface_ccd_candidate_rejected_pairs"] == 32
     assert row["moving_rigid_surface_ccd_point_triangle_checks"] == 184
     assert row["moving_rigid_surface_ccd_hits"] == 184
     assert row["moving_rigid_surface_ccd_limited_steps"] == 1
@@ -931,6 +973,22 @@ def test_plan083_cpu_scene_packet_rejects_surface_contact_hit_count_mismatch() -
     ):
         module.make_packet(
             _lying_flat_packet(surface_contact_ccd_hits=9999),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_surface_contact_rejected_pair_mismatch() -> (
+    None
+):
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="inconsistent surface-contact candidate filter rejected-pair count",
+    ):
+        module.make_packet(
+            _lying_flat_packet(surface_contact_candidate_rejected_pairs=0),
             max_equality_residual=1e-8,
             scene="lying_flat",
         )
@@ -1202,16 +1260,22 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["surface_contact_candidate_builds"] == 68
     assert row["surface_contact_point_triangle_candidates"] == 660
     assert row["surface_contact_edge_edge_candidates"] == 1224
+    assert row["surface_contact_candidate_pair_capacity"] == 2048
+    assert row["surface_contact_candidate_rejected_pairs"] == 164
     assert row["surface_contact_ccd_hits"] == 1
     assert row["surface_contact_ccd_limited_steps"] == 0
     assert row["inter_body_surface_contact_candidate_builds"] == 67
     assert row["inter_body_surface_contact_point_triangle_candidates"] == 33
+    assert row["inter_body_surface_contact_candidate_pair_capacity"] == 64
+    assert row["inter_body_surface_contact_candidate_rejected_pairs"] == 31
     assert row["inter_body_surface_contact_ccd_point_triangle_checks"] == 33
     assert row["inter_body_surface_contact_ccd_hits"] == 33
     assert row["inter_body_surface_contact_ccd_limited_steps"] == 1
     assert row["inter_body_surface_contact_ccd_zero_step_count"] == 32
     assert row["static_rigid_surface_ccd_box_count"] == 1
     assert row["static_rigid_surface_ccd_candidate_builds"] == 35
+    assert row["static_rigid_surface_ccd_candidate_pair_capacity"] == 256
+    assert row["static_rigid_surface_ccd_candidate_rejected_pairs"] == 86
     assert row["static_rigid_surface_ccd_point_triangle_checks"] == 68
     assert row["static_rigid_surface_ccd_edge_edge_checks"] == 102
     assert row["static_rigid_surface_ccd_hits"] == 34
@@ -1219,6 +1283,8 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["moving_rigid_surface_ccd_box_count"] == 1
     assert row["moving_rigid_surface_ccd_sample_count"] == 10
     assert row["moving_rigid_surface_ccd_candidate_builds"] == 3
+    assert row["moving_rigid_surface_ccd_candidate_pair_capacity"] == 64
+    assert row["moving_rigid_surface_ccd_candidate_rejected_pairs"] == 21
     assert row["moving_rigid_surface_ccd_point_triangle_checks"] == 2
     assert row["moving_rigid_surface_ccd_edge_edge_checks"] == 41
     assert row["moving_rigid_surface_ccd_hits"] == 1
@@ -1250,12 +1316,18 @@ def test_plan083_cpu_scene_packet_accepts_external_surface_ccd() -> None:
     assert row["moving_rigid_obstacle_count"] == 2
     assert row["surface_contact_candidate_builds"] == 0
     assert row["inter_body_surface_contact_candidate_builds"] == 2
+    assert row["inter_body_surface_contact_candidate_pair_capacity"] == 4
+    assert row["inter_body_surface_contact_candidate_rejected_pairs"] == 2
     assert row["inter_body_surface_contact_ccd_hits"] == 2
     assert row["static_rigid_surface_ccd_box_count"] == 2
     assert row["static_rigid_surface_ccd_triangle_count"] == 24
+    assert row["static_rigid_surface_ccd_candidate_pair_capacity"] == 4
+    assert row["static_rigid_surface_ccd_candidate_rejected_pairs"] == 2
     assert row["static_rigid_surface_ccd_hits"] == 2
     assert row["moving_rigid_surface_ccd_box_count"] == 2
     assert row["moving_rigid_surface_ccd_sample_count"] == 4
+    assert row["moving_rigid_surface_ccd_candidate_pair_capacity"] == 4
+    assert row["moving_rigid_surface_ccd_candidate_rejected_pairs"] == 2
     assert row["moving_rigid_surface_ccd_hits"] == 2
     assert row["mixed_inter_body_surface_contact_ccd_hits"] == 1
     assert row["mixed_static_rigid_surface_ccd_hits"] == 1

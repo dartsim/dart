@@ -154,8 +154,12 @@ struct DeformableSolverDiagnostics
   std::size_t selfContactBarrierActiveContacts = 0;
   /// Runtime self-surface contact candidate and CCD activity produced inside
   /// the default deformable ``World::step`` line search. Candidate counts are
-  /// cumulative over line-search trials for the most recent step.
+  /// cumulative over line-search trials for the most recent step. Pair capacity
+  /// counts the point-triangle plus edge-edge pairs eligible before the
+  /// swept-AABB filter; rejected pairs are capacity minus emitted candidates.
   std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactCandidatePairCapacity = 0;
+  std::size_t surfaceContactCandidateRejectedPairs = 0;
   std::size_t surfaceContactPointTriangleCandidates = 0;
   std::size_t surfaceContactEdgeEdgeCandidates = 0;
   std::size_t surfaceContactCcdPointTriangleChecks = 0;
@@ -166,6 +170,8 @@ struct DeformableSolverDiagnostics
   /// Runtime inter-body deformable surface-contact candidate and CCD activity
   /// produced inside the default deformable ``World::step`` line search.
   std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactCandidatePairCapacity = 0;
+  std::size_t interBodySurfaceContactCandidateRejectedPairs = 0;
   std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
   std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
   std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
@@ -181,6 +187,8 @@ struct DeformableSolverDiagnostics
   std::size_t staticRigidSurfaceCcdTriangleCount = 0;
   std::size_t staticRigidSurfaceCcdEdgeCount = 0;
   std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t staticRigidSurfaceCcdCandidateRejectedPairs = 0;
   std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
   std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
   std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
@@ -197,6 +205,8 @@ struct DeformableSolverDiagnostics
   std::size_t movingRigidSurfaceCcdTriangleCount = 0;
   std::size_t movingRigidSurfaceCcdEdgeCount = 0;
   std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t movingRigidSurfaceCcdCandidateRejectedPairs = 0;
   std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
   std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
   std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;

@@ -1018,6 +1018,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     global-heap no-growth guards. Active inter-body deformable surface-CCD
     crossings and two non-square production-scale deformable frictional
     self-contact grids now have the same baked no-growth guard coverage.
+  - Added deformable `World::step` diagnostics for runtime surface-contact
+    candidate pair capacity and rejected pair counts across self-surface,
+    inter-body deformable, static rigid surface CCD, and moving rigid surface
+    CCD candidate paths, with matching dartpy/stub exposure and PLAN-083 CPU
+    scene packet validation.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.

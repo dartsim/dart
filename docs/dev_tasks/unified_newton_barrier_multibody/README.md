@@ -2,6 +2,39 @@
 
 ## Current Status
 
+Latest `World::step` contact-filter stats follow-up (2026-06-14): after PR
+#2978 merged and the old remote branch was deleted, work continues locally on
+the new branch `simx/plan083-worldstep-contact-filter-stats`, created from
+`simx/plan083-runtime-scene-filter-followup` at `fdb649da6c4`. The branch
+already contains `origin/main` at `9de4ac6af873`, has not been pushed, and has
+no open PR. Keep `simx/plan083-runtime-scene-filter-followup` available as the
+possible checkpoint/milestone PR branch, and push/open this follow-up branch
+only after explicit maintainer approval. Do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This slice promotes runtime contact-filter pressure accounting into
+`World::step` diagnostics. The built-in deformable diagnostics now report
+candidate pair capacity and rejected pair counts for self-surface, inter-body
+deformable, static rigid surface CCD, and moving rigid surface CCD candidate
+paths. The counters are exposed through C++, dartpy/stubs, focused deformable
+unit assertions, `bm_deformable_body`, the PLAN-083 CPU scene benchmark, and
+the CPU packet writer's serialization/consistency checks.
+
+This proves runtime `World::step` candidate-filter pressure accounting only. It
+does not prove GPU `World::step` contact-candidate construction, production
+GPU runtime filtering, a speedup gate, or paper-scale scene behavior.
+
+Current validation passed:
+
+- `pixi run python scripts/cmake_build.py --build-dir build/default/cpp/Release --target dart-simulation --target test_deformable_body --target bm_deformable_body --target bm_plan083_cpu_scene_corpus --target dartpy`
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_deformable_body$'`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-all`
+- `git diff --check`
+
 Latest filtered scene-runtime contact-candidate follow-up (2026-06-13): work
 continues locally on `simx/plan083-runtime-scene-filter-followup`, stacked on
 the clean checkpoint branch `simx/plan083-rigid-curved-ccd-worldstep-followup`

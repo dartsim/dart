@@ -1853,6 +1853,10 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.lineSearchTrials);
   state.counters["surface_contact_candidate_builds"]
       = static_cast<double>(diagnostics.surfaceContactCandidateBuilds);
+  state.counters["surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(diagnostics.surfaceContactCandidatePairCapacity);
+  state.counters["surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(diagnostics.surfaceContactCandidateRejectedPairs);
   state.counters["surface_contact_point_triangle_candidates"]
       = static_cast<double>(diagnostics.surfaceContactPointTriangleCandidates);
   state.counters["surface_contact_edge_edge_candidates"]
@@ -1869,6 +1873,12 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.surfaceContactCcdZeroStepCount);
   state.counters["inter_body_surface_contact_candidate_builds"]
       = static_cast<double>(diagnostics.interBodySurfaceContactCandidateBuilds);
+  state.counters["inter_body_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCandidatePairCapacity);
+  state.counters["inter_body_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCandidateRejectedPairs);
   state.counters["inter_body_surface_contact_point_triangle_candidates"]
       = static_cast<double>(
           diagnostics.interBodySurfaceContactPointTriangleCandidates);
@@ -1900,6 +1910,12 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.staticRigidSurfaceCcdEdgeCount);
   state.counters["static_rigid_surface_ccd_candidate_builds"]
       = static_cast<double>(diagnostics.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["static_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["static_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdCandidateRejectedPairs);
   state.counters["static_rigid_surface_ccd_point_triangle_candidates"]
       = static_cast<double>(
           diagnostics.staticRigidSurfaceCcdPointTriangleCandidates);
@@ -1931,6 +1947,12 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.movingRigidSurfaceCcdEdgeCount);
   state.counters["moving_rigid_surface_ccd_candidate_builds"]
       = static_cast<double>(diagnostics.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["moving_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["moving_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdCandidateRejectedPairs);
   state.counters["moving_rigid_surface_ccd_point_triangle_candidates"]
       = static_cast<double>(
           diagnostics.movingRigidSurfaceCcdPointTriangleCandidates);
@@ -1974,6 +1996,14 @@ void recordSummedDeformableRuntimeContactCounters(
       = static_cast<double>(sumDiagnosticsMember(
           diagnostics,
           &sx::DeformableSolverDiagnostics::surfaceContactCandidateBuilds));
+  state.counters["surface_contact_candidate_pair_capacity"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactCandidatePairCapacity));
+  state.counters["surface_contact_candidate_rejected_pairs"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactCandidateRejectedPairs));
   state.counters["surface_contact_point_triangle_candidates"] = static_cast<
       double>(sumDiagnosticsMember(
       diagnostics,
@@ -2007,6 +2037,16 @@ void recordSummedDeformableRuntimeContactCounters(
           diagnostics,
           &sx::DeformableSolverDiagnostics::
               interBodySurfaceContactCandidateBuilds));
+  state.counters["inter_body_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidatePairCapacity));
+  state.counters["inter_body_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateRejectedPairs));
   state.counters["inter_body_surface_contact_point_triangle_candidates"]
       = static_cast<double>(sumDiagnosticsMember(
           diagnostics,
@@ -2065,6 +2105,16 @@ void recordSummedDeformableRuntimeContactCounters(
       double>(sumDiagnosticsMember(
       diagnostics,
       &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdCandidateBuilds));
+  state.counters["static_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidatePairCapacity));
+  state.counters["static_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidateRejectedPairs));
   state.counters["static_rigid_surface_ccd_point_triangle_candidates"]
       = static_cast<double>(sumDiagnosticsMember(
           diagnostics,
@@ -2124,6 +2174,16 @@ void recordSummedDeformableRuntimeContactCounters(
       double>(sumDiagnosticsMember(
       diagnostics,
       &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdCandidateBuilds));
+  state.counters["moving_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidatePairCapacity));
+  state.counters["moving_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidateRejectedPairs));
   state.counters["moving_rigid_surface_ccd_point_triangle_candidates"]
       = static_cast<double>(sumDiagnosticsMember(
           diagnostics,

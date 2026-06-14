@@ -475,6 +475,8 @@ SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
     "surface_contact_candidate_builds",
     "surface_contact_point_triangle_candidates",
     "surface_contact_edge_edge_candidates",
+    "surface_contact_candidate_pair_capacity",
+    "surface_contact_candidate_rejected_pairs",
     "surface_contact_ccd_point_triangle_checks",
     "surface_contact_ccd_edge_edge_checks",
     "surface_contact_ccd_hits",
@@ -486,6 +488,8 @@ EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
     "inter_body_surface_contact_candidate_builds",
     "inter_body_surface_contact_point_triangle_candidates",
     "inter_body_surface_contact_edge_edge_candidates",
+    "inter_body_surface_contact_candidate_pair_capacity",
+    "inter_body_surface_contact_candidate_rejected_pairs",
     "inter_body_surface_contact_ccd_point_triangle_checks",
     "inter_body_surface_contact_ccd_edge_edge_checks",
     "inter_body_surface_contact_ccd_hits",
@@ -499,6 +503,8 @@ EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
     "static_rigid_surface_ccd_candidate_builds",
     "static_rigid_surface_ccd_point_triangle_candidates",
     "static_rigid_surface_ccd_edge_edge_candidates",
+    "static_rigid_surface_ccd_candidate_pair_capacity",
+    "static_rigid_surface_ccd_candidate_rejected_pairs",
     "static_rigid_surface_ccd_point_triangle_checks",
     "static_rigid_surface_ccd_edge_edge_checks",
     "static_rigid_surface_ccd_hits",
@@ -513,6 +519,8 @@ EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
     "moving_rigid_surface_ccd_candidate_builds",
     "moving_rigid_surface_ccd_point_triangle_candidates",
     "moving_rigid_surface_ccd_edge_edge_candidates",
+    "moving_rigid_surface_ccd_candidate_pair_capacity",
+    "moving_rigid_surface_ccd_candidate_rejected_pairs",
     "moving_rigid_surface_ccd_point_triangle_checks",
     "moving_rigid_surface_ccd_edge_edge_checks",
     "moving_rigid_surface_ccd_hits",
@@ -614,6 +622,48 @@ def _surface_contact_runtime_counters(row: Mapping[str, Any]) -> dict[str, int]:
             row_name = benchmark_row_name(row)
             raise Plan083CpuScenePacketError(
                 f"{row_name} has more {label} hits than CCD checks"
+            )
+    for label, point_key, edge_key, capacity_key, rejected_key in (
+        (
+            "surface-contact candidate filter",
+            "surface_contact_point_triangle_candidates",
+            "surface_contact_edge_edge_candidates",
+            "surface_contact_candidate_pair_capacity",
+            "surface_contact_candidate_rejected_pairs",
+        ),
+        (
+            "inter-body surface-contact candidate filter",
+            "inter_body_surface_contact_point_triangle_candidates",
+            "inter_body_surface_contact_edge_edge_candidates",
+            "inter_body_surface_contact_candidate_pair_capacity",
+            "inter_body_surface_contact_candidate_rejected_pairs",
+        ),
+        (
+            "static-rigid surface CCD candidate filter",
+            "static_rigid_surface_ccd_point_triangle_candidates",
+            "static_rigid_surface_ccd_edge_edge_candidates",
+            "static_rigid_surface_ccd_candidate_pair_capacity",
+            "static_rigid_surface_ccd_candidate_rejected_pairs",
+        ),
+        (
+            "moving-rigid surface CCD candidate filter",
+            "moving_rigid_surface_ccd_point_triangle_candidates",
+            "moving_rigid_surface_ccd_edge_edge_candidates",
+            "moving_rigid_surface_ccd_candidate_pair_capacity",
+            "moving_rigid_surface_ccd_candidate_rejected_pairs",
+        ),
+    ):
+        candidate_count = counters[point_key] + counters[edge_key]
+        pair_capacity = counters[capacity_key]
+        if pair_capacity < candidate_count:
+            row_name = benchmark_row_name(row)
+            raise Plan083CpuScenePacketError(
+                f"{row_name} has more {label} candidates than pair capacity"
+            )
+        if counters[rejected_key] != pair_capacity - candidate_count:
+            row_name = benchmark_row_name(row)
+            raise Plan083CpuScenePacketError(
+                f"{row_name} has inconsistent {label} rejected-pair count"
             )
     return counters
 

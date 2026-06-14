@@ -1986,6 +1986,14 @@ void defSimulationModule(nb::module_& m)
           "surface_contact_candidate_builds",
           &sim::DeformableSolverDiagnostics::surfaceContactCandidateBuilds)
       .def_ro(
+          "surface_contact_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidatePairCapacity)
+      .def_ro(
+          "surface_contact_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidateRejectedPairs)
+      .def_ro(
           "surface_contact_point_triangle_candidates",
           &sim::DeformableSolverDiagnostics::
               surfaceContactPointTriangleCandidates)
@@ -2012,6 +2020,14 @@ void defSimulationModule(nb::module_& m)
           "inter_body_surface_contact_candidate_builds",
           &sim::DeformableSolverDiagnostics::
               interBodySurfaceContactCandidateBuilds)
+      .def_ro(
+          "inter_body_surface_contact_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidatePairCapacity)
+      .def_ro(
+          "inter_body_surface_contact_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateRejectedPairs)
       .def_ro(
           "inter_body_surface_contact_point_triangle_candidates",
           &sim::DeformableSolverDiagnostics::
@@ -2059,6 +2075,14 @@ void defSimulationModule(nb::module_& m)
           "static_rigid_surface_ccd_candidate_builds",
           &sim::DeformableSolverDiagnostics::
               staticRigidSurfaceCcdCandidateBuilds)
+      .def_ro(
+          "static_rigid_surface_ccd_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidatePairCapacity)
+      .def_ro(
+          "static_rigid_surface_ccd_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidateRejectedPairs)
       .def_ro(
           "static_rigid_surface_ccd_point_triangle_candidates",
           &sim::DeformableSolverDiagnostics::
@@ -2108,6 +2132,14 @@ void defSimulationModule(nb::module_& m)
           "moving_rigid_surface_ccd_candidate_builds",
           &sim::DeformableSolverDiagnostics::
               movingRigidSurfaceCcdCandidateBuilds)
+      .def_ro(
+          "moving_rigid_surface_ccd_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidatePairCapacity)
+      .def_ro(
+          "moving_rigid_surface_ccd_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidateRejectedPairs)
       .def_ro(
           "moving_rigid_surface_ccd_point_triangle_candidates",
           &sim::DeformableSolverDiagnostics::

@@ -888,6 +888,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.selfContactBarrierActiveContacts;
   diagnostics.surfaceContactCandidateBuilds
       = stats.surfaceContactCandidateBuilds;
+  diagnostics.surfaceContactCandidatePairCapacity
+      = stats.surfaceContactCandidatePairCapacity;
+  diagnostics.surfaceContactCandidateRejectedPairs
+      = stats.surfaceContactCandidateRejectedPairs;
   diagnostics.surfaceContactPointTriangleCandidates
       = stats.surfaceContactPointTriangleCandidates;
   diagnostics.surfaceContactEdgeEdgeCandidates
@@ -903,6 +907,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.surfaceContactCcdZeroStepCount;
   diagnostics.interBodySurfaceContactCandidateBuilds
       = stats.interBodySurfaceContactCandidateBuilds;
+  diagnostics.interBodySurfaceContactCandidatePairCapacity
+      = stats.interBodySurfaceContactCandidatePairCapacity;
+  diagnostics.interBodySurfaceContactCandidateRejectedPairs
+      = stats.interBodySurfaceContactCandidateRejectedPairs;
   diagnostics.interBodySurfaceContactPointTriangleCandidates
       = stats.interBodySurfaceContactPointTriangleCandidates;
   diagnostics.interBodySurfaceContactEdgeEdgeCandidates
@@ -929,6 +937,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.staticRigidSurfaceCcdEdgeCount;
   diagnostics.staticRigidSurfaceCcdCandidateBuilds
       = stats.staticRigidSurfaceCcdCandidateBuilds;
+  diagnostics.staticRigidSurfaceCcdCandidatePairCapacity
+      = stats.staticRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.staticRigidSurfaceCcdCandidateRejectedPairs
+      = stats.staticRigidSurfaceCcdCandidateRejectedPairs;
   diagnostics.staticRigidSurfaceCcdPointTriangleCandidates
       = stats.staticRigidSurfaceCcdPointTriangleCandidates;
   diagnostics.staticRigidSurfaceCcdEdgeEdgeCandidates
@@ -956,6 +968,10 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.movingRigidSurfaceCcdEdgeCount;
   diagnostics.movingRigidSurfaceCcdCandidateBuilds
       = stats.movingRigidSurfaceCcdCandidateBuilds;
+  diagnostics.movingRigidSurfaceCcdCandidatePairCapacity
+      = stats.movingRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.movingRigidSurfaceCcdCandidateRejectedPairs
+      = stats.movingRigidSurfaceCcdCandidateRejectedPairs;
   diagnostics.movingRigidSurfaceCcdPointTriangleCandidates
       = stats.movingRigidSurfaceCcdPointTriangleCandidates;
   diagnostics.movingRigidSurfaceCcdEdgeEdgeCandidates

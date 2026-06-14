@@ -141,6 +141,14 @@ The current `abd-alg-affine-body` micro-packet includes a reduced solved-state
 micro-solve diagnostic with residual/convergence counters. Add real runtime
 residual rows only when a broader ABD packet needs stepping evidence.
 
+The 2026-06-14 runtime contact-filter stats slice adds branch-local C++/dartpy
+diagnostics for `World::step` candidate pair capacity and rejected pair counts
+across self-surface, inter-body deformable, static rigid surface CCD, and moving
+rigid surface CCD candidate paths. This supports CPU runtime contact-filter
+pressure evidence only; the GPU `World::step` contact-candidate construction,
+production GPU runtime filtering, speedup gate, and paper-scale behavior remain
+future `abd-future-gpu` evidence.
+
 ## Py-Demos Category Targets
 
 | Category target               | Rows                                                                                                                                                                                                         |
