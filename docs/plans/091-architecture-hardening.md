@@ -467,7 +467,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
     of by hand). Each slice is one commit with its own focused tests; the packet
     is done when slice 4 lands and a previously-silent-substitution scene errors
     (strict) or records the substitution in a packet.
-- Evidence (slices 1–2 of 4 landed): **Slice 1** —
+- Evidence (slices 1–3 of 4 landed): **Slice 1** —
   `compute::ResolvedSolverConfiguration` and `compute::ResolvedConfigurationNote`
   value types (plain strings — no ECS, solver, or backend leak;
   `check-api-boundaries` green) added to `world_step_profile.hpp`;
@@ -487,8 +487,20 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `tests/unit/simulation/world/test_world_resolved_configuration.cpp` (5 cases:
   empty before finalize, default families, requested-method reflection, AVBD
   substitution recorded, strict mode rejects) passes. Gates: `pixi run lint`,
-  `pixi run check-api-boundaries` green. Slices 3–4 (capability-derived
-  schedule / packet serialization) remain.
+  `pixi run check-api-boundaries` green. **Slice 3** — the built-in schedule
+  no longer branches on the family enum directly: each family declares its
+  scheduling-relevant capabilities
+  (`builtInRigidSolverUsesSplitPipeline`/`builtInCombinedRigidStage`,
+  `builtInMultibodyFusesWithUnifiedConstraint`/`builtInStandaloneMultibodyStage`
+  in `detail/world_step_schedule.hpp`), and `makeBuiltInWorldStepSchedule`
+  derives stage inclusion from declared domain presence plus those
+  capabilities. Adding a family now means declaring its capabilities rather
+  than threading another hand-listed domain-presence branch. The emitted
+  schedule is identical for every existing scene: `test_world_step_schedule`
+  (16 pinned scenes) and the WP-091.2 golden trajectories
+  (`test_world_default_step_golden` 3/3) are **unchanged**; `pixi run lint`,
+  `pixi run check-api-boundaries` green. Slice 4 (packet serialization)
+  remains.
 
 #### WP-091.12 Single selection idiom
 

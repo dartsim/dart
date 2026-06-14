@@ -130,69 +130,120 @@ struct BuiltInWorldStepSchedule
 // no-op by default), and the built-in schedule calls `prepare()` on every
 // scheduled stage, so the prepare set cannot drift from the stage classes.
 
+// --- Minimal per-family scheduling capabilities ---------------------------
+//
+// PLAN-091 WP-091.11 slice 3: rather than branching the schedule on the family
+// enum directly, each built-in family declares the scheduling-relevant
+// capabilities below, and `makeBuiltInWorldStepSchedule` derives stage
+// inclusion from declared domain presence plus these capabilities. Adding a
+// family means declaring its capabilities here instead of threading another
+// hand-listed domain-presence branch through the derivation. The fuller
+// capability matrix (supported joints/actuators/shapes, differentiability) is
+// a documented non-goal of this packet.
+
+/// Whether a rigid-body solver family advances the rigid-body domain through
+/// the split velocity/contact/position pipeline (which fuses with a multibody
+/// constraint solve when a multibody domain is present), rather than through a
+/// single combined contact-and-advance stage.
+[[nodiscard]] constexpr bool builtInRigidSolverUsesSplitPipeline(
+    BuiltInRigidBodySolverFamily family) noexcept
+{
+  return family == BuiltInRigidBodySolverFamily::SequentialImpulse;
+}
+
+/// The single stage that owns rigid-body contact and advancement for families
+/// that do not use the split pipeline.
+[[nodiscard]] constexpr BuiltInWorldStepStageSlot builtInCombinedRigidStage(
+    [[maybe_unused]] BuiltInRigidBodySolverFamily family) noexcept
+{
+  // Ipc is currently the only rigid family with a combined contact-and-advance
+  // stage; the split pipeline (sequential impulse) never reaches here.
+  return BuiltInWorldStepStageSlot::RigidIpcContact;
+}
+
+/// Whether a multibody integration family fuses with the rigid sequential-
+/// impulse solve into the shared unified-constraint stage (splitting multibody
+/// velocity/position around a shared constraint solve), rather than advancing
+/// the multibody domain through a single standalone stage.
+[[nodiscard]] constexpr bool builtInMultibodyFusesWithUnifiedConstraint(
+    BuiltInMultibodyIntegrationFamily family) noexcept
+{
+  return family == BuiltInMultibodyIntegrationFamily::SemiImplicit;
+}
+
+/// The single stage that advances the multibody domain when the integration
+/// family runs standalone (not fused into a unified-constraint solve).
+[[nodiscard]] constexpr BuiltInWorldStepStageSlot
+builtInStandaloneMultibodyStage(
+    BuiltInMultibodyIntegrationFamily family) noexcept
+{
+  return family == BuiltInMultibodyIntegrationFamily::Variational
+             ? BuiltInWorldStepStageSlot::MultibodyVariationalIntegration
+             : BuiltInWorldStepStageSlot::MultibodyForwardDynamics;
+}
+
 [[nodiscard]] inline BuiltInWorldStepSchedule makeBuiltInWorldStepSchedule(
     const BuiltInWorldStepScheduleOptions& options)
 {
   BuiltInWorldStepSchedule schedule;
-  const bool variationalSelected
-      = options.multibodyIntegration
-        == BuiltInMultibodyIntegrationFamily::Variational;
 
-  switch (options.rigidBodySolver) {
-    case BuiltInRigidBodySolverFamily::SequentialImpulse:
-      if (options.hasMultibodyStructures && variationalSelected) {
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyVelocity);
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyContact);
-        }
-        schedule.add(
-            BuiltInWorldStepStageSlot::MultibodyVariationalIntegration);
-        if (options.hasDeformableBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
-        }
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyPosition);
-        }
-      } else if (options.hasMultibodyStructures) {
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyVelocity);
-        }
-        schedule.add(BuiltInWorldStepStageSlot::MultibodyVelocity);
-        schedule.add(BuiltInWorldStepStageSlot::UnifiedConstraint);
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyPosition);
-        }
-        schedule.add(BuiltInWorldStepStageSlot::MultibodyPosition);
-        if (options.hasDeformableBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
-        }
-      } else {
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyVelocity);
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyContact);
-        }
-        if (options.hasDeformableBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
-        }
-        if (options.hasRigidBodies) {
-          schedule.add(BuiltInWorldStepStageSlot::RigidBodyPosition);
-        }
+  const bool hasRigid = options.hasRigidBodies;
+  const bool hasMultibody = options.hasMultibodyStructures;
+  const bool hasDeformable = options.hasDeformableBodies;
+
+  if (builtInRigidSolverUsesSplitPipeline(options.rigidBodySolver)) {
+    const bool fuseMultibody = hasMultibody
+                               && builtInMultibodyFusesWithUnifiedConstraint(
+                                   options.multibodyIntegration);
+
+    if (fuseMultibody) {
+      // Rigid sequential impulse and a fusing multibody family share one
+      // velocity solve, a unified constraint solve, then a shared position
+      // update.
+      if (hasRigid) {
+        schedule.add(BuiltInWorldStepStageSlot::RigidBodyVelocity);
       }
-      break;
-    case BuiltInRigidBodySolverFamily::Ipc:
-      if (options.hasRigidBodies) {
-        schedule.add(BuiltInWorldStepStageSlot::RigidIpcContact);
+      schedule.add(BuiltInWorldStepStageSlot::MultibodyVelocity);
+      schedule.add(BuiltInWorldStepStageSlot::UnifiedConstraint);
+      if (hasRigid) {
+        schedule.add(BuiltInWorldStepStageSlot::RigidBodyPosition);
       }
-      if (options.hasMultibodyStructures) {
-        schedule.add(
-            variationalSelected
-                ? BuiltInWorldStepStageSlot::MultibodyVariationalIntegration
-                : BuiltInWorldStepStageSlot::MultibodyForwardDynamics);
-      }
-      if (options.hasDeformableBodies) {
+      schedule.add(BuiltInWorldStepStageSlot::MultibodyPosition);
+      if (hasDeformable) {
         schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
       }
-      break;
+    } else {
+      // Split rigid contact pipeline; a non-fusing multibody family (if any)
+      // advances through its own standalone stage between contact resolution
+      // and the rigid position update.
+      if (hasRigid) {
+        schedule.add(BuiltInWorldStepStageSlot::RigidBodyVelocity);
+        schedule.add(BuiltInWorldStepStageSlot::RigidBodyContact);
+      }
+      if (hasMultibody) {
+        schedule.add(
+            builtInStandaloneMultibodyStage(options.multibodyIntegration));
+      }
+      if (hasDeformable) {
+        schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
+      }
+      if (hasRigid) {
+        schedule.add(BuiltInWorldStepStageSlot::RigidBodyPosition);
+      }
+    }
+  } else {
+    // Combined rigid contact-and-advance stage; the multibody domain (if any)
+    // advances standalone afterward.
+    if (hasRigid) {
+      schedule.add(builtInCombinedRigidStage(options.rigidBodySolver));
+    }
+    if (hasMultibody) {
+      schedule.add(
+          builtInStandaloneMultibodyStage(options.multibodyIntegration));
+    }
+    if (hasDeformable) {
+      schedule.add(BuiltInWorldStepStageSlot::DeformableDynamics);
+    }
   }
 
   if (options.includeKinematics) {
