@@ -141,7 +141,7 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
 // working one instead of leaving the engine null. On success, *chosenName is
 // set to the static name of the backend that was actually created.
 ::filament::Engine* createEngineWithFallback(
-    Backend requested, const char** chosenName)
+    Backend requested, const char** chosenName, bool headless)
 {
   // Fall back only to backends with embedded materials (OpenGL, Vulkan), never
   // to Filament's platform default which could select a material-less backend.
@@ -154,6 +154,7 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
       continue;
     }
     previous = backend;
+    static_cast<void>(headless);
     if (::filament::Engine* engine
         = ::filament::Engine::Builder().backend(backend).build()) {
       if (backend != requested) {
@@ -178,7 +179,7 @@ FilamentRenderContext createFilamentRenderContext(
 {
   FilamentRenderContext context;
   context.engine = createEngineWithFallback(
-      resolveRequestedBackend(options), &context.backendName);
+      resolveRequestedBackend(options), &context.backendName, options.headless);
   context.renderer = context.engine->createRenderer();
   if (options.headless) {
     ::filament::Renderer::DisplayInfo displayInfo;

@@ -1545,6 +1545,18 @@ void defSimulationModule(nb::module_& m)
           },
           nb::arg("torque"))
       .def("clear_torque", &sim::RigidBody::clearTorque)
+      .def(
+          "apply_linear_impulse",
+          [](sim::RigidBody& self, const nb::handle& impulse) {
+            self.applyLinearImpulse(toVector3(impulse));
+          },
+          nb::arg("impulse"))
+      .def(
+          "apply_angular_impulse",
+          [](sim::RigidBody& self, const nb::handle& impulse) {
+            self.applyAngularImpulse(toVector3(impulse));
+          },
+          nb::arg("impulse"))
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro("translation", &sim::RigidBody::getTranslation)
@@ -3360,6 +3372,32 @@ void defSimulationModule(nb::module_& m)
           nb::arg("parent_anchor"),
           nb::arg("child_anchor"),
           nb::keep_alive<0, 1>())
+      .def(
+          "has_rigid_body_distance_spring",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasRigidBodyDistanceSpring(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_rigid_body_distance_spring_parameters",
+          [](const sim::World& self, const std::string& name) {
+            const auto parameters
+                = self.getRigidBodyDistanceSpringParameters(name);
+            return nb::make_tuple(parameters.first, parameters.second);
+          },
+          nb::arg("name"))
+      .def(
+          "set_rigid_body_distance_spring_parameters",
+          [](sim::World& self,
+             const std::string& name,
+             double restLength,
+             double stiffness) {
+            self.setRigidBodyDistanceSpringParameters(
+                name, restLength, stiffness);
+          },
+          nb::arg("name"),
+          nb::arg("rest_length"),
+          nb::arg("stiffness"))
       .def(
           "get_rigid_body_joint",
           [](sim::World& self, const std::string& name) -> nb::object {

@@ -10,8 +10,9 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
+_TIME_STEP = 0.005
 _BASE_HALF = np.array([0.16, 0.16, 0.16])
 _SLIDER_HALF = np.array([0.22, 0.13, 0.13])
 _RAIL_HALF = np.array([0.95, 0.025, 0.025])
@@ -32,7 +33,7 @@ def _translation(position: np.ndarray) -> np.ndarray:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
+    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, 0.0))
 
     base = world.add_rigid_body("avbd_prismatic_motor_base", position=tuple(_BASE_POS))
     base.is_static = True
@@ -81,16 +82,78 @@ def build() -> SceneSetup:
     speed_history: deque[float] = deque(maxlen=160)
     position_history: deque[float] = deque(maxlen=160)
     drift_history: deque[float] = deque(maxlen=160)
+    _last_metrics: dict[str, float] = {}
 
-    def build_panel(builder: object, context: object) -> None:
+    def sample_metrics() -> dict[str, float]:
         position = np.asarray(slider.translation, dtype=float).reshape(3)
         velocity = np.asarray(slider.linear_velocity, dtype=float).reshape(3)
         measured_speed = float(velocity[0])
+        speed_error = float(_TARGET_SPEED - measured_speed)
         axis_position = float(position[0] - _BASE_POS[0])
         orthogonal_drift = float(np.linalg.norm(position[1:] - _BASE_POS[1:]))
-        speed_history.append(measured_speed)
-        position_history.append(axis_position)
-        drift_history.append(orthogonal_drift)
+        return {
+            "measured_speed": measured_speed,
+            "speed_error": speed_error,
+            "abs_speed_error": abs(speed_error),
+            "axis_position": axis_position,
+            "orthogonal_drift": orthogonal_drift,
+            "world_time": float(world.time),
+        }
+
+    def record_metrics() -> dict[str, float]:
+        _last_metrics.clear()
+        _last_metrics.update(sample_metrics())
+        speed_history.append(_last_metrics["measured_speed"])
+        position_history.append(_last_metrics["axis_position"])
+        drift_history.append(_last_metrics["orthogonal_drift"])
+        return _last_metrics
+
+    def capture_metrics() -> dict[str, object]:
+        if not _last_metrics:
+            record_metrics()
+        speed_values = list(speed_history)
+        abs_error_values = [
+            abs(float(_TARGET_SPEED) - float(value)) for value in speed_history
+        ]
+        position_values = list(position_history)
+        drift_values = list(drift_history)
+        return {
+            "row": "avbd_rigid_prismatic_motor",
+            "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
+            "actuator": "prismatic_velocity_motor",
+            "related_source_row": "rigid_joint_motor_limits",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(world.time),
+            "joint_name": str(motor_joint.name),
+            "target_speed": float(_TARGET_SPEED),
+            "max_force": float(_MAX_FORCE),
+            "measured_speed": float(_last_metrics["measured_speed"]),
+            "speed_error": float(_last_metrics["speed_error"]),
+            "abs_speed_error": float(_last_metrics["abs_speed_error"]),
+            "axis_position": float(_last_metrics["axis_position"]),
+            "orthogonal_drift": float(_last_metrics["orthogonal_drift"]),
+            "metrics": dict(_last_metrics),
+            "history": {
+                "samples": float(len(speed_values)),
+                "max_measured_speed": max(speed_values, default=0.0),
+                "max_abs_speed_error": max(abs_error_values, default=0.0),
+                "max_axis_position": max(position_values, default=0.0),
+                "max_orthogonal_drift": max(drift_values, default=0.0),
+            },
+        }
+
+    def pre_step() -> None:
+        bridge.pre_step()
+        record_metrics()
+
+    record_metrics()
+
+    def build_panel(builder: object, context: object) -> None:
+        metrics = _last_metrics or record_metrics()
+        measured_speed = float(metrics["measured_speed"])
+        axis_position = float(metrics["axis_position"])
+        orthogonal_drift = float(metrics["orthogonal_drift"])
 
         builder.text("solver: AVBD prismatic velocity motor")
         builder.text(f"joint: {motor_joint.name}")
@@ -108,7 +171,7 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=pre_step,
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Prismatic Motor", build_panel)],
         info={
@@ -119,6 +182,9 @@ def build() -> SceneSetup:
             "target_speed": _TARGET_SPEED,
             "max_force": _MAX_FORCE,
             "base_position": _BASE_POS.copy(),
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )
 

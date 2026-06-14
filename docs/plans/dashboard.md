@@ -1457,8 +1457,9 @@ check-dart7-final-world-promotion`.
   with `rigid_body`, `deformable_body`, and `vbd_deformable` runtime-switchable
   scenes plus lightweight `Planned World Ports` placeholders for high-value DART
   6 concepts that still need World-native ports (IK, SIMBICON walking,
-  operational-space control, robot puppets, collision sandbox, mobile
-  manipulation); tooling/docs/CHANGELOG updated. The
+  operational-space control, robot puppets, mobile manipulation); the retired
+  collision sandbox route now points to concrete Python collision-debugging rows
+  instead of a C++ placeholder. The
   `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
   decision), so PLAN-101's `--scene` smoke gate is unaffected.
@@ -1483,9 +1484,10 @@ check-dart7-final-world-promotion`.
   and cross-language golden parity fixtures are removed from the demo surfaces.
   The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
   are tracked in PLAN-103's Landed State + retire-later checklist.
-- Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
-  the notebook imports (not copies) the scene modules; C++ `dart-demos` cycles
-  its World scenes; `pixi run lint` and `check-docs-policy` green.
+- Gate: `pixi run py-demos -- --cycle-scenes --headless --frames 1` cycles all
+  scenes (exit 0, with per-scene progress); the notebook imports (not copies)
+  the scene modules; C++ `dart-demos` cycles its World scenes; `pixi run lint`
+  and `check-docs-policy` green.
 
 ### PLAN-110: Differentiable Simulation
 
