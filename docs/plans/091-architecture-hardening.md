@@ -580,17 +580,21 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   default-config `test_world_default_step_golden` 3/3, `test_world_contact_parity`
   5/5, `test_boxed_lcp_contact` 122/122 unchanged (these exercise the shared
   helpers at runtime through `rigid_body_constraint`/`boxed_lcp_contact`);
-  `contact_jacobians.cpp` compiles clean under `DART_BUILD_DIFF=ON` against the
-  shared header; `pixi run lint` green. Note: the `DART_BUILD_DIFF=ON` *test
-  binaries* (`test_diff_contact_jacobian` et al.) could not be linked because the
-  merged `main` carries a pre-existing diff-only build break unrelated to this
-  packet — `world.cpp:5221` passes the `StlAllocator`-typed
+  `contact_jacobians.cpp`'s de-duplication is runtime-verified under
+  `DART_BUILD_DIFF=ON`: `test_diff_contact_jacobian` 5/5,
+  `test_diff_public_contact_jacobian` 5/5, `test_diff_contact_gradient_modes`
+  6/6 (gradients unchanged); `pixi run lint` green. Running those diff suites
+  first required fixing a pre-existing diff-only `main` build break unrelated to
+  this packet — `world.cpp` passed the `StlAllocator`-typed
   `world_storage.hpp` `differentiableParameters` to
   `contactStepDerivativesWithParameters`, whose signature
   (`contact_jacobians.hpp:193`) takes a default-allocator
-  `std::vector<ParameterRegistration>&`; the allocator type was introduced by
-  main commit `64e61f1f04b` (#2863) and neither file is touched by this branch.
-  **Slice B (remaining):** converge the four contact-problem *assemblers* (the
+  `std::vector<ParameterRegistration>&` (allocator type introduced by main
+  commit `64e61f1f04b` (#2863); `DART_BUILD_DIFF` is not exercised in CI). Fixed
+  in the follow-up commit by adapting the parameter vector at the `world.cpp`
+  call site (a trivial default-allocator copy; no API or storage-allocator
+  change).
+  **Slice B (remaining):** converge the four contact-problem _assemblers_ (the
   canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
   differentiable-capture rebuild, and the sequential-impulse scratch in
   `world_step_stage.cpp`) onto one producer, single-source the remaining inline

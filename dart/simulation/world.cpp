@@ -5205,6 +5205,12 @@ void World::captureStepDerivatives()
     // When physical parameters are registered, additionally assemble the
     // parameter Jacobian ∂x'/∂θ alongside the state/control Jacobians;
     // otherwise skip the extra FD work and leave parameterJacobian empty.
+    // The differentiable entry points take a default-allocator parameter
+    // vector, while differentiableParameters uses the World's StlAllocator;
+    // adapt it here (a trivial copy, compiled only in the diff build).
+    const std::vector<detail::ParameterRegistration> parameterRegistrations(
+        m_storage->differentiableParameters.begin(),
+        m_storage->differentiableParameters.end());
     StepDerivatives contactDerivatives
         = m_storage->differentiableParameters.empty()
               ? detail::contactStepDerivatives(
@@ -5218,7 +5224,7 @@ void World::captureStepDerivatives()
                     contacts,
                     m_gravity,
                     m_timeStep,
-                    m_storage->differentiableParameters,
+                    parameterRegistrations,
                     m_contactGradientMode);
     // Non-empty only when a dynamic rigid body is in scope. When empty (e.g. a
     // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
