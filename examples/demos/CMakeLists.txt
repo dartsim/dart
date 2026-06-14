@@ -54,9 +54,14 @@ if(TARGET dart-demos)
 
   if(BUILD_TESTING AND DART_BUILD_TESTS)
     add_test(NAME EXAMPLE_dart_demos_list COMMAND dart-demos --list)
+    # dart-demos links Filament, whose prebuilt runtime dlopen's SDL3 at process
+    # startup. Under AddressSanitizer that load fails ("Failed loading SDL3
+    # library") and aborts before `--list` can print, so disable this runtime
+    # smoke test in ASan builds. It still runs in Release/Debug, and dart-demos
+    # is still built under ASan (the failure is purely at runtime startup).
     set_tests_properties(
       EXAMPLE_dart_demos_list
-      PROPERTIES LABELS "examples;gui;catalog"
+      PROPERTIES LABELS "examples;gui;catalog" DISABLED ${DART_ENABLE_ASAN}
     )
     if(NOT APPLE)
       if(WIN32)
