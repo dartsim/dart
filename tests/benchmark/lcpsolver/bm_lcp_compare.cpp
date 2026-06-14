@@ -9204,6 +9204,11 @@ void RunWorldBoxContactBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "World box contact case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -9825,6 +9830,13 @@ void RunWorldBoxContactBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(batch->problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "World box contact batch case exceeds concrete solver support");
     return;
   }
 
@@ -13144,20 +13156,27 @@ std::vector<BenchmarkArgProblem> MakeWorldStackContactBenchmarkArgProblems()
   return argProblems;
 }
 
-std::optional<LcpProblem> MakeWorldBoxContactSupportProbe()
-{
-  std::string errorMessage;
-  auto fixture = MakeWorldBoxContactBenchmarkProblem(errorMessage, 0, 1);
-  if (!fixture.has_value()) {
-    return std::nullopt;
-  }
-
-  return std::move(fixture->problem);
-}
-
 std::vector<int> GetWorldBoxContactBenchmarkArgs()
 {
   return {1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 192, 256};
+}
+
+std::vector<BenchmarkArgProblem> MakeWorldBoxContactBenchmarkArgProblems()
+{
+  std::vector<BenchmarkArgProblem> argProblems;
+  for (const int boxCount : GetWorldBoxContactBenchmarkArgs()) {
+    std::string errorMessage;
+    auto fixture
+        = MakeWorldBoxContactBenchmarkProblem(errorMessage, 0, boxCount);
+    if (!fixture.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        BenchmarkArgProblem{boxCount, std::move(fixture->problem)});
+  }
+
+  return argProblems;
 }
 
 struct ArticulatedContactBenchmarkProbe
@@ -13201,10 +13220,81 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBatchSupportProbe(
   return MakeWorldContactBenchmarkBatch(errorMessage, batchKind);
 }
 
-std::optional<WorldContactBenchmarkBatch> MakeWorldBoxContactBatchSupportProbe()
+std::vector<BatchBenchmarkArg> GetWorldBoxContactBatchArgCandidates()
 {
-  std::string errorMessage;
-  return MakeWorldBoxContactBenchmarkBatch(1, 1, errorMessage);
+  constexpr int batchSize = 4;
+  return {
+      {1, batchSize},
+      {4, batchSize},
+      {8, batchSize},
+      {16, batchSize},
+      {24, batchSize},
+      {32, batchSize},
+      {48, batchSize},
+      {64, batchSize},
+      {96, batchSize},
+      {128, batchSize},
+      {192, batchSize},
+      {256, batchSize}};
+}
+
+bool ShouldRunWorldBoxContactBatchArg(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const BatchBenchmarkArg& arg)
+{
+  if (solver.name == "Pgs") {
+    return true;
+  }
+  if (solver.name == "Admm" && arg.problemArg == 256) {
+    return false;
+  }
+
+  return arg.problemArg == 24 || arg.problemArg == 64 || arg.problemArg == 96
+         || arg.problemArg == 128 || arg.problemArg == 192
+         || arg.problemArg == 256;
+}
+
+struct WorldBoxContactBatchArgProblems
+{
+  BatchBenchmarkArg arg;
+  std::vector<LcpProblem> problems;
+};
+
+std::vector<WorldBoxContactBatchArgProblems>
+MakeWorldBoxContactBatchArgProblems()
+{
+  std::vector<WorldBoxContactBatchArgProblems> argProblems;
+  for (const auto candidate : GetWorldBoxContactBatchArgCandidates()) {
+    std::string errorMessage;
+    auto batch = MakeWorldBoxContactBenchmarkBatch(
+        candidate.problemArg, candidate.batchSize, errorMessage);
+    if (!batch.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        WorldBoxContactBatchArgProblems{candidate, std::move(batch->problems)});
+  }
+
+  return argProblems;
+}
+
+std::vector<BatchBenchmarkArg> GetConcreteWorldBoxContactBatchArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const std::vector<WorldBoxContactBatchArgProblems>& argProblems)
+{
+  std::vector<BatchBenchmarkArg> args;
+  for (const auto& candidate : argProblems) {
+    if (!ShouldRunWorldBoxContactBatchArg(solver, candidate.arg)) {
+      continue;
+    }
+
+    if (SolverSupportsConcreteProblemBatch(solver, candidate.problems)) {
+      args.push_back(candidate.arg);
+    }
+  }
+
+  return args;
 }
 
 void RegisterWorldContactBenchmarks()
@@ -13230,16 +13320,14 @@ void RegisterWorldContactBenchmarks()
 
 void RegisterWorldBoxContactBenchmarks()
 {
-  const auto supportProbe = MakeWorldBoxContactSupportProbe();
-  if (!supportProbe.has_value()) {
-    return;
-  }
+  const auto argProblems = MakeWorldBoxContactBenchmarkArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
-    if (!SolverSupportsConcreteProblem(solver, *supportProbe)) {
+    const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
+    if (args.empty()) {
       continue;
     }
 
@@ -13250,7 +13338,7 @@ void RegisterWorldBoxContactBenchmarks()
             [solver](benchmark::State& state) {
               RunWorldBoxContactBenchmark(state, solver);
             }),
-        GetWorldBoxContactBenchmarkArgs());
+        args);
   }
 }
 
@@ -13446,66 +13534,31 @@ void RegisterWorldContactBatchBenchmarks()
 
 void RegisterWorldBoxContactBatchBenchmarks()
 {
-  const auto supportProbe = MakeWorldBoxContactBatchSupportProbe();
-  if (!supportProbe.has_value()) {
-    return;
-  }
-
-  const auto addWorldBoxContactBatchArgs
-      = [](benchmark::Benchmark* registeredBenchmark,
-           const dart::test::LcpSolverManifestEntry& solver) {
-          if (solver.name == "Pgs") {
-            registeredBenchmark->Args({1, 4})
-                ->Args({4, 4})
-                ->Args({8, 4})
-                ->Args({16, 4})
-                ->Args({24, 4})
-                ->Args({32, 4})
-                ->Args({48, 4})
-                ->Args({64, 4})
-                ->Args({96, 4})
-                ->Args({128, 4})
-                ->Args({192, 4})
-                ->Args({256, 4});
-            return;
-          }
-
-          registeredBenchmark->Args({24, 4})
-              ->Args({64, 4})
-              ->Args({96, 4})
-              ->Args({128, 4})
-              ->Args({192, 4});
-          if (solver.name != "Admm") {
-            registeredBenchmark->Args({256, 4});
-          }
-        };
+  const auto argProblems = MakeWorldBoxContactBatchArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
-    if (!SolverSupportsConcreteProblemBatch(solver, supportProbe->problems)) {
+    const auto args = GetConcreteWorldBoxContactBatchArgs(solver, argProblems);
+    if (args.empty()) {
       continue;
     }
 
     const auto serialName = MakeWorldBoxContactBatchSerialBenchmarkName(solver);
-    addWorldBoxContactBatchArgs(
-        benchmark::RegisterBenchmark(
-            serialName.c_str(),
-            [solver](benchmark::State& state) {
-              RunWorldBoxContactBatchSerialBenchmark(state, solver);
-            }),
-        solver);
+    auto* serialBatchBenchmark = benchmark::RegisterBenchmark(
+        serialName.c_str(), [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchSerialBenchmark(state, solver);
+        });
+    AddBatchBenchmarkArgs(serialBatchBenchmark, args);
 
     const auto parallelName
         = MakeWorldBoxContactBatchParallelBenchmarkName(solver);
-    addWorldBoxContactBatchArgs(
-        benchmark::RegisterBenchmark(
-            parallelName.c_str(),
-            [solver](benchmark::State& state) {
-              RunWorldBoxContactBatchParallelBenchmark(state, solver);
-            }),
-        solver);
+    auto* parallelBatchBenchmark = benchmark::RegisterBenchmark(
+        parallelName.c_str(), [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchParallelBenchmark(state, solver);
+        });
+    AddBatchBenchmarkArgs(parallelBatchBenchmark, args);
   }
 }
 #endif
