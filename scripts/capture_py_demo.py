@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import importlib.util
 import json
 import math
 import os
@@ -515,16 +516,24 @@ def rigid_workflow_packet_capture_specs() -> (
 
 
 def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
-    python_dir = _repo_root() / "python"
-    if str(python_dir) not in sys.path:
-        sys.path.append(str(python_dir))
     guidance: dict[str, dict[str, object]] = {}
+    runner_module_name = "_dart_capture_py_demo_runner_guidance"
+    runner_path = _repo_root() / "python" / "examples" / "demos" / "runner.py"
     try:
-        from examples.demos.runner import (
-            RIGID_VISUAL_WORKFLOW_GUIDES,
-            rigid_workflow_related_evidence_by_scene,
+        spec = importlib.util.spec_from_file_location(runner_module_name, runner_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"could not load {runner_path}")
+        runner_module = importlib.util.module_from_spec(spec)
+        sys.modules[runner_module_name] = runner_module
+        spec.loader.exec_module(runner_module)
+        RIGID_VISUAL_WORKFLOW_GUIDES = getattr(
+            runner_module, "RIGID_VISUAL_WORKFLOW_GUIDES", {}
+        )
+        rigid_workflow_related_evidence_by_scene = getattr(
+            runner_module, "rigid_workflow_related_evidence_by_scene", None
         )
     except Exception:
+        sys.modules.pop(runner_module_name, None)
         RIGID_VISUAL_WORKFLOW_GUIDES = {}
         rigid_workflow_related_evidence_by_scene = None
 
