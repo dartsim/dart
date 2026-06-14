@@ -2235,6 +2235,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Benchmark"
         in builder.events
     )
+    for parameter_row in parameter_rows:
+        assert f"text:{parameter_row['solver']}" in builder.events
+        assert f"text:{parameter_row['surface']}" in builder.events
+        assert f"text:{parameter_row['parameters']}" in builder.events
+        assert f"text:{parameter_row['defaults']}" in builder.events
+        assert f"text:{parameter_row['benchmark_filter']}" in builder.events
     for plot_prefix in (
         "plot:Sequential billiard momentum error:",
         "plot:Boxed LCP billiard momentum error:",
