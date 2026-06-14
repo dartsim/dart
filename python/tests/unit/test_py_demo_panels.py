@@ -2577,8 +2577,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
-        assert any(schema_row["fields"] in event for event in builder.events)
-        assert any(schema_row["meaning"] in event for event in builder.events)
+        assert f"text:{schema_row['fields']}" in builder.events
+        assert f"text:{schema_row['meaning']}" in builder.events
     assert (
         "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
         "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
