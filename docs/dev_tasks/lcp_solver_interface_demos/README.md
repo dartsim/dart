@@ -1,5 +1,69 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Concrete Native Count Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `b222e5d20f2 Route LCP demo smoke through concrete support`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Concrete native count guard status:
+
+- `python/tests/unit/test_py_demo_panels.py` now derives standalone problem
+  summary and solver profile native/delegated counts from the concrete
+  `native_supported` rows.
+- The test no longer maintains a duplicate hardcoded native-count table or a
+  manifest-category formula with a Direct special case for the profile count.
+- Explicit sentinels for known concrete support boundaries remain: Direct's
+  partial standard native surface, MPRGP's standard-only surface, Dantzig's full
+  surface coverage, and the known delegated rows for near-singular, moderate
+  scale, boxed, and friction-index cases.
+- Solver implementations, demo runtime behavior, benchmark registration code,
+  generated profile/evidence CSVs, bindings, stubs, and public APIs were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with 155 tests.
+- `pixi run lint` passed, including `scripts/check_lcp_solver_roster.py`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Standalone Smoke Route Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

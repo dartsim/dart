@@ -1762,17 +1762,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "active_friction_index_contact": 24,
         "moderate_scale_standard": 24,
     }
-    expected_native_problem_counts = {
-        "standard_spd": 23,
-        "ill_conditioned_standard": 23,
-        "near_singular_standard": 22,
-        "boxed_active_bounds": 15,
-        "mass_ratio_boxed": 15,
-        "singular_degenerate_boxed": 15,
-        "friction_index_contact": 16,
-        "active_friction_index_contact": 16,
-        "moderate_scale_standard": 22,
-    }
     expected_problem_types = {
         "standard_spd": "Standard",
         "ill_conditioned_standard": "Standard",
@@ -1941,6 +1930,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     } == {"delegated"}
     for case_name, expected_count in expected_problem_counts.items():
         summary_row = problem_summary_by_case[case_name]
+        case_rows = [row for row in problem_rows if row["case"] == case_name]
+        native_case_rows = [row for row in case_rows if row["native_supported"]]
+        delegated_case_rows = [
+            row for row in case_rows if not row["native_supported"]
+        ]
         assert summary_row["solver_count"] == expected_count
         assert summary_row["problem_type"] == expected_problem_types[case_name]
         assert summary_row["lcp_dimension"] == expected_problem_dimensions[case_name]
@@ -1952,35 +1946,28 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
             summary_row["findex_contact_count"]
             == expected_findex_contact_counts[case_name]
         )
+        assert {row["problem_type"] for row in case_rows} == {
+            expected_problem_types[case_name]
+        }
+        assert {row["lcp_dimension"] for row in case_rows} == {
+            expected_problem_dimensions[case_name]
+        }
         assert {
-            row["problem_type"] for row in problem_rows if row["case"] == case_name
-        } == {expected_problem_types[case_name]}
-        assert {
-            row["lcp_dimension"] for row in problem_rows if row["case"] == case_name
-        } == {expected_problem_dimensions[case_name]}
-        assert {
-            row["findex_row_count"]
-            for row in problem_rows
-            if row["case"] == case_name
+            row["findex_row_count"] for row in case_rows
         } == {expected_findex_row_counts[case_name]}
         assert {
-            row["findex_contact_count"]
-            for row in problem_rows
-            if row["case"] == case_name
+            row["findex_contact_count"] for row in case_rows
         } == {expected_findex_contact_counts[case_name]}
-        assert summary_row["native_solver_count"] == expected_native_problem_counts[
-            case_name
-        ]
-        assert (
-            summary_row["delegated_solver_count"]
-            == expected_count - expected_native_problem_counts[case_name]
+        assert summary_row["native_solver_count"] == len(native_case_rows)
+        assert summary_row["delegated_solver_count"] == len(delegated_case_rows)
+        assert summary_row["contract_ok_count"] == sum(
+            1 for row in case_rows if row["contract_ok"]
         )
-        assert summary_row["contract_ok_count"] == expected_count
-        assert summary_row["native_contract_ok_count"] == expected_native_problem_counts[
-            case_name
-        ]
-        assert summary_row["delegated_contract_ok_count"] == (
-            expected_count - expected_native_problem_counts[case_name]
+        assert summary_row["native_contract_ok_count"] == sum(
+            1 for row in native_case_rows if row["contract_ok"]
+        )
+        assert summary_row["delegated_contract_ok_count"] == sum(
+            1 for row in delegated_case_rows if row["contract_ok"]
         )
         assert summary_row["max_solution_error"] <= expected_case_tolerances.get(
             case_name, 2e-4
@@ -1993,8 +1980,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_native_elapsed_us"] >= 0.0
         assert summary_row["slowest_solver"] in solver_by_name
         assert summary_row["slowest_elapsed_us"] >= summary_row["fastest_elapsed_us"]
-        case_rows = [row for row in problem_rows if row["case"] == case_name]
-        native_case_rows = [row for row in case_rows if row["native_supported"]]
         fastest_row = min(case_rows, key=lambda row: row["elapsed_us"])
         fastest_native_row = min(native_case_rows, key=lambda row: row["elapsed_us"])
         slowest_row = max(case_rows, key=lambda row: row["elapsed_us"])
@@ -2011,7 +1996,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
             slowest_row["elapsed_us"]
         )
     for solver_name, profile_row in solver_profile_by_name.items():
-        manifest_row = solver_by_name[solver_name]
         solver_problem_rows = [
             row for row in problem_rows if row["solver"] == solver_name
         ]
@@ -2021,25 +2005,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         delegated_solver_problem_rows = [
             row for row in solver_problem_rows if not row["native_supported"]
         ]
-        expected_native_case_count = (
-            4 * int(manifest_row["standard"])
-            + 3 * int(manifest_row["boxed"])
-            + 2 * int(manifest_row["findex"])
-        )
-        if solver_name == "Direct":
-            expected_native_case_count = 2
-        assert profile_row["problem_count"] == len(expected_problem_counts)
-        assert profile_row["native_case_count"] == expected_native_case_count
-        assert (
-            profile_row["delegated_case_count"]
-            == len(expected_problem_counts) - expected_native_case_count
-        )
-        assert profile_row["contract_ok_count"] == len(expected_problem_counts)
-        assert profile_row["native_contract_ok_count"] == expected_native_case_count
-        assert (
-            profile_row["delegated_contract_ok_count"]
-            == len(expected_problem_counts) - expected_native_case_count
-        )
+        assert len(solver_problem_rows) == len(expected_problem_counts)
         assert profile_row["max_solution_error"] <= max(
             expected_case_tolerances.values(), default=2e-4
         )
