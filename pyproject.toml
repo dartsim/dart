@@ -44,7 +44,7 @@ metadata.version.regex = "<version>(?P<value>[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.(dev|
 
 [tool.scikit-build.cmake]
 # CMake version requirement
-version = ">=3.22.1"
+version = ">=4.2"
 # CMake build type
 build-type = "Release"
 
