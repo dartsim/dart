@@ -33,7 +33,10 @@
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/deformable_contact/continuous_collision_step.hpp>
+#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/world.hpp>
+
+#include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
@@ -48,11 +51,15 @@
 
 namespace cuda = dart::simulation::compute::cuda;
 namespace dc = dart::simulation::detail::deformable_contact;
+namespace native = dart::collision::native;
+namespace rigid = dart::simulation::detail;
 namespace sx = dart::simulation;
 
 namespace {
 
 constexpr std::size_t kRigidCurvedSegmentCount = 8;
+constexpr std::size_t kRigidCurvedAnalyticReferenceCount = 256;
+constexpr double kRigidCurvedReferenceTolerance = 1e-6;
 constexpr double kPi = 3.14159265358979323846264338327950288;
 constexpr double kSceneRuntimeCandidateActivationDistance = 0.05;
 constexpr double kSceneRuntimeCcdTimeStep = 1.0;
@@ -120,6 +127,12 @@ struct RigidCurvedCcdFixture
   std::size_t segmentCount = kRigidCurvedSegmentCount;
   std::size_t hitCount = 0;
   double minStepBound = 1.0;
+  std::size_t analyticReferencePairCount = 0;
+  std::size_t analyticReferenceHitCount = 0;
+  std::size_t analyticReferenceHitMismatchCount = 0;
+  double analyticReferenceMinStepBound = 1.0;
+  double maxSampledReferenceOvershoot = 0.0;
+  double maxSampledReferenceConservativeGap = 0.0;
 };
 
 void setVec3(double values[3], const Eigen::Vector3d& vector)
@@ -237,35 +250,6 @@ void populateCpuPairResults(Fixture& fixture)
   }
 }
 
-double smoothAlpha(const double alpha)
-{
-  return 0.5 - 0.5 * std::cos(kPi * alpha);
-}
-
-Eigen::Vector3d sampledRigidCurvedPoint(
-    const double baseX, const double baseY, const double alpha, const bool hit)
-{
-  const double eased = smoothAlpha(alpha);
-  const double lateralPhase = (5.0 * kPi / 1.125) * alpha;
-  const double lateral = 0.035 * std::sin(lateralPhase);
-  const double z = hit ? 0.32 * (0.5625 - alpha) : 0.18 - 0.08 * eased;
-  return {baseX + lateral, baseY + 0.025 * std::sin(lateralPhase), z};
-}
-
-Eigen::Vector3d sampledRigidCurvedEdgeEndpoint(
-    const double baseY,
-    const double alpha,
-    const bool hit,
-    const double halfLengthSign)
-{
-  const double eased = smoothAlpha(alpha);
-  const double centerX = -0.45 + (hit ? 1.0 : 0.25) * eased;
-  const double theta = 0.18 * std::sin(2.0 * kPi * alpha);
-  const Eigen::Vector3d direction(std::sin(theta), std::cos(theta), 0.0);
-  const Eigen::Vector3d center(centerX, baseY, 0.0);
-  return center + (halfLengthSign * 0.21) * direction;
-}
-
 template <typename Pair>
 void evaluateTrajectorySegments(
     const std::vector<Pair>& segmentPairs,
@@ -289,9 +273,12 @@ void evaluateTrajectorySegments(
         continue;
       }
 
-      const double localStep = std::clamp(result.stepBound, 0.0, 1.0);
-      const double trajectoryStep = (static_cast<double>(segment) + localStep)
-                                    / static_cast<double>(segmentCount);
+      // A segment-local endpoint-linear CCD result approximates a curved rigid
+      // trajectory. Use the segment lower bound as the conservative trajectory
+      // step for the sampled curved row; the analytic-reference counters below
+      // verify the prefix against the continuous curved rigid IPC ACCD query.
+      const double trajectoryStep
+          = static_cast<double>(segment) / static_cast<double>(segmentCount);
       stepBounds[trajectory] = trajectoryStep;
       hits[trajectory] = 1u;
       ++hitCount;
@@ -323,10 +310,8 @@ void reduceGpuTrajectorySegments(
         continue;
       }
 
-      const double localStep
-          = std::clamp(result.stepBounds[pairIndex], 0.0, 1.0);
-      const double trajectoryStep = (static_cast<double>(segment) + localStep)
-                                    / static_cast<double>(segmentCount);
+      const double trajectoryStep
+          = static_cast<double>(segment) / static_cast<double>(segmentCount);
       stepBounds[trajectory] = trajectoryStep;
       hits[trajectory] = 1u;
       ++hitCount;
@@ -399,6 +384,46 @@ EdgeEdgeCcdFixture makeEdgeEdgeCcdFixture(const int pairCount)
 
   populateCpuPairResults(fixture);
   return fixture;
+}
+
+native::CcdOption makeRigidCurvedReferenceOption()
+{
+  native::CcdOption option = native::CcdOption::precise();
+  option.tolerance = kRigidCurvedReferenceTolerance;
+  option.maxIterations = 256;
+  return option;
+}
+
+template <typename Pair>
+void recordRigidCurvedAnalyticReference(
+    RigidCurvedCcdFixture<Pair>& fixture,
+    const bool referenceHit,
+    const double referenceStepBound)
+{
+  const std::size_t referenceIndex = fixture.analyticReferencePairCount;
+  ++fixture.analyticReferencePairCount;
+
+  const bool sampledHit = fixture.cpuHits[referenceIndex] != 0u;
+  if (referenceHit) {
+    ++fixture.analyticReferenceHitCount;
+    fixture.analyticReferenceMinStepBound = std::min(
+        fixture.analyticReferenceMinStepBound,
+        std::clamp(referenceStepBound, 0.0, 1.0));
+  }
+  if (sampledHit != referenceHit) {
+    ++fixture.analyticReferenceHitMismatchCount;
+    return;
+  }
+  if (!referenceHit) {
+    return;
+  }
+
+  const double sampledStepBound = fixture.cpuStepBounds[referenceIndex];
+  const double reference = std::clamp(referenceStepBound, 0.0, 1.0);
+  fixture.maxSampledReferenceOvershoot = std::max(
+      fixture.maxSampledReferenceOvershoot, sampledStepBound - reference);
+  fixture.maxSampledReferenceConservativeGap = std::max(
+      fixture.maxSampledReferenceConservativeGap, reference - sampledStepBound);
 }
 
 sx::DeformableBodyOptions makeSceneRuntimeCcdBodyOptions(const int sampleCount)
@@ -598,19 +623,25 @@ makeRigidCurvedPointTriangleFixture(const int trajectoryCount)
   const Eigen::Vector3d a(-1.0, -1.0, 0.0);
   const Eigen::Vector3d b(1.0, -1.0, 0.0);
   const Eigen::Vector3d c(0.0, 1.0, 0.0);
+  const Eigen::Vector3d localPoint(0.5, 0.0, 0.0);
   for (int i = 0; i < trajectoryCount; ++i) {
-    const double baseX = static_cast<double>((i % 16) - 8) * 0.015;
-    const double baseY = static_cast<double>(((i / 16) % 16) - 8) * 0.015;
+    const double baseX = 0.0;
+    const double baseY = 0.0;
     const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose pointPoseStart;
+    pointPoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose pointPoseEnd = pointPoseStart;
+    pointPoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose trianglePose;
     for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
       const double alpha0 = static_cast<double>(segment)
                             / static_cast<double>(fixture.segmentCount);
       const double alpha1 = static_cast<double>(segment + 1)
                             / static_cast<double>(fixture.segmentCount);
-      const Eigen::Vector3d pointStart
-          = sampledRigidCurvedPoint(baseX, baseY, alpha0, hit);
-      const Eigen::Vector3d pointEnd
-          = sampledRigidCurvedPoint(baseX, baseY, alpha1, hit);
+      const Eigen::Vector3d pointStart = rigid::transformRigidIpcPoint(
+          localPoint, pointPoseStart, pointPoseEnd, alpha0);
+      const Eigen::Vector3d pointEnd = rigid::transformRigidIpcPoint(
+          localPoint, pointPoseStart, pointPoseEnd, alpha1);
       if ((i % 2) == 0) {
         fixture.segmentPairs.push_back(makePair(pointStart, pointEnd, a, b, c));
       } else {
@@ -628,6 +659,34 @@ makeRigidCurvedPointTriangleFixture(const int trajectoryCount)
       fixture.hitCount,
       fixture.minStepBound);
 
+  const auto referenceLimit
+      = std::min(fixture.trajectoryCount, kRigidCurvedAnalyticReferenceCount);
+  const native::CcdOption referenceOption = makeRigidCurvedReferenceOption();
+  for (std::size_t i = 0; i < referenceLimit; ++i) {
+    const double baseX = 0.0;
+    const double baseY = 0.0;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose pointPoseStart;
+    pointPoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose pointPoseEnd = pointPoseStart;
+    pointPoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose trianglePose;
+    native::CcdPrimitiveResult reference;
+    const bool referenceHit = rigid::rigidIpcPointTriangleCcd(
+        localPoint,
+        pointPoseStart,
+        pointPoseEnd,
+        a,
+        b,
+        c,
+        trianglePose,
+        trianglePose,
+        referenceOption,
+        reference);
+    recordRigidCurvedAnalyticReference(
+        fixture, referenceHit, reference.timeOfImpact);
+  }
+
   return fixture;
 }
 
@@ -638,25 +697,36 @@ makeRigidCurvedEdgeEdgeFixture(const int trajectoryCount)
   fixture.trajectoryCount = static_cast<std::size_t>(trajectoryCount);
   fixture.segmentPairs.reserve(fixture.trajectoryCount * fixture.segmentCount);
 
-  const Eigen::Vector3d b0(0.0, -0.55, 0.0);
-  const Eigen::Vector3d b1(0.0, 0.55, 0.0);
+  const Eigen::Vector3d localA0(0.5, -0.21, 0.0);
+  const Eigen::Vector3d localA1(0.5, 0.21, 0.0);
   for (int i = 0; i < trajectoryCount; ++i) {
-    const double baseY = static_cast<double>((i % 8) - 4) * 0.015;
+    const double baseX = static_cast<double>((i % 16) - 8) * 0.006;
+    const double baseY = static_cast<double>((i % 8) - 4) * 0.006;
     const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose edgePoseStart;
+    edgePoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose edgePoseEnd = edgePoseStart;
+    edgePoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    const Eigen::Vector3d staticB0(baseX + 0.2, baseY, 0.0);
+    const Eigen::Vector3d staticB1(baseX + 0.8, baseY, 0.0);
     for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
       const double alpha0 = static_cast<double>(segment)
                             / static_cast<double>(fixture.segmentCount);
       const double alpha1 = static_cast<double>(segment + 1)
                             / static_cast<double>(fixture.segmentCount);
       fixture.segmentPairs.push_back(makeEdgeEdgePair(
-          sampledRigidCurvedEdgeEndpoint(baseY, alpha0, hit, -1.0),
-          sampledRigidCurvedEdgeEndpoint(baseY, alpha1, hit, -1.0),
-          sampledRigidCurvedEdgeEndpoint(baseY, alpha0, hit, 1.0),
-          sampledRigidCurvedEdgeEndpoint(baseY, alpha1, hit, 1.0),
-          b0,
-          b0,
-          b1,
-          b1));
+          rigid::transformRigidIpcPoint(
+              localA0, edgePoseStart, edgePoseEnd, alpha0),
+          rigid::transformRigidIpcPoint(
+              localA0, edgePoseStart, edgePoseEnd, alpha1),
+          rigid::transformRigidIpcPoint(
+              localA1, edgePoseStart, edgePoseEnd, alpha0),
+          rigid::transformRigidIpcPoint(
+              localA1, edgePoseStart, edgePoseEnd, alpha1),
+          staticB0,
+          staticB0,
+          staticB1,
+          staticB1));
     }
   }
 
@@ -668,6 +738,36 @@ makeRigidCurvedEdgeEdgeFixture(const int trajectoryCount)
       fixture.cpuHits,
       fixture.hitCount,
       fixture.minStepBound);
+
+  const auto referenceLimit
+      = std::min(fixture.trajectoryCount, kRigidCurvedAnalyticReferenceCount);
+  const native::CcdOption referenceOption = makeRigidCurvedReferenceOption();
+  for (std::size_t i = 0; i < referenceLimit; ++i) {
+    const double baseX = static_cast<double>((i % 16) - 8) * 0.006;
+    const double baseY = static_cast<double>((i % 8) - 4) * 0.006;
+    const bool hit = (i % 4) != 0;
+    rigid::RigidIpcPose edgePoseStart;
+    edgePoseStart.position = Eigen::Vector3d(baseX, baseY, hit ? 0.25 : 0.6);
+    rigid::RigidIpcPose edgePoseEnd = edgePoseStart;
+    edgePoseEnd.rotation = Eigen::Vector3d(0.0, hit ? kPi : 0.25, 0.0);
+    rigid::RigidIpcPose staticPose;
+    const Eigen::Vector3d staticB0(baseX + 0.2, baseY, 0.0);
+    const Eigen::Vector3d staticB1(baseX + 0.8, baseY, 0.0);
+    native::CcdPrimitiveResult reference;
+    const bool referenceHit = rigid::rigidIpcEdgeEdgeCcd(
+        localA0,
+        localA1,
+        edgePoseStart,
+        edgePoseEnd,
+        staticB0,
+        staticB1,
+        staticPose,
+        staticPose,
+        referenceOption,
+        reference);
+    recordRigidCurvedAnalyticReference(
+        fixture, referenceHit, reference.timeOfImpact);
+  }
 
   return fixture;
 }
@@ -784,6 +884,18 @@ void recordRigidCurvedCounters(
   state.counters["hits"] = static_cast<double>(fixture.hitCount);
   state.counters["min_step_bound"] = fixture.minStepBound;
   state.counters["max_result_abs_error"] = maxError;
+  state.counters["analytic_reference_pairs"]
+      = static_cast<double>(fixture.analyticReferencePairCount);
+  state.counters["analytic_reference_hits"]
+      = static_cast<double>(fixture.analyticReferenceHitCount);
+  state.counters["analytic_reference_hit_mismatches"]
+      = static_cast<double>(fixture.analyticReferenceHitMismatchCount);
+  state.counters["analytic_reference_min_step_bound"]
+      = fixture.analyticReferenceMinStepBound;
+  state.counters["max_sampled_reference_overshoot"]
+      = fixture.maxSampledReferenceOvershoot;
+  state.counters["max_sampled_reference_conservative_gap"]
+      = fixture.maxSampledReferenceConservativeGap;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(
           state.iterations() * fixture.segmentPairs.size()));

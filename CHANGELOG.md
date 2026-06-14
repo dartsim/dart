@@ -2518,6 +2518,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added point-point curved CCD to rigid IPC conservative line search so
     vertex-vertex barrier rows can limit unsafe steps and report point-point
     diagnostics.
+  - Tightened the private PLAN-083 CUDA CCD/line-search packet so sampled
+    rigid-curved point-triangle and edge-edge rows are generated from rigid IPC
+    pose interpolation and validated against continuous curved rigid IPC ACCD
+    reference-prefix counters before the packet can be recorded.
   - Hardened the opt-in experimental rigid IPC world-step stage so malformed
     runtime mesh topology, non-finite mesh vertices, and invalid box extents
     are skipped before internal barrier assembly or CCD.

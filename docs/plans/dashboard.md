@@ -393,8 +393,8 @@ its own line so status updates remain git-history friendly.
   broader figure/demo scene rows still have zero external candidate/check/hit
   counts.
   It still keeps
-  production runtime scene filtering, analytic curved CCD, production
-  scene-level line search inside
+  production runtime scene filtering, production analytic curved CCD,
+  production scene-level line search inside
   `World::step`, full runtime
   sparse Hessian graph construction and assembly beyond the reduced dedup row,
   unbounded production direct/global sparse factorization, production nonlinear equality convergence

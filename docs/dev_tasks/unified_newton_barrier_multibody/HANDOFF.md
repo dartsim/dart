@@ -1,5 +1,52 @@
 # Unified Newton-Barrier Handoff
 
+## Curved-Reference CCD Line-Search Packet Checkpoint (2026-06-13)
+
+After PR #2978 merged into `origin/main` at `5bf908100da4` and the remote
+`simx/plan083-gpu-contact-candidate-packet` branch was deleted, work moved to
+the new local branch `simx/plan083-curved-ccd-reference-packet` from the
+preserved local continuation stack. The clean branch is based at
+`origin/main`/`5bf908100da4`, is 42 commits ahead, ends at the local
+`Add rigid-curved CCD reference counters` checkpoint, and backup branch
+`simx/plan083-curved-ccd-reference-packet-stack` preserves the pre-cleanup
+local stack. The older pre-merge preservation stash remains `stash@{0}`. Keep
+all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint tightens the private CCD/line-search packet's sampled
+rigid-curved rows. The benchmark now builds rigid-curved point-triangle and
+edge-edge trajectories from rigid IPC pose interpolation, reduces sampled
+segment hits to the segment lower bound for conservativeness, and records a
+continuous curved rigid IPC ACCD reference prefix for each sampled family. The
+latest generated packet records 512 reference prefix pairs, 384 reference hits,
+zero hit mismatches, zero sampled-reference overshoot, and
+`max_sampled_reference_conservative_gap=0.04166632272181661`. The top-level
+packet still covers 266,240 pairs and 1,183,744 sampled/evaluated segments,
+with `max_result_abs_error=5.551115123125783e-17` and
+`speedup=0.45472262951920356x` (`meets_speedup_gate=false`).
+
+This is still reduced packet/reference evidence only. It does not prove a
+production analytic curved CCD backend, production scene-level line search
+inside `World::step`, GPU `World::step`, or any runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_ccd_line_search_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `git diff --check`
+- `pixi run test-all`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_ccd_line_search --parallel`
+- `pixi run -e cuda python scripts/write_plan083_gpu_ccd_line_search_packet.py`
+- `pixi run -e cuda test-all`
+
+`stash@{0}` still contains the pre-merge preservation stash from before an
+earlier checkpoint; do not drop it without explicit maintainer approval.
+
 ## Precession External Surface CCD Sidecar CPU Packet Checkpoint (2026-06-13)
 
 After fetching and locally merging `origin/main` at `a3509146afe` into

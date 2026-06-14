@@ -83,6 +83,12 @@ def _benchmark_data(**overrides):
         hits=640,
         min_step_bound=0.125,
         max_result_abs_error=0.0,
+        analytic_reference_pairs=64,
+        analytic_reference_hits=48,
+        analytic_reference_hit_mismatches=0,
+        analytic_reference_min_step_bound=0.125,
+        max_sampled_reference_overshoot=0.0,
+        max_sampled_reference_conservative_gap=0.05,
     )
     curved_gpu = _row(
         "BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda/1024",
@@ -96,6 +102,12 @@ def _benchmark_data(**overrides):
         gpu_hits=640,
         min_step_bound=0.125,
         max_result_abs_error=3e-12,
+        analytic_reference_pairs=64,
+        analytic_reference_hits=48,
+        analytic_reference_hit_mismatches=0,
+        analytic_reference_min_step_bound=0.125,
+        max_sampled_reference_overshoot=0.0,
+        max_sampled_reference_conservative_gap=0.05,
         host_setup_ns=1.25,
         host_to_device_ns=2.25,
         kernel_ns=3.25,
@@ -109,6 +121,12 @@ def _benchmark_data(**overrides):
         hits=512,
         min_step_bound=0.375,
         max_result_abs_error=0.0,
+        analytic_reference_pairs=64,
+        analytic_reference_hits=48,
+        analytic_reference_hit_mismatches=0,
+        analytic_reference_min_step_bound=0.25,
+        max_sampled_reference_overshoot=0.0,
+        max_sampled_reference_conservative_gap=0.08,
     )
     curved_edge_gpu = _row(
         "BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda/1024",
@@ -122,6 +140,12 @@ def _benchmark_data(**overrides):
         gpu_hits=512,
         min_step_bound=0.375,
         max_result_abs_error=4e-12,
+        analytic_reference_pairs=64,
+        analytic_reference_hits=48,
+        analytic_reference_hit_mismatches=0,
+        analytic_reference_min_step_bound=0.25,
+        max_sampled_reference_overshoot=0.0,
+        max_sampled_reference_conservative_gap=0.08,
         host_setup_ns=1.75,
         host_to_device_ns=2.75,
         kernel_ns=3.75,
@@ -280,6 +304,10 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     assert row["pair_count"] == 5376
     assert row["segment_count"] == 19712
     assert row["hit_count"] == 3200
+    assert row["analytic_reference_pair_count"] == 128
+    assert row["analytic_reference_hit_count"] == 96
+    assert row["max_sampled_reference_overshoot"] == 0.0
+    assert row["max_sampled_reference_conservative_gap"] == 0.08
     assert row["min_step_bound"] == 0.125
     assert row["max_result_abs_error"] == 7e-12
     assert set(row["primitive_families"]) == {
@@ -298,6 +326,24 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     assert (
         row["primitive_families"]["rigid_curved_point_triangle"]["samples_per_pair"]
         == 8
+    )
+    assert (
+        row["primitive_families"]["rigid_curved_point_triangle"][
+            "analytic_reference_method"
+        ]
+        == "rigid_ipc_curved_accd_prefix"
+    )
+    assert (
+        row["primitive_families"]["rigid_curved_point_triangle"][
+            "analytic_reference_pairs"
+        ]
+        == 64
+    )
+    assert (
+        row["primitive_families"]["rigid_curved_point_triangle"][
+            "analytic_reference_hit_mismatches"
+        ]
+        == 0
     )
     assert (
         row["primitive_families"]["scene_runtime_point_triangle"][
@@ -365,6 +411,79 @@ def test_plan083_gpu_ccd_line_search_packet_rejects_hit_mismatch() -> None:
         assert "hit count" in str(exc)
     else:
         raise AssertionError("expected hit-count failure")
+
+
+def test_plan083_gpu_ccd_line_search_packet_rejects_missing_analytic_reference() -> (
+    None
+):
+    module = _load_module()
+    data = _benchmark_data()
+    curved_gpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda/1024"
+    )
+    del curved_gpu["analytic_reference_pairs"]
+
+    try:
+        module.make_packet(
+            data,
+            pair_count=1024,
+            tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuCcdLineSearchPacketError as exc:
+        assert "analytic_reference_pairs" in str(exc)
+    else:
+        raise AssertionError("expected missing analytic reference failure")
+
+
+def test_plan083_gpu_ccd_line_search_packet_rejects_analytic_hit_mismatch() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    curved_rows = [
+        row
+        for row in data["benchmarks"]
+        if row["name"].startswith("BM_Plan083RigidCurvedPointTriangleCcdLineSearch")
+    ]
+    for row in curved_rows:
+        row["analytic_reference_hit_mismatches"] = 1
+
+    try:
+        module.make_packet(
+            data,
+            pair_count=1024,
+            tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuCcdLineSearchPacketError as exc:
+        assert "analytic reference hit mismatches" in str(exc)
+    else:
+        raise AssertionError("expected analytic reference mismatch failure")
+
+
+def test_plan083_gpu_ccd_line_search_packet_rejects_analytic_overshoot() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    curved_rows = [
+        row
+        for row in data["benchmarks"]
+        if row["name"].startswith("BM_Plan083RigidCurvedPointTriangleCcdLineSearch")
+    ]
+    for row in curved_rows:
+        row["max_sampled_reference_overshoot"] = 1e-3
+
+    try:
+        module.make_packet(
+            data,
+            pair_count=1024,
+            tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuCcdLineSearchPacketError as exc:
+        assert "overshoots analytic reference" in str(exc)
+    else:
+        raise AssertionError("expected analytic overshoot failure")
 
 
 def test_plan083_gpu_ccd_line_search_packet_records_speedup_gate_miss() -> None:

@@ -285,6 +285,7 @@ def _validate_primitive_family(
         )
 
     scene_counters: dict[str, int] = {}
+    analytic_reference_counters: dict[str, float | int | str] = {}
     if is_scene_runtime:
         required_scene_counters = [
             "scene_bodies",
@@ -405,6 +406,54 @@ def _validate_primitive_family(
                     f"!= edge-edge pairs {scene_counters['edge_edge_pairs']}"
                 )
 
+    if family.startswith("rigid_curved_"):
+        required_reference_counters = [
+            "analytic_reference_pairs",
+            "analytic_reference_hits",
+            "analytic_reference_hit_mismatches",
+            "analytic_reference_min_step_bound",
+            "max_sampled_reference_overshoot",
+            "max_sampled_reference_conservative_gap",
+        ]
+        for key in required_reference_counters:
+            cpu_value = _counter(cpu_row, key)
+            gpu_value = _counter(gpu_row, key)
+            if abs(cpu_value - gpu_value) > tolerance:
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} CPU {key} {cpu_value:g} != GPU {key} {gpu_value:g}"
+                )
+            analytic_reference_counters[key] = (
+                int(cpu_value)
+                if key
+                in {
+                    "analytic_reference_pairs",
+                    "analytic_reference_hits",
+                    "analytic_reference_hit_mismatches",
+                }
+                else cpu_value
+            )
+
+        if analytic_reference_counters["analytic_reference_pairs"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record analytic reference pairs"
+            )
+        if analytic_reference_counters["analytic_reference_hits"] <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record analytic reference hits"
+            )
+        if analytic_reference_counters["analytic_reference_hit_mismatches"] != 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} analytic reference hit mismatches must be zero"
+            )
+        if analytic_reference_counters["max_sampled_reference_overshoot"] > tolerance:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} sampled curved CCD overshoots analytic reference by "
+                f"{analytic_reference_counters['max_sampled_reference_overshoot']:.3g}"
+            )
+        analytic_reference_counters["analytic_reference_method"] = (
+            "rigid_ipc_curved_accd_prefix"
+        )
+
     segment_count = cpu_pairs
     samples_per_pair = 1
     has_segment_counters = (
@@ -469,6 +518,8 @@ def _validate_primitive_family(
     if is_scene_runtime:
         family_packet["nominal_pair_count"] = pair_count
         family_packet.update(scene_counters)
+    if analytic_reference_counters:
+        family_packet.update(analytic_reference_counters)
     return family_packet
 
 
@@ -543,6 +594,11 @@ def make_packet(
     meets_speedup_gate = all(
         family["meets_speedup_gate"] for family in primitive_families.values()
     )
+    analytic_reference_families = [
+        family
+        for family in primitive_families.values()
+        if "analytic_reference_pairs" in family
+    ]
 
     return {
         "plan083_gpu_ccd_line_search_packet": {
@@ -557,6 +613,28 @@ def make_packet(
             ),
             "hit_count": sum(
                 family["hit_count"] for family in primitive_families.values()
+            ),
+            "analytic_reference_pair_count": sum(
+                family["analytic_reference_pairs"]
+                for family in analytic_reference_families
+            ),
+            "analytic_reference_hit_count": sum(
+                family["analytic_reference_hits"]
+                for family in analytic_reference_families
+            ),
+            "max_sampled_reference_overshoot": max(
+                (
+                    family["max_sampled_reference_overshoot"]
+                    for family in analytic_reference_families
+                ),
+                default=0.0,
+            ),
+            "max_sampled_reference_conservative_gap": max(
+                (
+                    family["max_sampled_reference_conservative_gap"]
+                    for family in analytic_reference_families
+                ),
+                default=0.0,
             ),
             "min_step_bound": min(
                 family["min_step_bound"] for family in primitive_families.values()

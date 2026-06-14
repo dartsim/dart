@@ -119,9 +119,10 @@ moves entirely into durable plan sidecars.
   remain unproven.
   The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
   point-triangle/edge-edge CCD/line-search packet is in-progress because
-  parity exists for reduced endpoint-linear, 8-sample trajectory, and reduced
-  scene-owned runtime candidate fixtures plus a reduced combined scene runtime
-  CCD line-search row, but analytic curved CCD, production scene-level
+  parity exists for reduced endpoint-linear, 8-sample trajectory, continuous
+  curved rigid IPC ACCD reference-prefix counters, and reduced scene-owned
+  runtime candidate fixtures plus a reduced combined scene runtime CCD
+  line-search row, but production analytic curved CCD, production scene-level
   line-search feasibility inside `World::step`, and runtime speedup remain
   unproven. The barrier/friction
   local-kernel
