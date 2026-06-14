@@ -61,34 +61,6 @@ bool Mesh<S>::hasVertexNormals() const
 
 //==============================================================================
 template <typename S>
-const typename Mesh<S>::Vertices& Mesh<S>::getVertices() const
-{
-  return this->mVertices;
-}
-
-//==============================================================================
-template <typename S>
-typename Mesh<S>::Vertices& Mesh<S>::getVertices()
-{
-  return this->mVertices;
-}
-
-//==============================================================================
-template <typename S>
-const typename Mesh<S>::Normals& Mesh<S>::getVertexNormals() const
-{
-  return this->mVertexNormals;
-}
-
-//==============================================================================
-template <typename S>
-typename Mesh<S>::Normals& Mesh<S>::getVertexNormals()
-{
-  return this->mVertexNormals;
-}
-
-//==============================================================================
-template <typename S>
 void Mesh<S>::clear()
 {
   mVertices.clear();

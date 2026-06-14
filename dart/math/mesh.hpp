@@ -36,6 +36,7 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
+#include <utility>
 #include <vector>
 
 namespace dart {
@@ -64,16 +65,18 @@ public:
   bool hasVertexNormals() const;
 
   /// Returns the vertices of the mesh.
-  const Vertices& getVertices() const;
-
-  /// Returns the vertices of the mesh.
-  Vertices& getVertices();
-
-  /// Returns the vertex normals of the mesh.
-  const Normals& getVertexNormals() const;
+  template <typename Self>
+  [[nodiscard]] auto&& getVertices(this Self&& self)
+  {
+    return std::forward<Self>(self).mVertices;
+  }
 
   /// Returns the vertex normals of the mesh.
-  Normals& getVertexNormals();
+  template <typename Self>
+  [[nodiscard]] auto&& getVertexNormals(this Self&& self)
+  {
+    return std::forward<Self>(self).mVertexNormals;
+  }
 
   /// Clears all the vertices and vertex normals.
   virtual void clear();
