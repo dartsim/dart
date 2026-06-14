@@ -11,16 +11,15 @@ find_package(EnTT 3.14 QUIET CONFIG)
 if(NOT EnTT_FOUND AND NOT TARGET EnTT::EnTT)
   include(FetchContent)
 
-  FetchContent_Declare(
-    entt
-    GIT_REPOSITORY https://github.com/skypjack/entt.git
-    GIT_TAG v3.16.0
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-  )
   FetchContent_GetProperties(entt)
   if(NOT entt_POPULATED)
-    FetchContent_Populate(entt)
+    FetchContent_Populate(
+      entt
+      GIT_REPOSITORY https://github.com/skypjack/entt.git
+      GIT_TAG v3.16.0
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
   endif()
 
   add_library(EnTT::EnTT INTERFACE IMPORTED GLOBAL)

@@ -33,7 +33,7 @@
 
 ### Build Tool Chain
 
-- **CMake Version:** ≥ 3.22.1
+- **CMake Version:** ≥ 4.2.3
 - **Build Generator:** Ninja (via pixi) / CMake default
 - **C++ Standard:** C++20
 - **Package Manager:** pixi (conda-forge based)
