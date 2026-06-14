@@ -41,6 +41,40 @@ The GPU compute is fine; small problems are dominated by fixed per-call cost.
 at the largest size, with `kernel_ns` dominating and growing. The kernels
 themselves are the bottleneck.
 
+## Measured kernel-phase breakdown (CUDA events, point-triangle /65536)
+
+Temporary CUDA-event instrumentation of `launchSweptPointTriangleSweepKernel`
+(env-gated, since reverted) measured, for the worst scene-runtime row
+(points=2560, triangles=768):
+
+| Phase                 | Time   | Share |
+| --------------------- | ------ | ----: |
+| sort (bitonic)        | 0.380 ms | ~36% |
+| count + serial prefix | 0.355 ms | ~34% |
+| scatter               | 0.331 ms | ~31% |
+| **kernel total**      | **~1.07 ms** | |
+
+The three kernel phases are **roughly equal** — there is no single dominant
+kernel to optimize. More importantly, the benchmark's total `real_time` for this
+row is **~4.0 ms**, of which the function's named timers (setup+h2d+kernel+d2h)
+sum to only ~1.6 ms. The remaining **~2.4 ms is per-call device allocation +
+`cudaFree`** of the ~31 MB all-pairs buffers at scope exit (the benchmark loop
+calls the function once per iteration with no buffer reuse).
+
+### Decisive consequence: the gate is size-bound, not kernel-bound
+
+The CPU does the same row in ~0.32 ms. Even a *perfect* GPU kernel rewrite
+(FP32 + CUB sort/scan, removing all kernel cost) would still leave
+~1.6 ms of setup/transfer + ~2.4 ms of alloc/free per call ≈ a floor far above
+the CPU's 0.32 ms **at these reduced problem sizes**. Therefore FP32 / CUB
+kernel micro-optimizations **cannot flip the speedup gate at reduced scale** —
+the problem is simply too small to amortize per-call GPU overhead. Closing the
+gate requires (a) eliminating per-call overhead via persistent device buffers +
+right-sized compaction outputs + batching, and (b) **paper-scale problem sizes**
+so the GPU has enough work to amortize launch and transfer cost. Kernel-quality
+fixes (FP32, CUB) are worthwhile for the kernel phase but are not sufficient and
+not the first lever.
+
 ## Root causes (ranked)
 
 ### Kernel-bound rows (Regime B)
@@ -85,18 +119,28 @@ fixable in principle.
 
 ## Recommendations (highest leverage first)
 
-1. Replace the per-stage bitonic launches and the `<<<1,1>>>` scans with a
-   single device scan/sort primitive (CUB `DeviceScan`/`DeviceRadixSort` or
-   thrust). Removes ~133 launches + the serial scans in one change.
-2. Add an FP32 (or mixed-precision) geometry path for the AABB/distance math;
-   keep FP64 only where parity demands it. Largest single arithmetic win on this
-   GPU class.
-3. Reuse persistent device buffers across calls and size compaction outputs to
-   an expected-candidate bound, not all-pairs capacity. Removes per-call
-   `cudaMalloc`/over-allocation.
-4. Fuse the build→sort→count→scan→scatter stages and raise occupancy (more work
+The measured breakdown above changes the priority: the gate is **size/overhead-
+bound**, so the first levers must reduce per-call overhead and raise problem
+size, *then* optimize kernels.
+
+1. **Add a paper-scale benchmark configuration.** The reduced sizes (≈2.5k
+   points) cannot amortize GPU launch/transfer overhead; without larger problems
+   the gate is unreachable regardless of kernel quality. This is the prerequisite
+   for any speedup claim.
+2. **Eliminate per-call overhead:** reuse persistent device buffers across calls
+   and size compaction outputs to an expected-candidate bound, not all-pairs
+   capacity (~31 MB → ~KB). Removes the ~2.4 ms/call alloc+free that dominates
+   total time. Bit-exact.
+3. Replace the per-stage bitonic launches and the `<<<1,1>>>` scans with a single
+   device scan/sort primitive (CUB `DeviceScan`/`DeviceRadixSort`). Removes ~133
+   launches + the serial scans (~36% of kernel time). Prefix sums are bit-exact;
+   sort changes only output order (compare candidate sets, not ordered arrays).
+4. Add an FP32 (or mixed-precision) geometry path for the AABB/distance math
+   (~65% of kernel time across count+scatter); keep FP64 only where parity
+   demands it. Requires relaxing the packet/unit-test distance tolerance.
+5. Fuse the build→sort→count→scan→scatter stages and raise occupancy (more work
    per thread / 2D tiling over point×triangle).
-5. Add an explicit warmup step in the harness so cold-start context init is not
+6. Add an explicit warmup step in the harness so cold-start context init is not
    attributed to the first measured row.
 
 These attack the plan's actual blocker (a competitive GPU `World::step`
