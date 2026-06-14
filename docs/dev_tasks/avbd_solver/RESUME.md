@@ -66,9 +66,30 @@ and `World.RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet`
 beyond the merge resolution and the `hasShapes()` API alignment; no parity is
 claimed. Validation: the merged tree built clean (`pixi run build`), the three
 focused contact-skip tests plus `World.CollisionQueryCanIgnoreSpecificPairs`
-passed, and `pixi run lint` passed; the full
-`pixi run test-all && pixi run -e cuda test-all` sweep is running and its results
-will be appended here when it completes.
+passed, and `pixi run lint` passed. The full
+`pixi run test-all && pixi run -e cuda test-all` sweep (run with `--keep-going`
+at `DART_PARALLEL_JOBS=8` because the host was saturated by other sessions'
+builds) passed Linting, Build, Python, and Documentation in both the default and
+CUDA environments, and CUDA tests passed 8/8. Two tests failed in both
+environments, and both are pre-existing main allocator-correctness gates that
+are byte-identical to `origin/main`, fail deterministically, and are unrelated
+to this PR (this PR's `world_step_stage.cpp` change is confined to the
+sequential-impulse `RigidBodyContactStage` audit and never allocates for
+no-ignored-pair worlds):
+
+- `DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers`: #2996
+  changed the Dantzig `solve()` to an `Eigen::Ref` path that no longer routes
+  work buffers through the scratch's custom allocator, so `allocationCount`
+  stays 0. LCP subsystem; not touched by this PR.
+- `World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`: the rigid-IPC
+  "two-box stack" baked step records one extra base-allocator allocation
+  (4 vs 3) after baking, from #3000/#2996 Newton-barrier/profiling changes.
+  Rigid-IPC/Newton-barrier path; not touched by this PR.
+
+Both reproduce only in the local `DART_BUILD_PROFILE=ON` build (which enables the
+allocator debugger #2996 reworked); PR #3004's hosted CI is green, so they do
+not block #3004. They are recommended for a separate LCP/IPC allocator bug-fix
+(main + release-6.17), not this AVBD PR.
 
 Latest local slice: a new `test_world` regression,
 `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
