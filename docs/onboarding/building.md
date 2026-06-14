@@ -78,9 +78,9 @@ require per-engine collision dependencies or OctoMap.
 
 ### Windows
 
-Install Visual Studio 2026 and CMake 4.2 or later. CMake 4.2 is the first
-release that recognizes the `Visual Studio 18 2026` generator; the Pixi
-environments already use a newer CMake.
+Install Visual Studio 2026 and CMake 4.2.3 or later. This matches the upstream
+CMake version in Ubuntu 26.04's `cmake` package (`4.2.3-2ubuntu2`) while keeping
+DART's CMake requirement portable across package managers.
 
 Install required dependencies using `vcpkg`:
 
