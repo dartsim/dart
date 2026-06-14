@@ -1078,6 +1078,7 @@ private:
 #if DART_BUILD_PROFILE
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};
+  compute::WorldStepProfile m_stepProfileScratch{};
 #endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   std::uint64_t m_frameTopologyRevision{0};

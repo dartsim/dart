@@ -3385,6 +3385,7 @@ void World::clear()
 #if DART_BUILD_PROFILE
   m_stepProfilingEnabled = false;
   m_lastStepProfile.reset();
+  m_stepProfileScratch.reset();
 #endif
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
@@ -5698,9 +5699,8 @@ void World::stepPipelineOnce(
 
 #if DART_BUILD_PROFILE
   if (m_stepProfilingEnabled) {
-    compute::WorldStepProfile stepProfile;
-    pipeline.executeProfiled(*this, executor, stepProfile);
-    m_lastStepProfile = std::move(stepProfile);
+    pipeline.executeProfiled(*this, executor, m_stepProfileScratch);
+    std::swap(m_lastStepProfile, m_stepProfileScratch);
   } else {
     pipeline.execute(*this, executor);
   }

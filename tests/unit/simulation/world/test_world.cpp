@@ -412,6 +412,50 @@ public:
   }
 };
 
+class EmptyProfileExecutor final
+  : public dart::simulation::compute::ComputeExecutor
+{
+public:
+  void execute(const dart::simulation::compute::ComputeGraph&) override
+  {
+    ++executionCount;
+  }
+
+  [[nodiscard]] dart::simulation::compute::ComputeExecutionProfile
+  executeProfiled(const dart::simulation::compute::ComputeGraph&) override
+  {
+    ++executionCount;
+    return {};
+  }
+
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return 1;
+  }
+
+  int executionCount{0};
+};
+
+class GraphProfileWorldStage final
+  : public dart::simulation::compute::WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "graph_profile";
+  }
+
+  void execute(
+      dart::simulation::World&,
+      dart::simulation::compute::ComputeExecutor& executor) override
+  {
+    (void)executor.executeProfiled(m_graph);
+  }
+
+private:
+  dart::simulation::compute::ComputeGraph m_graph;
+};
+
 class RecordingWorldStage final
   : public dart::simulation::compute::WorldStepStage
 {
@@ -20541,23 +20585,37 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
 }
 
 #if DART_BUILD_PROFILE
-TEST(World, StepProfilingPreservesLastCompleteProfileAfterStageFailure)
+TEST(World, StepProfilingReusesStorageAndPreservesLastCompleteProfile)
 {
   namespace sx = dart::simulation;
   namespace compute = dart::simulation::compute;
 
   sx::World world;
   world.setStepProfilingEnabled(true);
-  compute::SequentialExecutor executor;
+  EmptyProfileExecutor executor;
 
   NoOpWorldStage successfulStage;
+  GraphProfileWorldStage graphProfileStage;
   compute::WorldStepPipeline successfulPipeline;
-  successfulPipeline.addStage(successfulStage);
+  successfulPipeline.addStage(successfulStage).addStage(graphProfileStage);
+  world.step(executor, successfulPipeline);
   world.step(executor, successfulPipeline);
 
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.step(executor, successfulPipeline);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "warm profiled steps should reuse the retained stage and graph "
+           "profile storage instead of rebuilding it from a fresh snapshot";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
   const auto completedProfile = world.getLastStepProfile();
-  ASSERT_EQ(completedProfile.stages.size(), 1u);
+  ASSERT_EQ(completedProfile.stages.size(), 2u);
   EXPECT_EQ(completedProfile.stages[0].name, "noop");
+  EXPECT_EQ(completedProfile.stages[1].name, "graph_profile");
+  ASSERT_EQ(completedProfile.stages[1].graphProfiles.size(), 1u);
 
   ThrowingWorldStage throwingStage;
   compute::WorldStepPipeline failingPipeline;
