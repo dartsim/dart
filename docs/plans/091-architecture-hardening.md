@@ -818,12 +818,31 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   total linear momentum is conserved through the contact while kinetic energy is
   dissipated (never gained) — validating the public metrics on a contact-bearing
   multi-body scene. Gates: `pixi run lint`, `pixi run check-api-boundaries`,
-  `pixi run check-dart7-promotion-surface` green; golden 3/3. **Remaining:** the
+  `pixi run check-dart7-promotion-surface` green; golden 3/3. **Cross-family
+  comparison (landed):** `tests/unit/simulation/compute/test_cross_family_metrics.cpp`
+  runs one reference scene under multiple solver families from one loop and
+  compares the public `StepMetrics`, realizing the packet's core acceptance — a
+  zero-gravity two-sphere head-on collision under `ContactSolverMethod`
+  sequential-impulse vs boxed-LCP (both conserve total linear momentum to 1e-7
+  and dissipate kinetic energy; final momenta agree to 5e-7, KE within 0.05 J),
+  and a 1-link pendulum under semi-implicit vs variational multibody integration
+  (both conserve `totalEnergy` to <1% drift; the two families' final energies
+  agree within 2%). IPC is documented-excluded (it only handles free mesh-like
+  bodies, not a sphere pair). Tolerances are physically derived (conservation
+  budgets), comfortably above the observed spreads, so non-flaky.
+  `test_cross_family_metrics` 2/2, golden 3/3. **Finding (recorded as a
+  follow-up):** the `StepMetrics` multibody kinetic/potential SPLIT is not
+  physical — derived as `mechanical - sum(-m g . com_world)`, whose potential
+  gauge differs from `computeMultibodyMechanicalEnergy`'s, so multibody
+  `kineticEnergy` can be negative at rest; only `totalEnergy` is reliable for
+  multibodies (now documented on the fields). A later slice computes the split
+  consistently (link-Jacobian kinetic energy). **Remaining:** the
   registered scene-builder corpus, the single harness binary + manifest-driven
   packet writer (replacing the per-scene script fleet), the cross-family
   dashboard row set, contact/iteration metric population (needs a non-const
-  narrow-phase pass), multibody-link world-frame momentum aggregation, and the
-  order-of-convergence (dt-halving) validation sweep. NOTE: independent of this
+  narrow-phase pass), the consistent multibody kinetic/potential split +
+  world-frame link momentum aggregation, and the order-of-convergence
+  (dt-halving) validation sweep. NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
   rigid-IPC allocation-counter off-by-one) introduced by the merged main
