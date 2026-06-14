@@ -8919,6 +8919,72 @@ TEST(World, CollisionQueryCanIgnoreSpecificPairs)
   }
 }
 
+// The rigid contact stage's no-contact fast path may skip the collision query
+// only when every dynamic-involving candidate pair is ignored (the path used by
+// the AVBD Spring/Spring Ratio source rows). Presence of an ignored pair must
+// not suppress a genuinely colliding non-ignored pair: a body falling onto the
+// ground must still be caught even when an unrelated ignored pair exists. This
+// guards the audit branch of `shouldSkipRigidBodyContactQuery` against a
+// regression that skips the query whenever any ignored pair is present.
+TEST(World, RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+
+  // A non-ignored body that starts above the ground and must be caught by the
+  // contact stage rather than falling through it.
+  sx::RigidBodyOptions landerOptions;
+  landerOptions.position = Eigen::Vector3d(-2.0, 0.0, 0.6);
+  auto lander = world.addRigidBody("lander", landerOptions);
+  lander.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  // Two overlapping bodies whose mutual contact is ignored, mirroring a
+  // spring-connected source pair. They activate the ignored-pair audit branch.
+  sx::RigidBodyOptions ignoredAOptions;
+  ignoredAOptions.position = Eigen::Vector3d(2.0, 0.0, 0.25);
+  auto ignoredA = world.addRigidBody("ignored_a", ignoredAOptions);
+  ignoredA.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  sx::RigidBodyOptions ignoredBOptions;
+  ignoredBOptions.position = Eigen::Vector3d(2.3, 0.0, 0.25);
+  auto ignoredB = world.addRigidBody("ignored_b", ignoredBOptions);
+  ignoredB.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  world.setCollisionPairIgnored(ignoredA, ignoredB);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+
+  const double startGap
+      = std::abs(ignoredA.getTranslation().x() - ignoredB.getTranslation().x());
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // The non-ignored lander rests on the ground top (z == 0) plus its half
+  // height; if the query had been skipped it would have fallen through.
+  EXPECT_NEAR(lander.getTranslation().z(), 0.25, 5e-2);
+  EXPECT_GT(lander.getTranslation().z(), 0.0);
+
+  // The ignored pair keeps overlapping: their mutual contact never resolved, so
+  // they were not pushed apart toward the non-overlapping gap of 0.5.
+  const double endGap
+      = std::abs(ignoredA.getTranslation().x() - ignoredB.getTranslation().x());
+  EXPECT_LT(endGap, 0.4);
+  EXPECT_NEAR(endGap, startGap, 5e-2);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+}
+
 // Public rigid-body joints act like source AVBD forces for collision discovery:
 // live constrained body pairs do not generate contact manifolds, and broken
 // joints make the pair collidable again.

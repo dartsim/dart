@@ -7,24 +7,29 @@ The user resumed after the previous literal-stop checkpoint by saying
 stop-only snapshot lower in this file.
 
 Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
-is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
-currently contains the local 2D/3D Spring/Spring Ratio tracked-packet refresh
-for the spring-connected ignored-pair slices, plus the previous 3D Spring/Spring
-Ratio ignored-collision-pair slice, the previous 2D Spring/Spring Ratio
+is a follow-up branch based on the now-merged PR #2991 head `6f41e9529bf`. Its
+spring-filter and packet-refresh commits up to `679d03cc03b` are published to
+`origin/avbd/soft-body-inertia-orientation-cache` (local matches origin at that
+head); on top of that the branch carries one unpushed local commit adding the
+`World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`
+contact-skip regression test. It otherwise contains the local 2D/3D
+Spring/Spring Ratio tracked-packet refresh for the spring-connected
+ignored-pair slices, plus the previous 3D Spring/Spring Ratio
+ignored-collision-pair slice, the previous 2D Spring/Spring Ratio
 contact-filtering slice, inertia-orientation cleanup, and handoff-doc refreshes.
-The latest kept implementation explicitly records ignored-pair benchmark
-invariants in the Spring/Spring Ratio packet writers and refreshed packet JSON.
-Do not push, open a PR, resolve review threads, comment, retrigger reviews, or
-mutate CI without explicit maintainer approval.
+The Spring/Spring Ratio packet writers explicitly record ignored-pair benchmark
+invariants in the refreshed packet JSON. Do not push, open a PR, resolve review
+threads, comment, retrigger reviews, or mutate CI without explicit maintainer
+approval.
 
-Current verified checkpoint PR state: after explicit maintainer approval, PR
-#2991 branch `avbd/source-row-extraction-precheck` was pushed to origin and is
-currently at `6f41e9529bf` after verifying latest `origin/main` was already
-merged. The previous three CI-fix commits, the AVBD contact-config guard
-follow-up, and the handoff-doc refresh are on the PR branch, hosted CI is still
-running, and the branch is mergeable with no failed checks observed in the
-latest rollup. Review-thread resolution, PR comments, review re-triggers, and
-any further push still require explicit maintainer approval.
+Current verified checkpoint PR state: PR #2991 (branch
+`avbd/source-row-extraction-precheck` into `main`) is now MERGED at merge commit
+`f6fecbc5bd5` (merged 2026-06-14), carrying the source-row coverage and
+contact-precheck work, the three CI-fix commits, the AVBD contact-config guard
+follow-up, and the handoff-doc refreshes; its CI rollup passed with no failed
+checks. The follow-up branch above is not yet in a PR. Review-thread
+resolution, PR comments, review re-triggers, opening a follow-up PR, and any
+push still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -32,7 +37,34 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the 2D/3D Spring and Spring Ratio tracked packets now
+Latest local slice: a new `test_world` regression,
+`World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
+locks in the rigid contact stage's ignored-pair no-contact fast path (the path
+the Spring/Spring Ratio source rows rely on). It builds a world with one
+ignored, overlapping rigid-body pair (mirroring a spring-connected source pair)
+plus a non-ignored body dropped onto static ground, steps the default pipeline,
+then asserts the dropped body is still caught on the ground top (the collision
+query was not skipped) while the ignored pair stays overlapping and the ignored
+count stays at one. A temporary mutation that skipped the query whenever any
+ignored pair existed made the dropped body free-fall to z = -1.18 m and failed
+the assertions, confirming the test guards the `shouldSkipRigidBodyContactQuery`
+audit branch; the mutation was reverted before final validation. This slice adds
+no production-code change, refreshes no tracked packet, opens no follow-up PR,
+resolves no GitHub review threads, and claims no CPU/GPU/paper-number parity.
+Validation:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryCanIgnoreSpecificPairs:World.CollisionQuerySkipsLiveRigidBodyJointPairs:World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.MultibodyLinkRestsOnStaticGround' --gtest_brief=1`
+  passed, 5 tests.
+- Mutation check: temporarily adding `if (hasIgnoredCollisionPairs) return true;`
+  to `shouldSkipRigidBodyContactQuery` rebuilt `test_world` and failed the new
+  test with `lander z = -1.18`; the mutation was reverted and `git diff` on
+  `dart/simulation/compute/world_step_stage.cpp` is empty.
+- `pixi run lint` passed.
+- `pixi run test-unit` passed, 161 tests.
+
+Previous local slice: the 2D/3D Spring and Spring Ratio tracked packets now
 reflect the spring-connected ignored-pair configuration. The packet writers
 require `ignored_collision_pairs` benchmark counters, and the refreshed packets
 record one ignored pair for Spring and seven adjacent ignored pairs for Spring

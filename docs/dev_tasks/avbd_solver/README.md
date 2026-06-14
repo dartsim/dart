@@ -9,7 +9,23 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up (2026-06-14): unpublished branch
+- Latest local follow-up (2026-06-14): branch
+  `avbd/soft-body-inertia-orientation-cache` now carries an unpushed local
+  regression, `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
+  that locks in the rigid contact stage's ignored-pair no-contact fast path. The
+  test steps a world holding one ignored, overlapping rigid-body pair plus a
+  non-ignored body dropped onto static ground and asserts the dropped body is
+  still caught on the ground (the collision query is not skipped) while the
+  ignored pair keeps overlapping. A temporary mutation that skipped the query
+  whenever any ignored pair existed made the dropped body free-fall and failed
+  the test, confirming it guards the `shouldSkipRigidBodyContactQuery` audit
+  branch; the mutation was reverted. Validation passed the `test_world` rebuild,
+  the focused contact/ignored-pair cluster (5 tests), `pixi run lint`, and
+  `pixi run test-unit` (161 tests). This slice adds no production-code change,
+  refreshes no tracked packet, opens no follow-up PR, resolves no GitHub review
+  threads, and claims no CPU/GPU/paper-number parity. (PR #2991 is now merged to
+  `main` at `f6fecbc5bd5`.)
+- Latest local follow-up (2026-06-14): branch
   `avbd/soft-body-inertia-orientation-cache` now refreshes the 2D/3D
   Spring/Spring Ratio tracked packets after the spring-connected ignored-pair
   slices. The packet writers require the `ignored_collision_pairs` benchmark
