@@ -1,5 +1,47 @@
 # Unified Newton-Barrier Handoff
 
+## Filtered Scene-Runtime Contact-Candidate Follow-up (2026-06-13)
+
+Work continues locally on `simx/plan083-runtime-scene-filter-followup`, stacked
+on the clean checkpoint branch `simx/plan083-rigid-curved-ccd-worldstep-followup`
+at `4c7c0ca1614`. This branch has not been pushed and has no open PR. Keep the
+checkpoint branch available as the possible milestone PR branch, and push/open
+this follow-up branch only after explicit maintainer approval. Do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This slice adds a reduced end-to-end scene-owned contact-candidate row to the
+private GPU packet. The new benchmark builds point-triangle and edge-edge
+candidate ids with the existing GPU scene sweep filter, then feeds those
+GPU-compacted ids directly into the GPU candidate-buffer distance kernels. The
+packet writer now rejects missing/mismatched filtered-row counters and requires
+the filtered row to prove real rejection pressure. Fresh CUDA packet evidence
+records `pair_capacity=7274496`, `candidate_count=2048`,
+`accepted_count=2048`, `rejected_count=7272448`,
+`point_triangle_candidate_count=512`, `edge_edge_candidate_count=1536`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.07484292773973288x` (`meets_speedup_gate=false`). The top-level
+contact-candidate packet records `max_result_abs_error=5.551115123125783e-17`
+and `speedup=0.020550464331653258x` (`meets_speedup_gate=false`).
+
+This remains reduced packet evidence only. It does not prove production runtime
+scene filtering inside `World::step`, GPU `World::step` contact-candidate
+construction, or a top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
 ## Scene Direct-Sparse Assembly/Solve Follow-up (2026-06-13)
 
 After PR #2978 merged and the old remote branch was deleted, work continues

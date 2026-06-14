@@ -2,6 +2,47 @@
 
 ## Current Reality (2026-06-13)
 
+Latest filtered scene-runtime contact-candidate follow-up (2026-06-13): work
+continues locally on `simx/plan083-runtime-scene-filter-followup`, stacked on
+the clean checkpoint branch `simx/plan083-rigid-curved-ccd-worldstep-followup`
+at `4c7c0ca1614`. This branch has not been pushed and has no open PR. Keep the
+checkpoint branch available as the possible milestone PR branch, and push/open
+this follow-up branch only after explicit maintainer approval. Do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This slice adds a reduced end-to-end scene-owned contact-candidate row to the
+private GPU packet. The new benchmark builds point-triangle and edge-edge
+candidate ids with the existing GPU scene sweep filter, then feeds those
+GPU-compacted ids directly into the GPU candidate-buffer distance kernels. The
+packet writer now rejects missing/mismatched filtered-row counters and requires
+the filtered row to prove real rejection pressure. Fresh CUDA packet evidence
+records `pair_capacity=7274496`, `candidate_count=2048`,
+`accepted_count=2048`, `rejected_count=7272448`,
+`point_triangle_candidate_count=512`, `edge_edge_candidate_count=1536`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.07484292773973288x` (`meets_speedup_gate=false`). The top-level
+contact-candidate packet records `max_result_abs_error=5.551115123125783e-17`
+and `speedup=0.020550464331653258x` (`meets_speedup_gate=false`).
+
+This remains reduced packet evidence only. It does not prove production runtime
+scene filtering inside `World::step`, GPU `World::step` contact-candidate
+construction, or a top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
 Latest scene direct-sparse assembly/solve follow-up (2026-06-13): after PR
 #2978 merged and the old remote branch was deleted, work continues locally on
 `simx/plan083-rigid-curved-ccd-worldstep-followup`. This branch has merged the
@@ -2175,11 +2216,14 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-rigid-curved-ccd-worldstep-followup` is the local-only follow-up
-branch created after PR #2978 merged and GitHub deleted
-`simx/plan083-gpu-contact-candidate-packet`. The current branch merges
-`origin/main` at `9de4ac6af873` through merge commit `46a4993def6` and carries
-the scene direct-sparse assembly packet expansion in `02de4b27758`.
+`simx/plan083-runtime-scene-filter-followup` is the local-only follow-up branch
+stacked on `simx/plan083-rigid-curved-ccd-worldstep-followup` after the
+scene direct-sparse checkpoint. The checkpoint branch was created after PR
+#2978 merged and GitHub deleted `simx/plan083-gpu-contact-candidate-packet`; it
+merged `origin/main` at `9de4ac6af873` through merge commit `46a4993def6` and
+carries the scene direct-sparse assembly packet expansion in `02de4b27758`.
+The current follow-up branch adds the reduced filtered scene-runtime
+contact-candidate buffer row on top of that checkpoint.
 
 The historical #2978 branch carried point-triangle and edge-edge contact-stencil
 filtering; brute-force and swept-AABB candidate-mask/list packets; runtime
@@ -2196,20 +2240,21 @@ and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
-Resume from `simx/plan083-rigid-curved-ccd-worldstep-followup` unless a later
-handoff supersedes it. The branch is clean and has no PR yet; push/open a
-checkpoint PR only after explicit maintainer approval. The next
-contact-candidate packet gaps are runtime scene filtering and speedup-gate work;
-the next barrier/friction packet gaps are full runtime sparse Hessian graph
-construction and assembly beyond the reduced dedup row, broader sparse
-barrier/contact assembly, and speedup-gate work; the next assembly/solve gaps
-are full runtime sparse Hessian graph construction and assembly, production
-sparse equality reduction, direct/global sparse factorization, production
-nonlinear equality convergence policy/solving, GPU `World::step` assembly/solve
-integration, and speedup-gate work. The CCD row still needs analytic curved CCD,
-full scene-level line-search feasibility, and runtime speedup. Do not mark these
-rows measured until the top-level speed gate and runtime evidence are proven.
-Keep the dev-task folder active
+Resume from `simx/plan083-runtime-scene-filter-followup` unless a later handoff
+supersedes it. The branch is local-only and has no PR yet; push/open the
+checkpoint or follow-up PR only after explicit maintainer approval. The next
+contact-candidate packet gaps are production runtime scene filtering inside
+`World::step`, GPU `World::step` contact-candidate construction, and
+speedup-gate work; the next barrier/friction packet gaps are full runtime sparse
+Hessian graph construction and assembly beyond the reduced dedup row, broader
+sparse barrier/contact assembly, and speedup-gate work; the next assembly/solve
+gaps are full runtime sparse Hessian graph construction and assembly,
+production sparse equality reduction, direct/global sparse factorization,
+production nonlinear equality convergence policy/solving, GPU `World::step`
+assembly/solve integration, and speedup-gate work. The CCD row still needs
+analytic curved CCD, full scene-level line-search feasibility, and runtime
+speedup. Do not mark these rows measured until the top-level speed gate and
+runtime evidence are proven. Keep the dev-task folder active
 because PLAN-083 acceptance criteria are still unmet. If the task later moves
 out of this folder, get maintainer direction before deleting it and keep the
 remaining planned manifest plus in-progress CPU/GPU/scene limitations in
