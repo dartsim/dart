@@ -470,12 +470,9 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
   DART_ASSERT(mProperties.mProblem->getLowerBounds().size() == _x.size());
   DART_ASSERT(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
-  for (int i = 0; i < std::ssize(_x); ++i) {
-    _x[i] = math::clip(
-        _x[i],
-        mProperties.mProblem->getLowerBounds()[i],
-        mProperties.mProblem->getUpperBounds()[i]);
-  }
+  // Equivalent to the element-wise clip max(lower, min(_x, upper)).
+  _x = mProperties.mProblem->getLowerBounds().cwiseMax(
+      _x.cwiseMin(mProperties.mProblem->getUpperBounds()));
 }
 
 //==============================================================================

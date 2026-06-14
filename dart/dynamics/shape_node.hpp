@@ -126,8 +126,6 @@ public:
   /// Hook removal so collision signals fire before the node disappears.
   void stageForRemoval();
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 protected:
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const BasicProperties& properties);
