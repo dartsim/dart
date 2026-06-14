@@ -1,16 +1,17 @@
 # Resume: Hierarchical Memory Manager
 
-## Hard Stop Handoff (2026-06-13, Diff Contact Jacobian Allocator Scratch)
+## Hard Stop Handoff (2026-06-14, Diff Contact Jacobian Allocator Scratch Committed)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
 HMM handoff entry point unless a maintainer explicitly redirects the work.
-The branch currently has no open PR. Fresh resume recon for this slice started
-from `3923089a2dd` (`Add allocator-aware contact candidate return builders`),
-ahead of `origin/pr/hmm-phase45-replay-snapshot-allocators` by 39 commits.
+The branch currently has no open PR. Fresh resume recon found the latest code
+slice at `572e818a207` (`Route diff contact Jacobian scratch through
+allocator`); this handoff update is one docs commit on top, leaving the branch
+ahead of `origin/pr/hmm-phase45-replay-snapshot-allocators` by 41 commits.
 
-Latest local slice: differentiable rigid contact Jacobian detail scratch now
+Latest committed slice: differentiable rigid contact Jacobian detail scratch now
 threads a caller-provided `common::MemoryAllocator` through the frozen contact
 scene, sparse Jacobian rows, body-row indexes, active-set vectors, and
 parameter finite-difference helper storage. The existing no-allocator detail
@@ -25,6 +26,17 @@ traffic is balanced. This is a diff-only HMM allocator-provenance slice. It does
 not change public APIs, contact-gradient math, default `DART_BUILD_DIFF=OFF`
 behavior, Eigen's own dense-matrix allocation behavior, or the broader
 collision/contact return surfaces.
+
+Current next-slice notes: start from a fresh measured gap rather than older
+historical candidates. Source inspection on this branch shows the previously
+listed `World::saveBinary()` ignored-pair staging vector now uses the
+`ignoredCollisionPairs` allocator, live `DeformableNodeState` payloads are
+allocator-backed and emplaced with the World allocator, and `comps::Joint`
+stores bounded `JointVector` payloads instead of raw dynamic `Eigen::VectorXd`
+fields. Remaining work should be selected from a failing no-growth/no-heap gate
+or a newly proven DART-owned stage scratch gap; do not broaden public
+return-by-value convenience APIs unless built-in World code consumes that
+storage.
 
 Validation for this slice:
 
