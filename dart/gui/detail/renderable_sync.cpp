@@ -116,7 +116,7 @@ std::optional<float4> makeRenderOutputOverrideColor(
 
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
 {
-  return std::ranges::contains(ids, id);
+  return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
 std::vector<ActiveRenderableState> collectActiveRenderableStates(

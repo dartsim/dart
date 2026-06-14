@@ -64,18 +64,16 @@ public:
   bool hasVertexNormals() const;
 
   /// Returns the vertices of the mesh.
-  template <typename Self>
-  [[nodiscard]] auto&& getVertices(this Self&& self)
-  {
-    return std::forward<Self>(self).mVertices;
-  }
+  const Vertices& getVertices() const;
+
+  /// Returns the vertices of the mesh.
+  Vertices& getVertices();
 
   /// Returns the vertex normals of the mesh.
-  template <typename Self>
-  [[nodiscard]] auto&& getVertexNormals(this Self&& self)
-  {
-    return std::forward<Self>(self).mVertexNormals;
-  }
+  const Normals& getVertexNormals() const;
+
+  /// Returns the vertex normals of the mesh.
+  Normals& getVertexNormals();
 
   /// Clears all the vertices and vertex normals.
   virtual void clear();
