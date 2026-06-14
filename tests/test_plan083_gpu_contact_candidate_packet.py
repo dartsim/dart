@@ -499,6 +499,11 @@ def _benchmark_data(**overrides):
         world_step_surface_contact_ccd_hits=20,
         world_step_surface_contact_ccd_limited_steps=1,
         world_step_surface_contact_ccd_zero_step_count=8,
+        world_step_inter_body_surface_contact_candidate_builds=2,
+        world_step_inter_body_surface_contact_candidate_pair_capacity=12,
+        world_step_inter_body_surface_contact_candidate_rejected_pairs=6,
+        world_step_inter_body_surface_contact_point_triangle_candidates=4,
+        world_step_inter_body_surface_contact_edge_edge_candidates=2,
         max_result_abs_error=0.0,
     )
     filtered_combined_gpu = _row(
@@ -543,6 +548,11 @@ def _benchmark_data(**overrides):
         world_step_surface_contact_ccd_hits=20,
         world_step_surface_contact_ccd_limited_steps=1,
         world_step_surface_contact_ccd_zero_step_count=8,
+        world_step_inter_body_surface_contact_candidate_builds=2,
+        world_step_inter_body_surface_contact_candidate_pair_capacity=12,
+        world_step_inter_body_surface_contact_candidate_rejected_pairs=6,
+        world_step_inter_body_surface_contact_point_triangle_candidates=4,
+        world_step_inter_body_surface_contact_edge_edge_candidates=2,
         max_result_abs_error=1e-14,
         host_setup_ns=2.0,
         host_to_device_ns=4.0,
@@ -768,6 +778,12 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert filtered["world_step_surface_contact"]["ccd_hits"] == 20
     assert filtered["world_step_surface_contact"]["ccd_limited_steps"] == 1
     assert filtered["world_step_surface_contact"]["ccd_zero_step_count"] == 8
+    inter_body = filtered["world_step_surface_contact"]["inter_body"]
+    assert inter_body["candidate_builds"] == 2
+    assert inter_body["candidate_pair_capacity"] == 12
+    assert inter_body["candidate_rejected_pairs"] == 6
+    assert inter_body["point_triangle_candidates"] == 4
+    assert inter_body["edge_edge_candidates"] == 2
     assert filtered["max_result_abs_error"] == 1e-14
 
 
@@ -1074,6 +1090,37 @@ def test_plan083_gpu_contact_candidate_packet_rejects_world_step_ccd_mismatch() 
         assert "ccd_hits" in str(exc)
     else:
         raise AssertionError("expected World::step CCD counter mismatch")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_inter_body_capacity() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    filtered_cpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeFilteredCandidateBufferCpu/1024"
+    )
+    filtered_gpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeFilteredCandidateBufferCuda/1024"
+    )
+    # Break the capacity == emitted + rejected invariant on both sides equally.
+    name = "world_step_inter_body_surface_contact_candidate_pair_capacity"
+    filtered_cpu[name] = 99
+    filtered_gpu[name] = 99
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "inter-body capacity" in str(exc)
+    else:
+        raise AssertionError("expected World::step inter-body capacity error")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:

@@ -173,6 +173,11 @@ struct WorldStepSurfaceContactCounters
   std::size_t ccdHits = 0;
   std::size_t ccdLimitedSteps = 0;
   std::size_t ccdZeroStepCount = 0;
+  std::size_t interBodyCandidateBuilds = 0;
+  std::size_t interBodyCandidatePairCapacity = 0;
+  std::size_t interBodyCandidateRejectedPairs = 0;
+  std::size_t interBodyPointTriangleCandidates = 0;
+  std::size_t interBodyEdgeEdgeCandidates = 0;
 };
 
 struct RuntimeSweepCandidateBufferFixture
@@ -954,6 +959,75 @@ sx::DeformableBodyOptions makeSceneRuntimeCandidateBodyOptions(
   return options;
 }
 
+// Minimal two-body inter-body deformable witness. A moving-point body crosses a
+// stationary triangle obstacle within a single ``World::step`` so the built-in
+// deformable diagnostics report nonzero inter-body surface-contact candidate
+// activity. Both bodies share the same offset/scale, so the relative geometry
+// (and therefore the inter-body counters) is offset-invariant; this mirrors the
+// CPU scene corpus inter-body witness construction.
+sx::DeformableBodyOptions makeInterBodyMovingPointWitnessOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 3.0),
+         Eigen::Vector3d(1.0, -1.0, 3.0),
+         Eigen::Vector3d(0.0, 1.0, 3.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  for (auto& position : options.positions) {
+    position *= 0.04;
+  }
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.velocities[3] = Eigen::Vector3d(0.0, 0.0, -20.0);
+  options.masses.assign(options.positions.size(), 0.02);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+sx::DeformableBodyOptions makeInterBodyObstacleWitnessOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  for (auto& position : options.positions) {
+    position *= 0.04;
+  }
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 0.02);
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+WorldStepSurfaceContactCounters captureInterBodyWitnessCounters()
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeCandidateTimeStep);
+  world.addDeformableBody(
+      "plan083_inter_body_moving_witness",
+      makeInterBodyMovingPointWitnessOptions());
+  world.addDeformableBody(
+      "plan083_inter_body_obstacle_witness",
+      makeInterBodyObstacleWitnessOptions());
+  world.step();
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+
+  WorldStepSurfaceContactCounters counters;
+  counters.interBodyCandidateBuilds
+      = diagnostics.interBodySurfaceContactCandidateBuilds;
+  counters.interBodyCandidatePairCapacity
+      = diagnostics.interBodySurfaceContactCandidatePairCapacity;
+  counters.interBodyCandidateRejectedPairs
+      = diagnostics.interBodySurfaceContactCandidateRejectedPairs;
+  counters.interBodyPointTriangleCandidates
+      = diagnostics.interBodySurfaceContactPointTriangleCandidates;
+  counters.interBodyEdgeEdgeCandidates
+      = diagnostics.interBodySurfaceContactEdgeEdgeCandidates;
+  return counters;
+}
+
 RuntimeSweepCandidateBufferFixture makeSceneRuntimeCandidateBufferFixture(
     const int pairCount, const bool captureWorldStepSurfaceContact = false)
 {
@@ -1004,6 +1078,19 @@ RuntimeSweepCandidateBufferFixture makeSceneRuntimeCandidateBufferFixture(
         = diagnostics.surfaceContactCcdLimitedSteps;
     fixture.worldStepSurfaceContact.ccdZeroStepCount
         = diagnostics.surfaceContactCcdZeroStepCount;
+
+    const WorldStepSurfaceContactCounters interBody
+        = captureInterBodyWitnessCounters();
+    fixture.worldStepSurfaceContact.interBodyCandidateBuilds
+        = interBody.interBodyCandidateBuilds;
+    fixture.worldStepSurfaceContact.interBodyCandidatePairCapacity
+        = interBody.interBodyCandidatePairCapacity;
+    fixture.worldStepSurfaceContact.interBodyCandidateRejectedPairs
+        = interBody.interBodyCandidateRejectedPairs;
+    fixture.worldStepSurfaceContact.interBodyPointTriangleCandidates
+        = interBody.interBodyPointTriangleCandidates;
+    fixture.worldStepSurfaceContact.interBodyEdgeEdgeCandidates
+        = interBody.interBodyEdgeEdgeCandidates;
   }
   return fixture;
 }
@@ -1365,6 +1452,24 @@ void recordFilteredCombinedCandidateBufferCounters(
       = static_cast<double>(fixture.worldStepSurfaceContact.ccdLimitedSteps);
   state.counters["world_step_surface_contact_ccd_zero_step_count"]
       = static_cast<double>(fixture.worldStepSurfaceContact.ccdZeroStepCount);
+  state.counters["world_step_inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.interBodyCandidateBuilds);
+  state
+      .counters["world_step_inter_body_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.interBodyCandidatePairCapacity);
+  state.counters
+      ["world_step_inter_body_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.interBodyCandidateRejectedPairs);
+  state.counters
+      ["world_step_inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.interBodyPointTriangleCandidates);
+  state.counters["world_step_inter_body_surface_contact_edge_edge_candidates"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.interBodyEdgeEdgeCandidates);
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * pairCapacity));

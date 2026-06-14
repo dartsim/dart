@@ -171,6 +171,19 @@ still reduced packet evidence only; production runtime scene filtering inside
 `World::step`, GPU `World::step` contact candidate construction, speedup-gate
 completion, and paper-scale behavior remain future `abd-future-gpu` evidence.
 
+The 2026-06-14 inter-body candidate witness slice adds an `inter_body`
+sub-witness to that same `world_step_surface_contact` witness: inter-body
+deformable surface-contact candidate counters from a dedicated minimal two-body
+`World::step` (a moving-point body crossing a stationary triangle obstacle). The
+row records 33 inter-body candidate builds, 528 inter-body pair capacity, 495
+rejected inter-body pairs, 33 point-triangle candidates, and 0 edge-edge
+candidates, with exact CPU/GPU packet parity and a writer that requires nonzero
+build/rejection pressure and enforces `capacity == emitted + rejected`. This is
+still reduced packet evidence only; production runtime scene filtering inside
+`World::step`, GPU `World::step` contact candidate construction, inter-body CCD
+parity, speedup-gate completion, and paper-scale behavior remain future
+`abd-future-gpu` evidence.
+
 ## Py-Demos Category Targets
 
 | Category target               | Rows                                                                                                                                                                                                         |

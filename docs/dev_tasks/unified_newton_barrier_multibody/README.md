@@ -2,6 +2,32 @@
 
 ## Current Status
 
+Latest `World::step` inter-body candidate witness follow-up (2026-06-14): work
+continues locally on `simx/plan083-worldstep-gpu-candidate-bridge` (local-only,
+no PR), stacked on the milestone checkpoint PR #3000 branch. This slice extends
+the private GPU contact-candidate packet's `world_step_surface_contact` witness
+with an `inter_body` sub-witness: inter-body deformable surface-contact candidate
+counters from a dedicated minimal two-body `World::step` (a moving-point body
+crossing a stationary triangle obstacle). The writer CPU/GPU-parity-checks the
+inter-body candidate builds, capacity, rejected pairs, point-triangle, and
+edge-edge candidates, requires a nonzero build and rejection pressure, and
+enforces `capacity == emitted + rejected`. Fresh CUDA evidence records
+`inter_body.candidate_builds=33`, `candidate_pair_capacity=528`,
+`candidate_rejected_pairs=495`, `point_triangle_candidates=33`, and
+`edge_edge_candidates=0`; the recorded `max_result_abs_error` and sub-1x speedup
+(`meets_speedup_gate=false`) are unchanged by this slice. This proves a reduced
+inter-body deformable `World::step` candidate filter-pressure witness only; it
+does not prove production runtime scene filtering inside `World::step`, GPU
+`World::step` contact-candidate construction, inter-body CCD parity, or a
+top-level runtime speedup claim. Validation passed: `pixi run python -m pytest
+tests/test_plan083_gpu_contact_candidate_packet.py
+tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py
+-q`, the CUDA build + `pixi run -e cuda python
+scripts/write_plan083_gpu_contact_candidate_packet.py`,
+`scripts/check_plan083_gpu_parity_packet.py`,
+`scripts/check_plan083_completion_audit.py`, `pixi run lint`, and
+`git diff --check`.
+
 Latest `World::step` self-surface CCD witness follow-up (2026-06-14): the
 checkpoint branch `simx/plan083-worldstep-contact-filter-stats` has been pushed
 and opened as the milestone checkpoint **PR #3000** against `main` (with explicit

@@ -17,6 +17,20 @@ moves entirely into durable plan sidecars.
 ## Evidence Snapshot
 
 Latest branch-local delta (2026-06-14): the private GPU contact-candidate
+packet's `World::step` witness now also carries an `inter_body` sub-witness with
+inter-body deformable surface-contact candidate counters from a dedicated minimal
+two-body `World::step` (a moving-point body crossing a stationary triangle
+obstacle). The writer CPU/GPU-parity-checks the inter-body candidate builds, pair
+capacity, rejected pairs, point-triangle, and edge-edge candidates, requires a
+nonzero build and rejection pressure, and enforces `capacity == emitted +
+rejected`. Fresh CUDA evidence records 33 inter-body candidate builds, 528
+inter-body pair capacity, 495 rejected inter-body pairs, 33 point-triangle
+candidates, and 0 edge-edge candidates. This is still a reduced inter-body
+deformable `World::step` candidate filter-pressure witness only, not production
+runtime scene filtering, GPU `World::step` candidate construction, inter-body CCD
+parity, a speedup gate, or paper-scale behavior.
+
+Prior branch-local delta (2026-06-14): the private GPU contact-candidate
 packet's reduced scene-owned filtered candidate-buffer row's `World::step`
 self-surface witness now also carries the matching self-surface
 continuous-collision (CCD) counters from the same generated DART `World::step`.

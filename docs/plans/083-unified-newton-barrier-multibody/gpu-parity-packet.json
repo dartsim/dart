@@ -403,7 +403,14 @@
             "ccd_edge_edge_checks": 101888,
             "ccd_hits": 39168,
             "ccd_limited_steps": 1,
-            "ccd_zero_step_count": 16384
+            "ccd_zero_step_count": 16384,
+            "inter_body": {
+              "candidate_builds": 33,
+              "candidate_pair_capacity": 528,
+              "candidate_rejected_pairs": 495,
+              "point_triangle_candidates": 33,
+              "edge_edge_candidates": 0
+            }
           },
           "max_result_abs_error": 5.551115123125783e-17,
           "speedup": 0.09728698147728942,

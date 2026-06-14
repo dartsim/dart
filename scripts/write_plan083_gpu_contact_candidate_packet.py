@@ -1436,6 +1436,57 @@ def _validate_world_step_surface_contact_counters(
             f"checks {ccd_checks}"
         )
 
+    inter_body_builds = int(
+        _counter(cpu_row, "world_step_inter_body_surface_contact_candidate_builds")
+    )
+    gpu_inter_body_builds = int(
+        _counter(gpu_row, "world_step_inter_body_surface_contact_candidate_builds")
+    )
+    if inter_body_builds != gpu_inter_body_builds:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step inter-body candidate-build mismatch: "
+            f"{inter_body_builds}/{gpu_inter_body_builds}"
+        )
+    if inter_body_builds <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record a World::step inter-body candidate build"
+        )
+
+    inter_body: dict[str, int] = {"candidate_builds": inter_body_builds}
+    for suffix in (
+        "candidate_pair_capacity",
+        "candidate_rejected_pairs",
+        "point_triangle_candidates",
+        "edge_edge_candidates",
+    ):
+        counter_name = f"world_step_inter_body_surface_contact_{suffix}"
+        cpu_value = int(_counter(cpu_row, counter_name))
+        gpu_value = int(_counter(gpu_row, counter_name))
+        if cpu_value != gpu_value:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU World::step inter-body {suffix} mismatch: "
+                f"{cpu_value}/{gpu_value}"
+            )
+        inter_body[suffix] = cpu_value
+
+    inter_body_emitted = (
+        inter_body["point_triangle_candidates"] + inter_body["edge_edge_candidates"]
+    )
+    if (
+        inter_body["candidate_pair_capacity"]
+        != inter_body_emitted + inter_body["candidate_rejected_pairs"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} World::step inter-body capacity "
+            f"{inter_body['candidate_pair_capacity']} does not equal emitted "
+            f"{inter_body_emitted} + rejected "
+            f"{inter_body['candidate_rejected_pairs']}"
+        )
+    if inter_body["candidate_rejected_pairs"] <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record World::step inter-body filtering pressure"
+        )
+
     return {
         "line_search_trials": line_search_trials,
         "candidate_builds": candidate_builds,
@@ -1449,6 +1500,7 @@ def _validate_world_step_surface_contact_counters(
         "ccd_hits": ccd_counters["ccd_hits"],
         "ccd_limited_steps": ccd_counters["ccd_limited_steps"],
         "ccd_zero_step_count": ccd_counters["ccd_zero_step_count"],
+        "inter_body": inter_body,
     }
 
 

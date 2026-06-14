@@ -1,5 +1,44 @@
 # Unified Newton-Barrier Handoff
 
+## `World::step` Inter-Body Candidate Witness Follow-up (2026-06-14)
+
+Work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`
+(local-only, no PR), stacked on the milestone checkpoint PR #3000 branch
+`simx/plan083-worldstep-contact-filter-stats`.
+
+This slice extends the private GPU contact-candidate packet's
+`world_step_surface_contact` witness with an `inter_body` sub-witness: the
+inter-body deformable surface-contact candidate counters from a dedicated minimal
+two-body `World::step` (a moving-point deformable body crossing a stationary
+triangle obstacle, mirroring the CPU scene corpus inter-body witness
+construction). The packet writer now CPU/GPU-parity-checks the inter-body
+candidate builds, pair capacity, rejected pairs, point-triangle candidates, and
+edge-edge candidates, requires a nonzero candidate build and nonzero rejection
+pressure, and enforces `capacity == emitted + rejected`. Fresh CUDA packet
+evidence records `world_step_surface_contact.inter_body.candidate_builds=33`,
+`candidate_pair_capacity=528`, `candidate_rejected_pairs=495`,
+`point_triangle_candidates=33`, and `edge_edge_candidates=0`. These are
+deterministic scene counts; the recorded
+`max_result_abs_error=5.551115123125783e-17` and sub-1x speedup
+(`meets_speedup_gate=false`) are unchanged by this slice.
+
+This proves a reduced same-process inter-body deformable `World::step` candidate
+filter-pressure witness only. It does not prove production runtime scene
+filtering inside `World::step`, GPU `World::step` contact-candidate construction,
+inter-body CCD parity, or a top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
 ## `World::step` Self-Surface CCD Witness Follow-up (2026-06-14)
 
 Work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`, stacked
