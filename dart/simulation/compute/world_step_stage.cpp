@@ -64,6 +64,7 @@
 #include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
 #include "dart/simulation/detail/newton_barrier/restitution_damping.hpp"
+#include "dart/simulation/detail/rigid_contact_assembly.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -10019,7 +10020,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
                                        constraint.normalArmCrossA,
                                        constraint.hasNormalAngularA,
                                        constraint.staticA);
-    constexpr double restitutionThreshold = 1e-3;
+    constexpr double restitutionThreshold
+        = detail::kRigidContactRestitutionThreshold;
     constraint.restitutionVelocity
         = (restitution > 0.0 && initialApproach < -restitutionThreshold)
               ? -restitution * initialApproach

@@ -593,13 +593,17 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   commit `64e61f1f04b` (#2863); `DART_BUILD_DIFF` is not exercised in CI). Fixed
   in the follow-up commit by adapting the parameter vector at the `world.cpp`
   call site (a trivial default-allocator copy; no API or storage-allocator
-  change).
+  change). A follow-up commit also routed the fourth `restitutionThreshold`
+  copy (the sequential-impulse scratch in `world_step_stage.cpp`) to the shared
+  `kRigidContactRestitutionThreshold`, so the restitution threshold is now
+  defined once across all four contact paths (golden 3/3, contact parity 5/5,
+  boxed-LCP 122/122 unchanged).
   **Slice B (remaining):** converge the four contact-problem _assemblers_ (the
   canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
   differentiable-capture rebuild, and the sequential-impulse scratch in
-  `world_step_stage.cpp`) onto one producer, single-source the remaining inline
-  constants (the SI `restitutionThreshold` and positional-correction constants
-  in `world_step_stage.cpp`), and hand the populated snapshot to the
+  `world_step_stage.cpp`) onto one producer, single-source the remaining
+  positional-correction constants in `world_step_stage.cpp`, and hand the
+  populated snapshot to the
   differentiable capture instead of rebuilding it — the higher-risk
   physics-convergence work this slice deliberately leaves for a focused
   follow-up (which also needs the diff build unbroken).
