@@ -506,6 +506,23 @@ def test_cmake_cache_bool(run_cpp_example, tmp_path):
     assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
 
 
+def test_runtime_env_prepends_absolute_build_library_path(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setattr(run_cpp_example.sys, "platform", "linux")
+
+    env = {"LD_LIBRARY_PATH": "existing"}
+    build_dir = Path("build/default/cpp/Release")
+    runtime_env = run_cpp_example._runtime_env(env, build_dir, software_gl=False)
+
+    paths = runtime_env["LD_LIBRARY_PATH"].split(run_cpp_example.os.pathsep)
+    expected = build_dir.resolve() / "lib"
+    assert Path(paths[0]).is_absolute()
+    assert paths[0] == str(expected)
+    assert paths[1] == "existing"
+    assert env["LD_LIBRARY_PATH"] == "existing"
+
+
 def test_run_filament_smoke_uses_no_tests_error_when_supported(
     run_cpp_example, tmp_path, monkeypatch
 ):

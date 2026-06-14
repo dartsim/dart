@@ -58,6 +58,24 @@ if(TARGET dart-demos)
       EXAMPLE_dart_demos_list
       PROPERTIES LABELS "examples;gui;catalog"
     )
+    if(NOT APPLE)
+      if(WIN32)
+        set(_dart_demos_path_var "PATH")
+      else()
+        set(_dart_demos_path_var "LD_LIBRARY_PATH")
+      endif()
+      set(
+        _dart_demos_list_env_mods
+        "${_dart_demos_path_var}=path_list_prepend:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        "${_dart_demos_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+      )
+      set_tests_properties(
+        EXAMPLE_dart_demos_list
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_demos_list_env_mods}"
+      )
+      unset(_dart_demos_list_env_mods)
+      unset(_dart_demos_path_var)
+    endif()
     foreach(test_target IN ITEMS tests tests_and_run)
       if(TARGET ${test_target})
         add_dependencies(${test_target} dart-demos)
