@@ -28,21 +28,21 @@ contact-precheck work, the three CI-fix commits, the AVBD contact-config guard
 follow-up, and the handoff-doc refreshes; its CI rollup passed with no failed
 checks.
 
-Follow-up items identified in PR review (deferred, not blocking this PR):
+Follow-up items identified in PR review:
 
-- A positive test that the contact-skip fast path actually fires when every
-  dynamic-involving candidate pair is ignored. Note: with all pairs ignored the
-  skip path and the ordinary ignored-pair filter both yield zero contacts, so
-  this is behaviorally indistinguishable at the World API and would need
-  white-box instrumentation to have teeth; deferred for that reason.
-- Extend the contact-skip regression to exercise the prescribed-response audit
-  branch (both-endpoints-prescribed skip, and prescribed-vs-non-prescribed
-  not-ignored leaving the query enabled), which the current four-plain-body test
-  does not reach.
-- Hoist `makeCollisionPairKey` into a shared detail header so the contact-stage
-  audit and `World::setCollisionPairIgnored` cannot drift out of sync (currently
-  duplicated verbatim in `world_step_stage.cpp` and `world.cpp`).
-- Upgrade the regenerated Spring/Spring Ratio packets from legacy
+- Addressed: two coverage tests now exercise the previously untested branches of
+  `shouldSkipRigidBodyContactQuery` that codecov flagged on PR #3004 (3 missing
+  lines). `World.RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored`
+  covers the all-dynamic-pairs-ignored skip return and the both-prescribed audit
+  skip; `World.RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet`
+  covers the >64-candidate audit-limit fallback. The skip-return branch is still
+  behaviorally indistinguishable from the ordinary ignored-pair filter at the
+  World API, so the test asserts the dynamic body falls freely while exercising
+  that line.
+- Deferred: hoist `makeCollisionPairKey` into a shared detail header so the
+  contact-stage audit and `World::setCollisionPairIgnored` cannot drift out of
+  sync (currently duplicated verbatim in `world_step_stage.cpp` and `world.cpp`).
+- Deferred: upgrade the regenerated Spring/Spring Ratio packets from legacy
   `schema_version` 1 (currently `LEGACY_IDENTITY_EXEMPT`) to version 2 with a
   `resolved_solver_identity` so the packet-identity check covers them.
 
@@ -51,6 +51,24 @@ deformable row coverage with evidence against the native source corpus. Keep
 claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
+
+Latest local slice (PR #3004 update): merged the latest `origin/main` into the
+PR branch to clear the CONFLICTING state. The only conflict was
+`world_step_stage.cpp`, where #3000's contact-filter diagnostics changed the
+candidate prefilter; the resolution keeps the branch's ignored-pair audit
+(`isRigidContactCandidate` + the prescribed/ignored-pair candidate scan) and
+adopts main's `geometry.hasShapes()` API. Also addressed the codecov report on
+PR #3004 (3 missing lines in `world_step_stage.cpp`) by adding two coverage
+tests: `World.RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored` (covers
+the all-dynamic-pairs-ignored skip return and the both-prescribed audit skip)
+and `World.RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet`
+(covers the >64-candidate audit-limit fallback). No production logic changed
+beyond the merge resolution and the `hasShapes()` API alignment; no parity is
+claimed. Validation: the merged tree built clean (`pixi run build`), the three
+focused contact-skip tests plus `World.CollisionQueryCanIgnoreSpecificPairs`
+passed, and `pixi run lint` passed; the full
+`pixi run test-all && pixi run -e cuda test-all` sweep is running and its results
+will be appended here when it completes.
 
 Latest local slice: a new `test_world` regression,
 `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,

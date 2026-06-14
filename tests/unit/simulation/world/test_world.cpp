@@ -12760,6 +12760,113 @@ TEST(World, RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts)
   EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
 }
 
+// When every dynamic-involving candidate pair is ignored, the contact stage's
+// audit takes the no-contact fast path. Two overlapping static bodies form a
+// both-prescribed pair (exercising the audit's prescribed-pair skip), and a
+// dynamic body whose pairs with both static bodies are ignored leaves no
+// resolvable contact, so it falls freely through them under gravity. This
+// covers the all-pairs-ignored skip return of
+// `shouldSkipRigidBodyContactQuery`.
+TEST(World, RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Two overlapping static bodies: their mutual pair is both-prescribed, so the
+  // audit skips it without needing an explicit ignore entry.
+  sx::RigidBodyOptions staticAOptions;
+  staticAOptions.isStatic = true;
+  staticAOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto staticA = world.addRigidBody("static_a", staticAOptions);
+  staticA.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::RigidBodyOptions staticBOptions;
+  staticBOptions.isStatic = true;
+  staticBOptions.position = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto staticB = world.addRigidBody("static_b", staticBOptions);
+  staticB.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  // A dynamic body above the static pair whose contacts with both are ignored.
+  sx::RigidBodyOptions fallerOptions;
+  fallerOptions.position = Eigen::Vector3d(0.15, 0.0, 1.5);
+  auto faller = world.addRigidBody("faller", fallerOptions);
+  faller.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  world.setCollisionPairIgnored(faller, staticA);
+  world.setCollisionPairIgnored(faller, staticB);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 2u);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // With every dynamic-involving pair ignored, the query is skipped and no
+  // contact is generated, so the dynamic body falls through the static pair
+  // (whose top is at z = 0.5) into negative z.
+  EXPECT_LT(faller.getTranslation().z(), 0.0);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 2u);
+}
+
+// With more rigid contact candidates than the ignored-pair audit limit, the
+// contact stage conservatively runs the collision query rather than auditing
+// every pair, even when an ignored pair exists. A body falling onto static
+// ground must still be caught. This covers the audit-limit fallback of
+// `shouldSkipRigidBodyContactQuery`.
+TEST(World, RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+
+  sx::RigidBodyOptions landerOptions;
+  landerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.6);
+  auto lander = world.addRigidBody("lander", landerOptions);
+  lander.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  // Add enough static filler bodies to push the candidate count past the audit
+  // limit (64). With ground + lander, 63 fillers yields 65 candidates. They sit
+  // far apart so they never collide with each other or the lander.
+  std::vector<sx::RigidBody> fillers;
+  for (int i = 0; i < 63; ++i) {
+    sx::RigidBodyOptions fillerOptions;
+    fillerOptions.isStatic = true;
+    fillerOptions.position
+        = Eigen::Vector3d(static_cast<double>(i) + 5.0, 8.0, 0.25);
+    auto filler
+        = world.addRigidBody("filler_" + std::to_string(i), fillerOptions);
+    filler.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+    fillers.push_back(filler);
+  }
+
+  // One ignored pair so the ignored-pair audit path is entered before the limit
+  // fallback. These two fillers are far apart and never collide regardless.
+  world.setCollisionPairIgnored(fillers[0], fillers[1]);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // The query was not skipped despite the ignored pair: the lander still lands
+  // on the ground top (z == 0) plus its half height.
+  EXPECT_NEAR(lander.getTranslation().z(), 0.25, 5e-2);
+  EXPECT_GT(lander.getTranslation().z(), 0.0);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+}
+
 // Public rigid-body joints act like source AVBD forces for collision discovery:
 // live constrained body pairs do not generate contact manifolds, and broken
 // joints make the pair collidable again.
