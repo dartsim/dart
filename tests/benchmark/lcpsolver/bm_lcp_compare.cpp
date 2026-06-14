@@ -6921,6 +6921,12 @@ struct ParallelBatchFixture
         errorMessage = "LCP solver factory returned null";
         return;
       }
+      if (!solver->supportsProblem(problems[index])) {
+        valid = false;
+        errorMessage
+            = "LCP parallel batch case exceeds concrete solver support";
+        return;
+      }
 
       solvers.push_back(std::move(solver));
       solutions[index] = Eigen::VectorXd::Zero(problems[index].b.size());
