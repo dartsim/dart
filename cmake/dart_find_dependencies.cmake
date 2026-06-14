@@ -611,19 +611,16 @@ if(DART_BUILD_GUI)
     endif()
 
     include(FetchContent)
-    FetchContent_Declare(
-      filament_prebuilt
-      URL
-        "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
-      URL_HASH SHA256=${_dart_filament_archive_hash}
-      DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
     FetchContent_GetProperties(filament_prebuilt)
     if(NOT filament_prebuilt_POPULATED)
-      cmake_policy(PUSH)
-      cmake_policy(SET CMP0169 OLD)
-      FetchContent_Populate(filament_prebuilt)
-      cmake_policy(POP)
+      FetchContent_Populate(
+        filament_prebuilt
+        URL
+          "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
+        URL_HASH SHA256=${_dart_filament_archive_hash}
+        DOWNLOAD_EXTRACT_TIMESTAMP
+        TRUE
+      )
     endif()
 
     set(_dart_fetched_filament_root "${filament_prebuilt_SOURCE_DIR}")
