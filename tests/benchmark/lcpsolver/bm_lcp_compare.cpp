@@ -9546,6 +9546,11 @@ void RunContactSolverComparisonSweepBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Contact solver comparison case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -9624,6 +9629,11 @@ void RunContactNormalStandardSweepBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(*problem)) {
+    state.SkipWithError(
+        "Contact-normal standard case exceeds concrete solver support");
     return;
   }
 

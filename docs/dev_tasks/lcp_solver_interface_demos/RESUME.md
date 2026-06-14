@@ -1,5 +1,89 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Contact Sweep Runtime Guards
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is a viable
+   milestone PR candidate when the maintainer approves publication; keep this
+   follow-up branch for subsequent PR(s) unless the maintainer explicitly
+   chooses a broader checkpoint scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark runtime guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `23c97994a2d Guard articulated LCP contact benchmarks concretely`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af873`.
+
+What this checkpoint changes:
+
+- `RunContactSolverComparisonSweepBenchmark()` now rechecks the exact generated
+  contact fixture problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- `RunContactNormalStandardSweepBenchmark()` now rechecks the exact generated
+  normal-only standard subproblem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- The registration paths already filter these rows through concrete generated
+  problem support; the new runtime guards make stale or manual registrations
+  fail explicitly instead of timing unsupported cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+git fetch origin
+git merge origin/main
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpContactSolverComparisonSweep/(Admm|Sap|BoxedSemiSmoothNewton)/(WorldSeparated1|WorldStack32|ArticulatedGround16)|BM_LcpContactNormalStandardSweep/(Direct|Dantzig|MPRGP|Baraff)/(WorldSeparated1|WorldStack32|ArticulatedGround16)'
+pixi run bm lcp_compare -- --benchmark_filter='BM_LcpContactSolverComparisonSweep/Admm/WorldSeparated1$|BM_LcpContactNormalStandardSweep/Direct/WorldSeparated1$|BM_LcpContactNormalStandardSweep/MPRGP/WorldSeparated16$' --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- `origin/main` remained `9de4ac6af873`, and the merge was already up to
+  date.
+- Row-list validation passed and listed representative Admm, Sap, and
+  BoxedSemiSmoothNewton comparison rows plus Direct, Dantzig, MPRGP, and Baraff
+  normal-standard rows where each concrete problem is supported.
+- The sampled comparison and normal-standard rows passed with `contract_ok=1`
+  and `solver_supports_problem=1`.
+- Lint, whitespace checks, and the default build passed.
+- The CUDA full gate passed all 7 groups: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Articulated Contact Runtime Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

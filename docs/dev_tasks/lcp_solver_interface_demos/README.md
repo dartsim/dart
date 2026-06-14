@@ -1,5 +1,74 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Contact Sweep Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `23c97994a2d Guard articulated LCP contact benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Contact sweep benchmark status:
+
+- `RunContactSolverComparisonSweepBenchmark()` now rechecks the exact generated
+  contact fixture problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- `RunContactNormalStandardSweepBenchmark()` now rechecks the exact generated
+  normal-only standard subproblem with the same concrete support predicate.
+- The registration paths already filter these rows through concrete generated
+  problem support; the new runtime guards make stale or manual registrations
+  fail explicitly instead of timing unsupported cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `git fetch origin` followed by `git merge origin/main` passed as a no-op;
+  `origin/main` remained `9de4ac6af873`.
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpContactSolverComparisonSweep/(Admm|Sap|BoxedSemiSmoothNewton)/(WorldSeparated1|WorldStack32|ArticulatedGround16)|BM_LcpContactNormalStandardSweep/(Direct|Dantzig|MPRGP|Baraff)/(WorldSeparated1|WorldStack32|ArticulatedGround16)'`
+  passed. It listed representative Admm/Sap/BoxedSemiSmoothNewton comparison
+  rows and preserved concrete Direct filtering for the normal-standard sweep.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpContactSolverComparisonSweep/Admm/WorldSeparated1$|BM_LcpContactNormalStandardSweep/Direct/WorldSeparated1$|BM_LcpContactNormalStandardSweep/MPRGP/WorldSeparated16$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The sampled rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed.
+- `pixi run -e cuda test-all` passed all 7 groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Articulated Contact Runtime Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
