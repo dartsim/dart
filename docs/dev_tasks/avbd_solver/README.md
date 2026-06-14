@@ -11,7 +11,8 @@ Corpus matrix:
 
 - Latest local follow-up (2026-06-14): after explicit maintainer approval, PR
   #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-  `fffb5bf45ba` after merging the latest `origin/main`. The Dynamic Friction
+  `0bf4ca6b8ae` after verifying the latest `origin/main` was already merged.
+  Hosted CI restarted on that head. The Dynamic Friction
   panel-label thread from Codex review `4492237805` is covered on the pushed
   branch by deriving the plotted high-friction speed label from `max_friction`
   and by integration coverage for the
@@ -22,12 +23,18 @@ Corpus matrix:
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
 - Latest local follow-up (2026-06-14): the local branch is now ahead of
-  `origin/avbd/source-row-extraction-precheck` by three unpushed CI-fix commits:
-  `000c1ccb535` disables CMake C++ module scanning, and the second local commit
-  fixes the GUI smoke runner's runtime library path. The third local commit
-  adds focused unit coverage proving the runner prepends an absolute build
-  library path to `LD_LIBRARY_PATH` for relative build directories. The PR
-  remote head remains `fffb5bf45ba`; any further push still requires explicit
+  `origin/avbd/source-row-extraction-precheck` only by the AVBD contact-config
+  guard follow-up: the rigid contact stage now skips the per-contact
+  `rigidAvbdContactStageConfig()` scan unless the registry has
+  `RigidAvbdContactConfig` storage. The `/0` Dynamic Friction benchmark moved
+  from a 7.837 us median CPU step before the edit to 7.409 us after it under
+  lower but still noisy local load with CPU scaling enabled. Focused default
+  contact tests, the full `World.RigidBodyContactStageAvbd*` cluster, and the
+  two review regression tests passed; final validation also passed
+  `pixi run lint`, `pixi run build`, and `pixi run test-unit` (161 tests).
+  This is path smoke only; it does not refresh the tracked friction-sweep
+  packet, close the frictionless source-row CPU gap, resolve the GitHub review
+  threads, or claim GPU parity. Any further push still requires explicit
   maintainer approval.
 - Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
   exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
@@ -40,8 +47,8 @@ Corpus matrix:
   `CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND` Ninja rules and reached normal
   `.o` compilation for `dart-collision-native`; local Clang 22 then failed on
   missing standard C++ header `cmath`, which is a local toolchain issue rather
-  than the hosted scanner failure. This CI fix is local only until another
-  maintainer-approved push.
+  than the hosted scanner failure. This CI fix was pushed as part of PR head
+  `0bf4ca6b8ae`.
 - Latest local follow-up (2026-06-14): while validating the GUI smoke path
   locally, `pixi run test-dart-gui-smoke` initially failed every generated
   smoke test because `scripts/run_cpp_example.py` prepended a relative build
@@ -52,8 +59,8 @@ Corpus matrix:
   31/31 smoke tests. Focused regression coverage now passes
   `pixi run pytest python/tests/unit/test_run_cpp_example.py::test_runtime_env_prepends_absolute_build_library_path -q`,
   the full `python/tests/unit/test_run_cpp_example.py` file passes, and
-  `pixi run lint` passes. This CI-smoke fix and regression are local only until
-  another maintainer-approved push.
+  `pixi run lint` passes. This CI-smoke fix and regression were pushed as part
+  of PR head `0bf4ca6b8ae`.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
   contact friction solve now returns when a clamped tangent impulse delta is
   exactly zero and skips static/prescribed endpoint velocity writes for tangent

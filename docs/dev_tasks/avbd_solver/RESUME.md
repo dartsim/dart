@@ -8,13 +8,11 @@ stop-only snapshot lower in this file.
 
 Current verified branch state: after explicit maintainer approval, PR #2991
 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-`fffb5bf45ba` after merging the latest `origin/main`. The local branch is now
-ahead of `origin/avbd/source-row-extraction-precheck` by three unpushed CI-fix
-commits: `000c1ccb535` disables CMake C++ module scanning, the second local
-commit fixes the GUI smoke runner's runtime library path, and the third local
-commit adds focused unit coverage for the absolute runtime library path.
-Review-thread resolution, PR comments, review re-triggers, and any further push
-still require explicit maintainer approval.
+`0bf4ca6b8ae` after verifying latest `origin/main` was already merged. The
+previous three CI-fix commits are now on the PR branch, hosted CI restarted,
+and the local branch contains the AVBD contact-config guard follow-up described
+below. Review-thread resolution, PR comments, review re-triggers, and any
+further push still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -22,7 +20,17 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact friction solve
+Latest local slice: the rigid contact stage now skips the per-contact
+`rigidAvbdContactStageConfig()` scan unless the registry has
+`RigidAvbdContactConfig` storage. Default sequential-impulse worlds such as the
+frictionless Dynamic Friction source row already queried contacts without AVBD
+shape details, so this removes one remaining AVBD opt-in check from the
+ordinary contact path while preserving the all-or-nothing AVBD config behavior
+when any contact config storage exists. This does not refresh the tracked
+friction-sweep packet, close the frictionless source-row CPU gap, resolve the
+GitHub review threads, or claim GPU parity.
+
+Previous local slice: the default sequential-impulse rigid contact friction solve
 now returns when a clamped tangent impulse delta is exactly zero and skips
 static/prescribed endpoint velocity writes for tangent impulses. This trims
 no-op work in the same Dynamic Friction coefficient sweep contact path without
@@ -69,10 +77,10 @@ changelog note. `pixi run lint`, `pixi run build`, and the post-push
 `CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND` Ninja rules and reached normal
 `.o` compilation for `dart-collision-native`; local Clang 22 then failed on
 missing standard C++ header `cmath`, which is a local toolchain issue rather
-than the hosted scanner failure. This CI fix is local only until another
-maintainer-approved push.
+than the hosted scanner failure. This CI fix was pushed as part of PR head
+`0bf4ca6b8ae`.
 
-Second local CI-smoke follow-up: while validating the GUI smoke path locally,
+Second CI-smoke follow-up now pushed: while validating the GUI smoke path locally,
 `pixi run test-dart-gui-smoke` initially failed every generated smoke test
 because `scripts/run_cpp_example.py` prepended a relative build library path to
 `LD_LIBRARY_PATH`; each CTest smoke test runs from a nested working directory,
@@ -82,8 +90,35 @@ build-library path, and `pixi run test-dart-gui-smoke` passes 31/31 smoke
 tests. Focused regression coverage now passes
 `pixi run pytest python/tests/unit/test_run_cpp_example.py::test_runtime_env_prepends_absolute_build_library_path -q`,
 the full `python/tests/unit/test_run_cpp_example.py` file passes, and
-`pixi run lint` passes. This CI-smoke fix and regression are local only until
-another maintainer-approved push.
+`pixi run lint` passes. This CI-smoke fix and regression were pushed as part of
+PR head `0bf4ca6b8ae`.
+
+Validation for the latest AVBD config-guard slice:
+
+- `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=0 PYTHONPATH=build/default/cpp/Release/python:python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run python - <<'PY' ...`
+  profiled the Python `avbd_demo2d_dynamic_friction` source-shaped scene for
+  eight steps. The last-step profile reported wall time 0.044 ms with
+  `rigid_body_contact` at 0.034 ms / 77.2% wall, so the frictionless row
+  remains contact-stage dominated.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-current-head-20260614.json --benchmark_out_format=json'`
+  passed before this edit. It recorded a 7.837 us median CPU step under load
+  average `8.72, 12.78, 12.68` with CPU scaling enabled.
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
+  passed, 3 tests.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactStageAvbd*' --gtest_brief=1`
+  passed, 44 tests.
+- `pixi run env PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py::test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env -q`
+  passed, 2 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-avbd-config-guard-20260614.json --benchmark_out_format=json'`
+  passed after the edit. It recorded a 7.409 us median CPU step under load
+  average `4.06, 6.11, 9.52` with CPU scaling enabled. This is path smoke only
+  because same-source native timing, visual captures, and packet regeneration
+  were not rerun.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
 
 Validation for the latest friction tangent no-op slice:
 

@@ -9651,7 +9651,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // back into velocities. The standard rigid position stage still advances
   // poses, so default pipeline ordering is unchanged. Unsupported envelopes
   // fall through to the sequential-impulse path below.
-  if (const auto avbdConfig = rigidAvbdContactStageConfig(registry, contacts)) {
+  const auto avbdConfig = mayUseAvbdContactDetails
+                              ? rigidAvbdContactStageConfig(registry, contacts)
+                              : std::optional<comps::RigidAvbdContactConfig>{};
+  if (avbdConfig) {
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
