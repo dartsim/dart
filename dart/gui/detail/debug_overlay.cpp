@@ -86,6 +86,15 @@ void clearDebugLineOverlay(
   overlay.reset();
 }
 
+void clearProviderDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    DebugOverlayController& controller)
+{
+  clearDebugLineOverlay(engine, scene, controller.providerOverlay);
+  controller.providerLabels.clear();
+}
+
 void clearDebugOverlays(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
@@ -94,8 +103,7 @@ void clearDebugOverlays(
   clearDebugLineOverlay(engine, scene, controller.staticOverlay);
   clearDebugLineOverlay(engine, scene, controller.contactOverlay);
   clearDebugLineOverlay(engine, scene, controller.gizmoOverlay);
-  clearDebugLineOverlay(engine, scene, controller.providerOverlay);
-  controller.providerLabels.clear();
+  clearProviderDebugOverlay(engine, scene, controller);
 }
 
 void refreshDebugLineOverlay(

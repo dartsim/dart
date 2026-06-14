@@ -72,6 +72,15 @@ void clearDebugOverlays(
     ::filament::Scene& scene,
     DebugOverlayController& controller);
 
+/// Clears the application-provided debug overlay geometry and its labels as a
+/// unit. The inverse of refreshProviderDebugOverlay: a labels-only DebugScene
+/// populates providerLabels without creating an overlay entity, so the overlay
+/// and labels must always be cleared together.
+void clearProviderDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    DebugOverlayController& controller);
+
 void refreshDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,

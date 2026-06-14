@@ -415,10 +415,12 @@ void SceneFrameUpdater::update(
         providerScene.triangles,
         mSceneState.debugOverlays);
     mSceneState.debugOverlays.providerLabels = std::move(providerScene.labels);
-  } else if (mSceneState.debugOverlays.providerOverlay) {
-    clearDebugLineOverlay(
-        mEngine, mScene, mSceneState.debugOverlays.providerOverlay);
-    mSceneState.debugOverlays.providerLabels.clear();
+  } else {
+    // Clear provider geometry and labels whenever no provider is active. A
+    // labels-only provider leaves providerOverlay empty while providerLabels
+    // stays populated, so clearing only the overlay would leak stale labels
+    // into updateFrameUi after the provider stops emitting.
+    clearProviderDebugOverlay(mEngine, mScene, mSceneState.debugOverlays);
   }
 }
 
