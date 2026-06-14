@@ -1,5 +1,70 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Concrete Smoke Routing Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`; do not add it to the checkpoint PR
+   unless the maintainer explicitly chooses that scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   concrete smoke routing guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `7ab235eace9 Guard LCP overview table displays`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+
+What this checkpoint changes:
+
+- `tests/unit/math/lcp/test_all_solvers_smoke.cpp` now uses each constructed
+  solver's concrete `supportsProblem(problem.problem)` result to choose the
+  native or delegated expectation in `BoxedProblemHandledCorrectly` and
+  `FrictionProblemDoesNotCrash`.
+- The manifest support booleans remain covered as manifest metadata; the
+  smoke tests now guard the runtime route taken by the concrete problem.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, py-demo metadata, generated profile/evidence
+  CSVs, bindings, stubs, public APIs, or demo runtime behavior.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run test-lcpsolver
+```
+
+Result:
+
+- Focused LCP suite passed with 17/17 tests, including
+  `UNIT_math_lcp_math_lcp_all_solvers_smoke`.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Overview Tables Row Display Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

@@ -426,14 +426,16 @@ TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
-    if (!solverCase.supportsBoxed) {
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    if (!solver->supportsProblem(problem.problem)) {
       Eigen::VectorXd x;
       auto result
           = solver->solve(problem.problem, x, solver->getDefaultOptions());
       EXPECT_TRUE(
           result.status == LcpSolverStatus::Success
           || result.status == LcpSolverStatus::MaxIterations)
-          << solverCase.name << " should handle boxed: " << result.message;
+          << solverCase.name
+          << " should delegate boxed problems: " << result.message;
       continue;
     }
 
@@ -459,12 +461,13 @@ TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
 
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
     Eigen::VectorXd x;
     LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
     auto result = solver->solve(problem.problem, x, options);
 
-    if (!solverCase.supportsFrictionIndex) {
+    if (!solver->supportsProblem(problem.problem)) {
       EXPECT_TRUE(result.succeeded())
           << solverCase.name
           << " should delegate friction-index problems through Dantzig: "
