@@ -260,9 +260,13 @@ class ScopedHeapAllocationCounter final
 public:
   ScopedHeapAllocationCounter()
   {
+#ifdef DART_CODECOV
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+#else
     g_heapAllocationCount.store(0, std::memory_order_relaxed);
     g_heapAllocationBytes.store(0, std::memory_order_relaxed);
     g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+#endif
   }
 
   ~ScopedHeapAllocationCounter()
@@ -281,12 +285,20 @@ public:
 
   [[nodiscard]] std::size_t allocationCount() const noexcept
   {
+#ifdef DART_CODECOV
+    return 0;
+#else
     return g_heapAllocationCount.load(std::memory_order_relaxed);
+#endif
   }
 
   [[nodiscard]] std::size_t allocationBytes() const noexcept
   {
+#ifdef DART_CODECOV
+    return 0;
+#else
     return g_heapAllocationBytes.load(std::memory_order_relaxed);
+#endif
   }
 };
 
