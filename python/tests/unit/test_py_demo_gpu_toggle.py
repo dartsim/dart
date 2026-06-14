@@ -204,10 +204,12 @@ def test_world_factory_records_capture_metrics(tmp_path):
         ),
     )
     log = tmp_path / "scene_metrics.jsonl"
-    factory_pre_step, _force_drag, _panels, _provider = _make_world_factory(
-        scene,
-        capture_metrics_event_log=str(log),
-    )()
+    factory_pre_step, _force_drag, _panels, _provider, _debug_provider = (
+        _make_world_factory(
+            scene,
+            capture_metrics_event_log=str(log),
+        )()
+    )
 
     assert factory_pre_step is not None
     factory_pre_step()
