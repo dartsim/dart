@@ -18,6 +18,7 @@ From inside the DART repo:
 
 ```bash
 pixi run demos                                  # launch the Demos app
+pixi run demos -- --list                        # list scenes without opening the GUI
 pixi run demos -- --scene rigid_body
 ```
 
@@ -25,9 +26,11 @@ In the app, use the **Demos** sidebar to switch scenes. Scenes are grouped into
 ordered World-solver categories: World Rigid Body, IPC Deformable, Vertex Block
 Descent, and Planned World Ports. The planned ports are launchable placeholders
 for high-value DART 6 concepts that still need World-native implementations
-(IK, SIMBICON walking, operational-space control, robot puppets, collision
-sandbox, and mobile manipulation); they do not keep the removed DART 6 scene
-code.
+(IK, SIMBICON walking, operational-space control, robot puppets, and mobile
+manipulation); they do not keep the removed DART 6 scene code. The old
+collision sandbox placeholder is retired; use the concrete Python GUI rows
+`rigid_contact_inspector`, `rigid_collision_query_options`, and
+`rigid_collision_casts` for collision-debugging workflows.
 
 `dart-demos` accepts the same options as other GUI programs (`--headless`,
 `--frames`, `--screenshot <path>`, `--width`, `--height`, `--backend`,
