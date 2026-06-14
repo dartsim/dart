@@ -32,7 +32,7 @@ jobs:
     name: ${{ matrix.build_type }}
     runs-on: windows-2025-vs2026
     env:
-      DART_WINDOWS_CMAKE_GENERATOR: Visual Studio 18 2026
+      CMAKE_GENERATOR: Visual Studio 18 2026
     strategy:
       fail-fast: false
       matrix:

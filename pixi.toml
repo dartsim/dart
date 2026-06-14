@@ -517,11 +517,12 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 freeglut = ">=3.2.2"
 
 [target.win-64.tasks]
+# Keep Visual Studio selection external: CMake defaults to the installed VS
+# generator, and CI/users can select newer versions via CMAKE_GENERATOR.
 config = { cmd = """
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G "$DART_WINDOWS_CMAKE_GENERATOR" \
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -532,7 +533,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", DART_WINDOWS_CMAKE_GENERATOR = "Visual Studio 18 2026" } }
+""", env = { DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
     black . --exclude '\\..*' && isort . --skip-glob '.*'
@@ -575,7 +576,6 @@ config-py = { cmd = """
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G "$DART_WINDOWS_CMAKE_GENERATOR" \
         -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -587,7 +587,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", DART_WINDOWS_CMAKE_GENERATOR = "Visual Studio 18 2026" } }
+""", env = { DART_VERBOSE = "OFF" } }
 
 test = { cmd = """
     ctest \
@@ -696,7 +696,6 @@ config-install = { cmd = """
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G "$DART_WINDOWS_CMAKE_GENERATOR" \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -707,7 +706,7 @@ config-install = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release", DART_WINDOWS_CMAKE_GENERATOR = "Visual Studio 18 2026" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 tracy = { cmd = "tracy-profiler.exe" }
 
