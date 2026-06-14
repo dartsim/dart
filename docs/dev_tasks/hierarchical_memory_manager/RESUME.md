@@ -9,9 +9,9 @@ HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR. Fresh resume recon found the branch clean
 at `544126e69fe` (`Record HMM diff contact Jacobian handoff`) before this
 slice; the profiling slice landed as `886c630fadd` (`Reuse profiled World step
-snapshots`). Before checkpoint PR publication, the branch merged `origin/main`
-at `c4c5ed87eae` via merge commit `53a5d0066f7` to satisfy the published-PR
-base-merge rule.
+snapshots`). Before checkpoint PR publication, the branch merged latest
+`origin/main` at `9de4ac6af87` via merge commit `9e9e8a45bd8` to satisfy the
+published-PR base-merge rule.
 
 Latest committed slice: profiled `World::step()` now reuses the existing
 `WorldStepProfile` snapshot instead of replacing it with a newly returned
