@@ -34,7 +34,7 @@
 
 #include "dart/simulation/comps/all.hpp"
 #include "dart/simulation/compute/variational_integration.hpp"
-#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
+#include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/io/binary_io.hpp"
 #include "dart/simulation/io/category_serializer.hpp"
 

@@ -608,7 +608,7 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   physics-convergence work this slice deliberately leaves for a focused
   follow-up (which also needs the diff build unbroken).
 
-#### WP-091.14 Family-neutral joint model
+#### WP-091.14 Family-neutral joint model [claimed]
 
 - Objective: shared `comps::Joint` carries only family-neutral semantics;
   per-family solver state lives in family-owned sidecar components; no family
@@ -623,6 +623,26 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   serialization round-trip preserved; existing joint suites green.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.10.
+- Evidence (re-homing slice landed; field move remaining): the rigid/articulated
+  AVBD machinery — `rigid_block_kernel.hpp` and `rigid_world_contact.hpp` (the
+  latter holds the `AvbdRigidWorld*` joint/spring sidecar components) — is
+  re-homed out of the deformable-named `detail/deformable_vbd/` directory into a
+  dedicated `detail/rigid_avbd/` family module; all 12 includers updated. The
+  shared AVBD kernels (`avbd_constraint.hpp`, `contact_kernel.hpp`, used by both
+  the rigid and deformable paths) stay in `deformable_vbd/` — relocating those
+  shared kernels to a neutral shared directory is WP-091.15's scope, so the
+  re-homed rigid module currently still includes them cross-directory. Pure file
+  relocation + include-path updates; behavior-preserving (golden 3/3,
+  `test_boxed_lcp_contact`, `test_avbd_rigid_block`, `test_serialization` green;
+  `pixi run lint` green). **Remaining (the core change):** move the per-family
+  AVBD joint stiffness fields (`hasAvbdStiffnessState`,
+  `avbd{Start,Linear,Angular,Max}Stiffness`) out of the shared `comps::Joint`
+  into a sidecar component — keeping the family-neutral `breakForce`/`broken`
+  that the variational and sequential-IPC families legitimately read — so no
+  family discovers another family's config. That is a 150+-site field move
+  (notably `avbdMaxStiffness` has 19 read sites in `world_step_stage.cpp`) with a
+  facade lazy-load materialization pattern and version-gated serialization
+  round-trip; it is left for a focused follow-up under this packet.
 
 #### WP-091.15 Family-scoped source layout
 

@@ -40,8 +40,8 @@
 #include <dart/simulation/comps/joint.hpp>
 #include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 
 #include <dart/common/memory_allocator.hpp>

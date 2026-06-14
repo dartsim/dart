@@ -40,8 +40,8 @@
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/name.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
 #include <dart/simulation/frame/frame.hpp>

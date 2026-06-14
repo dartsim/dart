@@ -15,8 +15,8 @@
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/variational_integration.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/frame/frame.hpp>
 #include <dart/simulation/multibody/multibody.hpp>

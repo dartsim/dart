@@ -59,8 +59,8 @@
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/boxed_lcp_contact.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
