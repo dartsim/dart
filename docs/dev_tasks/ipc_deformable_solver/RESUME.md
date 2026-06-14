@@ -118,7 +118,8 @@ The remaining M7 work, roughly in increasing-risk order:
   (NO `--delete-branch`); milestone DART 7.0; never add AI attribution.
 - After `pixi run generate-stubs`, revert unrelated stubs unless the promoted
   DART 7 surface changed; keep the intended `simulation.pyi` diff.
-- `pixi run update-api-boundary-inventory` when a public dartpy binding changes.
+- `pixi run check-api-boundaries` when a public dartpy binding changes (use
+  `pixi run report-api-boundary-inventory` for the on-demand signal report).
 - Adding a `CollisionShapeType` enum value breaks **every** switch on it under
   `-Werror=switch` — grep the **whole repo** (incl. `examples/`) for
   `case CollisionShapeType::Mesh`.
@@ -413,10 +414,11 @@ Prior #2755 = deformable surface/tetra topology bindings (DeformableSurfaceTrian
 
 - DeformableTetrahedron classes, options surface*triangles/tetrahedra, body
   accessors surface_triangle_count/surface_triangle, tetrahedron_count/tetrahedron/
-  tetrahedron_rest_volume, node_mass; regen stubs + inventory which tracks public
-  CLASS names; unit-tetra test). KEY dartpy facts: NO get*\_/set\_\_ names allowed;
+  tetrahedron_rest_volume, node_mass; regen stubs; unit-tetra test). KEY dartpy
+  facts: NO get*\_/set\_\_ names allowed;
   binding changes need `pixi run generate-stubs` AND
-  `pixi run update-api-boundary-inventory` + `check-api-boundary-inventory`.
+  `pixi run check-api-boundaries` (on-demand report via
+  `pixi run report-api-boundary-inventory`).
 
 Prior #2754 = friction diagnostics: DeformableSolverStats gains
 `frictionDissipation` (sum mu*lambda*f1(y)*y over active friction contacts at the
@@ -487,8 +489,8 @@ against -- so it is skipped; friction diagnostics is the next executable item.
 Prior #2752 = edge-edge self-contact friction (force + Hessian; generic over the
 4-node SelfContactFrictionContact, only buildSelfContactFrictionContacts extended
 to edgeEdgeCandidates). #2751 = self-contact friction Hessian (PT). #2750 = Python facade (dartpy
-deformable bindings; forbids get*\*/set*\* names; regenerate stubs +
-api-boundary-inventory.md). #2749 = scene-replay harness.
+deformable bindings; forbids get*\*/set*\* names; regenerate stubs; verify with
+`pixi run check-api-boundaries`). #2749 = scene-replay harness.
 
 Prior #2749 = scene-replay harness; #2748 = self-contact friction; #2746 = ground
 friction. NOTE (from the #2745
@@ -547,7 +549,7 @@ git merge --no-ff origin/main
 cmake --build build/default/cpp/Release --target test_deformable_body dartpy
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SerializationLoadsLegacyV8Material:DeformableBody.SerializationPreservesMeshTopologyAndMaterial:DeformableBody.MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact:DeformableBody.MatrixFreeLinearSolverMatchesSparseDirectSolve'
 PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'matrix_free_solver'
-pixi run check-api-boundary-inventory
+pixi run check-api-boundaries
 pixi run lint
 
 # Stop here for the current PR #2821 handoff. The remaining commands are

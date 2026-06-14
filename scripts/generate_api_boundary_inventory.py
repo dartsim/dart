@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import difflib
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_PATH = REPO_ROOT / "docs" / "onboarding" / "api-boundary-inventory.md"
+OUTPUT_PATH = REPO_ROOT / "build" / "reports" / "api-boundary-inventory.md"
 ALLOWLIST_PATH = REPO_ROOT / "scripts" / "check_api_boundaries_allowlist.txt"
 
 CXX_API_ROOT = REPO_ROOT / "dart"
@@ -231,10 +230,11 @@ def render_inventory() -> str:
         "",
         "# API Boundary Inventory",
         "",
-        "This generated inventory tracks the current public API boundary signals used by",
-        "the policy in [api-boundaries.md](api-boundaries.md). Regenerate it with",
-        "`pixi run update-api-boundary-inventory` and verify it with",
-        "`pixi run check-api-boundary-inventory`.",
+        "This on-demand report summarizes the current public API boundary signals used",
+        "by the policy in [api-boundaries.md](api-boundaries.md). It is generated on",
+        "demand and not committed; produce it with `pixi run report-api-boundary-inventory`.",
+        "The enforced source of truth is scripts/check_api_boundaries.py and",
+        "scripts/check_api_boundaries_allowlist.txt (run `pixi run check-api-boundaries`).",
         "",
         "The inventory is intentionally signal-based. A header can be installed and still",
         "contain exposed implementation debt if public declarations mention `detail` or",
@@ -374,9 +374,6 @@ def render_inventory() -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--check", action="store_true", help="fail if the inventory is stale"
-    )
-    parser.add_argument(
         "--output",
         type=Path,
         default=OUTPUT_PATH,
@@ -387,26 +384,9 @@ def main() -> int:
     output_path = args.output
     expected = render_inventory()
 
-    if args.check:
-        if not output_path.exists():
-            print(f"{output_path} does not exist", file=sys.stderr)
-            return 1
-        actual = output_path.read_text()
-        if actual == expected:
-            print("API boundary inventory is up to date.")
-            return 0
-        diff = difflib.unified_diff(
-            actual.splitlines(),
-            expected.splitlines(),
-            fromfile=str(output_path),
-            tofile="generated",
-            lineterm="",
-        )
-        print("\n".join(diff), file=sys.stderr)
-        return 1
-
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(expected)
-    print(f"Wrote {output_path.relative_to(REPO_ROOT)}")
+    print(f"Wrote {output_path}")
     return 0
 
 

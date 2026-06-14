@@ -57,8 +57,9 @@ Conflicts are confined to experimental `CMakeLists.txt`,
 `RigidBodyIntegrationStage`/`BatchedRigidBodyIntegrationStage`/`integrateRigidBody`
 **and** this branch's `RigidBodyVelocityStage`/`RigidBodyPositionStage`/
 `RigidBodyContactStage`/`MultibodyForwardDynamicsStage`).
-`docs/onboarding/api-boundary-inventory.md` is generated — regenerate via
-`pixi run lint`, don't hand-merge it.
+The API-boundary policy lives in `docs/onboarding/api-boundaries.md`; the
+enforced gate is `pixi run check-api-boundaries` (on-demand signal report via
+`pixi run report-api-boundary-inventory`).
 
 Commands:
 
