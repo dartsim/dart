@@ -2701,20 +2701,21 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Contract,Iterations,Error,Residual,Complementarity,us"
         in builder.events
     )
-    for problem_row in problem_rows:
-        assert f"text:{problem_row['label']}" in builder.events
-        assert f"text:{problem_row['solver']}" in builder.events
-        assert f"text:{problem_row['solve_route']}" in builder.events
-        assert f"text:{problem_row['status']}" in builder.events
-        assert (
-            f"text:{'OK' if problem_row['contract_ok'] else 'Fail'}"
-            in builder.events
-        )
-        assert f"text:{problem_row['iterations']}" in builder.events
-        assert f"text:{problem_row['solution_error']:.2e}" in builder.events
-        assert f"text:{problem_row['residual']:.2e}" in builder.events
-        assert f"text:{problem_row['complementarity']:.2e}" in builder.events
-        assert f"text:{problem_row['elapsed_us']:.1f}" in builder.events
+    assert _table_rows(builder.events, "lcp_representative_solver_details") == [
+        [
+            problem_row["label"],
+            problem_row["solver"],
+            problem_row["solve_route"],
+            problem_row["status"],
+            "OK" if problem_row["contract_ok"] else "Fail",
+            str(problem_row["iterations"]),
+            f"{problem_row['solution_error']:.2e}",
+            f"{problem_row['residual']:.2e}",
+            f"{problem_row['complementarity']:.2e}",
+            f"{problem_row['elapsed_us']:.1f}",
+        ]
+        for problem_row in problem_rows
+    ]
     assert (
         "table:lcp_solver_selection_guide:Family,Solvers,Best fit,Strength,"
         "Tradeoff,Evidence cue"
