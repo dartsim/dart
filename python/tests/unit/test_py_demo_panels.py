@@ -2764,12 +2764,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Benchmark"
         in builder.events
     )
-    for parameter_row in parameter_rows:
-        assert f"text:{parameter_row['solver']}" in builder.events
-        assert f"text:{parameter_row['surface']}" in builder.events
-        assert f"text:{parameter_row['parameters']}" in builder.events
-        assert f"text:{parameter_row['defaults']}" in builder.events
-        assert f"text:{parameter_row['benchmark_filter']}" in builder.events
+    assert _table_rows(builder.events, "lcp_advanced_solver_parameters") == [
+        [
+            parameter_row["solver"],
+            parameter_row["surface"],
+            parameter_row["parameters"],
+            parameter_row["defaults"],
+            parameter_row["benchmark_filter"],
+        ]
+        for parameter_row in parameter_rows
+    ]
     assert [
         event.removeprefix("plot:").rsplit(":", 1)[0]
         for event in builder.events
