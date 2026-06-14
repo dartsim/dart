@@ -1,5 +1,66 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Remaining Standalone Runner Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. PR #3001 (the milestone) is merged into `main` as `07fd0c9315a`. This
+   `followup/lcp-solver-demo-panel-guards` branch is a clean linear stack on
+   `origin/main` carrying the standalone LCP benchmark-guard audit, ready to be
+   published as the next PR.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+What this checkpoint changes:
+
+- Concrete `supportsProblem` runtime guards were added to the remaining
+  standalone solver-on-problem benchmark runners that still timed a solve
+  without a support recheck: the threading benchmarks
+  (`RunJacobiSolverThreadingBenchmark`,
+  `RunRedBlackGaussSeidelThreadingBenchmark`,
+  `RunBlockedJacobiThreadingBenchmark`); the `RunBenchmark<>` template helper
+  (covers `BM_LcpCompare_Dantzig_Scaled`, `BM_LcpCompare_Pgs_Scaled`,
+  `BM_LCP_COMPARE_SMOKE`); `RunStaggeringContactPipelineSweepBenchmark`; and
+  `RunInteriorPointPathSweepBenchmark`.
+- `RunMprgpSpdCheckSweepBenchmark` is intentionally NOT guarded: its
+  registration registers all 12 cases unconditionally and
+  `MprgpSolver::supportsProblem` is parameter-dependent
+  (`Parameters::checkPositiveDefinite` defaults to `true`), so the sweep
+  deliberately benchmarks the PD-check across conditioning kinds and a
+  `supportsProblem` guard would reject the very rows it exists to measure.
+- With this, every standalone solver-on-problem benchmark runner is guarded
+  (except the intentional MPRGP exception). The only remaining benchmark
+  categories do NOT fit the standalone "supportsProblem-before-solve" pattern:
+  the `BM_LcpValidation_*` micro-benchmarks, the `BM_LcpWorld*Step_BoxedLcp`
+  World-step benchmarks, and the CUDA batch runners.
+- No solver implementation, public API, demo, binding, stub, or generated CSV
+  change outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run build`, `clang-format --dry-run --Werror`, and `git diff --check`
+  passed.
+- `BM_LCP_COMPARE` run across all newly-guarded families: 92 rows ran, 0 skipped
+  by the guards (defensive backstops), `contract_ok=1` for all (InteriorPoint's
+  12 rows and Staggering's 24 rows confirm 0 skips).
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. The follow-up branch is ready to be published as the next PR; otherwise
+   continue from the documented remaining categories.
+4. Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Milestone PR #3001 Merged; Follow-up Rebased Onto Main
 
 This is the latest hand-off state. Sections below are historical checkpoints

@@ -1,5 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Remaining Standalone Runner Guards
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. PR #3001 (the milestone) is merged into `main` as `07fd0c9315a`. This
+   `followup/lcp-solver-demo-panel-guards` branch is a clean linear stack on
+   `origin/main` carrying the standalone LCP benchmark-guard audit, ready to be
+   published as the next PR.
+3. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+What this checkpoint changes:
+
+- Concrete `supportsProblem` runtime guards were added to the remaining
+  standalone solver-on-problem benchmark runners that still timed a solve
+  without a support recheck:
+  - the threading benchmarks (`RunJacobiSolverThreadingBenchmark`,
+    `RunRedBlackGaussSeidelThreadingBenchmark`,
+    `RunBlockedJacobiThreadingBenchmark`);
+  - the `RunBenchmark<>` template helper (covers `BM_LcpCompare_Dantzig_Scaled`,
+    `BM_LcpCompare_Pgs_Scaled`, and `BM_LCP_COMPARE_SMOKE`);
+  - `RunStaggeringContactPipelineSweepBenchmark`;
+  - `RunInteriorPointPathSweepBenchmark`.
+- `RunMprgpSpdCheckSweepBenchmark` is intentionally NOT guarded. Its
+  registration registers all 12 cases unconditionally, and
+  `MprgpSolver::supportsProblem` is parameter-dependent
+  (`Parameters::checkPositiveDefinite` defaults to `true`). The sweep
+  deliberately benchmarks the PD-check across conditioning kinds (including
+  near-singular), so a `supportsProblem` guard would reject the very rows the
+  sweep exists to measure. It must stay unguarded.
+- With this, every standalone solver-on-problem benchmark runner is guarded
+  (except the intentional MPRGP exception). The only remaining benchmark
+  categories do NOT fit the standalone "supportsProblem-before-solve" pattern:
+  the `BM_LcpValidation_*` micro-benchmarks (time `computeEffectiveBounds`), the
+  `BM_LcpWorld*Step_BoxedLcp` World-step benchmarks (boxed-LCP contact pipeline
+  via `World::step`), and the CUDA batch runners (GPU kernels rather than the
+  `LcpSolver` interface).
+- No solver implementation, public API, demo, binding, stub, or generated CSV
+  change outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run build                                       # green
+clang-format --dry-run --Werror tests/benchmark/lcpsolver/bm_lcp_compare.cpp
+git diff --check
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_Lcp(JacobiSolverThreading_Standard|JacobiSolverThreadingBanded_Standard|RedBlackGaussSeidelSolverThreadingBanded_Standard|BlockedJacobiSolverThreadingBanded_Standard|Compare_Dantzig_Scaled|Compare_Pgs_Scaled|StaggeringContactPipelineSweep|InteriorPointPathSweep)|BM_LCP_COMPARE_SMOKE' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Result:
+
+- Build, clang-format, and whitespace checks passed.
+- 92 rows ran across all newly-guarded families; 0 were skipped by the guards
+  (they are defensive backstops), and every row reported `contract_ok=1`.
+  InteriorPoint's 12 rows and Staggering's 24 rows confirm the guards skip
+  nothing currently registered.
+
+Remaining audit work (next):
+
+- The MPRGP SpdCheck sweep stays unguarded by design (above).
+- The non-standalone categories (validation micro-benchmarks, World-step
+  benchmarks, CUDA batch runners) need their own gating design if desired.
+- The follow-up branch is ready to be published as the next PR when approved.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
 ## Current Reality - 2026-06-14 Milestone PR #3001 Merged; Follow-up Rebased Onto Main
 
 This is the latest hand-off. Older sections below are historical checkpoints

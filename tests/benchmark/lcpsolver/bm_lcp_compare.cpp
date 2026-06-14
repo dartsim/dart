@@ -3259,6 +3259,10 @@ void RunBenchmark(
     const std::string& label)
 {
   Solver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError("Benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(state, solver, problem, options, label);
 }
 
@@ -3396,6 +3400,11 @@ void RunJacobiSolverThreadingBenchmark(
   options.customOptions = &params;
 
   dart::math::JacobiSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -3453,6 +3462,11 @@ void RunRedBlackGaussSeidelThreadingBenchmark(benchmark::State& state)
   options.customOptions = &params;
 
   dart::math::RedBlackGaussSeidelSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -3500,6 +3514,11 @@ void RunBlockedJacobiThreadingBenchmark(benchmark::State& state)
   options.customOptions = &params;
 
   dart::math::BlockedJacobiSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7899,6 +7918,11 @@ void RunInteriorPointPathSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::InteriorPointSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Interior-point path sweep case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -9640,6 +9664,11 @@ void RunStaggeringContactPipelineSweepBenchmark(
   options.complementarityTolerance = 1e-6;
 
   dart::math::StaggeringSolver solver;
+  if (!solver.supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Staggering contact pipeline case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
