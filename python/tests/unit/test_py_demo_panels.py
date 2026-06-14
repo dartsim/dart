@@ -2519,6 +2519,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events
     )
+    for benchmark_row in info["benchmark_packet_rows"]:
+        assert f"text:{benchmark_row['packet']}" in builder.events
+        assert f"text:{benchmark_row['surface']}" in builder.events
+        assert f"text:{benchmark_row['benchmark_filter']}" in builder.events
+        assert f"text:{benchmark_row['coverage']}" in builder.events
     assert (
         "table:lcp_representative_requirement_coverage:Requirement,Live packet,"
         "Benchmark packet,Metrics,Evidence"
