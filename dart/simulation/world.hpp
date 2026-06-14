@@ -924,6 +924,20 @@ public:
   [[nodiscard]] const compute::ResolvedSolverConfiguration&
   getResolvedConfiguration() const noexcept;
 
+  /// Solver-agnostic physical metrics (energies, momenta, contacts) of this
+  /// World at its CURRENT state. PLAN-091 WP-091.24.
+  ///
+  /// This is a read-only query: it reads body mass, velocity, pose, and inertia
+  /// plus the World's gravity and computes the metrics in
+  /// `compute::StepMetrics`. It does NOT run a step, does NOT modify any state,
+  /// and does NOT change `step` behavior, so it can be called at any point to
+  /// snapshot energy/momentum invariants without perturbing the trajectory.
+  /// Energy and momentum conventions match the rest of the library (see
+  /// `compute::StepMetrics`); the multibody energy reuses
+  /// `compute::computeMultibodyMechanicalEnergy`, so the value matches the
+  /// integrator's own energy diagnostic exactly.
+  [[nodiscard]] compute::StepMetrics computeStepMetrics() const;
+
   //--------------------------------------------------------------------------
   // Multibody solver configuration
   //--------------------------------------------------------------------------

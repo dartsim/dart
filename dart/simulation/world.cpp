@@ -6042,6 +6042,84 @@ const compute::ResolvedSolverConfiguration& World::getResolvedConfiguration()
 }
 
 //==============================================================================
+compute::StepMetrics World::computeStepMetrics() const
+{
+  // PLAN-091 WP-091.24 (foundational slice): a read-only snapshot of the
+  // World's physical invariants. This is a pure query -- it reads body state
+  // and gravity and runs no step, mutates no registry/cache field, and so
+  // cannot perturb a trajectory (the default-step goldens stay bit-identical).
+  // Conventions match the rest of the library exactly (RigidBody energy/
+  // momentum accessors and compute::computeMultibodyMechanicalEnergy), so the
+  // numbers are consistent across the facade.
+  compute::StepMetrics metrics;
+
+  const detail::WorldRegistry& registry = m_storage->registry;
+  const Eigen::Vector3d& gravity = m_gravity;
+
+  // Free rigid bodies: full world-frame state is stored, so kinetic/potential
+  // energy and linear/angular momentum are computed directly. Static and
+  // kinematic bodies carry no dynamics degrees of freedom and contribute no
+  // mechanical energy or momentum, so they are skipped (mirroring the contact
+  // solver's infinite-mass treatment).
+  const auto rigidView = registry.view<comps::RigidBodyTag>();
+  for (const auto entity : rigidView) {
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue;
+    }
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
+    const auto& transform = registry.get<comps::Transform>(entity);
+
+    const Eigen::Matrix3d rotation
+        = transform.orientation.normalized().toRotationMatrix();
+    const Eigen::Matrix3d worldInertia
+        = rotation * mass.inertia * rotation.transpose();
+
+    metrics.kineticEnergy
+        += 0.5 * mass.mass * velocity.linear.squaredNorm()
+           + 0.5 * velocity.angular.dot(worldInertia * velocity.angular);
+    metrics.potentialEnergy += -mass.mass * gravity.dot(transform.position);
+
+    const Eigen::Vector3d linear = mass.mass * velocity.linear;
+    metrics.linearMomentum += linear;
+    metrics.angularMomentum
+        += transform.position.cross(linear) + worldInertia * velocity.angular;
+  }
+
+  // Multibodies: link world-frame velocities are not stored (they are derived
+  // from the joint degrees of freedom by forward kinematics), so the total
+  // mechanical energy is taken from the same exported helper the variational
+  // integrator's energy diagnostic uses -- guaranteeing this value matches that
+  // path bit-for-bit. The gravitational potential is split out with the same
+  // `- m g . x_com` convention so kinetic = mechanical - potential stays
+  // consistent. World-frame multibody-link momentum aggregation needs the link
+  // Jacobian and is deferred to a later WP-091.24 slice.
+  const auto structureView = registry.view<comps::MultibodyStructure>();
+  for (const auto structureEntity : structureView) {
+    const auto& structure
+        = structureView.get<comps::MultibodyStructure>(structureEntity);
+
+    const double mechanical = compute::computeMultibodyMechanicalEnergy(
+        registry, structure, gravity);
+
+    double potential = 0.0;
+    for (const auto linkEntity : structure.links) {
+      const auto& link = registry.get<comps::Link>(linkEntity);
+      const Eigen::Vector3d comWorld
+          = link.worldTransform * link.mass.localCenterOfMass;
+      potential += -link.mass.mass * gravity.dot(comWorld);
+    }
+
+    metrics.potentialEnergy += potential;
+    metrics.kineticEnergy += mechanical - potential;
+  }
+
+  metrics.totalEnergy = metrics.kineticEnergy + metrics.potentialEnergy;
+  return metrics;
+}
+
+//==============================================================================
 const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
 {
 #if DART_BUILD_PROFILE

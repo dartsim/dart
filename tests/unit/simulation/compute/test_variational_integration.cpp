@@ -386,8 +386,14 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
   const auto& structure = structureOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
 
-  const double energy0
-      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+  // Energy is read through the public solver-agnostic metrics surface
+  // (PLAN-091 WP-091.24). For this single-multibody scene
+  // World::computeStepMetrics().totalEnergy equals
+  // computeMultibodyMechanicalEnergy(registry, structure, gravity) exactly (the
+  // facade reuses that same helper), so the conservation bound below is
+  // unchanged -- this just proves the public metrics are usable in place of the
+  // internal registry read.
+  const double energy0 = world.computeStepMetrics().totalEnergy;
   ASSERT_GT(std::abs(energy0), 1e-6);
 
   sxc::MultibodyVariationalState state;
@@ -396,8 +402,7 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
   for (int k = 0; k < steps; ++k) {
     sxc::integrateMultibodyVariational(registry, structure, gravity, dt, state);
     if (k % 1000 == 0) {
-      const double energy
-          = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+      const double energy = world.computeStepMetrics().totalEnergy;
       ASSERT_FALSE(std::isnan(energy));
       maxRelativeDrift = std::max(
           maxRelativeDrift, std::abs(energy - energy0) / std::abs(energy0));
@@ -456,18 +461,17 @@ TEST(VariationalIntegration, SelectableThroughWorldStep)
   bob.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 1.0));
   world.updateKinematics();
 
-  auto& registry = dart::simulation::detail::registryOf(world);
-  const auto& structure = structureOf(world);
-  const Eigen::Vector3d gravity = world.getGravity();
-  const double energy0
-      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+  // Read total mechanical energy through the public metrics surface
+  // (PLAN-091 WP-091.24). For this single-multibody scene it equals
+  // computeMultibodyMechanicalEnergy(registry, structure, gravity) exactly, so
+  // the conservation bound is unchanged.
+  const double energy0 = world.computeStepMetrics().totalEnergy;
 
   for (int k = 0; k < 20000; ++k) {
     world.step();
   }
 
-  const double energy
-      = sxc::computeMultibodyMechanicalEnergy(registry, structure, gravity);
+  const double energy = world.computeStepMetrics().totalEnergy;
   EXPECT_FALSE(std::isnan(energy));
   EXPECT_LT(std::abs(energy - energy0) / std::abs(energy0), 1e-2);
 }

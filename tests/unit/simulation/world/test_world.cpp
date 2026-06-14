@@ -22187,3 +22187,76 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
 
   EXPECT_TRUE(joint.isBroken());
 }
+
+// PLAN-091 WP-091.24 (foundational slice): the public solver-agnostic step
+// metrics report the physical invariants of a passive scene, and reading them
+// is a side-effect-free query.
+//
+// A single free-floating rigid body under zero gravity, with no contacts and no
+// applied force, is a torque- and force-free system: its linear momentum,
+// angular momentum, and kinetic energy are all conserved exactly across the
+// default step. With an isotropic inertia the default semi-implicit rigid-body
+// integrator reproduces that conservation to floating-point round-off (the
+// world-frame inertia is rotation-invariant, so the constant world angular
+// velocity yields constant angular momentum and rotational energy), giving a
+// tight conservation gate read entirely through World::computeStepMetrics().
+TEST(World, ComputeStepMetricsConservesFreeBodyInvariants)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.5;
+  // Isotropic inertia: world-frame inertia stays R (cI) R^T = cI under any
+  // rotation, so a constant world angular velocity conserves angular momentum
+  // and rotational kinetic energy under the semi-implicit integrator.
+  options.inertia = 0.4 * Eigen::Matrix3d::Identity();
+  options.position = Eigen::Vector3d(0.1, -0.2, 0.3);
+  options.linearVelocity = Eigen::Vector3d(0.7, -0.3, 0.5);
+  options.angularVelocity = Eigen::Vector3d(0.2, 0.9, -0.4);
+  world.addRigidBody("free_body", options);
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+
+  // Sanity: a moving body with finite inertia has non-trivial invariants.
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+  ASSERT_GT(initial.linearMomentum.norm(), 1e-6);
+  ASSERT_GT(initial.angularMomentum.norm(), 1e-6);
+  // No gravity, so potential energy is exactly zero and total == kinetic.
+  EXPECT_DOUBLE_EQ(initial.potentialEnergy, 0.0);
+  EXPECT_DOUBLE_EQ(
+      initial.totalEnergy, initial.kineticEnergy + initial.potentialEnergy);
+
+  // computeStepMetrics() is a pure query: calling it does not change the World,
+  // so a second call on the unstepped world returns identical numbers.
+  const sx::compute::StepMetrics repeated = world.computeStepMetrics();
+  EXPECT_DOUBLE_EQ(repeated.kineticEnergy, initial.kineticEnergy);
+  EXPECT_TRUE(repeated.linearMomentum.isApprox(initial.linearMomentum, 0.0));
+  EXPECT_TRUE(repeated.angularMomentum.isApprox(initial.angularMomentum, 0.0));
+
+  const int steps = 500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Linear momentum: conserved (no force).
+  EXPECT_LT(
+      (after.linearMomentum - initial.linearMomentum).norm(),
+      1e-9 * initial.linearMomentum.norm());
+  // Angular momentum about the world origin: conserved.
+  EXPECT_LT(
+      (after.angularMomentum - initial.angularMomentum).norm(),
+      1e-9 * initial.angularMomentum.norm());
+  // Kinetic energy: conserved (gravity-free, contact-free, isotropic inertia).
+  EXPECT_LT(
+      std::abs(after.kineticEnergy - initial.kineticEnergy),
+      1e-9 * initial.kineticEnergy);
+  EXPECT_DOUBLE_EQ(after.potentialEnergy, 0.0);
+}

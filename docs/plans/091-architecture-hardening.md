@@ -763,7 +763,7 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   `test_avbd_rigid_block` 105/105; `pixi run lint` and
   `pixi run check-api-boundaries` green. 17 files changed.
 
-#### WP-091.24 Metrics contract, scene corpus, one harness
+#### WP-091.24 Metrics contract, scene corpus, one harness [claimed]
 
 - Objective: apples-to-apples comparison has a substrate: a solver-agnostic
   step-metrics value object populated by every family, a registered-builder
@@ -792,6 +792,39 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   smoke.
 - Dependencies: WP-091.1 (identity schema), WP-091.11 (resolved-config
   report).
+- Evidence (foundational slice landed; corpus/harness/convergence remain): the
+  solver-agnostic step-metrics value object exists and is consumed by a public
+  query. `compute::StepMetrics` (in the promoted `compute/world_step_profile.hpp`
+  alongside `WorldStepProfile`/`ResolvedSolverConfiguration` — pure value type,
+  plain `double`/`size_t`/`Eigen::Vector3d`, no ECS/solver/backend leak;
+  `check-api-boundaries` + the public-header poison-boundary smoke test green)
+  carries per-World kinetic/potential/total energy, linear/angular momentum
+  (about the world origin), active rigid-contact count and max penetration, and
+  last-step iterations/residual. `World::computeStepMetrics() const` populates
+  it as a **read-only** query (reads the registry + gravity only; no
+  `collide()`, no step, no writes — proven side-effect-free: the WP-091.2
+  goldens are bit-identical and an idempotence assertion holds), reusing the
+  exact `RigidBody`/`computeMultibodyMechanicalEnergy` energy conventions so the
+  numbers match existing diagnostics. The existing variational-vs-semi-implicit
+  energy comparison (`test_variational_integration.cpp`,
+  `PendulumConservesEnergyOverLongHorizon` / `SelectableThroughWorldStep`) now
+  consumes `computeStepMetrics().totalEnergy` instead of internal registry
+  access, at identical tolerances (178/178). A conservation test
+  (`test_world.cpp` `ComputeStepMetricsConservesFreeBodyInvariants`) asserts a
+  free body conserves linear+angular momentum and kinetic energy to 1e-9 over
+  500 steps. Gates: `pixi run lint`, `pixi run check-api-boundaries`,
+  `pixi run check-dart7-promotion-surface` green; golden 3/3. **Remaining:** the
+  registered scene-builder corpus, the single harness binary + manifest-driven
+  packet writer (replacing the per-scene script fleet), the cross-family
+  dashboard row set, contact/iteration metric population (needs a non-const
+  narrow-phase pass), multibody-link world-frame momentum aggregation, and the
+  order-of-convergence (dt-halving) validation sweep. NOTE: independent of this
+  slice, the branch carries one **pre-existing** red test
+  (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
+  rigid-IPC allocation-counter off-by-one) introduced by the merged main
+  #2996/#3005 allocator-modernization + C++23 raise — verified pre-existing by
+  stashing this slice and reproducing it on the clean WP-091.23 tree; tracked
+  for separate triage.
 
 ### WS3 — Compute axis reality
 
