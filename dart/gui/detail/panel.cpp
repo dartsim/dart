@@ -42,6 +42,15 @@
 
 namespace {
 
+// Bounds for the built-in debug-tuning sliders (doubles so they can back
+// ImGui::SliderScalar with ImGuiDataType_Double directly).
+constexpr double kDebugGridSpacingMin = 0.1;
+constexpr double kDebugGridSpacingMax = 2.0;
+constexpr double kDebugAxisLengthMin = 0.05;
+constexpr double kDebugAxisLengthMax = 1.5;
+constexpr double kDebugForceScaleMin = 0.0001;
+constexpr double kDebugForceScaleMax = 0.02;
+
 std::string visiblePanelLabel(std::string_view label)
 {
   const auto idMarker = label.find("##");
@@ -469,24 +478,41 @@ bool renderBuiltInStatusPanel(
     changed |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
     ImGui::SameLine();
     changed |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
-    changed |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox("Inertia", &staticDebugOptions.drawInertiaBoxes);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox(
-        "Collision", &staticDebugOptions.drawCollisionShapeBounds);
-    ImGui::SameLine();
     changed |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
     ImGui::SameLine();
-    changed
-        |= ImGui::Checkbox("Support", &staticDebugOptions.drawSupportPolygons);
     changed
         |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
     ImGui::SameLine();
     changed |= ImGui::Checkbox(
         "Contact forces", &contactDebugOptions.drawContactForces);
+
+    if (ImGui::TreeNode("Debug tuning")) {
+      const float sliderWidth = 140.0f * static_cast<float>(guiScale);
+      ImGui::PushItemWidth(sliderWidth);
+      changed |= ImGui::SliderScalar(
+          "Grid spacing",
+          ImGuiDataType_Double,
+          &staticDebugOptions.gridSpacing,
+          &kDebugGridSpacingMin,
+          &kDebugGridSpacingMax,
+          "%.2f");
+      changed |= ImGui::SliderScalar(
+          "World axis len",
+          ImGuiDataType_Double,
+          &staticDebugOptions.worldFrameAxisLength,
+          &kDebugAxisLengthMin,
+          &kDebugAxisLengthMax,
+          "%.2f");
+      changed |= ImGui::SliderScalar(
+          "Contact force scale",
+          ImGuiDataType_Double,
+          &contactDebugOptions.contactForceScale,
+          &kDebugForceScaleMin,
+          &kDebugForceScaleMax,
+          "%.4f");
+      ImGui::PopItemWidth();
+      ImGui::TreePop();
+    }
     return changed;
   };
 

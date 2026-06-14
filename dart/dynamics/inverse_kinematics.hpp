@@ -582,9 +582,6 @@ public:
     /// often want the first three components (orientation error) to have
     /// smaller weights than the last three components (translation error).
     Eigen::Vector6d mErrorWeights;
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// Constructor
@@ -725,8 +722,6 @@ protected:
   Properties mErrorP;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -1342,8 +1337,6 @@ protected:
   Eigen::MatrixXd mNullSpaceCache;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================

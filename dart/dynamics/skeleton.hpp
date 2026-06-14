@@ -1305,9 +1305,6 @@ protected:
 
     /// Centroid of the support polygon
     Eigen::Vector2d mSupportCentroid;
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   mutable common::aligned_vector<DataCache> mTreeCache;

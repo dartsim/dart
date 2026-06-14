@@ -335,8 +335,6 @@ private:
   bool mAmShapeFrame;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The WorldFrame class is a class that is used internally to create the
@@ -379,8 +377,6 @@ private:
   static const Eigen::Vector6d mZero;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

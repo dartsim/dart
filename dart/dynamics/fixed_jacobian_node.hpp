@@ -159,9 +159,6 @@ protected:
     /// Do not use directly! Use getJacobianClassicDeriv() to access this
     /// quantity
     math::Jacobian mWorldJacobianClassicDeriv;
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   mutable Cache mCache;

@@ -28,15 +28,19 @@ its own line so status updates remain git-history friendly.
   version 2, enforced for new packet files by `pixi run check-avbd-packets` in
   both the `lint` and `check-lint` aggregates, and the six mirrored
   contact-scene claim sites are relabeled; writer-script migration to emit the
-  new field is a recorded follow-up (see the packet Evidence bullet). Execute
-  the remaining four WS0 evidence-integrity packets in plan document order:
-  WP-091.2 golden trajectories (next available; behavior-lock guardrail that
-  hard-gates the refactor-heavy packets), WP-091.3 architecture-claim lint
-  (acceptance-criteria clarified — adds test citations to the marked rows
-  before linting them), WP-091.4 legacy freeze (blocked: PLAN-042 Decision 5
-  has no recorded maintainer direction yet), WP-091.5 plan-ID renumber
-  (PLAN-080 and PLAN-082 collisions confirmed real; the packet hazard owns the
-  exact `git grep` scope across docs and code). Then
+  new field is a recorded follow-up (see the packet Evidence bullet).
+  WP-091.2 (golden trajectories) is `[done]` (PR #2994, merged 2026-06-14) —
+  `test_world_default_step_golden` locks the default `World::step` over a
+  three-scene matrix with a two-oracle design (analytical closed-form/physical
+  invariants plus the committed-snapshot behavior lock), so the refactor-heavy
+  WS1+ packets now have behavior-lock evidence to diff against. Execute the
+  remaining WS0 evidence-integrity packets in plan document order: WP-091.3
+  architecture-claim lint (next available; acceptance-criteria clarified —
+  adds test citations to the marked rows before linting them), WP-091.4 legacy
+  freeze (blocked: PLAN-042 Decision 5 has no recorded maintainer direction
+  yet), WP-091.5 plan-ID renumber (PLAN-080 and PLAN-082 collisions confirmed
+  real; the packet hazard owns the exact `git grep` scope across docs and
+  code). Then
   open WS1 with WP-091.10 (virtual finalize/prepare on the stage contract).
   Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
@@ -1421,7 +1425,10 @@ check-dart7-final-world-promotion`.
   [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
   when extending the renderer; the latter is the seam to implement for
   offline/high-fidelity sensor rendering (egocentric views, lens distortion,
-  depth/segmentation outputs).
+  depth/segmentation outputs). For material/lighting/texture fidelity and for
+  promoting debug visuals into the GUI component (per-shape PBR, IBL reflections,
+  texture mipmaps, an app `debugProvider`, richer debug primitives), see
+  [`../design/renderer_fidelity_and_debug_visuals.md`](../design/renderer_fidelity_and_debug_visuals.md).
 - Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
   CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
   `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type

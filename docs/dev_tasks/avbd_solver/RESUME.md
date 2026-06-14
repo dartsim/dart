@@ -160,6 +160,15 @@ The panel label now derives from `max_friction`, the value is recorded in
 `Friction 5 speed` label. No GitHub reply, thread resolution, or review
 retrigger has been performed.
 
+Latest CI follow-up: PR #2991's Linux `Release Tests` AddressSanitizer phase
+passed 218/219 CTests before `EXAMPLE_dart_demos_list` aborted with
+`Failed loading SDL3 library`. The failure is isolated to the manually
+registered `dart-demos --list` CTest, which previously did not inherit the
+runtime-library path setup used by the normal DART test helpers. The test now
+prepends `${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}` and the build-tree
+DART library directory to the platform runtime library path on non-Apple
+platforms.
+
 Merge state: `origin/main` at `c4c5ed87eae4` was merged after the review-fix
 commit as `5c43ed6f843`; the only manual conflict was
 `scripts/capture_py_demo.py`, resolved by preserving this branch's
@@ -305,6 +314,17 @@ Validation for the latest AVBD config-guard slice:
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `pixi run test-unit` passed, 161 tests.
+
+Validation for the latest ASan `dart-demos --list` CI follow-up:
+
+- `pixi run config-asan` passed and generated the CTest entry with
+  `LD_LIBRARY_PATH` prepends for `.pixi/envs/default/lib` and
+  `build/default/cpp/asan/lib`.
+- `pixi run -- cmake --build build/default/cpp/asan --target dart-demos -j 8`
+  passed.
+- `ASAN_OPTIONS=detect_leaks=1 pixi run -- ctest --test-dir build/default/cpp/asan -R EXAMPLE_dart_demos_list --output-on-failure -V`
+  passed, 1 test. The verbose CTest output showed the runtime-library
+  modifications and listed the demo catalog without the SDL load failure.
 
 Validation for the latest friction tangent no-op slice:
 

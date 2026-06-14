@@ -2827,10 +2827,9 @@ void BodyNode::updateTransformSecondDerivatives() const
   const Eigen::Matrix4d relativeTransformMatrix
       = mParentJoint->getRelativeTransform().matrix();
 
-  std::vector<math::Jacobian, Eigen::aligned_allocator<math::Jacobian>>
-      localJacobianDerivs(localDofs);
-  std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>
-      localSeMatrices(localDofs, Eigen::Matrix4d::Zero());
+  std::vector<math::Jacobian> localJacobianDerivs(localDofs);
+  std::vector<Eigen::Matrix4d> localSeMatrices(
+      localDofs, Eigen::Matrix4d::Zero());
 
   if (localDofs > 0) {
     const math::Jacobian localJacobian = mParentJoint->getRelativeJacobian();

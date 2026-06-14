@@ -64,8 +64,6 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_API Sensor : public virtual common::Subject
 {
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   using NameChangedSignal = common::Signal<void(
       const Sensor* _sensor,
       const std::string& _oldName,

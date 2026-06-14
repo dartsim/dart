@@ -119,9 +119,9 @@ For renderer changes, use the focused scene extraction tests plus at least one
 bounded headless render:
 
 ```bash
-cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
+cmake --build build/default/cpp/Release --target UNIT_gui_DebugVisuals
 ctest --test-dir build/default/cpp/Release --output-on-failure \
-  -R '^UNIT_gui_FilamentSceneExtraction$'
+  -R '^UNIT_gui_DebugVisuals$'
 pixi run ex dartsim --headless --frames 1 --width 1280 --height 720 \
   --screenshot /tmp/dartsim.ppm
 pixi run demos -- --scene rigid_body --headless --frames 2 --width 640 \

@@ -92,6 +92,16 @@ Corpus matrix:
   so the probe was reverted and no code from it is kept. This branch does not
   refresh any tracked source-row packet, close the 2D Soft Body CPU gap, push a
   follow-up PR, or claim GPU/paper-number parity.
+- Latest CI follow-up (2026-06-14): PR #2991's Linux `Release Tests`
+  AddressSanitizer phase reached 218/219 passing CTests, then
+  `EXAMPLE_dart_demos_list` aborted with `Failed loading SDL3 library`. The
+  manually registered `dart-demos --list` CTest now prepends both the Pixi
+  install library directory and the build-tree DART library directory to its
+  runtime library path, matching the normal DART test-helper setup for this
+  GUI catalog smoke. Focused local validation passed `pixi run config-asan`,
+  `pixi run -- cmake --build build/default/cpp/asan --target dart-demos -j 8`,
+  and
+  `ASAN_OPTIONS=detect_leaks=1 pixi run -- ctest --test-dir build/default/cpp/asan -R EXAMPLE_dart_demos_list --output-on-failure -V`.
 - Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
   #2991 branch `avbd/source-row-extraction-precheck` is pushed to origin at
   `6f41e9529bf` after verifying the latest `origin/main` was already merged.
