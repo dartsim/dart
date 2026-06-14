@@ -387,7 +387,10 @@ _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
             "solver_supports_standard, solver_supports_boxed, "
             "solver_supports_friction_index, solver_supports_problem"
         ),
-        "meaning": "Concrete native support flags for each solver and problem row.",
+        "meaning": (
+            "Native form support flags plus concrete problem support for each "
+            "solver row."
+        ),
     },
     {
         "fields": (
@@ -484,7 +487,7 @@ _PROFILE_CATEGORY_SUPPORT_FIELDS = {
     "FrictionIndex": "solver_supports_friction_index",
 }
 _PROFILE_EVIDENCE_REQUIRED_SURFACES = tuple(_PROFILE_CATEGORY_SUPPORT_FIELDS)
-_PROFILE_SOLVER_SUPPORT_FIELDS = {
+_PROFILE_FORM_SUPPORT_FIELDS = {
     "solver_supports_standard": "standard",
     "solver_supports_boxed": "boxed",
     "solver_supports_friction_index": "findex",
@@ -669,7 +672,7 @@ def _validate_performance_profile_evidence_row(
             "mismatched LCP performance profile evidence row: "
             f"{surface}/{solver} solver family counters are not one-hot"
         )
-    for field, solver_support_key in _PROFILE_SOLVER_SUPPORT_FIELDS.items():
+    for field, solver_support_key in _PROFILE_FORM_SUPPORT_FIELDS.items():
         value = _as_int_counter(row, field)
         expected = 1 if solver_support_row[solver_support_key] else 0
         if value != expected:

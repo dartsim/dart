@@ -1,5 +1,68 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Evidence Schema Form Support Naming
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `d95daaf9605 Separate LCP concrete evidence support checks`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Evidence schema form-support naming status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now describes the performance
+  evidence support counters as native form support plus concrete problem
+  support, matching the C++ benchmark counter sources.
+- The demo helper map was renamed from `_PROFILE_SOLVER_SUPPORT_FIELDS` to
+  `_PROFILE_FORM_SUPPORT_FIELDS` so only the standard/boxed/friction-index form
+  counters are treated as manifest-derived support flags.
+- `scripts/check_lcp_solver_roster.py` now guards the renamed helper in the
+  static demo schema check.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, bindings, stubs, and public APIs were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_solver_roster_rejects_demo_profile_column_drift python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_solver_roster_reads_demo_profile_evidence_schema_rows -q`
+  passed with 2 tests.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_evidence_schema_rows_cover_required_columns python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_evidence_schema_is_exposed_in_info -q`
+  passed with 2 tests.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with 64 tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Concrete Evidence Support Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

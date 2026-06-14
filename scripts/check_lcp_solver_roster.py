@@ -315,7 +315,7 @@ def parse_demo_profile_evidence_schema() -> dict[str, Any]:
     targets = {
         "_PROFILE_CATEGORY_SUPPORT_FIELDS",
         "_PROFILE_EVIDENCE_REQUIRED_SURFACES",
-        "_PROFILE_SOLVER_SUPPORT_FIELDS",
+        "_PROFILE_FORM_SUPPORT_FIELDS",
         "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS",
         "_PROFILE_PROBLEM_TYPE_FIELDS",
         "_SOLVER_IDENTITY_SCHEMA_VERSION",
@@ -1265,14 +1265,14 @@ def check_demo_performance_profiles() -> None:
 def check_demo_profile_evidence_required_columns() -> None:
     demo_schema = parse_demo_profile_evidence_schema()
     demo_columns = tuple(demo_schema["_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"])
-    expected_solver_support_fields = {
+    expected_form_support_fields = {
         counter: PROFILE_KEY_BY_CATEGORY[category]
         for category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
     }
     expected = {
         "_PROFILE_CATEGORY_SUPPORT_FIELDS": FORM_SUPPORT_COUNTER_BY_CATEGORY,
         "_PROFILE_EVIDENCE_REQUIRED_SURFACES": PROFILE_CATEGORIES,
-        "_PROFILE_SOLVER_SUPPORT_FIELDS": expected_solver_support_fields,
+        "_PROFILE_FORM_SUPPORT_FIELDS": expected_form_support_fields,
         "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTER_BY_CATEGORY,
         "_PROFILE_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTERS,
         "_SOLVER_IDENTITY_SCHEMA_VERSION": SOLVER_IDENTITY_SCHEMA_VERSION,
