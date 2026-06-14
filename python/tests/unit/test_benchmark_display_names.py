@@ -69,6 +69,10 @@ def test_humanize_new_solver_surfaces():
         == "AVBD demo2d dynamic friction step"
     )
     assert (
+        module.humanize_name("BM_AvbdDemo2dFrictionCoefficientSweep/25")
+        == "AVBD demo2d friction coefficient sweep · 25 max friction x10"
+    )
+    assert (
         module.humanize_name("BM_AvbdDemo2dStaticFrictionStep")
         == "AVBD demo2d static friction step"
     )
@@ -230,6 +234,11 @@ def test_humanize_new_solver_surfaces():
         module.humanize_name("BM_AvbdPaperScaleHighRatioChainStep")
         == "AVBD paper-scale high-ratio chain step"
     )
+    assert (
+        module.humanize_name("BM_AvbdPaperScaleHighRatioChainIterationSweep/100")
+        == "AVBD paper-scale high-ratio chain iteration sweep · "
+        "100 max iterations"
+    )
 
 
 def test_humanize_generic_fallback_for_unmapped_names():
@@ -247,11 +256,19 @@ def test_family_grouping():
     assert module.family_of("BM_VbdWorldStepDefault/8") == module.FAMILY_VBD
     assert module.family_of("BM_DeformableFemBarStep/2") == module.FAMILY_FEM
     assert module.family_of("BM_AvbdEmptyWorldStep") == module.FAMILY_AVBD
+    assert (
+        module.family_of("BM_AvbdPaperScaleHighRatioChainIterationSweep/100")
+        == module.FAMILY_AVBD
+    )
     assert module.family_of("BM_AvbdDemo2dMotorStep") == module.FAMILY_AVBD
     assert module.family_of("BM_AvbdDemo2dHangingRopeStep") == module.FAMILY_AVBD
     assert module.family_of("BM_AvbdDemo2dFractureStep") == module.FAMILY_AVBD
     assert (
         module.family_of("BM_AvbdDemo2dDynamicFrictionStep")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdDemo2dFrictionCoefficientSweep/25")
         == module.FAMILY_AVBD
     )
     assert (

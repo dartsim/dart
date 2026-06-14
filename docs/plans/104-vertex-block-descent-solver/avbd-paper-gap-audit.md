@@ -424,8 +424,11 @@ now records the public world-anchored articulated revolute motor break/reset
 scene's headless visual capture and
 `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/1` benchmark. Focused
 integration coverage now also reverses its target velocity after reset and
-checks weak re-arm breaks again. Broad motor lifecycle coverage, GPU parity, and
-paper-number gates remain open.
+checks weak re-arm breaks again.
+[`avbd-breakable-motor-scale-packet.json`](avbd-breakable-motor-scale-packet.json)
+now validates the four public articulated breakable motor benchmark rows over
+1, 8, and 32 motors. Broad motor lifecycle coverage, source-demo comparison,
+GPU parity, and paper-number gates remain open.
 [`avbd-rigid-breakable-joint-packet.json`](avbd-rigid-breakable-joint-packet.json)
 and
 [`avbd-articulated-breakable-joint-packet.json`](avbd-articulated-breakable-joint-packet.json)
@@ -449,8 +452,11 @@ articulated spherical break/reset scenes' headless visual captures plus
 `BM_AvbdArticulatedWorldSphericalBreakableJointStep/1`, and
 `BM_AvbdArticulatedSphericalPairBreakableJointStep/1` benchmark evidence.
 Focused demo regressions also verify weak re-arm breaks again after high-force
-reset for all three spherical paths. Broad
-fracture-constraint, GPU parity, and paper-number gates remain open.
+reset for all three spherical paths.
+[`avbd-breakable-joint-scale-packet.json`](avbd-breakable-joint-scale-packet.json)
+now validates the five public fixed/spherical breakable point-joint benchmark
+rows over 1, 8, and 32 joints. Broad fracture-constraint, breakable-wall, GPU
+parity, and paper-number gates remain open.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,
@@ -721,8 +727,15 @@ plus a focused C++ 50-link/50,000:1 finite/reset smoke and
 `BM_AvbdPaperScaleHighRatioChainStep` dashboard row through configured
 `World::step()` solve-budget fields with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence, but it still cannot reproduce the paper's full
-hard-constrained articulated chains, same-hardware numbers, or
+visual/benchmark evidence. `BM_AvbdPaperScaleHighRatioChainIterationSweep`
+now adds dashboard-selected 25/50/100/200 max-iteration coverage for that same
+fixture, and
+[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](avbd-paper-scale-high-ratio-iteration-sweep-packet.json)
+records validated benchmark JSON plus finite replay plot data, and
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](avbd-paper-scale-high-ratio-iteration-sweep-plot.svg)
+renders the timing/stability sweep. No same-hardware paper-number comparison or
+GPU parity exists yet. DART still cannot reproduce
+the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
