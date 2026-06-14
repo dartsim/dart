@@ -5696,14 +5696,16 @@ void World::captureStepDerivatives()
                     contacts,
                     m_gravity,
                     m_timeStep,
-                    m_contactGradientMode)
+                    m_contactGradientMode,
+                    m_storage->memoryAllocator)
               : detail::contactStepDerivativesWithParameters(
                     m_storage->registry,
                     contacts,
                     m_gravity,
                     m_timeStep,
                     m_storage->differentiableParameters,
-                    m_contactGradientMode);
+                    m_contactGradientMode,
+                    m_storage->memoryAllocator);
     // Non-empty only when a dynamic rigid body is in scope. When empty (e.g. a
     // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
     if (contactDerivatives.stateJacobian.size() != 0) {

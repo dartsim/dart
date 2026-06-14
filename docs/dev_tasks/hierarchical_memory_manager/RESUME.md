@@ -1,33 +1,39 @@
 # Resume: Hierarchical Memory Manager
 
-## Hard Stop Handoff (2026-06-13, Multibody Dynamics Scratch Vector Aliases)
+## Hard Stop Handoff (2026-06-13, Diff Contact Jacobian Allocator Scratch)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
 HMM handoff entry point unless a maintainer explicitly redirects the work.
-The branch currently has no open PR. It includes `origin/main` at
-`a122e8e0f3e` via local merge commit `57c8b1cd608`; a fresh
-`git fetch origin main && git merge --no-edit origin/main` reported "Already up
-to date."
+The branch currently has no open PR. Fresh resume recon for this slice started
+from `3923089a2dd` (`Add allocator-aware contact candidate return builders`),
+ahead of `origin/pr/hmm-phase45-replay-snapshot-allocators` by 39 commits.
 
-Latest local slice: `MultibodyDynamicsScratch` now gives its allocator-backed
-scratch containers local vector aliases (`LinkIndexVector`,
-`SpatialVectorVector`, `LinkContactVector`, `ConstrainedDofVector`,
-`ConstrainedTargetVector`, and `BodyJacobianVector`) instead of repeating the
-full `std::vector<T, Allocator>` spelling across the RNEA and contact scratch
-fields. The nearby analytic RNEA helper alias now reuses the scratch-owned
-spatial-vector alias as well.
+Latest local slice: differentiable rigid contact Jacobian detail scratch now
+threads a caller-provided `common::MemoryAllocator` through the frozen contact
+scene, sparse Jacobian rows, body-row indexes, active-set vectors, and
+parameter finite-difference helper storage. The existing no-allocator detail
+overloads still route through the default allocator, while
+`World::captureStepDerivatives()` now passes the `WorldStorage` allocator into
+the contact Jacobian path when `DART_BUILD_DIFF=ON`.
 
-This is a mechanical maintainability slice. It does not change dynamics
-behavior, public APIs, allocator provenance, or the existing multibody scratch
-allocation claims.
+The focused proof is
+`DiffContactJacobian.DetailOverloadUsesProvidedAllocator`, which uses a
+`CountingMemoryAllocator` against the detail overload and verifies allocator
+traffic is balanced. This is a diff-only HMM allocator-provenance slice. It does
+not change public APIs, contact-gradient math, default `DART_BUILD_DIFF=OFF`
+behavior, Eigen's own dense-matrix allocation behavior, or the broader
+collision/contact return surfaces.
 
 Validation for this slice:
 
 ```bash
-pixi run cmake --build build/default/cpp/Release --target test_multibody -j 8
-pixi run build/default/cpp/Release/bin/test_multibody
+DART_BUILD_DIFF_OVERRIDE=ON pixi run config
+pixi run cmake --build build/default/cpp/Release --target test_diff_contact_jacobian -j 8
+pixi run build/default/cpp/Release/bin/test_diff_contact_jacobian \
+  --gtest_filter=DiffContactJacobian.DetailOverloadUsesProvidedAllocator
+pixi run build/default/cpp/Release/bin/test_diff_contact_jacobian
 pixi run lint
 git diff --check
 pixi run build

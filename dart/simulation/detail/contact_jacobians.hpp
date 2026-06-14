@@ -53,6 +53,8 @@
 #include <dart/simulation/fwd.hpp>
 #include <dart/simulation/world_options.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
@@ -139,6 +141,14 @@ namespace dart::simulation::detail {
     double timeStep,
     ContactGradientMode mode = ContactGradientMode::Analytic);
 
+[[nodiscard]] DART_SIMULATION_API StepDerivatives contactStepDerivatives(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    ContactGradientMode mode,
+    common::MemoryAllocator& allocator);
+
 /// One registered differentiable physical parameter: which rigid-body entity it
 /// belongs to and which scalar parameter of that body to differentiate. This is
 /// the detail-side, ECS-typed mirror of the public `PhysicalParameterSelector`;
@@ -193,5 +203,15 @@ contactStepDerivativesWithParameters(
     double timeStep,
     std::span<const ParameterRegistration> parameters,
     ContactGradientMode mode = ContactGradientMode::Analytic);
+
+[[nodiscard]] DART_SIMULATION_API StepDerivatives
+contactStepDerivativesWithParameters(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    std::span<const ParameterRegistration> parameters,
+    ContactGradientMode mode,
+    common::MemoryAllocator& allocator);
 
 } // namespace dart::simulation::detail
