@@ -3579,6 +3579,8 @@ enum class StandardSpdProblemKind
 
 constexpr int kNewtonWarmStartPgsIterations = 5;
 constexpr int kNewtonWarmStartGradientIterations = 5;
+constexpr std::array<int, 3> kNewtonWarmStartProblemSizes{{32, 64, 128}};
+constexpr int kNewtonWarmStartBatchSize = 4;
 
 struct RelaxationSweepCase
 {
@@ -6995,6 +6997,13 @@ struct ParallelNewtonWarmStartBatchFixture
         errorMessage = "LCP solver factory returned null";
         return;
       }
+      if (!solver->supportsProblem(problems[index])) {
+        valid = false;
+        errorMessage
+            = "Newton warm-start parallel batch case exceeds concrete solver "
+              "support";
+        return;
+      }
 
       solvers.push_back(std::move(solver));
       solutions[index] = Eigen::VectorXd::Zero(problems[index].b.size());
@@ -7931,6 +7940,11 @@ void RunNewtonWarmStartBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Newton warm-start case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7959,6 +7973,45 @@ std::vector<LcpProblem> MakeNewtonWarmStartBatchProblems(
   return problems;
 }
 
+std::vector<int> GetConcreteNewtonWarmStartProblemSizes(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::vector<int> problemSizes;
+  for (const int problemSize : kNewtonWarmStartProblemSizes) {
+    const auto problem = MakeStandardActiveSetTransitionProblem(
+        problemSize, 80'000u + static_cast<unsigned>(problemSize));
+    if (SolverSupportsConcreteProblem(solver, problem)) {
+      problemSizes.push_back(problemSize);
+    }
+  }
+
+  return problemSizes;
+}
+
+std::vector<std::array<int, 2>> GetConcreteNewtonWarmStartBatchArgs(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::vector<std::array<int, 2>> args;
+  for (const int problemSize : kNewtonWarmStartProblemSizes) {
+    const auto problems = MakeNewtonWarmStartBatchProblems(
+        problemSize, kNewtonWarmStartBatchSize);
+    if (SolverSupportsConcreteProblemBatch(solver, problems)) {
+      args.push_back({problemSize, kNewtonWarmStartBatchSize});
+    }
+  }
+
+  return args;
+}
+
+void AddNewtonWarmStartBatchArgs(
+    benchmark::Benchmark* registeredBenchmark,
+    const std::vector<std::array<int, 2>>& args)
+{
+  for (const auto [problemSize, batchSize] : args) {
+    registeredBenchmark->Args({problemSize, batchSize});
+  }
+}
+
 void RunNewtonWarmStartBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -7974,6 +8027,13 @@ void RunNewtonWarmStartBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Newton warm-start batch case exceeds concrete solver support");
     return;
   }
 
@@ -12261,40 +12321,41 @@ void RegisterNewtonWarmStartBenchmarks()
       continue;
     }
 
-    for (const auto mode : kModes) {
-      const auto name = MakeNewtonWarmStartBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          name.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBenchmark(state, solver, mode);
-          })
-          ->Arg(32)
-          ->Arg(64)
-          ->Arg(128);
+    const auto problemSizes = GetConcreteNewtonWarmStartProblemSizes(solver);
+    const auto batchArgs = GetConcreteNewtonWarmStartBatchArgs(solver);
+    if (problemSizes.empty() && batchArgs.empty()) {
+      continue;
+    }
 
-      const auto serialBatchName
-          = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          serialBatchName.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
-          })
-          ->Args({32, 4})
-          ->Args({64, 4})
-          ->Args({128, 4});
+    for (const auto mode : kModes) {
+      if (!problemSizes.empty()) {
+        const auto name = MakeNewtonWarmStartBenchmarkName(solver, mode);
+        auto* registeredBenchmark = benchmark::RegisterBenchmark(
+            name.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBenchmark(state, solver, mode);
+            });
+        AddBenchmarkArgs(registeredBenchmark, problemSizes);
+      }
+
+      if (!batchArgs.empty()) {
+        const auto serialBatchName
+            = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
+        auto* serialBatchBenchmark = benchmark::RegisterBenchmark(
+            serialBatchName.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
+            });
+        AddNewtonWarmStartBatchArgs(serialBatchBenchmark, batchArgs);
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
-      const auto parallelBatchName
-          = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          parallelBatchName.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
-          })
-          ->Args({32, 4})
-          ->Args({64, 4})
-          ->Args({128, 4});
+        const auto parallelBatchName
+            = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
+        auto* parallelBatchBenchmark = benchmark::RegisterBenchmark(
+            parallelBatchName.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
+            });
+        AddNewtonWarmStartBatchArgs(parallelBatchBenchmark, batchArgs);
 #endif
+      }
     }
   }
 }

@@ -1,5 +1,76 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Newton Warm-Start Concrete Gates
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is a viable
+   milestone PR candidate when the maintainer approves publication; keep this
+   follow-up branch for subsequent PR(s) unless the maintainer explicitly
+   chooses a broader checkpoint scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark registration guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `1be53bf6384 Clarify LCP demo native support labels`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+
+What this checkpoint changes:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now computes Newton
+  warm-start single, serial-batch, and parallel-batch benchmark rows from
+  concrete `supportsProblem(problem)` checks for the generated StandardActiveSet
+  cases instead of hardcoded size rows.
+- The Newton warm-start benchmark runners now keep runtime support guards for
+  the same concrete single and batch cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside benchmark registration and benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpNewtonWarmStart(BatchSerial|BatchParallel)?/StandardActiveSet/(MinimumMapNewton|FischerBurmeisterNewton|PenalizedFischerBurmeisterNewton)/(None|Pgs|GradientDescent|PgsThenGradient)'
+pixi run bm lcp_compare -- --benchmark_filter='BM_LcpNewtonWarmStart/StandardActiveSet/FischerBurmeisterNewton/Pgs/32$|BM_LcpNewtonWarmStartBatchSerial/StandardActiveSet/PenalizedFischerBurmeisterNewton/PgsThenGradient/32/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Result:
+
+- Row-list validation passed and listed expected single, serial-batch, and
+  parallel-batch rows for all three standard Newton solvers, four warm-start
+  modes, and sizes 32/64/128.
+- The sampled single and serial-batch benchmark rows passed with
+  `contract_ok=1`; the single row reported `solver_supports_problem=1`.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Demo Native Support Labels
 
 This is the latest hand-off. Older sections below are historical checkpoints
