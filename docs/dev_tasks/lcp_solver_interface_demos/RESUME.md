@@ -1,5 +1,87 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Pathological Benchmark Runtime Guards
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is a viable
+   milestone PR candidate when the maintainer approves publication; keep this
+   follow-up branch for subsequent PR(s) unless the maintainer explicitly
+   chooses a broader checkpoint scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark runtime guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `c355b915cad Guard LCP parallel batch benchmarks concretely`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af873`; the continuation fetched and
+  merged `origin/main` with `Already up to date.`
+
+What this checkpoint changes:
+
+- Mildly ill-conditioned, near-singular, and singular-degenerate scalar
+  benchmark runners now recheck the generated problem with the selected
+  solver's concrete `supportsProblem(problem)` predicate before timing the row.
+- Mildly ill-conditioned, near-singular, singular-degenerate friction-index,
+  and singular-degenerate standard/boxed serial batch runners now recheck every
+  generated batch problem with the selected solver's concrete support predicate
+  before timing the row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported pathological cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(MildIllConditioned/(Standard32|CoupledFrictionIndex8)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|MildIllConditionedBatchSerial/(Standard32|CoupledFrictionIndex8)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|NearSingular/(Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|ShockPropagation|BoxedSemiSmoothNewton)|NearSingularBatchSerial/(Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|ShockPropagation|BoxedSemiSmoothNewton)|SingularDegenerate/(Standard16|Boxed16|CoupledFrictionIndex6)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|SingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/(Pgs|Dantzig)|SingularDegenerateStandardBoxedBatchSerial/(Standard16|Boxed16)/(Dantzig|Pgs|BoxedSemiSmoothNewton))'
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpSingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/.*'
+pixi run bm lcp_compare -- --benchmark_filter='BM_Lcp(MildIllConditioned/CoupledFrictionIndex8/Pgs|MildIllConditionedBatchSerial/CoupledFrictionIndex8/Pgs/4|NearSingular/Boxed8/ShockPropagation|NearSingularBatchSerial/Boxed8/ShockPropagation/4|SingularDegenerate/CoupledFrictionIndex6/BoxedSemiSmoothNewton|SingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/Admm/4|SingularDegenerateStandardBoxedBatchSerial/Boxed16/BoxedSemiSmoothNewton/4)$' --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+git diff --check
+pixi run build
+```
+
+Result:
+
+- Row-list validation passed and listed representative pathological scalar and
+  serial batch rows.
+- A focused singular friction-index serial batch row list passed and confirmed
+  the concrete registered solvers are `Admm`, `Sap`, and
+  `BoxedSemiSmoothNewton`.
+- The sampled scalar and serial batch rows passed with `contract_ok=1`; scalar
+  rows also reported `solver_supports_problem=1`.
+- Lint, whitespace checks, and the default build passed.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Parallel Batch Fixture Runtime Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

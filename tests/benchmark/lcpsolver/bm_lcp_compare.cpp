@@ -8348,6 +8348,11 @@ void RunMildIllConditionedBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Mildly ill-conditioned case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8615,6 +8620,13 @@ void RunMildIllConditionedBatchSerialBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Mildly ill-conditioned batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -8717,6 +8729,10 @@ void RunNearSingularBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError("Near-singular case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8768,6 +8784,13 @@ void RunNearSingularBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Near-singular batch case exceeds concrete solver support");
     return;
   }
 
@@ -8866,6 +8889,11 @@ void RunSingularDegenerateBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Singular-degenerate case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8934,6 +8962,14 @@ void RunSingularDegenerateFrictionIndexBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Singular-degenerate friction-index batch case exceeds concrete "
+        "solver support");
     return;
   }
 
@@ -9020,6 +9056,14 @@ void RunSingularDegenerateStandardBoxedBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Singular-degenerate standard/boxed batch case exceeds concrete "
+        "solver support");
     return;
   }
 
