@@ -7189,6 +7189,11 @@ void RunManifestBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Manifest benchmark case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7228,6 +7233,11 @@ void RunActiveSetTransitionBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active-set transition case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7258,6 +7268,11 @@ void RunActiveFrictionIndexContactBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active friction-index contact case exceeds concrete solver support");
     return;
   }
 

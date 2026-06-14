@@ -1,5 +1,78 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Base Benchmark Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `4c3c8faef46 Guard LCP contact sweep benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; this continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Base benchmark status:
+
+- `RunManifestBenchmark()` now rechecks the exact manifest benchmark problem
+  with the selected solver's concrete `supportsProblem(problem)` predicate
+  before timing the row.
+- `RunActiveSetTransitionBenchmark()` now rechecks the generated active-set
+  transition problem with the selected solver's concrete support predicate.
+- `RunActiveFrictionIndexContactBenchmark()` now rechecks the generated active
+  friction-index contact problem with the selected solver's concrete support
+  predicate.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `git fetch origin` followed by `git merge origin/main` passed as a no-op;
+  `origin/main` remained `9de4ac6af873`.
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpActiveSetTransition/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpActiveFrictionIndexContact/FrictionIndex/(Pgs|Admm|BoxedSemiSmoothNewton)'`
+  passed. It listed representative manifest, active-set transition, and
+  active friction-index contact rows for the guarded benchmark families.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$|BM_LcpActiveSetTransition/FrictionIndex/Pgs$|BM_LcpActiveFrictionIndexContact/FrictionIndex/Admm$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The sampled rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed.
+- `pixi run -e cuda test-all` passed all 7 groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Contact Sweep Runtime Guards
 
 This is the latest hand-off state. Sections below are historical checkpoints
