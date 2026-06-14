@@ -34,7 +34,7 @@ def benchmark_timing_ns(row: Mapping[str, Any]) -> float:
         return math.nan
     try:
         return timing_to_ns(float(value), str(row.get("time_unit", "ns")))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return math.nan
 
 

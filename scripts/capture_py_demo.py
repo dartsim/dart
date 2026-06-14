@@ -738,7 +738,7 @@ def _read_scene_resolved_solver_identity(
         return None
     try:
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(payload, dict):
         return None
@@ -765,7 +765,7 @@ def _read_scene_metrics_evidence(
         return None
     try:
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(payload, dict):
         return None

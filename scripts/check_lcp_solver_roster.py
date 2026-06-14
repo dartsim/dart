@@ -905,7 +905,7 @@ def check_demo_standalone_smoke_metadata() -> None:
         smoke_expected = tuple(
             float(value) for value in metadata["_STANDALONE_SMOKE_EXPECTED"]
         )
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         smoke_expected = ()
     if smoke_expected != expected_solution:
         errors.append(
@@ -982,7 +982,7 @@ def check_demo_standalone_problem_cases() -> None:
 
         try:
             tolerance = float(row.get("tolerance", "nan"))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             tolerance = math.nan
         if not math.isfinite(tolerance) or tolerance <= 0.0:
             errors.append(f"{case}: tolerance must be positive and finite")

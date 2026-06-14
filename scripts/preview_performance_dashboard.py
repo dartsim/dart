@@ -34,7 +34,7 @@ def _git(*args: str) -> str:
             capture_output=True,
             text=True,
         ).stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         return ""
 
 
