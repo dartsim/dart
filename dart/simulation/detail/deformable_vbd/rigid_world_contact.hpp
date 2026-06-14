@@ -1743,8 +1743,7 @@ inline Eigen::Vector3d avbdRigidWorldContactCanonicalLocalPoint(
 //==============================================================================
 template <typename RowOrderVector>
 inline void assignAvbdRigidWorldContactRows(
-    AvbdRigidWorldContactSnapshot& snapshot,
-    RowOrderVector& rows)
+    AvbdRigidWorldContactSnapshot& snapshot, RowOrderVector& rows)
 {
   rows.clear();
   rows.reserve(snapshot.contacts.size());
