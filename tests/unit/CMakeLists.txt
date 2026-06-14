@@ -166,6 +166,7 @@ set(
   common/test_composite.cpp
   common/test_exception.cpp
   common/test_factory.cpp
+  common/test_feature_support.cpp
   common/test_frame_allocator.cpp
   common/test_free_list_allocator.cpp
   common/test_local_resource.cpp

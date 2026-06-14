@@ -1,0 +1,89 @@
+# C++23 Modernization Plan
+
+Status: **in progress** (DART 7). Branch: `dart7-cpp23-modernization`.
+
+DART is already idiomatic C++20 (pervasive `std::span`/ranges/concepts,
+`using enum`, `std::source_location`, `[[nodiscard]]`, fmt logging) and used
+**zero** C++23 before this effort. C++23 here is about _deleting hand-rolled
+standard-library reimplementations and repetitive boilerplate_ — making the code
+cleaner, simpler, less error-prone, and in a few spots faster — not about new
+capability.
+
+This document is the source of truth for the phased rollout and the portability
+gate. The machine-readable counterpart is
+[`dart/common/feature_support.hpp`](../../dart/common/feature_support.hpp).
+
+## Compiler floor
+
+DART's pinned toolchains (via pixi/conda) are the real constraint — **not** the
+worst-case upstream compilers:
+
+| Platform | Compiler                          | Standard library |
+| -------- | --------------------------------- | ---------------- |
+| Linux    | GCC 15.2 (and conda clang)        | libstdc++ 15     |
+| macOS    | conda clang (no AppleClang in CI) | libc++ 22        |
+| Windows  | MSVC 14.51 / VS2026               | MSVC STL         |
+
+Consequences that shape every decision below:
+
+- There is **no AppleClang** in the matrix — macOS CI runs entirely through
+  `pixi run` on the conda toolchain. The usual "AppleClang lags" deferral does
+  **not** apply to DART; core-language C++23 and `move_only_function` clear on
+  every platform.
+- The real gate is **library** completeness: libc++ 22 still lacks
+  `std::generator`, `views::chunk`/`slide`/`cartesian_product`, `<stacktrace>`,
+  `<spanstream>`; and libstdc++ ships `<mdspan>` only from GCC 16 (our Linux
+  floor is GCC 15).
+- MSVC has no stable `/std:c++23`; CMake maps `cxx_std_23` to `/std:c++latest`,
+  so Windows rides _preview_ C++23. Keep Windows on the adopt-now subset.
+
+## Portability gate
+
+| Bucket                 | Features                                                                                                                                                                                                                                          | Rule                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Adopt now**          | `std::expected`, `optional` monadic ops, `std::to_underlying`, `std::unreachable` (via `DART_UNREACHABLE`), deducing-this, multidim `operator[]`, static `operator()`, `[[assume]]`/relaxed `constexpr`, ranges `zip`/`enumerate`/`to`/`contains` | Use unconditionally once compiling as C++23.                                               |
+| **Adopt with guard**   | `std::print` (use `fmt::print`), `flat_map`/`flat_set`, `move_only_function`                                                                                                                                                                      | Use only behind the matching `DART_HAS_*` macro with a fallback.                           |
+| **Defer (do not use)** | `std::generator`, `views::chunk`/`slide`/`cartesian_product`, `<stacktrace>`, `<spanstream>`, `std::mdspan` (vendor Kokkos if needed), `import std`                                                                                               | Blocked by libc++/GCC 15 gaps. Treat as a hard lint. Never use `mdspan` in CUDA `.cu` TUs. |
+
+## Phased rollout
+
+Each phase ends green (build + `test-unit`) and is committed as a checkpoint.
+
+- **Phase 0 — Enablement.** `DART_UNREACHABLE` macro (release `std::unreachable`,
+  debug fatal+abort); `dart/common/feature_support.hpp` probe header; a
+  compile-time `static_assert` smoke test (`tests/unit/common/test_feature_support.cpp`)
+  that fails loudly if a runner silently lacks an adopt-now feature. No standard
+  bump yet.
+- **Phase 1 — Zero-risk mechanical.** `std::to_underlying` for enum→underlying
+  casts; `DART_UNREACHABLE` on _audited_ exhaustive switches (parser/fallback
+  sites stay error-returns/asserts); static `operator()` on stateless functors.
+- **Phase 2 — Flip the switch.** Bump `cxx_std_20 → cxx_std_23` at
+  `cmake/dart_defs.cmake:475` and `:2312`, plus `dartsim/{ui,engine}/CMakeLists.txt`.
+  Verify all CI platforms + CUDA. Document `/std:c++latest` on Windows.
+- **Phase 3 — Core-language dedup.** Deducing-this to collapse CRTP `derived()`
+  and const/non-const accessor pairs — start in leaf/`detail/` headers
+  (`math/lie_group`, `simulation/ecs`) before public-ABI headers; multidim
+  `operator[](i,j)` on matrix types with call sites updated in lockstep. Verify
+  dartpy at each public-header step.
+- **Phase 4 — Vocabulary types.** Migrate `dart::common::Result` → `std::expected`
+  behind a thin `using` alias, then convert call sites; adopt `optional` monadic
+  ops in parsers; convert `bool`+out-param solver/IK/IO signatures via **new
+  overloads** to protect ABI/dartpy/gz-physics.
+- **Phase 5 — Guarded / optional.** `std::print` via fmt at debug/HUD/benchmark
+  sites; safe-subset ranges (`zip`/`enumerate`/`contains`/`to`) for parallel-array
+  loops; `flat_map`/`flat_set` and `move_only_function` only behind feature-test
+  guards with std fallbacks.
+- **Phase 6 — Deferred.** Optionally vendor Kokkos `mdspan` to unblock the
+  SoA/SDF/LCP buffer rewrites; keep `generator`/`chunk`/`stacktrace` out until
+  libc++ ships them.
+
+## What NOT to do
+
+- No `std::generator` or `views::chunk`/`slide`/`cartesian_product` — they break
+  the libc++ build. Keep the hand-rolled `SimdChunksView` and vector-returning
+  tree traversals.
+- No repo-wide `mdspan` or `import std`.
+- `DART_UNREACHABLE` is not find-and-replace: many `DART_ASSERT(false)` sites are
+  reachable on malformed input or return a safe fallback. Audit each.
+- ABI/dartpy churn is the dominant `std::expected` cost: prefer new overloads,
+  and reserve breaking enum promotions for the DART 8 ABI window.
