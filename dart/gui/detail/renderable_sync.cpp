@@ -59,12 +59,11 @@ using ::filament::math::mat4f;
 
 mat4f toFilamentTransform(const Eigen::Isometry3d& transform)
 {
-  const Eigen::Matrix4d matrix = transform.matrix();
+  const Eigen::Matrix4f matrix = transform.matrix().cast<float>();
   mat4f out;
+  // filament mat4f and Eigen are both column-major; copy column by column.
   for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      out[col][row] = static_cast<float>(matrix(row, col));
-    }
+    Eigen::Map<Eigen::Vector4f>(out[col].v) = matrix.col(col);
   }
   return out;
 }
