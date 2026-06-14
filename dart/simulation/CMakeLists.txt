@@ -111,7 +111,6 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
     ${cuda_target_name}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
-  target_compile_features(${cuda_target_name} PUBLIC cxx_std_23)
   target_link_libraries(
     ${cuda_target_name}
     PUBLIC ${target_name}
