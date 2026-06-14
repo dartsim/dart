@@ -823,17 +823,31 @@ public:
   {
   }
 
+  ~WorldStepProfilingExecutor() override
+  {
+    m_stageProfile.graphProfiles.resize(m_nextGraphProfileIndex);
+  }
+
   void execute(const ComputeGraph& graph) override
   {
-    m_stageProfile.graphProfiles.push_back(m_delegate.executeProfiled(graph));
+    auto& profile = nextGraphProfile();
+    m_delegate.executeProfiled(graph, profile);
   }
 
   [[nodiscard]] ComputeExecutionProfile executeProfiled(
       const ComputeGraph& graph) override
   {
-    auto profile = m_delegate.executeProfiled(graph);
-    m_stageProfile.graphProfiles.push_back(profile);
+    auto& profile = nextGraphProfile();
+    m_delegate.executeProfiled(graph, profile);
     return profile;
+  }
+
+  void executeProfiled(
+      const ComputeGraph& graph, ComputeExecutionProfile& profile) override
+  {
+    auto& storedProfile = nextGraphProfile();
+    m_delegate.executeProfiled(graph, storedProfile);
+    profile = storedProfile;
   }
 
   [[nodiscard]] std::size_t getWorkerCount() const override
@@ -842,8 +856,20 @@ public:
   }
 
 private:
+  ComputeExecutionProfile& nextGraphProfile()
+  {
+    if (m_nextGraphProfileIndex < m_stageProfile.graphProfiles.size()) {
+      return m_stageProfile.graphProfiles[m_nextGraphProfileIndex++];
+    }
+
+    m_stageProfile.graphProfiles.emplace_back();
+    ++m_nextGraphProfileIndex;
+    return m_stageProfile.graphProfiles.back();
+  }
+
   ComputeExecutor& m_delegate;
   WorldStepStageProfile& m_stageProfile;
+  std::size_t m_nextGraphProfileIndex = 0;
 };
 
 } // namespace
@@ -878,7 +904,6 @@ void WorldStepPipeline::executeProfiled(
     entry.duration = {};
     entry.acceleration = metadata.acceleration;
     entry.acceleratedBackendEnabled = false;
-    entry.graphProfiles.clear();
 
     const bool stageCanUseGpuBackend
         = hasAcceleration(metadata.acceleration, ComputeStageAcceleration::Gpu);

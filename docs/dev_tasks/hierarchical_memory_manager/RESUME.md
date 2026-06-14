@@ -1,34 +1,37 @@
 # Resume: Hierarchical Memory Manager
 
-## Hard Stop Handoff (2026-06-14, Profile Snapshot Reuse)
+## Hard Stop Handoff (2026-06-14, Nested Profile Storage Reuse)
 
-Resume from exactly one branch:
-`pr/hmm-phase45-replay-snapshot-allocators`, tracking
-`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
-HMM handoff entry point unless a maintainer explicitly redirects the work.
-The branch currently has no open PR. Fresh resume recon found the branch clean
-at `544126e69fe` (`Record HMM diff contact Jacobian handoff`) before this
-slice; the profiling slice landed as `886c630fadd` (`Reuse profiled World step
-snapshots`). Before checkpoint PR publication, the branch merged latest
-`origin/main` at `9de4ac6af87` via merge commit `9e9e8a45bd8` to satisfy the
-published-PR base-merge rule.
+Checkpoint PR #2996 (`Reuse profiled World step snapshots`) is open against
+`main` from `pr/hmm-phase45-replay-snapshot-allocators` at `97733411196`, with
+milestone `DART 7.0`. Live GitHub recon on 2026-06-14 reported it is no longer
+draft and has merge state `BLOCKED`. Treat that PR as the checkpoint for the
+profile snapshot reuse slice; do not add follow-up work to that branch unless a
+maintainer explicitly redirects the work.
 
-Latest committed slice: profiled `World::step()` now reuses the existing
-`WorldStepProfile` snapshot instead of replacing it with a newly returned
-profile every profiled step. `WorldStepPipeline` has an in-place profiled
-execution overload that clears and resizes the existing top-level stage profile
-vector, resets each reused stage entry, and preserves the existing
-return-by-value convenience overload by delegating through the in-place path.
+Continue current HMM work from the local follow-up branch
+`pr/hmm-phase45-followup-allocation-slice`, based on checkpoint head
+`97733411196`. This branch is local only at the time of this handoff. Do not
+push it or open a follow-up PR without explicit maintainer approval.
+
+Latest local slice: profiled `World::step()` now reuses nested same-shape
+compute-graph profile storage for built-in inline graph execution. The
+world-step profiling wrapper preserves warmed `WorldStepStageProfile`
+`graphProfiles` slots instead of clearing them every step, and built-in
+sequential/inline parallel executor profiling can fill an existing
+`ComputeExecutionProfile` so node-profile storage and critical-path scratch are
+reused.
 
 The focused proof is
-`WorldStepProfileIntegration.WarmedCustomPipelineProfileDoesNotAllocate`, which
-warms a profiled custom `WorldStepPipeline`, runs a third profiled
-`World::step()`, and verifies zero global-heap allocations while preserving the
-stage vector capacity. This closes the top-level profiled World-step snapshot
-allocation gap for warmed same-shape pipelines. It does not claim nested
-compute-graph `graphProfiles` are allocation-free, does not change summary text
-rendering, does not remove the public return-by-value profiling convenience
-API, and does not broaden non-profile build behavior.
+`WorldStepProfileIntegration.WarmedNestedGraphProfileDoesNotAllocate`, which
+warms a profiled `World` with a kinematics graph, runs a third profiled
+`World::step()` through `ParallelExecutor`, and verifies zero global-heap
+allocations while preserving top-level stage, nested graph-profile, and nested
+node-profile capacities. This closes the warmed same-shape inline nested
+compute-graph profile gap for built-in World stages. It does not claim
+allocation-free profiling for Taskflow-backed non-inline parallel graphs, public
+return-by-value profile copies, profile summary rendering, or arbitrary custom
+executors that only implement the legacy return-by-value profiling API.
 
 Current next-slice notes: start from a fresh measured gap rather than older
 historical candidates. Source inspection on this branch shows the previously
@@ -41,20 +44,27 @@ or a newly proven DART-owned stage scratch gap; do not broaden public
 return-by-value convenience APIs unless built-in World code consumes that
 storage.
 
-Validation for the profiling slice before the pre-PR base merge:
+Focused validation for the current follow-up slice:
 
 ```bash
 pixi run cmake --build build/default/cpp/Release --target test_world_step_profiling -j 8
 pixi run build/default/cpp/Release/bin/test_world_step_profiling \
-  --gtest_filter=WorldStepProfileIntegration.WarmedCustomPipelineProfileDoesNotAllocate
+  --gtest_filter=WorldStepProfileIntegration.WarmedNestedGraphProfileDoesNotAllocate
 pixi run build/default/cpp/Release/bin/test_world_step_profiling
-pixi run lint
-git diff --check
-pixi run build
-pixi run -e cuda test-all
+pixi run cmake --build build/default/cpp/Release --target test_compute_graph -j 8
+pixi run build/default/cpp/Release/bin/test_compute_graph
 ```
 
-Post-base-merge checkpoint validation:
+Latest local validation before commit:
+
+```bash
+pixi run lint
+git diff --check
+DART_PARALLEL_JOBS=8 pixi run build
+DART_PARALLEL_JOBS=8 pixi run -e cuda test-all
+```
+
+Historical checkpoint validation for PR #2996:
 
 ```bash
 pixi run lint
@@ -65,9 +75,6 @@ pixi run build/default/cpp/Release/bin/test_world_step_profiling
 pixi run -e cuda cmake --build build/cuda/cpp/Release --target test_world_step_profiling -j 8
 pixi run -e cuda build/cuda/cpp/Release/bin/test_world_step_profiling
 ```
-
-Before publishing or opening a PR from this branch, get explicit maintainer
-approval before pushing.
 
 ## Historical Slices Below
 

@@ -51,16 +51,21 @@ void SequentialExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile SequentialExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+  ComputeExecutionProfile profile;
+  executeProfiled(graph, profile);
+  return profile;
+}
+
+//==============================================================================
+void SequentialExecutor::executeProfiled(
+    const ComputeGraph& graph, ComputeExecutionProfile& profile)
+{
 #if DART_BUILD_PROFILE
-  ComputeExecutionProfiler profiler(graph, getWorkerCount());
-  profiler.start();
-  for (auto* node : graph.getTopologicalOrderView()) {
-    profiler.executeNode(*node);
-  }
-  return profiler.finish();
+  ComputeExecutionProfiler::executeInline(
+      graph, getWorkerCount(), profile, m_profilePathTimes);
 #else
   execute(graph);
-  return {};
+  profile = {};
 #endif
 }
 

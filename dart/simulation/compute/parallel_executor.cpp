@@ -42,6 +42,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 namespace dart::simulation::compute {
 
@@ -60,6 +61,7 @@ public:
 
   std::unique_ptr<tf::Executor> executor;
   std::size_t inlineThreshold = 1;
+  std::vector<ComputeExecutionProfile::Duration> inlineProfilePathTimes;
 };
 
 //==============================================================================
@@ -119,24 +121,30 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+  ComputeExecutionProfile profile;
+  executeProfiled(graph, profile);
+  return profile;
+}
+
+//==============================================================================
+void ParallelExecutor::executeProfiled(
+    const ComputeGraph& graph, ComputeExecutionProfile& profile)
+{
 #if DART_BUILD_PROFILE
   DART_SIMULATION_ASSERT_MSG(
       graph.findResourceHazards().empty(),
       "Parallel execution found unordered resource-access hazards; add an "
       "explicit dependency or declare a reduction");
 
-  ComputeExecutionProfiler profiler(graph, getWorkerCount());
-
   // Cost gate: mirror execute(); a sub-threshold graph profiles its inline
   // (sequential) run, which is what actually executes.
   if (graph.getNodeCount() <= m_impl->inlineThreshold) {
-    profiler.start();
-    for (auto* node : graph.getTopologicalOrderView()) {
-      profiler.executeNode(*node);
-    }
-    return profiler.finish();
+    ComputeExecutionProfiler::executeInline(
+        graph, getWorkerCount(), profile, m_impl->inlineProfilePathTimes);
+    return;
   }
 
+  ComputeExecutionProfiler profiler(graph, getWorkerCount());
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
 
@@ -153,10 +161,10 @@ ComputeExecutionProfile ParallelExecutor::executeProfiled(
 
   profiler.start();
   m_impl->executor->run(taskflow).get();
-  return profiler.finish();
+  profile = profiler.finish();
 #else
   execute(graph);
-  return {};
+  profile = {};
 #endif
 }
 

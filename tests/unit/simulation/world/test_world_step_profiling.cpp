@@ -519,6 +519,51 @@ TEST(WorldStepProfileIntegration, WarmedCustomPipelineProfileDoesNotAllocate)
   EXPECT_EQ(stage.executionCount, 3u);
 }
 
+TEST(WorldStepProfileIntegration, WarmedNestedGraphProfileDoesNotAllocate)
+{
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  world.addRigidBody("profiled_kinematics_node", options);
+
+  sx::compute::ParallelExecutor executor(2);
+
+  world.setStepProfilingEnabled(true);
+  world.step(executor);
+  world.step(executor);
+
+  const auto* kinematics = world.getLastStepProfile().getStage("kinematics");
+  ASSERT_NE(kinematics, nullptr);
+  ASSERT_FALSE(kinematics->graphProfiles.empty());
+  ASSERT_FALSE(kinematics->graphProfiles.front().nodes.empty());
+  const std::size_t stageCapacity
+      = world.getLastStepProfile().stages.capacity();
+  const std::size_t graphProfileCapacity = kinematics->graphProfiles.capacity();
+  const std::size_t nodeProfileCapacity
+      = kinematics->graphProfiles.front().nodes.capacity();
+
+  ScopedHeapAllocationCounter heapCounter;
+  world.step(executor);
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated by warmed nested compute-graph "
+         "profiling: "
+      << heapCounter.allocationBytes();
+
+  const auto* refreshedKinematics
+      = world.getLastStepProfile().getStage("kinematics");
+  ASSERT_NE(refreshedKinematics, nullptr);
+  ASSERT_FALSE(refreshedKinematics->graphProfiles.empty());
+  ASSERT_FALSE(refreshedKinematics->graphProfiles.front().nodes.empty());
+  EXPECT_EQ(world.getLastStepProfile().stages.capacity(), stageCapacity);
+  EXPECT_EQ(
+      refreshedKinematics->graphProfiles.capacity(), graphProfileCapacity);
+  EXPECT_EQ(
+      refreshedKinematics->graphProfiles.front().nodes.capacity(),
+      nodeProfileCapacity);
+}
+
 #else
 
 TEST(WorldStepProfileIntegration, BuildProfileOffMakesRuntimeToggleANoop)
