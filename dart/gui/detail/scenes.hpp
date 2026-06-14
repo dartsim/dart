@@ -70,6 +70,7 @@ struct DartScene
   std::vector<IkHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
   std::function<std::vector<dart::gui::DebugLabelDescriptor>()> debugLabels;
+  std::function<dart::gui::DebugScene()> debugProvider;
   std::vector<dart::gui::BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
@@ -145,6 +146,7 @@ struct AppOptions
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::Gizmo> gizmos;
   std::function<std::vector<dart::gui::DebugLabelDescriptor>()> debugLabels;
+  std::function<dart::gui::DebugScene()> debugProvider;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;

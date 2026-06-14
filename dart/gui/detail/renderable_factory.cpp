@@ -1593,6 +1593,34 @@ Renderable createPlaneRenderable(
 
 } // namespace
 
+// True for shapes rendered with a lit material that exposes metallic/roughness/
+// reflectance parameters and does not supply its own per-part asset materials.
+bool shapeUsesLitMaterialOverride(ShapeKind kind)
+{
+  switch (kind) {
+    case ShapeKind::Box:
+    case ShapeKind::Sphere:
+    case ShapeKind::Ellipsoid:
+    case ShapeKind::Cylinder:
+    case ShapeKind::Capsule:
+    case ShapeKind::Cone:
+    case ShapeKind::Pyramid:
+    case ShapeKind::MultiSphere:
+    case ShapeKind::ConvexMesh:
+    case ShapeKind::Heightmap:
+    case ShapeKind::SoftMesh:
+    case ShapeKind::Plane:
+      return true;
+    case ShapeKind::LineSegments:
+    case ShapeKind::PointCloud:
+    case ShapeKind::VoxelGrid:
+    case ShapeKind::Mesh:
+    case ShapeKind::Unsupported:
+      return false;
+  }
+  return false;
+}
+
 std::optional<Renderable> createRenderableFromDescriptor(
     ::filament::Engine& engine,
     const MaterialSet& materials,
@@ -1701,6 +1729,12 @@ std::optional<Renderable> createRenderableFromDescriptor(
 
   if (renderable) {
     applyRenderableShadowSettings(engine, *renderable, descriptor.material);
+    // Apply per-shape PBR overrides only to lit primitives. Unlit line/point/
+    // voxel renderables have no PBR parameters, and asset meshes
+    // (ShapeKind::Mesh) carry their own per-part materials.
+    if (shapeUsesLitMaterialOverride(descriptor.geometry.kind)) {
+      applyDescriptorMaterialOverride(*renderable, descriptor.material);
+    }
   }
 
   return renderable;

@@ -26,6 +26,9 @@ class _FallbackMaterialDescriptor:
         self.visible = True
         self.casts_shadows = True
         self.receives_shadows = True
+        self.metallic: float | None = None
+        self.roughness: float | None = None
+        self.reflectance: float | None = None
 
 
 class _FallbackRenderableDescriptor:
@@ -72,6 +75,29 @@ def _shape_scalar(shape: Any, name: str) -> float:
         return float(value)
     except Exception:  # noqa: BLE001
         return 0.0
+
+
+def _visual_pbr_value(visual: Any, name: str) -> float | None:
+    value = _shape_member(visual, name)
+    if value is None:
+        return None
+    try:
+        scalar = float(value)
+    except Exception:  # noqa: BLE001
+        return None
+    if not np.isfinite(scalar) or scalar < 0.0:
+        return None
+    return scalar
+
+
+def _copy_visual_pbr(material: Any, visual: Any) -> None:
+    for name in ("metallic", "roughness", "reflectance"):
+        if not hasattr(material, name):
+            continue
+        try:
+            setattr(material, name, _visual_pbr_value(visual, name))
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def world_render_frame() -> Any:
@@ -212,6 +238,7 @@ class DescriptorRenderScene:
                 material.receives_shadows = shadowed
             except Exception:  # noqa: BLE001
                 pass
+            _copy_visual_pbr(material, visual)
             descriptor.material = material
             try:
                 descriptor.world_transform = _isometry_to_matrix(frame.get_transform())

@@ -229,6 +229,21 @@ struct ApplicationOptions
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
   std::function<std::vector<DebugLabelDescriptor>()> debugLabels;
+
+  /// Optional provider of per-frame debug geometry drawn into the built-in
+  /// overlay.
+  ///
+  /// Lets any application contribute custom debug lines, triangles, and labels
+  /// through one DART concept (`DebugScene`) each frame. The geometry renders
+  /// with the same unlit, no-shadow, always-on-top treatment as the built-in
+  /// debug overlays, so hosts no longer need to build their own overlay wiring.
+  ///
+  /// The provider runs on the frame loop's thread once per loop iteration
+  /// (including frames the renderer skips for pacing) and its output is
+  /// re-uploaded each call, so keep it cheap; derive geometry from state you
+  /// already track rather than re-scanning large worlds. World stepping runs
+  /// on the same thread, so reading live world state is safe today.
+  std::function<DebugScene()> debugProvider;
   std::vector<InverseKinematicsHandle> ikHandles;
   std::vector<BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<KeyboardAction> keyboardActions;
