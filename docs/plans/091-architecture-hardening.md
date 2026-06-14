@@ -146,7 +146,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   self-approve; the maintainer merge is the independent acceptance recorded by
   the `[done]` heading marker.
 
-#### WP-091.2 Golden trajectories for the default step [claimed]
+#### WP-091.2 Golden trajectories for the default step [done — PR #2994, merged 2026-06-14]
 
 - Objective: committed reference trajectories (states, contact counts,
   tolerances) for a small scene matrix lock the default `World::step`

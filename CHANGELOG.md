@@ -9,6 +9,10 @@
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
+  - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
+    do not require `clang-scan-deps` while DART has no C++ module sources.
+  - Fixed the DART GUI smoke runner to use an absolute build-library path so
+    CTest working directories do not load stale installed DART libraries.
   - Removed the `dart/common/filesystem.hpp` compatibility header; include `<filesystem>` and use `std::filesystem`/`std::error_code` directly.
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
   - Renamed component meta headers to `All.hpp` and added the `dart/all.hpp` umbrella header; deprecated `<component>.hpp`/`all.hpp` headers now forward to `All.hpp`. ([#2047](https://github.com/dartsim/dart/pull/2047), [#2070](https://github.com/dartsim/dart/pull/2070), [#2084](https://github.com/dartsim/dart/pull/2084), [#2166](https://github.com/dartsim/dart/pull/2166))
@@ -608,6 +612,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `BM_AvbdPaperScaleHighRatioChainStep`, and a tracked
     `avbd-paper-scale-high-ratio-chain-packet.json` visual/benchmark packet for
     a 50-link/50,000:1 CPU smoke that keeps the same-hardware and GPU gates open,
+    plus a dashboard-selected `BM_AvbdPaperScaleHighRatioChainIterationSweep`
+    row over 25, 50, 100, and 200 max-iteration budgets for the same
+    paper-scale high-ratio chain fixture with a tracked
+    `avbd-paper-scale-high-ratio-iteration-sweep-packet.json`
+    benchmark/stability packet and
+    `avbd-paper-scale-high-ratio-iteration-sweep-plot.svg` rendered plot,
     plus tracked `avbd-rigid-revolute-motor-packet.json` and
     `avbd-rigid-prismatic-motor-packet.json` visual/benchmark packets for the
     public free-rigid revolute and prismatic motor rows,
@@ -752,7 +762,39 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for contact/joint/spring row ordinals instead of per-step tree maps, and
     append paths seed the body-index cache when they fall back to an existing
     snapshot entity scan. The rigid row driver skips per-body row-index scratch
-    setup for row families absent from a solve.
+    setup for row families absent from a solve. Rigid AVBD contact manifolds
+    with no active Coulomb friction capacity now clear their friction row
+    inventory and return after normal-row construction, avoiding tangent-row
+    warm-start lookup and construction work for frictionless manifolds while
+    preserving normal rows. The default sequential-impulse rigid contact stage
+    also skips tangent-basis setup, tangent effective-mass calculation, and
+    friction solve calls for contacts with zero combined Coulomb friction while
+    preserving normal contact projection, and uses a normal-only inner solve
+    loop when every assembled contact is frictionless. The ordinary rigid
+    contact path now also requests only basic contact query details when no
+    private AVBD contact config component is present, while
+    public `World::collide()` and AVBD contact snapshots still request full
+    shape-index/local-point data; the sequential normal solve caches
+    velocity/transform component pointers and unit normal impulse deltas across
+    its inner iterations and skips inverse world-inertia factorization for
+    centered frictionless normal contacts whose angular contact Jacobian is
+    exactly zero. The normal impulse loop also reuses precomputed contact
+    angular Jacobian terms when evaluating approach velocity and effective
+    mass, skips zero-angular normal velocity/effective-mass work, avoids
+    no-op angular velocity updates for centered normal rows, and returns early
+    when a normal impulse iteration produces no velocity change. Positional
+    contact correction also skips no-op writes to prescribed/static bodies, and
+    contact assembly skips prescribed/static endpoint arm and tangent-mass
+    work while preserving dynamic endpoint impulse math. Contact assembly now
+    also shares each endpoint's contact-material lookup between friction and
+    restitution setup, skips the square-root call for exact zero combined
+    friction products, and avoids no-op tangent-friction velocity writes for
+    zero deltas and static/prescribed endpoints.
+    During simulation bake, the rigid contact stage now
+    reserves ordinary and AVBD contact scratch from the collision-shape capacity
+    estimate and prewarms collision-query cache storage without generating
+    prepare-time contacts; `execute()` remains the only path that assembles
+    contact rows for the actual solve.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about

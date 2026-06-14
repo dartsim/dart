@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -119,6 +120,54 @@ std::size_t findEntityIndex(const EntityVector& entities, entt::entity entity)
 }
 
 } // namespace
+
+//==============================================================================
+TEST(AvbdRigidBlock, NormalizeRigidOrientationKeepsUnitAndRejectsInvalid)
+{
+  const Eigen::Quaterniond unit = Eigen::Quaterniond::Identity();
+  const Eigen::Quaterniond normalizedUnit
+      = vbd::normalizeAvbdRigidOrientation(unit);
+
+  EXPECT_DOUBLE_EQ(normalizedUnit.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.x(), 0.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.y(), 0.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.z(), 0.0);
+
+  const Eigen::Quaterniond scaled(2.0, 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedScaled
+      = vbd::normalizeAvbdRigidOrientation(scaled);
+  EXPECT_NEAR(normalizedScaled.norm(), 1.0, 1e-15);
+  EXPECT_DOUBLE_EQ(normalizedScaled.w(), 1.0);
+
+  const Eigen::Quaterniond zero(0.0, 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedZero
+      = vbd::normalizeAvbdRigidOrientation(zero);
+  EXPECT_DOUBLE_EQ(normalizedZero.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedZero.x(), 0.0);
+
+  const Eigen::Quaterniond invalid(
+      std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedInvalid
+      = vbd::normalizeAvbdRigidOrientation(invalid);
+  EXPECT_DOUBLE_EQ(normalizedInvalid.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedInvalid.x(), 0.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, BodyWorldPointKeepsOriginAnchorAtPosition)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 3.0);
+  state.orientation = rotationZ(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 originWorld = vbd::avbdRigidBodyWorldPoint(state, Vec3::Zero());
+
+  EXPECT_EQ(originWorld, state.position);
+
+  const Vec3 offsetWorld = vbd::avbdRigidBodyWorldPoint(state, Vec3::UnitX());
+
+  EXPECT_GT((offsetWorld - state.position).norm(), 0.0);
+}
 
 //==============================================================================
 TEST(AvbdRigidBlock, RigidStepUpdatesTranslationAndOrientation)
@@ -208,6 +257,25 @@ TEST(AvbdRigidBlock, PointAttachmentStampsForceTorqueAndPsdHessian)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, PointAttachmentOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(-1.0, 0.25, 2.0);
+  state.orientation = rotationX(0.25 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidPointAttachmentRow row;
+  row.axis = Vec3(0.5, -1.0, 2.0).normalized();
+
+  const vbd::Vector6d direction
+      = vbd::avbdRigidPointAttachmentDirection(state, row);
+
+  vbd::Vector6d expected = vbd::Vector6d::Zero();
+  expected.head<3>() = row.axis;
+
+  EXPECT_EQ(direction, expected);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointAttachmentDualUpdateGrowsInsideBounds)
 {
   vbd::AvbdRigidBodyState state;
@@ -288,6 +356,34 @@ TEST(AvbdRigidBlock, PointPairIncludesTorqueDirections)
   EXPECT_NEAR((secondDirection.head<3>() + Vec3::UnitX()).norm(), 0.0, 1e-12);
   EXPECT_NEAR(
       (secondDirection.tail<3>() - Vec3(0.0, 0.0, -1.0)).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, PointPairOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState stateA;
+  stateA.position = Vec3(0.5, -1.0, 2.0);
+  stateA.orientation = rotationZ(0.25 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(-2.0, 1.0, 0.25);
+  stateB.orientation = rotationY(0.5 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidPointPairRow row;
+  row.axis = Vec3(1.0, -2.0, 0.5).normalized();
+
+  const vbd::Vector6d firstDirection
+      = vbd::avbdRigidPointPairDirectionA(stateA, row);
+  const vbd::Vector6d secondDirection
+      = vbd::avbdRigidPointPairDirectionB(stateB, row);
+
+  vbd::Vector6d expectedFirst = vbd::Vector6d::Zero();
+  expectedFirst.head<3>() = row.axis;
+  vbd::Vector6d expectedSecond = vbd::Vector6d::Zero();
+  expectedSecond.head<3>() = -row.axis;
+
+  EXPECT_EQ(firstDirection, expectedFirst);
+  EXPECT_EQ(secondDirection, expectedSecond);
 }
 
 //==============================================================================
@@ -373,6 +469,62 @@ TEST(AvbdRigidBlock, PointPairDistanceSpringStampsRadialFiniteStiffness)
   EXPECT_NEAR((blockB.force - 8.0 * expectedB).norm(), 0.0, 1e-12);
   EXPECT_NEAR((blockA.hessian - expectedHessian).norm(), 0.0, 1e-12);
   EXPECT_NEAR((blockB.hessian - expectedHessian).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 0.5);
+  state.orientation = rotationY(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 axis = Vec3(1.0, 2.0, 0.5).normalized();
+  const double length = 2.0;
+  const double restLength = 1.0;
+  const double stiffness = 6.0;
+
+  vbd::AvbdRigidBodyBlock block;
+  vbd::addAvbdRigidDistanceSpringHessianAtWorldPoint(
+      block,
+      state,
+      state.position,
+      axis,
+      length,
+      restLength,
+      stiffness,
+      /*clampToPsd=*/true);
+
+  const Eigen::Matrix3d nnT = axis * axis.transpose();
+  const Eigen::Matrix3d pointHessian
+      = stiffness
+        * (nnT
+           + (1.0 - restLength / length) * (Eigen::Matrix3d::Identity() - nnT));
+  vbd::Matrix6d expectedHessian = vbd::Matrix6d::Zero();
+  expectedHessian.topLeftCorner<3, 3>() = pointHessian;
+
+  EXPECT_NEAR((block.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  const double translationAngularNorm
+      = block.hessian.topRightCorner<3, 3>().norm();
+  const double angularNorm = block.hessian.bottomRightCorner<3, 3>().norm();
+  EXPECT_NEAR(translationAngularNorm, 0.0, 1e-12);
+  EXPECT_NEAR(angularNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(-0.5, 1.0, 2.0);
+  state.orientation = rotationY(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 axis = Vec3(0.25, -1.0, 2.0).normalized();
+  const vbd::Vector6d direction
+      = vbd::avbdRigidDistanceSpringDirectionAtWorldPoint(
+          state, state.position, axis);
+
+  vbd::Vector6d expected = vbd::Vector6d::Zero();
+  expected.head<3>() = axis;
+  EXPECT_EQ(direction, expected);
 }
 
 //==============================================================================
@@ -463,6 +615,77 @@ TEST(AvbdRigidBlock, PointPairDistanceSpringStepReducesStretch)
 
   EXPECT_LT(finalDistance, initialDistance);
   EXPECT_GT(finalDistance, row.restLength);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidDistanceSpringBuilderUsesScratchForLargeInputs)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(1.5, 0.3, -0.2);
+
+  constexpr std::size_t kActiveSprings
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springs(
+      kActiveSprings + 1u);
+  for (std::size_t i = 0; i < kActiveSprings; ++i) {
+    auto& spring = springs[i];
+    spring.bodyA = 0;
+    spring.bodyB = 1;
+    spring.endpointA
+        = {11u + static_cast<std::uint32_t>(i),
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i))};
+    spring.endpointB
+        = {23u,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i + 1u))};
+    spring.rowIndex = static_cast<std::uint32_t>(i);
+    spring.row.localPointA = Vec3(0.01 * static_cast<double>(i), 0.0, 0.0);
+    spring.row.localPointB = Vec3(0.0, 0.02 * static_cast<double>(i), 0.0);
+    spring.row.restLength = 0.75 + 0.01 * static_cast<double>(i);
+    spring.row.materialStiffness = 20.0 + static_cast<double>(i);
+    spring.startStiffness = 2.0;
+    spring.maxStiffness = 80.0;
+  }
+  springs.back() = springs.front();
+  springs.back().bodyB = 99u;
+
+  vbd::AvbdScalarRowInventory springInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springRows;
+  vbd::AvbdRigidDistanceSpringRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStart);
+
+  ASSERT_EQ(scratch.activeRows.size(), kActiveSprings);
+  ASSERT_EQ(springInventory.size(), kActiveSprings);
+  ASSERT_EQ(springRows.size(), kActiveSprings);
+  EXPECT_EQ(springRows.back().rowIndex, kActiveSprings - 1u);
+  EXPECT_EQ(
+      springInventory[0].descriptor.key.role,
+      vbd::AvbdScalarRowRole::RigidDistanceSpring);
+  EXPECT_DOUBLE_EQ(springRows[0].row.materialStiffness, 20.0);
+  EXPECT_DOUBLE_EQ(
+      springRows.back().row.materialStiffness,
+      20.0 + static_cast<double>(kActiveSprings - 1u));
+
+  springInventory[0].state.stiffness = 30.0;
+  springInventory[0].state.lambda = 3.0;
+  springs[0].row.materialStiffness = 25.0;
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStart);
+
+  ASSERT_EQ(springInventory.size(), kActiveSprings);
+  ASSERT_EQ(springRows.size(), kActiveSprings);
+  EXPECT_DOUBLE_EQ(springInventory[0].state.stiffness, 25.0);
+  EXPECT_DOUBLE_EQ(springInventory[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(springRows[0].row.materialStiffness, 25.0);
 }
 
 //==============================================================================
@@ -983,6 +1206,8 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
 TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(-0.5, 0.3, -0.2);
 
   std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
   contacts[0].bodyA = 0;
@@ -992,7 +1217,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
          vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 4)};
   contacts[0].endpointB = {
       7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
-  contacts[0].point = Vec3::Zero();
+  contacts[0].point = Vec3(0.1, 0.2, -0.15);
   contacts[0].normalFromAtoB = 2.0 * Vec3::UnitX();
   contacts[0].depth = 0.2;
   contacts[0].frictionCoefficient = 0.5;
@@ -1051,10 +1276,139 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
   EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.upper, 4.0);
   EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.lower, -4.0);
   EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.upper, 4.0);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointA - normalRows[0].row.localPointA)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointB - normalRows[0].row.localPointB)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.localPointA - normalRows[0].row.localPointA)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.localPointB - normalRows[0].row.localPointB)
+          .norm(),
+      0.0,
+      1e-12);
   EXPECT_NEAR(frictionRows[0].first.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
   EXPECT_NEAR(frictionRows[0].second.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
   EXPECT_NEAR(
       frictionRows[0].first.axis.dot(frictionRows[0].second.axis), 0.0, 1e-12);
+  EXPECT_GT(frictionRows[0].first.localPointA.norm(), 0.0);
+  EXPECT_GT(frictionRows[0].first.localPointB.norm(), 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.offset, 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.offset, 0.0);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          states[0], states[1], frictionRows[0].first),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          states[0], states[1], frictionRows[0].second),
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  contacts[0].bodyA = 0;
+  contacts[0].bodyB = 1;
+  contacts[0].endpointA
+      = {42,
+         vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 4)};
+  contacts[0].endpointB = {
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+  contacts[0].point = Vec3(0.1, 0.2, -0.15);
+  contacts[0].normalFromAtoB = Vec3::UnitX();
+  contacts[0].depth = 0.2;
+  contacts[0].frictionCoefficient = 0.5;
+  contacts[0].startStiffness = 80.0;
+  contacts[0].maxStiffness = 400.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 1u);
+  normalInventory[0].state.lambda = 8.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+
+  normalInventory[0].state.lambda = 0.0;
+  contacts[0].startStiffness = 0.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(normalRows.size(), 1u);
+  EXPECT_TRUE(frictionInventory.records().empty());
+  EXPECT_TRUE(frictionRows.empty());
+
+  normalInventory[0].state.lambda = 8.0;
+  contacts[0].startStiffness = 80.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+
+  contacts[0].frictionCoefficient = 0.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(normalRows.size(), 1u);
+  EXPECT_TRUE(frictionInventory.records().empty());
+  EXPECT_TRUE(frictionRows.empty());
 }
 
 //==============================================================================
@@ -1146,6 +1500,116 @@ TEST(
   ASSERT_EQ(frictionRows.size(), 1u);
   EXPECT_NEAR(frictionRows[0].first.state.lambda, expected.x(), 1e-12);
   EXPECT_NEAR(frictionRows[0].second.state.lambda, expected.y(), 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(-0.5, 0.3, -0.2);
+
+  constexpr std::size_t kActiveContacts
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(kActiveContacts);
+  for (std::size_t i = 0; i < contacts.size(); ++i) {
+    auto& contact = contacts[i];
+    contact.bodyA = 0;
+    contact.bodyB = 1;
+    contact.endpointA
+        = {42u + static_cast<std::uint32_t>(i),
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i))};
+    contact.endpointB = {
+        7u,
+        vbd::packAvbdContactFeatureId(
+            vbd::AvbdContactFeatureKind::Face, static_cast<std::uint32_t>(i))};
+    contact.point = Vec3(0.01 * static_cast<double>(i), 0.2, -0.15);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.2 + 0.001 * static_cast<double>(i);
+    contact.frictionCoefficient = 0.5;
+    contact.startStiffness = 80.0;
+    contact.maxStiffness = 400.0;
+    contact.row = static_cast<std::uint32_t>(i);
+  }
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), kActiveContacts);
+  ASSERT_EQ(normalRows.size(), kActiveContacts);
+  EXPECT_EQ(scratch.activeContacts.size(), kActiveContacts);
+  EXPECT_EQ(scratch.contactLocalPoints.size(), kActiveContacts);
+  EXPECT_NEAR((normalRows[0].row.axis + Vec3::UnitZ()).norm(), 0.0, 1e-12);
+  EXPECT_DOUBLE_EQ(
+      normalRows.back().row.previousConstraintValue, contacts.back().depth);
+
+  for (std::size_t i = 0; i < normalInventory.size(); ++i) {
+    normalInventory[i].state.lambda = 8.0;
+  }
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
+  ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  frictionInventory[0].state.lambda = 3.0;
+  frictionInventory[1].state.lambda = 4.0;
+  const Vec3 previousFirstAxis = frictionInventory[0].direction;
+  const Vec3 previousSecondAxis = frictionInventory[1].direction;
+
+  contacts[0].normalFromAtoB = Vec3(1.0, 0.0, 1.0).normalized();
+  const Eigen::Matrix<double, 3, 2> currentBasis
+      = vbd::avbdRigidContactTangentBasis(contacts[0].normalFromAtoB);
+  const Eigen::Vector2d expected = vbd::projectAvbdFrictionDualToTangentPair(
+      3.0,
+      4.0,
+      previousFirstAxis,
+      previousSecondAxis,
+      currentBasis.col(0),
+      currentBasis.col(1));
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
+  ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  EXPECT_NEAR(frictionInventory[0].state.lambda, expected.x(), 1e-12);
+  EXPECT_NEAR(frictionInventory[1].state.lambda, expected.y(), 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.axis - currentBasis.col(0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.axis - currentBasis.col(1)).norm(), 0.0, 1e-12);
 }
 
 //==============================================================================
@@ -1634,6 +2098,102 @@ TEST(AvbdRigidBlock, LargeRigidMotorRowsUseProvidedScratchAllocator)
          "scratch allocator";
   EXPECT_EQ(linearMotorRows.size(), kRowCount);
   EXPECT_TRUE(angularMotorRows.empty());
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidMotorBuilderReusesLargeInputScratch)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidLinearMotor> linearMotors;
+  linearMotors.reserve(9);
+  for (std::uint32_t row = 0; row < 9u; ++row) {
+    linearMotors.push_back(
+        vbd::makeAvbdRigidLinearMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Vec3::Zero(),
+            Vec3::Zero(),
+            Vec3::UnitX(),
+            /*targetSpeed=*/0.75,
+            /*maxForce=*/6.0,
+            /*startStiffness=*/50.0,
+            /*maxStiffness=*/400.0,
+            row));
+  }
+
+  std::vector<vbd::AvbdRigidAngularMotor> angularMotors;
+  angularMotors.reserve(8);
+  for (std::uint32_t row = 0; row < 8u; ++row) {
+    angularMotors.push_back(
+        vbd::makeAvbdRigidAngularMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Eigen::Quaterniond::Identity(),
+            Vec3::UnitZ(),
+            /*targetSpeed=*/1.0,
+            /*maxTorque=*/4.0,
+            /*startStiffness=*/70.0,
+            /*maxStiffness=*/500.0,
+            100u + row));
+  }
+
+  vbd::AvbdScalarRowInventory motorInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearMotorRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularMotorRows;
+  vbd::AvbdRigidMotorRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(motorInventory.size(), 17u);
+  EXPECT_EQ(linearMotorRows.size(), linearMotors.size());
+  EXPECT_EQ(angularMotorRows.size(), angularMotors.size());
+  EXPECT_EQ(scratch.activeLinearRows.size(), linearMotors.size());
+  EXPECT_EQ(scratch.activeAngularRows.size(), angularMotors.size());
+  EXPECT_EQ(motorInventory[0].descriptor.key.row, 0u);
+  EXPECT_EQ(motorInventory[8].descriptor.key.row, 8u);
+  EXPECT_EQ(motorInventory[9].descriptor.key.row, 100u);
+  EXPECT_EQ(motorInventory[16].descriptor.key.row, 107u);
+
+  const std::size_t linearCapacity = scratch.activeLinearRows.capacity();
+  const std::size_t angularCapacity = scratch.activeAngularRows.capacity();
+  motorInventory[0].state.lambda = 3.0;
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch,
+      warmStart);
+
+  EXPECT_EQ(scratch.activeLinearRows.capacity(), linearCapacity);
+  EXPECT_EQ(scratch.activeAngularRows.capacity(), angularCapacity);
+  EXPECT_EQ(linearMotorRows.size(), linearMotors.size());
+  EXPECT_EQ(angularMotorRows.size(), angularMotors.size());
+  EXPECT_DOUBLE_EQ(motorInventory[0].state.lambda, 3.0);
 }
 
 //==============================================================================

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections import deque
 from typing import Any
 
@@ -23,6 +24,7 @@ _BOX_SIZE_2D = np.array([1.0, 0.5])
 _BOX_SIZE = np.array([1.0, 0.5, _THICKNESS])
 _BOX_COUNT = 11
 _BOX_INITIAL_SPEED = 10.0
+_MAX_FRICTION_ENV = "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION"
 _SOURCE_ROW: dict[str, Any] = {
     "demo": "avbd-demo2d",
     "repository": "https://github.com/savant117/avbd-demo2d",
@@ -64,6 +66,21 @@ _SOURCE_ROW: dict[str, Any] = {
 }
 
 
+def _dynamic_max_friction_from_env() -> float:
+    value = os.environ.get(_MAX_FRICTION_ENV)
+    if value is None:
+        return 5.0
+    try:
+        max_friction = float(value)
+    except ValueError as exc:
+        raise ValueError(f"{_MAX_FRICTION_ENV} must be a finite number") from exc
+    if not np.isfinite(max_friction):
+        raise ValueError(f"{_MAX_FRICTION_ENV} must be finite")
+    if max_friction < 0.0:
+        raise ValueError(f"{_MAX_FRICTION_ENV} must be non-negative")
+    return max_friction
+
+
 def _box_mass_2d(size_xy: np.ndarray, density: float) -> float:
     return float(np.prod(size_xy) * density)
 
@@ -78,15 +95,20 @@ def _full_box_inertia(size: np.ndarray, mass: float) -> np.ndarray:
     )
 
 
-def _source_row() -> dict[str, Any]:
+def _source_row(max_friction: float) -> dict[str, Any]:
+    source_shapes = {
+        name: dict(shape) for name, shape in _SOURCE_ROW["source_shapes"].items()
+    }
+    source_shapes["boxes"]["friction_range"] = (max_friction, 0.0)
     return {
         **_SOURCE_ROW,
         "solver_defaults": dict(_SOURCE_ROW["solver_defaults"]),
-        "source_shapes": {
-            name: dict(shape)
-            for name, shape in _SOURCE_ROW["source_shapes"].items()
-        },
+        "source_shapes": source_shapes,
         "expected_counts": dict(_SOURCE_ROW["expected_counts"]),
+        "parameters": {
+            "max_dynamic_box_friction": max_friction,
+            "environment_variable": _MAX_FRICTION_ENV,
+        },
     }
 
 
@@ -94,8 +116,8 @@ def _source_box_position(index: int) -> np.ndarray:
     return np.array([-30.0 + 2.0 * float(index), 0.75, 0.0])
 
 
-def _source_box_friction(index: int) -> float:
-    return 5.0 - float(index) / 10.0 * 5.0
+def _source_box_friction(index: int, max_friction: float) -> float:
+    return max_friction - float(index) / 10.0 * max_friction
 
 
 def _add_source_box(
@@ -128,6 +150,7 @@ def _add_source_box(
 
 
 def build() -> SceneSetup:
+    max_friction = _dynamic_max_friction_from_env()
     world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
 
     ground = _add_source_box(
@@ -150,7 +173,7 @@ def build() -> SceneSetup:
                 size=_BOX_SIZE,
                 size_2d=_BOX_SIZE_2D,
                 density=1.0,
-                friction=_source_box_friction(index),
+                friction=_source_box_friction(index, max_friction),
                 position=_source_box_position(index),
                 linear_velocity=np.array([_BOX_INITIAL_SPEED, 0.0, 0.0]),
             )
@@ -178,6 +201,7 @@ def build() -> SceneSetup:
 
     high_friction_speed_history: deque[float] = deque(maxlen=160)
     zero_friction_speed_history: deque[float] = deque(maxlen=160)
+    high_friction_speed_label = f"Friction {max_friction:.3g} speed"
 
     def build_panel(builder: object, context: object) -> None:
         high_friction_speed = float(
@@ -191,12 +215,13 @@ def build() -> SceneSetup:
 
         builder.text("source corpus: avbd-demo2d Dynamic Friction")
         builder.text("source scene: sceneDynamicFriction, index 2 of 19")
+        builder.text(f"max dynamic friction: {max_friction:.3g}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"collision shapes: {1 + len(boxes)}")
         builder.text(f"high-friction speed: {high_friction_speed:.3f} m/s")
         builder.text(f"zero-friction speed: {zero_friction_speed:.3f} m/s")
         builder.text(f"world time: {world.time:.3f} s")
-        builder.plot_lines("Friction 5 speed", list(high_friction_speed_history))
+        builder.plot_lines(high_friction_speed_label, list(high_friction_speed_history))
         builder.plot_lines("Friction 0 speed", list(zero_friction_speed_history))
         builder.separator()
         bridge.build_control_panel(builder, context)
@@ -210,8 +235,10 @@ def build() -> SceneSetup:
             "sx_world": world,
             "ground": ground,
             "boxes": boxes,
+            "max_dynamic_box_friction": max_friction,
+            "high_friction_speed_label": high_friction_speed_label,
             "source_demo_row": "avbd-demo2d dynamic friction",
-            "source_demo_reference": _source_row(),
+            "source_demo_reference": _source_row(max_friction),
         },
     )
 

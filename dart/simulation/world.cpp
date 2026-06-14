@@ -215,6 +215,7 @@ struct World::CollisionQueryCache
     Key key;
     const CollisionShape* shape;
     Eigen::Isometry3d pose;
+    Eigen::Isometry3d inversePose;
   };
 
   using KeyVector = std::vector<Key, CacheAllocator<Key>>;
@@ -6551,7 +6552,25 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 
 //==============================================================================
 std::span<const Contact> World::queryContacts(
-    const CollisionQueryOptions& options)
+    const CollisionQueryOptions& options, bool includeShapeContactDetails)
+{
+  return updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/true);
+}
+
+//==============================================================================
+void World::prepareCollisionQueryCache(
+    const CollisionQueryOptions& options, bool includeShapeContactDetails)
+{
+  (void)updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/false);
+}
+
+//==============================================================================
+std::span<const Contact> World::updateCollisionQueryCache(
+    const CollisionQueryOptions& options,
+    bool includeShapeContactDetails,
+    bool collectContacts)
 {
   if (!m_collisionQueryCache) {
     m_collisionQueryCache = makeCollisionQueryCache(m_memoryManager);
@@ -6636,12 +6655,15 @@ std::span<const Contact> World::queryContacts(
       if (!supportsNativeShape(shape)) {
         continue;
       }
+      const Eigen::Isometry3d worldPose = pose * shape.localTransform;
       specs.push_back(
           CollisionQueryCache::ShapeEntrySpec{
               CollisionQueryCache::Key{
                   entity, i, geometry.revision, multibody, isLink},
               &shape,
-              pose * shape.localTransform});
+              worldPose,
+              includeShapeContactDetails ? worldPose.inverse()
+                                         : Eigen::Isometry3d::Identity()});
     }
   };
 
@@ -6759,6 +6781,9 @@ std::span<const Contact> World::queryContacts(
   cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
   auto& contacts = cache.contacts;
   contacts.clear();
+  if (!collectContacts) {
+    return contacts;
+  }
   for (const auto& pair : cache.candidatePairs.pairs) {
     if (pair.first >= cache.entryByObjectId.size()
         || pair.second >= cache.entryByObjectId.size()) {
@@ -6784,19 +6809,21 @@ std::span<const Contact> World::queryContacts(
       // The native narrow phase reports the normal pointing from the second
       // object toward the first; the public Contact convention points from
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
-      contacts.push_back(
-          Contact{
-              CollisionBody(
-                  detail::fromRegistryEntity(cache.entries[i].entity), this),
-              CollisionBody(
-                  detail::fromRegistryEntity(cache.entries[j].entity), this),
-              point.position,
-              -point.normal,
-              point.depth,
-              specs[i].key.shapeIndex,
-              specs[j].key.shapeIndex,
-              specs[i].pose.inverse() * point.position,
-              specs[j].pose.inverse() * point.position});
+      Contact contact{
+          CollisionBody(
+              detail::fromRegistryEntity(cache.entries[i].entity), this),
+          CollisionBody(
+              detail::fromRegistryEntity(cache.entries[j].entity), this),
+          point.position,
+          -point.normal,
+          point.depth,
+          specs[i].key.shapeIndex,
+          specs[j].key.shapeIndex};
+      if (includeShapeContactDetails) {
+        contact.localPointA = specs[i].inversePose * point.position;
+        contact.localPointB = specs[j].inversePose * point.position;
+      }
+      contacts.push_back(std::move(contact));
     });
   }
 
