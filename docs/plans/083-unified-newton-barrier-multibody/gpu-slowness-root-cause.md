@@ -175,6 +175,62 @@ Measured GPU/CPU total-time ratio at paper scale (`/1048576`), warmed up:
 The edge-edge sweep now beats the CPU at paper scale, and GPU setup dropped from
 ~5.3 ms to ~0.05–0.18 ms per call. The remaining point-triangle gap is the FP64
 count kernel (one thread per point looping over all triangles); recommendations
-3–5 (CUB scan/sort, FP32/mixed precision, higher occupancy) target that residual
-and are the next step. This confirms the gate is reachable: the size+overhead
-fix alone already flips one of the two sweep families to a GPU win.
+3–5 (CUB scan/sort, FP32/mixed precision, higher occupancy) target that residual.
+
+## Full-suite paper-scale measurement and gate feasibility (2026-06-14)
+
+Paper-scale args (`->Arg(1048576)`) were added to all 34 benchmark rows and the
+packet writer was re-run at `--stencil-count 1048576`. The packet's
+`meets_speedup_gate` is `min(speedup)` across **all ~18 packet rows** at the
+chosen size, requiring **every** row to be ≥1.25x. Measured per-row speedups at
+paper scale (vs 65536 in parentheses where dramatically different):
+
+| Row                                                | paper-scale g/c→speedup | note   |
+| -------------------------------------------------- | ----------------------- | ------ |
+| `point_triangle_all_pairs_mask`                    | **3.94x** (gate pass)   | wins   |
+| `edge_edge_all_pairs_mask`                         | **2.46x** (gate pass)   | wins   |
+| `point_triangle_swept_aabb_candidates`             | **1.93x** (gate pass)   | wins   |
+| `edge_edge_runtime_sweep_buffer`                   | 1.04x                   | parity |
+| `edge_edge`                                        | 1.03x                   | parity |
+| `point_triangle`                                   | 0.92x                   | near   |
+| `combined_scene_runtime_filtered_candidate_buffer` | 0.76x                   | near   |
+| `edge_edge_scene_runtime_sweep`                    | 0.70x                   | near   |
+| `point_triangle_scene_runtime_sweep`               | 0.58x                   | mid    |
+| `edge_edge_sweep_broad_phase`                      | 0.22x                   | slow   |
+| `combined_scene_runtime_candidate_filter`          | 0.22x                   | slow   |
+| `point_triangle_scene_runtime_buffer`              | 0.21x                   | slow   |
+| `point_triangle_sweep_broad_phase`                 | **0.084x (min → gate)** | slow   |
+
+Top-level: speedup **0.084x**, `meets_speedup_gate=false`. The structural fix +
+paper scale lifted the min from **0.025x → 0.084x** and moved most rows to
+parity-or-win, but the gate stays false.
+
+### The full min-across-all-rows gate is structurally infeasible as measured
+
+Profiling the holdout rows shows two distinct, **non-kernel** reasons the gate
+cannot reach 1.25x for every row — neither fixable by FP32/CUB kernel work:
+
+1. **Transfer-bound rows are mathematically unwinnable per-call.**
+   `SceneRuntimePointTriangleCandidateBuffer` /1048576: CPU total = 143,910 ns,
+   but the GPU host→device transfer **alone** = 343,407 ns (kernel is only
+   45,228 ns). Even with a zero-cost kernel the GPU pays >2.3x the CPU's _entire_
+   runtime just moving the scene to the device, so speedup ≤ 0.42x. This is
+   because the benchmark measures each sub-operation in isolation with its own
+   per-call transfer; a real fused `World::step` GPU pipeline would transfer the
+   scene **once** and reuse it across broad-phase → candidate → CCD → solve.
+2. **Low-occupancy kernel rows.** `SweptPointTriangleSweep` (the
+   `point_triangle_sweep_broad_phase` row) uses a 1024-point fixture → only ~4
+   thread-blocks on a ~58-SM GPU, with an FP64 inner loop and the bitonic
+   sort-launch-storm: kernel = 1.53 ms vs CPU 0.17 ms. FP32 + one-thread-per-pair
+   occupancy would help but is unlikely to reach 1.25x at this fixture size.
+
+**Conclusion:** the speedup gate as defined (every micro-row ≥1.25x, each
+measured with its own host↔device transfer) cannot be flipped by kernel
+optimization, because (1) transfer-bound rows lose on PCIe transfer the CPU never
+pays, and (2) some fixtures are too small to fill the GPU. To make a _true_ GPU
+speedup claim, the gate should measure a **fused end-to-end pipeline at paper
+scale** that amortizes one host→device transfer across the whole step (the way a
+production GPU `World::step` would run), rather than summing isolated per-row
+transfers. On the rows that represent genuine batched GPU work (all-pairs masks,
+swept-AABB candidates, edge-edge sweep) the GPU already wins 1.04x–3.94x after
+this fix.

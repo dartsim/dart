@@ -1519,7 +1519,11 @@ static void BM_Plan083ContactCandidateCpu(benchmark::State& state)
   benchmark::DoNotOptimize(acceptedCount);
   recordSharedCounters(state, fixture, 0.0);
 }
-BENCHMARK(BM_Plan083ContactCandidateCpu)->Arg(4096)->Arg(65536)->UseRealTime();
+BENCHMARK(BM_Plan083ContactCandidateCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->Arg(1048576)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_Plan083ContactCandidateCuda(benchmark::State& state)
@@ -1558,7 +1562,11 @@ static void BM_Plan083ContactCandidateCuda(benchmark::State& state)
   state.counters["kernel_ns"] = result.timing.kernelNs;
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
-BENCHMARK(BM_Plan083ContactCandidateCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+BENCHMARK(BM_Plan083ContactCandidateCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->Arg(1048576)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_Plan083PointTriangleCandidateMaskCpu(benchmark::State& state)
@@ -1597,6 +1605,7 @@ static void BM_Plan083PointTriangleCandidateMaskCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083PointTriangleCandidateMaskCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1649,6 +1658,7 @@ static void BM_Plan083PointTriangleCandidateMaskCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083PointTriangleCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1690,6 +1700,7 @@ static void BM_Plan083EdgeEdgeCandidateMaskCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083EdgeEdgeCandidateMaskCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1737,6 +1748,7 @@ static void BM_Plan083EdgeEdgeCandidateMaskCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083EdgeEdgeCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1795,6 +1807,7 @@ static void BM_Plan083SweptPointTriangleCandidateMaskCpu(
 BENCHMARK(BM_Plan083SweptPointTriangleCandidateMaskCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1851,6 +1864,7 @@ static void BM_Plan083SweptPointTriangleCandidateMaskCuda(
 BENCHMARK(BM_Plan083SweptPointTriangleCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1910,6 +1924,7 @@ static void BM_Plan083SweptEdgeEdgeCandidateMaskCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptEdgeEdgeCandidateMaskCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1963,6 +1978,7 @@ static void BM_Plan083SweptEdgeEdgeCandidateMaskCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptEdgeEdgeCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -1993,6 +2009,7 @@ static void BM_Plan083SweptPointTriangleSweepCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptPointTriangleSweepCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2056,6 +2073,7 @@ static void BM_Plan083SweptPointTriangleSweepCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptPointTriangleSweepCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2084,6 +2102,7 @@ static void BM_Plan083SweptEdgeEdgeSweepCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptEdgeEdgeSweepCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2145,6 +2164,7 @@ static void BM_Plan083SweptEdgeEdgeSweepCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083SweptEdgeEdgeSweepCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2385,6 +2405,7 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCpu(
 BENCHMARK(BM_Plan083SceneRuntimeCombinedSweepFilterCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2501,6 +2522,7 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCuda(
 BENCHMARK(BM_Plan083SceneRuntimeCombinedSweepFilterCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2536,6 +2558,7 @@ static void BM_Plan083RuntimePointTriangleCandidateBufferCpu(
 BENCHMARK(BM_Plan083RuntimePointTriangleCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2585,6 +2608,7 @@ static void BM_Plan083RuntimePointTriangleCandidateBufferCuda(
 BENCHMARK(BM_Plan083RuntimePointTriangleCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2622,6 +2646,7 @@ static void BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2669,6 +2694,7 @@ static void BM_Plan083RuntimeEdgeEdgeCandidateBufferCuda(
 BENCHMARK(BM_Plan083RuntimeEdgeEdgeCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2704,6 +2730,7 @@ static void BM_Plan083SceneRuntimePointTriangleCandidateBufferCpu(
 BENCHMARK(BM_Plan083SceneRuntimePointTriangleCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2753,6 +2780,7 @@ static void BM_Plan083SceneRuntimePointTriangleCandidateBufferCuda(
 BENCHMARK(BM_Plan083SceneRuntimePointTriangleCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2791,6 +2819,7 @@ static void BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCpu(
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2838,6 +2867,7 @@ static void BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda(
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2899,6 +2929,7 @@ static void BM_Plan083SceneRuntimeCombinedCandidateBufferCpu(
 BENCHMARK(BM_Plan083SceneRuntimeCombinedCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2990,6 +3021,7 @@ static void BM_Plan083SceneRuntimeCombinedCandidateBufferCuda(
 BENCHMARK(BM_Plan083SceneRuntimeCombinedCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -3041,6 +3073,7 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCpu(
 BENCHMARK(BM_Plan083SceneRuntimeFilteredCandidateBufferCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -3156,6 +3189,7 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCuda(
 BENCHMARK(BM_Plan083SceneRuntimeFilteredCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -3188,6 +3222,7 @@ static void BM_Plan083EdgeEdgeContactCandidateCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083EdgeEdgeContactCandidateCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -3227,4 +3262,5 @@ static void BM_Plan083EdgeEdgeContactCandidateCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083EdgeEdgeContactCandidateCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
