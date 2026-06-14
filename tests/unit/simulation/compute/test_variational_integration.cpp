@@ -3387,7 +3387,6 @@ TEST(
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.hasAvbdStiffnessState = false;
 
   EXPECT_FALSE(
       registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
@@ -3446,7 +3445,6 @@ TEST(
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.hasAvbdStiffnessState = false;
 
   EXPECT_FALSE(
       registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
@@ -3525,7 +3523,6 @@ TEST(
       joint.parentLink = entt::null;
       joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
     }
-    joint.hasAvbdStiffnessState = false;
 
     EXPECT_FALSE(
         registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
@@ -3609,7 +3606,6 @@ TEST(
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
@@ -3677,7 +3673,6 @@ TEST(
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
@@ -12116,7 +12111,6 @@ TEST(
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
   joint.axis = hingeAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
@@ -12193,7 +12187,6 @@ TEST(
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
@@ -12280,7 +12273,6 @@ TEST(
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
@@ -12398,7 +12390,6 @@ TEST(
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
@@ -12526,7 +12517,6 @@ TEST(
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   joint.breakForce = 1e-18;
 
   EXPECT_FALSE(
@@ -12629,7 +12619,6 @@ TEST(
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   joint.breakForce = 1e-18;
 
   EXPECT_FALSE(
@@ -12812,7 +12801,6 @@ TEST(
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d hingeAxis
       = Eigen::Vector3d(-2.0, 1.0, 3.0).normalized();
   joint.axis = hingeAxis;
@@ -12929,7 +12917,6 @@ TEST(
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(0.5, -1.0, 2.0).normalized();
   joint.axis = sliderAxis;
@@ -13053,7 +13040,6 @@ TEST(
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
@@ -13245,7 +13231,6 @@ TEST(
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
@@ -13445,7 +13430,6 @@ TEST(
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   joint.breakForce = 1e-18;
 
   EXPECT_FALSE(
@@ -13620,7 +13604,6 @@ TEST(
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.hasAvbdStiffnessState = false;
   joint.breakForce = 1e-18;
 
   EXPECT_FALSE(

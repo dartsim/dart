@@ -634,15 +634,27 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   re-homed rigid module currently still includes them cross-directory. Pure file
   relocation + include-path updates; behavior-preserving (golden 3/3,
   `test_boxed_lcp_contact`, `test_avbd_rigid_block`, `test_serialization` green;
-  `pixi run lint` green). **Remaining (the core change):** move the per-family
-  AVBD joint stiffness fields (`hasAvbdStiffnessState`,
-  `avbd{Start,Linear,Angular,Max}Stiffness`) out of the shared `comps::Joint`
-  into a sidecar component — keeping the family-neutral `breakForce`/`broken`
-  that the variational and sequential-IPC families legitimately read — so no
-  family discovers another family's config. That is a 150+-site field move
-  (notably `avbdMaxStiffness` has 19 read sites in `world_step_stage.cpp`) with a
-  facade lazy-load materialization pattern and version-gated serialization
-  round-trip; it is left for a focused follow-up under this packet.
+  `pixi run lint` green). **Core field move (landed):** the per-family AVBD
+  joint stiffness fields (`hasAvbdStiffnessState`,
+  `avbd{Start,Linear,Angular,Max}Stiffness`) are moved out of the shared
+  `comps::Joint` into a new family-owned sidecar `comps::AvbdJointStiffness`
+  (four stiffness values; the old `hasAvbdStiffnessState` flag becomes component
+  presence — absent ⇒ defaults). The family-neutral `breakForce`/`broken` stay
+  on `comps::Joint` (the variational and sequential-IPC families legitimately
+  read those). The facade setters/getters/`materializeAvbdStiffnessState`
+  (`multibody/joint.cpp`), the `rigid_avbd/rigid_world_contact.hpp`
+  materialization, and the `world.cpp` `JointLayout` cache mirror now read/write
+  the sidecar (registry + entity are in scope at every site). Serialization:
+  `kBinaryFormatVersion` bumped to 20 — the new format serializes the sidecar as
+  a registered component; legacy v17–19 packets read the inline bool+4-doubles
+  block and stage it, then `postLoadComponent` materializes the sidecar only
+  when the legacy flag was set (absent ⇒ defaults), preserving round-trip both
+  ways. The 22 `config.avbdMaxStiffness` reads in `world_step_stage.cpp` are the
+  *deformable* AVBD config (a name collision) and are correctly untouched.
+  Behavior-preserving: `test_serialization` 54/54 (round-trip), golden 3/3
+  (trajectories unchanged), `test_avbd_rigid_block` 105/105,
+  `test_boxed_lcp_contact` 122/122; `pixi run lint` and
+  `pixi run check-api-boundaries` green. Net +279/−138 across 11 files.
 
 #### WP-091.15 Family-scoped source layout
 

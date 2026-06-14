@@ -943,16 +943,26 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     return false;
   }
 
-  const double effectiveStartStiffness = joint->hasAvbdStiffnessState
-                                             ? joint->avbdStartStiffness
+  // The presence of comps::AvbdJointStiffness is the materialized-state flag;
+  // absent means start/max come from the caller-provided defaults and the
+  // linear/angular material stiffness fall back to the component defaults.
+  const comps::AvbdJointStiffness* stiffnessState
+      = registry.try_get<comps::AvbdJointStiffness>(jointEntity);
+  const comps::AvbdJointStiffness resolvedStiffness
+      = stiffnessState != nullptr ? *stiffnessState
+                                  : comps::AvbdJointStiffness{};
+  const double effectiveStartStiffness = stiffnessState != nullptr
+                                             ? resolvedStiffness.startStiffness
                                              : startStiffness;
-  const double effectiveMaxStiffness
-      = joint->hasAvbdStiffnessState ? joint->avbdMaxStiffness : maxStiffness;
+  const double effectiveMaxStiffness = stiffnessState != nullptr
+                                           ? resolvedStiffness.maxStiffness
+                                           : maxStiffness;
   if (std::isnan(effectiveStartStiffness) || effectiveStartStiffness < 0.0
-      || std::isnan(joint->avbdLinearStiffness)
-      || joint->avbdLinearStiffness < 0.0
-      || std::isnan(joint->avbdAngularStiffness)
-      || joint->avbdAngularStiffness < 0.0 || std::isnan(effectiveMaxStiffness)
+      || std::isnan(resolvedStiffness.linearStiffness)
+      || resolvedStiffness.linearStiffness < 0.0
+      || std::isnan(resolvedStiffness.angularStiffness)
+      || resolvedStiffness.angularStiffness < 0.0
+      || std::isnan(effectiveMaxStiffness)
       || effectiveMaxStiffness < effectiveStartStiffness) {
     return false;
   }
@@ -1028,13 +1038,18 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
   config.linearAxisMask = linearAxisMask;
   config.angularAxisMask = angularAxisMask;
   config.startStiffness = effectiveStartStiffness;
-  config.linearMaterialStiffness = joint->avbdLinearStiffness;
-  config.angularMaterialStiffness = joint->avbdAngularStiffness;
+  config.linearMaterialStiffness = resolvedStiffness.linearStiffness;
+  config.angularMaterialStiffness = resolvedStiffness.angularStiffness;
   config.maxStiffness = effectiveMaxStiffness;
 
-  joint->hasAvbdStiffnessState = true;
-  joint->avbdStartStiffness = effectiveStartStiffness;
-  joint->avbdMaxStiffness = effectiveMaxStiffness;
+  // Materialize/refresh the AVBD point-joint stiffness sidecar, preserving the
+  // resolved linear/angular material stiffness and recording the effective
+  // start/max used to configure the runtime row.
+  comps::AvbdJointStiffness materializedStiffness = resolvedStiffness;
+  materializedStiffness.startStiffness = effectiveStartStiffness;
+  materializedStiffness.maxStiffness = effectiveMaxStiffness;
+  registry.emplace_or_replace<comps::AvbdJointStiffness>(
+      jointEntity, materializedStiffness);
   return true;
 }
 

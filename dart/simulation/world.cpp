@@ -348,11 +348,10 @@ struct World::ReplayState
     VectorState armature;
     VectorState coulombFriction;
     double breakForce = 0.0;
-    bool hasAvbdStiffnessState = true;
-    double avbdStartStiffness = 1.0;
-    double avbdLinearStiffness = std::numeric_limits<double>::infinity();
-    double avbdAngularStiffness = std::numeric_limits<double>::infinity();
-    double avbdMaxStiffness = std::numeric_limits<double>::infinity();
+    // Mirrors the presence and values of the comps::AvbdJointStiffness sidecar
+    // for replay-frame layout change detection.
+    bool hasAvbdStiffnessState = false;
+    comps::AvbdJointStiffness avbdStiffness;
     JointLimitsState limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -615,8 +614,14 @@ bool sameReplayJointLimits(
 }
 
 template <typename JointLayout>
-bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
+bool sameReplayJointLayout(
+    const comps::Joint& joint,
+    const comps::AvbdJointStiffness* avbdStiffness,
+    const JointLayout& layout)
 {
+  const bool hasAvbdStiffnessState = avbdStiffness != nullptr;
+  const comps::AvbdJointStiffness resolvedStiffness
+      = hasAvbdStiffnessState ? *avbdStiffness : comps::AvbdJointStiffness{};
   return joint.type == layout.type && joint.actuatorType == layout.actuatorType
          && std::string_view{joint.name}
                 == std::string_view{layout.name.data(), layout.name.size()}
@@ -627,11 +632,14 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
          && joint.breakForce == layout.breakForce
-         && joint.hasAvbdStiffnessState == layout.hasAvbdStiffnessState
-         && joint.avbdStartStiffness == layout.avbdStartStiffness
-         && joint.avbdLinearStiffness == layout.avbdLinearStiffness
-         && joint.avbdAngularStiffness == layout.avbdAngularStiffness
-         && joint.avbdMaxStiffness == layout.avbdMaxStiffness
+         && hasAvbdStiffnessState == layout.hasAvbdStiffnessState
+         && resolvedStiffness.startStiffness
+                == layout.avbdStiffness.startStiffness
+         && resolvedStiffness.linearStiffness
+                == layout.avbdStiffness.linearStiffness
+         && resolvedStiffness.angularStiffness
+                == layout.avbdStiffness.angularStiffness
+         && resolvedStiffness.maxStiffness == layout.avbdStiffness.maxStiffness
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -4191,7 +4199,6 @@ Joint World::addArticulatedJoint(
   joint.name = std::move(actualName);
   joint.parentLink = parentEntity;
   joint.childLink = childEntity;
-  joint.hasAvbdStiffnessState = false;
   if (articulatedPointJointUsesAxis(componentType)) {
     joint.axis = axis.normalized();
   }
@@ -4829,9 +4836,11 @@ Joint World::addRigidBodyJoint(
   joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
-  joint.hasAvbdStiffnessState = true;
-  joint.avbdStartStiffness = defaultAvbdConfig.startStiffness;
-  joint.avbdMaxStiffness = defaultAvbdConfig.maxStiffness;
+  comps::AvbdJointStiffness defaultStiffness;
+  defaultStiffness.startStiffness = defaultAvbdConfig.startStiffness;
+  defaultStiffness.maxStiffness = defaultAvbdConfig.maxStiffness;
+  m_storage->registry.emplace_or_replace<comps::AvbdJointStiffness>(
+      jointEntity, defaultStiffness);
   if (!detail::deformable_vbd::configureAvbdRigidWorldPointJointFromCurrentPose(
           m_storage->registry,
           jointEntity,
@@ -6168,7 +6177,10 @@ void World::restoreReplayFrame(std::size_t index)
         "Cannot restore replay frame: Joint entity layout changed");
     DART_SIMULATION_THROW_T_IF(
         !sameReplayJointLayout(
-            m_storage->registry.get<comps::Joint>(state.entity), state.layout),
+            m_storage->registry.get<comps::Joint>(state.entity),
+            m_storage->registry.try_get<comps::AvbdJointStiffness>(
+                state.entity),
+            state.layout),
         InvalidOperationException,
         "Cannot restore replay frame: Joint entity layout changed");
   }
@@ -6515,11 +6527,14 @@ void World::recordReplayFrame()
     captureReplayVector(joint.armature, state.layout.armature);
     captureReplayVector(joint.coulombFriction, state.layout.coulombFriction);
     state.layout.breakForce = joint.breakForce;
-    state.layout.hasAvbdStiffnessState = joint.hasAvbdStiffnessState;
-    state.layout.avbdStartStiffness = joint.avbdStartStiffness;
-    state.layout.avbdLinearStiffness = joint.avbdLinearStiffness;
-    state.layout.avbdAngularStiffness = joint.avbdAngularStiffness;
-    state.layout.avbdMaxStiffness = joint.avbdMaxStiffness;
+    if (const auto* avbdStiffness
+        = m_storage->registry.try_get<comps::AvbdJointStiffness>(entity)) {
+      state.layout.hasAvbdStiffnessState = true;
+      state.layout.avbdStiffness = *avbdStiffness;
+    } else {
+      state.layout.hasAvbdStiffnessState = false;
+      state.layout.avbdStiffness = comps::AvbdJointStiffness{};
+    }
     captureReplayJointLimits(joint.limits, state.layout.limits);
     state.layout.axis = joint.axis;
     state.layout.axis2 = joint.axis2;

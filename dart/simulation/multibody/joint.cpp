@@ -158,25 +158,29 @@ void validateAvbdRigidWorldPointJointFacade(
       "Joint is not an AVBD point-joint facade");
 }
 
-void materializeAvbdStiffnessState(
-    const dart::simulation::detail::WorldRegistry& registry,
+// Materialize and return the AVBD point-joint stiffness sidecar for the joint,
+// emplacing it if absent. Returns a reference into the registry storage.
+comps::AvbdJointStiffness& materializeAvbdStiffnessState(
+    dart::simulation::detail::WorldRegistry& registry,
     entt::entity jointEntity,
     comps::Joint& joint)
 {
-  if (joint.hasAvbdStiffnessState) {
-    return;
+  if (auto* stiffness
+      = registry.try_get<comps::AvbdJointStiffness>(jointEntity)) {
+    return *stiffness;
   }
+
+  comps::AvbdJointStiffness stiffness;
 
   if (const auto* config
       = registry
             .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
                 jointEntity)) {
-    joint.avbdStartStiffness = config->startStiffness;
-    joint.avbdLinearStiffness = config->linearMaterialStiffness;
-    joint.avbdAngularStiffness = config->angularMaterialStiffness;
-    joint.avbdMaxStiffness = config->maxStiffness;
-    joint.hasAvbdStiffnessState = true;
-    return;
+    stiffness.startStiffness = config->startStiffness;
+    stiffness.linearStiffness = config->linearMaterialStiffness;
+    stiffness.angularStiffness = config->angularMaterialStiffness;
+    stiffness.maxStiffness = config->maxStiffness;
+    return registry.emplace<comps::AvbdJointStiffness>(jointEntity, stiffness);
   }
 
   double startStiffness = 0.0;
@@ -187,9 +191,9 @@ void materializeAvbdStiffnessState(
       InvalidArgumentException,
       "Joint is not an AVBD point-joint facade");
 
-  joint.avbdStartStiffness = startStiffness;
-  joint.avbdMaxStiffness = maxStiffness;
-  joint.hasAvbdStiffnessState = true;
+  stiffness.startStiffness = startStiffness;
+  stiffness.maxStiffness = maxStiffness;
+  return registry.emplace<comps::AvbdJointStiffness>(jointEntity, stiffness);
 }
 
 void validateFiniteNonnegative(
@@ -669,14 +673,15 @@ void Joint::setAvbdStartStiffness(double stiffness)
   const auto entity = detail::toRegistryEntity(m_entity);
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
   validateFiniteNonnegative(stiffness, "AVBD start stiffness", jointComp.name);
-  materializeAvbdStiffnessState(registry, entity, jointComp);
+  auto& jointStiffness
+      = materializeAvbdStiffnessState(registry, entity, jointComp);
 
   DART_SIMULATION_THROW_T_IF(
-      stiffness > jointComp.avbdMaxStiffness,
+      stiffness > jointStiffness.maxStiffness,
       InvalidArgumentException,
       "Joint '{}' AVBD start stiffness must not exceed max stiffness",
       jointComp.name);
-  jointComp.avbdStartStiffness = stiffness;
+  jointStiffness.startStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
     config->startStiffness = stiffness;
   }
@@ -689,25 +694,26 @@ double Joint::getAvbdStartStiffness() const
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
-  if (!jointComp.hasAvbdStiffnessState) {
-    if (const auto* config
-        = registry
-              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
-                  entity)) {
-      return config->startStiffness;
-    }
-
-    double startStiffness = 0.0;
-    double maxStiffness = 0.0;
-    DART_SIMULATION_THROW_T_IF(
-        !detail::deformable_vbd::
-            computeAvbdRigidWorldPointJointDefaultStiffness(
-                registry, jointComp, startStiffness, maxStiffness),
-        InvalidArgumentException,
-        "Joint is not an AVBD point-joint facade");
-    return startStiffness;
+  if (const auto* stiffness
+      = registry.try_get<comps::AvbdJointStiffness>(entity)) {
+    return stiffness->startStiffness;
   }
-  return jointComp.avbdStartStiffness;
+
+  if (const auto* config
+      = registry
+            .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                entity)) {
+    return config->startStiffness;
+  }
+
+  double startStiffness = 0.0;
+  double maxStiffness = 0.0;
+  DART_SIMULATION_THROW_T_IF(
+      !detail::deformable_vbd::computeAvbdRigidWorldPointJointDefaultStiffness(
+          registry, jointComp, startStiffness, maxStiffness),
+      InvalidArgumentException,
+      "Joint is not an AVBD point-joint facade");
+  return startStiffness;
 }
 
 //==============================================================================
@@ -718,9 +724,10 @@ void Joint::setAvbdLinearStiffness(double stiffness)
   const auto entity = detail::toRegistryEntity(m_entity);
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
   validateMaterialStiffness(stiffness, "AVBD linear stiffness", jointComp.name);
-  materializeAvbdStiffnessState(registry, entity, jointComp);
+  auto& jointStiffness
+      = materializeAvbdStiffnessState(registry, entity, jointComp);
 
-  jointComp.avbdLinearStiffness = stiffness;
+  jointStiffness.linearStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
     config->linearMaterialStiffness = stiffness;
   }
@@ -733,15 +740,18 @@ double Joint::getAvbdLinearStiffness() const
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
-  if (!jointComp.hasAvbdStiffnessState) {
-    if (const auto* config
-        = registry
-              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
-                  entity)) {
-      return config->linearMaterialStiffness;
-    }
+  if (const auto* stiffness
+      = registry.try_get<comps::AvbdJointStiffness>(entity)) {
+    return stiffness->linearStiffness;
   }
-  return jointComp.avbdLinearStiffness;
+
+  if (const auto* config
+      = registry
+            .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                entity)) {
+    return config->linearMaterialStiffness;
+  }
+  return comps::AvbdJointStiffness{}.linearStiffness;
 }
 
 //==============================================================================
@@ -753,9 +763,10 @@ void Joint::setAvbdAngularStiffness(double stiffness)
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
   validateMaterialStiffness(
       stiffness, "AVBD angular stiffness", jointComp.name);
-  materializeAvbdStiffnessState(registry, entity, jointComp);
+  auto& jointStiffness
+      = materializeAvbdStiffnessState(registry, entity, jointComp);
 
-  jointComp.avbdAngularStiffness = stiffness;
+  jointStiffness.angularStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
     config->angularMaterialStiffness = stiffness;
   }
@@ -768,15 +779,18 @@ double Joint::getAvbdAngularStiffness() const
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
   validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
-  if (!jointComp.hasAvbdStiffnessState) {
-    if (const auto* config
-        = registry
-              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
-                  entity)) {
-      return config->angularMaterialStiffness;
-    }
+  if (const auto* stiffness
+      = registry.try_get<comps::AvbdJointStiffness>(entity)) {
+    return stiffness->angularStiffness;
   }
-  return jointComp.avbdAngularStiffness;
+
+  if (const auto* config
+      = registry
+            .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                entity)) {
+    return config->angularMaterialStiffness;
+  }
+  return comps::AvbdJointStiffness{}.angularStiffness;
 }
 
 //==============================================================================

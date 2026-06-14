@@ -177,14 +177,17 @@ void readQuaterniond(std::istream& input, Eigen::Quaterniond& q)
   q = Eigen::Quaterniond(w, x, y, z);
 }
 
-void resetJointAvbdStiffnessState(comps::Joint& joint)
+// Staged AVBD point-joint stiffness parsed from a legacy (v17-v19) Joint record
+// where the four stiffness values lived inline on the Joint struct. The Joint
+// component serializer consumes this in postLoadComponent() to materialize the
+// separate comps::AvbdJointStiffness sidecar. When `present` is false the joint
+// had no materialized stiffness, so no sidecar is emplaced and reads fall back
+// to defaults (matching the old hasAvbdStiffnessState == false behavior).
+struct LegacyJointAvbdStiffness
 {
-  joint.hasAvbdStiffnessState = false;
-  joint.avbdStartStiffness = 1.0;
-  joint.avbdLinearStiffness = std::numeric_limits<double>::infinity();
-  joint.avbdAngularStiffness = std::numeric_limits<double>::infinity();
-  joint.avbdMaxStiffness = std::numeric_limits<double>::infinity();
-}
+  bool present = false;
+  comps::AvbdJointStiffness values;
+};
 
 void deserializeJointV1(std::istream& input, comps::Joint& joint)
 {
@@ -224,7 +227,6 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
   joint.commandVelocity = comps::makeJointVector(dof, 0.0);
   joint.breakForce = 0.0;
   joint.broken = false;
-  resetJointAvbdStiffnessState(joint);
 
   const double infinity = std::numeric_limits<double>::infinity();
   if (joint.limits.lower.size() != dof) {
@@ -270,7 +272,6 @@ void deserializeJointV2ToV13(
 
   joint.breakForce = 0.0;
   joint.broken = false;
-  resetJointAvbdStiffnessState(joint);
 
   readVectorXd(input, joint.limits.lower);
   readVectorXd(input, joint.limits.upper);
@@ -313,7 +314,11 @@ void deserializeJointV2ToV13(
   }
 }
 
-void deserializeJointV14ToV16(std::istream& input, comps::Joint& joint)
+void deserializeJointV14ToV19(
+    std::istream& input,
+    comps::Joint& joint,
+    std::uint32_t formatVersion,
+    LegacyJointAvbdStiffness& stagedStiffness)
 {
   readPOD(input, joint.type);
   readPOD(input, joint.actuatorType);
@@ -332,7 +337,22 @@ void deserializeJointV14ToV16(std::istream& input, comps::Joint& joint)
 
   readPOD(input, joint.breakForce);
   readPOD(input, joint.broken);
-  resetJointAvbdStiffnessState(joint);
+
+  // Versions 17-19 stored the AVBD point-joint stiffness inline on the Joint
+  // record (a bool flag plus four doubles). Newer formats keep it in a separate
+  // comps::AvbdJointStiffness sidecar. Read and stage the legacy values so the
+  // serializer can materialize the sidecar after the Joint is emplaced. Earlier
+  // versions (14-16) had no such block, so the joint loads with no sidecar.
+  stagedStiffness = LegacyJointAvbdStiffness{};
+  if (formatVersion >= 17u) {
+    bool hasAvbdStiffnessState = false;
+    readPOD(input, hasAvbdStiffnessState);
+    readPOD(input, stagedStiffness.values.startStiffness);
+    readPOD(input, stagedStiffness.values.linearStiffness);
+    readPOD(input, stagedStiffness.values.angularStiffness);
+    readPOD(input, stagedStiffness.values.maxStiffness);
+    stagedStiffness.present = hasAvbdStiffnessState;
+  }
 
   readVectorXd(input, joint.limits.lower);
   readVectorXd(input, joint.limits.upper);
@@ -576,6 +596,10 @@ private:
       comps::Joint& component,
       std::uint32_t formatVersion) const override
   {
+    // No legacy inline AVBD stiffness unless an older record explicitly stages
+    // it below.
+    m_stagedStiffness = LegacyJointAvbdStiffness{};
+
     if (formatVersion == 1u) {
       deserializeJointV1(input, component);
       return;
@@ -584,13 +608,33 @@ private:
       deserializeJointV2ToV13(input, component, formatVersion);
       return;
     }
-    if (formatVersion < 17u) {
-      deserializeJointV14ToV16(input, component);
+    if (formatVersion < 20u) {
+      deserializeJointV14ToV19(
+          input, component, formatVersion, m_stagedStiffness);
       return;
     }
 
     loadComponent(input, component);
   }
+
+  void postLoadComponent(
+      entt::entity entity,
+      ::dart::simulation::detail::WorldRegistry& registry,
+      std::uint32_t /*formatVersion*/) const override
+  {
+    // Versions 17-19 carried the AVBD point-joint stiffness inline on the Joint
+    // record. Materialize the separate comps::AvbdJointStiffness sidecar from
+    // the staged values when the legacy joint had a materialized state; absence
+    // means the joint loads with no sidecar (defaults), matching the old
+    // hasAvbdStiffnessState == false behavior.
+    if (m_stagedStiffness.present) {
+      registry.emplace_or_replace<comps::AvbdJointStiffness>(
+          entity, m_stagedStiffness.values);
+    }
+    m_stagedStiffness = LegacyJointAvbdStiffness{};
+  }
+
+  mutable LegacyJointAvbdStiffness m_stagedStiffness;
 };
 
 void registerJointSerializer(SerializerRegistry& registry)
@@ -879,6 +923,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerLinkSerializer(registry);
   registerJointSerializer(registry);
+  registerComponentIfNeeded<comps::AvbdJointStiffness>(registry);
   registerAvbdRigidWorldPointJointConfigSerializer(registry);
   registerAvbdRigidWorldDistanceSpringConfigSerializer(registry);
 

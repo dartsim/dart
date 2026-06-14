@@ -96,7 +96,9 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   18: World stores variational multibody solve budget metadata.
 //   19: Private AVBD rigid-world point-joint and distance-spring configs are
 //      serializable.
-constexpr std::uint32_t kBinaryFormatVersion = 19;
+//   20: AVBD point-joint stiffness moved off the Joint record into a separate
+//      comps::AvbdJointStiffness component (present only when materialized).
+constexpr std::uint32_t kBinaryFormatVersion = 20;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

@@ -238,23 +238,6 @@ struct Joint
   /// Whether the joint has been broken by an AVBD break-force threshold.
   bool broken = false;
 
-  /// Whether AVBD point-joint stiffness fields were materialized or loaded.
-  /// Legacy binaries derive start/max defaults from endpoint AVBD config on
-  /// first use.
-  bool hasAvbdStiffnessState = false;
-
-  /// AVBD point-joint row starting stiffness.
-  double avbdStartStiffness = 1.0;
-
-  /// AVBD linear point-joint material stiffness. Infinity keeps hard rows.
-  double avbdLinearStiffness = std::numeric_limits<double>::infinity();
-
-  /// AVBD angular point-joint material stiffness. Infinity keeps hard rows.
-  double avbdAngularStiffness = std::numeric_limits<double>::infinity();
-
-  /// AVBD point-joint maximum ramp stiffness.
-  double avbdMaxStiffness = std::numeric_limits<double>::infinity();
-
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
@@ -303,6 +286,34 @@ struct Joint
         return 0;
     }
   }
+};
+
+/// Family-owned AVBD point-joint stiffness sidecar.
+///
+/// Holds the per-family AVBD point-joint stiffness inputs that used to live on
+/// the family-neutral Joint component. The presence of this component on a
+/// joint entity is itself the "stiffness has been materialized/set" flag: when
+/// the component is ABSENT, reads fall back to these same defaults (legacy
+/// binaries derive start/max defaults from the endpoint AVBD config on first
+/// use). Setting any stiffness emplaces the component and populates all four
+/// fields.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct AvbdJointStiffness
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(AvbdJointStiffness);
+
+  /// AVBD point-joint row starting stiffness.
+  double startStiffness = 1.0;
+
+  /// AVBD linear point-joint material stiffness. Infinity keeps hard rows.
+  double linearStiffness = std::numeric_limits<double>::infinity();
+
+  /// AVBD angular point-joint material stiffness. Infinity keeps hard rows.
+  double angularStiffness = std::numeric_limits<double>::infinity();
+
+  /// AVBD point-joint maximum ramp stiffness.
+  double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
 } // namespace dart::simulation::comps

@@ -5694,7 +5694,6 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
-  joint.hasAvbdStiffnessState = false;
 
   ASSERT_TRUE(
       vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(
