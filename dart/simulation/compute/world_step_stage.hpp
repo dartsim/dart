@@ -265,6 +265,8 @@ public:
   void execute(World& world, ComputeExecutor& executor);
   [[nodiscard]] WorldStepProfile executeProfiled(
       World& world, ComputeExecutor& executor);
+  void executeProfiled(
+      World& world, ComputeExecutor& executor, WorldStepProfile& profile);
 
 private:
   std::array<WorldStepStage*, kInlineStageCount> m_stages{};

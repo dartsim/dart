@@ -1,31 +1,32 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Hard Stop Handoff (2026-06-14, Diff Contact Jacobian Allocator Scratch Committed)
+## Hard Stop Handoff (2026-06-14, Profile Snapshot Reuse)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
 HMM handoff entry point unless a maintainer explicitly redirects the work.
-The branch currently has no open PR. Fresh resume recon found the latest code
-slice at `572e818a207` (`Route diff contact Jacobian scratch through
-allocator`); this handoff update is one docs commit on top, leaving the branch
-ahead of `origin/pr/hmm-phase45-replay-snapshot-allocators` by 41 commits.
+The branch currently has no open PR. Fresh resume recon found the branch clean
+at `544126e69fe` (`Record HMM diff contact Jacobian handoff`) before this
+slice; this slice is one local commit on top, leaving the branch ahead of
+`origin/pr/hmm-phase45-replay-snapshot-allocators` by 42 commits.
 
-Latest committed slice: differentiable rigid contact Jacobian detail scratch now
-threads a caller-provided `common::MemoryAllocator` through the frozen contact
-scene, sparse Jacobian rows, body-row indexes, active-set vectors, and
-parameter finite-difference helper storage. The existing no-allocator detail
-overloads still route through the default allocator, while
-`World::captureStepDerivatives()` now passes the `WorldStorage` allocator into
-the contact Jacobian path when `DART_BUILD_DIFF=ON`.
+Latest committed slice: profiled `World::step()` now reuses the existing
+`WorldStepProfile` snapshot instead of replacing it with a newly returned
+profile every profiled step. `WorldStepPipeline` has an in-place profiled
+execution overload that clears and resizes the existing top-level stage profile
+vector, resets each reused stage entry, and preserves the existing
+return-by-value convenience overload by delegating through the in-place path.
 
 The focused proof is
-`DiffContactJacobian.DetailOverloadUsesProvidedAllocator`, which uses a
-`CountingMemoryAllocator` against the detail overload and verifies allocator
-traffic is balanced. This is a diff-only HMM allocator-provenance slice. It does
-not change public APIs, contact-gradient math, default `DART_BUILD_DIFF=OFF`
-behavior, Eigen's own dense-matrix allocation behavior, or the broader
-collision/contact return surfaces.
+`WorldStepProfileIntegration.WarmedCustomPipelineProfileDoesNotAllocate`, which
+warms a profiled custom `WorldStepPipeline`, runs a third profiled
+`World::step()`, and verifies zero global-heap allocations while preserving the
+stage vector capacity. This closes the top-level profiled World-step snapshot
+allocation gap for warmed same-shape pipelines. It does not claim nested
+compute-graph `graphProfiles` are allocation-free, does not change summary text
+rendering, does not remove the public return-by-value profiling convenience
+API, and does not broaden non-profile build behavior.
 
 Current next-slice notes: start from a fresh measured gap rather than older
 historical candidates. Source inspection on this branch shows the previously
@@ -41,11 +42,10 @@ storage.
 Validation for this slice:
 
 ```bash
-DART_BUILD_DIFF_OVERRIDE=ON pixi run config
-pixi run cmake --build build/default/cpp/Release --target test_diff_contact_jacobian -j 8
-pixi run build/default/cpp/Release/bin/test_diff_contact_jacobian \
-  --gtest_filter=DiffContactJacobian.DetailOverloadUsesProvidedAllocator
-pixi run build/default/cpp/Release/bin/test_diff_contact_jacobian
+pixi run cmake --build build/default/cpp/Release --target test_world_step_profiling -j 8
+pixi run build/default/cpp/Release/bin/test_world_step_profiling \
+  --gtest_filter=WorldStepProfileIntegration.WarmedCustomPipelineProfileDoesNotAllocate
+pixi run build/default/cpp/Release/bin/test_world_step_profiling
 pixi run lint
 git diff --check
 pixi run build

@@ -854,20 +854,31 @@ WorldStepProfile WorldStepPipeline::executeProfiled(
     World& world, ComputeExecutor& executor)
 {
   WorldStepProfile profile;
+  executeProfiled(world, executor, profile);
+  return profile;
+}
 
+//==============================================================================
+void WorldStepPipeline::executeProfiled(
+    World& world, ComputeExecutor& executor, WorldStepProfile& profile)
+{
 #if DART_BUILD_PROFILE
   profile.stepCount = 1;
-  profile.stages.reserve(m_stageCount);
+  profile.wallTime = {};
+  profile.stages.resize(m_stageCount);
 
   const auto stepStart = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < m_stageCount; ++i) {
     auto& stage = getStage(i);
     const auto metadata = stage.getMetadata();
 
-    auto& entry = profile.stages.emplace_back();
+    auto& entry = profile.stages[i];
     entry.name = stage.getName();
     entry.domain = metadata.domain;
+    entry.duration = {};
     entry.acceleration = metadata.acceleration;
+    entry.acceleratedBackendEnabled = false;
+    entry.graphProfiles.clear();
 
     const bool stageCanUseGpuBackend
         = hasAcceleration(metadata.acceleration, ComputeStageAcceleration::Gpu);
@@ -886,10 +897,9 @@ WorldStepProfile WorldStepPipeline::executeProfiled(
   }
   profile.wallTime = std::chrono::steady_clock::now() - stepStart;
 #else
+  profile.reset();
   execute(world, executor);
 #endif
-
-  return profile;
 }
 
 //==============================================================================

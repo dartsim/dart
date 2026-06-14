@@ -5628,7 +5628,7 @@ void World::stepPipelineOnce(
 
 #if DART_BUILD_PROFILE
   if (m_stepProfilingEnabled) {
-    m_lastStepProfile = pipeline.executeProfiled(*this, executor);
+    pipeline.executeProfiled(*this, executor, m_lastStepProfile);
   } else {
     pipeline.execute(*this, executor);
   }
