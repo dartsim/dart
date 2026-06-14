@@ -2175,57 +2175,41 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-contact-candidate-packet` - the single consolidated PLAN-083
-follow-up PR for the remaining private packet work (#2978). This branch now
-carries point-triangle and edge-edge contact-stencil filtering plus
-brute-force all-pairs point-triangle and edge-edge candidate-mask packets plus
-motion-aware swept-AABB point-triangle and edge-edge candidate-list packets,
-compact runtime sweep-buffer endpoint-distance packets, winding-independent
-endpoint-linear point-triangle/edge-edge CCD/line-search packets plus sampled
-rigid-curved point-triangle/edge-edge CCD/line-search packets plus reduced
-scene-owned runtime point-triangle/edge-edge CCD rows, reduced scene-owned
-runtime candidate-buffer packets, reduced scene-owned runtime sweep
-broad-phase packets, scalar barrier/friction local kernels plus point-triangle
-primitive barrier gradients and point-triangle/edge-edge tangent stencils plus
-point-edge/point-point tangent stencils, point-triangle, point-point,
-point-edge, and edge-edge primitive barrier-Hessian parity,
-point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-projection
-parity, reduced scene-owned point-triangle, point-edge, point-point, and
-edge-edge barrier-Hessian runtime rows plus a reduced combined all-family scene
-runtime barrier-Hessian row,
-reduced assembly/solve parity including sparse block residual and sparse
-Jacobi, sparse CG, sparse equality-reduced diagonal solve rows, a reduced
-scene-owned equality-reduced diagonal solve row, a reduced scene-owned diagonal
-assembly/solve row, and a reduced scene-owned sparse off-diagonal surface-edge
-assembly row, a reduced scene-owned sparse residual row, a reduced scene-owned
-sparse Jacobi row, a reduced scene-owned sparse CG row, reduced scene
-state-batch parity, and reduced ABD complex-geometry/FEM coupling evidence.
-Keep rows `in-progress` unless their full row policy is satisfied:
-GPU sweep-and-prune broad-phase construction, analytic curved CCD, full
-scene-level line search, full runtime scene filtering, GPU
-`World::step` contact candidate construction, full runtime sparse Hessian graph
-construction and assembly beyond the reduced dedup row, direct/global sparse
-factorization, production nonlinear equality convergence policy/solving,
-paper-scale assets, and accepted reference timings remain future evidence.
+`simx/plan083-rigid-curved-ccd-worldstep-followup` is the local-only follow-up
+branch created after PR #2978 merged and GitHub deleted
+`simx/plan083-gpu-contact-candidate-packet`. The current branch merges
+`origin/main` at `9de4ac6af873` through merge commit `46a4993def6` and carries
+the scene direct-sparse assembly packet expansion in `02de4b27758`.
+
+The historical #2978 branch carried point-triangle and edge-edge contact-stencil
+filtering; brute-force and swept-AABB candidate-mask/list packets; runtime
+sweep-buffer packets; endpoint-linear and sampled rigid-curved CCD/line-search
+packets; reduced scene-owned runtime candidate-buffer, broad-phase, CCD, barrier,
+friction, state-batch, ABD coupling, and assembly/solve packet evidence. Keep
+rows `in-progress` unless their full row policy is satisfied: GPU
+sweep-and-prune broad-phase construction, analytic curved CCD, full scene-level
+line search, full runtime scene filtering, GPU `World::step` contact candidate
+construction, full runtime sparse Hessian graph construction and assembly beyond
+the reduced dedup/direct-sparse rows, direct/global sparse factorization,
+production nonlinear equality convergence policy/solving, paper-scale assets,
+and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
-Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
-remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
-reviving former stacked branches. The next contact-candidate packet gaps are
-runtime scene filtering and speedup-gate work; the next barrier/friction packet
-gaps are full runtime sparse Hessian graph construction and assembly beyond the
-reduced dedup row, broader sparse barrier/contact assembly, and speedup-gate work;
-the next assembly/solve gaps
+Resume from `simx/plan083-rigid-curved-ccd-worldstep-followup` unless a later
+handoff supersedes it. The branch is clean and has no PR yet; push/open a
+checkpoint PR only after explicit maintainer approval. The next
+contact-candidate packet gaps are runtime scene filtering and speedup-gate work;
+the next barrier/friction packet gaps are full runtime sparse Hessian graph
+construction and assembly beyond the reduced dedup row, broader sparse
+barrier/contact assembly, and speedup-gate work; the next assembly/solve gaps
 are full runtime sparse Hessian graph construction and assembly, production
 sparse equality reduction, direct/global sparse factorization, production
 nonlinear equality convergence policy/solving, GPU `World::step` assembly/solve
-integration, and speedup-gate work. The CCD row
-still needs
-analytic curved CCD, full scene-level line-search feasibility,
-and runtime speedup. Do not mark these rows measured until the top-level speed
-gate and runtime evidence are
-proven. Keep the dev-task folder active
+integration, and speedup-gate work. The CCD row still needs analytic curved CCD,
+full scene-level line-search feasibility, and runtime speedup. Do not mark these
+rows measured until the top-level speed gate and runtime evidence are proven.
+Keep the dev-task folder active
 because PLAN-083 acceptance criteria are still unmet. If the task later moves
 out of this folder, get maintainer direction before deleting it and keep the
 remaining planned manifest plus in-progress CPU/GPU/scene limitations in
