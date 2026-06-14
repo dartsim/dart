@@ -1412,6 +1412,7 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringWorld()
       100.0,
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Zero());
+  world->setCollisionPairIgnored(anchor, block);
   return world;
 }
 
@@ -1457,6 +1458,9 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringRatioWorld()
         stiffness,
         Eigen::Vector3d(0.5, 0.0, 0.0),
         Eigen::Vector3d(-0.5, 0.0, 0.0));
+    world->setCollisionPairIgnored(
+        links[static_cast<std::size_t>(i)],
+        links[static_cast<std::size_t>(i + 1)]);
   }
 
   benchmark::DoNotOptimize(links.data());
@@ -3277,6 +3281,7 @@ static void BM_AvbdDemo3dSpringStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 1.0;
   state.counters["collision_shapes"] = 3.0;
+  state.counters["ignored_collision_pairs"] = 1.0;
   state.counters["source_scene_index"] = 7.0;
 }
 BENCHMARK(BM_AvbdDemo3dSpringStep);
@@ -3295,6 +3300,7 @@ static void BM_AvbdDemo3dSpringRatioStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 7.0;
   state.counters["collision_shapes"] = 9.0;
+  state.counters["ignored_collision_pairs"] = 7.0;
   state.counters["source_scene_index"] = 8.0;
 }
 BENCHMARK(BM_AvbdDemo3dSpringRatioStep);

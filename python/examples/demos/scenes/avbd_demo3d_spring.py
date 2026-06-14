@@ -172,6 +172,8 @@ def build() -> SceneSetup:
         parent_anchor=tuple(_CENTER_ANCHOR),
         child_anchor=tuple(_CENTER_ANCHOR),
     )
+    world.set_collision_pair_ignored(anchor, block)
+    ignored_collision_pairs = [(anchor, block)]
     springs = [
         {
             "name": "avbd_demo3d_spring_radial",
@@ -229,6 +231,7 @@ def build() -> SceneSetup:
         builder.text("source scene: sceneSpring, index 7 of 14")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"distance springs: {len(springs)}")
+        builder.text(f"ignored collision pairs: {len(ignored_collision_pairs)}")
         builder.text(f"spring length: {length:.3f} m")
         builder.text(f"block dz: {block_z - initial_block_z:.3f} m")
         builder.text(f"world time: {world.time:.3f} s")
@@ -248,6 +251,7 @@ def build() -> SceneSetup:
             "anchor": anchor,
             "block": block,
             "springs": springs,
+            "ignored_collision_pairs": ignored_collision_pairs,
             "source_demo_row": "avbd-demo3d spring",
             "source_demo_reference": _source_row(),
             "spring_length": spring_length,

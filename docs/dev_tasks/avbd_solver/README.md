@@ -10,6 +10,22 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` now extends the Spring/Spring
+  Ratio contact-filtering slice to the 3D source rows. The 3D Python scenes
+  and matching C++ benchmark constructors explicitly ignore the radial
+  spring-connected rigid body collision pairs; focused Python coverage asserts
+  the Spring row has one ignored pair and Spring Ratio has seven adjacent
+  ignored pairs, with non-adjacent Spring Ratio links still collidable. The
+  benchmark smoke records `ignored_collision_pairs=1` and `7` on
+  `BM_AvbdDemo3dSpringStep` and `BM_AvbdDemo3dSpringRatioStep`, respectively.
+  Validation passed the affected benchmark target rebuild, focused Python
+  regressions, the Spring/Spring Ratio benchmark smoke, `git diff --check`,
+  `pixi run lint`, `pixi run build`, and `pixi run -e cuda test-all` on the
+  visible NVIDIA RTX 5000 Ada host. This is local source-row configuration
+  evidence only; it does not refresh any tracked packet, close the 3D
+  Spring/Spring Ratio CPU gates, push a follow-up PR, resolve GitHub review
+  threads, or claim GPU/paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
   `avbd/soft-body-inertia-orientation-cache` now carries a conservative
   Spring/Spring Ratio contact-filtering slice on top of the local
   inertia-orientation cleanup. The Python source rows and matching C++

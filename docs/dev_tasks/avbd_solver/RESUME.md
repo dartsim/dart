@@ -8,12 +8,11 @@ stop-only snapshot lower in this file.
 
 Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
 is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
-currently contains the local Spring/Spring Ratio ignored-collision-pair slice
-plus the previous inertia-orientation cleanup and handoff-doc refreshes. The
-latest kept implementation explicitly ignores spring-connected rigid body
-collision pairs in the Python source rows and matching C++ benchmark
-constructors, and makes the rigid contact stage's no-contact fast path respect
-ignored dynamic rigid-body pairs before skipping the collision query. Do not
+currently contains the local 3D Spring/Spring Ratio ignored-collision-pair
+slice plus the previous 2D Spring/Spring Ratio contact-filtering slice,
+inertia-orientation cleanup, and handoff-doc refreshes. The latest kept
+implementation explicitly ignores spring-connected rigid body collision pairs
+in the 3D Python source rows and matching C++ benchmark constructors. Do not
 push, open a PR, resolve review threads, comment, retrigger reviews, or mutate
 CI without explicit maintainer approval.
 
@@ -32,7 +31,19 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the 2D Spring and Spring Ratio source rows now explicitly
+Latest local slice: the 3D Spring and Spring Ratio source rows now explicitly
+ignore collision pairs that are already connected by the measured spring
+constraints. The C++ `BM_AvbdDemo3dSpringStep` and
+`BM_AvbdDemo3dSpringRatioStep` benchmark constructors mirror those ignored
+pairs and expose `ignored_collision_pairs` counters. Focused Python coverage
+asserts the 3D Spring row has one ignored pair and the 3D Spring Ratio row has
+seven adjacent ignored pairs, and also verifies a non-adjacent 3D Spring Ratio
+pair remains collidable. The benchmark smoke is configuration/path evidence
+only under high local load; it does not refresh a tracked packet, close the 3D
+Spring/Spring Ratio CPU gates, push a follow-up PR, resolve GitHub review
+threads, or claim GPU/paper-number parity.
+
+Previous local slice: the 2D Spring and Spring Ratio source rows now explicitly
 ignore collision pairs that are already connected by the measured spring
 constraints. The C++ `BM_AvbdDemo2dSpringStep` and
 `BM_AvbdDemo2dSpringRatioStep` benchmark constructors mirror those ignored
@@ -139,6 +150,33 @@ tests. Focused regression coverage now passes
 the full `python/tests/unit/test_run_cpp_example.py` file passes, and
 `pixi run lint` passes. This CI-smoke fix and regression were pushed as part of
 PR head `0bf4ca6b8ae`.
+
+Validation for the latest 3D Spring/Spring Ratio ignored-pair slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run env PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo3d_spring_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo3d_spring_ratio_scene_matches_source_row -q`
+  passed, 2 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo3d(SpringStep|SpringRatioStep)$" --benchmark_min_time=0.3s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-local-3d-spring-contact-filter-20260614.json --benchmark_out_format=json'`
+  passed. Under load average `22.04, 11.41, 8.44` with CPU scaling enabled,
+  it recorded median CPU step times of 9.880 us for
+  `BM_AvbdDemo3dSpringStep` with `ignored_collision_pairs=1` and 78.036 us
+  for `BM_AvbdDemo3dSpringRatioStep` with `ignored_collision_pairs=7`. This is
+  source-row configuration/path smoke only because same-source native timing,
+  visual captures, and packet regeneration were not rerun.
+- `git diff --check` passed.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The final report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The simulation
+  label passed 73/73 tests in 963.42 s, including
+  `test_rigid_ipc_paper_experiments` at 578.36 s and
+  `test_lcp_jacobi_batch_cuda` at 207.77 s. The CUDA-specific label passed 8/8
+  tests in 210.65 s, with `test_lcp_jacobi_batch_cuda` at 207.54 s. The docs
+  build passed with the existing four `dartpy._world_render_bridge` autodoc
+  import warnings, and CUDA benchmark smokes passed under CPU-scaling warnings
+  and load averages around 8-10, so treat those timings as smoke evidence only.
 
 Validation for the latest Spring/Spring Ratio ignored-pair slice:
 
