@@ -2141,25 +2141,40 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Fastest native,Slowest"
         in builder.events
     )
-    standard_spd_summary = problem_summary_by_case["standard_spd"]
-    assert (
-        f"text:{standard_spd_summary['fastest_solver']} "
-        f"({standard_spd_summary['fastest_elapsed_us']:.1f} us)"
-        in builder.events
-    )
-    assert (
-        f"text:{standard_spd_summary['max_solution_error']:.2e}"
-        in builder.events
-    )
-    assert (
-        f"text:{standard_spd_summary['max_complementarity']:.2e}"
-        in builder.events
-    )
-    assert (
-        f"text:{standard_spd_summary['slowest_solver']} "
-        f"({standard_spd_summary['slowest_elapsed_us']:.1f} us)"
-        in builder.events
-    )
+    for summary_row in problem_summary_rows:
+        assert f"text:{summary_row['label']}" in builder.events
+        assert f"text:{summary_row['problem_type']}" in builder.events
+        assert f"text:{summary_row['lcp_dimension']}" in builder.events
+        assert f"text:{summary_row['findex_contact_count']}" in builder.events
+        assert f"text:{summary_row['challenge']}" in builder.events
+        assert (
+            f"text:{summary_row['native_contract_ok_count']}/"
+            f"{summary_row['native_solver_count']}"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['delegated_contract_ok_count']}/"
+            f"{summary_row['delegated_solver_count']}"
+            in builder.events
+        )
+        assert f"text:{summary_row['max_solution_error']:.2e}" in builder.events
+        assert f"text:{summary_row['max_complementarity']:.2e}" in builder.events
+        assert f"text:{summary_row['max_residual']:.2e}" in builder.events
+        assert (
+            f"text:{summary_row['fastest_solver']} "
+            f"({summary_row['fastest_elapsed_us']:.1f} us)"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['fastest_native_solver']} "
+            f"({summary_row['fastest_native_elapsed_us']:.1f} us)"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['slowest_solver']} "
+            f"({summary_row['slowest_elapsed_us']:.1f} us)"
+            in builder.events
+        )
     for challenge in (
         "large mass-ratio conditioning with active bounds",
         "rank-deficient complementarity with opposing active bounds",
