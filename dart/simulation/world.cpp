@@ -3360,6 +3360,10 @@ void World::clear()
   // Recreate the opaque storage at the rebuild boundary so registry/component
   // capacities and other allocator-backed build artifacts release their live
   // allocations instead of surviving as stale storage in an empty World.
+  m_collisionQueryCache.reset();
+  m_stepPipelineCache.reset();
+  m_replay.reset();
+  m_storage.reset();
   m_storage = makeWorldStorage(m_memoryManager);
   markFrameTopologyChanged();
   m_simulationMode = false;
@@ -3390,13 +3394,7 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
-  m_collisionQueryCache.reset();
   m_stepPipelineCache = makeStepPipelineCache(m_memoryManager);
-  if (m_replay) {
-    m_replay->recordingEnabled = false;
-    m_replay->frames.clear();
-    m_replay->cursor.reset();
-  }
 }
 
 //==============================================================================

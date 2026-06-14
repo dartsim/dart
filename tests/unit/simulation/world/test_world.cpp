@@ -3408,54 +3408,58 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       const auto& boundaries
           = view.get<sx::comps::DeformableBoundaryConditions>(entity);
       auto& memory = deformableStorageWorld.getMemoryManager();
-      EXPECT_TRUE(memory.hasAllocated(
+      const auto hasAllocated = [&memory](const auto* pointer, size_t size) {
+        return memory.hasAllocated(
+            const_cast<void*>(static_cast<const void*>(pointer)), size);
+      };
+      EXPECT_TRUE(hasAllocated(
           state.positions.data(),
           state.positions.size() * sizeof(Eigen::Vector3d)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           state.previousPositions.data(),
           state.previousPositions.size() * sizeof(Eigen::Vector3d)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           state.velocities.data(),
           state.velocities.size() * sizeof(Eigen::Vector3d)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           state.masses.data(), state.masses.size() * sizeof(double)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           state.fixed.data(), state.fixed.size() * sizeof(std::uint8_t)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           topology.restPositions.data(),
           topology.restPositions.size() * sizeof(Eigen::Vector3d)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           spring.edges.data(),
           spring.edges.size() * sizeof(sx::comps::DeformableSpringEdge)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           topology.surfaceTriangles.data(),
           topology.surfaceTriangles.size()
               * sizeof(sx::comps::DeformableSurfaceTriangle)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           topology.tetrahedra.data(),
           topology.tetrahedra.size()
               * sizeof(sx::comps::DeformableTetrahedron)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           topology.tetrahedronRestVolumes.data(),
           topology.tetrahedronRestVolumes.size() * sizeof(double)));
       ASSERT_EQ(boundaries.dirichlet.size(), 1u);
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           boundaries.dirichlet.data(),
           boundaries.dirichlet.size()
               * sizeof(sx::comps::DeformableDirichletBoundary)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           boundaries.dirichlet[0].nodes.data(),
           boundaries.dirichlet[0].nodes.size() * sizeof(std::size_t)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           boundaries.dirichlet[0].referencePositions.data(),
           boundaries.dirichlet[0].referencePositions.size()
               * sizeof(Eigen::Vector3d)));
       ASSERT_EQ(boundaries.neumann.size(), 1u);
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           boundaries.neumann.data(),
           boundaries.neumann.size()
               * sizeof(sx::comps::DeformableNeumannBoundary)));
-      EXPECT_TRUE(memory.hasAllocated(
+      EXPECT_TRUE(hasAllocated(
           boundaries.neumann[0].nodes.data(),
           boundaries.neumann[0].nodes.size() * sizeof(std::size_t)));
     }
@@ -3603,6 +3607,64 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   EXPECT_TRUE(memoryManager.hasAllocated(
       rebuiltStorage, sizeof(sx::detail::WorldStorage)));
 #endif
+}
+
+TEST(World, ClearReleasesStorageBeforeFixedCapacityReplacement)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  constexpr std::size_t kBodyCount = 32u;
+  constexpr std::size_t kMaxCapacity = 4u * 1024u * 1024u;
+
+  const auto makeOptions = [](std::size_t freeListBytes) {
+    sx::WorldOptions options;
+    options.freeListInitialAllocation = freeListBytes;
+    options.freeListGrowthPolicy
+        = common::FreeListAllocator::GrowthPolicy::FixedCapacity;
+    return options;
+  };
+  const auto populate = [](sx::World& world) {
+    for (std::size_t i = 0; i < kBodyCount; ++i) {
+      world.addRigidBody(std::format("clear_fixed_capacity_body_{:02}", i));
+    }
+    world.setReplayRecordingEnabled(true);
+  };
+  const auto canPopulate = [&](std::size_t freeListBytes) {
+    try {
+      sx::World world(makeOptions(freeListBytes));
+      populate(world);
+      return true;
+    } catch (...) {
+      return false;
+    }
+  };
+
+  std::size_t upper = 4096u;
+  while (upper < kMaxCapacity && !canPopulate(upper)) {
+    upper *= 2u;
+  }
+  ASSERT_LT(upper, kMaxCapacity);
+
+  std::size_t lower = 0u;
+  while (lower + 1u < upper) {
+    const auto mid = lower + (upper - lower) / 2u;
+    if (canPopulate(mid)) {
+      upper = mid;
+    } else {
+      lower = mid;
+    }
+  }
+
+  sx::World world(makeOptions(upper));
+  populate(world);
+  ASSERT_EQ(world.getRigidBodyCount(), kBodyCount);
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+
+  EXPECT_NO_THROW(world.clear());
+  EXPECT_EQ(world.getRigidBodyCount(), 0u);
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
 }
 
 TEST(World, SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator)
