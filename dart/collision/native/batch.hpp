@@ -37,7 +37,6 @@
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Geometry>
-#include <Eigen/StdVector>
 
 #include <limits>
 #include <span>
@@ -193,9 +192,8 @@ struct DART_COLLISION_NATIVE_API BatchStorage
 
   std::vector<ObjectId> ids;
   std::vector<const Shape*> shapes;
-  std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>
-      transforms;
-  std::vector<Aabb, Eigen::aligned_allocator<Aabb>> aabbs;
+  std::vector<Eigen::Isometry3d> transforms;
+  std::vector<Aabb> aabbs;
   std::vector<std::uint8_t> flags;
   std::vector<std::size_t> idToIndex;
   bool denseIds = true;

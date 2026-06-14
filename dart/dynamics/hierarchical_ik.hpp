@@ -327,8 +327,6 @@ protected:
   mutable math::Jacobian mJacCache;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The CompositeIK class allows you to specify an arbitrary hierarchy of
