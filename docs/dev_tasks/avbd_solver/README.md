@@ -9,6 +9,118 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest CI follow-up (2026-06-14): PR #2991's Linux `Release Tests`
+  AddressSanitizer phase reached 218/219 passing CTests, then
+  `EXAMPLE_dart_demos_list` aborted with `Failed loading SDL3 library`. The
+  manually registered `dart-demos --list` CTest now prepends both the Pixi
+  install library directory and the build-tree DART library directory to its
+  runtime library path, matching the normal DART test-helper setup for this
+  GUI catalog smoke. Focused local validation passed `pixi run config-asan`,
+  `pixi run -- cmake --build build/default/cpp/asan --target dart-demos -j 8`,
+  and
+  `ASAN_OPTIONS=detect_leaks=1 pixi run -- ctest --test-dir build/default/cpp/asan -R EXAMPLE_dart_demos_list --output-on-failure -V`.
+- Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
+  #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
+  `1265b12054c` after verifying the latest `origin/main` was already merged.
+  Hosted CI restarted on that head. The Dynamic Friction
+  panel-label thread from Codex review `4492237805` is covered on the pushed
+  branch by deriving the plotted high-friction speed label from `max_friction`
+  and by integration coverage for the
+  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. The older
+  numeric-equivalent friction-env packet thread is also covered on the pushed
+  branch by
+  `test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env`.
+  The two Codex bot threads remain unresolved on GitHub because no bot replies
+  or thread-resolution mutations were performed.
+- Latest pushed follow-up (2026-06-14): the AVBD contact-config guard is now on
+  PR head `1265b12054c`: the rigid contact stage skips the per-contact
+  `rigidAvbdContactStageConfig()` scan unless the registry has
+  `RigidAvbdContactConfig` storage. The `/0` Dynamic Friction benchmark moved
+  from a 7.837 us median CPU step before the edit to 7.409 us after it under
+  lower but still noisy local load with CPU scaling enabled. Focused default
+  contact tests, the full `World.RigidBodyContactStageAvbd*` cluster, and the
+  two review regression tests passed; final validation also passed
+  `pixi run lint`, `pixi run build`, and `pixi run test-unit` (161 tests).
+  This is path smoke only; it does not refresh the tracked friction-sweep
+  packet, close the frictionless source-row CPU gap, resolve the GitHub review
+  threads, or claim GPU parity. The local branch is aligned with origin; any
+  further push still requires explicit maintainer approval.
+- Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
+  exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
+  CMake 4.3 emitted C++20 module dependency-scanning rules that invoked missing
+  `clang-scan-deps` even though DART has no C++ module sources. The local
+  follow-up disables `CMAKE_CXX_SCAN_FOR_MODULES` at the root project and adds
+  a changelog note. `pixi run lint`, `pixi run build`, and the post-push
+  `pixi run test-unit` passed. A fresh Clang/Ninja smoke configure without
+  `clang-scan-deps` generated no `.ddi`, `clang-scan-deps`, or
+  `CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND` Ninja rules and reached normal
+  `.o` compilation for `dart-collision-native`; local Clang 22 then failed on
+  missing standard C++ header `cmath`, which is a local toolchain issue rather
+  than the hosted scanner failure. This CI fix was pushed as part of PR head
+  `0bf4ca6b8ae`.
+- Latest local follow-up (2026-06-14): while validating the GUI smoke path
+  locally, `pixi run test-dart-gui-smoke` initially failed every generated
+  smoke test because `scripts/run_cpp_example.py` prepended a relative build
+  library path to `LD_LIBRARY_PATH`; each CTest smoke test runs from a nested
+  working directory, so the loader could fall back to an installed DART library
+  that required unavailable `libfcl.so.0.7`. The runner now prepends the
+  absolute build-library path, and `pixi run test-dart-gui-smoke` passes
+  31/31 smoke tests. Focused regression coverage now passes
+  `pixi run pytest python/tests/unit/test_run_cpp_example.py::test_runtime_env_prepends_absolute_build_library_path -q`,
+  the full `python/tests/unit/test_run_cpp_example.py` file passes, and
+  `pixi run lint` passes. This CI-smoke fix and regression were pushed as part
+  of PR head `0bf4ca6b8ae`.
+- Latest local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact friction solve now returns when a clamped tangent impulse delta is
+  exactly zero and skips static/prescribed endpoint velocity writes for tangent
+  impulses. This trims no-op work in the same Dynamic Friction coefficient
+  sweep contact path without changing the normal solve or static endpoint
+  semantics. Focused contact behavior, restitution, and baked allocator tests
+  passed; a five-row `BM_AvbdDemo2dFrictionCoefficientSweep` smoke recorded
+  medians of 7.107, 11.982, 15.833, 7.754, and 7.563 us for max friction 0,
+  0.5, 1.0, 2.5, and 5.0 under load average `3.61, 4.55, 7.00` with CPU
+  scaling enabled. `pixi run build` and `pixi run test-unit` passed. This is
+  source-row path evidence only; it does not refresh the tracked packet, close
+  the frictionless source-row CPU gap, resolve the GitHub review threads, or
+  claim GPU parity. A guarded zero-restitution approach-velocity probe was
+  rejected and reverted after the `/0` benchmark reran around 13.7 us median.
+- Prior local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact assembly now shares each endpoint's `ContactMaterial` lookup between
+  friction and restitution and skips `sqrt` for exact zero combined friction
+  products. A source-shaped frictionless Dynamic Friction profile still showed
+  `rigid_body_contact` dominating the step at 0.050 ms / 80.0% of a 0.063 ms
+  wall step, and `/0` benchmark smokes recorded 7.924 us before this lookup
+  cleanup and 7.891 us after it under high host load and CPU-scaling warnings.
+  This is path smoke only; it does not refresh the tracked friction-sweep
+  packet, close the frictionless source-row CPU gap, resolve the GitHub review
+  threads, or claim GPU parity. Validation passed the focused
+  `test_world` contact/allocator filter, `pixi run lint`, `pixi run build`,
+  `pixi run test-unit`, and `pixi run -e cuda test-all` on the visible NVIDIA
+  RTX 5000 Ada host. The CUDA run passed all seven categories and retained the
+  existing four `dartpy._world_render_bridge` autodoc warnings during docs.
+- Prior local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact assembly now skips prescribed/static endpoint arm and tangent
+  effective-mass work while preserving dynamic endpoint impulse math. This
+  extends the static-ground-side cleanup for the
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a `/0` benchmark smoke
+  recorded a 7.04 us median CPU step under load average `1.84, 2.00, 1.34`
+  with CPU scaling enabled. Full validation
+  passed `pixi run lint`, `pixi run build`, `pixi run test-unit`, focused
+  Python regression, `git diff --check`, and `pixi run -e cuda test-all` on
+  the visible NVIDIA RTX 5000 Ada host. This is local path and review-fix
+  evidence only. It does not refresh the tracked friction-sweep packet, close
+  the frictionless source-row CPU gap, resolve the GitHub review thread, or
+  claim GPU parity. Afterward, `origin/main` at `c4c5ed87eae4` was merged
+  locally; the only conflict was `scripts/capture_py_demo.py`, resolved by
+  preserving both the PR branch's capture env/metadata overrides and `main`'s
+  visual-verification scene-metrics manifest support. Post-merge validation
+  passed `pixi run python -m py_compile scripts/capture_py_demo.py`, focused
+  capture and Dynamic Friction Python regressions with explicit build
+  `PYTHONPATH`, the focused contact/allocator `test_world` filter,
+  `pixi run build`, `pixi run test-unit`, `pixi run lint`,
+  `pixi run -e cuda test-all`, and the focused numeric-equivalent friction-env
+  packet regression. No push has been performed.
 - Latest local follow-up: PLAN-091 WP-091.1 relabels the AVBD contact-scene
   evidence rows: no `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene
   emplaces the internal AVBD rigid-contact opt-in config
@@ -29,6 +141,642 @@ Corpus matrix:
   `pixi run check-avbd-packets`); committed packet bytes are unchanged. This
   is an evidence-integrity relabel only; it does not close or reopen any AVBD
   solver, source-corpus CPU-win, GPU, or paper-number gate.
+- Latest resumed checkpoint (2026-06-13): the default sequential-impulse rigid
+  contact position correction now skips no-op position writes to
+  prescribed/static bodies while preserving the same inverse-mass-weighted
+  correction for dynamic endpoints. This targets the static-ground side of the
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a `/0` benchmark smoke
+  recorded a 7.78 us median CPU step under load average `19.85, 12.52, 9.51`
+  with CPU scaling enabled. Full validation completed on 2026-06-13:
+  `pixi run lint`, `pixi run build`, `pixi run test-unit`, and
+  `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The CUDA run overlapped external DART/CUDA load, had CPU-scaling benchmark
+  warnings, and retained the existing four `dartpy._world_render_bridge`
+  autodoc warnings during docs. This is local path evidence only. It does not
+  refresh the tracked friction-sweep packet, close the frictionless source-row
+  CPU gap, or claim GPU parity.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse
+  normal contact solve now records whether each side of a contact has a nonzero
+  normal angular Jacobian term, skips the corresponding zero-angular
+  approach-velocity and effective-mass work, avoids no-op angular velocity
+  updates for centered normal rows, and returns early from normal-impulse
+  application when the clamped impulse delta is zero. This targets the same
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a lower-load `/0` benchmark
+  smoke recorded median CPU step time moving from 7.96 us before the edit to
+  7.49 us after under CPU scaling warnings. Full validation completed on
+  2026-06-13: `pixi run lint`, `pixi run build`, `pixi run test-unit`, and
+  `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The CUDA run overlapped external DART/CUDA load and retained the existing
+  four `dartpy._world_render_bridge` autodoc warnings during docs. This is
+  local path evidence only. This does not refresh the tracked friction-sweep
+  packet, close the frictionless source-row CPU gap, or claim GPU parity.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse
+  normal contact solve now stores each contact's `arm x normal` terms and
+  reuses them for normal effective mass, restitution approach, and per-iteration
+  normal approach velocity instead of rebuilding full contact-point velocities
+  with angular cross products inside the normal loop. This targets the same
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a high-load `/0` benchmark
+  smoke recorded median CPU step time moving from 20.84 us before the edit to
+  20.27 us after under load averages above 23 with CPU scaling enabled. This is
+  local path evidence only. Full validation passed `pixi run lint`,
+  `pixi run build`, `pixi run test-unit`, and `pixi run -e cuda test-all` on
+  the visible NVIDIA RTX 5000 Ada host, with the existing four
+  `dartpy._world_render_bridge` autodoc warnings during docs. This does not
+  refresh the tracked friction-sweep packet, close the frictionless source-row
+  CPU gap, or claim GPU parity.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact path now skips inverse world-inertia factorization for centered,
+  frictionless normal contacts whose angular contact Jacobian is exactly zero.
+  This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row,
+  where 11 zero-friction boxes contact the ground through centered normal rows.
+  Focused contact behavior and baked allocator tests passed, and a `/0`
+  benchmark smoke recorded a 7.42 us median CPU step under load average
+  `3.64, 4.33, 6.29` with CPU scaling enabled. This is local path evidence
+  only; it does not refresh the tracked friction-sweep packet, close the
+  frictionless source-row CPU gap, or claim GPU parity.
+- Latest resumed checkpoint (2026-06-12): `RigidBodyContactStage::prepare()`
+  now sizes ordinary and AVBD contact scratch from the conservative
+  collision-shape capacity estimate and prewarms collision-query cache storage
+  without generating prepare-time contacts. `execute()` remains the only path
+  that assembles contact rows for the actual solve. Focused contact tests, the
+  previously failing baked allocator regression in default and CUDA builds,
+  `pixi run lint`, `pixi run build`, `pixi run test-unit`, full
+  `pixi run -e cuda test-all`, and a `/0` friction-sweep benchmark smoke
+  passed. This removes duplicate bake-time contact generation only; the `/0`
+  benchmark smoke is path evidence, not a tracked source-row CPU-win refresh.
+- Latest resumed checkpoint (2026-06-12): the friction-coefficient sweep owner
+  row now matches the tracked packet evidence: DART is faster than the
+  same-source native runner at max friction 0.5, 1.0, 2.5, and 5.0, but still
+  slower at max friction 0.0, so the all-coefficient CPU-win gate remains open.
+  The packet-writer regression now covers mixed faster/slower reference sweeps
+  and preserves the remaining-gate text when any coefficient fails the CPU-win
+  comparison. This is evidence hygiene only; it does not refresh benchmark
+  timings, close the frictionless source-row gap, or claim GPU parity.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact path now requests only basic private contact-query details when no
+  rigid AVBD contact config component is present, while
+  public `World::collide()` and private AVBD contact snapshots still request
+  the full shape-index/local-point payload. The same slice caches
+  per-contact velocity/transform component pointers, inverse effective mass,
+  and unit normal impulse velocity deltas across the sequential normal solve,
+  avoiding repeated registry lookups and normal impulse cross/matrix work
+  inside the inner iterations. Local validation passed the focused `test_world`
+  and `bm_avbd_rigid_fixed_joint` target build; the focused
+  zero-friction/sliding contact filter; focused public collision-query
+  local-detail coverage for shape-local transforms, cache updates, and compound
+  rigid-body shapes; focused `/0` benchmark path checks; `pixi run lint`;
+  `pixi run build`; the focused contact and public collision-query filters
+  again after lint/build; the full `test_world` binary (314 tests); and
+  `git diff --check`. Full CUDA validation also passed
+  `pixi run -e cuda test-all` on the visible NVIDIA RTX 5000 Ada host. The
+  path checks recorded medians around 6.74 us for the cached normal-impulse
+  slice and 7.25 us for the basic-contact-query slice under CPU scaling and
+  host load, so they validate behavior on the edited path only; they are not a
+  tracked packet refresh or CPU-win comparison. The frictionless source-row gap,
+  all-coefficient CPU-win gate, GPU parity, source-demo parity, and
+  paper-number gates remain open.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact stage now records whether any assembled contact can carry Coulomb
+  friction and uses a normal-only Gauss-Seidel loop when every contact is
+  frictionless. This keeps the normal impulse and penetration-correction path
+  active for the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row
+  while removing the per-contact friction branch from the inner iteration
+  loop. Local validation passed the focused `test_world` and
+  `bm_avbd_rigid_fixed_joint` target build; the focused
+  `World.RigidBodyContactZeroFrictionPreservesSlidingVelocity`,
+  `World.RigidBodyContactFrictionDeceleratesSlidingBody`, and
+  `World.RigidBodyContactFrictionRollsSlidingSphere` filter; a focused `/0`
+  benchmark path check; and the five-row `BM_AvbdDemo2dFrictionCoefficientSweep`.
+  The five-row run recorded median CPU step times of 7.01 us, 7.51 us,
+  18.13 us, 11.07 us, and 8.09 us for max friction 0, 0.5, 1.0, 2.5, and
+  5.0 respectively under load average `4.76, 9.43, 16.93` with CPU scaling
+  enabled. These benchmark reruns validate the path only; they do not refresh
+  the tracked packet, compare same-source native timing, or close the
+  frictionless CPU-win gate. Final verification also passed `pixi run lint`,
+  `pixi run build`, the focused three-test filter after lint/build, the full
+  `test_world` binary (314 tests), and `git diff --check`. The frictionless
+  source-row gap, all-coefficient CPU-win gate, GPU parity, source-demo parity,
+  and paper-number gates remain open.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact stage now computes the combined Coulomb coefficient before tangent
+  setup and skips tangent-basis/effective-mass construction plus friction solve
+  calls when the coefficient is zero. This targets the remaining
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` fixed overhead after profiling the
+  source-shaped Dynamic Friction sweep showed `rigid_body_contact` dominated
+  the frictionless step. Focused validation passed the `test_world` and
+  `bm_avbd_rigid_fixed_joint` target build; the focused
+  `World.RigidBodyContactZeroFrictionPreservesSlidingVelocity`,
+  `World.RigidBodyContactFrictionDeceleratesSlidingBody`, and
+  `World.RigidBodyContactFrictionRollsSlidingSphere` filter; the full
+  `test_world` binary (314 tests); the five-row
+  `BM_AvbdDemo2dFrictionCoefficientSweep`; and a focused `/0` rerun. The
+  benchmark reruns were under high host load averages around
+  `32.19, 29.17, 20.43` and `32.33, 29.42, 20.74`, so they validate the path
+  but are not packet-refresh or CPU-win evidence. The frictionless source-row
+  gap, all-coefficient CPU-win gate, GPU parity, source-demo parity, and
+  paper-number gates remain open.
+- Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
+  short-circuits the empty Coulomb friction descriptor path after normal rows
+  are built. When every active contact has zero friction-force limit, the
+  builder clears/syncs stale friction inventory and returns before previous
+  friction-direction lookup/sort and tangent-row construction. The focused
+  regression now covers both the zero-friction-coefficient case and an active
+  positive-coefficient contact with zero normal force. A fresh local
+  `BM_AvbdDemo2dFrictionCoefficientSweep` run recorded DART median CPU step
+  times of 6.87 us, 8.41 us, 18.60 us, 11.25 us, and 9.18 us for max friction
+  0, 0.5, 1.0, 2.5, and 5.0 respectively. This run is benchmark-only local
+  evidence and does not regenerate the tracked packet because the same-source
+  native timing and capture artifacts were not rerun; it also does not close
+  the frictionless CPU gap, all-coefficient CPU-win gate, GPU parity, or
+  paper-number gates. Local validation passed the focused target build,
+  focused three-test contact-manifold filter, benchmark target build,
+  five-row friction-coefficient benchmark, `pixi run lint`, `pixi run build`,
+  the focused three-test filter again, full `test_avbd_rigid_block` (97 tests),
+  and `git diff --check`.
+- Latest resumed checkpoint (2026-06-12): local session branch consolidation is
+  complete. The single non-main local resume branch is
+  `avbd/source-row-extraction-precheck`; it contains the PR #2977
+  `avbd/source-row-perf-slice` work, the later friction-sweep evidence, and the
+  current handoff docs. The local `avbd/source-row-perf-slice` branch was
+  removed after confirming its head is already an ancestor of the consolidated
+  branch. The local `feature/avbd-articulated-masked-rows` branch was removed
+  as a superseded raw 33-hour checkpoint; its remote ref remains on origin as
+  archive only and should not be used as the fresh-session starting point. The
+  unrelated local `feature/free-joint-energy-benchmarks` branch was also
+  removed locally and remains on origin. Fresh agents should resume with
+  `git switch avbd/source-row-extraction-precheck`, not from the old branch
+  names or stashes.
+- Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
+  skips the Coulomb tangent-row inventory entirely when every active contact has
+  a zero friction-force limit. The implementation preserves the existing
+  descriptor layout whenever any contact can carry positive friction, so mixed
+  manifolds keep their current row-index assumptions. Focused C++ coverage in
+  `RigidContactManifoldBuilderSkipsZeroLimitFrictionRows` verifies that normal
+  rows persist while zero-limit friction rows and inventory records are removed.
+  A refreshed `BM_AvbdDemo2dFrictionCoefficientSweep` run produced DART median
+  CPU step times of 6.20 us, 6.79 us, 14.87 us, 8.85 us, and 7.00 us for max
+  friction 0, 0.5, 1.0, 2.5, and 5.0 respectively. The tracked
+  [`avbd-friction-coefficient-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+  now records DART faster than the same-source native runner at max friction
+  0.5, 1.0, 2.5, and 5.0, but still slower at frictionless max friction 0.
+  The benchmark stdout reported a high host load average during this run, so
+  treat the packet as current evidence rather than a paper-number claim. Local
+  validation passed the `test_avbd_rigid_block` target build, three
+  focused contact-manifold tests, `bm_avbd_rigid_fixed_joint` target build, the
+  five-row friction-coefficient benchmark, packet regeneration, and plot
+  regeneration, `pixi run lint`, final focused target rebuild, focused
+  contact-manifold test rerun, `pixi run build`, and `git diff --check`.
+- Latest resumed checkpoint (2026-06-12): the paper/source-corpus friction
+  coefficient comparison now has same-source reference timing and
+  per-coefficient visual-capture evidence.
+  `BM_AvbdDemo2dFrictionCoefficientSweep` reuses the source-shaped
+  `avbd-demo2d` Dynamic Friction scene and sweeps maximum dynamic-box Coulomb
+  friction values 0, 0.5, 1, 2.5, and 5 across the existing 11 sliding-box
+  setup. The native `avbd-demo2d` timing runner accepts
+  `--dynamic-friction-max-friction` for matching source timing. The py-demo
+  scene reads `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION`,
+  `scripts/capture_py_demo.py` records caller-supplied env/metadata in
+  `manifest.json`, and the tracked
+  [`avbd-friction-coefficient-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+  validates five DART benchmark rows, five same-source native timing rows, the
+  rendered timing plot, and five visual capture manifests. On this host DART is
+  faster at max friction 0.5 and 5.0, but slower at 0, 1.0, and 2.5. Local
+  validation for the resumed slice passed the focused capture/packet pytest,
+  focused build-path py-demo checks, packet regeneration from the existing
+  benchmark/reference/capture artifacts, `pixi run lint`, `pixi run build`, and
+  `git diff --check`. This is not a full-coefficient CPU-win, GPU parity, or
+  paper-number claim.
+- Latest resumed checkpoint (2026-06-12): the public articulated breakable
+  motor benchmark surface now has a validated scale packet,
+  [`avbd-breakable-motor-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-motor-scale-packet.json),
+  generated from a real `BM_AvbdArticulatedBreakableMotorStep`,
+  `BM_AvbdArticulatedPrismaticBreakableMotorStep`,
+  `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep`, and
+  `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` run over 1, 8, and 32
+  motors. The packet validates finite timing rows and exact `motors` plus
+  `breakable_motors` counters for the same-multibody/world-link
+  revolute/prismatic public motor row families. This is benchmark-only scale
+  evidence for existing public motor break/reset rows; it is not a broad motor
+  lifecycle corpus, visual fracture/breakable-wall corpus, CPU-win, GPU, or
+  paper-number claim.
+- Latest resumed checkpoint (2026-06-12): the public fixed/spherical
+  breakable point-joint benchmark surface now has a validated scale packet,
+  [`avbd-breakable-joint-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-joint-scale-packet.json),
+  generated from a real `BM_AvbdRigidBreakableJointStep`,
+  `BM_AvbdRigidSphericalBreakableJointStep`,
+  `BM_AvbdArticulatedBreakableJointStep`,
+  `BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
+  `BM_AvbdArticulatedSphericalPairBreakableJointStep` run over 1, 8, and 32
+  breakable joints. The packet validates finite timing rows and exact
+  `breakable_joints` counters for each fixed/spherical public row family.
+  This is benchmark-only scale evidence for existing public break/reset rows;
+  it is not a broad breakable-wall/fracture corpus, breakable-motor scale,
+  CPU-win, GPU, or paper-number claim.
+- Latest resumed checkpoint (2026-06-12): current-pose private
+  movable-pair revolute and prismatic AVBD motor rows now have focused
+  simulation-mode binary save/load regressions proving tiny restored effort
+  limits remain effective after reload. The tests preserve the generated
+  private `AvbdRigidWorldPointJointConfig`, command, effort-limit, mask, and
+  non-cardinal basis state, then step the restored world to verify the hard
+  anchor/hinge/masked rows stay active while the free-axis motor does not
+  become an unbounded velocity target. Local validation passed the focused
+  `test_variational_integration` target build, the two-test restored
+  tiny-limit filter before and after lint, `pixi run lint`, `pixi run build`,
+  and `git diff --check`. This is narrow persistent private articulated motor
+  evidence only, not broad fracture/corpus, CPU-win, GPU, or paper-number
+  evidence.
+- Final stop handoff (2026-06-12): the user explicitly directed the session to
+  stop working further, only ensure the hand-off docs, and then literally
+  stop. Do not continue implementation, verification, hosted CI work, branch
+  cleanup, PR mutation, push, merge, or review-comment handling unless a future
+  user request explicitly asks for that specific action. The active checkout
+  before this docs-only handoff edit was
+  `avbd/source-row-extraction-precheck` at local HEAD `ba56bd46517`
+  (`Add AVBD high-ratio sweep stability plot`), tracking
+  `origin/avbd/source-row-extraction-precheck` and ahead by 17 local commits.
+  The branch now includes the high-ratio iteration sweep benchmark, tracked
+  packet JSON, and rendered SVG stability plot. This is still only benchmark
+  and packet evidence for a focused 50-link/50,000:1 fixture; it is not a
+  same-hardware paper-number comparison, broad articulated stability proof, or
+  GPU parity claim. No fresh lint/build/test/CI, `git diff --check`, PR
+  refresh, push, branch cleanup, merge, or stash operation was performed for
+  this stop-only handoff by explicit user direction. `RESUME.md` is the source
+  of truth for the current branch inventory, stash inventory, local-only
+  commits, PR caveats, stopped plan, and future recovery commands.
+- Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
+  iteration sweep now has finite replay stability counters, a tracked
+  benchmark/stability-plot packet,
+  [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+  and a rendered SVG plot,
+  [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](../../plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg),
+  generated from a real
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` run over 25, 50, 100, and
+  200 max iterations. The packet validates the 50-link/50,000:1 fixture
+  counters, requires finite 32-step replay for each budget, and records sorted
+  timing/stability plot data. This still does not provide a same-hardware
+  paper-number comparison, broad articulated stability proof, or GPU parity.
+  Local validation passed the focused packet/plot writer pytest, the focused
+  benchmark target build, the actual sweep benchmark run with three
+  repetitions, packet/plot generation, `pixi run lint`, `pixi run build`, and
+  `git diff --check`.
+- Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
+  articulated-chain benchmark now includes
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep`, a dashboard-selected
+  iteration-count sweep over 25, 50, 100, and 200 max iterations using the
+  existing 50-link/50,000:1 fixture and replay-reset path. The display-name
+  mapping and dashboard runner know about the row. This is only first
+  parameter-sweep infrastructure; it does not provide a tracked packet, plot,
+  same-hardware paper-number comparison, or GPU parity claim. Local validation
+  passed the focused benchmark target build, benchmark registration list for
+  `/25`, `/50`, `/100`, and `/200`, the focused Python dashboard tests,
+  `pixi run lint`, `pixi run build`, and `git diff --check`.
+- Latest current-state audit (2026-06-12): the next-gap wording was refreshed
+  against the current C++/dartpy tests and benchmark rows. The evidence now
+  shows that narrow breakable benchmark rows, public world-fixed reset,
+  dartpy fixed/spherical break/skip/reset endpoint-shape checks, and
+  non-cardinal dartpy same-multibody/world-link one-DOF reset checks are already
+  covered. Keep the next local implementation work focused on genuinely open
+  broader private articulated motor/fracture lifecycle/corpus coverage, rigid
+  contact persistence completeness, or source-demo CPU/GPU parity. PR #2977's
+  latest read-only CI refresh showed one failing visible check: Linux
+  `Debug Tests` was cancelled at the job timeout while building/running Debug
+  Python tests, after Debug C++ tests passed. No PR mutation or hosted CI rerun
+  was performed.
+- Latest resumed checkpoint (2026-06-12): direct private same-multibody
+  fixed, prismatic, and spherical point-joint reset coverage now matches the
+  neighboring direct private revolute movable-pair reset path. The new C++
+  regressions use explicit off-origin anchors, cover all-axis fixed rows, a
+  non-cardinal prismatic slider basis, and spherical linear-only rows, force
+  broken-row drift, and prove the existing private
+  `AvbdRigidWorldPointJointConfig` re-engages the expected masked hard rows
+  across two movable endpoints. Local validation passed the focused
+  `test_variational_integration` target build, a focused six-test movable-pair
+  reset filter, `pixi run build`, `pixi run lint`, and `git diff --check`.
+  This is narrow articulated lifecycle evidence only, not a CPU-win, GPU, or
+  paper-number claim.
+- Critical stop handoff (2026-06-12): the user explicitly directed the session
+  to stop all further work and only ensure the hand-off docs. Do not continue
+  implementation, verification, branch cleanup, PR mutation, hosted CI work,
+  push, or merge from this checkpoint unless a future user request explicitly
+  asks for it. The active checkout before this docs-only handoff edit was the
+  consolidated continuation branch `avbd/source-row-extraction-precheck` at
+  local HEAD `456b931a57b` (`Broaden AVBD articulated reset axis coverage`),
+  tracking `origin/avbd/source-row-extraction-precheck` and ahead by eight
+  local commits. This docs-only handoff intentionally has no fresh
+  build/test/CI or `git diff --check` verification by explicit user direction;
+  only the repository-required pre-commit `pixi run lint` is expected if the
+  handoff is committed locally. `RESUME.md` is the current source of truth for
+  the branch inventory, stash inventory, recent local commits, PR #2977
+  caveats, and the next steps to use only if work is explicitly resumed.
+- Latest resumed checkpoint (2026-06-11): same-multibody articulated one-DOF
+  reset/re-engagement coverage now exercises non-cardinal axes in the public
+  movable offset revolute path, the direct private movable revolute config
+  path, and the generated current-pose movable revolute/prismatic config paths.
+  The affected tests measure hinge/slider progress against the configured
+  arbitrary axis instead of cardinal yaw/X-axis shortcuts. Local validation
+  passed the focused `test_variational_integration` target build, the four-test
+  reset filter, `pixi run build`, `pixi run lint`, and `git diff --check`. This
+  is narrow articulated lifecycle evidence only, not a CPU-win, GPU, or
+  paper-number claim.
+- Latest resumed checkpoint (2026-06-11): direct private articulated
+  revolute/prismatic velocity point-joint broken-state save/load/reset coverage
+  now exercises non-cardinal free-axis bases for both child-link and parent-link
+  world-link endpoint polarities. The strengthened C++ tests verify serialized
+  `AvbdRigidWorldPointJointConfig` axis bases survive while broken and that
+  reset re-engages the masked hard rows plus free-axis motor row with the
+  correct endpoint polarity. Local validation passed the focused
+  `test_variational_integration` target build, the four-test direct private
+  one-DOF broken-state persistence filter, `pixi run build`, `pixi run lint`,
+  and `git diff --check`. This is narrow articulated lifecycle evidence only,
+  not a CPU-win, GPU, or paper-number claim.
+- Literal stop handoff (2026-06-11): the user explicitly redirected this
+  session to stop all further work and only ensure the hand-off docs. Do not
+  continue implementation, branch cleanup, PR mutation, CI reruns, push, or
+  verification from this checkpoint unless a future user request explicitly
+  asks for it. The active checkout is the consolidated continuation branch
+  `avbd/source-row-extraction-precheck` at local HEAD `533dc490d87` (commit
+  subject: `Reuse AVBD rigid motor row scratch`), clean before this docs-only
+  handoff edit and ahead of `origin/avbd/source-row-extraction-precheck` by
+  five commits:
+  `51eb9b48e08`, `13604d8b8b5`, `04a369222a7`, `77404f63496`, and
+  `533dc490d87`. Treat `RESUME.md` as the detailed source of truth for the
+  branch inventory, stash inventory, PR #2977 status, validation history, and
+  future resume rules. No lint/build/test/CI or `git diff --check` verification
+  was run for this stop-only docs update by explicit user direction.
+- Latest resumed checkpoint (2026-06-11): combined rigid linear/angular motor
+  source-row construction now has reusable private active-row scratch for the
+  large-input path, and the World contact solve scratch reserves/reuses that
+  storage across frames. The existing small-input stack path and public
+  scratch-free overload remain intact. Local validation passed the focused
+  rigid-block target build, the focused motor/world-solve filter (4 tests), the
+  full `test_avbd_rigid_block` binary (96 tests), the focused
+  `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` no-heap
+  smoke, `pixi run lint`, `pixi run build`, and `git diff --check`. This is
+  only source-row extraction overhead cleanup, not a source CPU-win, GPU, or
+  paper-number claim. No push, PR mutation, hosted CI rerun, merge, or branch
+  cleanup was performed.
+- Latest resumed checkpoint (2026-06-11): work resumed after the prior
+  stop-only handoff to finish the contact-manifold small-row scratch cleanup on
+  the consolidated local branch `avbd/source-row-extraction-precheck`.
+  `buildAvbdRigidContactManifoldRows()` now uses stack-backed active contact,
+  normal descriptor, local-point, and friction descriptor storage for small
+  contact manifolds, while larger manifolds keep using reusable scratch. Local
+  validation passed `pixi run lint`, the affected rigid-block/contact target
+  build, the focused rigid contact-manifold filter (2 tests), the focused
+  boxed-LCP contact filter (17 tests), full `test_avbd_rigid_block` (95 tests),
+  full `test_boxed_lcp_contact` (122 tests), `pixi run build`, and
+  `git diff --check`. A follow-up audit tightened the small path so cached
+  previous friction directions also use stack storage instead of the scratch
+  vector. This checkpoint remains local; no push, PR mutation, hosted CI rerun,
+  merge, or branch cleanup was performed. This is only source-row extraction
+  overhead cleanup, not a source CPU-win, GPU, or paper-number claim.
+- Latest resumed follow-up (2026-06-11): rigid distance-spring source-row
+  extraction now has reusable private active-row scratch for the large-input
+  path, and the world contact solve scratch reserves/reuses it alongside joint
+  and motor row scratch. The existing small-input stack path remains unchanged.
+  Local validation passed the focused rigid-block/world targets, the focused
+  distance-spring/motor rigid-block filter (4 tests), the focused AVBD world
+  filter (4 tests), the full `test_avbd_rigid_block` binary (95 tests),
+  `pixi run build`, `pixi run lint`, and `git diff --check`. This is still
+  only source-row extraction overhead cleanup, not a source CPU-win, GPU, or
+  paper-number claim.
+- Latest resumed validation (2026-06-11): the angular-motor source-row cleanup
+  checkpoint `ada568afa85` has now been validated after the earlier
+  no-verification handoff. The focused rigid-block target, the focused
+  angular-motor filter (2 tests), the full `test_avbd_rigid_block` binary (95
+  tests), `pixi run build`, `pixi run lint`, and `git diff --check` passed.
+  This validates only the narrow standalone angular-motor source-row scratch
+  cleanup; it is still not a source CPU-win, GPU, or paper-number claim.
+- Latest critical handoff stop (2026-06-11): the user explicitly redirected
+  this session to stop implementation and focus only on hand-off for all
+  current work, with no further verification. The active checkout remains the
+  consolidated continuation branch `avbd/source-row-extraction-precheck`. The
+  branch has the local point-joint source-row cleanup commit
+  `5a56acb0c4c` on top of pushed `f380bf9bc04`, plus the current
+  angular-motor source-row cleanup and this handoff-doc update. No
+  lint/build/test/CI or `git diff --check` was run after the stop instruction.
+  Before the stop instruction, the angular-motor slice had already passed the
+  focused rigid-block target, the focused angular-motor filter (2 tests), the
+  full `test_avbd_rigid_block` binary (95 tests), and `pixi run lint`. Full
+  `pixi run build` and `git diff --check` were not rerun for the angular-motor
+  slice before this stop.
+- Latest resumed follow-up (2026-06-12): standalone rigid angular-motor
+  source-row construction now uses stack-backed active row/descriptor storage
+  for small inputs and keeps pointers to source `AvbdRigidAngularMotor`
+  configs instead of copying full motor configs into scratch. This is a narrow
+  motor source-row extraction cleanup on top of the point-joint cleanup below,
+  not a source CPU-win, GPU, or paper-number claim. Validation has now passed
+  as recorded above.
+- Latest resumed follow-up (2026-06-12): rigid point-joint linear and angular
+  source-row builders now use stack-backed active row/descriptor storage for
+  small inputs and keep only pointers to source joint configs instead of
+  copying the full `AvbdRigidPointJoint` once per active axis. This is a narrow
+  point-joint source-row extraction cleanup for the current consolidated branch,
+  not a source CPU-win, GPU, or paper-number claim. Local validation passed the
+  focused rigid-block target, the point-joint builder/config focused filter (11
+  tests), the full `test_avbd_rigid_block` binary (95 tests), `pixi run lint`,
+  `pixi run build`, and `git diff --check`.
+- Latest critical handoff stop (2026-06-11): the user explicitly redirected
+  this session to stop implementation and focus only on hand-off, with no
+  further verification. The consolidated continuation branch remains
+  `avbd/source-row-extraction-precheck`; this final handoff captures the
+  current contact-manifold local-anchor reuse source/test/docs changes on top
+  of `ae19e3b0822` (`Avoid redundant AVBD contact tangent anchor transform`).
+  No lint/build/test/CI or `git diff --check` was run after the stop
+  instruction. Treat the validation bullets below as pre-stop evidence only,
+  and use `RESUME.md` as the source of truth for the branch inventory, stashes,
+  PR #2977 state, and next fresh-session plan.
+- Latest resumed follow-up (2026-06-12): rigid contact manifold row
+  construction now computes each active contact's body-local anchors once and
+  reuses them for both the normal row and the paired tangent friction rows.
+  `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` now also
+  verifies the normal/friction rows share those generated local anchors for a
+  non-origin contact. This is only a narrow rigid contact source-row extraction
+  cleanup and does not close any source CPU-win, GPU, or paper-number gate.
+- Latest resumed validation (2026-06-12): the contact-manifold local-anchor
+  reuse slice passed the focused rigid-block target, the focused
+  `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` filter,
+  the full `test_avbd_rigid_block` binary (95 tests), `pixi run lint`, and
+  `pixi run build`. This is only validation for the narrow source-row
+  extraction cleanup above.
+- Latest resumed follow-up (2026-06-11): rigid contact manifold friction row
+  construction now passes a zero step-start relative position when both tangent
+  anchors are initialized from the same world contact point, avoiding a
+  redundant local-anchor-to-world transform pair during contact source-row
+  extraction. `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows`
+  now covers nonzero body-local anchors while verifying the generated tangent
+  rows start with zero offset and zero tangent constraint value. The focused
+  rigid-block target, the focused test, the full `test_avbd_rigid_block`
+  binary, `pixi run lint`, `pixi run build`, and `git diff --check` passed
+  locally. This is only a narrow rigid contact source-row overhead cleanup and
+  does not close any source CPU-win, GPU, or paper-number gate.
+- Latest critical handoff stop (2026-06-11): the user explicitly directed this
+  session to stop implementation and focus only on hand-off for all current
+  work, without any further verification. The current checkout is the
+  consolidated continuation branch `avbd/source-row-extraction-precheck`, with
+  pushed head `8fc57deb9d6` (`Checkpoint AVBD handoff state`) before this
+  final handoff-doc commit. The branch already contains the point-attachment
+  world-point reuse slice, which computes the point-attachment world anchor once
+  in `addAvbdRigidPointAttachment()` and reuses it for both constraint value and
+  6D direction assembly. Before the stop instruction, local validation had
+  already passed `pixi run lint`, the focused rigid-block target/filter, full
+  `test_avbd_rigid_block`, and `pixi run build`; `pixi run test-unit` had been
+  started but no final result is claimed in this handoff. After the stop
+  instruction, no further lint/build/test/CI or `git diff --check` verification
+  was run. This remains a narrow helper overhead cleanup and does not close any
+  source CPU-win, GPU, or paper-number gate.
+- Latest resumed validation (2026-06-11): the handoff-captured
+  point-attachment and distance-spring direction helper slice on
+  `avbd/source-row-extraction-precheck` has now been validated locally.
+  `avbdRigidWorldPointDirection()` is available to point attachments,
+  point-attachment and distance-spring direction helpers now share the
+  exact-origin path, and
+  `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`
+  covers the attachment origin-anchor behavior. The focused rigid-block helper
+  filter passed 9 tests, the full `test_avbd_rigid_block` binary passed 95
+  tests, `pixi run build` passed, `pixi run lint` passed, `git diff --check`
+  passed, and `pixi run test-unit` passed 161/161 tests. This is still a
+  narrow helper overhead cleanup and does not close any source CPU-win, GPU, or
+  paper-number gate.
+- Previous critical handoff stop (2026-06-11): the user explicitly directed the
+  session to stop implementation and focus only on hand-off for all current
+  work, without any further verification. The checkpoint was preserved and
+  pushed first; work has since resumed and the checkpointed helper slice now
+  has the local validation evidence above.
+- Latest resumed follow-up (2026-06-11): generic rigid point-pair and paired
+  friction direction assembly now share `avbdRigidWorldPointDirection()`, the
+  same exact-origin helper used by distance springs. Source rows whose rigid
+  point-joint, motor, or friction anchors sit exactly at a body origin now skip
+  angular-arm cross products during standalone row stamping and the serial
+  rigid row driver, while off-origin rows still take the general path.
+  `AvbdRigidBlock.PointPairOriginAnchorDirectionStaysTranslational` covers the
+  helper behavior. The focused `test_avbd_rigid_block` target and rigid-block
+  binary passed locally; `pixi run build` and `pixi run lint` also passed. This
+  is still only a narrow helper overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
+- Previous resumed follow-up: distance-spring source rows now share
+  a single exact-origin-anchor helper for both force direction and Hessian
+  assembly. Center-anchor Spring rows skip angular-arm cross products and the
+  generic world-point Jacobian multiply when the rigid anchor is exactly at the
+  body origin, while off-origin Spring Ratio rows still take the general path.
+  `AvbdRigidBlock.DistanceSpringOriginAnchorDirectionStaysTranslational` and
+  `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` cover
+  the helper behavior. Focused and full `test_avbd_rigid_block`, `pixi run
+lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
+  still only a narrow helper overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
+- Consolidated branch handoff: resume from
+  `avbd/source-row-extraction-precheck`. It is the single branch for the next
+  fresh Claude/Codex session and includes the #2977 source-row prep fix, the
+  stacked source-row extraction precheck work, the current resume docs, the
+  formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
+  the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
+  origin-anchor distance-spring, generic point-pair, point-attachment, and
+  distance-spring direction helper fast paths, plus the latest
+  point-attachment world-point reuse cleanup. The point-attachment and final
+  distance-spring direction edits now have local validation recorded in
+  `RESUME.md`; the final handoff docs themselves intentionally have no fresh
+  verification after the critical stop instruction. Local stashes may still
+  exist as historical recovery points, but fresh work should not depend on
+  them. The latest pushed continuation head before this final handoff update was
+  `8fc57deb9d6` (`Checkpoint AVBD handoff state`). PR #2977
+  (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
+  known state; the latest read-only refresh showed all visible completed checks
+  green/skipped/neutral and only Linux `Debug Tests` still in progress. It
+  should only receive CI-fix commits if a fresh status refresh reveals a
+  concrete failure. `RESUME.md` is the detailed source of truth for the current
+  plan, branch inventory, validation, and branch-cleanup rules.
+- Latest handoff-captured follow-up: `addAvbdRigidDistanceSpringHessianAtWorldPoint()`
+  now stamps the translational 3x3 Hessian block directly when the world anchor
+  is exactly the rigid body origin, avoiding the generic world-point Jacobian
+  multiply for center-anchor Spring/Spring Ratio source rows.
+  `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` covers
+  the behavior. Focused and full `test_avbd_rigid_block` validation had passed
+  before the final stop instruction, but no lint/build/test/CI verification was
+  run after this handoff-doc update by explicit user request. This is only a
+  narrow helper overhead cleanup; it does not close any source CPU-win, GPU, or
+  paper-number gate.
+- Prior handoff stop: the user previously redirected the session to hand-off
+  only with no further verification, and that docs-only handoff was pushed.
+  Work has since resumed on the same consolidated branch. Do not treat that
+  older docs-only handoff as validation evidence; use the current validation in
+  `RESUME.md`, refresh PR #2977 status in a fresh session, and resume from the
+  consolidated branch above.
+- Latest resumed follow-up: `avbdRigidBodyWorldPoint()` now returns the body
+  position directly for exact origin anchors, avoiding quaternion normalization
+  and rotation in source rows whose rigid-body point constraints or radial
+  springs attach at body origins. `AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition`
+  covers the behavior, and the full `test_avbd_rigid_block` binary passes with
+  91 tests. This is only a narrow helper overhead cleanup; it does not close
+  any source CPU-win, GPU, or paper-number gate.
+- Latest resumed follow-up: `RigidBodyContactStage::prepare()` now reserves
+  AVBD scratch only when contacts could use a contact-config storage path or
+  when point-joint/distance-spring AVBD pair constraints exist. Contact solver
+  scratch still reserves for ordinary contacts, but worlds with no possible
+  AVBD rows avoid the AVBD snapshot/inventory/solve-scratch reserve path. The
+  focused no-heap/contact-stage and rigid source-row tests pass. This is only
+  source-row prepare-overhead cleanup; it does not close any source CPU-win,
+  GPU, or paper-number gate.
+- Latest local follow-up: rigid contact snapshot row assignment now avoids the
+  duplicate per-contact row-counter claim during snapshot collection and fills
+  contact row indices in one linear pass after canonical contact-row ordering,
+  without writing the scratch row-counter vector. The focused row-order tests
+  still pass, preserving warm-start row identity across contact and endpoint
+  ordering. This is only contact snapshot overhead cleanup for rigid source
+  rows; it does not close any source CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: `normalizeAvbdRigidOrientation()` now uses a
+  squared-norm fast path, keeps exact unit quaternions exact without division,
+  and preserves scaled-input normalization plus invalid-input identity fallback.
+  Focused `test_avbd_rigid_block` validation passes. This trims a repeated
+  rigid-row orientation helper used by contact, joint, motor, and spring source
+  rows; it is only a narrow overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: `RigidBodyContactStage::execute()` now uses
+  storage-level AVBD point-joint and distance-spring prechecks before running
+  the exact extraction views. This avoids scanning the same AVBD config sets
+  twice in joint/spring source rows while still returning early without scratch
+  allocation in worlds that have no private pair-constraint storage. Focused
+  rigid AVBD contact-stage, distance-spring, and dartpy world tests pass. A
+  selected same-filter benchmark toggle under high host load moved median CPU
+  time lower for 2D Motor, Joint Grid, Rope, Heavy Rope, Hanging Rope, Spring,
+  Spring Ratio, 3D Rope, and 3D Heavy Rope, while 3D Spring and Spring Ratio
+  were slightly slower in the noisy smoke. This remains source-row overhead
+  evidence only and does not close any CPU-win, GPU, or paper-number gate.
+- Latest handoff follow-up: PR #2977 (`avbd/source-row-perf-slice`) has been
+  merged forward to `origin/main` at `7d05d7b9ea7` after the hosted PR branch
+  reported `BEHIND`. The two red hosted checks were self-hosted runner losses
+  during build (`CUDA Build` on `dartsim-mark13-4` and CodeQL C++ on
+  `dartsim-mark13-5`); their logs stop with the build step still in progress
+  and no compiler/test failure recorded. The Codecov bot comment on
+  `world_step_stage.cpp` reported one uncovered changed line while the Codecov
+  statuses were passing. The PR follow-up keeps the no-contact prepare skip,
+  but restores prepare-time `World::queryContacts()` cache warmup for worlds
+  that can have rigid contacts and sizes AVBD contact scratch from the larger
+  of the collision-shape estimate and warmed query capacity. Focused CUDA
+  `test_world --gtest_filter=World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`,
+  `pixi run build`, and `pixi run test-unit` pass locally. Full CUDA
+  `test-all` was previously started on the stacked extraction branch and
+  intentionally stopped when the task changed to #2977 handoff. See
+  `RESUME.md` for the branch/stash inventory and exact fresh-session plan.
+- Latest local follow-up: after merging `origin/main` at `906a6c0241fe`, the
+  narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
+  focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
+  avoids the collision-shape capacity scan when the contact query is already
+  skipped, avoids running a prepare-time contact query that `execute()` repeats
+  only to size AVBD contact scratch, and uses the distance-spring storage size
+  for AVBD scratch reserve capacity instead of iterating the spring configs just
+  to count them. Earlier same-branch benchmark smoke under lower host load moved
+  `BM_AvbdDemo2dMotorStep_median` from about 9.34 us to 8.83 us,
+  `BM_AvbdDemo2dSpringStep_median` from about 5.04 us to 4.28 us, and
+  `BM_AvbdDemo2dSpringRatioStep_median` from about 45.3 us to 37.1 us. Coverage
+  CI then caught that the no-query cleanup still needed contact-scene AVBD
+  scratch reservations, so the kept variant reserves contact scratch from the
+  collision-shape capacity estimate without restoring the duplicate
+  `queryContacts()` call. This remains no-contact/source-row overhead evidence
+  and does not close any source CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
   persistence coverage now exercises fixed, revolute, prismatic, and spherical
   public articulated facades for both same-multibody link pairs and world-link
@@ -2014,17 +2762,11 @@ numbers.
    one-DOF off-origin plus same-multibody movable-pair non-cardinal finite-limit
    regressions,
    broaden articulated fracture coverage beyond the narrow hard point-joint
-   projection threshold, fixed-row reset, movable link-pair reset,
-   same-multibody/world-anchored one-DOF motor-row break/skip and
-   reset/re-engagement beyond the selected non-cardinal C++ basis checks and
-   the focused dartpy same-multibody/world-link revolute/prismatic stepping
-   regressions with endpoint/axis-shape assertions, including the non-cardinal
-   same-multibody pair and world-link revolute/prismatic reset regressions,
-   world-fixed reset
-   coverage, the now-covered fixed point-joint and spherical linear-row Python
-   stepping regressions with endpoint-shape assertions, and source/demo
-   fracture cases beyond the now-covered 2D Fracture and 3D Breakable
-   break/reset rows,
+   projection threshold and movable link-pair reset, with the fixed-row,
+   world-fixed, same-multibody/world-anchored one-DOF motor-row, fixed
+   point-joint, and spherical linear-row reset evidence now treated as covered
+   by the current C++/dartpy regression set. Continue source/demo fracture
+   cases beyond the now-covered 2D Fracture and 3D Breakable break/reset rows,
    and expand public articulated World facade coverage beyond the current
    same-multibody link-link/world-link entrypoints, explicit anchors,
    same-multibody/world-anchor fixed/revolute/prismatic off-origin cases,

@@ -989,13 +989,17 @@ private:
 
   void ensureDesignMode() const;
   [[nodiscard]] const std::vector<Contact>& queryContacts(
-      const CollisionQueryOptions& options);
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
+  void prepareCollisionQueryCache(
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails = true);
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
   void recordReplayFrame();
@@ -1013,6 +1017,10 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
+  [[nodiscard]] const std::vector<Contact>& updateCollisionQueryCache(
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails,
+      bool collectContacts);
   double getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept;
   void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
   void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;

@@ -312,7 +312,15 @@ yet. `PaperScaleHighRatioChainStaysFiniteAndResets` now adds a focused
 dashboard row with tracked
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
 visual/benchmark evidence, without closing same-hardware paper-number or GPU
-parity gates.
+parity gates. `BM_AvbdPaperScaleHighRatioChainIterationSweep` now adds the
+first dashboard-selected max-iteration sweep for that same fixture over
+25/50/100/200 iterations, with finite replay counters, tracked
+benchmark/stability-plot evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+and a rendered
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
+it still needs same-hardware paper-number comparison and GPU parity before
+counting as a completed parameter sweep.
 Public free-rigid-body revolute/prismatic velocity actuators now also extract
 to private AVBD angular/linear motor rows. Both paths have categorized
 `avbd_rigid_revolute_motor` / `avbd_rigid_prismatic_motor` py-demos,
@@ -415,6 +423,21 @@ it records the DART public World Dynamic Friction row at 5.73 us median CPU
 time per step versus 10.49 us for the native source runner on this host,
 closing that narrow source row while leaving broad contact-manifold friction
 persistence, stacking/friction sweeps, GPU, and paper-number gates open.
+The companion `BM_AvbdDemo2dFrictionCoefficientSweep` benchmark now sweeps the
+same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
+and 5. The tracked
+[`avbd-friction-coefficient-sweep-packet.json`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+validates the sweep rows, embeds same-source native timing for each coefficient,
+embeds per-coefficient visual capture hashes, and records that after skipping
+all-zero Coulomb contact-friction row blocks DART is faster for max friction
+0.5, 1.0, 2.5, and 5.0 but still slower for the frictionless max friction 0
+case on this host.
+The rendered
+[`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
+plots DART and native source CPU step time versus maximum friction. This closes
+only the source/reference timing-evidence and per-coefficient visual-capture
+gaps for this friction-coefficient comparison; it is not a full CPU-win, GPU,
+or paper-number claim.
 The `avbd_demo2d_static_friction` py-demo now ports the `avbd-demo2d` Static
 Friction source row with source revision/scene metadata, one rotated static
 ground slab, 11 rotated dynamic boxes, uniform source friction 1.0, focused
@@ -759,7 +782,13 @@ tracks the active break-force armed articulated prismatic motor path through
 world-anchored articulated prismatic motor path through
 `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep`, tracks the active
 world-anchored articulated revolute motor path through
-`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep`, and it
+`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep`, and
+[`avbd-breakable-motor-scale-packet.json`](104-vertex-block-descent-solver/avbd-breakable-motor-scale-packet.json)
+now validates those four public articulated breakable motor benchmark rows over
+1, 8, and 32 motors with finite timing rows and exact `motors` plus
+`breakable_motors` counters. This remains benchmark-only scale evidence rather
+than a broad motor lifecycle, source-demo, GPU, or paper-number claim. The same
+dashboard slice also
 tracks the public free-rigid and
 articulated breakable fixed point-joint paths through
 `BM_AvbdRigidBreakableJointStep` and
@@ -772,7 +801,12 @@ The same dashboard slice also tracks public spherical break/reset rows through
 `BM_AvbdRigidSphericalBreakableJointStep`,
 `BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
 `BM_AvbdArticulatedSphericalPairBreakableJointStep`, each backed by tracked
-packet evidence.
+packet evidence. The companion
+[`avbd-breakable-joint-scale-packet.json`](104-vertex-block-descent-solver/avbd-breakable-joint-scale-packet.json)
+now validates those five public fixed/spherical breakable point-joint
+benchmark rows over 1, 8, and 32 joints with finite timing rows and exact
+`breakable_joints` counters; this remains benchmark-only scale evidence rather
+than a broad fracture-corpus, breakable-wall, GPU, or paper-number claim.
 Public free-rigid-body AVBD point joints now also expose a narrow break-force
 and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
@@ -813,6 +847,14 @@ solve-budget fields, and `BM_AvbdPaperScaleHighRatioChainStep` adds the
 matching paper-scale CPU dashboard row with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
 visual/benchmark evidence but no same-hardware paper-number claim.
+`BM_AvbdPaperScaleHighRatioChainIterationSweep` is now selected by the
+dashboard runner over 25/50/100/200 max-iteration budgets for the same
+paper-scale fixture, with finite replay counters, tracked benchmark/stability
+evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+and rendered plot evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
+the same-hardware paper-number comparison and GPU evidence remain open.
 The private
 endpoint classifier now separates free rigid-body endpoints from multibody
 links, with
@@ -1021,14 +1063,23 @@ implementation work should prefer one of these gaps, in order:
    `World::step()` solve-budget fields, and
    `BM_AvbdPaperScaleHighRatioChainStep` exposes the matching paper-scale CPU
    dashboard row with a visual/benchmark packet, but this is still not a
-   same-hardware comparison.
-   Direct private and current-pose movable-pair revolute break/reset
-   regressions now verify broken rows stay skipped under opposing endpoint
-   forces and re-enter with an updated command, and the current-pose fixed
-   movable-pair regression verifies all-axis rows re-enter from a generated
-   config. Current-pose movable-pair revolute/prismatic tiny-limit regressions
-   now also prove generated free-axis motor rows honor finite effort caps while
-   captured anchor/hinge/masked rows remain active. Public articulated
+   same-hardware comparison. The companion
+   `BM_AvbdPaperScaleHighRatioChainIterationSweep` row adds first
+   dashboard-selected iteration-budget coverage over 25/50/100/200 max
+   iterations with finite replay counters, a tracked benchmark/stability packet,
+   and a rendered SVG plot, still without a same-hardware paper-number
+   comparison or GPU parity.
+   Direct private movable-pair fixed/revolute/prismatic and current-pose
+   movable-pair fixed/revolute/prismatic break/reset regressions now verify
+   broken rows stay skipped under opposing endpoint forces and re-enter with an
+   updated command or persistent all-axis rows. Direct private and current-pose
+   spherical movable-pair regressions now prove linear-only rows re-enter after
+   reset while relative orientation remains free. Current-pose movable-pair
+   revolute/prismatic tiny-limit regressions now also prove generated free-axis
+   motor rows honor finite effort caps while captured anchor/hinge/masked rows
+   remain active, and restored simulation-mode binary save/load regressions now
+   prove those tiny effort caps remain effective after reload. Public
+   articulated
    revolute/prismatic floating-endpoint plus selected off-origin-anchor facade
    drive regressions now also use non-cardinal axes and check the generated AVBD
    free-axis basis column before stepping, and public same-multibody
@@ -1065,11 +1116,12 @@ implementation work should prefer one of these gaps, in order:
    and captured current-pose anchors, and proves reset rebuilds only the
    generated linear rows while relative orientation remains free, but broader
    persistent private articulated motor coverage beyond the command-update,
-   movable link-pair, tiny-limit, one-DOF break/reset, spherical reset, and
-   movable-pair plus direct world-link save/load/reset checks remains open.
+   movable link-pair, tiny-limit, restored tiny-limit save/load, one-DOF
+   break/reset, spherical reset, and movable-pair plus direct world-link
+   save/load/reset checks remains open.
    Extend that bridge to those row families, then broaden fracture
-   lifecycle/corpus coverage beyond the narrow hard point-joint threshold,
-   private fixed-row/world-fixed reset, and the now-covered 2D Fracture/3D
+   lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
+   the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
    Breakable source-demo fixed-joint break/reset rows, and public articulated
    World facade coverage
    beyond the new same-multibody link-link, world-link, explicit-anchor, and
@@ -1082,15 +1134,13 @@ implementation work should prefer one of these gaps, in order:
    same-multibody/world-link endpoint-shape assertions plus
    same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
    save/load/reset persistence including explicit-anchor fixed and selected
-   non-cardinal one-DOF motor rows with restored effort-limit state plus
-   dartpy same-multibody/world-link fixed/spherical and one-DOF binary
-   round-trips and direct break/skip/reset non-cardinal basis checks, plus
-   dartpy fixed point-joint break/skip/reset
-   stepping for same-multibody and world-link explicit all-axis anchor rows
-   with endpoint-shape assertions, dartpy same-multibody/world-link spherical
-   linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
-   one-DOF motor break/skip/reset endpoint/axis-shape assertions and
-   re-engagement.
+   non-cardinal one-DOF motor rows with restored effort-limit state. The dartpy
+   same-multibody/world-link fixed/spherical and one-DOF binary round-trips,
+   direct break/skip/reset non-cardinal basis checks, fixed point-joint
+   break/skip/reset endpoint-shape assertions, spherical linear-row
+   break/skip/reset endpoint-shape assertions, and explicit-anchor one-DOF
+   motor reset endpoint/axis-shape assertions are current evidence rather than
+   fresh next targets.
 2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
    feature extraction and row identity so box/sphere/cylinder/capsule/plane/mesh
    contact manifolds persist across realistic rigid stacks and piles, building
@@ -1148,7 +1198,11 @@ implementation work should prefer one of these gaps, in order:
    and `avbd-demo3d` Ground/Dynamic Friction/Static
    Friction/Pyramid/Rope/Heavy Rope/Spring/Spring Ratio/Stack/Stack
    Ratio/Soft Body/Bridge/Breakable rows now
-   have matched source-row harnesses. All listed rows now have tracked
+   have matched source-row harnesses. The Dynamic Friction path now also has a
+   dashboard friction-coefficient sweep over maximum friction 0, 0.5, 1, 2.5,
+   and 5 with a tracked benchmark/native-reference packet and rendered plot.
+   All listed rows now
+   have tracked
    visual/benchmark/native-reference packets, with the
    narrow 2D Dynamic Friction, 2D Static Friction, 2D
    Pyramid, 2D Stack, 2D Stack Ratio, Fracture, 2D Ground, 3D Ground, 3D Dynamic
