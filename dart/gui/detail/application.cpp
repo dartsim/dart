@@ -156,10 +156,11 @@ using dart::gui::detail::updateConfiguredImGuiOverlayScale;
 using dart::gui::detail::updateFrameUi;
 using dart::gui::detail::updateFrameViewport;
 
-// Number of frames each scene renders in `--cycle-scenes` mode before the host
-// advances to the next scene. A few frames are enough to exercise scene build,
-// extraction, render, and teardown without making the smoke test slow.
-constexpr int kCycleFramesPerScene = 4;
+// Default number of frames each scene renders in `--cycle-scenes` mode before
+// the host advances. A few frames exercise scene build, extraction, render, and
+// teardown without making the smoke test slow; `--frames N` overrides this per
+// scene instead of acting as a global viewer stop.
+constexpr int kDefaultCycleFramesPerScene = 4;
 
 // User-requested demo switches are treated as candidate activations. If the
 // candidate returns but still exceeds this startup budget, the host restores
@@ -307,6 +308,23 @@ double resolveDemoSceneStartupTimeoutMs()
 std::string demoSceneDisplayName(const dart::gui::DemoSceneEntry& scene)
 {
   return scene.title.empty() ? scene.id : scene.title;
+}
+
+void printDemoCatalog(const std::vector<dart::gui::DemoSceneEntry>& scenes)
+{
+  std::string lastCategory;
+  for (const auto& scene : scenes) {
+    if (scene.category != lastCategory) {
+      std::cout << "\n[" << scene.category << "]\n";
+      lastCategory = scene.category;
+    }
+    std::cout << "  " << std::left << std::setw(28) << scene.id << " "
+              << demoSceneDisplayName(scene);
+    if (!scene.summary.empty()) {
+      std::cout << " - " << scene.summary;
+    }
+    std::cout << '\n';
+  }
 }
 
 std::string jsonEscape(std::string_view value)
@@ -968,11 +986,15 @@ int runGuiBackendApplicationImpl(
     const std::vector<dart::gui::DemoSceneEntry>* demoCatalog,
     int initialDemoIndex,
     bool cycleScenes,
+    int cycleFramesPerScene = kDefaultCycleFramesPerScene,
     std::optional<ScriptedDemoSwitch> scriptedDemoSwitch = std::nullopt,
     std::optional<ScriptedForceDrag> scriptedForceDrag = std::nullopt)
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
+  if (cycleScenes) {
+    appOptions.run.maxFrames = -1;
+  }
   const bool renderOutputModeExplicit = appOptions.renderOutputModeExplicit;
   const auto renderOutputMode = appOptions.renderSettings.outputMode;
   appOptions.camera = applicationOptions.camera;
@@ -1149,6 +1171,11 @@ int runGuiBackendApplicationImpl(
       const auto& demoEntry
           = (*demoCatalog)[static_cast<std::size_t>(activeIndex)];
       candidateDemoEntry = &demoEntry;
+      if (cycleScenes) {
+        std::cout << "Cycling demo scene " << (activeIndex + 1) << "/"
+                  << demoCatalog->size() << ": " << demoEntry.id << "\n"
+                  << std::flush;
+      }
 
       dart::gui::ApplicationOptions sceneOptions;
       try {
@@ -1477,7 +1504,7 @@ int runGuiBackendApplicationImpl(
             framesThisScene);
         requestSceneSwitch(lifecycle, scriptedDemoSwitch->sceneId);
       }
-      if (cycleScenes && framesThisScene >= kCycleFramesPerScene) {
+      if (cycleScenes && framesThisScene >= cycleFramesPerScene) {
         cycleAdvance = true;
       }
     }
@@ -1655,9 +1682,23 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     initialId = env;
   }
   bool cycleScenes = false;
+  int cycleFramesPerScene = kDefaultCycleFramesPerScene;
   std::optional<ScriptedDemoSwitch> scriptedDemoSwitch;
   std::optional<ScriptedForceDrag> scriptedForceDrag;
   std::string scriptedEventLogPath;
+
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
+    if (arg == "--list") {
+      printDemoCatalog(scenes);
+      return 0;
+    } else if (arg == "--cycle-scenes") {
+      cycleScenes = true;
+    } else if (arg == "--frames" && i + 1 < argc && argv[i + 1] != nullptr) {
+      cycleFramesPerScene = std::max(1, std::atoi(argv[i + 1]));
+      ++i;
+    }
+  }
 
   std::vector<char*> filteredArguments;
   filteredArguments.reserve(static_cast<std::size_t>(argc));
@@ -1668,6 +1709,12 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
     const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
     if (arg == "--cycle-scenes") {
       cycleScenes = true;
+      continue;
+    }
+    if (cycleScenes && arg == "--frames") {
+      if (i + 1 < argc && argv[i + 1] != nullptr) {
+        ++i;
+      }
       continue;
     }
     if (arg == "--scripted-demo-switch") {
@@ -1834,6 +1881,7 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
       &scenes,
       index,
       cycleScenes,
+      cycleFramesPerScene,
       std::move(scriptedDemoSwitch),
       std::move(scriptedForceDrag));
 }

@@ -52,6 +52,19 @@ dart_build_gui_example(dart-demos "${CMAKE_CURRENT_LIST_DIR}/app/main.cpp")
 if(TARGET dart-demos)
   target_link_libraries(dart-demos PRIVATE demos_scenes)
 
+  if(BUILD_TESTING AND DART_BUILD_TESTS)
+    add_test(NAME EXAMPLE_dart_demos_list COMMAND dart-demos --list)
+    set_tests_properties(
+      EXAMPLE_dart_demos_list
+      PROPERTIES LABELS "examples;gui;catalog"
+    )
+    foreach(test_target IN ITEMS tests tests_and_run)
+      if(TARGET ${test_target})
+        add_dependencies(${test_target} dart-demos)
+      endif()
+    endforeach()
+  endif()
+
   # Headless smoke: cycle through every registered scene a few frames each,
   # exercising scene build, render, and the runtime scene switch/teardown. Uses
   # the same software-GL environment as the other GUI Filament smoke tests.
