@@ -379,7 +379,7 @@ paths:
 | PLAN-110 boxed-LCP/Nimble-style path      | Rigid / articulated | Generalized-coordinate boxed LCP normal/friction contact solve | active-set LCP implicit differentiation        | first opt-in differentiable rigid solver; default remains off                 |
 | Planned Dojo-style evaluation             | Rigid / articulated | Variational maximal/constrained coordinate NCP                 | IPM/KKT implicit differentiation               | possible second opt-in rigid solver family after an internal spike            |
 | PLAN-081/PLAN-104 deformable solver paths | Deformable          | IPC/VBD-family deformable methods                              | deferred per-solver/coupler differentiation    | separate domain; later coupled to rigid solvers through pairwise couplers     |
-| PLAN-082 variational-integrator work      | Rigid / articulated | Variational integration for articulated systems                | not sufficient by itself for contact gradients | shared integration rationale; Dojo adds contact/NCP/IPM and differentiability |
+| PLAN-084 variational-integrator work      | Rigid / articulated | Variational integration for articulated systems                | not sufficient by itself for contact gradients | shared integration rationale; Dojo adds contact/NCP/IPM and differentiability |
 
 The public API should not expose a `DojoWorld`, `DojoSolver`, solver registry, or
 Dojo.jl dependency. If promoted, users would opt in through DART-owned

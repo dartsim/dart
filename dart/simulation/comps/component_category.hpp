@@ -60,24 +60,50 @@ enum class ComponentCategory
 //==============================================================================
 // Category Declaration Macros
 //==============================================================================
+//
+// Serialization identity (stable, compiler-independent)
+// ----------------------------------------------------------------------------
+// Each category macro takes an explicit `StableId` string literal that becomes
+// the component's on-disk identity AND its SerializerRegistry key (via
+// getTypeName()). This identity is INTENTIONALLY decoupled from the C++ type
+// name: renaming a component's C++ type must NOT change its on-disk identity.
+//
+// Earlier revisions returned `typeid(TypeName).name()`, whose value is the
+// compiler-mangled name. That made the on-disk format implementation-defined
+// (different across compilers/ABIs) and fragile under C++ renames. The stable
+// string ID removes both hazards.
+//
+// Format-break note (DART 7 has no compatibility debt): old binary packets that
+// stored mangled-name identities will no longer load. This is intentional; the
+// kBinaryFormatVersion bump in binary_io.hpp records the break. See WP-091.23.
+//
+// ID scheme: "comps.<TypeName>" for components in namespace
+// dart::simulation::comps, "compute.<TypeName>" for compute-owned components.
+// IDs MUST be globally unique across all components; the StableComponentIds
+// unit test in test_serialization.cpp guards against duplicates and against any
+// ID accidentally equal to a mangled typeid string.
 
 /// Declare a Property Component
 ///
 /// Automatically serialized via Boost.PFR reflection.
 /// All member fields are serialized.
 ///
+/// @param TypeName The C++ type being declared.
+/// @param StableId String-literal on-disk identity (e.g. "comps.Name"). Must be
+///        globally unique and stable across C++ renames.
+///
 /// Example:
 ///   struct Name {
-///     DART_SIMULATION_PROPERTY_COMPONENT(Name);
+///     DART_SIMULATION_PROPERTY_COMPONENT(Name, "comps.Name");
 ///     std::string name;
 ///   };
-#define DART_SIMULATION_PROPERTY_COMPONENT(TypeName)                           \
+#define DART_SIMULATION_PROPERTY_COMPONENT(TypeName, StableId)                 \
   static constexpr ::dart::simulation::comps::ComponentCategory category       \
       = ::dart::simulation::comps::ComponentCategory::Property;                \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
-    return typeid(TypeName).name();                                            \
+    return StableId;                                                           \
   }
 
 /// Declare a State Component
@@ -85,58 +111,71 @@ enum class ComponentCategory
 /// Automatically serialized with entity ID remapping.
 /// Requires `entityFields()` method to declare entity reference fields.
 ///
+/// @param TypeName The C++ type being declared.
+/// @param StableId String-literal on-disk identity. Must be globally unique and
+///        stable across C++ renames.
+///
 /// Example:
 ///   struct FrameState {
-///     DART_SIMULATION_STATE_COMPONENT(FrameState);
+///     DART_SIMULATION_STATE_COMPONENT(FrameState, "comps.FrameState");
 ///     entt::entity parentFrame = entt::null;
 ///
 ///     static constexpr auto entityFields() {
 ///       return std::tuple{&FrameState::parentFrame};
 ///     }
 ///   };
-#define DART_SIMULATION_STATE_COMPONENT(TypeName)                              \
+#define DART_SIMULATION_STATE_COMPONENT(TypeName, StableId)                    \
   static constexpr ::dart::simulation::comps::ComponentCategory category       \
       = ::dart::simulation::comps::ComponentCategory::State;                   \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
-    return typeid(TypeName).name();                                            \
+    return StableId;                                                           \
   }
 
 /// Declare a Cache Component
 ///
 /// Not serialized - reconstructed after deserialization.
 ///
+/// @param TypeName The C++ type being declared.
+/// @param StableId String-literal identity. Cache components are not
+///        serialized, but the ID is still required for a uniform interface and
+///        must be globally unique.
+///
 /// Example:
 ///   struct FrameCache {
-///     DART_SIMULATION_CACHE_COMPONENT(FrameCache);
+///     DART_SIMULATION_CACHE_COMPONENT(FrameCache, "comps.FrameCache");
 ///     Eigen::Isometry3d worldTransform;
 ///     bool needUpdate = true;
 ///   };
-#define DART_SIMULATION_CACHE_COMPONENT(TypeName)                              \
+#define DART_SIMULATION_CACHE_COMPONENT(TypeName, StableId)                    \
   static constexpr ::dart::simulation::comps::ComponentCategory category       \
       = ::dart::simulation::comps::ComponentCategory::Cache;                   \
   static constexpr bool serializable = false;                                  \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
-    return typeid(TypeName).name();                                            \
+    return StableId;                                                           \
   }
 
 /// Declare a Tag Component
 ///
 /// Empty marker components with no data.
 ///
+/// @param TypeName The C++ type being declared.
+/// @param StableId String-literal on-disk identity. Must be globally unique and
+///        stable across C++ renames.
+///
 /// Example:
 ///   struct FreeFrameTag {
-///     DART_SIMULATION_TAG_COMPONENT(FreeFrameTag);
+///     DART_SIMULATION_TAG_COMPONENT(FreeFrameTag, "comps.FreeFrameTag");
 ///   };
-#define DART_SIMULATION_TAG_COMPONENT(TypeName)                                \
+#define DART_SIMULATION_TAG_COMPONENT(TypeName, StableId)                      \
   static constexpr ::dart::simulation::comps::ComponentCategory category       \
       = ::dart::simulation::comps::ComponentCategory::Tag;                     \
   static constexpr bool serializable = true;                                   \
   [[nodiscard]] static std::string_view getTypeName()                          \
   {                                                                            \
-    return typeid(TypeName).name();                                            \
+    return StableId;                                                           \
   }
 
 //==============================================================================

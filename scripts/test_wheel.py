@@ -8,7 +8,7 @@ and runs basic functionality tests to ensure the wheel works correctly.
 
 Usage:
     python scripts/test_wheel.py dist/dartpy-*.whl
-    python scripts/test_wheel.py dist/dartpy-0.2.0-cp312-cp312-linux_x86_64.whl
+    python scripts/test_wheel.py dist/dartpy-0.2.0-cp314-cp314-linux_x86_64.whl
 """
 
 import argparse
@@ -49,13 +49,13 @@ def test_wheel(wheel_path):
         print(f"Error: Invalid wheel filename format: {wheel_name}")
         sys.exit(1)
 
-    # Extract cpXXX (e.g., cp312)
+    # Extract cpXXX (e.g., cp314)
     python_tag = parts[2]
     if not python_tag.startswith("cp"):
         print(f"Error: Could not extract Python version from wheel: {wheel_name}")
         sys.exit(1)
 
-    # Convert cp312 -> 3.12
+    # Convert cp314 -> 3.14
     python_version = f"{python_tag[2]}.{python_tag[3:]}"
 
     print(f"\n{'='*60}")

@@ -20,8 +20,8 @@
 #include "dart/simulation/comps/variational_contact.hpp"
 #include "dart/simulation/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/compute/multibody_dynamics.hpp"
-#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/multibody_spatial_algebra.hpp"
+#include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -4083,6 +4083,41 @@ double computeMultibodyMechanicalEnergy(
 }
 
 //==============================================================================
+MultibodyMechanicalEnergyTerms computeMultibodyMechanicalEnergyTerms(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity)
+{
+  MultibodyMechanicalEnergyTerms terms;
+  if (structure.links.empty()) {
+    return terms;
+  }
+  MultibodyVariationalTreeScratch treeScratch;
+  VariationalStepScratch stepScratch;
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
+
+  stepScratch.currentSpatialVelocities.resize(tree.links.size());
+  gatherVelocity(registry, tree, stepScratch.velocity);
+  currentSpatialVelocitiesInto(
+      tree, stepScratch.velocity, stepScratch.currentSpatialVelocities);
+
+  // Mirrors computeMultibodyMechanicalEnergy's per-link terms exactly (same
+  // VarTree forward-kinematics world transforms), so terms.kinetic +
+  // terms.potential equals that function's mechanical-energy return value.
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto& link = tree.links[i];
+    const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
+    terms.kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
+    const auto& linkComp = registry.get<comps::Link>(structure.links[i]);
+    const Eigen::Vector3d comWorld
+        = link.worldTransform * linkComp.mass.localCenterOfMass;
+    terms.potential -= linkComp.mass.mass * gravity.dot(comWorld);
+  }
+  return terms;
+}
+
+//==============================================================================
 Eigen::VectorXd computeMultibodyInverseMassProduct(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
@@ -4489,7 +4524,7 @@ void MultibodyVariationalIntegrationStage::execute(
       compliantScratch->clear();
     }
     // Build the opt-in contact hook from the multibody's contact config
-    // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
+    // (PLAN-084 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
     // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
     // duals persist in VariationalContactDualState and advance on an outer-loop
     // cadence after the step. Absent => contact-free.

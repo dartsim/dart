@@ -22,7 +22,7 @@
 namespace dart::simulation::comps {
 
 /// Persistent augmented-Lagrangian dual state for variational-integrator ground
-/// contact (PLAN-082 Phase C, rung C3), paired with `VariationalContact` on the
+/// contact (PLAN-084 Phase C, rung C3), paired with `VariationalContact` on the
 /// same multibody. Holds the per-contact-point duals (`lambda >= 0`, the
 /// accumulated AL contact forces) and the cadence counter that gates the
 /// outer-loop dual ascent.
@@ -36,7 +36,8 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct VariationalContactDualState
 {
-  DART_SIMULATION_STATE_COMPONENT(VariationalContactDualState);
+  DART_SIMULATION_STATE_COMPONENT(
+      VariationalContactDualState, "comps.VariationalContactDualState");
 
   using DualVector = std::vector<double, dart::common::StlAllocator<double>>;
 

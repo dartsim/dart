@@ -18,7 +18,7 @@
 #include <cmath>
 
 /// SE(3) discrete-mechanics calculus kernels for the linear-time variational
-/// integrator (PLAN-082). All spatial quantities use the `[angular; linear]`
+/// integrator (PLAN-084). All spatial quantities use the `[angular; linear]`
 /// twist convention that matches `compute/multibody_dynamics.cpp`
 /// (`adjoint`/`motionCross`/`spatialInertia`).
 ///

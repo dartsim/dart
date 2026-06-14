@@ -1,13 +1,13 @@
 name: Benchmark PR Comparison
 
-# Opt-in per-PR benchmark comparison comment (PLAN-080 follow-on). Reuses the
+# Opt-in per-PR benchmark comparison comment (PLAN-092 follow-on). Reuses the
 # Performance Dashboard's benchmark slice and reads its github-action-benchmark
 # gh-pages history (published by performance_dashboard.yml) as the baseline, then
 # posts a "moved by N%" comparison in the PR review thread via scripts/
 # benchmark_pr_compare.py. This is a read-only consumer of the dashboard data,
 # not a second publishing pipeline: it never writes to gh-pages.
 #
-# Gradual rollout (PLAN-080): the job is gated to same-repo PRs carrying the
+# Gradual rollout (PLAN-092): the job is gated to same-repo PRs carrying the
 # `benchmark` label, so ordinary PRs pay no benchmark cost. Fork PRs are skipped
 # because their GITHUB_TOKEN is read-only and cannot post a comment, and running
 # fork code on the benchmark path is out of scope for the initial rollout.

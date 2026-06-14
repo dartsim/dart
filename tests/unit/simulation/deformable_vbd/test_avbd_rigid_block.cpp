@@ -27,9 +27,9 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/multibody/link.hpp>
@@ -223,6 +223,39 @@ TEST(AvbdRigidBlock, InertiaTermSolvesBackToInertialTarget)
           .norm(),
       0.0,
       1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, LowerTriangleInertiaTermMatchesFullForScaledOrientations)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 0.5);
+  state.orientation = rotationZ(0.4);
+  state.orientation.coeffs() *= 3.0;
+
+  vbd::AvbdRigidBodyState target;
+  target.position = Vec3(-0.5, 0.25, 1.5);
+  target.orientation = rotationZ(-0.35);
+  target.orientation.coeffs() *= 2.0;
+
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  inertia.diagonal() = Vec3(4.0, 5.0, 6.0);
+
+  vbd::AvbdRigidBodyBlock fullBlock;
+  vbd::addAvbdRigidBodyInertiaTerm(
+      fullBlock, /*mass=*/2.0, inertia, /*timeStep=*/0.5, state, target);
+
+  vbd::AvbdRigidBodyBlock lowerBlock;
+  vbd::addAvbdRigidBodyInertiaTermLowerTriangle(
+      lowerBlock, /*mass=*/2.0, inertia, /*timeStep=*/0.5, state, target);
+
+  EXPECT_NEAR((fullBlock.force - lowerBlock.force).norm(), 0.0, 1e-12);
+  for (int row = 0; row < fullBlock.hessian.rows(); ++row) {
+    for (int col = 0; col <= row; ++col) {
+      EXPECT_NEAR(
+          lowerBlock.hessian(row, col), fullBlock.hessian(row, col), 1e-12);
+    }
+  }
 }
 
 //==============================================================================
@@ -5694,7 +5727,6 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
-  joint.hasAvbdStiffnessState = false;
 
   ASSERT_TRUE(
       vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(

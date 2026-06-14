@@ -59,8 +59,8 @@
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/boxed_lcp_contact.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
@@ -12694,6 +12694,179 @@ TEST(World, CollisionQueryCanIgnoreSpecificPairs)
   }
 }
 
+// The rigid contact stage's no-contact fast path may skip the collision query
+// only when every dynamic-involving candidate pair is ignored (the path used by
+// the AVBD Spring/Spring Ratio source rows). Presence of an ignored pair must
+// not suppress a genuinely colliding non-ignored pair: a body falling onto the
+// ground must still be caught even when an unrelated ignored pair exists. This
+// guards the audit branch of `shouldSkipRigidBodyContactQuery` against a
+// regression that skips the query whenever any ignored pair is present.
+TEST(World, RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+
+  // A non-ignored body that starts above the ground and must be caught by the
+  // contact stage rather than falling through it.
+  sx::RigidBodyOptions landerOptions;
+  landerOptions.position = Eigen::Vector3d(-2.0, 0.0, 0.6);
+  auto lander = world.addRigidBody("lander", landerOptions);
+  lander.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  // Two overlapping bodies whose mutual contact is ignored, mirroring a
+  // spring-connected source pair. They activate the ignored-pair audit branch.
+  sx::RigidBodyOptions ignoredAOptions;
+  ignoredAOptions.position = Eigen::Vector3d(2.0, 0.0, 0.25);
+  auto ignoredA = world.addRigidBody("ignored_a", ignoredAOptions);
+  ignoredA.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  sx::RigidBodyOptions ignoredBOptions;
+  ignoredBOptions.position = Eigen::Vector3d(2.3, 0.0, 0.25);
+  auto ignoredB = world.addRigidBody("ignored_b", ignoredBOptions);
+  ignoredB.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  world.setCollisionPairIgnored(ignoredA, ignoredB);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+
+  const double startGap
+      = std::abs(ignoredA.getTranslation().x() - ignoredB.getTranslation().x());
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // The non-ignored lander rests on the ground top (z == 0) plus its half
+  // height; if the query had been skipped it would have fallen through.
+  EXPECT_NEAR(lander.getTranslation().z(), 0.25, 5e-2);
+  EXPECT_GT(lander.getTranslation().z(), 0.0);
+
+  // The ignored pair keeps overlapping: their mutual contact never resolved, so
+  // they were not pushed apart toward the non-overlapping gap of 0.5.
+  const double endGap
+      = std::abs(ignoredA.getTranslation().x() - ignoredB.getTranslation().x());
+  EXPECT_LT(endGap, 0.4);
+  EXPECT_NEAR(endGap, startGap, 5e-2);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+}
+
+// When every dynamic-involving candidate pair is ignored, the contact stage's
+// audit takes the no-contact fast path. Two overlapping static bodies form a
+// both-prescribed pair (exercising the audit's prescribed-pair skip), and a
+// dynamic body whose pairs with both static bodies are ignored leaves no
+// resolvable contact, so it falls freely through them under gravity. This
+// covers the all-pairs-ignored skip return of
+// `shouldSkipRigidBodyContactQuery`.
+TEST(World, RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Two overlapping static bodies: their mutual pair is both-prescribed, so the
+  // audit skips it without needing an explicit ignore entry.
+  sx::RigidBodyOptions staticAOptions;
+  staticAOptions.isStatic = true;
+  staticAOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto staticA = world.addRigidBody("static_a", staticAOptions);
+  staticA.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  sx::RigidBodyOptions staticBOptions;
+  staticBOptions.isStatic = true;
+  staticBOptions.position = Eigen::Vector3d(0.3, 0.0, 0.0);
+  auto staticB = world.addRigidBody("static_b", staticBOptions);
+  staticB.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  // A dynamic body above the static pair whose contacts with both are ignored.
+  sx::RigidBodyOptions fallerOptions;
+  fallerOptions.position = Eigen::Vector3d(0.15, 0.0, 1.5);
+  auto faller = world.addRigidBody("faller", fallerOptions);
+  faller.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  world.setCollisionPairIgnored(faller, staticA);
+  world.setCollisionPairIgnored(faller, staticB);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 2u);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // With every dynamic-involving pair ignored, the query is skipped and no
+  // contact is generated, so the dynamic body falls through the static pair
+  // (whose top is at z = 0.5) into negative z.
+  EXPECT_LT(faller.getTranslation().z(), 0.0);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 2u);
+}
+
+// With more rigid contact candidates than the ignored-pair audit limit, the
+// contact stage conservatively runs the collision query rather than auditing
+// every pair, even when an ignored pair exists. A body falling onto static
+// ground must still be caught. This covers the audit-limit fallback of
+// `shouldSkipRigidBodyContactQuery`.
+TEST(World, RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+
+  sx::RigidBodyOptions landerOptions;
+  landerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.6);
+  auto lander = world.addRigidBody("lander", landerOptions);
+  lander.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+
+  // Add enough static filler bodies to push the candidate count past the audit
+  // limit (64). With ground + lander, 63 fillers yields 65 candidates. They sit
+  // far apart so they never collide with each other or the lander.
+  std::vector<sx::RigidBody> fillers;
+  for (int i = 0; i < 63; ++i) {
+    sx::RigidBodyOptions fillerOptions;
+    fillerOptions.isStatic = true;
+    fillerOptions.position
+        = Eigen::Vector3d(static_cast<double>(i) + 5.0, 8.0, 0.25);
+    auto filler
+        = world.addRigidBody("filler_" + std::to_string(i), fillerOptions);
+    filler.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.25, 0.25, 0.25)));
+    fillers.push_back(filler);
+  }
+
+  // One ignored pair so the ignored-pair audit path is entered before the limit
+  // fallback. These two fillers are far apart and never collide regardless.
+  world.setCollisionPairIgnored(fillers[0], fillers[1]);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  // The query was not skipped despite the ignored pair: the lander still lands
+  // on the ground top (z == 0) plus its half height.
+  EXPECT_NEAR(lander.getTranslation().z(), 0.25, 5e-2);
+  EXPECT_GT(lander.getTranslation().z(), 0.0);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 1u);
+}
+
 // Public rigid-body joints act like source AVBD forces for collision discovery:
 // live constrained body pairs do not generate contact manifolds, and broken
 // joints make the pair collidable again.
@@ -22186,4 +22359,185 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   world.restoreReplayFrame(0);
 
   EXPECT_TRUE(joint.isBroken());
+}
+
+// PLAN-091 WP-091.24 (foundational slice): the public solver-agnostic step
+// metrics report the physical invariants of a passive scene, and reading them
+// is a side-effect-free query.
+//
+// A single free-floating rigid body under zero gravity, with no contacts and no
+// applied force, is a torque- and force-free system: its linear momentum,
+// angular momentum, and kinetic energy are all conserved exactly across the
+// default step. With an isotropic inertia the default semi-implicit rigid-body
+// integrator reproduces that conservation to floating-point round-off (the
+// world-frame inertia is rotation-invariant, so the constant world angular
+// velocity yields constant angular momentum and rotational energy), giving a
+// tight conservation gate read entirely through World::computeStepMetrics().
+TEST(World, ComputeStepMetricsConservesFreeBodyInvariants)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.5;
+  // Isotropic inertia: world-frame inertia stays R (cI) R^T = cI under any
+  // rotation, so a constant world angular velocity conserves angular momentum
+  // and rotational kinetic energy under the semi-implicit integrator.
+  options.inertia = 0.4 * Eigen::Matrix3d::Identity();
+  options.position = Eigen::Vector3d(0.1, -0.2, 0.3);
+  options.linearVelocity = Eigen::Vector3d(0.7, -0.3, 0.5);
+  options.angularVelocity = Eigen::Vector3d(0.2, 0.9, -0.4);
+  world.addRigidBody("free_body", options);
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+
+  // Sanity: a moving body with finite inertia has non-trivial invariants.
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+  ASSERT_GT(initial.linearMomentum.norm(), 1e-6);
+  ASSERT_GT(initial.angularMomentum.norm(), 1e-6);
+  // No gravity, so potential energy is exactly zero and total == kinetic.
+  EXPECT_DOUBLE_EQ(initial.potentialEnergy, 0.0);
+  EXPECT_DOUBLE_EQ(
+      initial.totalEnergy, initial.kineticEnergy + initial.potentialEnergy);
+
+  // computeStepMetrics() is a pure query: calling it does not change the World,
+  // so a second call on the unstepped world returns identical numbers.
+  const sx::compute::StepMetrics repeated = world.computeStepMetrics();
+  EXPECT_DOUBLE_EQ(repeated.kineticEnergy, initial.kineticEnergy);
+  EXPECT_TRUE(repeated.linearMomentum.isApprox(initial.linearMomentum, 0.0));
+  EXPECT_TRUE(repeated.angularMomentum.isApprox(initial.angularMomentum, 0.0));
+
+  const int steps = 500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Linear momentum: conserved (no force).
+  EXPECT_LT(
+      (after.linearMomentum - initial.linearMomentum).norm(),
+      1e-9 * initial.linearMomentum.norm());
+  // Angular momentum about the world origin: conserved.
+  EXPECT_LT(
+      (after.angularMomentum - initial.angularMomentum).norm(),
+      1e-9 * initial.angularMomentum.norm());
+  // Kinetic energy: conserved (gravity-free, contact-free, isotropic inertia).
+  EXPECT_LT(
+      std::abs(after.kineticEnergy - initial.kineticEnergy),
+      1e-9 * initial.kineticEnergy);
+  EXPECT_DOUBLE_EQ(after.potentialEnergy, 0.0);
+}
+
+TEST(World, ComputeStepMetricsConservesLinearMomentumThroughCollision)
+{
+  namespace sx = dart::simulation;
+
+  // Two free rigid bodies on a 1-D head-on course, no gravity and no
+  // static/kinematic bodies: the only forces are the internal contact impulses
+  // between them, so total linear momentum is conserved (Newton's third law),
+  // while the default restitution-0 inelastic contact dissipates kinetic
+  // energy. computeStepMetrics() must report both, validating the public
+  // metrics across a contact-bearing multi-body scene (PLAN-091 WP-091.24
+  // validation layer).
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions a;
+  a.mass = 1.0;
+  a.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  a.position = Eigen::Vector3d(-1.2, 0.0, 0.0);
+  a.linearVelocity = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("a", a);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions b;
+  b.mass = 2.0;
+  b.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  b.position = Eigen::Vector3d(1.2, 0.0, 0.0);
+  b.linearVelocity = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", b);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+  // Total linear momentum = m_a v_a + m_b v_b = 1*1.5 + 2*(-0.5) = +0.5 along
+  // x.
+  EXPECT_NEAR(initial.linearMomentum.x(), 0.5, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.y(), 0.0, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.z(), 0.0, 1e-12);
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+
+  // Long enough for the 1.4 m gap (closing at 2 m/s, ~0.7 s) to close and the
+  // contact to resolve.
+  const int steps = 1500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Total linear momentum is conserved through the contact (no external force).
+  EXPECT_LT((after.linearMomentum - initial.linearMomentum).norm(), 1e-8);
+  // The inelastic collision dissipated most of the kinetic energy, proving a
+  // real contact was exercised (a perfectly-inelastic head-on collision retains
+  // only the common-velocity kinetic energy P^2 / (2 (m_a + m_b))).
+  EXPECT_LT(after.kineticEnergy, 0.5 * initial.kineticEnergy);
+  // A passive contact can only remove kinetic energy, never add it.
+  EXPECT_LE(after.kineticEnergy, initial.kineticEnergy + 1e-9);
+}
+
+TEST(World, ComputeStepMetricsPotentialEnergyConvergesWithTimeStep)
+{
+  namespace sx = dart::simulation;
+
+  // Order-of-convergence seed (PLAN-091 WP-091.24 validation layer): a single
+  // free rigid body falling under constant gravity has the exact closed form
+  // y(T) = y0 - 1/2 g T^2. computeStepMetrics().potentialEnergy = m g_mag y
+  // encodes that height, so the discretization error in the reported potential
+  // energy shrinks as the time step shrinks. Halving dt must reduce the error
+  // (the integrator is consistent), confirmed here without assuming the scheme.
+  const double gMag = 9.81;
+  const double mass = 2.0;
+  const double y0 = 5.0;
+  const double totalTime = 0.5;
+
+  const auto peError = [&](double dt) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, -gMag, 0.0));
+    world.setTimeStep(dt);
+    sx::RigidBodyOptions options;
+    options.mass = mass;
+    options.position = Eigen::Vector3d(0.0, y0, 0.0);
+    world.addRigidBody("faller", options);
+    world.enterSimulationMode();
+    const int steps = static_cast<int>(std::lround(totalTime / dt));
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+    }
+    const double yExact = y0 - 0.5 * gMag * totalTime * totalTime;
+    const double peExact = mass * gMag * yExact; // -m g.x with g = (0,-g,0).
+    return std::abs(world.computeStepMetrics().potentialEnergy - peExact);
+  };
+
+  const double coarse = peError(1.0e-3); //  500 steps to T.
+  const double fine = peError(5.0e-4);   // 1000 steps to T.
+
+  // There must be a measurable (and bounded) discretization error to converge.
+  ASSERT_GT(coarse, 1.0e-9) << "no measurable discretization error to converge";
+  EXPECT_LT(coarse, 1.0);
+  // Consistency: halving dt reduces the error. A first-order scheme gives a
+  // ratio near 0.5, a second-order one near 0.25; the [0.05, 0.7] band asserts
+  // genuine convergence (error shrinks > 30%) without assuming the exact order,
+  // and is wide enough not to flake on round-off.
+  const double ratio = fine / coarse;
+  EXPECT_GT(ratio, 0.05) << "convergence ratio " << ratio;
+  EXPECT_LT(ratio, 0.7) << "convergence ratio " << ratio;
 }

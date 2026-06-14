@@ -96,7 +96,16 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   18: World stores variational multibody solve budget metadata.
 //   19: Private AVBD rigid-world point-joint and distance-spring configs are
 //      serializable.
-constexpr std::uint32_t kBinaryFormatVersion = 19;
+//   20: AVBD point-joint stiffness moved off the Joint record into a separate
+//      comps::AvbdJointStiffness component (present only when materialized).
+//   21: Component on-disk identity is now an explicit, stable string ID
+//      ("comps.<Type>"/"compute.<Type>") instead of the compiler-mangled
+//      typeid(T).name(). This decouples the on-disk identity from the C++ type
+//      spelling and makes the format compiler-independent. Clean break:
+//      DART 7 has no compatibility debt, so packets written with mangled-name
+//      component identities (versions <= 20) no longer round-trip their
+//      components. See WP-091.23 and comps/component_category.hpp.
+constexpr std::uint32_t kBinaryFormatVersion = 21;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

@@ -44,7 +44,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Name
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(Name);
+  DART_SIMULATION_PROPERTY_COMPONENT(Name, "comps.Name");
 
   std::string name;
 };

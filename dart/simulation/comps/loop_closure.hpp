@@ -46,7 +46,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct LoopClosure
 {
-  DART_SIMULATION_STATE_COMPONENT(LoopClosure);
+  DART_SIMULATION_STATE_COMPONENT(LoopClosure, "comps.LoopClosure");
 
   dart::simulation::LoopClosureFamily family
       = dart::simulation::LoopClosureFamily::Rigid;

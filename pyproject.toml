@@ -10,7 +10,7 @@ name = "dartpy"
 dynamic = ["version"]
 description = "Python API of Dynamic Animation and Robotics Toolkit."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = "BSD-2-Clause"
 authors = [{ name = "Jeongseok Lee", email = "jslee02@gmail.com" }]
 keywords = ["dartsim", "robotics"]
@@ -22,6 +22,8 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: MacOS",
   "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = ["numpy"]
 
@@ -71,7 +73,7 @@ profile = "black"
 skip = ['build', 'dist', 'docs', 'examples', 'external', 'python', '.pixi']
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.14"
 strict = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]

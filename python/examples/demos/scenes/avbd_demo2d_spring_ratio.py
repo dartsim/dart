@@ -155,6 +155,7 @@ def build() -> SceneSetup:
         )
 
     springs: list[dict[str, Any]] = []
+    ignored_collision_pairs: list[tuple[sx.RigidBody, sx.RigidBody]] = []
     for child_index, (parent, child) in enumerate(zip(links, links[1:]), start=1):
         stiffness = _spring_stiffness(child_index)
         name = f"avbd_demo2d_spring_ratio_radial_{child_index - 1:02d}"
@@ -167,6 +168,8 @@ def build() -> SceneSetup:
             parent_anchor=tuple(_PARENT_ANCHOR),
             child_anchor=tuple(_CHILD_ANCHOR),
         )
+        world.set_collision_pair_ignored(parent, child)
+        ignored_collision_pairs.append((parent, child))
         springs.append(
             {
                 "name": name,
@@ -221,6 +224,7 @@ def build() -> SceneSetup:
         builder.text("source scene: sceneSpringsRatio, index 10 of 19")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"distance springs: {len(springs)}")
+        builder.text(f"ignored collision pairs: {len(ignored_collision_pairs)}")
         builder.text(f"max spring length: {max_length:.3f} m")
         builder.text(f"middle-link dy: {middle_y - initial_middle_y:.3f} m")
         builder.text(f"world time: {world.time:.3f} s")
@@ -238,6 +242,7 @@ def build() -> SceneSetup:
             "sx_world": world,
             "links": links,
             "springs": springs,
+            "ignored_collision_pairs": ignored_collision_pairs,
             "source_demo_row": "avbd-demo2d spring ratio",
             "source_demo_reference": _source_row(),
             "spring_lengths": spring_lengths,
