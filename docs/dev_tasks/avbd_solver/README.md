@@ -12,7 +12,7 @@ Corpus matrix:
 - Latest follow-up (2026-06-14): with explicit maintainer approval, branch
   `avbd/soft-body-inertia-orientation-cache` merged the latest `origin/main`
   (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), was pushed to
-  origin, and was submitted as a follow-up PR into `main`, bundling the 2D/3D
+  origin, and was opened as follow-up PR #3004 into `main`, bundling the 2D/3D
   Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
   the refreshed Spring/Spring Ratio packets, and the contact-skip regression
   test. PR #2991 is merged at `f6fecbc5bd5`; the AVBD CPU-win, GPU, and

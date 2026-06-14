@@ -12,7 +12,7 @@ as squash commit `f6fecbc5bd5`. The branch is based on the original pre-squash
 PR head `6f41e9529bf` (that commit is not itself in `main`'s linear history).
 With explicit maintainer approval the branch was merged with the latest
 `origin/main` (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), pushed
-to origin, and submitted as a follow-up PR into `main`. It carries the 2D/3D
+to origin, and opened as follow-up PR #3004 into `main`. It carries the 2D/3D
 Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
 the refreshed Spring/Spring Ratio packets (whose writers record the
 `ignored_collision_pairs` invariant), the
