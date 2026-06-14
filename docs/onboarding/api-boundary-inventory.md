@@ -14,7 +14,7 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 490
+- C++ public headers scanned: 491
 - C++ headers with exposed implementation debt: 120
 - C++ headers with compatibility signals: 50
 - dartpy binding sources scanned: 162
