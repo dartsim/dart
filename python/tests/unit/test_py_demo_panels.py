@@ -2741,15 +2741,26 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert f"text:{parameter_row['parameters']}" in builder.events
         assert f"text:{parameter_row['defaults']}" in builder.events
         assert f"text:{parameter_row['benchmark_filter']}" in builder.events
-    for plot_prefix in (
-        "plot:Sequential billiard momentum error:",
-        "plot:Boxed LCP billiard momentum error:",
-        "plot:Sequential billiard energy error:",
-        "plot:Boxed LCP billiard energy error:",
-        "plot:Sequential billiard symmetry error:",
-        "plot:Boxed LCP billiard symmetry error:",
-    ):
-        assert any(event.startswith(plot_prefix) for event in builder.events)
+    assert [
+        event.removeprefix("plot:").rsplit(":", 1)[0]
+        for event in builder.events
+        if event.startswith("plot:")
+    ] == [
+        "Sequential step ms",
+        "Boxed LCP step ms",
+        "Sequential ramp slide",
+        "Boxed LCP ramp slide",
+        "Sequential billiard momentum error",
+        "Boxed LCP billiard momentum error",
+        "Sequential billiard energy error",
+        "Boxed LCP billiard energy error",
+        "Sequential billiard symmetry error",
+        "Boxed LCP billiard symmetry error",
+        "Sequential stack drift",
+        "Boxed LCP stack drift",
+        "Sequential card spread",
+        "Boxed LCP card spread",
+    ]
 
 
 def test_lcp_physics_updates_live_metrics_headlessly() -> None:
