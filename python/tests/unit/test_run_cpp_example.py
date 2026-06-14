@@ -78,7 +78,6 @@ def test_normalize_target_rejects_retired_classic_standalone_examples(
         "planned_simbicon_walking",
         "planned_operational_space_control",
         "planned_robot_puppets",
-        "planned_collision_sandbox",
         "planned_mobile_manipulation",
         "deformable_body",
         "vbd_deformable",
@@ -107,7 +106,6 @@ def test_normalize_target_rejects_removed_dart6_demos(run_cpp_example, target):
     ("target", "replacement"),
     [
         ("atlas_simbicon", "planned_simbicon_walking"),
-        ("collision_sandbox", "planned_collision_sandbox"),
         ("operational_space_control", "planned_operational_space_control"),
         ("wam_ikfast", "planned_inverse_kinematics"),
     ],
@@ -125,6 +123,31 @@ def test_normalize_target_mentions_planned_dart6_replacements(
 
 
 @pytest.mark.parametrize(
+    "target",
+    [
+        "collision_sandbox",
+        "point_cloud",
+        "polyhedron_visual",
+        "point-cloud",
+        "polyhedron-visual",
+    ],
+)
+def test_normalize_target_routes_retired_collision_demos_to_py_demos(
+    run_cpp_example, target
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "DART 6 demo scene has been removed" in message
+    assert "pixi run py-demos -- --scene rigid_contact_inspector" in message
+    assert "pixi run py-demos -- --scene rigid_collision_query_options" in message
+    assert "pixi run py-demos -- --scene rigid_collision_casts" in message
+    assert "pixi run py-demos -- --list" in message
+    assert "planned_collision_sandbox" not in message
+
+
+@pytest.mark.parametrize(
     ("target", "expected"),
     [
         # Hyphen-spelled removed demos (the FILAMENT_ALL_SCENES spelling) must
@@ -132,6 +155,7 @@ def test_normalize_target_mentions_planned_dart6_replacements(
         # through to a nonexistent CMake target.
         ("rigid-cubes", "DART 6 demo scene has been removed"),
         ("atlas-simbicon", "pixi run demos -- --scene planned_simbicon_walking"),
+        ("point-cloud", "pixi run py-demos -- --scene rigid_contact_inspector"),
         ("rigid-body", "pixi run demos -- --scene rigid_body"),
     ],
 )

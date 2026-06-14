@@ -10,8 +10,9 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
+_TIME_STEP = 0.004
 _BASE_HALF = np.array([0.18, 0.18, 0.18])
 _PAYLOAD_HALF = np.array([0.24, 0.14, 0.14])
 _GROUND_HALF = np.array([1.3, 0.55, 0.08])
@@ -59,7 +60,7 @@ def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=0.004, gravity=(0.0, 0.0, -9.81))
+    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, -9.81))
 
     ground = world.add_rigid_body("avbd_spherical_breakable_ground")
     ground.is_static = True
@@ -140,11 +141,95 @@ def build() -> SceneSetup:
         bridge.sync()
         sync_connector()
 
+    anchor_error_history: deque[float] = deque(maxlen=160)
+    orientation_error_history: deque[float] = deque(maxlen=160)
+    speed_history: deque[float] = deque(maxlen=160)
+    broken_history: deque[float] = deque(maxlen=160)
+    _last_metrics: dict[str, float | str] = {}
+
+    def sample_metrics() -> dict[str, float | str]:
+        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
+        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
+        anchor_error = float(
+            np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET)
+        )
+        orientation_drift = float(
+            np.linalg.norm(
+                np.asarray(payload.rotation, dtype=float) - captured_payload_rotation
+            )
+        )
+        payload_speed = float(
+            np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float))
+        )
+        broken = 1.0 if breakable_joint.is_broken else 0.0
+        return {
+            "anchor_offset_error": anchor_error,
+            "orientation_drift": orientation_drift,
+            "payload_speed": payload_speed,
+            "payload_height": float(payload_pos[2]),
+            "broken": broken,
+            "break_force": float(breakable_joint.break_force),
+            "world_time": float(world.time),
+            "status": "broken" if breakable_joint.is_broken else "intact",
+        }
+
+    def record_metrics() -> dict[str, float | str]:
+        _last_metrics.clear()
+        _last_metrics.update(sample_metrics())
+        anchor_error_history.append(float(_last_metrics["anchor_offset_error"]))
+        orientation_error_history.append(float(_last_metrics["orientation_drift"]))
+        speed_history.append(float(_last_metrics["payload_speed"]))
+        broken_history.append(float(_last_metrics["broken"]))
+        return _last_metrics
+
+    def capture_metrics() -> dict[str, object]:
+        if not _last_metrics:
+            record_metrics()
+        anchor_values = list(anchor_error_history)
+        orientation_values = list(orientation_error_history)
+        speed_values = list(speed_history)
+        broken_values = list(broken_history)
+        return {
+            "row": "avbd_rigid_spherical_breakable_joint",
+            "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
+            "constraint": "spherical_break_force_anchor_lifecycle",
+            "related_source_row": "rigid_joint_breakage",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(world.time),
+            "joint_name": str(breakable_joint.name),
+            "break_force": float(breakable_joint.break_force),
+            "reset_break_force": float(_RESET_BREAK_FORCE),
+            "anchor_offset_error": float(_last_metrics["anchor_offset_error"]),
+            "orientation_drift": float(_last_metrics["orientation_drift"]),
+            "payload_speed": float(_last_metrics["payload_speed"]),
+            "payload_height": float(_last_metrics["payload_height"]),
+            "broken": float(_last_metrics["broken"]),
+            "status": str(_last_metrics["status"]),
+            "metrics": {
+                "anchor_offset_error": float(_last_metrics["anchor_offset_error"]),
+                "orientation_drift": float(_last_metrics["orientation_drift"]),
+                "payload_speed": float(_last_metrics["payload_speed"]),
+                "payload_height": float(_last_metrics["payload_height"]),
+                "broken": float(_last_metrics["broken"]),
+                "break_force": float(_last_metrics["break_force"]),
+                "status": str(_last_metrics["status"]),
+            },
+            "history": {
+                "samples": float(len(anchor_values)),
+                "max_anchor_offset_error": max(anchor_values, default=0.0),
+                "max_orientation_drift": max(orientation_values, default=0.0),
+                "max_payload_speed": max(speed_values, default=0.0),
+                "saw_broken": max(broken_values, default=0.0),
+            },
+        }
+
     def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
         payload.linear_velocity = (0.0, 0.0, 0.0)
         payload.angular_velocity = (0.0, 0.0, 0.0)
         breakable_joint.break_force = float(break_force)
         breakable_joint.reset_breakage()
+        record_metrics()
         sync_connector()
 
     def rearm_weak_joint() -> None:
@@ -152,26 +237,17 @@ def build() -> SceneSetup:
 
     def pre_step() -> None:
         bridge.pre_step()
+        record_metrics()
         sync_connector()
 
     bridge.sync()
     sync_connector()
-
-    anchor_error_history: deque[float] = deque(maxlen=160)
-    orientation_error_history: deque[float] = deque(maxlen=160)
-    broken_history: deque[float] = deque(maxlen=160)
+    record_metrics()
 
     def build_panel(builder: object, context: object) -> None:
-        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
-        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
-        anchor_error = float(np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET))
-        orientation_error = float(
-            np.linalg.norm(np.asarray(payload.rotation, dtype=float) - captured_payload_rotation)
-        )
-        broken = 1.0 if breakable_joint.is_broken else 0.0
-        anchor_error_history.append(anchor_error)
-        orientation_error_history.append(orientation_error)
-        broken_history.append(broken)
+        metrics = _last_metrics or record_metrics()
+        anchor_error = float(metrics["anchor_offset_error"])
+        orientation_error = float(metrics["orientation_drift"])
 
         builder.text("solver: AVBD spherical point joint with break-force threshold")
         builder.text(f"joint: {breakable_joint.name}")
@@ -211,6 +287,7 @@ def build() -> SceneSetup:
             "reset_break_force": _RESET_BREAK_FORCE,
             "reset_joint": reset_joint,
             "rearm_weak_joint": rearm_weak_joint,
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )
 

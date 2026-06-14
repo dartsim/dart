@@ -148,6 +148,20 @@ public:
   /// Clear the body's accumulated torque.
   void clearTorque();
 
+  /// Apply an instantaneous world-frame linear impulse.
+  ///
+  /// Dynamic bodies receive `impulse / mass` as an immediate linear-velocity
+  /// change. Static and kinematic bodies ignore impulses because they represent
+  /// infinite-mass or prescribed-motion states in the public rigid-body model.
+  void applyLinearImpulse(const Eigen::Vector3d& impulse);
+
+  /// Apply an instantaneous world-frame angular impulse about the center of
+  /// mass.
+  ///
+  /// Dynamic bodies receive `I_world^-1 * impulse` as an immediate
+  /// angular-velocity change. Static and kinematic bodies ignore impulses.
+  void applyAngularImpulse(const Eigen::Vector3d& impulse);
+
   //--------------------------------------------------------------------------
   // Derived dynamic quantities
   //

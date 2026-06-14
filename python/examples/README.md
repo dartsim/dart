@@ -17,19 +17,20 @@ C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
 ## Run
 
 ```bash
-pixi run py-demos                                # default: open replay timeline
+pixi run py-demos                                # default: open rigid_body
+pixi run py-demos -- --scene rigid_solver_compare # compare SI vs IPC visually
 pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
-pixi run py-demos -- --scene articulated         # select a scene by id
+pixi run py-demos -- --scene articulated         # select any scene by id
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle every scene and exit
 pixi run py-demos -- --list                      # print the catalog
-pixi run py-demo-capture -- --scene articulated --show-ui --video
+pixi run py-demo-capture -- --scene rigid_solver_compare --show-ui --video
 ```
 
 Without pixi, from the repo root:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:python \
-    .pixi/envs/default/bin/python -m examples.demos --scene articulated --frames 5
+    .pixi/envs/default/bin/python -m examples.demos --scene rigid_body --frames 5
 ```
 
 ## Add a scene

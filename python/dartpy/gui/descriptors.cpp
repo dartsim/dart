@@ -203,7 +203,17 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw("step_once", &gui::ViewerLifecycleState::stepOnce)
       .def_rw(
           "screenshot_requested",
-          &gui::ViewerLifecycleState::screenshotRequested);
+          &gui::ViewerLifecycleState::screenshotRequested)
+      .def_rw(
+          "scene_switch_requested",
+          &gui::ViewerLifecycleState::sceneSwitchRequested)
+      .def_rw("requested_scene", &gui::ViewerLifecycleState::requestedScene)
+      .def_rw(
+          "scene_activation_status",
+          &gui::ViewerLifecycleState::sceneActivationStatus)
+      .def_rw(
+          "scene_activation_pending_scene",
+          &gui::ViewerLifecycleState::sceneActivationPendingScene);
 
   nb::class_<gui::OrbitCamera>(m, "OrbitCamera")
       .def(nb::init<>())
@@ -488,6 +498,16 @@ void defGuiDescriptors(nb::module_& m)
       &gui::requestSingleStep,
       nb::arg("state"),
       nb::arg("pause") = true);
+  m.def(
+      "request_scene_switch",
+      &gui::requestSceneSwitch,
+      nb::arg("state"),
+      nb::arg("scene_id"));
+  m.def(
+      "request_scene_replay",
+      &gui::requestSceneReplay,
+      nb::arg("state"),
+      nb::arg("scene_id"));
   m.def(
       "should_advance_simulation",
       &gui::shouldAdvanceSimulation,
