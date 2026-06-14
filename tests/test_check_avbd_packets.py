@@ -130,7 +130,12 @@ def test_non_integer_schema_version_is_rejected(tmp_path):
     assert any("schema_version must be an integer" in error for error in errors)
 
 
-def test_legacy_allowlist_matches_committed_corpus():
+def test_legacy_allowlist_and_current_packets_cover_committed_corpus():
     module = _load_module()
-    committed = {path.name for path in PACKET_DIR.glob("avbd-*-packet.json")}
-    assert committed <= module.LEGACY_IDENTITY_EXEMPT_PACKETS
+    for path in PACKET_DIR.glob("avbd-*-packet.json"):
+        if path.name in module.LEGACY_IDENTITY_EXEMPT_PACKETS:
+            continue
+        packet = json.loads(path.read_text())
+        assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
+        assert "resolved_solver_identity" in packet
+        assert module.packet_errors(path) == []

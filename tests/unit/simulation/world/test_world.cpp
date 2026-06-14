@@ -13810,6 +13810,39 @@ TEST(World, RigidBodyContactFrictionDeceleratesSlidingBody)
   EXPECT_GT(slider.getTranslation().x(), 0.0);
 }
 
+// Test that the sequential-impulse contact path keeps normal contact active
+// while a zero combined Coulomb coefficient leaves tangential velocity alone.
+TEST(World, RigidBodyContactZeroFrictionPreservesSlidingVelocity)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+  ground.setFriction(0.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1);
+  boxOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto slider = world.addRigidBody("slider", boxOptions);
+  slider.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.1)));
+  slider.setFriction(0.0);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(120);
+
+  EXPECT_NEAR(slider.getLinearVelocity().x(), 2.0, 1e-9);
+  EXPECT_GT(slider.getTranslation().x(), 0.5);
+  EXPECT_NEAR(slider.getTranslation().z(), 0.1, 5e-2);
+}
+
 // Test that a coupled stack settles: two spheres stacked on a static ground
 // generate two contacts (ground-sphere1 and sphere1-sphere2) that share the
 // middle sphere, so the contact-space inverse-mass matrix is a non-singular

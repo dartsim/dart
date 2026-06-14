@@ -146,7 +146,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   self-approve; the maintainer merge is the independent acceptance recorded by
   the `[done]` heading marker.
 
-#### WP-091.2 Golden trajectories for the default step
+#### WP-091.2 Golden trajectories for the default step [done — PR #2994, merged 2026-06-14]
 
 - Objective: committed reference trajectories (states, contact counts,
   tolerances) for a small scene matrix lock the default `World::step`
@@ -171,6 +171,52 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   `tests/unit/simulation/CMakeLists.txt`, so no per-directory CMake edit is
   needed); record per-step state (position, velocity, contact count, time)
   and the tolerance policy in the fixture/test.
+- Evidence: `tests/unit/simulation/world/test_world_default_step_golden.cpp`
+  (ctest `test_world_default_step_golden`, label `simulation`,
+  `DefaultStepGolden.{FreeFall,SphereOnGround,BoxOnGround}`) locks the default
+  `World::step` over a three-scene matrix using public facade headers only
+  (`world.hpp`, `world_options.hpp`, `body/rigid_body.hpp`,
+  `body/rigid_body_options.hpp`, `body/collision_shape.hpp`,
+  `body/contact.hpp`, `frame/frame.hpp`; no `detail/` or `compute/` includes):
+  free-fall (semi-implicit integrator,
+  0 contacts), a sphere dropped onto a static box ground (contact onset at
+  frame 99, count 0→1), and a box dropped onto ground (4-point manifold). Each
+  step records frame, time, position, linear+angular velocity, and the
+  post-step `World::collide()` contact count. Golden files committed under
+  `tests/fixtures/default_step_golden/` (`free_fall.tsv` 30 rows,
+  `sphere_on_ground.tsv` and `box_on_ground.tsv` 120 rows each), loaded
+  `__FILE__`-relative; regenerate with
+  `DART_REGENERATE_DEFAULT_STEP_GOLDEN=1`. Two-oracle design: (1) a
+  correctness layer (`assertAnalyticalAnchors`) validates each trajectory
+  against ground truth independent of the golden — the exact semi-implicit
+  Euler closed form `z_n = z0 - g·dt²·n(n+1)/2`, `v_n = -g·n·dt` for the
+  contact-free phase (to `1e-9`, so the golden cannot enshrine an integrator
+  bug; forward Euler would diverge by `g·dt²·n`), plus physical invariants for
+  the contact phase (no tunneling, settles at the geometric rest height
+  `ground_top + half_size`, comes to rest, no spurious lateral/spin); it runs
+  in both compare and regen modes so a regenerated golden is physics-validated
+  before commit. (2) the behavior-lock snapshot compares the full per-step
+  trajectory at `kStateTolerance = 1e-6` absolute (the single knob — tolerates
+  floating-point reassociation from behavior-preserving refactors and
+  cross-platform libm/FMA differences while catching real physics changes),
+  contact counts exact. Verified: all three cases pass (snapshot + analytical);
+  compare-mode passes 5/5 consecutive runs and two regenerations produce
+  byte-identical goldens (same-toolchain bitwise determinism); an injected
+  gravity perturbation makes `DefaultStepGolden.FreeFall` fail (snapshot
+  `lin_z` drift `1e-5` ≫ tolerance). Demonstrating the correctness layer's
+  value: perturbing the scene's gravity while leaving the analytical profile
+  makes the closed-form anchor fail, and regeneration is then **refused** —
+  `writeGolden` is gated on `::testing::Test::HasFailure()`, so the
+  physically wrong golden is not serialized (verified: the `free_fall.tsv`
+  sha256 is byte-identical before and after a bad-physics regen attempt). The
+  snapshot path therefore cannot launder a physically wrong trajectory.
+  Reverting restores green. Re-verified green after merging the latest `main` (#2992, which
+  touched `world.cpp`/`rigid_body.cpp`), confirming #2992 preserved
+  default-step behavior. Gates: `pixi run lint` (formatting clean),
+  `pixi run build`, and `pixi run test-unit` (161/161, no regressions) all
+  exit 0; the focused test runs green via `ctest -R default_step_golden`.
+  Systematic energy/momentum-conservation and order-of-convergence validation
+  across the scene corpus is deferred to WP-091.24.
 
 #### WP-091.3 Architecture-page claim lint
 
@@ -466,7 +512,14 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   momenta, penetration, contact counts, solver iterations/residual); a scene
   builder registry under `tests/`; one harness binary; a manifest-driven
   packet writer replacing the per-scene script fleet; a tracked
-  cross-family `World::step` scenario row set in the perf dashboard.
+  cross-family `World::step` scenario row set in the perf dashboard. This
+  packet also owns the **systematic analytical/physical validation** layer
+  built on those metrics — energy/momentum-conservation bounds and
+  order-of-convergence checks (halve `dt`, confirm error drops at the scheme's
+  rate) across the scene corpus. WP-091.2 seeds only the per-scene
+  closed-form/invariant anchors inline in its golden test; the corpus-wide
+  validation substrate (and a reusable closed-form reference helper) lands
+  here once the metrics value object exists.
 - Non-goals: forcing one contact representation across families (record
   per-family contact-source support in the corpus manifest instead);
   kernel-level microbenchmarks.

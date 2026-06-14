@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#111827}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:13px;fill:#4b5563}
+.axis{stroke:#6b7280;stroke-width:1.4}
+.tick{font-size:11px;fill:#4b5563}
+</style>
+<rect width="720" height="360" fill="#ffffff"/>
+<text x="32" y="36" class="title">AVBD Friction Coefficient Sweep</text>
+<text x="32" y="58" class="subtitle">avbd-demo2d Dynamic Friction; 11 boxes, lower CPU time is better.</text>
+<line x1="76" y1="292" x2="682" y2="292" class="axis"/>
+<line x1="76" y1="84" x2="76" y2="292" class="axis"/>
+<text x="18" y="91" class="tick">24 us</text>
+<text x="18" y="296" class="tick">0 us</text>
+<polyline points="76.00,237.80 136.60,232.69 197.20,162.09 379.00,214.71 682.00,230.84" fill="none" stroke="#2563eb" stroke-width="3"/>
+<polyline points="76.00,268.02 136.60,99.41 197.20,136.72 379.00,111.50 682.00,120.50" fill="none" stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5"/>
+<line x1="514" y1="34" x2="548" y2="34" stroke="#2563eb" stroke-width="3"/>
+<text x="556" y="38" class="tick">DART</text>
+<line x1="514" y1="54" x2="548" y2="54" stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5"/>
+<text x="556" y="58" class="tick">Native source</text>
+<circle cx="76.00" cy="237.80" r="5" fill="#2563eb"/>
+<circle cx="76.00" cy="268.02" r="5" fill="#dc2626"/>
+<text x="76.00" y="316" class="tick" text-anchor="middle">0</text>
+<circle cx="136.60" cy="232.69" r="5" fill="#2563eb"/>
+<circle cx="136.60" cy="99.41" r="5" fill="#dc2626"/>
+<text x="136.60" y="316" class="tick" text-anchor="middle">0.5</text>
+<circle cx="197.20" cy="162.09" r="5" fill="#2563eb"/>
+<circle cx="197.20" cy="136.72" r="5" fill="#dc2626"/>
+<text x="197.20" y="316" class="tick" text-anchor="middle">1</text>
+<circle cx="379.00" cy="214.71" r="5" fill="#2563eb"/>
+<circle cx="379.00" cy="111.50" r="5" fill="#dc2626"/>
+<text x="379.00" y="316" class="tick" text-anchor="middle">2.5</text>
+<circle cx="682.00" cy="230.84" r="5" fill="#2563eb"/>
+<circle cx="682.00" cy="120.50" r="5" fill="#dc2626"/>
+<text x="682.00" y="316" class="tick" text-anchor="middle">5</text>
+<text x="379" y="344" class="subtitle" text-anchor="middle">Maximum Coulomb friction coefficient</text>
+</svg>
