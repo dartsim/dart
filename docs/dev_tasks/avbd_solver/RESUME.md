@@ -6,13 +6,22 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current verified branch state: after explicit maintainer approval, PR #2991
-branch `avbd/source-row-extraction-precheck` was pushed to origin at
-`1265b12054c` after verifying latest `origin/main` was already merged. The
-previous three CI-fix commits and the AVBD contact-config guard follow-up are
-now on the PR branch, hosted CI restarted, and the local branch is aligned with
-origin. Review-thread resolution, PR comments, review re-triggers, and any
-further push still require explicit maintainer approval.
+Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
+is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
+currently contains local commit `09a98956a5e`, which avoids repeated AVBD rigid
+inertia orientation normalization and adds focused lower-triangle/full-helper
+regression coverage. The branch is clean after the commit. Do not push, open a
+PR, resolve review threads, comment, retrigger reviews, or mutate CI without
+explicit maintainer approval.
+
+Current verified checkpoint PR state: after explicit maintainer approval, PR
+#2991 branch `avbd/source-row-extraction-precheck` was pushed to origin and is
+currently at `6f41e9529bf` after verifying latest `origin/main` was already
+merged. The previous three CI-fix commits, the AVBD contact-config guard
+follow-up, and the handoff-doc refresh are on the PR branch, hosted CI is still
+running, and the branch is mergeable with no failed checks observed in the
+latest rollup. Review-thread resolution, PR comments, review re-triggers, and
+any further push still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -20,7 +29,21 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the rigid contact stage now skips the per-contact
+Latest local slice: `addAvbdRigidBodyInertiaTermLowerTriangle()` now reuses the
+already normalized current orientation and normalizes the inertial target once
+before computing the rigid body orientation error, avoiding repeated
+normalization in the hot block-descent body assembly path. The public robust
+orientation-error helpers still normalize their inputs. Focused regression
+coverage compares the lower-triangle inertia helper against the full symmetric
+helper for scaled current and target quaternions. Validation passed the target
+rebuild, the new focused test, the full `test_avbd_rigid_block` suite (100
+tests), and `pixi run lint`; earlier same-slice validation passed
+`pixi run build` and `pixi run test-unit` before the regression was added. The
+benchmark smoke ran under high load and is inconclusive, so this is hot-path
+overhead evidence only. It does not refresh a tracked packet, close the 2D Soft
+Body CPU gap, push a follow-up PR, or claim GPU/paper-number parity.
+
+Latest pushed PR slice: the rigid contact stage now skips the per-contact
 `rigidAvbdContactStageConfig()` scan unless the registry has
 `RigidAvbdContactConfig` storage. Default sequential-impulse worlds such as the
 frictionless Dynamic Friction source row already queried contacts without AVBD

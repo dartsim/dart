@@ -9,9 +9,25 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up (2026-06-14): new unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` is based on PR #2991 head
+  `6f41e9529bf` and currently has local commit `09a98956a5e`. The slice avoids
+  repeated AVBD rigid inertia orientation normalization in
+  `addAvbdRigidBodyInertiaTermLowerTriangle()` by sharing the already
+  normalized current orientation and normalizing the inertial target once before
+  the hot body-block assembly. Focused regression coverage now compares the
+  lower-triangle inertia helper against the full symmetric helper for scaled
+  current and target quaternions. Validation passed the target rebuild,
+  `test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.LowerTriangleInertiaTermMatchesFullForScaledOrientations'`,
+  the full `test_avbd_rigid_block` suite (100 tests), and `pixi run lint`.
+  Earlier same-slice validation passed `pixi run build` and
+  `pixi run test-unit` before the regression was added. The benchmark smoke was
+  high-load and inconclusive, so this is hot-path overhead evidence only; it
+  does not refresh any tracked source-row packet, close the 2D Soft Body CPU
+  gap, push a follow-up PR, or claim GPU/paper-number parity.
 - Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
-  #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-  `1265b12054c` after verifying the latest `origin/main` was already merged.
+  #2991 branch `avbd/source-row-extraction-precheck` is pushed to origin at
+  `6f41e9529bf` after verifying the latest `origin/main` was already merged.
   Hosted CI restarted on that head. The Dynamic Friction
   panel-label thread from Codex review `4492237805` is covered on the pushed
   branch by deriving the plotted high-friction speed label from `max_friction`
@@ -23,8 +39,9 @@ Corpus matrix:
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
 - Latest pushed follow-up (2026-06-14): the AVBD contact-config guard is now on
-  PR head `1265b12054c`: the rigid contact stage skips the per-contact
-  `rigidAvbdContactStageConfig()` scan unless the registry has
+  implementation commit `1265b12054c`, with the current PR head including the
+  later handoff-doc refresh at `6f41e9529bf`: the rigid contact stage skips the
+  per-contact `rigidAvbdContactStageConfig()` scan unless the registry has
   `RigidAvbdContactConfig` storage. The `/0` Dynamic Friction benchmark moved
   from a 7.837 us median CPU step before the edit to 7.409 us after it under
   lower but still noisy local load with CPU scaling enabled. Focused default
