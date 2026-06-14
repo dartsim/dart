@@ -10034,15 +10034,24 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
                 tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
             tangentLambda = clampedTangent - tangentImpulse;
             tangentImpulse = clampedTangent;
+            if (tangentLambda == 0.0) {
+              return;
+            }
 
             const Eigen::Vector3d tangentImpulseVector
                 = tangentLambda * tangent;
-            velocityB.linear += constraint.invMassB * tangentImpulseVector;
-            velocityB.angular += constraint.invInertiaB
-                                 * constraint.armB.cross(tangentImpulseVector);
-            velocityA.linear -= constraint.invMassA * tangentImpulseVector;
-            velocityA.angular -= constraint.invInertiaA
-                                 * constraint.armA.cross(tangentImpulseVector);
+            if (!constraint.staticB) {
+              velocityB.linear += constraint.invMassB * tangentImpulseVector;
+              velocityB.angular
+                  += constraint.invInertiaB
+                     * constraint.armB.cross(tangentImpulseVector);
+            }
+            if (!constraint.staticA) {
+              velocityA.linear -= constraint.invMassA * tangentImpulseVector;
+              velocityA.angular
+                  -= constraint.invInertiaA
+                     * constraint.armA.cross(tangentImpulseVector);
+            }
           };
           solveFriction(
               constraint.tangent1,

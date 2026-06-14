@@ -10,14 +10,12 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up (2026-06-14): local branch
-  `avbd/source-row-extraction-precheck` has unpushed commits through
-  `47c22bae3b6` before this handoff refresh. Before editing this handoff, the
-  worktree was clean and ahead of
-  `origin/avbd/source-row-extraction-precheck` by six commits. GitHub PR #2991
-  still points at remote head `f21059197f4` and reports `DIRTY` because the
-  local review fixes and `origin/main` merge have not been pushed. Pushes,
-  review-thread resolution, PR comments, and review retriggers still require
-  explicit maintainer approval.
+  `avbd/source-row-extraction-precheck` started this follow-up clean at
+  `f8f57b78b8f`, ahead of `origin/avbd/source-row-extraction-precheck` by seven
+  commits. GitHub PR #2991 still points at remote head `f21059197f4` and
+  reports `DIRTY` because the local review fixes, `origin/main` merge, and
+  follow-up commits have not been pushed. Pushes, review-thread resolution, PR
+  comments, and review retriggers still require explicit maintainer approval.
 - Latest local follow-up (2026-06-14): the current PR #2991 Codex review
   surface has two unresolved bot threads. The older
   numeric-equivalent friction-env packet thread is covered locally by
@@ -28,6 +26,20 @@ Corpus matrix:
   `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. No GitHub reply,
   thread resolution, push, or review retrigger has been performed.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact friction solve now returns when a clamped tangent impulse delta is
+  exactly zero and skips static/prescribed endpoint velocity writes for tangent
+  impulses. This trims no-op work in the same Dynamic Friction coefficient
+  sweep contact path without changing the normal solve or static endpoint
+  semantics. Focused contact behavior, restitution, and baked allocator tests
+  passed; a five-row `BM_AvbdDemo2dFrictionCoefficientSweep` smoke recorded
+  medians of 7.107, 11.982, 15.833, 7.754, and 7.563 us for max friction 0,
+  0.5, 1.0, 2.5, and 5.0 under load average `3.61, 4.55, 7.00` with CPU
+  scaling enabled. `pixi run build` and `pixi run test-unit` passed. This is
+  source-row path evidence only; it does not refresh the tracked packet, close
+  the frictionless source-row CPU gap, resolve the GitHub review threads, or
+  claim GPU parity. A guarded zero-restitution approach-velocity probe was
+  rejected and reverted after the `/0` benchmark reran around 13.7 us median.
+- Prior local follow-up (2026-06-14): the default sequential-impulse rigid
   contact assembly now shares each endpoint's `ContactMaterial` lookup between
   friction and restitution and skips `sqrt` for exact zero combined friction
   products. A source-shaped frictionless Dynamic Friction profile still showed

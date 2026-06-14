@@ -6,14 +6,13 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current verified branch state: `avbd/source-row-extraction-precheck` has
-unpushed commits through `47c22bae3b6` before this handoff refresh. Before
-editing this handoff, the worktree was clean and ahead of
-`origin/avbd/source-row-extraction-precheck` by six commits. PR #2991 still
+Current verified branch state: `avbd/source-row-extraction-precheck` started
+this follow-up clean at `f8f57b78b8f`, ahead of
+`origin/avbd/source-row-extraction-precheck` by seven commits. PR #2991 still
 points at remote head `f21059197f4` and reports `DIRTY` on GitHub because the
-local review fixes and `origin/main` merge have not been pushed. Pushes,
-review-thread resolution, PR comments, and review re-triggers still require
-explicit maintainer approval.
+local review fixes, `origin/main` merge, and follow-up commits have not been
+pushed. Pushes, review-thread resolution, PR comments, and review re-triggers
+still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -21,7 +20,15 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact assembly now
+Latest local slice: the default sequential-impulse rigid contact friction solve
+now returns when a clamped tangent impulse delta is exactly zero and skips
+static/prescribed endpoint velocity writes for tangent impulses. This trims
+no-op work in the same Dynamic Friction coefficient sweep contact path without
+changing the normal solve or static endpoint semantics. It does not refresh the
+tracked friction-sweep packet, close the frictionless source-row CPU gap, or
+claim GPU parity.
+
+Prior local slice: the default sequential-impulse rigid contact assembly now
 shares each endpoint's `ContactMaterial` lookup between friction and
 restitution and skips `sqrt` for exact zero combined friction products. This is
 a narrow fixed-cost cleanup for the
@@ -48,7 +55,29 @@ this branch's `--env`/`--metadata` capture overrides and `main`'s
 visual-verification resolved-solver-identity / scene-metrics manifest support.
 No push has been performed.
 
-Validation for the latest material-lookup slice:
+Validation for the latest friction tangent no-op slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactRestitution:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 6 tests in 54.68 s.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-friction-sweep-after-static-friction-write-guard-20260614.json --benchmark_out_format=json'`
+  passed. It recorded median CPU step times of 7.107, 11.982, 15.833, 7.754,
+  and 7.563 us for max friction 0, 0.5, 1.0, 2.5, and 5.0 under load average
+  `3.61, 4.55, 7.00` with CPU scaling enabled. This is path smoke only because
+  same-source native timing, visual captures, and packet regeneration were not
+  rerun.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+
+Rejected local probe reverted before this handoff:
+
+- A zero-restitution guard avoided pre-solve approach-velocity calculation when
+  both materials had zero restitution. Focused contact/restitution/no-allocation
+  tests passed, but `/0` benchmark smokes reran at 13.71-13.76 us medians, so
+  the probe was rejected and reverted before this kept slice.
+
+Validation for the prior material-lookup slice:
 
 - `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=0 PYTHONPATH=build/default/cpp/Release/python:python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run python - <<'PY' ...`
   profiled the Python `avbd_demo2d_dynamic_friction` source-shaped scene for

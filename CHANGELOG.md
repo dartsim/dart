@@ -759,8 +759,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contact assembly skips prescribed/static endpoint arm and tangent-mass
     work while preserving dynamic endpoint impulse math. Contact assembly now
     also shares each endpoint's contact-material lookup between friction and
-    restitution setup, and skips the square-root call for exact zero combined
-    friction products.
+    restitution setup, skips the square-root call for exact zero combined
+    friction products, and avoids no-op tangent-friction velocity writes for
+    zero deltas and static/prescribed endpoints.
     During simulation bake, the rigid contact stage now
     reserves ordinary and AVBD contact scratch from the collision-shape capacity
     estimate and prewarms collision-query cache storage without generating
