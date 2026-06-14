@@ -10,6 +10,17 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` now refreshes the 2D/3D
+  Spring/Spring Ratio tracked packets after the spring-connected ignored-pair
+  slices. The packet writers require the `ignored_collision_pairs` benchmark
+  counter, and the four refreshed packets record 1 ignored pair for Spring and
+  7 adjacent ignored pairs for Spring Ratio. The same-host packet evidence
+  records DART about 4.02x slower for 2D Spring, 4.48x slower for 2D Spring
+  Ratio, 2.47x slower for 3D Spring, and 3.57x slower for 3D Spring Ratio, so
+  all four CPU-win gates remain open. This local evidence refresh does not
+  push a follow-up PR, resolve GitHub review threads, add GPU packets, or claim
+  paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
   `avbd/soft-body-inertia-orientation-cache` now extends the Spring/Spring
   Ratio contact-filtering slice to the 3D source rows. The 3D Python scenes
   and matching C++ benchmark constructors explicitly ignore the radial

@@ -8,13 +8,14 @@ stop-only snapshot lower in this file.
 
 Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
 is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
-currently contains the local 3D Spring/Spring Ratio ignored-collision-pair
-slice plus the previous 2D Spring/Spring Ratio contact-filtering slice,
-inertia-orientation cleanup, and handoff-doc refreshes. The latest kept
-implementation explicitly ignores spring-connected rigid body collision pairs
-in the 3D Python source rows and matching C++ benchmark constructors. Do not
-push, open a PR, resolve review threads, comment, retrigger reviews, or mutate
-CI without explicit maintainer approval.
+currently contains the local 2D/3D Spring/Spring Ratio tracked-packet refresh
+for the spring-connected ignored-pair slices, plus the previous 3D Spring/Spring
+Ratio ignored-collision-pair slice, the previous 2D Spring/Spring Ratio
+contact-filtering slice, inertia-orientation cleanup, and handoff-doc refreshes.
+The latest kept implementation explicitly records ignored-pair benchmark
+invariants in the Spring/Spring Ratio packet writers and refreshed packet JSON.
+Do not push, open a PR, resolve review threads, comment, retrigger reviews, or
+mutate CI without explicit maintainer approval.
 
 Current verified checkpoint PR state: after explicit maintainer approval, PR
 #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin and is
@@ -31,7 +32,18 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the 3D Spring and Spring Ratio source rows now explicitly
+Latest local slice: the 2D/3D Spring and Spring Ratio tracked packets now
+reflect the spring-connected ignored-pair configuration. The packet writers
+require `ignored_collision_pairs` benchmark counters, and the refreshed packets
+record one ignored pair for Spring and seven adjacent ignored pairs for Spring
+Ratio. Refreshed same-host packet evidence records DART at 3.44 us versus
+0.856 us for 2D Spring, 35.12 us versus 7.83 us for 2D Spring Ratio, 3.99 us
+versus 1.62 us for 3D Spring, and 30.53 us versus 8.55 us for 3D Spring Ratio.
+Those ratios keep all four Spring/Spring Ratio CPU-win gates open. This local
+branch does not add GPU packets, push a follow-up PR, resolve GitHub review
+threads, or claim GPU/paper-number parity.
+
+Previous local slice: the 3D Spring and Spring Ratio source rows now explicitly
 ignore collision pairs that are already connected by the measured spring
 constraints. The C++ `BM_AvbdDemo3dSpringStep` and
 `BM_AvbdDemo3dSpringRatioStep` benchmark constructors mirror those ignored
@@ -150,6 +162,36 @@ tests. Focused regression coverage now passes
 the full `python/tests/unit/test_run_cpp_example.py` file passes, and
 `pixi run lint` passes. This CI-smoke fix and regression were pushed as part of
 PR head `0bf4ca6b8ae`.
+
+Validation for the latest 2D/3D Spring/Spring Ratio packet-refresh slice:
+
+- `pixi run pytest python/tests/unit/test_write_avbd_demo2d_spring_packets.py python/tests/unit/test_write_avbd_demo3d_spring_packets.py -q`
+  passed, 11 tests.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `PYTHONPATH=build/default/cpp/Release/python:python DARTPY_RUNTIME_DIR=build/default/cpp/Release/python/dartpy LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run python scripts/capture_py_demo.py --scene <spring-scene> --frames 24 --width 640 --height 360 --output-dir /tmp/avbd-spring-packet-refresh-20260614/captures/<spring-scene>`
+  passed for `avbd_demo2d_spring`, `avbd_demo2d_spring_ratio`,
+  `avbd_demo3d_spring`, and `avbd_demo3d_spring_ratio`; all captures reported
+  `Final contacts: 0`.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo(2d|3d)Spring(Ratio)?Step$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-spring-packet-refresh-20260614/dart-spring-benchmarks.json --benchmark_out_format=json'`
+  passed under load average `2.30, 5.23, 9.54` with CPU scaling enabled. Median
+  CPU times were 3.440 us for 2D Spring, 35.121 us for 2D Spring Ratio,
+  3.991 us for 3D Spring, and 30.526 us for 3D Spring Ratio, with
+  `ignored_collision_pairs=1`, `7`, `1`, and `7` respectively.
+- `pixi run python scripts/run_avbd_demo2d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo2d --scene spring --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo2d-spring.json`
+  passed against source revision `74699a11f858`.
+- `pixi run python scripts/run_avbd_demo2d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo2d --scene spring_ratio --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo2d-spring-ratio.json`
+  passed against source revision `74699a11f858`.
+- `pixi run python scripts/run_avbd_demo3d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo3d --scene spring --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo3d-spring.json`
+  passed against source revision `7701bd427d55`.
+- `pixi run python scripts/run_avbd_demo3d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo3d --scene spring_ratio --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo3d-spring-ratio.json`
+  passed against source revision `7701bd427d55`.
+- The four packet writers passed and refreshed
+  `avbd-demo2d-spring-packet.json`, `avbd-demo2d-spring-ratio-packet.json`,
+  `avbd-demo3d-spring-packet.json`, and
+  `avbd-demo3d-spring-ratio-packet.json`. Packet ratios are 4.02x slower,
+  4.48x slower, 2.47x slower, and 3.57x slower than the corresponding native
+  source rows, so the CPU-win gates remain open.
 
 Validation for the latest 3D Spring/Spring Ratio ignored-pair slice:
 

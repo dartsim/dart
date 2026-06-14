@@ -32,6 +32,7 @@ from examples.demos.runner import (
 from examples.demos.scenes import (
     articulated,
     atlas_simbicon,
+    avbd_demo2d_dynamic_friction,
     contact,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
@@ -1010,6 +1011,24 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         if label in self.timeline_values:
             return True, self.timeline_values[label]
         return False, value
+
+
+def test_avbd_demo2d_dynamic_friction_panel_uses_configured_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _require_simulation_symbols("CollisionShape", "World")
+    monkeypatch.setenv("DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION", "0.5")
+
+    setup = avbd_demo2d_dynamic_friction.build()
+    builder = _FakePanelBuilder()
+
+    assert setup.info["max_dynamic_box_friction"] == pytest.approx(0.5)
+    assert setup.info["high_friction_speed_label"] == "Friction 0.5 speed"
+
+    setup.panels[0].build(builder, object())
+
+    assert "plot:Friction 0.5 speed:1" in builder.events
+    assert "plot:Friction 5 speed:1" not in builder.events
 
 
 def test_planned_world_port_panels_expose_actionable_routes() -> None:
