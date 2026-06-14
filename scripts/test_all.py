@@ -37,7 +37,7 @@ def supports_unicode() -> bool:
         # Try to encode a Unicode character
         "\u2713".encode(encoding or "utf-8")
         return True
-    except (UnicodeEncodeError, LookupError):
+    except UnicodeEncodeError, LookupError:
         return False
 
 

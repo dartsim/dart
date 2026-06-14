@@ -137,7 +137,7 @@ def _timing_ns(row: dict) -> float:
         return math.nan
     try:
         return _to_ns(float(value), unit)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return math.nan
 
 

@@ -264,7 +264,7 @@ def _timing_ns(row: dict, metric: str) -> float:
         return math.nan
     try:
         return _to_ns(float(value), row.get("time_unit", "ns"))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return math.nan
 
 
@@ -379,7 +379,7 @@ def collect_coefficients_of_variation(
         key = family + (args or "")
         try:
             cv = float(row.get(metric))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if math.isfinite(cv) and cv >= 0.0:
             cvs[key][allocator] = cv
@@ -415,7 +415,7 @@ def collect_timing_statistics(
         statistics[key][allocator][aggregate] = timing
         try:
             repetitions = int(row.get("repetitions", 0))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             repetitions = 0
         if repetitions > 0:
             statistics[key][allocator]["repetitions"] = float(repetitions)
@@ -445,7 +445,7 @@ def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
                 continue
             try:
                 counter = float(value)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
             if math.isfinite(counter):
                 counters[key][counter_name] = counter

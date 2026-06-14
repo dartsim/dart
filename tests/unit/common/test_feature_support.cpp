@@ -125,18 +125,11 @@ static_assert(
 static_assert(
     DART_HAS_STD_UNREACHABLE,
     "std::unreachable must be available on DART's C++23 floor");
-static_assert(
-    DART_HAS_DEDUCING_THIS,
-    "deducing-this must be available on DART's C++23 floor");
-static_assert(
-    DART_HAS_MULTIDIM_SUBSCRIPT,
-    "multidimensional subscript must be available on DART's C++23 floor");
-static_assert(
-    DART_HAS_STD_RANGES_ZIP,
-    "std::views::zip must be available on DART's C++23 floor");
-static_assert(
-    DART_HAS_STD_RANGES_ENUMERATE,
-    "std::views::enumerate must be available on DART's C++23 floor");
+// deducing-this, multidimensional subscript, std::views::zip, and
+// std::views::enumerate are intentionally NOT required here. They are deferred
+// (see docs/design/cpp23_modernization.md): not uniformly available across the
+// supported toolchains -- AppleClang and the CI system GCC 13 lack them -- and
+// DART does not use them yet.
 #endif
 
 namespace {

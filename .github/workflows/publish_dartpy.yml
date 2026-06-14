@@ -58,14 +58,8 @@ jobs:
           matrix<<JSON
           {
             "include": [
-              {"os":"ubuntu-latest","python-version":"312"},
-              {"os":"ubuntu-latest","python-version":"313"},
               {"os":"ubuntu-latest","python-version":"314"},
-              {"os":"macos-latest","python-version":"312"},
-              {"os":"macos-latest","python-version":"313"},
               {"os":"macos-latest","python-version":"314"},
-              {"os":"windows-2025-vs2026","python-version":"312"},
-              {"os":"windows-2025-vs2026","python-version":"313"},
               {"os":"windows-2025-vs2026","python-version":"314"}
             ]
           }
@@ -76,9 +70,9 @@ jobs:
           matrix<<JSON
           {
             "include": [
-              {"os":"ubuntu-latest","python-version":"312"},
-              {"os":"macos-latest","python-version":"312"},
-              {"os":"windows-2025-vs2026","python-version":"312"}
+              {"os":"ubuntu-latest","python-version":"314"},
+              {"os":"macos-latest","python-version":"314"},
+              {"os":"windows-2025-vs2026","python-version":"314"}
             ]
           }
           JSON

@@ -19,6 +19,10 @@
     `std::mdspan`). See `docs/design/cpp23_modernization.md`.
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
+  - Increased the minimum required Python version for dartpy from 3.12 to 3.14
+    (the default `python3` in Ubuntu 26.04 LTS). The development environment and
+    the published wheel matrix now target Python 3.14 only; 3.12 and 3.13 wheels
+    are no longer built. `[tool.mypy]` now type-checks against Python 3.14.
   - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
     do not require `clang-scan-deps` while DART has no C++ module sources.
   - Fixed the DART GUI smoke runner to use an absolute build-library path so
