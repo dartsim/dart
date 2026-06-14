@@ -1280,10 +1280,9 @@ int main(int argc, char** argv)
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->addSkeleton(createFloor());
 
-  // Automatic deactivation is opt-in. Enable it here with a short dwell so
-  // islands visibly go to sleep a fraction of a second after they settle.
+  // Automatic deactivation is on by default. Use a short dwell here so islands
+  // visibly go to sleep a fraction of a second after they settle.
   auto opts = world->getDeactivationOptions();
-  opts.mEnabled = true;
   opts.mTimeUntilSleep = 0.3;
   world->setDeactivationOptions(opts);
 

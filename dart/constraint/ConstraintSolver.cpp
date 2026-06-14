@@ -679,12 +679,17 @@ void ConstraintSolver::buildConstrainedGroups()
     // With no active constraints, no island can be frozen. Clear any stale
     // freeze flags so a body that just lost all of its contacts resumes
     // simulating (e.g. a stack member that was kicked away).
-    if (mDeactivationActive) {
+    if (mDeactivationActive && mHadDeactivationGroups) {
       for (auto& skeleton : mSkeletons) {
-        skeleton->setResting(false);
-        skeleton->setIslandIndex(-1);
+        if (skeleton->isResting() || skeleton->isSleepCandidate()
+            || skeleton->getIslandIndex() >= 0) {
+          skeleton->setResting(false);
+          skeleton->setSleepCandidate(false);
+          skeleton->setIslandIndex(-1);
+        }
       }
     }
+    mHadDeactivationGroups = false;
     return;
   }
 
@@ -741,7 +746,30 @@ void ConstraintSolver::buildConstrainedGroups()
   // for a body whose island LCP still runs.
   //----------------------------------------------------------------------------
   if (mDeactivationActive) {
+    mHadDeactivationGroups = !mConstrainedGroups.empty();
     mGroupResting.assign(mConstrainedGroups.size(), true);
+
+    // Only rigid contact islands whose penetration correction has essentially
+    // converged are eligible for automatic sleeping. Other constraints (joint
+    // limits, motors, explicit dynamic joint constraints, soft contacts, etc.)
+    // expose solver forces as part of their observable behavior; keeping those
+    // islands awake preserves existing query semantics when sleeping is enabled
+    // by default.
+    constexpr double kSleepContactPenetrationTolerance = 1e-3;
+    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
+      const auto& group = mConstrainedGroups[i];
+      for (std::size_t j = 0; j < group.getNumConstraints(); ++j) {
+        const auto* constraint = group.getConstraint(j).get();
+        const auto* contact
+            = dynamic_cast<const ContactConstraint*>(constraint);
+        if (!contact
+            || contact->getContact().penetrationDepth
+                   > kSleepContactPenetrationTolerance) {
+          mGroupResting[i] = false;
+          break;
+        }
+      }
+    }
 
     // Map each group's root skeleton (raw pointer) to its group index.
     std::unordered_map<const dynamics::Skeleton*, std::size_t> rootToGroup;

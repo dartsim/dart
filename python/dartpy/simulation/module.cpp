@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/DeactivationOptions.hpp>
+
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -42,6 +44,23 @@ void World(py::module& sm);
 void dart_simulation(py::module& m)
 {
   auto sm = m.def_submodule("simulation");
+
+  ::py::class_<dart::simulation::DeactivationOptions>(sm, "DeactivationOptions")
+      .def(::py::init<>())
+      .def_readwrite(
+          "mEnabled", &dart::simulation::DeactivationOptions::mEnabled)
+      .def_readwrite(
+          "mLinearSpeedThreshold",
+          &dart::simulation::DeactivationOptions::mLinearSpeedThreshold)
+      .def_readwrite(
+          "mAngularSpeedThreshold",
+          &dart::simulation::DeactivationOptions::mAngularSpeedThreshold)
+      .def_readwrite(
+          "mTimeUntilSleep",
+          &dart::simulation::DeactivationOptions::mTimeUntilSleep)
+      .def_readwrite(
+          "mWakeThresholdScale",
+          &dart::simulation::DeactivationOptions::mWakeThresholdScale);
 
   World(sm);
 }

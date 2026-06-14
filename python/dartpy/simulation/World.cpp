@@ -236,6 +236,19 @@ void World(py::module& m)
           },
           ::py::arg("resetCommand"))
       .def(
+          "setDeactivationOptions",
+          +[](dart::simulation::World* self,
+              const dart::simulation::DeactivationOptions& options) -> void {
+            self->setDeactivationOptions(options);
+          },
+          ::py::arg("options"))
+      .def(
+          "getDeactivationOptions",
+          +[](const dart::simulation::World* self)
+              -> dart::simulation::DeactivationOptions {
+            return self->getDeactivationOptions();
+          })
+      .def(
           "setTime",
           +[](dart::simulation::World* self, double _time) -> void {
             return self->setTime(_time);

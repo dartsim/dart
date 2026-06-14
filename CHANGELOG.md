@@ -22,9 +22,10 @@
 
 * Simulation
 
-  * Add opt-in automatic body deactivation ("sleeping") for resting solver
-    islands, including wake-on-contact/force handling and island-index
-    diagnostics: [#2920](https://github.com/dartsim/dart/pull/2920)
+  * Add automatic body deactivation ("sleeping") for resting solver islands,
+    enabled by default with an opt-out option, including wake-on-contact/force
+    handling and island-index diagnostics:
+    [#2920](https://github.com/dartsim/dart/pull/2920)
 
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 

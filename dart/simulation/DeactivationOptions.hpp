@@ -50,13 +50,11 @@ namespace simulation {
 /// it does not depend on iteration or container order.
 struct DeactivationOptions
 {
-  /// Whether automatic deactivation is enabled. Defaults to false (opt-in):
-  /// when disabled, no skeleton is ever flagged as resting and behavior is
-  /// byte-identical to having the feature absent. It is opt-in because a
-  /// sleeping island skips its dynamics, so queries of joint/contact reaction
-  /// forces, accelerations, etc. on a resting body would otherwise read zero;
-  /// callers that want the large resting-scene speedup enable it explicitly.
-  bool mEnabled = false;
+  /// Whether automatic deactivation is enabled. Defaults to true: resting
+  /// constrained islands sleep automatically for the resting-scene speedup.
+  /// Set this to false to opt out; when disabled, no skeleton is ever flagged
+  /// as resting and behavior is byte-identical to having the feature absent.
+  bool mEnabled = true;
 
   /// Maximum linear speed (m/s) of any body in a skeleton for that skeleton to
   /// be considered quiet enough to begin sleeping.

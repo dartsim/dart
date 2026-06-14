@@ -127,8 +127,7 @@ constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
 // Creates a world with automatic deactivation enabled. The library default is
-// OFF (opt-in), because a sleeping body's queried dynamics read zero; these
-// tests exercise the feature so they enable it explicitly.
+// ON, but the helper keeps tests explicit and resilient to per-test overrides.
 WorldPtr makeSleepWorld()
 {
   auto world = World::create();
@@ -146,8 +145,8 @@ WorldPtr makeSleepWorld()
 // for many further steps.
 TEST(IslandDeactivation, SettlesThenSleeps)
 {
-  EXPECT_FALSE(World::create()->getDeactivationOptions().mEnabled)
-      << "automatic deactivation must default to OFF (opt-in)";
+  EXPECT_TRUE(World::create()->getDeactivationOptions().mEnabled)
+      << "automatic deactivation must default to ON";
   auto world = makeSleepWorld();
 
   world->addSkeleton(createFloor());

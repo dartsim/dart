@@ -331,6 +331,11 @@ protected:
   /// rest-detection work and behaves exactly as before the feature.
   bool mDeactivationActive = false;
 
+  /// Whether the previous deactivation-active solve built at least one
+  /// constrained group. Used to avoid clearing per-skeleton sleep state every
+  /// step in unconstrained scenes.
+  bool mHadDeactivationGroups = false;
+
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
 };

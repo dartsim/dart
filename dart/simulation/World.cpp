@@ -183,9 +183,14 @@ void World::step(bool _resetCommand)
 
   // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
   // step so the post-step rest-detection pass can treat it as non-quiet even
-  // after _resetCommand clears the actuation vectors below.
+  // after _resetCommand clears the actuation vectors below. Disturbance
+  // tracking is only needed while contact islands exist; unconstrained active
+  // scenes cannot sleep.
   std::vector<bool> disturbedThisStep;
-  if (deactivationEnabled)
+  const bool trackDisturbances
+      = deactivationEnabled
+        && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
+  if (trackDisturbances)
     disturbedThisStep.assign(mSkeletons.size(), false);
 
   // Integrate velocity for unconstrained skeletons
@@ -197,8 +202,9 @@ void World::step(bool _resetCommand)
         continue;
 
       const bool externallyDisturbed
-          = deactivationEnabled && skel->hasExternalDisturbance();
-      if (externallyDisturbed)
+          = deactivationEnabled && (trackDisturbances || skel->isResting())
+            && skel->hasExternalDisturbance();
+      if (externallyDisturbed && !disturbedThisStep.empty())
         disturbedThisStep[i] = true;
 
       // A resting skeleton skips forward dynamics (including gravity) unless a
@@ -242,7 +248,8 @@ void World::step(bool _resetCommand)
       if (skel->isImpulseApplied()) {
         skel->setResting(false);
         skel->setSleepCandidate(false);
-        disturbedThisStep[i] = true;
+        if (!disturbedThisStep.empty())
+          disturbedThisStep[i] = true;
       } else {
         continue;
       }
@@ -266,7 +273,8 @@ void World::step(bool _resetCommand)
   // sleep, and wake any that have started moving again. This is a deterministic
   // function of post-step cached speeds, dwell time, and the configured
   // thresholds, so it does not depend on container or iteration order.
-  if (deactivationEnabled)
+  if (deactivationEnabled
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
     updateRestStates(disturbedThisStep);
 
   mTime += mTimeStep;
@@ -298,6 +306,11 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
     if (!skel->isMobile())
       continue;
 
+    if (skel->getIslandIndex() < 0) {
+      skel->setSleepCandidate(false);
+      continue;
+    }
+
     const double linInstant = skel->computeMaxBodyLinearSpeed();
     const double angInstant = skel->computeMaxBodyAngularSpeed();
     const double linSpeed
@@ -308,7 +321,8 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
     skel->setSmoothedAngularSpeed(angSpeed);
 
     const bool disturbed
-        = disturbedThisStep[i] || skel->hasExternalDisturbance();
+        = (i < disturbedThisStep.size() && disturbedThisStep[i])
+          || skel->hasExternalDisturbance();
 
     if (skel->isSleepCandidate()) {
       // Stay a candidate unless the body clearly started moving again (beyond
