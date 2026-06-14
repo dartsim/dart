@@ -2095,14 +2095,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Benchmark packet,Metrics,Evidence"
         in builder.events
     )
-    for requirement in (
-        "Billiard symmetry, energy, momentum",
-        "High mass-ratio stack",
-        "Thin card pile",
-        "Scalability smoke",
-        "Friction coupling and active tangential bounds",
-    ):
-        assert any(requirement in event for event in builder.events)
+    for requirement_row in info["representative_requirement_rows"]:
+        assert f"text:{requirement_row['requirement']}" in builder.events
+        assert f"text:{requirement_row['live_packet']}" in builder.events
+        assert f"text:{requirement_row['benchmark_packet']}" in builder.events
+        assert f"text:{requirement_row['metrics']}" in builder.events
+        assert f"text:{requirement_row['evidence']}" in builder.events
     assert (
         "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
         "Current leaders,Current laggards,Takeaway"
