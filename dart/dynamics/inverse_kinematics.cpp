@@ -601,7 +601,7 @@ InverseKinematics::TaskSpaceRegion::getTaskSpaceRegionProperties() const
 //==============================================================================
 InverseKinematics::GradientMethod::Properties::Properties(
     double clamp, const Eigen::VectorXd& weights)
-  : mComponentWiseClamp(clamp), mComponentWeights(weights)
+  : mComponentWiseClamp(std::abs(clamp)), mComponentWeights(weights)
 {
   // Do nothing
 }
@@ -674,12 +674,8 @@ const std::string& InverseKinematics::GradientMethod::getMethodName() const
 void InverseKinematics::GradientMethod::clampGradient(
     Eigen::VectorXd& _grad) const
 {
-  for (int i = 0; i < std::ssize(_grad); ++i) {
-    if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp) {
-      _grad[i] = _grad[i] > 0 ? mGradientP.mComponentWiseClamp
-                              : -mGradientP.mComponentWiseClamp;
-    }
-  }
+  const double clamp = mGradientP.mComponentWiseClamp;
+  _grad = _grad.cwiseMax(-clamp).cwiseMin(clamp);
 }
 
 //==============================================================================

@@ -355,8 +355,8 @@ inline TetElementResult evaluateStableNeoHookeanTet(
 /// Rotation R from the polar decomposition F = R S (a proper rotation, det +1).
 inline Eigen::Matrix3d polarRotation(const Eigen::Matrix3d& f)
 {
-  Eigen::JacobiSVD<Eigen::Matrix3d> svd(
-      f, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Eigen::JacobiSVD<Eigen::Matrix3d, Eigen::ComputeFullU | Eigen::ComputeFullV>
+      svd(f);
   Eigen::Matrix3d u = svd.matrixU();
   const Eigen::Matrix3d& v = svd.matrixV();
   // Reflect the smallest-singular-value axis if U V^T is a reflection, so R is

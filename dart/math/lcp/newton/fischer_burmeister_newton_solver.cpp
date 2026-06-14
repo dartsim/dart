@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <string>
 
 #include <cmath>
 
@@ -110,6 +111,111 @@ double fbMerit(
   Eigen::VectorXd grad(x.size());
   computeFbResidualAndGradient(A, b, x, smoothingEpsilon, phi, grad);
   return 0.5 * phi.squaredNorm();
+}
+
+bool validateParameters(
+    const FischerBurmeisterNewtonSolver::Parameters& params,
+    std::string* message)
+{
+  if (!std::isfinite(params.smoothingEpsilon)
+      || params.smoothingEpsilon <= 0.0) {
+    if (message) {
+      *message = "Fischer-Burmeister Newton smoothing_epsilon must be positive";
+    }
+    return false;
+  }
+  if (params.maxLineSearchSteps <= 0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton max_line_search_steps must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepReduction) || params.stepReduction <= 0.0
+      || params.stepReduction >= 1.0) {
+    if (message) {
+      *message = "Fischer-Burmeister Newton step_reduction must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.sufficientDecrease)
+      || params.sufficientDecrease < 0.0 || params.sufficientDecrease >= 1.0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton sufficient_decrease must be in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.minStep) || params.minStep <= 0.0) {
+    if (message) {
+      *message = "Fischer-Burmeister Newton min_step must be positive";
+    }
+    return false;
+  }
+  if (params.maxGradientDescentWarmStartSteps < 0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton "
+            "max_gradient_descent_warm_start_steps must be non-negative";
+    }
+    return false;
+  }
+  if (params.maxGradientDescentLineSearchSteps <= 0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton "
+            "max_gradient_descent_line_search_steps must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentStepReduction)
+      || params.gradientDescentStepReduction <= 0.0
+      || params.gradientDescentStepReduction >= 1.0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton gradient_descent_step_reduction must "
+            "be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentSufficientDecrease)
+      || params.gradientDescentSufficientDecrease < 0.0
+      || params.gradientDescentSufficientDecrease >= 1.0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton "
+            "gradient_descent_sufficient_decrease must be in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentMinStep)
+      || params.gradientDescentMinStep <= 0.0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton gradient_descent_min_step must be "
+            "positive";
+    }
+    return false;
+  }
+  if (params.maxPgsWarmStartIterations < 0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton max_pgs_warm_start_iterations must be "
+            "non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.pgsWarmStartRelaxation)
+      || params.pgsWarmStartRelaxation <= 0.0
+      || params.pgsWarmStartRelaxation > 2.0) {
+    if (message) {
+      *message
+          = "Fischer-Burmeister Newton pgs_warm_start_relaxation must be in "
+            "(0, 2]";
+    }
+    return false;
+  }
+  return true;
 }
 
 void runPgsWarmStart(
@@ -267,11 +373,7 @@ LcpResult FischerBurmeisterNewtonSolver::solve(
   const double absTol = (options.absoluteTolerance > 0.0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }
@@ -297,6 +399,36 @@ LcpResult FischerBurmeisterNewtonSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity
+        = detail::complementarityInfinityNorm(x, fastW, loEff, hiEff, absTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);

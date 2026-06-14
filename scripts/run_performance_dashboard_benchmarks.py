@@ -21,16 +21,19 @@ class BenchmarkSpec:
 
 
 # The dashboard is intentionally scoped to DART 7 World performance. Keep
-# the published history focused on end-to-end DART 7 World update/step
-# cases for the new DART 7 simulation APIs (the DART 7 World and its
-# solver families) instead of mixing in unrelated SIMD or robot-loader surfaces.
+# the published history focused on DART 7 World update/step cases and the
+# solver-family rows that directly feed those contact solves instead of mixing
+# in unrelated SIMD or robot-loader surfaces.
 #
-# Each surface tracks the *end-to-end World step* of a DART 7 solver family so
-# the headline charts stay comparable. Internal micro-kernels (distance, barrier,
-# tangent-stencil, candidate-set, etc.) and CUDA/GPU-only or DART_BUILD_DIFF-gated
-# rows are deliberately excluded: they either need hardware the GitHub-hosted
-# runner lacks or a build flag the dashboard build does not set, and they would
-# bury the World-step throughput signal. Filters are bounded so a run stays cheap.
+# Each surface is bounded so a run stays cheap. Most surfaces track the
+# *end-to-end World step* of a DART 7 solver family; the LCP surface also keeps
+# one representative solver-contract row per supported problem form because
+# those rows are the apples-to-apples evidence for the contact solver family.
+# Internal micro-kernels (distance, barrier, tangent-stencil, candidate-set,
+# etc.) and CUDA/GPU-only or DART_BUILD_DIFF-gated rows are deliberately
+# excluded: they either need hardware the GitHub-hosted runner lacks or a build
+# flag the dashboard build does not set, and they would bury the World-step
+# throughput signal.
 BENCHMARK_SPECS = [
     # Core DART 7 World step & scaling (kinematics, sequential/parallel
     # World step, rigid-body step scaling, the contact-shaped/contact-island
@@ -56,6 +59,25 @@ BENCHMARK_SPECS = [
         target="bm_rigid_ipc_solver",
         benchmark_filter="BM_RigidWorldStep_(SequentialImpulse|Ipc)/.*",
         output_name="dashboard_rigid_world.json",
+    ),
+    # LCP solver contract and DART 7 contact evidence: one representative
+    # standard, boxed, and friction-index row per supported solver, plus bounded
+    # world-contact, billiards, mass-ratio stack, and card-pile rows that mirror
+    # the lcp_physics demo packets.
+    BenchmarkSpec(
+        surface="lcp-solvers",
+        target="lcp_compare",
+        benchmark_filter=(
+            "BM_LcpCompare/Standard/(.*/12|Direct/3)$|"
+            "BM_LcpCompare/Boxed/.*/12$|"
+            "BM_LcpCompare/FrictionIndex/.*/4$|"
+            "BM_LcpWorldContact/FrictionIndex/.*/4$|"
+            "BM_LcpWorldBoxContact/FrictionIndex/.*/4$|"
+            "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$|"
+            "BM_LcpWorldStackStep_BoxedLcp/(3|4)/200$|"
+            "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$"
+        ),
+        output_name="dashboard_lcp_solvers.json",
     ),
     # Deformable Vertex Block Descent solver (PLAN-104): end-to-end World step
     # of a square deformable grid with the default gradient-descent solver and

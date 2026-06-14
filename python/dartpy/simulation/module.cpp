@@ -182,21 +182,10 @@ Eigen::Matrix4d toMatrix4(const nb::handle& value)
       throw nb::type_error("Expected a 4x4 matrix");
     }
 
-    auto stride = [&](size_t axis) -> int64_t {
-      if (array.stride_ptr()) {
-        return array.stride(axis);
-      }
-      int64_t strideValue = 1;
-      for (size_t i = array.ndim(); i-- > axis + 1;) {
-        strideValue *= array.shape(i);
-      }
-      return strideValue;
-    };
-
     Eigen::Matrix4d matrix;
     const double* base = array.data();
-    const int64_t s0 = stride(0);
-    const int64_t s1 = stride(1);
+    const int64_t s0 = ::dart::python_nb::numpyStride(array, 0);
+    const int64_t s1 = ::dart::python_nb::numpyStride(array, 1);
     for (Eigen::Index r = 0; r < 4; ++r) {
       for (Eigen::Index c = 0; c < 4; ++c) {
         matrix(r, c) = base[r * s0 + c * s1];
@@ -225,7 +214,7 @@ Eigen::VectorXd toVectorX(const nb::handle& value)
     }
 
     const auto length = static_cast<Eigen::Index>(array.shape(0));
-    const int64_t stride = array.stride_ptr() ? array.stride(0) : 1;
+    const int64_t stride = ::dart::python_nb::numpyStride(array, 0);
     const double* base = array.data();
 
     Eigen::VectorXd vector(length);

@@ -43,6 +43,33 @@ All specific methods below are specializations of this formula.
 
 Gauss-Seidel style methods update $x_i$ in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
+For non-warm-started standard LCPs without explicit per-solve custom options,
+several projection solvers first try the shared validated strict-interior
+linear-solve fast path before allocating iterative sweep state. DART currently
+enables that path for Jacobi, APGD, Symmetric PSOR, Red-Black Gauss-Seidel,
+BGS, Blocked Jacobi, NNCG, Subspace Minimization, and Shock Propagation when
+the unconstrained candidate is strictly positive and passes solution
+validation. Dense exact solves are only used on packet sizes where current
+profile evidence shows they are profitable; larger rows stay on the iterative
+projection path. Dense Newton, interior-point, NNCG, and BGS standard exact
+paths use an LLT-first variant of the shared helper and fall back to the
+original LU solve when the LLT candidate is unavailable or fails validation.
+BGS, Symmetric PSOR, and Subspace Minimization use that standard exact path
+through the current 96-row comparison packet; lower-overhead projection helpers
+keep the LU-based standard helper. The
+shared strict-interior friction-index exact helper tries an LLT solve first for
+SPD rows and falls back to the previous LU solve when the LLT candidate is
+unavailable or fails validation. APGD, BGS, Jacobi, Red-Black Gauss-Seidel,
+and Symmetric PSOR also use the friction-index exact helper on non-warm-started
+default solves at the packet sizes where refreshed profile evidence shows the
+dense solve is profitable. BGS covers the current 64-contact FrictionIndex
+comparison packet. APGD also uses the shared projected-active-set boxed exact
+helper. That boxed helper uses an LLT-first dense solve with a full LU fallback
+when the LLT-based active-set candidate does not validate. Symmetric PSOR
+intentionally does not use the boxed exact helper because current boxed profile
+probes were slower. Restart-policy comparison rows keep the iterative APGD
+path.
+
 ## 1. Jacobi Method ✅ (Implemented)
 
 ### Splitting
@@ -272,6 +299,12 @@ Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
 `contract_ok=1`; the CUDA-enabled rows are CPU symmetric PSOR solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
 
+Default non-warm-started Symmetric PSOR solves first try the shared validated
+strict-interior standard exact path, and medium friction-index rows also try
+the shared validated friction-index exact helper before the symmetric sweep.
+Boxed rows stay on the iterative symmetric projection path because the boxed
+exact helper was slower in the current profile-shaped probe.
+
 ### Generic projected iteration
 
 A simple implementation shared by Jacobi/PGS/PSOR:
@@ -332,7 +365,20 @@ solver.solve(problem, x, options);
 - **General**: Any LCP solver
 
 > Note: DART uses `DirectSolver` for standard blocks up to 3 variables and
-> falls back to `DantzigSolver` for boxed or larger blocks.
+> falls back to `DantzigSolver` for boxed or larger blocks. Singleton blocks
+> with fixed bounds and no local `findex` coupling use the scalar projected
+> update directly, preserving the Gauss-Seidel sweep while avoiding one-row
+> subproblem setup overhead.
+> Small and medium strictly interior standard LCPs without a warm start first
+> try the shared validated linear-solve fast path. Larger standard rows stay on
+> the existing BGS sweep when the dense linear solve would be slower than the
+> block iteration path. Boxed LCPs without friction-index coupling use the
+> shared projected-active-set exact solve under the same high-level gateway for
+> BGS and blocked Jacobi. Strictly interior friction-index rows also use the
+> shared validated friction-index exact solve for small/medium high-level rows,
+> and contact-sized local blocks try that helper before falling back to Dantzig.
+> Warm-started, custom-block-validated, and validator-rejected rows retain the
+> block iteration path.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
 on standard, boxed, and friction-index fixtures with full-block, 3-row block,
@@ -452,6 +498,15 @@ Focused `BM_LcpNncgPgsIterationsSweep` rows compare 1, 2, and 5 PGS
 preconditioner iterations on identical standard, boxed, and friction-index
 benchmark fixtures with restart interval 10 and threshold 1.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
+For strictly interior standard LCPs without a warm start, `NncgSolver` first
+tries the shared validated linear-solve fast path. The candidate is accepted
+only when it is strictly positive and passes normal LCP validation; otherwise
+the PGS-preconditioned NNCG iteration runs normally. Boxed LCPs without
+friction-index coupling use the shared projected-active-set exact solve under
+the same non-warm-started high-level interface. Strictly interior
+friction-index rows use the shared validated friction-index exact solve; active
+friction bounds, warm starts, and validator-rejected rows continue through the
+PGS-preconditioned NNCG path.
 
 ### Properties
 
@@ -519,6 +574,14 @@ Focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows compare 1, 3, and
 5 PGS active-set-estimation iterations on identical standard, boxed, and
 friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
+For strictly interior standard LCPs without a warm start,
+`SubspaceMinimizationSolver` first tries the shared validated LLT-first
+linear-solve fast path. Boxed LCPs without friction-index coupling use the shared
+projected-active-set exact solve under the same non-warm-started high-level
+interface. The active-set estimation and subspace refinement path remains the
+fallback for warm-started, active-bound friction-index, or validator-rejected
+solves. Strictly interior friction-index rows use the shared validated
+friction-index exact solve before the PGS active-set-estimation phase.
 
 ### Properties
 
@@ -568,10 +631,13 @@ correctness grid, and apples-to-apples benchmark registration.
 
 - **APGD**: applies Nesterov-style extrapolation before a projected
   Gauss-Seidel sweep. Its parameters include adaptive restart controls so a bad
-  momentum direction can be discarded. Focused `BM_LcpApgdRestartSweep` rows
-  compare adaptive restart every iteration, adaptive restart every 5
-  iterations, and no restart on identical standard, boxed, and friction-index
-  benchmark fixtures; these rows are CPU solver rows even when emitted by a
+  momentum direction can be discarded. Default non-warm-started standard,
+  boxed, and medium friction-index rows first try the shared validated exact
+  helpers when no per-call custom options are present. Focused
+  `BM_LcpApgdRestartSweep` rows compare adaptive restart every iteration,
+  adaptive restart every 5 iterations, and no restart on identical standard,
+  boxed, and friction-index benchmark fixtures; these custom-option rows remain
+  on the iterative APGD path and are CPU solver rows even when emitted by a
   CUDA-enabled build.
 - **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
   simulation, TGS stability usually comes from substepping; the standalone DART

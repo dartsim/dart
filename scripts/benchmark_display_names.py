@@ -29,6 +29,7 @@ from dataclasses import dataclass
 # Section headers used to group charts on the dashboard.
 FAMILY_CORE = "DART 7 World — core step & scaling"
 FAMILY_RIGID = "Rigid-body dynamics solver"
+FAMILY_LCP = "LCP solver and contact comparison"
 FAMILY_VBD = "Deformable solver (Vertex Block Descent)"
 FAMILY_FEM = "Deformable solver (FEM)"
 FAMILY_AVBD = "Augmented VBD"
@@ -92,6 +93,25 @@ SURFACES: dict[str, Surface] = {
     ),
     "BM_RigidWorldStep_Ipc": Surface(
         "Rigid world step (IPC barrier)", FAMILY_RIGID, ("boxes",)
+    ),
+    # --- LCP solver and contact comparison (BM_LCP_COMPARE) ---------------
+    "BM_LcpCompare": Surface(
+        "LCP solver comparison", FAMILY_LCP, ("surface", "solver", "rows")
+    ),
+    "BM_LcpWorldContact": Surface(
+        "LCP world contact", FAMILY_LCP, ("surface", "solver", "contacts")
+    ),
+    "BM_LcpWorldBoxContact": Surface(
+        "LCP world box contact", FAMILY_LCP, ("surface", "solver", "boxes")
+    ),
+    "BM_LcpWorldBilliardsStep_BoxedLcp": Surface(
+        "LCP billiards world step", FAMILY_LCP, ("pairs", "steps")
+    ),
+    "BM_LcpWorldStackStep_BoxedLcp": Surface(
+        "LCP mass-ratio stack world step", FAMILY_LCP, ("spheres", "steps")
+    ),
+    "BM_LcpWorldCardPileStep_BoxedLcp": Surface(
+        "LCP card-pile world step", FAMILY_LCP, ("cards", "steps")
     ),
     # --- Deformable Vertex Block Descent (bm_vbd_world_solver) ------------
     "BM_VbdWorldStepDefault": Surface(

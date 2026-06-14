@@ -275,7 +275,15 @@ lint-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+lint-lcp-solver-roster = { cmd = [
+  "python",
+  "scripts/check_lcp_solver_roster.py",
+] }
 lint-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+lint-architecture-page = { cmd = [
+  "python",
+  "scripts/check_architecture_page_lint.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -305,7 +313,9 @@ lint = { depends-on = [
   "lint-plan083-cpu-scene-corpus",
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
+  "lint-lcp-solver-roster",
   "lint-avbd-packets",
+  "lint-architecture-page",
   "sync-ai-commands",
 ] }
 
@@ -374,7 +384,15 @@ check-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+check-lcp-solver-roster = { cmd = [
+  "python",
+  "scripts/check_lcp_solver_roster.py",
+] }
 check-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+check-architecture-page = { cmd = [
+  "python",
+  "scripts/check_architecture_page_lint.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -413,7 +431,9 @@ check-lint = { depends-on = [
   "check-phase5-cuda-workflow",
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
+  "check-lcp-solver-roster",
   "check-avbd-packets",
+  "check-architecture-page",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -1224,8 +1244,8 @@ test-lcpsolver = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure \
-        -R UNIT_lcpsolver
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+        -R "^UNIT_math_lcp_"
+""", depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-unit = { cmd = "python scripts/run_cpp_test.py", depends-on = ["config"] }
 
@@ -2457,6 +2477,7 @@ lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "lint-api-boundaries",
+  "lint-lcp-solver-roster",
   "sync-ai-commands",
 ] }
 
@@ -2480,6 +2501,7 @@ check-lint = { depends-on = [
   "check-docs-policy",
   "check-dart7-clean-break-policy",
   "check-api-boundaries",
+  "check-lcp-solver-roster",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }

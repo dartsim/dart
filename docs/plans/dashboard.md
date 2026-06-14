@@ -166,9 +166,10 @@ its own line so status updates remain git-history friendly.
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
   contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
-  history; `pixi run -e cuda test-all` is the local full CUDA gate on Linux CUDA
-  hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
-  future compute-bound contact/constraint work must extend the checked
+  history, plus a bounded LCP solver/contact comparison slice for the contact
+  foundation; `pixi run -e cuda test-all` is the local full CUDA gate on Linux
+  CUDA hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path;
+  and future compute-bound contact/constraint work must extend the checked
   benchmark gate.
   Taskflow remains behind the simulation executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
@@ -1467,7 +1468,10 @@ check-dart7-final-world-promotion`.
   [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
   when extending the renderer; the latter is the seam to implement for
   offline/high-fidelity sensor rendering (egocentric views, lens distortion,
-  depth/segmentation outputs).
+  depth/segmentation outputs). For material/lighting/texture fidelity and for
+  promoting debug visuals into the GUI component (per-shape PBR, IBL reflections,
+  texture mipmaps, an app `debugProvider`, richer debug primitives), see
+  [`../design/renderer_fidelity_and_debug_visuals.md`](../design/renderer_fidelity_and_debug_visuals.md).
 - Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
   CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
   `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type

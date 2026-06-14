@@ -67,7 +67,7 @@ For iter $= 1$ to max_iter:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/InteriorPointSolver.hpp>
+#include <dart/math/lcp/other/interior_point_solver.hpp>
 
 using namespace dart::math;
 
@@ -87,6 +87,10 @@ auto result = solver.solve(problem, x, options);
 
 > Note: DART's implementation targets standard LCPs and delegates boxed or
 > friction-indexed problems to the boxed-capable pivoting solver.
+> Strictly interior standard LCPs first try the shared validated linear-solve
+> fast path. This path is accepted only when the candidate is strictly positive
+> and passes the LCP solution validator; otherwise the path-following solver
+> runs normally.
 
 DART 7 benchmark evidence includes `BM_LcpInteriorPointPathSweep`, which
 compares centering parameter $\sigma=0.1/0.3$ and step scales 0.75/0.99 over
@@ -194,6 +198,9 @@ solver.solve(problem, x, options);
 
 > Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
 > friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
+> Non-warm-started strictly interior friction-index rows first try the shared
+> validated friction-index exact solve; active friction bounds, warm starts, and
+> validator-rejected rows continue through the normal/friction staggering loop.
 
 DART 7 benchmark evidence includes `BM_LcpStaggeringContactPipelineSweep`,
 which exercises the normal/friction split on DART-owned contact-pipeline
@@ -268,7 +275,7 @@ for layer in layers (bottom to top):
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
+#include <dart/math/lcp/other/shock_propagation_solver.hpp>
 
 using namespace dart::math;
 
@@ -287,6 +294,30 @@ solver.solve(problem, x, options);
 
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
+> Strictly interior standard LCPs without a warm start first try the shared
+> validated linear-solve fast path. Default-option solves take that path before
+> block/layer construction; custom block/layer options first run a lightweight
+> structure validation so invalid custom layers still fail before the fast path
+> is accepted. Accepted exact candidates validate the problem form and final
+> solution before the full layered path setup runs. SPD rows prefer an LLT exact
+> solve before falling back to the shared linear-solve helper. Boxed LCPs without
+> friction-index coupling use the same structure-validation gate, then try the
+> shared projected-active-set exact solve before block data construction; the
+> shortcut is accepted only when the final boxed solution passes validation.
+> Strictly interior friction-index rows up to 192 variables use the shared
+> validated friction-index exact solve after lightweight block/layer structure
+> validation. Default options and empty custom block/layer options avoid block
+> data construction before that exact attempt; non-empty custom partitions still
+> build and validate block data first so invalid partitions fail before a fast
+> path can accept a solution. Larger or validator-rejected friction-index rows
+> continue through the layered block path. Non-warm-started fallback solves
+> delay resetting the initial guess until after those exact attempts and block
+> validation, avoiding a zero-vector write on accepted exact candidates while
+> preserving the layered fallback initialization.
+> Small uncoupled fixed-bound blocks first try a local direct linear solve when
+> the unconstrained candidate is already feasible; active-bound, singular,
+> non-finite, larger, and active local `findex` blocks still use the existing
+> Direct/Dantzig fallback path.
 
 DART 7 benchmark evidence includes `BM_LcpShockPropagationLayerSweep`, which
 compares single-layer, two-layer, and serial layer schedules over standard
@@ -340,7 +371,7 @@ while not converged:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/mprgp_solver.hpp>
 
 using namespace dart::math;
 
@@ -359,8 +390,14 @@ auto result = solver.solve(problem, x, options);
 ```
 
 > Note: DART's implementation targets standard LCPs with symmetric positive
-> definite matrices and delegates boxed or friction-indexed problems to the
-> boxed-capable pivoting solver.
+> definite matrices. `supportsProblem(problem)` reports only that native SPD
+> subset by default, while boxed, friction-indexed, non-symmetric, and
+> non-positive-definite packets still delegate to the boxed-capable pivoting
+> solver through `solve()`.
+> Default, non-warm-started, strictly interior standard LCPs reuse the
+> positive-definite factorization check as a validated linear-solve fast path
+> before the reduced-gradient loop. Custom-option solves stay on the iterative
+> path so parameter stress tests and user tuning remain observable.
 
 DART 7 benchmark evidence includes `BM_LcpMprgpSpdCheckSweep`, which compares
 well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
@@ -386,6 +423,24 @@ $$y = y + \rho(x-z)$$
 
 For friction-index rows, the projection uses effective bounds coupled to the
 current normal impulse.
+The default initial penalty is $\rho=4$, chosen from current DART-owned
+adaptive-rho sweep evidence to reduce active-box iteration counts while keeping
+the same adaptive residual-balancing path.
+For non-warm-started standard LCPs with default per-solve parameters, ADMM first
+tries a validated strict-interior exact solve before allocating iteration
+workspace. The fast path prefers an LLT solve on SPD rows, falls back to the
+shared linear-solve helper when needed, and is accepted only when the candidate
+is strictly positive and passes solution validation. Non-warm-started boxed
+LCPs without friction-index coupling then try a projected active-set exact solve:
+the unconstrained solution proposes lower/upper/free rows, the free block is
+solved exactly, and the shortcut is accepted only if the final boxed solution
+passes the shared validator. Small and medium strictly interior friction-index
+rows use the shared validated friction-index exact solve; larger
+friction-index, warm-started, and explicit custom-option calls stay on the
+operator-splitting loop.
+The ADMM loop reuses its linear-solve right-hand side and projected-step
+workspace across iterations, avoiding repeated per-iteration vector allocation
+without changing the operator-splitting updates or convergence tests.
 Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
 on identical standard, boxed, and friction-index benchmark fixtures; these rows
 are CPU solver rows even when emitted by a CUDA-enabled build. Additional
@@ -398,7 +453,7 @@ the focused correctness slice and `BM_LcpMildIllConditioned/ExtremeCoupled*`
 rows keep that claim separate from broader all-solver conditioning coverage.
 
 ```cpp
-#include <dart/math/lcp/other/AdmmSolver.hpp>
+#include <dart/math/lcp/other/admm_solver.hpp>
 
 dart::math::AdmmSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
@@ -426,17 +481,26 @@ design.
 Focused `BM_LcpSapRegularizationSweep` rows compare regularization values
 `1e-6`, `1e-5`, and `1e-4` on identical standard, boxed, and friction-index
 benchmark fixtures; these rows are CPU solver rows even when emitted by a
-CUDA-enabled build. Additional `BM_LcpContactSolverComparisonSweep/Sap/*` rows
-reuse DART 7 separated sphere-ground, coupled vertical-stack, and articulated
-unified-contact friction-index fixtures so SAP contact evidence is tracked
-independently from the synthetic regularization sweep. SAP also has
+CUDA-enabled build. The main `BM_LcpCompare/*/Sap` profile uses the stricter
+`1e-6` regularization for standard and friction-index rows, and the solver's
+default `1e-4` compliance regularization for boxed rows where the current
+comparison tolerance admits the expected approximate complementarity. Additional
+`BM_LcpContactSolverComparisonSweep/Sap/*` rows reuse DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+friction-index fixtures so SAP contact evidence is tracked independently from
+the synthetic regularization sweep. SAP also has
 solver-specific generated evidence on 16x-coupled mildly ill-conditioned
 friction-index packets at 16 and 24 contacts; the focused correctness slice and
 `BM_LcpMildIllConditioned/ExtremeCoupled*` rows keep that claim separate from
 broader all-solver conditioning coverage.
+For non-warm-started high-level solves, strictly interior standard rows use the
+shared validated linear-solve fast path and boxed rows without friction-index
+coupling use the shared projected-active-set exact solve. Warm-started,
+coupled-friction, and validator-rejected rows stay on SAP's regularized Newton
+path.
 
 ```cpp
-#include <dart/math/lcp/other/SapSolver.hpp>
+#include <dart/math/lcp/other/sap_solver.hpp>
 
 dart::math::SapSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
@@ -462,14 +526,14 @@ Jacobi splitting applied to blocks (similar to Blocked Gauss-Seidel but with Jac
 # All blocks updated in parallel
 for iter = 1 to max_iter:
   parallel for each block i:
-    r_i = b_i + sum(A_{ij} * x_j^k, j != i)
+    r_i = b_i - sum(A_{ij} * x_j^k, j != i)
     x_i^{k+1} = SolveSubLCP(A_{ii}, r_i)
 ```
 
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
+#include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
 
 using namespace dart::math;
 
@@ -484,7 +548,18 @@ auto result = solver.solve(problem, x, options);
 > Note: Block partitions follow `findex` by default (contact blocks), or can be
 > set explicitly via `BlockedJacobiSolver::Parameters::blockSizes`.
 > DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
-> to `DantzigSolver` for boxed or larger blocks.
+> to `DantzigSolver` for boxed or larger blocks. Singleton blocks with fixed
+> bounds use the scalar projected solve directly, which preserves the Jacobi
+> update while avoiding local solver setup overhead. Fixed-bound problems also
+> precompute the Jacobi snapshot product once per iteration so independent
+> blocks do not repeat dense row products.
+> Strictly interior standard LCPs without a warm start first try the shared
+> validated linear-solve fast path. Default-option solves can take that path
+> before block construction, while explicit custom block partitions are still
+> validated before the fast path is accepted. Strictly interior friction-index
+> rows use the shared validated friction-index exact solve through the same
+> validation gateway, and contact-sized local `findex` blocks try that helper
+> before falling back to Dantzig.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
 Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with
