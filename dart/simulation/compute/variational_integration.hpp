@@ -517,7 +517,7 @@ public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   /// Pre-reserve per-multibody variational state storage before baked steps.
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
 private:

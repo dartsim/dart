@@ -362,7 +362,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
 
 ### WS1 — Internal solver contract and selection
 
-#### WP-091.10 Solver contract step 1: virtual finalize/prepare
+#### WP-091.10 Solver contract step 1: virtual finalize/prepare [claimed]
 
 - Objective: the hand-synchronized prepare-table-plus-switch pair is replaced
   by virtual `prepare()`/`finalize()` on the stage contract.
@@ -374,6 +374,29 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   deleted; existing unit suites green; golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.2.
+- Evidence: `compute::WorldStepStage` now declares a virtual
+  `prepare(World&)` with a no-op default (defined in
+  `world_step_stage.cpp`); all seven concrete stages that cache per-step state
+  (`Kinematics`, `RigidBodyVelocity`, `RigidBodyContact`, `RigidIpcContact`,
+  `DeformableDynamics` in `world_step_stage.hpp`, plus `UnifiedConstraintStage`
+  in `multibody_dynamics.hpp` and `MultibodyVariationalIntegrationStage` in
+  `variational_integration.hpp`) override it. The hand-synchronized
+  prepare-table-plus-switch pair is deleted: `world.cpp`'s `prepareStage`
+  (an 11-case dispatch `switch` gated on the table) collapses to
+  `stageForSlot(slot).prepare(world)` in the schedule loop, and
+  `detail::builtInWorldStepScheduleNeedsPreparation` is removed from
+  `world_step_schedule.hpp` (net −69 lines). The replacement is provably
+  behavior-preserving: the deleted table returned `true` for exactly the seven
+  stages that own a `prepare()` and `false` for the four that do not, so
+  virtual dispatch (no-op base for the four) reproduces it bit-for-bit. The
+  obsolete `BuiltInWorldStepSchedule.PreparationContractCoversStatefulStages`
+  unit test (which asserted the removed table) is dropped, with a note that
+  preparation behavior is now covered by the World suites and the golden
+  trajectories. Verified: `pixi run build` green; the WP-091.2 golden
+  trajectories are **unchanged** (`test_world_default_step_golden` 3/3); and
+  `test_world`, `test_world_contact_parity`, `test_world_step_schedule`, and
+  `test_variational_integration` all pass (`pixi run lint` clean; full
+  `test-unit` deferred to CI).
 
 #### WP-091.11 Minimal capabilities and validated finalize
 

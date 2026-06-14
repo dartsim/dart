@@ -1563,7 +1563,7 @@ struct WorldStepPipelineStages
         hasDeformableBodies,
         /*includeKinematics=*/true);
     for (const auto slot : schedule) {
-      prepareStage(slot, world);
+      stageForSlot(slot).prepare(world);
     }
   }
 
@@ -1633,42 +1633,6 @@ private:
   {
     for (const auto slot : schedule) {
       pipeline.addStage(stageForSlot(slot));
-    }
-  }
-
-  void prepareStage(Slot slot, World& world)
-  {
-    if (!detail::builtInWorldStepScheduleNeedsPreparation(slot)) {
-      return;
-    }
-
-    switch (slot) {
-      case Slot::RigidBodyVelocity:
-        rigidBodyVelocity.prepare(world);
-        return;
-      case Slot::RigidBodyContact:
-        rigidBodyContact.prepare(world);
-        return;
-      case Slot::RigidIpcContact:
-        rigidIpcContact.prepare(world);
-        return;
-      case Slot::MultibodyVariationalIntegration:
-        multibodyVariational.prepare(world);
-        return;
-      case Slot::UnifiedConstraint:
-        unifiedConstraint.prepare(world);
-        return;
-      case Slot::DeformableDynamics:
-        deformableDynamics.prepare(world);
-        return;
-      case Slot::Kinematics:
-        kinematics.prepare(world);
-        return;
-      case Slot::RigidBodyPosition: // LCOV_EXCL_LINE
-      case Slot::MultibodyVelocity:
-      case Slot::MultibodyForwardDynamics:
-      case Slot::MultibodyPosition:
-        return; // LCOV_EXCL_LINE
     }
   }
 };

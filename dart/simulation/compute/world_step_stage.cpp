@@ -639,6 +639,12 @@ ComputeStageMetadata WorldStepStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void WorldStepStage::prepare(World& /*world*/)
+{
+  // Default no-op: stateless stages need no per-step preparation.
+}
+
+//==============================================================================
 WorldStepPipeline& WorldStepPipeline::addStage(WorldStepStage& stage)
 {
   if (m_stageCount >= m_stages.size()) {

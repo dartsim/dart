@@ -125,27 +125,10 @@ struct BuiltInWorldStepSchedule
   }
 };
 
-[[nodiscard]] constexpr bool builtInWorldStepScheduleNeedsPreparation(
-    BuiltInWorldStepStageSlot slot) noexcept
-{
-  switch (slot) {
-    case BuiltInWorldStepStageSlot::RigidBodyVelocity:
-    case BuiltInWorldStepStageSlot::RigidBodyContact:
-    case BuiltInWorldStepStageSlot::RigidIpcContact:
-    case BuiltInWorldStepStageSlot::MultibodyVariationalIntegration:
-    case BuiltInWorldStepStageSlot::UnifiedConstraint:
-    case BuiltInWorldStepStageSlot::DeformableDynamics:
-    case BuiltInWorldStepStageSlot::Kinematics:
-      return true;
-    case BuiltInWorldStepStageSlot::RigidBodyPosition:
-    case BuiltInWorldStepStageSlot::MultibodyVelocity:
-    case BuiltInWorldStepStageSlot::MultibodyForwardDynamics:
-    case BuiltInWorldStepStageSlot::MultibodyPosition:
-      return false;
-  }
-
-  return false;
-}
+// Note: which stages need per-step preparation is no longer a separate table.
+// Each stage overrides the virtual `compute::WorldStepStage::prepare()` (a
+// no-op by default), and the built-in schedule calls `prepare()` on every
+// scheduled stage, so the prepare set cannot drift from the stage classes.
 
 [[nodiscard]] inline BuiltInWorldStepSchedule makeBuiltInWorldStepSchedule(
     const BuiltInWorldStepScheduleOptions& options)
