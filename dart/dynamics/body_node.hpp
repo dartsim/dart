@@ -54,7 +54,6 @@
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
 #include <optional>
 #include <span>
@@ -1137,8 +1136,7 @@ protected:
   /// Same as mDependentDofs, but holds const pointers
   std::vector<const DegreeOfFreedom*> mConstDependentDofs;
 
-  using Matrix4dVector
-      = std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>;
+  using Matrix4dVector = std::vector<Eigen::Matrix4d>;
 
   /// Cached relative transform first derivatives (per local DOF)
   mutable Matrix4dVector mRelativeTransformDerivatives;
@@ -1261,9 +1259,6 @@ protected:
   StructuralChangeSignal mStructuralChangeSignal;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   //----------------------------------------------------------------------------
   /// \{ @name Slot registers
   //----------------------------------------------------------------------------

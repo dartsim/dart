@@ -102,7 +102,9 @@ int LemkeImpl(
     for (std::size_t i = 0; i < nonbas.size(); ++i) {
       B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(B);
+    // BDCSVD is preferred over JacobiSVD for large dynamic matrices; here it is
+    // used only for a condition-number estimate (singular values, no U/V).
+    Eigen::BDCSVD<Eigen::MatrixXd> svd(B);
     double cond = svd.singularValues()(0)
                   / svd.singularValues()(svd.singularValues().size() - 1);
     if (cond > 1e16) {

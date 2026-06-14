@@ -95,9 +95,6 @@ struct GenericJointState
       const Vector& constraintImpulses = Vector::Zero());
 
   virtual ~GenericJointState() = default;
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -192,8 +189,6 @@ struct GenericJointUniqueProperties
       const GenericJointUniqueProperties& other);
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -209,8 +204,6 @@ struct GenericJointProperties : Joint::Properties,
   virtual ~GenericJointProperties() = default;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================

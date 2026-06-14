@@ -96,8 +96,6 @@ protected:
   static const Eigen::Vector6d mZero;
 
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
