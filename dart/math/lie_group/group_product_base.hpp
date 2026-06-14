@@ -45,6 +45,27 @@
 
 namespace dart::math::detail {
 
+template <int... Values>
+struct GroupProductStaticSum;
+
+template <>
+struct GroupProductStaticSum<>
+{
+  static constexpr int value = 0;
+};
+
+template <int First, int... Rest>
+struct GroupProductStaticSum<First, Rest...>
+{
+  static constexpr int value = First + GroupProductStaticSum<Rest...>::value;
+};
+
+template <int... Values>
+constexpr int sumGroupProductStaticSizes()
+{
+  return GroupProductStaticSum<Values...>::value;
+}
+
 template <int... Sizes>
 constexpr auto getGroupProductParamIndices()
 {
