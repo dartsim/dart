@@ -2,6 +2,48 @@
 
 ## Current Status
 
+Latest scene direct-sparse assembly/solve follow-up (2026-06-13): after PR
+#2978 merged and the old remote branch was deleted, work continues locally on
+`simx/plan083-rigid-curved-ccd-worldstep-followup`. This branch has merged the
+latest `origin/main` at `9de4ac6af873` through local merge commit
+`46a4993def6f`; it has not been pushed and has no open PR. Keep the checkpoint
+branch `simx/plan083-curved-ccd-reference-packet` available as the possible
+milestone PR branch, but keep this follow-up branch local unless the maintainer
+approves a push or new PR. Do not push, PR-comment, resolve review threads,
+trigger CI, open or close PRs, delete branches, or claim unrelated PLAN-091
+packets without explicit maintainer approval.
+
+This slice expands the private Newton assembly/solve packet's reduced
+scene-runtime direct sparse factor-solve row from three selected scene nodes to
+eight selected scene nodes, exercising the existing 48-DOF direct-sparse cap and
+six selected scene edge blocks. The packet writer now rejects inconsistent
+direct-sparse DOF, active-DOF, selected-node, and 6x6 block-entry accounting.
+Fresh CUDA packet evidence records `selected_scene_node_count=8`,
+`selected_scene_edge_pair_count=6`, `dof_count=48`, `block_count=6`,
+`block_entry_count=216`,
+`scene_runtime_direct_sparse_factor_solve.max_result_abs_error=4.551414082424e-18`,
+`residual_norm=4.596089064510693e-17`, `step_norm=0.15520625719772183`, and
+`speedup=0.006653527066632866x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records
+`max_result_abs_error=3.2741809263825417e-11`,
+`residual_norm=3.7103006033468554e-13`, and
+`speedup=0.001142831863949895x` (`meets_speedup_gate=false`).
+
+This remains reduced packet evidence only. It does not prove unbounded
+production direct/global sparse factorization, full runtime sparse Hessian graph
+construction and assembly, GPU `World::step` assembly/solve integration, or a
+top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- `pixi run lint`
+
 Latest interval-reference CCD line-search follow-up (2026-06-13): work now
 continues locally on `simx/plan083-rigid-curved-ccd-worldstep-followup`, branched
 from local checkpoint branch `simx/plan083-curved-ccd-reference-packet`. The

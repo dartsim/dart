@@ -837,17 +837,17 @@ def _benchmark_data(**overrides):
     )
     scene_direct_sparse_cpu = _row(
         "BM_NewtonSceneRuntimeDirectSparseSolveCpu/1024",
-        rows=3,
-        bodies=3,
-        dofs=18,
-        blocks=3,
-        block_entries=108,
-        active_dofs=18,
+        rows=8,
+        bodies=8,
+        dofs=48,
+        blocks=6,
+        block_entries=216,
+        active_dofs=48,
         scene_bodies=1,
         scene_nodes=320,
         scene_triangles=96,
-        selected_scene_nodes=3,
-        selected_scene_edge_pairs=3,
+        selected_scene_nodes=8,
+        selected_scene_edge_pairs=6,
         regularization=0.25,
         factorized=1,
         min_factor_pivot=3.5,
@@ -862,29 +862,29 @@ def _benchmark_data(**overrides):
         "BM_NewtonSceneRuntimeDirectSparseSolveCuda/1024",
         real_time=4.5,
         cpu_time=4.5,
-        rows=3,
-        bodies=3,
-        dofs=18,
-        blocks=3,
-        block_entries=108,
-        active_dofs=18,
+        rows=8,
+        bodies=8,
+        dofs=48,
+        blocks=6,
+        block_entries=216,
+        active_dofs=48,
         scene_bodies=1,
         scene_nodes=320,
         scene_triangles=96,
-        selected_scene_nodes=3,
-        selected_scene_edge_pairs=3,
+        selected_scene_nodes=8,
+        selected_scene_edge_pairs=6,
         regularization=0.25,
         factorized=1,
-        gpu_rows=3,
-        gpu_bodies=3,
-        gpu_dofs=18,
-        gpu_blocks=3,
-        gpu_active_dofs=18,
+        gpu_rows=8,
+        gpu_bodies=8,
+        gpu_dofs=48,
+        gpu_blocks=6,
+        gpu_active_dofs=48,
         gpu_scene_bodies=1,
         gpu_scene_nodes=320,
         gpu_scene_triangles=96,
-        gpu_selected_scene_nodes=3,
-        gpu_selected_scene_edge_pairs=3,
+        gpu_selected_scene_nodes=8,
+        gpu_selected_scene_edge_pairs=6,
         gpu_regularization=0.25,
         gpu_min_factor_pivot=3.5,
         gpu_step_norm=0.65,
@@ -1321,19 +1321,19 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert direct["timing_ns"]["factor_solve"] == 5.0
     assert direct["timing_ns"]["final_residual"] == 6.0
     scene_direct = row["scene_runtime_direct_sparse_factor_solve"]
-    assert scene_direct["row_count"] == 3
+    assert scene_direct["row_count"] == 8
     assert scene_direct["nominal_row_count"] == 1024
     assert scene_direct["scene_body_count"] == 1
     assert scene_direct["scene_node_count"] == 320
     assert scene_direct["scene_triangle_count"] == 96
-    assert scene_direct["selected_scene_node_count"] == 3
-    assert scene_direct["selected_scene_edge_pair_count"] == 3
-    assert scene_direct["body_count"] == 3
-    assert scene_direct["dof_count"] == 18
+    assert scene_direct["selected_scene_node_count"] == 8
+    assert scene_direct["selected_scene_edge_pair_count"] == 6
+    assert scene_direct["body_count"] == 8
+    assert scene_direct["dof_count"] == 48
     assert scene_direct["max_supported_dof_count"] == 48
-    assert scene_direct["block_count"] == 3
-    assert scene_direct["block_entry_count"] == 108
-    assert scene_direct["active_dof_count"] == 18
+    assert scene_direct["block_count"] == 6
+    assert scene_direct["block_entry_count"] == 216
+    assert scene_direct["active_dof_count"] == 48
     assert scene_direct["regularization"] == 0.25
     assert scene_direct["factorized"] is True
     assert scene_direct["minimum_factor_pivot"] == 3.5
@@ -1403,6 +1403,30 @@ def test_newton_assembly_solve_packet_rejects_residual_failure() -> None:
         assert "residual norm" in str(exc)
     else:
         raise AssertionError("expected residual failure")
+
+
+def test_newton_assembly_solve_packet_rejects_scene_direct_sparse_dofs() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    for row in data["benchmarks"]:
+        if row["name"] == "BM_NewtonSceneRuntimeDirectSparseSolveCpu/1024":
+            row["dofs"] = 42
+        if row["name"] == "BM_NewtonSceneRuntimeDirectSparseSolveCuda/1024":
+            row["dofs"] = 42
+            row["gpu_dofs"] = 42
+
+    try:
+        module.make_packet(
+            data,
+            row_count=1024,
+            tolerance=1e-10,
+            residual_tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.NewtonAssemblySolvePacketError as exc:
+        assert "six dofs per selected node" in str(exc)
+    else:
+        raise AssertionError("expected scene direct sparse shape failure")
 
 
 def test_newton_assembly_solve_packet_records_speedup_gate_miss() -> None:

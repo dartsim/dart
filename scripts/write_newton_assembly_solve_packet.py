@@ -34,6 +34,8 @@ DEFAULT_ROW_COUNT = 65536
 DEFAULT_TOLERANCE = 1e-10
 DEFAULT_RESIDUAL_TOLERANCE = 1e-8
 DEFAULT_SPEEDUP_GATE = 1.25
+DIRECT_SPARSE_DOFS_PER_BODY = 6
+DIRECT_SPARSE_BLOCK_ENTRY_COUNT = DIRECT_SPARSE_DOFS_PER_BODY**2
 DIRECT_SPARSE_MAX_DOF_COUNT = 48
 REQUIRED_TIMING_KEYS = {
     "setup",
@@ -1993,6 +1995,10 @@ def make_packet(
     direct_sparse_dofs = _matching_int_counter(
         direct_sparse_cpu_row, direct_sparse_gpu_row, "dofs", "gpu_dofs"
     )
+    if direct_sparse_dofs != direct_sparse_bodies * DIRECT_SPARSE_DOFS_PER_BODY:
+        raise NewtonAssemblySolvePacketError(
+            "direct sparse dofs do not match six dofs per body"
+        )
     if direct_sparse_dofs > DIRECT_SPARSE_MAX_DOF_COUNT:
         raise NewtonAssemblySolvePacketError(
             f"direct sparse dofs {direct_sparse_dofs} exceed "
@@ -2010,6 +2016,10 @@ def make_packet(
         "active_dofs",
         "gpu_active_dofs",
     )
+    if direct_sparse_active_dofs != direct_sparse_dofs:
+        raise NewtonAssemblySolvePacketError(
+            "direct sparse active dofs do not cover the bounded direct system"
+        )
     direct_sparse_factorized = _matching_int_counter(
         direct_sparse_cpu_row,
         direct_sparse_gpu_row,
@@ -2019,6 +2029,12 @@ def make_packet(
     if direct_sparse_factorized != 1:
         raise NewtonAssemblySolvePacketError("direct sparse row did not factorize")
     direct_sparse_block_entries = int(_counter(direct_sparse_cpu_row, "block_entries"))
+    if direct_sparse_block_entries != (
+        direct_sparse_blocks * DIRECT_SPARSE_BLOCK_ENTRY_COUNT
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "direct sparse block entries do not match 36 entries per 6x6 block"
+        )
     direct_sparse_regularization = _counter(direct_sparse_cpu_row, "regularization")
     direct_sparse_gpu_regularization = _counter(
         direct_sparse_gpu_row, "gpu_regularization"
@@ -2057,6 +2073,10 @@ def make_packet(
         "rows",
         "gpu_rows",
     )
+    if scene_direct_sparse_rows <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse row count is zero"
+        )
     scene_direct_sparse_scene_bodies = _matching_int_counter(
         scene_direct_sparse_cpu_row,
         scene_direct_sparse_gpu_row,
@@ -2081,12 +2101,24 @@ def make_packet(
         "selected_scene_nodes",
         "gpu_selected_scene_nodes",
     )
+    if scene_direct_sparse_selected_nodes <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse selected node count is zero"
+        )
+    if scene_direct_sparse_selected_nodes > scene_direct_sparse_scene_nodes:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse selected nodes exceed scene nodes"
+        )
     scene_direct_sparse_selected_edge_pairs = _matching_int_counter(
         scene_direct_sparse_cpu_row,
         scene_direct_sparse_gpu_row,
         "selected_scene_edge_pairs",
         "gpu_selected_scene_edge_pairs",
     )
+    if scene_direct_sparse_selected_edge_pairs <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse selected edge-pair count is zero"
+        )
     scene_direct_sparse_bodies = _matching_int_counter(
         scene_direct_sparse_cpu_row,
         scene_direct_sparse_gpu_row,
@@ -2105,6 +2137,13 @@ def make_packet(
         "dofs",
         "gpu_dofs",
     )
+    if scene_direct_sparse_dofs != (
+        scene_direct_sparse_selected_nodes * DIRECT_SPARSE_DOFS_PER_BODY
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse dofs do not match six dofs per "
+            "selected node"
+        )
     if scene_direct_sparse_dofs > DIRECT_SPARSE_MAX_DOF_COUNT:
         raise NewtonAssemblySolvePacketError(
             f"scene runtime direct sparse dofs {scene_direct_sparse_dofs} "
@@ -2128,6 +2167,11 @@ def make_packet(
         "active_dofs",
         "gpu_active_dofs",
     )
+    if scene_direct_sparse_active_dofs != scene_direct_sparse_dofs:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse active dofs do not cover the "
+            "selected scene system"
+        )
     scene_direct_sparse_factorized = _matching_int_counter(
         scene_direct_sparse_cpu_row,
         scene_direct_sparse_gpu_row,
@@ -2141,6 +2185,13 @@ def make_packet(
     scene_direct_sparse_block_entries = int(
         _counter(scene_direct_sparse_cpu_row, "block_entries")
     )
+    if scene_direct_sparse_block_entries != (
+        scene_direct_sparse_blocks * DIRECT_SPARSE_BLOCK_ENTRY_COUNT
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime direct sparse block entries do not match 36 entries "
+            "per 6x6 block"
+        )
     scene_direct_sparse_regularization = _counter(
         scene_direct_sparse_cpu_row, "regularization"
     )
