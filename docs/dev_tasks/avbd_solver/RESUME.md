@@ -8,10 +8,12 @@ stop-only snapshot lower in this file.
 
 Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
 is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
-currently contains the local inertia-orientation cleanup commit plus handoff-doc
-refreshes. The kept implementation avoids repeated AVBD rigid inertia
-orientation normalization and adds focused lower-triangle/full-helper
-regression coverage. The branch was clean before this handoff refresh. Do not
+currently contains the local Spring/Spring Ratio ignored-collision-pair slice
+plus the previous inertia-orientation cleanup and handoff-doc refreshes. The
+latest kept implementation explicitly ignores spring-connected rigid body
+collision pairs in the Python source rows and matching C++ benchmark
+constructors, and makes the rigid contact stage's no-contact fast path respect
+ignored dynamic rigid-body pairs before skipping the collision query. Do not
 push, open a PR, resolve review threads, comment, retrigger reviews, or mutate
 CI without explicit maintainer approval.
 
@@ -30,9 +32,25 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: `addAvbdRigidBodyInertiaTermLowerTriangle()` now reuses the
-already normalized current orientation and normalizes the inertial target once
-before computing the rigid body orientation error, avoiding repeated
+Latest local slice: the 2D Spring and Spring Ratio source rows now explicitly
+ignore collision pairs that are already connected by the measured spring
+constraints. The C++ `BM_AvbdDemo2dSpringStep` and
+`BM_AvbdDemo2dSpringRatioStep` benchmark constructors mirror those ignored
+pairs and expose `ignored_collision_pairs` counters. The rigid body contact
+stage keeps the old fast path for worlds without ignored pairs, audits small
+rigid-body candidate sets when ignored pairs exist, and skips collision query
+work only when every dynamic-involving candidate pair is explicitly ignored.
+This is deliberately bounded to small worlds; larger candidate sets fall back
+to the ordinary collision query path. Focused Python coverage asserts the
+Spring row has one ignored pair and Spring Ratio has seven adjacent ignored
+pairs, and also verifies a non-adjacent Spring Ratio pair remains collidable.
+This local branch does not refresh a tracked packet, close a CPU-win gate, push
+a follow-up PR, resolve GitHub review threads, or claim GPU/paper-number
+parity.
+
+Previous local slice: `addAvbdRigidBodyInertiaTermLowerTriangle()` now reuses
+the already normalized current orientation and normalizes the inertial target
+once before computing the rigid body orientation error, avoiding repeated
 normalization in the hot block-descent body assembly path. The public robust
 orientation-error helpers still normalize their inputs. Focused regression
 coverage compares the lower-triangle inertia helper against the full symmetric
@@ -47,9 +65,7 @@ CPU scaling was enabled and tracked source/native packets were not regenerated.
 A broader normalized-orientation reuse probe for assembly world-point/angular
 row helpers was also built and tested, but it measured 1.821 ms median CPU
 versus the 1.792 ms current-branch baseline, so the probe was reverted and no
-code from it is kept. This local branch does not refresh a tracked packet,
-close the 2D Soft Body CPU gap, push a follow-up PR, or claim GPU/paper-number
-parity.
+code from it is kept.
 
 Latest pushed PR slice: the rigid contact stage now skips the per-contact
 `rigidAvbdContactStageConfig()` scan unless the registry has
@@ -123,6 +139,33 @@ tests. Focused regression coverage now passes
 the full `python/tests/unit/test_run_cpp_example.py` file passes, and
 `pixi run lint` passes. This CI-smoke fix and regression were pushed as part of
 PR head `0bf4ca6b8ae`.
+
+Validation for the latest Spring/Spring Ratio ignored-pair slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.SimulationCollisionQueryCanIgnoreSpecificPairs:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `pixi run env PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_spring_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_spring_ratio_scene_matches_source_row -q`
+  passed, 2 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2d(SpringStep|SpringRatioStep)$" --benchmark_min_time=0.3s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-local-spring-contact-filter-final-20260614.json --benchmark_out_format=json'`
+  passed. Under load average `2.90, 5.92, 8.45` with CPU scaling enabled, it
+  recorded median CPU step times of 3.313 us for
+  `BM_AvbdDemo2dSpringStep` with `ignored_collision_pairs=1` and 34.588 us
+  for `BM_AvbdDemo2dSpringRatioStep` with `ignored_collision_pairs=7`. This is
+  source-row path smoke only because same-source native timing, visual
+  captures, and packet regeneration were not rerun.
+- `git diff --check` passed.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The final CUDA
+  simulation label passed 8/8 tests; its slowest test was
+  `test_lcp_jacobi_batch_cuda` at 208.20 s. Final CUDA benchmark smokes passed
+  under CPU-scaling warnings and load averages around 15.70-16.38, so treat
+  those timings as smoke evidence only.
 
 Validation for the latest AVBD config-guard slice:
 

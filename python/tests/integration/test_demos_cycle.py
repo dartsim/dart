@@ -9318,6 +9318,7 @@ def test_avbd_demo2d_spring_scene_matches_source_row() -> None:
     anchor = setup.info["anchor"]
     block = setup.info["block"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_length = setup.info["spring_length"]
     source = setup.info["source_demo_reference"]
 
@@ -9364,6 +9365,9 @@ def test_avbd_demo2d_spring_scene_matches_source_row() -> None:
     assert [len(body.collision_shapes) for body in (anchor, block)] == [1, 1]
     assert [body.friction for body in (anchor, block)] == pytest.approx([0.5, 0.5])
     assert len(springs) == 1
+    assert len(ignored_collision_pairs) == 1
+    assert sx_world.num_ignored_collision_pairs == 1
+    assert sx_world.is_collision_pair_ignored(anchor, block)
     assert springs[0]["rest_length"] == pytest.approx(4.0)
     assert springs[0]["stiffness"] == pytest.approx(100.0)
 
@@ -9395,6 +9399,7 @@ def test_avbd_demo2d_spring_ratio_scene_matches_source_row() -> None:
     sx_world = setup.info["sx_world"]
     links = setup.info["links"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_lengths = setup.info["spring_lengths"]
     source = setup.info["source_demo_reference"]
 
@@ -9438,6 +9443,13 @@ def test_avbd_demo2d_spring_ratio_scene_matches_source_row() -> None:
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 8
     assert len(springs) == 7
+    assert len(ignored_collision_pairs) == 7
+    assert sx_world.num_ignored_collision_pairs == 7
+    assert all(
+        sx_world.is_collision_pair_ignored(links[index], links[index + 1])
+        for index in range(7)
+    )
+    assert not sx_world.is_collision_pair_ignored(links[0], links[2])
     assert [link.is_static for link in links] == [
         True,
         False,

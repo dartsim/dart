@@ -66,6 +66,7 @@
 #include "dart/simulation/detail/newton_barrier/restitution_damping.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
+#include "dart/simulation/detail/world_storage.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/simulation/world_options.hpp"
 
@@ -1405,17 +1406,90 @@ bool hasPrescribedRigidBodyContactResponse(
 }
 
 //==============================================================================
-bool shouldSkipRigidBodyContactQuery(const detail::WorldRegistry& registry)
+struct RigidContactCandidate
 {
+  entt::entity entity = entt::null;
+  bool prescribedResponse = false;
+};
+
+//==============================================================================
+detail::WorldStorage::CollisionPairKey makeCollisionPairKey(
+    entt::entity first, entt::entity second)
+{
+  if (static_cast<std::uint32_t>(second) < static_cast<std::uint32_t>(first)) {
+    std::swap(first, second);
+  }
+  return {first, second};
+}
+
+//==============================================================================
+bool isRigidContactCandidate(
+    const detail::WorldRegistry& registry,
+    entt::entity entity,
+    const comps::CollisionGeometry& geometry)
+{
+  if (geometry.shapes.empty()) {
+    return false;
+  }
+
+  return registry.all_of<comps::RigidBodyTag>(entity)
+         || registry.all_of<comps::Link>(entity);
+}
+
+//==============================================================================
+bool shouldSkipRigidBodyContactQuery(const World& world)
+{
+  constexpr std::size_t kIgnoredPairSkipAuditLimit = 64u;
+
+  const auto& registry = detail::registryOf(world);
+  const auto& ignoredCollisionPairs
+      = detail::storageOf(world).ignoredCollisionPairs;
+  const bool hasIgnoredCollisionPairs = !ignoredCollisionPairs.empty();
   const auto collisionGeometryView = registry.view<comps::CollisionGeometry>();
+
+  std::vector<RigidContactCandidate> candidates;
+
+  bool hasNonPrescribedCandidate = false;
   for (const entt::entity entity : collisionGeometryView) {
-    if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
+    const auto& geometry
+        = collisionGeometryView.get<comps::CollisionGeometry>(entity);
+    if (!isRigidContactCandidate(registry, entity, geometry)) {
       continue;
     }
 
-    if (registry.all_of<comps::RigidBodyTag>(entity)
-        || registry.all_of<comps::Link>(entity)) {
-      return false;
+    const bool prescribedResponse
+        = hasPrescribedRigidBodyContactResponse(registry, entity);
+    if (!prescribedResponse) {
+      if (!hasIgnoredCollisionPairs) {
+        return false;
+      }
+      hasNonPrescribedCandidate = true;
+    }
+
+    if (hasIgnoredCollisionPairs) {
+      candidates.push_back(RigidContactCandidate{entity, prescribedResponse});
+    }
+  }
+
+  if (!hasNonPrescribedCandidate) {
+    return true;
+  }
+
+  if (candidates.size() > kIgnoredPairSkipAuditLimit) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < candidates.size(); ++i) {
+    for (std::size_t j = i + 1; j < candidates.size(); ++j) {
+      if (candidates[i].prescribedResponse
+          && candidates[j].prescribedResponse) {
+        continue;
+      }
+
+      if (!ignoredCollisionPairs.contains(makeCollisionPairKey(
+              candidates[i].entity, candidates[j].entity))) {
+        return false;
+      }
     }
   }
 
@@ -9468,7 +9542,7 @@ void RigidBodyContactStage::prepare(World& world)
   constraints.clear();
 
   const auto& registry = dart::simulation::detail::registryOf(world);
-  const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
+  const bool skipContactQuery = shouldSkipRigidBodyContactQuery(world);
   std::size_t contactCapacity = 0u;
   if (!skipContactQuery) {
     std::size_t collisionShapeCount = 0;
@@ -9617,7 +9691,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return projection.bodies != 0u;
   };
 
-  if (shouldSkipRigidBodyContactQuery(registry)) {
+  if (shouldSkipRigidBodyContactQuery(world)) {
     if (projectAvbdRigidPointJoints()) {
       return;
     }

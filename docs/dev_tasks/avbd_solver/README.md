@@ -10,6 +10,23 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` now carries a conservative
+  Spring/Spring Ratio contact-filtering slice on top of the local
+  inertia-orientation cleanup. The Python source rows and matching C++
+  benchmark constructors explicitly ignore the spring-connected rigid body
+  collision pairs, and the rigid contact stage's no-contact fast path now
+  honors ignored dynamic rigid-body pairs before deciding that the collision
+  query can be skipped. Focused Python coverage asserts the Spring row has one
+  ignored pair and Spring Ratio has seven adjacent ignored pairs; benchmark
+  counters expose the same counts. Validation passed the target rebuild,
+  focused C++ contact/allocator tests, focused Python Spring/Spring Ratio
+  regressions, a Spring/Spring Ratio benchmark smoke, `git diff --check`,
+  `pixi run lint`, `pixi run build`, `pixi run test-unit` (161 tests), and
+  `pixi run -e cuda test-all` on the visible NVIDIA RTX 5000 Ada host. This is
+  local source-row path evidence only; it does not refresh any tracked packet,
+  close a CPU-win gate, push a follow-up PR, resolve GitHub review threads, or
+  claim GPU/paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
   `avbd/soft-body-inertia-orientation-cache` is based on PR #2991 head
   `6f41e9529bf` and currently carries the local inertia-orientation cleanup
   commit plus handoff-doc refreshes. The kept implementation avoids repeated
