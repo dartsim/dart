@@ -60,8 +60,10 @@ and the default `world.step()` is the split pipeline
   `BatchedRigidBodyIntegrationStage`, `integrateRigidBody` (untouched) **and**
   this branch's `RigidBodyVelocityStage`/`RigidBodyPositionStage`/
   `RigidBodyContactStage`/`MultibodyForwardDynamicsStage`.
-- `docs/onboarding/api-boundary-inventory.md` is generated — take either side
-  then regenerate with `pixi run lint`. Resolve `CHANGELOG.md` by keeping both.
+- The API-boundary policy lives in `docs/onboarding/api-boundaries.md`; the
+  enforced gate is `pixi run check-api-boundaries` (an on-demand signal report
+  is available via `pixi run report-api-boundary-inventory`). Resolve
+  `CHANGELOG.md` by keeping both.
 
 ## Two gating tests (main's `tests/.../world/test_world.cpp`)
 
@@ -125,8 +127,7 @@ Decision recorded here and in RESUME.md.
   case `build/default/cpp/Release/bin/test_world --gtest_filter='World.Rollout*'`
 - Python: `PYTHONPATH=build/default/cpp/Release/python pixi run pytest
 python/tests/unit/simulation/test_experimental_world.py -q`
-- Lint (auto-formats; regenerates api-boundary-inventory.md): `pixi run lint`
-  — re-read generated files afterward.
+- Lint (auto-formats): `pixi run lint` — re-read generated files afterward.
 - Verify the real exit code, not just the task-notification code (compound
   commands mask failures).
 

@@ -40,6 +40,7 @@
 #include "dart/math/helpers.hpp"
 
 #include <string>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -236,10 +237,10 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
         "Cannot assign actuator type {} to DoF {} of Joint [{}] because it "
         "does not match the dynamic/kinematic classification of the "
         "joint-wide actuator type {}.",
-        static_cast<int>(actuatorType),
+        std::to_underlying(actuatorType),
         index,
         getName(),
-        static_cast<int>(mAspectProperties.mActuatorType));
+        std::to_underlying(mAspectProperties.mActuatorType));
     return;
   }
 

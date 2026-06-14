@@ -368,7 +368,7 @@ function(dart_gui_filament_configure_backend_target target_name)
   )
     target_link_options(${target_name} PRIVATE "-Wl,-z,noexecstack")
   endif()
-  target_compile_features(${target_name} PRIVATE cxx_std_20)
+  target_compile_features(${target_name} PRIVATE cxx_std_23)
 endfunction()
 
 function(_dart_gui_filament_apply_smoke_test_properties test_name)
@@ -652,7 +652,6 @@ function(dart_gui_filament_add_example example_target)
     PROPERTIES OUTPUT_NAME "${DART_GUI_FILAMENT_EXAMPLE_OUTPUT_NAME}"
   )
   target_link_libraries(${example_target} PRIVATE dart-gui)
-  target_compile_features(${example_target} PRIVATE cxx_std_20)
 
   if(DART_IN_SOURCE_BUILD)
     set_target_properties(

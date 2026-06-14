@@ -1412,7 +1412,9 @@ void MeshShape::extractMaterialsFromScene(
     if (meshUri.mPath) {
       common::Uri resolvedUri;
       if (resolvedUri.fromRelativeUri(
-              meshUri, std::string_view{imagePathString})) {
+              meshUri,
+              std::string_view(
+                  imagePathString.data(), imagePathString.size()))) {
         return resolvedUri.toString();
       }
     }
@@ -1692,7 +1694,9 @@ bool hasColladaExtension(std::string_view path)
   });
   constexpr auto colladaExtensions
       = std::to_array<std::string_view>({".dae", ".zae"});
-  return std::ranges::find(colladaExtensions, std::string_view{extension})
+  return std::ranges::find(
+             colladaExtensions,
+             std::string_view(extension.data(), extension.size()))
          != colladaExtensions.end();
 }
 

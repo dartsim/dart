@@ -205,7 +205,6 @@ promotion PR must include:
 - `pixi run generate-stubs`
 - `pixi run api-docs-py`
 - `pixi run check-api-boundaries`
-- `pixi run check-api-boundary-inventory`
 - the public-header allowlist check
 - the package-contract check
 - the installed-package smoke

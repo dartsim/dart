@@ -166,7 +166,10 @@ Uri::Uri(std::string_view input)
 }
 
 //==============================================================================
-Uri::Uri(const std::string& input) : Uri(std::string_view{input}) {}
+Uri::Uri(const std::string& input)
+  : Uri(std::string_view(input.data(), input.size()))
+{
+}
 
 //==============================================================================
 Uri::Uri(const char* input)

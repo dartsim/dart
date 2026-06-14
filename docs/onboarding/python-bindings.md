@@ -16,7 +16,7 @@
 
 - Header-only library with a CMake-first workflow
 - Eigen ↔ NumPy integration via `nanobind/eigen/*` (used throughout `python/dartpy/`)
-- Modern C++17+ support (DART is built as C++20)
+- Modern C++ support (DART is built as C++23)
 - Designed for high-performance bindings
 
 ### Why scikit-build-core?

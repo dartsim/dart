@@ -324,7 +324,6 @@ For this planning surface:
 For implementation PRs derived from this plan, select by touched scope:
 
 - `pixi run check-api-boundaries`
-- `pixi run check-api-boundary-inventory`
 - `pixi run check-dart7-promotion-surface` and
   `pixi run check-simulation-public-headers` for the promoted C++ header
   allowlist

@@ -35,7 +35,10 @@
 
 #include <dart/common/logging.hpp>
 
+#include <utility>
+
 #include <cassert>
+#include <cstdlib>
 
 // DART_NUM_ARGS(<arg1> [, <arg2> [, ...]])
 #define DETAIL_DART_NUM_ARGS(z, a, b, c, d, e, f, cnt, ...) cnt
@@ -69,6 +72,41 @@
 #define DART_ASSERT(...)                                                       \
   DART_CONCAT(DETAIL_DART_ASSERT_, DART_NUM_ARGS(__VA_ARGS__))                 \
   (__VA_ARGS__)
+
+// DART_UNREACHABLE()
+//
+// Marks a program point the author guarantees is never reached (for example,
+// the end of a function whose switch already handles every enumerator).
+//
+//   - Debug builds: logs a fatal diagnostic and aborts, so a logic error that
+//     does reach the point is caught loudly instead of silently triggering
+//     undefined behavior.
+//   - Release builds (NDEBUG): lowers to std::unreachable() -- or the compiler
+//     builtin on toolchains that predate it -- letting the optimizer drop the
+//     dead branch and surrounding bounds checks.
+//
+// Only use this where the branch is genuinely unreachable for every valid
+// input. Paths reachable on malformed user input must return an error or keep
+// an assertion instead: reaching a DART_UNREACHABLE() is undefined behavior.
+#if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+  #define DETAIL_DART_UNREACHABLE_BUILTIN() ::std::unreachable()
+#elif defined(__GNUC__) || defined(__clang__)
+  #define DETAIL_DART_UNREACHABLE_BUILTIN() __builtin_unreachable()
+#elif defined(_MSC_VER)
+  #define DETAIL_DART_UNREACHABLE_BUILTIN() __assume(false)
+#else
+  #define DETAIL_DART_UNREACHABLE_BUILTIN() ((void)0)
+#endif
+
+#if defined(NDEBUG)
+  #define DART_UNREACHABLE() DETAIL_DART_UNREACHABLE_BUILTIN()
+#else
+  #define DART_UNREACHABLE()                                                   \
+    do {                                                                       \
+      DART_FATAL("Unreachable code reached at {}:{}", __FILE__, __LINE__);     \
+      ::std::abort();                                                          \
+    } while (false)
+#endif
 
 // Macro to mark the function is not implemented
 #define DART_NOT_IMPLEMENTED                                                   \

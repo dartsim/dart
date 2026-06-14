@@ -205,7 +205,7 @@ Errors handleInclude(
     const std::string fileAttribute
         = getAttributeString(includeElements.get(), "file");
     const common::Uri mjcfUri = common::Uri::createFromRelativeUri(
-        baseUri, std::string_view{fileAttribute});
+        baseUri, std::string_view(fileAttribute.data(), fileAttribute.size()));
     tinyxml2::XMLDocument mjcfDoc;
     if (!readXmlFile(mjcfDoc, mjcfUri, retriever)) {
       errors.emplace_back(

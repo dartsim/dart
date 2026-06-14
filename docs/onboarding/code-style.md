@@ -25,9 +25,9 @@ This document describes the code style conventions used in the DART project.
 
 C++ headers and sources should be contained in the same subdirectory of `dart/` that matches their namespace, with the extension `.hpp` and `.cpp`, respectively.
 
-### C++20 Modern Patterns
+### C++23 Modern Patterns
 
-DART uses C++20 features to improve code clarity, maintainability, and performance. Use these patterns when appropriate:
+DART uses C++23 features to improve code clarity, maintainability, and performance. Use these patterns when appropriate:
 
 **Concepts for Template Constraints:**
 
@@ -73,13 +73,13 @@ if (!result.isCollision()) [[likely]] {
 }
 ```
 
-**When NOT to use C++20 features:**
+**When NOT to use C++23 features:**
 
 - Avoid `std::format` until Ubuntu 24.04 LTS (GCC 13+)
 - Don't replace clear index-based loops with complex range expressions
 - Keep SFINAE for Eigen compile-time traits (not proper constexpr)
 
-**Modernization summary (DART 7):** The codebase now assumes a C++20 baseline,
+**Modernization summary (DART 7):** The codebase now assumes a C++23 baseline,
 so new read-only APIs should prefer non-owning views (`std::span`,
 `std::string_view`) and call sites should avoid temporary containers. Favor
 `std::ranges` algorithms, associative `contains`, and `std::erase(_if)` when

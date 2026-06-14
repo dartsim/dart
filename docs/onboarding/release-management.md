@@ -126,7 +126,7 @@ git merge origin/$RELEASE_BRANCH -m "Merge $RELEASE_BRANCH into main (v$RELEASE_
 | ----------------------------------- | ------------------------------------- | ------------------------------- |
 | Deleted in main, updated in release | Keep deleted                          | DART 7 intentionally removed it |
 | Added in both branches              | Prefer main unless release is unique  | Main has DART 7-compatible form |
-| Content conflicts                   | Prefer main modernization             | Main carries C++20/DART 7 work  |
+| Content conflicts                   | Prefer main modernization             | Main carries C++23/DART 7 work  |
 | `CHANGELOG.md`                      | Review manually                       | Avoid losing release notes      |
 | Files only in release               | Keep only if still relevant to `main` | Some release-only files differ  |
 

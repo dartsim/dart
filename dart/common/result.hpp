@@ -34,12 +34,11 @@
 
 #include <dart/common/exception.hpp>
 
-#include <optional>
+#include <expected>
 #include <source_location>
 #include <string>
 #include <type_traits>
 #include <utility>
-#include <variant>
 
 namespace dart::common {
 
@@ -78,6 +77,9 @@ struct ErrTag
 /// Use exceptions (DART_THROW) when:
 /// - Failure indicates programmer error (null pointer, out of range)
 /// - Failure is unexpected and typically not recoverable
+///
+/// Result is a thin wrapper over std::expected<T, E> that exposes DART's
+/// ok()/err()/isOk() vocabulary; the underlying storage is the standard type.
 template <typename T, typename E = Error>
 class [[nodiscard]] Result
 {
@@ -87,13 +89,13 @@ public:
 
   template <typename U>
   Result(detail::OkTag, U&& value)
-    : m_storage(std::in_place_index<0>, std::forward<U>(value))
+    : m_storage(std::in_place, std::forward<U>(value))
   {
   }
 
   template <typename U>
   Result(detail::ErrTag, U&& error)
-    : m_storage(std::in_place_index<1>, std::forward<U>(error))
+    : m_storage(std::unexpect, std::forward<U>(error))
   {
   }
 
@@ -111,12 +113,12 @@ public:
 
   [[nodiscard]] bool isOk() const noexcept
   {
-    return m_storage.index() == 0;
+    return m_storage.has_value();
   }
 
   [[nodiscard]] bool isErr() const noexcept
   {
-    return m_storage.index() == 1;
+    return !m_storage.has_value();
   }
 
   [[nodiscard]] explicit operator bool() const noexcept
@@ -131,7 +133,7 @@ public:
           InvalidOperationException,
           "Attempted to access value of Result in error state");
     }
-    return std::get<0>(m_storage);
+    return *m_storage;
   }
 
   [[nodiscard]] const T& value() const&
@@ -141,7 +143,7 @@ public:
           InvalidOperationException,
           "Attempted to access value of Result in error state");
     }
-    return std::get<0>(m_storage);
+    return *m_storage;
   }
 
   [[nodiscard]] T&& value() &&
@@ -151,7 +153,7 @@ public:
           InvalidOperationException,
           "Attempted to access value of Result in error state");
     }
-    return std::move(std::get<0>(m_storage));
+    return *std::move(m_storage);
   }
 
   [[nodiscard]] E& error() &
@@ -161,7 +163,7 @@ public:
           InvalidOperationException,
           "Attempted to access error of Result in ok state");
     }
-    return std::get<1>(m_storage);
+    return m_storage.error();
   }
 
   [[nodiscard]] const E& error() const&
@@ -171,13 +173,13 @@ public:
           InvalidOperationException,
           "Attempted to access error of Result in ok state");
     }
-    return std::get<1>(m_storage);
+    return m_storage.error();
   }
 
   [[nodiscard]] T valueOr(T defaultValue) const&
   {
     if (isOk()) {
-      return std::get<0>(m_storage);
+      return *m_storage;
     }
     return defaultValue;
   }
@@ -185,7 +187,7 @@ public:
   [[nodiscard]] T valueOr(T defaultValue) &&
   {
     if (isOk()) {
-      return std::move(std::get<0>(m_storage));
+      return *std::move(m_storage);
     }
     return defaultValue;
   }
@@ -221,9 +223,9 @@ public:
   {
     using U = decltype(f(std::declval<const T&>()));
     if (isOk()) {
-      return Result<U, E>::ok(f(std::get<0>(m_storage)));
+      return Result<U, E>::ok(f(*m_storage));
     }
-    return Result<U, E>::err(std::get<1>(m_storage));
+    return Result<U, E>::err(m_storage.error());
   }
 
   template <typename F>
@@ -231,9 +233,9 @@ public:
   {
     using U = decltype(f(std::declval<T>()));
     if (isOk()) {
-      return Result<U, E>::ok(f(std::move(std::get<0>(m_storage))));
+      return Result<U, E>::ok(f(*std::move(m_storage)));
     }
-    return Result<U, E>::err(std::move(std::get<1>(m_storage)));
+    return Result<U, E>::err(std::move(m_storage).error());
   }
 
   template <typename F>
@@ -242,9 +244,9 @@ public:
   {
     using ResultU = decltype(f(std::declval<const T&>()));
     if (isOk()) {
-      return f(std::get<0>(m_storage));
+      return f(*m_storage);
     }
-    return ResultU::err(std::get<1>(m_storage));
+    return ResultU::err(m_storage.error());
   }
 
   template <typename F>
@@ -252,13 +254,13 @@ public:
   {
     using ResultU = decltype(f(std::declval<T>()));
     if (isOk()) {
-      return f(std::move(std::get<0>(m_storage)));
+      return f(*std::move(m_storage));
     }
-    return ResultU::err(std::move(std::get<1>(m_storage)));
+    return ResultU::err(std::move(m_storage).error());
   }
 
 private:
-  std::variant<T, E> m_storage;
+  std::expected<T, E> m_storage;
 };
 
 /// Void specialization for operations that succeed/fail without a value.
@@ -269,10 +271,10 @@ public:
   using ValueType = void;
   using ErrorType = E;
 
-  Result() : m_error(std::nullopt) {}
+  Result() = default;
 
   template <typename U>
-  explicit Result(U&& error) : m_error(std::forward<U>(error))
+  explicit Result(U&& error) : m_storage(std::unexpect, std::forward<U>(error))
   {
   }
 
@@ -289,12 +291,12 @@ public:
 
   [[nodiscard]] bool isOk() const noexcept
   {
-    return !m_error.has_value();
+    return m_storage.has_value();
   }
 
   [[nodiscard]] bool isErr() const noexcept
   {
-    return m_error.has_value();
+    return !m_storage.has_value();
   }
 
   [[nodiscard]] explicit operator bool() const noexcept
@@ -309,7 +311,7 @@ public:
           InvalidOperationException,
           "Attempted to access error of Result in ok state");
     }
-    return *m_error;
+    return m_storage.error();
   }
 
   [[nodiscard]] const E& error() const&
@@ -319,11 +321,11 @@ public:
           InvalidOperationException,
           "Attempted to access error of Result in ok state");
     }
-    return *m_error;
+    return m_storage.error();
   }
 
 private:
-  std::optional<E> m_error;
+  std::expected<void, E> m_storage;
 };
 
 } // namespace dart::common
