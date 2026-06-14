@@ -34,6 +34,7 @@
 
 #include "dart/simulation/body/contact.hpp"
 #include "dart/simulation/common/exceptions.hpp"
+#include "dart/simulation/comps/collision_geometry.hpp"
 #include "dart/simulation/comps/contact_material.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/frame_types.hpp"
@@ -48,11 +49,15 @@
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <dart/common/memory_manager.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <new>
 #include <span>
 #include <utility>
 #include <vector>
@@ -72,6 +77,36 @@ using detail::skew;
 using detail::spatialInertia;
 using detail::Subspace;
 using detail::Vector6;
+
+template <typename T, typename... Args>
+[[nodiscard]] T* constructStageOwnedScratch(
+    common::MemoryManager* memoryManager, Args&&... args)
+{
+  if (memoryManager != nullptr) {
+    auto* scratch
+        = memoryManager->constructUsingFree<T>(std::forward<Args>(args)...);
+    if (scratch == nullptr) {
+      throw std::bad_alloc();
+    }
+    return scratch;
+  }
+
+  return new T(std::forward<Args>(args)...);
+}
+
+template <typename T>
+void destroyStageOwnedScratch(
+    common::MemoryManager* memoryManager, T* scratch) noexcept
+{
+  if (scratch == nullptr) {
+    return;
+  }
+  if (memoryManager != nullptr) {
+    memoryManager->destroyUsingFree(scratch);
+  } else {
+    delete scratch;
+  }
+}
 
 //==============================================================================
 bool hasPrescribedRigidBodyContactResponse(
@@ -290,10 +325,11 @@ struct JointBiasTerm
 // Velocity-product bias terms cJ = Sdot qdot for a joint, mapped into the child
 // link frame by the post-joint offset adjoint (the same transform applied to
 // the motion subspace).
+template <typename JointBiasTermVector>
 void setJointBiasTerms(
     const comps::Joint& joint,
     const Matrix6& offsetAdjoint,
-    std::vector<JointBiasTerm>& terms)
+    JointBiasTermVector& terms)
 {
   terms.clear();
   switch (joint.type) {
@@ -339,6 +375,15 @@ void setJointBiasTerms(
 // multibody construction order, which is guaranteed parent-before-child.
 struct LinkDynamics
 {
+  using BiasTermAllocator = common::StlAllocator<JointBiasTerm>;
+
+  LinkDynamics() = default;
+
+  explicit LinkDynamics(common::MemoryAllocator& allocator)
+    : biasTerms(BiasTermAllocator{allocator})
+  {
+  }
+
   int parentIndex = -1; // -1 for the fixed base (root)
   entt::entity jointEntity = entt::null;
   std::size_t dof = 0;
@@ -346,7 +391,8 @@ struct LinkDynamics
   Matrix6 parentToChild = Matrix6::Identity();      // X = Ad(T^{-1})
   Matrix6 childToParentForce = Matrix6::Identity(); // X^T
   Subspace subspace{6, 0};                          // S in child frame
-  std::vector<JointBiasTerm> biasTerms; // cJ = Sdot qdot (child frame)
+  std::vector<JointBiasTerm, BiasTermAllocator>
+      biasTerms; // cJ = Sdot qdot (child frame)
   Matrix6 inertia = Matrix6::Zero();
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 };
@@ -356,11 +402,41 @@ struct LinkDynamics
 // plus the joint owning each link and the total movable DOF count.
 struct DynamicsTree
 {
-  std::vector<LinkDynamics> links;
-  std::vector<entt::entity> jointOf;
+  using LinkAllocator = common::StlAllocator<LinkDynamics>;
+  using JointAllocator = common::StlAllocator<entt::entity>;
+
+  DynamicsTree() = default;
+
+  explicit DynamicsTree(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      links(LinkAllocator{allocator}),
+      jointOf(JointAllocator{allocator})
+  {
+  }
+
+  void resizeLinks(std::size_t count)
+  {
+    while (links.size() < count) {
+      if (memoryAllocator != nullptr) {
+        links.emplace_back(*memoryAllocator);
+      } else {
+        links.emplace_back();
+      }
+    }
+    links.resize(count);
+  }
+
+  common::MemoryAllocator* memoryAllocator = nullptr;
+  std::vector<LinkDynamics, LinkAllocator> links;
+  std::vector<entt::entity, JointAllocator> jointOf;
   std::size_t dofCount = 0;
   Eigen::VectorXd armature; // Rotor inertia per generalized coordinate.
 };
+
+std::span<const LinkDynamics> linkSpan(const DynamicsTree& tree) noexcept
+{
+  return {tree.links.data(), tree.links.size()};
+}
 
 //==============================================================================
 // Internal handoff between the split semi-implicit multibody velocity, contact,
@@ -376,16 +452,17 @@ struct PendingMultibodyVelocity
 //==============================================================================
 // Build the per-link spatial dynamics for a multibody at its current
 // configuration. Links are in construction order (parent-before-child).
+template <typename LinkIndexVector>
 void buildDynamicsTreeInto(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     DynamicsTree& tree,
-    std::vector<std::pair<entt::entity, std::size_t>>& indexOf,
+    LinkIndexVector& indexOf,
     Subspace& jointFrameSubspace)
 {
   const auto& linkEntities = structure.links;
 
-  tree.links.resize(linkEntities.size());
+  tree.resizeLinks(linkEntities.size());
   tree.jointOf.resize(linkEntities.size());
   std::fill(
       tree.jointOf.begin(),
@@ -471,24 +548,13 @@ void buildDynamicsTreeInto(
   }
 }
 
-DynamicsTree buildDynamicsTree(
-    const detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure)
-{
-  DynamicsTree tree;
-  std::vector<std::pair<entt::entity, std::size_t>> indexOf;
-  Subspace jointFrameSubspace;
-  buildDynamicsTreeInto(registry, structure, tree, indexOf, jointFrameSubspace);
-  return tree;
-}
-
 //==============================================================================
 // Body-frame spatial Jacobian of every link via the recursion
 // J_i = X_i J_parent, with the link's own joint columns set to its motion
 // subspace S_i (already expressed in the link frame). Each Jacobian is 6 x
 // dofCount, [angular; linear] in the link's own frame.
-void linkBodyJacobiansInto(
-    const DynamicsTree& tree, std::vector<Eigen::MatrixXd>& jacobian)
+template <typename JacobianVector>
+void linkBodyJacobiansInto(const DynamicsTree& tree, JacobianVector& jacobian)
 {
   const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
   jacobian.resize(tree.links.size());
@@ -511,13 +577,6 @@ void linkBodyJacobiansInto(
   }
 }
 
-std::vector<Eigen::MatrixXd> linkBodyJacobians(const DynamicsTree& tree)
-{
-  std::vector<Eigen::MatrixXd> jacobian;
-  linkBodyJacobiansInto(tree, jacobian);
-  return jacobian;
-}
-
 //==============================================================================
 // Index of a link entity within a multibody structure.
 std::size_t linkIndexOf(
@@ -534,18 +593,53 @@ std::size_t linkIndexOf(
 }
 
 //==============================================================================
+bool hasCollisionShapes(
+    const detail::WorldRegistry& registry, entt::entity entity)
+{
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+  return geometry != nullptr && geometry->hasShapes();
+}
+
+bool hasAnyCollisionShapes(const detail::WorldRegistry& registry)
+{
+  auto view = registry.view<comps::CollisionGeometry>();
+  for (auto entity : view) {
+    if (view.get<comps::CollisionGeometry>(entity).hasShapes()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename MultibodyView>
+bool hasAnyCollisionShapesForMultibodyContacts(
+    const detail::WorldRegistry& registry, const MultibodyView& view)
+{
+  for (auto entity : view) {
+    const auto& structure
+        = view.template get<comps::MultibodyStructure>(entity);
+    for (const auto linkEntity : structure.links) {
+      if (hasCollisionShapes(registry, linkEntity)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//==============================================================================
 // Recursive Newton-Euler inverse dynamics over a precomputed tree.
 // Returns generalized forces for the supplied qddot and qdot.
 void recursiveNewtonEulerInto(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
     const Eigen::VectorXd& qddot,
     const Eigen::VectorXd& qdot,
     Eigen::VectorXd& tau,
-    std::vector<Vector6>& velocity,
-    std::vector<Vector6>& acceleration,
-    std::vector<Vector6>& force)
+    auto& velocity,
+    auto& acceleration,
+    auto& force)
 {
   const auto count = links.size();
   velocity.resize(count);
@@ -606,30 +700,6 @@ void recursiveNewtonEulerInto(
   }
 }
 
-Eigen::VectorXd recursiveNewtonEuler(
-    const std::vector<LinkDynamics>& links,
-    const Vector6& baseAcceleration,
-    std::size_t dofCount,
-    const Eigen::VectorXd& qddot,
-    const Eigen::VectorXd& qdot)
-{
-  Eigen::VectorXd tau;
-  std::vector<Vector6> velocity;
-  std::vector<Vector6> acceleration;
-  std::vector<Vector6> force;
-  recursiveNewtonEulerInto(
-      links,
-      baseAcceleration,
-      dofCount,
-      qddot,
-      qdot,
-      tau,
-      velocity,
-      acceleration,
-      force);
-  return tau;
-}
-
 //==============================================================================
 // Joint-space mass matrix and bias (Coriolis/centrifugal + gravity) forces for
 // a precomputed tree at the supplied generalized velocity.
@@ -641,7 +711,7 @@ struct MassAndBias
 };
 
 void computeMassAndBiasInto(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     std::size_t dofCount,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& qdot,
@@ -650,9 +720,9 @@ void computeMassAndBiasInto(
     Eigen::VectorXd& zero,
     Eigen::VectorXd& unit,
     Eigen::VectorXd& response,
-    std::vector<Vector6>& rneaVelocity,
-    std::vector<Vector6>& rneaAcceleration,
-    std::vector<Vector6>& rneaForce)
+    auto& rneaVelocity,
+    auto& rneaAcceleration,
+    auto& rneaForce)
 {
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
@@ -712,41 +782,53 @@ void computeMassAndBiasInto(
   }
 }
 
-MassAndBias computeMassAndBias(
-    const std::vector<LinkDynamics>& links,
-    std::size_t dofCount,
-    const Eigen::Vector3d& gravity,
-    const Eigen::VectorXd& qdot,
-    const Eigen::VectorXd& armature)
-{
-  MassAndBias result;
-  Eigen::VectorXd zero;
-  Eigen::VectorXd unit;
-  Eigen::VectorXd response;
-  std::vector<Vector6> rneaVelocity;
-  std::vector<Vector6> rneaAcceleration;
-  std::vector<Vector6> rneaForce;
-  computeMassAndBiasInto(
-      links,
-      dofCount,
-      gravity,
-      qdot,
-      armature,
-      result,
-      zero,
-      unit,
-      response,
-      rneaVelocity,
-      rneaAcceleration,
-      rneaForce);
-  return result;
-}
-
 //==============================================================================
 struct MultibodyDynamicsScratch
 {
+  using LinkIndex = std::pair<entt::entity, std::size_t>;
+  using LinkIndexAllocator = common::StlAllocator<LinkIndex>;
+  using SpatialVectorAllocator = common::StlAllocator<Vector6>;
+  using LinkContactAllocator = common::StlAllocator<LinkContact>;
+  using ConstrainedDofAllocator = common::StlAllocator<Eigen::Index>;
+  using ConstrainedTargetAllocator = common::StlAllocator<double>;
+  using BodyJacobianAllocator = common::StlAllocator<Eigen::MatrixXd>;
+  using LinkIndexVector = std::vector<LinkIndex, LinkIndexAllocator>;
+  using SpatialVectorVector = std::vector<Vector6, SpatialVectorAllocator>;
+  using LinkContactVector = std::vector<LinkContact, LinkContactAllocator>;
+  using ConstrainedDofVector
+      = std::vector<Eigen::Index, ConstrainedDofAllocator>;
+  using ConstrainedTargetVector
+      = std::vector<double, ConstrainedTargetAllocator>;
+  using BodyJacobianVector
+      = std::vector<Eigen::MatrixXd, BodyJacobianAllocator>;
+
+  MultibodyDynamicsScratch() = default;
+
+  explicit MultibodyDynamicsScratch(common::MemoryAllocator& allocator)
+    : tree(allocator),
+      linkIndexOf(LinkIndexAllocator{allocator}),
+      rneaVelocity(SpatialVectorAllocator{allocator}),
+      rneaAcceleration(SpatialVectorAllocator{allocator}),
+      rneaForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeAcceleration(SpatialVectorAllocator{allocator}),
+      rneaDerivativeForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeJointVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeTotalForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaAcceleration(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeAccumulatedForce(SpatialVectorAllocator{allocator}),
+      linkContacts(LinkContactAllocator{allocator}),
+      constrainedDof(ConstrainedDofAllocator{allocator}),
+      constrainedTarget(ConstrainedTargetAllocator{allocator}),
+      contactProblem(allocator),
+      bodyJacobian(BodyJacobianAllocator{allocator})
+  {
+  }
+
   DynamicsTree tree;
-  std::vector<std::pair<entt::entity, std::size_t>> linkIndexOf;
+  LinkIndexVector linkIndexOf;
   Subspace jointFrameSubspace;
   Eigen::VectorXd qdot;
   Eigen::VectorXd appliedForce;
@@ -757,20 +839,39 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd rhs;
   Eigen::VectorXd qddot;
   Eigen::VectorXd nextVelocity;
-  std::vector<Vector6> rneaVelocity;
-  std::vector<Vector6> rneaAcceleration;
-  std::vector<Vector6> rneaForce;
-  std::vector<LinkContact> linkContacts;
-  std::vector<Eigen::Index> constrainedDof;
-  std::vector<double> constrainedTarget;
+  SpatialVectorVector rneaVelocity;
+  SpatialVectorVector rneaAcceleration;
+  SpatialVectorVector rneaForce;
+  SpatialVectorVector rneaDerivativeVelocity;
+  SpatialVectorVector rneaDerivativeAcceleration;
+  SpatialVectorVector rneaDerivativeForce;
+  SpatialVectorVector rneaDerivativeJointVelocity;
+  SpatialVectorVector rneaDerivativeTotalForce;
+  SpatialVectorVector rneaDerivativeDeltaVelocity;
+  SpatialVectorVector rneaDerivativeDeltaAcceleration;
+  SpatialVectorVector rneaDerivativeDeltaForce;
+  SpatialVectorVector rneaDerivativeAccumulatedForce;
+  LinkContactVector linkContacts;
+  ConstrainedDofVector constrainedDof;
+  ConstrainedTargetVector constrainedTarget;
   MultibodyLinkContactProblem contactProblem;
   std::size_t activeContactRowCount = 0;
-  std::vector<Eigen::MatrixXd> bodyJacobian;
+  BodyJacobianVector bodyJacobian;
   Eigen::MatrixXd pointJacobian;
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
   Eigen::VectorXd contactImpulseDelta;
 };
+
+MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
+    World& world, detail::WorldRegistry& registry, entt::entity entity)
+{
+  if (auto* scratch = registry.try_get<MultibodyDynamicsScratch>(entity)) {
+    return *scratch;
+  }
+  return registry.emplace<MultibodyDynamicsScratch>(
+      entity, world.getMemoryManager().getFreeAllocator());
+}
 
 //==============================================================================
 void gatherMultibodyVelocityInto(
@@ -880,21 +981,20 @@ bool computeUnconstrainedMultibodyVelocityInto(
       }
     }
     if (anyExternalForce) {
-      const std::vector<Eigen::MatrixXd> bodyJacobian
-          = linkBodyJacobians(scratch.tree);
+      linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
       for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
         const Vector6 wrench
             = registry.get<comps::Link>(structure.links[i]).externalForce;
         if (!wrench.isZero()) {
           scratch.appliedForce.noalias()
-              += bodyJacobian[i].transpose() * wrench;
+              += scratch.bodyJacobian[i].transpose() * wrench;
         }
       }
     }
   }
 
   computeMassAndBiasInto(
-      scratch.tree.links,
+      linkSpan(scratch.tree),
       scratch.tree.dofCount,
       gravity,
       scratch.qdot,
@@ -1023,9 +1123,10 @@ double linkContactRelativeVelocity(
 }
 
 //==============================================================================
+template <typename BodyJacobianVector>
 void pointLinearJacobianInto(
     const DynamicsTree& tree,
-    const std::vector<Eigen::MatrixXd>& bodyJacobian,
+    const BodyJacobianVector& bodyJacobian,
     std::size_t linkIndex,
     const Eigen::Vector3d& point,
     Eigen::MatrixXd& pointJacobian)
@@ -1044,9 +1145,9 @@ void pointLinearJacobianInto(
   const auto& linkJacobian = bodyJacobian[linkIndex];
   for (Eigen::Index column = 0; column < dofCount; ++column) {
     const Eigen::Vector3d angular
-        = rotation * linkJacobian.col(column).head<3>();
+        = rotation * linkJacobian.col(column).template head<3>();
     const Eigen::Vector3d linear
-        = rotation * linkJacobian.col(column).tail<3>();
+        = rotation * linkJacobian.col(column).template tail<3>();
     pointJacobian.col(column) = linear - arm.cross(angular);
   }
 }
@@ -1181,7 +1282,7 @@ bool prepareMultibodyContactDynamicsInto(
   const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
   problem.inverseMass.resize(dof, dof);
   computeMassAndBiasInto(
-      scratch.tree.links,
+      linkSpan(scratch.tree),
       scratch.tree.dofCount,
       Eigen::Vector3d::Zero(),
       nextVelocity,
@@ -1379,7 +1480,7 @@ void solveMultibodyLinkContacts(
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity,
     double timeStep,
-    const std::vector<LinkContact>& linkContacts,
+    std::span<const LinkContact> linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
   if (!assembleMultibodyLinkContactProblemInto(
@@ -1723,11 +1824,12 @@ void enforceMultibodyVelocityLimits(
 }
 
 //==============================================================================
+template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
-    const std::vector<Contact>& contacts,
-    std::vector<LinkContact>& linkContacts)
+    std::span<const Contact> contacts,
+    LinkContactVector& linkContacts)
 {
   const auto isRigidBody = [&](entt::entity entity) {
     return registry.all_of<comps::RigidBodyTag>(entity);
@@ -1844,7 +1946,7 @@ void simulateMultibody(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const std::vector<LinkContact>& linkContacts,
+    std::span<const LinkContact> linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
   if (!computeUnconstrainedMultibodyVelocityInto(
@@ -2018,46 +2120,69 @@ bool treeSupportsAnalyticDerivatives(
 }
 
 //==============================================================================
+using SpatialVectorScratch = MultibodyDynamicsScratch::SpatialVectorVector;
+
+void resetSpatialVectorScratch(SpatialVectorScratch& scratch, std::size_t count)
+{
+  scratch.resize(count);
+  const Vector6 zero = Vector6::Zero();
+  std::fill(scratch.begin(), scratch.end(), zero);
+}
+
+//==============================================================================
 // Analytic ∂τ/∂q and ∂τ/∂q̇ of inverse dynamics τ = ID(q, q̇, qddot) via
 // Recursive-Newton-Euler derivative recursions, for trees of constant
 // unit-twist joints (see treeSupportsAnalyticDerivatives). [angular; linear]
 // spatial convention; crm = motionCross, crf = forceCross; ∂X_i/∂q_i =
 // -crm(S_i) X_i. O(dof²): a down/up sweep per source coordinate.
 InverseDynamicsDerivatives rneaDerivatives(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
     const Eigen::VectorXd& qddot,
-    const Eigen::VectorXd& qdot)
+    const Eigen::VectorXd& qdot,
+    SpatialVectorScratch& velocity,
+    SpatialVectorScratch& acceleration,
+    SpatialVectorScratch& force,
+    SpatialVectorScratch& jointVelocity,
+    SpatialVectorScratch& totalForce,
+    SpatialVectorScratch& deltaVelocity,
+    SpatialVectorScratch& deltaAcceleration,
+    SpatialVectorScratch& deltaForce,
+    SpatialVectorScratch& accumulatedForce)
 {
   const auto count = links.size();
   const auto n = static_cast<Eigen::Index>(dofCount);
 
   // Forward pass: per-link spatial velocity v, acceleration a, force f, and the
   // joint velocity contribution jv = S_i q̇_i.
-  std::vector<Vector6> v(count, Vector6::Zero());
-  std::vector<Vector6> a(count, Vector6::Zero());
-  std::vector<Vector6> f(count, Vector6::Zero());
-  std::vector<Vector6> jv(count, Vector6::Zero());
+  resetSpatialVectorScratch(velocity, count);
+  resetSpatialVectorScratch(acceleration, count);
+  resetSpatialVectorScratch(force, count);
+  resetSpatialVectorScratch(jointVelocity, count);
   for (std::size_t i = 0; i < count; ++i) {
     const auto& link = links[i];
     if (link.parentIndex < 0) {
-      a[i] = link.parentToChild * baseAcceleration;
+      acceleration[i] = link.parentToChild * baseAcceleration;
     } else {
       const auto p = static_cast<std::size_t>(link.parentIndex);
       if (link.dof > 0) {
-        jv[i] = link.subspace * qdot.segment(link.dofOffset, link.dof);
-        a[i] = link.subspace * qddot.segment(link.dofOffset, link.dof);
+        jointVelocity[i]
+            = link.subspace * qdot.segment(link.dofOffset, link.dof);
+        acceleration[i]
+            = link.subspace * qddot.segment(link.dofOffset, link.dof);
       }
-      v[i] = link.parentToChild * v[p] + jv[i];
-      a[i] += link.parentToChild * a[p] + crossMotion(v[i], jv[i]);
+      velocity[i] = link.parentToChild * velocity[p] + jointVelocity[i];
+      acceleration[i] += link.parentToChild * acceleration[p]
+                         + crossMotion(velocity[i], jointVelocity[i]);
     }
-    f[i] = link.inertia * a[i] + crossForce(v[i], link.inertia * v[i]);
+    force[i] = link.inertia * acceleration[i]
+               + crossForce(velocity[i], link.inertia * velocity[i]);
   }
 
   // Total accumulated force F_i = f_i + Σ_children X_c^T F_c (needed by the
   // δ(X^T) term in the position-derivative backward sweep).
-  std::vector<Vector6> totalForce = f;
+  totalForce.assign(force.begin(), force.end());
   for (std::size_t r = 0; r < count; ++r) {
     const auto i = count - 1 - r;
     if (links[i].parentIndex >= 0) {
@@ -2080,40 +2205,45 @@ InverseDynamicsDerivatives rneaDerivatives(
 
     // ---------- ∂/∂q_j ----------
     {
-      std::vector<Vector6> dv(count, Vector6::Zero());
-      std::vector<Vector6> da(count, Vector6::Zero());
-      std::vector<Vector6> df(count, Vector6::Zero());
+      resetSpatialVectorScratch(deltaVelocity, count);
+      resetSpatialVectorScratch(deltaAcceleration, count);
+      resetSpatialVectorScratch(deltaForce, count);
       for (std::size_t i = 0; i < count; ++i) {
         const auto& link = links[i];
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dv[i] = link.parentToChild * dv[p];
-          da[i] = link.parentToChild * da[p];
+          deltaVelocity[i] = link.parentToChild * deltaVelocity[p];
+          deltaAcceleration[i] = link.parentToChild * deltaAcceleration[p];
           if (i == m) {
             // ∂X_m/∂q_j = -crm(S_m) X_m acting on the parent motion/accel.
-            dv[i] += -crossMotion(subspaceM, link.parentToChild * v[p]);
-            da[i] += -crossMotion(subspaceM, link.parentToChild * a[p]);
+            deltaVelocity[i]
+                += -crossMotion(subspaceM, link.parentToChild * velocity[p]);
+            deltaAcceleration[i] += -crossMotion(
+                subspaceM, link.parentToChild * acceleration[p]);
           }
-          da[i] += crossMotion(dv[i], jv[i]);
+          deltaAcceleration[i]
+              += crossMotion(deltaVelocity[i], jointVelocity[i]);
         }
-        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
-                + crossForce(v[i], link.inertia * dv[i]);
+        deltaForce[i]
+            = link.inertia * deltaAcceleration[i]
+              + crossForce(deltaVelocity[i], link.inertia * velocity[i])
+              + crossForce(velocity[i], link.inertia * deltaVelocity[i]);
       }
-      std::vector<Vector6> dForce = df;
+      accumulatedForce.assign(deltaForce.begin(), deltaForce.end());
       for (std::size_t r = 0; r < count; ++r) {
         const auto i = count - 1 - r;
         const auto& link = links[i];
         if (link.dof > 0) {
           out.dTau_dq(static_cast<Eigen::Index>(link.dofOffset), j)
-              = link.subspace.col(0).dot(dForce[i]);
+              = link.subspace.col(0).dot(accumulatedForce[i]);
         }
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dForce[p] += link.childToParentForce * dForce[i];
+          accumulatedForce[p] += link.childToParentForce * accumulatedForce[i];
           if (i == m) {
             // δ(X_m^T) F_m = X_m^T crf(S_m) F_m.
-            dForce[p] += link.childToParentForce
-                         * crossForce(subspaceM, totalForce[i]);
+            accumulatedForce[p] += link.childToParentForce
+                                   * crossForce(subspaceM, totalForce[i]);
           }
         }
       }
@@ -2121,35 +2251,38 @@ InverseDynamicsDerivatives rneaDerivatives(
 
     // ---------- ∂/∂q̇_j ----------
     {
-      std::vector<Vector6> dv(count, Vector6::Zero());
-      std::vector<Vector6> da(count, Vector6::Zero());
-      std::vector<Vector6> df(count, Vector6::Zero());
+      resetSpatialVectorScratch(deltaVelocity, count);
+      resetSpatialVectorScratch(deltaAcceleration, count);
+      resetSpatialVectorScratch(deltaForce, count);
       for (std::size_t i = 0; i < count; ++i) {
         const auto& link = links[i];
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dv[i] = link.parentToChild * dv[p];
-          da[i] = link.parentToChild * da[p];
+          deltaVelocity[i] = link.parentToChild * deltaVelocity[p];
+          deltaAcceleration[i] = link.parentToChild * deltaAcceleration[p];
           if (i == m) {
-            dv[i] += subspaceM;
-            da[i] += crossMotion(v[i], subspaceM);
+            deltaVelocity[i] += subspaceM;
+            deltaAcceleration[i] += crossMotion(velocity[i], subspaceM);
           }
-          da[i] += crossMotion(dv[i], jv[i]);
+          deltaAcceleration[i]
+              += crossMotion(deltaVelocity[i], jointVelocity[i]);
         }
-        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
-                + crossForce(v[i], link.inertia * dv[i]);
+        deltaForce[i]
+            = link.inertia * deltaAcceleration[i]
+              + crossForce(deltaVelocity[i], link.inertia * velocity[i])
+              + crossForce(velocity[i], link.inertia * deltaVelocity[i]);
       }
-      std::vector<Vector6> dForce = df;
+      accumulatedForce.assign(deltaForce.begin(), deltaForce.end());
       for (std::size_t r = 0; r < count; ++r) {
         const auto i = count - 1 - r;
         const auto& link = links[i];
         if (link.dof > 0) {
           out.dTau_dqdot(static_cast<Eigen::Index>(link.dofOffset), j)
-              = link.subspace.col(0).dot(dForce[i]);
+              = link.subspace.col(0).dot(accumulatedForce[i]);
         }
         if (link.parentIndex >= 0) {
-          dForce[static_cast<std::size_t>(link.parentIndex)]
-              += link.childToParentForce * dForce[i];
+          accumulatedForce[static_cast<std::size_t>(link.parentIndex)]
+              += link.childToParentForce * accumulatedForce[i];
         }
       }
     }
@@ -2165,6 +2298,304 @@ struct MultibodyLinkContactAssemblyScratch::Impl
 {
   MultibodyDynamicsScratch scratch;
 };
+
+//==============================================================================
+struct MultibodyDynamicsTermsScratch::Impl
+{
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
+struct MultibodyLinkJacobianScratch::Impl
+{
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
+struct MultibodyInverseDynamicsScratch::Impl
+{
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch()
+  : MultibodyDynamicsTermsScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::~MultibodyDynamicsTermsScratch() = default;
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyDynamicsTermsScratch& MultibodyDynamicsTermsScratch::operator=(
+    MultibodyDynamicsTermsScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyDynamicsTermsScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyDynamicsTermsScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyDynamicsTermsScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch()
+  : MultibodyLinkJacobianScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
+
+//==============================================================================
+MultibodyLinkJacobianScratch::~MultibodyLinkJacobianScratch() = default;
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyLinkJacobianScratch& MultibodyLinkJacobianScratch::operator=(
+    MultibodyLinkJacobianScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyLinkJacobianScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyLinkJacobianScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyLinkJacobianScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch()
+  : MultibodyInverseDynamicsScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::~MultibodyInverseDynamicsScratch() = default;
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyInverseDynamicsScratch& MultibodyInverseDynamicsScratch::operator=(
+    MultibodyInverseDynamicsScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyInverseDynamicsScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyInverseDynamicsScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyInverseDynamicsScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
+void reserveMultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+
+  const auto linkCount = storage.tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  storage.qdot.resize(dof);
+  storage.rneaResponse.resize(dof);
+  storage.rneaVelocity.resize(linkCount);
+  storage.rneaAcceleration.resize(linkCount);
+  storage.rneaForce.resize(linkCount);
+}
+
+//==============================================================================
+void computeMultibodyInverseDynamicsInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration,
+    Eigen::VectorXd& result)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  if (structure.links.empty()) {
+    result.resize(0);
+    return;
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  if (storage.tree.dofCount == 0) {
+    result.resize(0);
+    return;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      desiredAcceleration.size()
+          != static_cast<Eigen::Index>(storage.tree.dofCount),
+      InvalidArgumentException,
+      "Desired acceleration dimension ({}) must match the multibody DOF count "
+      "({})",
+      desiredAcceleration.size(),
+      storage.tree.dofCount);
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
+
+  Vector6 baseAcceleration = Vector6::Zero();
+  baseAcceleration.tail<3>() = -gravity;
+  recursiveNewtonEulerInto(
+      linkSpan(storage.tree),
+      baseAcceleration,
+      storage.tree.dofCount,
+      desiredAcceleration,
+      storage.qdot,
+      result,
+      storage.rneaVelocity,
+      storage.rneaAcceleration,
+      storage.rneaForce);
+
+  // Armature contributes diag(armature) * qddot to the joint forces.
+  if (storage.tree.armature.size() == desiredAcceleration.size()) {
+    result += storage.tree.armature.cwiseProduct(desiredAcceleration);
+  }
+}
 
 //==============================================================================
 MultibodyLinkContactAssemblyScratch::MultibodyLinkContactAssemblyScratch()
@@ -2236,37 +2667,105 @@ bool assembleMultibodyLinkContactProblemInto(
 }
 
 //==============================================================================
+void reserveMultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyDynamicsTermsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+
+  const auto linkCount = storage.tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  storage.qdot.resize(dof);
+  storage.zero.resize(dof);
+  storage.unitAcceleration.resize(dof);
+  storage.rneaResponse.resize(dof);
+  storage.massAndBias.massMatrix.resize(dof, dof);
+  storage.massAndBias.bias.resize(dof);
+  storage.massAndBias.gravityOnly.resize(dof);
+  storage.rneaVelocity.resize(linkCount);
+  storage.rneaAcceleration.resize(linkCount);
+  storage.rneaForce.resize(linkCount);
+}
+
+//==============================================================================
+void computeMultibodyDynamicsTermsInto(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyDynamicsTerms& result)
+{
+  if (structure.links.empty()) {
+    result.massMatrix.resize(0, 0);
+    result.coriolisForces.resize(0);
+    result.gravityForces.resize(0);
+    return;
+  }
+
+  reserveMultibodyDynamicsTermsScratch(scratch, registry, structure);
+
+  auto& storage = scratch.m_impl->scratch;
+  if (storage.tree.dofCount == 0) {
+    result.massMatrix.resize(0, 0);
+    result.coriolisForces.resize(0);
+    result.gravityForces.resize(0);
+    return;
+  }
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
+  computeMassAndBiasInto(
+      linkSpan(storage.tree),
+      storage.tree.dofCount,
+      gravity,
+      storage.qdot,
+      storage.tree.armature,
+      storage.massAndBias,
+      storage.zero,
+      storage.unitAcceleration,
+      storage.rneaResponse,
+      storage.rneaVelocity,
+      storage.rneaAcceleration,
+      storage.rneaForce);
+
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  result.massMatrix.resize(dof, dof);
+  result.massMatrix = storage.massAndBias.massMatrix;
+  result.gravityForces.resize(dof);
+  result.gravityForces = storage.massAndBias.gravityOnly;
+  result.coriolisForces.resize(dof);
+  result.coriolisForces = storage.massAndBias.bias;
+  result.coriolisForces -= storage.massAndBias.gravityOnly;
+}
+
+//==============================================================================
 MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
+  MultibodyDynamicsTermsScratch scratch;
   MultibodyDynamicsTerms terms;
-  if (structure.links.empty()) {
-    return terms;
-  }
-
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return terms;
-  }
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
-    }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
-  }
-
-  const MassAndBias mb = computeMassAndBias(
-      tree.links, tree.dofCount, gravity, qdot, tree.armature);
-
-  terms.massMatrix = mb.massMatrix;
-  terms.gravityForces = mb.gravityOnly;
-  terms.coriolisForces = mb.bias - mb.gravityOnly;
+  computeMultibodyDynamicsTermsInto(
+      scratch, registry, structure, gravity, terms);
   return terms;
 }
 
@@ -2277,45 +2776,11 @@ Eigen::VectorXd computeMultibodyInverseDynamics(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration)
 {
-  if (structure.links.empty()) {
-    return {};
-  }
-
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return {};
-  }
-
-  DART_SIMULATION_THROW_T_IF(
-      desiredAcceleration.size() != static_cast<Eigen::Index>(tree.dofCount),
-      InvalidArgumentException,
-      "Desired acceleration dimension ({}) must match the multibody DOF count "
-      "({})",
-      desiredAcceleration.size(),
-      tree.dofCount);
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
-    }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
-  }
-
-  Vector6 baseAcceleration = Vector6::Zero();
-  baseAcceleration.tail<3>() = -gravity;
-
-  Eigen::VectorXd tau = recursiveNewtonEuler(
-      tree.links, baseAcceleration, tree.dofCount, desiredAcceleration, qdot);
-
-  // Armature contributes diag(armature) * qddot to the joint forces.
-  if (tree.armature.size() == desiredAcceleration.size()) {
-    tau += tree.armature.cwiseProduct(desiredAcceleration);
-  }
-
-  return tau;
+  MultibodyInverseDynamicsScratch scratch;
+  Eigen::VectorXd result;
+  computeMultibodyInverseDynamicsInto(
+      scratch, registry, structure, gravity, desiredAcceleration, result);
+  return result;
 }
 
 //==============================================================================
@@ -2325,38 +2790,73 @@ InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration)
 {
+  MultibodyInverseDynamicsScratch scratch;
   InverseDynamicsDerivatives result;
+  computeMultibodyInverseDynamicsDerivativesInto(
+      scratch, registry, structure, gravity, generalizedAcceleration, result);
+  return result;
+}
+
+//==============================================================================
+void computeMultibodyInverseDynamicsDerivativesInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration,
+    InverseDynamicsDerivatives& result)
+{
+  result = InverseDynamicsDerivatives{};
   if (structure.links.empty()) {
-    return result;
+    return;
   }
 
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0
-      || generalizedAcceleration.size()
-             != static_cast<Eigen::Index>(tree.dofCount)
-      || !treeSupportsAnalyticDerivatives(registry, tree)) {
-    return result; // valid == false: caller falls back to finite differencing
-  }
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+    scratch.m_impl.reset(impl);
   }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  if (storage.tree.dofCount == 0
+      || generalizedAcceleration.size()
+             != static_cast<Eigen::Index>(storage.tree.dofCount)
+      || !treeSupportsAnalyticDerivatives(registry, storage.tree)) {
+    return; // valid == false: caller falls back to finite differencing
+  }
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
 
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
 
-  return rneaDerivatives(
-      tree.links,
+  result = rneaDerivatives(
+      linkSpan(storage.tree),
       baseAcceleration,
-      tree.dofCount,
+      storage.tree.dofCount,
       generalizedAcceleration,
-      qdot);
+      storage.qdot,
+      storage.rneaDerivativeVelocity,
+      storage.rneaDerivativeAcceleration,
+      storage.rneaDerivativeForce,
+      storage.rneaDerivativeJointVelocity,
+      storage.rneaDerivativeTotalForce,
+      storage.rneaDerivativeDeltaVelocity,
+      storage.rneaDerivativeDeltaAcceleration,
+      storage.rneaDerivativeDeltaForce,
+      storage.rneaDerivativeAccumulatedForce);
 }
 
 //==============================================================================
@@ -2365,9 +2865,11 @@ Eigen::MatrixXd computeMultibodyLinkJacobian(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
-  const auto targetIndex = linkIndexOf(structure, linkEntity);
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  return linkBodyJacobians(tree)[targetIndex];
+  MultibodyLinkJacobianScratch scratch;
+  Eigen::MatrixXd result;
+  computeMultibodyLinkJacobianInto(
+      scratch, registry, structure, linkEntity, result);
+  return result;
 }
 
 //==============================================================================
@@ -2376,19 +2878,79 @@ Eigen::MatrixXd computeMultibodyLinkWorldJacobian(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
+  MultibodyLinkJacobianScratch scratch;
+  Eigen::MatrixXd result;
+  computeMultibodyLinkWorldJacobianInto(
+      scratch, registry, structure, linkEntity, result);
+  return result;
+}
+
+//==============================================================================
+void reserveMultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyLinkJacobianScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  linkBodyJacobiansInto(storage.tree, storage.bodyJacobian);
+}
+
+//==============================================================================
+void computeMultibodyLinkJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result)
+{
   const auto targetIndex = linkIndexOf(structure, linkEntity);
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  const Eigen::MatrixXd bodyJacobian = linkBodyJacobians(tree)[targetIndex];
+  reserveMultibodyLinkJacobianScratch(scratch, registry, structure);
+
+  const auto& bodyJacobian = scratch.m_impl->scratch.bodyJacobian[targetIndex];
+  result.resize(bodyJacobian.rows(), bodyJacobian.cols());
+  result = bodyJacobian;
+}
+
+//==============================================================================
+void computeMultibodyLinkWorldJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result)
+{
+  const auto targetIndex = linkIndexOf(structure, linkEntity);
+  reserveMultibodyLinkJacobianScratch(scratch, registry, structure);
+
+  const auto& storage = scratch.m_impl->scratch;
+  const auto& bodyJacobian = storage.bodyJacobian[targetIndex];
 
   // Rotate both the angular and linear blocks into world axes, keeping the link
   // origin as the reference point: this is the geometric (world-frame) Jacobian
   // [angular; linear of the link origin].
   const Eigen::Matrix3d rotation
-      = tree.links[targetIndex].worldTransform.linear();
-  Eigen::MatrixXd worldJacobian(6, bodyJacobian.cols());
-  worldJacobian.topRows<3>() = rotation * bodyJacobian.topRows<3>();
-  worldJacobian.bottomRows<3>() = rotation * bodyJacobian.bottomRows<3>();
-  return worldJacobian;
+      = storage.tree.links[targetIndex].worldTransform.linear();
+  result.resize(6, bodyJacobian.cols());
+  result.topRows<3>().noalias() = rotation * bodyJacobian.topRows<3>();
+  result.bottomRows<3>().noalias() = rotation * bodyJacobian.bottomRows<3>();
 }
 
 //==============================================================================
@@ -2423,13 +2985,23 @@ void MultibodyForwardDynamicsStage::execute(
   // equal-and-opposite impulse (two-sided). Same-multibody link-vs-link
   // contacts use one relative-Jacobian row; cross-multibody link-vs-link
   // contacts remain a later unified-solve slice.
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const bool hasContactShapes
+      = hasAnyCollisionShapesForMultibodyContacts(registry, view);
+  std::span<const Contact> contacts;
+  if (hasContactShapes) {
+    contacts = world.queryContacts(CollisionQueryOptions{});
+  }
 
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
-    collectMultibodyLinkContactsInto(
-        registry, structure, contacts, scratch.linkContacts);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
+    if (hasContactShapes) {
+      collectMultibodyLinkContactsInto(
+          registry, structure, contacts, scratch.linkContacts);
+    } else {
+      scratch.linkContacts.clear();
+    }
 
     simulateMultibody(
         registry, structure, gravity, timeStep, scratch.linkContacts, scratch);
@@ -2470,7 +3042,8 @@ void MultibodyVelocityStage::execute(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
     if (!computeUnconstrainedMultibodyVelocityInto(
@@ -2508,11 +3081,15 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   if (view.begin() == view.end()) {
     return;
   }
+  if (!hasAnyCollisionShapesForMultibodyContacts(registry, view)) {
+    return;
+  }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, scratch.linkContacts);
     if (scratch.linkContacts.empty()) {
@@ -2571,7 +3148,8 @@ void MultibodyPositionStage::execute(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     Eigen::VectorXd* nextVelocity = nullptr;
     if (auto* pendingVelocity
         = registry.try_get<PendingMultibodyVelocity>(entity);
@@ -2604,7 +3182,9 @@ void MultibodyPositionStage::execute(
 
 //==============================================================================
 void reserveMultibodyDynamicsRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount)
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    common::MemoryAllocator& allocator)
 {
   auto& pendingVelocityStorage = registry.storage<PendingMultibodyVelocity>();
   auto& dynamicsScratchStorage = registry.storage<MultibodyDynamicsScratch>();
@@ -2618,7 +3198,11 @@ void reserveMultibodyDynamicsRegistryStorage(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto* existingScratch = registry.try_get<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = existingScratch != nullptr
+              ? *existingScratch
+              : registry.emplace<MultibodyDynamicsScratch>(entity, allocator);
     buildDynamicsTreeInto(
         registry,
         structure,
@@ -2665,7 +3249,7 @@ void reserveMultibodyDynamicsRegistryStorage(
     if (dof > 0) {
       gatherMultibodyVelocityInto(registry, scratch.tree, scratch.qdot);
       computeMassAndBiasInto(
-          scratch.tree.links,
+          linkSpan(scratch.tree),
           scratch.tree.dofCount,
           Eigen::Vector3d::Zero(),
           scratch.qdot,
@@ -2689,20 +3273,76 @@ void reserveMultibodyDynamicsRegistryStorage(
 //==============================================================================
 struct UnifiedConstraintStage::Scratch
 {
+  using EntityAllocator = common::StlAllocator<entt::entity>;
+  using LinkContactAllocator = common::StlAllocator<LinkContact>;
+  using RequiredMultibodyAllocator = common::StlAllocator<char>;
+  using UnifiedContactAllocator = common::StlAllocator<UnifiedMultibodyContact>;
+  using ScratchPointerAllocator
+      = common::StlAllocator<MultibodyDynamicsScratch*>;
+  using VelocityAllocator = common::StlAllocator<Eigen::VectorXd>;
+
+  struct LinkContactBucket
+  {
+    using ContactVector = std::vector<LinkContact, LinkContactAllocator>;
+
+    LinkContactBucket() = default;
+
+    explicit LinkContactBucket(common::MemoryAllocator& allocator)
+      : contacts(LinkContactAllocator{allocator})
+    {
+    }
+
+    ContactVector contacts;
+  };
+
+  using LinkContactBucketAllocator = common::StlAllocator<LinkContactBucket>;
+
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      rigidProblem(allocator),
+      multibodyEntities(EntityAllocator{allocator}),
+      contactsByMultibody(LinkContactBucketAllocator{allocator}),
+      requiredMultibody(RequiredMultibodyAllocator{allocator}),
+      multibodyContacts(UnifiedContactAllocator{allocator}),
+      multibodyScratch(ScratchPointerAllocator{allocator}),
+      multibodyVelocities(VelocityAllocator{allocator}),
+      problem(allocator),
+      solveScratch(allocator)
+  {
+  }
+
+  void resizeContactBuckets(std::size_t count)
+  {
+    while (contactsByMultibody.size() < count) {
+      if (memoryAllocator != nullptr) {
+        contactsByMultibody.emplace_back(*memoryAllocator);
+      } else {
+        contactsByMultibody.emplace_back();
+      }
+    }
+    contactsByMultibody.resize(count);
+  }
+
+  common::MemoryAllocator* memoryAllocator = nullptr;
   RigidBodyContactProblem rigidProblem;
-  std::vector<entt::entity> multibodyEntities;
-  std::vector<std::vector<LinkContact>> contactsByMultibody;
-  std::vector<char> requiredMultibody;
-  std::vector<UnifiedMultibodyContact> multibodyContacts;
-  std::vector<MultibodyDynamicsScratch*> multibodyScratch;
-  std::vector<Eigen::VectorXd> multibodyVelocities;
+  std::vector<entt::entity, EntityAllocator> multibodyEntities;
+  std::vector<LinkContactBucket, LinkContactBucketAllocator>
+      contactsByMultibody;
+  std::vector<char, RequiredMultibodyAllocator> requiredMultibody;
+  std::vector<UnifiedMultibodyContact, UnifiedContactAllocator>
+      multibodyContacts;
+  std::vector<MultibodyDynamicsScratch*, ScratchPointerAllocator>
+      multibodyScratch;
+  std::vector<Eigen::VectorXd, VelocityAllocator> multibodyVelocities;
   UnifiedConstraintProblem problem;
   UnifiedConstraintSolveScratch solveScratch;
 };
 
 //==============================================================================
 bool UnifiedConstraintStage::assembleProblemIntoScratch(
-    World& world, const std::vector<Contact>& contacts)
+    World& world, std::span<const Contact> contacts)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
@@ -2722,7 +3362,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     scratch.multibodyEntities.push_back(entity);
   }
 
-  scratch.contactsByMultibody.resize(scratch.multibodyEntities.size());
+  scratch.resizeContactBuckets(scratch.multibodyEntities.size());
   scratch.requiredMultibody.assign(scratch.multibodyEntities.size(), 0);
 
   const auto findMultibodyIndex = [&](entt::entity multibody) {
@@ -2739,7 +3379,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
   for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
     const auto entity = scratch.multibodyEntities[k];
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& linkContacts = scratch.contactsByMultibody[k];
+    auto& linkContacts = scratch.contactsByMultibody[k].contacts;
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, linkContacts);
     if (!linkContacts.empty()) {
@@ -2747,7 +3387,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     }
   }
   for (const auto& linkContacts : scratch.contactsByMultibody) {
-    for (const auto& contact : linkContacts) {
+    for (const auto& contact : linkContacts.contacts) {
       if (contact.otherMultibody != entt::null) {
         const auto otherIndex = findMultibodyIndex(contact.otherMultibody);
         if (otherIndex < scratch.requiredMultibody.size()) {
@@ -2760,7 +3400,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
   std::size_t stagedBlockCount = 0;
   for (std::size_t k = 0; k < scratch.multibodyEntities.size(); ++k) {
     const auto entity = scratch.multibodyEntities[k];
-    const auto& linkContacts = scratch.contactsByMultibody[k];
+    const auto& linkContacts = scratch.contactsByMultibody[k].contacts;
     if (linkContacts.empty() && scratch.requiredMultibody[k] == 0) {
       continue;
     }
@@ -2771,7 +3411,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     }
     auto& stagedVelocity = scratch.multibodyVelocities[stagedBlockCount];
     auto& dynamicsScratch
-        = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
     if (pendingVelocity != nullptr && pendingVelocity->active) {
       stagedVelocity = pendingVelocity->velocity;
@@ -2830,13 +3470,33 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
 
 //==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
+  : UnifiedConstraintStage(frictionIterations, nullptr)
+{
+}
+
+//==============================================================================
+UnifiedConstraintStage::UnifiedConstraintStage(
+    std::size_t frictionIterations, common::MemoryManager* memoryManager)
   : m_frictionIterations(std::max<std::size_t>(1, frictionIterations)),
-    m_scratch(std::make_unique<Scratch>())
+    m_memoryManager(memoryManager),
+    m_scratch(
+        memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  memoryManager, memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
+        ScratchDeleter{memoryManager})
 {
 }
 
 //==============================================================================
 UnifiedConstraintStage::~UnifiedConstraintStage() = default;
+
+//==============================================================================
+void UnifiedConstraintStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
 
 //==============================================================================
 UnifiedConstraintStage::UnifiedConstraintStage(
@@ -2873,8 +3533,12 @@ void UnifiedConstraintStage::prepare(World& world)
   if (world.getContactSolverMethod() != ContactSolverMethod::BoxedLcp) {
     return;
   }
+  auto& registry = dart::simulation::detail::registryOf(world);
+  if (!hasAnyCollisionShapes(registry)) {
+    return;
+  }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
   }
@@ -2893,7 +3557,7 @@ void UnifiedConstraintStage::prepare(World& world)
 bool tryResolveSequentialMultibodyContacts(
     World& world,
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep)
 {
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
@@ -2927,7 +3591,8 @@ bool tryResolveSequentialMultibodyContacts(
   std::size_t crossMultibodyLinkContactCount = 0;
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, scratch.linkContacts);
     for (const auto& contact : scratch.linkContacts) {
@@ -3081,7 +3746,10 @@ void UnifiedConstraintStage::execute(
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  if (!hasAnyCollisionShapes(registry)) {
+    return;
+  }
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
   }

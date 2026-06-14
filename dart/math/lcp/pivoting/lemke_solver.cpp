@@ -336,11 +336,10 @@ LcpResult LemkeSolver::solve(
   const double absTol = (options.absoluteTolerance > 0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  const double compTol = (options.complementarityTolerance > 0)
+                             ? options.complementarityTolerance
+                             : mDefaultOptions.complementarityTolerance;
+  if (!problem.isStandardLcp(absTol)) {
     // Lemke is implemented for standard LCP only, but callers may still route
     // boxed/findex problems through this solver. Delegate to the boxed-capable
     // pivoting implementation to provide consistent behavior across solvers.
@@ -348,12 +347,36 @@ LcpResult LemkeSolver::solve(
     return fallback.solve(problem, x, options);
   }
 
+  Eigen::VectorXd w;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, std::max(absTol, compTol), x, &w)) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    const bool boundsOk = detail::computeEffectiveBounds(
+        lo, hi, findex, x, loEff, hiEff, &boundsMessage);
+    if (!boundsOk) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
+    result.complementarity
+        = detail::complementarityInfinityNorm(x, w, loEff, hiEff, absTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   // Call the legacy Lemke solver (expects w = Ax + q)
   const int exitCode = LemkeImpl(A, -b, &x);
 
   // Interpret exit code
   result.iterations = 1; // Pivoting methods don't have iterations in same sense
-  Eigen::VectorXd w = A * x - b;
+  w = A * x - b;
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string boundsMessage;
@@ -373,9 +396,6 @@ LcpResult LemkeSolver::solve(
     result.status = LcpSolverStatus::Success;
 
     if (options.validateSolution) {
-      const double compTol = (options.complementarityTolerance > 0)
-                                 ? options.complementarityTolerance
-                                 : mDefaultOptions.complementarityTolerance;
       const double validationTol = std::max(absTol, compTol);
       std::string validationMessage;
       const bool isValid = detail::validateSolution(

@@ -31,6 +31,9 @@
 
 #pragma once
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -39,21 +42,35 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::simulation::detail::newton_barrier {
 
+using EqualityIndexAllocator = dart::common::StlAllocator<int>;
+using EqualityIndexVector = std::vector<int, EqualityIndexAllocator>;
+
 struct EqualityChangeOfVariableResult
 {
+  EqualityChangeOfVariableResult() = default;
+
+  explicit EqualityChangeOfVariableResult(
+      dart::common::MemoryAllocator& allocator)
+    : independentRows(EqualityIndexAllocator{allocator}),
+      constrainedColumns(EqualityIndexAllocator{allocator}),
+      freeColumns(EqualityIndexAllocator{allocator})
+  {
+  }
+
   bool valid = false;
   bool fullRowRank = false;
   int rank = 0;
   double residualNorm = std::numeric_limits<double>::infinity();
-  std::vector<int> independentRows;
-  std::vector<int> constrainedColumns;
-  std::vector<int> freeColumns;
+  EqualityIndexVector independentRows;
+  EqualityIndexVector constrainedColumns;
+  EqualityIndexVector freeColumns;
   Eigen::VectorXd particularStep;
   Eigen::MatrixXd nullspaceBasis;
 };
@@ -74,7 +91,7 @@ namespace detail {
 
 //==============================================================================
 [[nodiscard]] inline Eigen::MatrixXd selectRows(
-    const Eigen::MatrixXd& matrix, const std::vector<int>& rows)
+    const Eigen::MatrixXd& matrix, std::span<const int> rows)
 {
   Eigen::MatrixXd selected(rows.size(), matrix.cols());
   for (int row = 0; row < static_cast<int>(rows.size()); ++row) {
@@ -85,7 +102,7 @@ namespace detail {
 
 //==============================================================================
 [[nodiscard]] inline Eigen::VectorXd selectEntries(
-    const Eigen::VectorXd& vector, const std::vector<int>& indices)
+    const Eigen::VectorXd& vector, std::span<const int> indices)
 {
   Eigen::VectorXd selected(indices.size());
   for (int row = 0; row < static_cast<int>(indices.size()); ++row) {
@@ -96,7 +113,7 @@ namespace detail {
 
 //==============================================================================
 [[nodiscard]] inline Eigen::MatrixXd selectColumns(
-    const Eigen::MatrixXd& matrix, const std::vector<int>& columns)
+    const Eigen::MatrixXd& matrix, std::span<const int> columns)
 {
   Eigen::MatrixXd selected(matrix.rows(), columns.size());
   for (int col = 0; col < static_cast<int>(columns.size()); ++col) {
@@ -106,10 +123,13 @@ namespace detail {
 }
 
 //==============================================================================
-[[nodiscard]] inline std::vector<int> firstPivots(
-    const Eigen::VectorXi& pivots, const int count)
+[[nodiscard]] inline EqualityIndexVector firstPivots(
+    const Eigen::VectorXi& pivots,
+    const int count,
+    dart::common::MemoryAllocator& allocator
+    = dart::common::MemoryAllocator::GetDefault())
 {
-  std::vector<int> selected;
+  EqualityIndexVector selected(EqualityIndexAllocator{allocator});
   selected.reserve(count);
   for (int i = 0;
        i < pivots.size() && static_cast<int>(selected.size()) < count;
@@ -123,10 +143,13 @@ namespace detail {
 }
 
 //==============================================================================
-[[nodiscard]] inline std::vector<int> complementIndices(
-    const int size, const std::vector<int>& selected)
+[[nodiscard]] inline EqualityIndexVector complementIndices(
+    const int size,
+    std::span<const int> selected,
+    dart::common::MemoryAllocator& allocator
+    = dart::common::MemoryAllocator::GetDefault())
 {
-  std::vector<int> complement;
+  EqualityIndexVector complement(EqualityIndexAllocator{allocator});
   complement.reserve(size - static_cast<int>(selected.size()));
   for (int index = 0; index < size; ++index) {
     if (std::find(selected.begin(), selected.end(), index) == selected.end()) {
@@ -143,9 +166,10 @@ namespace detail {
 makeEqualityChangeOfVariable(
     const Eigen::SparseMatrix<double>& equalityJacobian,
     const Eigen::VectorXd& equalityResidual,
+    dart::common::MemoryAllocator& allocator,
     const double tolerance = 1e-12)
 {
-  EqualityChangeOfVariableResult result;
+  EqualityChangeOfVariableResult result(allocator);
   const int numRows = static_cast<int>(equalityJacobian.rows());
   const int numCols = static_cast<int>(equalityJacobian.cols());
   result.particularStep = Eigen::VectorXd::Zero(numCols);
@@ -166,7 +190,8 @@ makeEqualityChangeOfVariable(
     result.fullRowRank = true;
     result.rank = 0;
     result.residualNorm = 0.0;
-    result.freeColumns = detail::complementIndices(numCols, {});
+    result.freeColumns
+        = detail::complementIndices(numCols, std::span<const int>{}, allocator);
     return result;
   }
 
@@ -178,12 +203,13 @@ makeEqualityChangeOfVariable(
   if (result.rank == 0) {
     result.valid = true;
     result.residualNorm = equalityResidual.norm();
-    result.freeColumns = detail::complementIndices(numCols, {});
+    result.freeColumns
+        = detail::complementIndices(numCols, std::span<const int>{}, allocator);
     return result;
   }
 
-  result.independentRows
-      = detail::firstPivots(rowQr.colsPermutation().indices(), result.rank);
+  result.independentRows = detail::firstPivots(
+      rowQr.colsPermutation().indices(), result.rank, allocator);
   if (static_cast<int>(result.independentRows.size()) != result.rank) {
     return result;
   }
@@ -199,13 +225,13 @@ makeEqualityChangeOfVariable(
     return result;
   }
 
-  result.constrainedColumns
-      = detail::firstPivots(columnQr.colsPermutation().indices(), result.rank);
+  result.constrainedColumns = detail::firstPivots(
+      columnQr.colsPermutation().indices(), result.rank, allocator);
   if (static_cast<int>(result.constrainedColumns.size()) != result.rank) {
     return result;
   }
-  result.freeColumns
-      = detail::complementIndices(numCols, result.constrainedColumns);
+  result.freeColumns = detail::complementIndices(
+      numCols, result.constrainedColumns, allocator);
 
   const Eigen::MatrixXd constrainedBlock
       = detail::selectColumns(independentJacobian, result.constrainedColumns);
@@ -243,6 +269,20 @@ makeEqualityChangeOfVariable(
                  && detail::allFinite(result.particularStep)
                  && detail::allFinite(result.nullspaceBasis);
   return result;
+}
+
+//==============================================================================
+[[nodiscard]] inline EqualityChangeOfVariableResult
+makeEqualityChangeOfVariable(
+    const Eigen::SparseMatrix<double>& equalityJacobian,
+    const Eigen::VectorXd& equalityResidual,
+    const double tolerance = 1e-12)
+{
+  return makeEqualityChangeOfVariable(
+      equalityJacobian,
+      equalityResidual,
+      dart::common::MemoryAllocator::GetDefault(),
+      tolerance);
 }
 
 //==============================================================================

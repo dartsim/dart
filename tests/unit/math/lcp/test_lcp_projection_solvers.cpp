@@ -525,6 +525,30 @@ TEST(BlockedJacobiSolver, SolveBoxedProblem)
 }
 
 //==============================================================================
+TEST(BlockedJacobiSolver, SolvesSingletonBoxedBlocksWithProjection)
+{
+  BlockedJacobiSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, 2);
+  A(0, 0) = 2.0;
+  A(1, 1) = 4.0;
+  Eigen::Vector2d b(3.0, -8.0);
+  Eigen::Vector2d lo(0.0, -1.0);
+  Eigen::Vector2d hi(1.0, 2.0);
+  LcpProblem problem(A, b, lo, hi);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_NEAR(x[0], 1.0, 1e-12);
+  EXPECT_NEAR(x[1], -1.0, 1e-12);
+  ExpectBoxed(x, problem.lo, problem.hi, kTol);
+}
+
+//==============================================================================
 TEST(BlockedJacobiSolver, SolveFrictionProblem)
 {
   BlockedJacobiSolver solver;
@@ -629,6 +653,23 @@ TEST(SymmetricPsorSolver, SolveBoxedProblem)
   options.maxIterations = 100;
   auto result = solver.solve(problem, x, options);
 
+  EXPECT_TRUE(x.array().isFinite().all());
+  ExpectBoxed(x, problem.lo, problem.hi, kTol);
+}
+
+//==============================================================================
+TEST(SymmetricPsorSolver, UsesProjectedActiveSetFastPathForSmallBoxedProblem)
+{
+  SymmetricPsorSolver solver;
+  auto problem = makeDantzigBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_EQ(result.iterations, 0);
   EXPECT_TRUE(x.array().isFinite().all());
   ExpectBoxed(x, problem.lo, problem.hi, kTol);
 }
@@ -966,7 +1007,7 @@ TEST(SubspaceMinimizationSolver, InvalidPgsIterations)
 }
 
 //==============================================================================
-TEST(JacobiSolver, LargeProblemHitsMaxIterations)
+TEST(JacobiSolver, WarmStartedLargeProblemHitsMaxIterations)
 {
   JacobiSolver solver;
   auto problem = makeLargeCoupledProblem(60);
@@ -976,6 +1017,7 @@ TEST(JacobiSolver, LargeProblemHitsMaxIterations)
   options.maxIterations = 1;
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
+  options.warmStart = true;
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
@@ -999,6 +1041,25 @@ TEST(RedBlackGaussSeidelSolver, LargeProblemHitsMaxIterations)
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(
+    RedBlackGaussSeidelSolver,
+    UsesProjectedActiveSetFastPathForSmallBoxedProblem)
+{
+  RedBlackGaussSeidelSolver solver;
+  auto problem = makeDantzigBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.array().isFinite().all());
+  ExpectBoxed(x, problem.lo, problem.hi, kTol);
 }
 
 //==============================================================================

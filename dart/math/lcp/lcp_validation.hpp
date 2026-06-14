@@ -36,11 +36,14 @@
 
 #include <dart/common/macros.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
+#include <Eigen/LU>
 
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -70,12 +73,18 @@ inline double projectToBounds(double value, double lo, double hi)
   return value;
 }
 
-inline bool validateProblem(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
+template <
+    typename ADerived,
+    typename BDerived,
+    typename LoDerived,
+    typename HiDerived,
+    typename FindexDerived>
+inline bool validateProblemView(
+    const Eigen::MatrixBase<ADerived>& A,
+    const Eigen::MatrixBase<BDerived>& b,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
+    const Eigen::MatrixBase<FindexDerived>& findex,
     std::string* message = nullptr)
 {
   const bool dimensionMismatch
@@ -85,6 +94,20 @@ inline bool validateProblem(
   if (dimensionMismatch) {
     if (message) {
       *message = "Matrix/vector dimensions inconsistent";
+    }
+    return false;
+  }
+
+  if (!A.allFinite()) {
+    if (message) {
+      *message = "Matrix contains non-finite values";
+    }
+    return false;
+  }
+
+  if (!b.allFinite()) {
+    if (message) {
+      *message = "Vector b contains non-finite values";
     }
     return false;
   }
@@ -113,9 +136,24 @@ inline bool validateProblem(
       return false;
     }
 
+    if (lo[i] == std::numeric_limits<double>::infinity()
+        || hi[i] == -std::numeric_limits<double>::infinity()) {
+      if (message) {
+        *message = "Bounds have invalid infinity direction";
+      }
+      return false;
+    }
+
     if (ref >= 0 && !std::isfinite(hi[i])) {
       if (message) {
         *message = "Friction coefficient (hi) must be finite";
+      }
+      return false;
+    }
+
+    if (ref >= 0 && hi[i] < 0.0) {
+      if (message) {
+        *message = "Friction coefficient (hi) must be non-negative";
       }
       return false;
     }
@@ -132,10 +170,28 @@ inline bool validateProblem(
 }
 
 inline bool validateProblem(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    std::string* message = nullptr)
+{
+  return validateProblemView(A, b, lo, hi, findex, message);
+}
+
+inline bool validateProblem(
     const LcpProblem& problem, std::string* message = nullptr)
 {
-  return validateProblem(
-      problem.A, problem.b, problem.lo, problem.hi, problem.findex, message);
+  const std::string problemMessage = problem.getValidationMessage();
+  if (problemMessage.empty()) {
+    return true;
+  }
+
+  if (message) {
+    *message = problemMessage;
+  }
+  return false;
 }
 
 inline bool computeEffectiveBounds(
@@ -180,6 +236,88 @@ inline bool computeEffectiveBounds(
     }
 
     const double scale = x[ref];
+    const double mu = hi[i];
+    if (!std::isfinite(scale)) {
+      if (message) {
+        *message = "Invalid friction index reference value";
+      }
+      return false;
+    }
+
+    if (!std::isfinite(mu)) {
+      if (message) {
+        *message = "Invalid friction coefficient (hi) for friction index entry";
+      }
+      return false;
+    }
+
+    if (mu < 0.0) {
+      if (message) {
+        *message = "Invalid negative friction coefficient (hi)";
+      }
+      return false;
+    }
+
+    const double bound = mu * std::abs(scale);
+    loEff[i] = -bound;
+    hiEff[i] = bound;
+  }
+
+  return true;
+}
+
+template <
+    typename LoDerived,
+    typename HiDerived,
+    typename FindexDerived,
+    typename XDerived,
+    typename LoEffDerived,
+    typename HiEffDerived>
+inline bool computeEffectiveBoundsInto(
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
+    const Eigen::MatrixBase<FindexDerived>& findex,
+    const Eigen::MatrixBase<XDerived>& x,
+    Eigen::MatrixBase<LoEffDerived>& loEff,
+    Eigen::MatrixBase<HiEffDerived>& hiEff,
+    std::string* message = nullptr)
+{
+  const Eigen::Index n = x.size();
+  auto& loEffOut = loEff.derived();
+  auto& hiEffOut = hiEff.derived();
+
+  if (lo.size() != n || hi.size() != n || findex.size() != n
+      || loEffOut.size() != n || hiEffOut.size() != n) {
+    if (message) {
+      *message = "Invalid LCP problem dimensions";
+    }
+    return false;
+  }
+
+  loEffOut = lo;
+  hiEffOut = hi;
+
+  for (Eigen::Index i = 0; i < n; ++i) {
+    const int ref = findex[i];
+    if (ref < 0) {
+      continue;
+    }
+
+    if (ref >= n) {
+      if (message) {
+        *message = "Invalid friction index entry";
+      }
+      return false;
+    }
+
+    if (ref == i) {
+      if (message) {
+        *message = "Invalid friction index entry: self reference";
+      }
+      return false;
+    }
+
+    const double scale = x[ref];
     const double mu = std::abs(hi[i]);
     if (!std::isfinite(scale)) {
       if (message) {
@@ -196,18 +334,23 @@ inline bool computeEffectiveBounds(
     }
 
     const double bound = mu * std::abs(scale);
-    loEff[i] = -bound;
-    hiEff[i] = bound;
+    loEffOut[i] = -bound;
+    hiEffOut[i] = bound;
   }
 
   return true;
 }
 
-inline double naturalResidualInfinityNorm(
-    const Eigen::VectorXd& x,
-    const Eigen::VectorXd& w,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi)
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline double naturalResidualInfinityNormView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi)
 {
   const Eigen::Index n = x.size();
   DART_ASSERT(w.size() == n);
@@ -226,11 +369,25 @@ inline double naturalResidualInfinityNorm(
   return maxResidual;
 }
 
-inline double complementarityInfinityNorm(
+inline double naturalResidualInfinityNorm(
     const Eigen::VectorXd& x,
     const Eigen::VectorXd& w,
     const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
+    const Eigen::VectorXd& hi)
+{
+  return naturalResidualInfinityNormView(x, w, lo, hi);
+}
+
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline double complementarityInfinityNormView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
     double tol)
 {
   const Eigen::Index n = x.size();
@@ -278,11 +435,26 @@ inline double complementarityInfinityNorm(
   return maxViolation;
 }
 
-inline bool validateSolution(
+inline double complementarityInfinityNorm(
     const Eigen::VectorXd& x,
     const Eigen::VectorXd& w,
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,
+    double tol)
+{
+  return complementarityInfinityNormView(x, w, lo, hi, tol);
+}
+
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline bool validateSolutionView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
     double tol,
     std::string* message = nullptr)
 {
@@ -355,6 +527,261 @@ inline bool validateSolution(
   }
 
   return true;
+}
+
+inline bool validateSolution(
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& w,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    double tol,
+    std::string* message = nullptr)
+{
+  return validateSolutionView(x, w, lo, hi, tol, message);
+}
+
+inline bool acceptStrictInteriorStandardCandidate(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd candidate,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut)
+{
+  if (!candidate.allFinite()) {
+    return false;
+  }
+
+  const double strictInteriorTol = std::max(0.0, interiorTolerance);
+  if (candidate.minCoeff() <= strictInteriorTol) {
+    return false;
+  }
+
+  Eigen::VectorXd w = problem.A * candidate - problem.b;
+  if (!validateSolution(
+          candidate, w, problem.lo, problem.hi, validationTolerance)) {
+    return false;
+  }
+
+  x = std::move(candidate);
+  if (wOut) {
+    *wOut = std::move(w);
+  }
+  return true;
+}
+
+inline bool trySolveStrictInteriorStandardLcp(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isStandardLcp(interiorTolerance)) {
+    return false;
+  }
+
+  return acceptStrictInteriorStandardCandidate(
+      problem,
+      interiorTolerance,
+      validationTolerance,
+      problem.A.partialPivLu().solve(problem.b),
+      x,
+      wOut);
+}
+
+inline bool trySolveStrictInteriorStandardLcpLltFirst(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isStandardLcp(interiorTolerance)) {
+    return false;
+  }
+
+  const Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+  if (llt.info() == Eigen::Success
+      && acceptStrictInteriorStandardCandidate(
+          problem,
+          interiorTolerance,
+          validationTolerance,
+          llt.solve(problem.b),
+          x,
+          wOut)) {
+    return true;
+  }
+
+  return acceptStrictInteriorStandardCandidate(
+      problem,
+      interiorTolerance,
+      validationTolerance,
+      problem.A.partialPivLu().solve(problem.b),
+      x,
+      wOut);
+}
+
+inline bool trySolveProjectedActiveSetBoxedLcp(
+    const LcpProblem& problem,
+    double activeSetTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isBoxedLcp()) {
+    return false;
+  }
+
+  const Eigen::Index n = problem.size();
+  const auto solveDense = [](const Eigen::MatrixXd& A,
+                             const Eigen::VectorXd& b,
+                             bool lltFirst) -> Eigen::VectorXd {
+    if (lltFirst) {
+      const Eigen::LLT<Eigen::MatrixXd> llt(A);
+      if (llt.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = llt.solve(b);
+        if (candidate.allFinite()) {
+          return candidate;
+        }
+      }
+    }
+    return A.partialPivLu().solve(b);
+  };
+
+  const auto tryCandidate = [&](bool lltFirst) -> bool {
+    Eigen::VectorXd unconstrained = solveDense(problem.A, problem.b, lltFirst);
+    if (!unconstrained.allFinite()) {
+      return false;
+    }
+
+    const double activeTol = std::max(0.0, activeSetTolerance);
+    Eigen::VectorXd candidate = Eigen::VectorXd::Zero(n);
+    std::vector<Eigen::Index> freeRows;
+    freeRows.reserve(static_cast<std::size_t>(n));
+
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const double lo = problem.lo[i];
+      const double hi = problem.hi[i];
+      const double value = unconstrained[i];
+      const bool hasLo = std::isfinite(lo);
+      const bool upperBoundFinite = std::isfinite(hi);
+      const bool fixed = hasLo && upperBoundFinite
+                         && std::abs(hi - lo) <= validationTolerance;
+
+      if (fixed) {
+        candidate[i] = 0.5 * (lo + hi);
+      } else if (hasLo && value <= lo + activeTol) {
+        candidate[i] = lo;
+      } else if (upperBoundFinite && value >= hi - activeTol) {
+        candidate[i] = hi;
+      } else {
+        freeRows.push_back(i);
+      }
+    }
+
+    if (freeRows.size() == static_cast<std::size_t>(n)) {
+      candidate = std::move(unconstrained);
+    } else if (!freeRows.empty()) {
+      const Eigen::Index freeCount = static_cast<Eigen::Index>(freeRows.size());
+      Eigen::MatrixXd reducedA(freeCount, freeCount);
+      Eigen::VectorXd reducedB(freeCount);
+
+      for (Eigen::Index r = 0; r < freeCount; ++r) {
+        const Eigen::Index row = freeRows[static_cast<std::size_t>(r)];
+        double rhs = problem.b[row];
+        for (Eigen::Index c = 0; c < n; ++c) {
+          rhs -= problem.A(row, c) * candidate[c];
+        }
+
+        for (Eigen::Index c = 0; c < freeCount; ++c) {
+          const Eigen::Index col = freeRows[static_cast<std::size_t>(c)];
+          reducedA(r, c) = problem.A(row, col);
+          rhs += problem.A(row, col) * candidate[col];
+        }
+
+        reducedB[r] = rhs;
+      }
+
+      Eigen::VectorXd reducedX = solveDense(reducedA, reducedB, lltFirst);
+      if (!reducedX.allFinite()) {
+        return false;
+      }
+
+      for (Eigen::Index i = 0; i < freeCount; ++i) {
+        candidate[freeRows[static_cast<std::size_t>(i)]] = reducedX[i];
+      }
+    }
+
+    Eigen::VectorXd w = problem.A * candidate - problem.b;
+    if (!validateSolution(
+            candidate, w, problem.lo, problem.hi, validationTolerance)) {
+      return false;
+    }
+
+    x = std::move(candidate);
+    if (wOut) {
+      *wOut = std::move(w);
+    }
+    return true;
+  };
+
+  return tryCandidate(true) || tryCandidate(false);
+}
+
+inline bool trySolveInteriorFrictionIndexLcp(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.hasFrictionIndex()) {
+    return false;
+  }
+
+  const auto tryCandidate = [&](Eigen::VectorXd candidate) -> bool {
+    if (!candidate.allFinite()) {
+      return false;
+    }
+
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    if (!computeEffectiveBounds(
+            problem.lo, problem.hi, problem.findex, candidate, loEff, hiEff)) {
+      return false;
+    }
+
+    const double strictInteriorTol = std::max(0.0, interiorTolerance);
+    for (Eigen::Index i = 0; i < candidate.size(); ++i) {
+      if (std::isfinite(loEff[i])
+          && candidate[i] <= loEff[i] + strictInteriorTol) {
+        return false;
+      }
+      if (std::isfinite(hiEff[i])
+          && candidate[i] >= hiEff[i] - strictInteriorTol) {
+        return false;
+      }
+    }
+
+    Eigen::VectorXd w = problem.A * candidate - problem.b;
+    if (!validateSolution(candidate, w, loEff, hiEff, validationTolerance)) {
+      return false;
+    }
+
+    x = std::move(candidate);
+    if (wOut) {
+      *wOut = std::move(w);
+    }
+    return true;
+  };
+
+  const Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+  if (llt.info() == Eigen::Success && tryCandidate(llt.solve(problem.b))) {
+    return true;
+  }
+
+  return tryCandidate(problem.A.partialPivLu().solve(problem.b));
 }
 
 } // namespace dart::math::detail

@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <barrier>
+#include <span>
 #include <thread>
 #include <vector>
 
@@ -62,10 +63,10 @@ namespace dart::simulation::detail::deformable_vbd {
 /// `options.iterations` budget runs.
 inline BlockDescentStats parallelBlockDescentMassSpring(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const VertexColoring& coloring,
@@ -171,15 +172,20 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 /// blockDescentDeformable, which does honor them. Active self-contact also
 /// falls back to the serial driver because the lagged VT/EE contact stencils
 /// are not part of the cached spring/tet coloring.
+template <
+    typename PositionVector,
+    typename FixedMask,
+    typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
+    typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats parallelBlockDescentDeformable(
-    std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    PositionVector& positions,
+    std::span<const double> masses,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const SpringElement> springs,
     double springStiffness,
     const SpringAdjacency& springAdjacency,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     const TetAdjacency& tetAdjacency,
@@ -187,10 +193,12 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     const VertexColoring& coloring,
     const BlockDescentOptions& options,
     unsigned int threadCount,
-    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
-    const std::vector<ContactPlane>* contactPlanes = nullptr,
+    std::span<const Eigen::Vector3d> stepStartPositions = {},
+    std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
-    const SelfContactAdjacency* selfContact = nullptr)
+    const SelfContactAdjacency* selfContact = nullptr,
+    ChebyshevTwoStepsBackVector* chebyshevTwoStepsBackScratch = nullptr,
+    ChebyshevBeforeSweepVector* chebyshevBeforeSweepScratch = nullptr)
 {
   if (threadCount <= 1 || (selfContact != nullptr && selfContact->active())) {
     return blockDescentDeformable(
@@ -211,13 +219,15 @@ inline BlockDescentStats parallelBlockDescentDeformable(
         stepStartPositions,
         contactPlanes,
         contactFriction,
-        selfContact);
+        selfContact,
+        chebyshevTwoStepsBackScratch,
+        chebyshevBeforeSweepScratch);
   }
 
   const std::size_t vertexCount = positions.size();
   const double invDt2 = 1.0 / (timeStep * timeStep);
   const bool useRayleigh
-      = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
+      = options.rayleighDamping > 0.0 && !stepStartPositions.empty();
 
   const auto assemble = [&](std::uint32_t vertex) {
     const SelfContactAdjacency* blockSelfContact
@@ -245,21 +255,21 @@ inline BlockDescentStats parallelBlockDescentDeformable(
       addRayleighDamping(
           block,
           elasticHessian,
-          positions[vertex] - (*stepStartPositions)[vertex],
+          positions[vertex] - stepStartPositions[vertex],
           options.rayleighDamping,
           timeStep);
       if (selfContact != nullptr) {
         addSelfContactTerms(block, vertex, *selfContact, positions);
       }
     }
-    if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
-      const ContactPlane& plane = (*contactPlanes)[vertex];
+    if (!contactPlanes.empty() && vertex < contactPlanes.size()) {
+      const ContactPlane& plane = contactPlanes[vertex];
       addHalfSpacePenaltyContact(block, positions[vertex], plane);
-      if (contactFriction > 0.0 && stepStartPositions != nullptr) {
+      if (contactFriction > 0.0 && !stepStartPositions.empty()) {
         addHalfSpaceFriction(
             block,
             positions[vertex],
-            (*stepStartPositions)[vertex],
+            stepStartPositions[vertex],
             plane,
             contactFriction);
       }

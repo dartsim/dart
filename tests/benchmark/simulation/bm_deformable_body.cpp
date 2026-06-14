@@ -1451,6 +1451,10 @@ void BM_DeformableSurfaceContactStage(benchmark::State& state)
   state.counters["crossing"] = crossing ? 1.0 : 0.0;
   state.counters["candidate_builds"]
       = static_cast<double>(stats.surfaceContactCandidateBuilds);
+  state.counters["candidate_pair_capacity"]
+      = static_cast<double>(stats.surfaceContactCandidatePairCapacity);
+  state.counters["candidate_rejected_pairs"]
+      = static_cast<double>(stats.surfaceContactCandidateRejectedPairs);
   state.counters["pt_candidates"]
       = static_cast<double>(stats.surfaceContactPointTriangleCandidates);
   state.counters["ee_candidates"]
@@ -1503,6 +1507,10 @@ void BM_DeformableInterBodySurfaceContactStage(benchmark::State& state)
   state.counters["crossing"] = crossing ? 1.0 : 0.0;
   state.counters["candidate_builds"]
       = static_cast<double>(stats.interBodySurfaceContactCandidateBuilds);
+  state.counters["candidate_pair_capacity"]
+      = static_cast<double>(stats.interBodySurfaceContactCandidatePairCapacity);
+  state.counters["candidate_rejected_pairs"] = static_cast<double>(
+      stats.interBodySurfaceContactCandidateRejectedPairs);
   state.counters["pt_candidates"] = static_cast<double>(
       stats.interBodySurfaceContactPointTriangleCandidates);
   state.counters["ee_candidates"]
@@ -1603,6 +1611,10 @@ void BM_DeformableStaticRigidSurfaceCcdStage(benchmark::State& state)
   state.counters["crossing"] = crossing ? 1.0 : 0.0;
   state.counters["candidate_builds"]
       = static_cast<double>(stats.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["candidate_pair_capacity"]
+      = static_cast<double>(stats.staticRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["candidate_rejected_pairs"]
+      = static_cast<double>(stats.staticRigidSurfaceCcdCandidateRejectedPairs);
   state.counters["pt_candidates"]
       = static_cast<double>(stats.staticRigidSurfaceCcdPointTriangleCandidates);
   state.counters["ee_candidates"]
@@ -1662,6 +1674,10 @@ void BM_DeformableMovingRigidSurfaceCcdStage(benchmark::State& state)
   state.counters["crossing"] = crossing ? 1.0 : 0.0;
   state.counters["candidate_builds"]
       = static_cast<double>(stats.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["candidate_pair_capacity"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["candidate_rejected_pairs"]
+      = static_cast<double>(stats.movingRigidSurfaceCcdCandidateRejectedPairs);
   state.counters["pt_candidates"]
       = static_cast<double>(stats.movingRigidSurfaceCcdPointTriangleCandidates);
   state.counters["ee_candidates"]

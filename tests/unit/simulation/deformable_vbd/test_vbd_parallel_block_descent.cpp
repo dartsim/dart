@@ -345,8 +345,8 @@ TEST(VbdParallelBlockDescent, ActiveSelfContactFallsBackToSerial)
       /*timeStep=*/0.01,
       coloring,
       options,
-      nullptr,
-      nullptr,
+      {},
+      {},
       0.0,
       &selfContact);
 
@@ -368,8 +368,8 @@ TEST(VbdParallelBlockDescent, ActiveSelfContactFallsBackToSerial)
           coloring,
           options,
           /*threadCount=*/4u,
-          nullptr,
-          nullptr,
+          {},
+          {},
           0.0,
           &selfContact);
 

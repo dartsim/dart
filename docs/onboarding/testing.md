@@ -534,13 +534,17 @@ ctest --output-on-failure  # Only show output for failing tests
 pixi run bm boxes
 pixi run bm kinematics
 pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+pixi run bm-dashboard-surfaces --surface lcp-solvers --dry-run
 pixi run bm --pixi-help
 ```
 
 > **Note:** LCP solver comparisons use the solver-agnostic harness and the
 > `BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
-> See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the sources,
-> and keep benchmark outputs under the build tree.
+> The `lcp-solvers` dashboard surface keeps a bounded standard, boxed,
+> friction-index, world-contact, billiards, mass-ratio stack, and card-pile
+> slice reproducible for dashboard runs. See `tests/common/lcpsolver` and
+> `tests/benchmark/lcpsolver` for the sources, and keep benchmark outputs under
+> the build tree.
 
 ### Manual Python Testing
 

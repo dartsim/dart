@@ -399,6 +399,7 @@ TEST(BgsSolver, LargeProblemHitsMaxIterations)
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
   options.validateSolution = false;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
@@ -1015,7 +1016,7 @@ TEST(ShockPropagationSolver, NonStandardBlockUsesDantzig)
 
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2) * 2.0;
   Eigen::VectorXd target(2);
-  target << 0.25, 0.75;
+  target << 0.25, 1.5;
   Eigen::VectorXd b = A * target;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
   Eigen::VectorXd hi = Eigen::VectorXd::Constant(2, 1.0);
@@ -1030,6 +1031,7 @@ TEST(ShockPropagationSolver, NonStandardBlockUsesDantzig)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_LE(x[0], 1.0 + 1e-6);
   EXPECT_LE(x[1], 1.0 + 1e-6);
+  EXPECT_NEAR(x[1], 1.0, 1e-6);
 }
 
 //=============================================================================
@@ -1053,6 +1055,7 @@ TEST(ShockPropagationSolver, MaxIterationsStatus)
 
   LcpOptions options;
   options.maxIterations = 1;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
@@ -1181,6 +1184,7 @@ TEST(StaggeringSolver, MaxIterationsOnFrictionProblem)
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
   options.validateSolution = false;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);

@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -119,8 +120,8 @@ std::size_t checkedTriangleVertex(
   return static_cast<std::size_t>(vertex);
 }
 
-void buildSurfaceEdges(
-    const RigidIpcBarrierSurface& surface, std::vector<SurfaceEdge>& edges)
+template <typename EdgeVector>
+void buildSurfaceEdges(const RigidIpcBarrierSurface& surface, EdgeVector& edges)
 {
   edges.clear();
   edges.reserve(3 * surface.triangles.size());
@@ -147,27 +148,149 @@ struct SurfaceWorldAabb
   bool valid = false;
 };
 
+dart::common::MemoryAllocator& allocatorOrDefault(
+    dart::common::MemoryAllocator* allocator)
+{
+  return allocator ? *allocator : dart::common::MemoryAllocator::GetDefault();
+}
+
+using SurfaceEdgeAllocator = dart::common::StlAllocator<SurfaceEdge>;
+using SurfaceEdgeVector = std::vector<SurfaceEdge, SurfaceEdgeAllocator>;
+using SurfaceEdgeVectorAllocator
+    = dart::common::StlAllocator<SurfaceEdgeVector>;
+using SurfaceWorldAabbAllocator = dart::common::StlAllocator<SurfaceWorldAabb>;
+using SurfaceMarginAllocator = dart::common::StlAllocator<double>;
+using SweepItemAllocator = dart::common::StlAllocator<dcd::SweepItem>;
+using CandidatePair = std::pair<std::size_t, std::size_t>;
+using CandidatePairAllocator = dart::common::StlAllocator<CandidatePair>;
+using BarrierTriplet = Eigen::Triplet<double>;
+using BarrierTripletAllocator = dart::common::StlAllocator<BarrierTriplet>;
+
 struct RigidIpcSurfacePairScratch
 {
-  std::vector<std::vector<SurfaceEdge>> surfaceEdges;
-  std::vector<SurfaceWorldAabb> surfaceAabbs;
-  std::vector<double> surfaceMargins;
-  std::vector<double> motionBounds;
-  std::vector<dcd::SweepItem> sweepItems;
-  std::vector<std::pair<std::size_t, std::size_t>> candidatePairs;
+  static constexpr std::size_t kSmallSurfaceEdgeCapacity = 8u;
+
+  explicit RigidIpcSurfacePairScratch(
+      dart::common::MemoryAllocator* allocator = nullptr)
+    : memoryAllocator(allocator),
+      surfaceEdges(SurfaceEdgeVectorAllocator{allocatorOrDefault(allocator)}),
+      surfaceAabbs(SurfaceWorldAabbAllocator{allocatorOrDefault(allocator)}),
+      surfaceMargins(SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
+      motionBounds(SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
+      sweepItems(SweepItemAllocator{allocatorOrDefault(allocator)}),
+      candidatePairs(CandidatePairAllocator{allocatorOrDefault(allocator)})
+  {
+  }
+
+  void resizeSurfaceEdges(std::size_t size)
+  {
+    if (size <= kSmallSurfaceEdgeCapacity) {
+      useSmallSurfaceEdges = true;
+      surfaceEdgeCount = size;
+      for (std::size_t i = 0; i < size; ++i) {
+        if (!smallSurfaceEdges[i].has_value()) {
+          if (memoryAllocator != nullptr) {
+            smallSurfaceEdges[i].emplace(
+                SurfaceEdgeAllocator{*memoryAllocator});
+          } else {
+            smallSurfaceEdges[i].emplace();
+          }
+        }
+      }
+      return;
+    }
+
+    useSmallSurfaceEdges = false;
+    surfaceEdgeCount = size;
+    if (surfaceEdges.size() > size) {
+      surfaceEdges.resize(size);
+    }
+    if (surfaceEdges.size() >= size) {
+      return;
+    }
+
+    surfaceEdges.reserve(size);
+    while (surfaceEdges.size() < size) {
+      if (memoryAllocator != nullptr) {
+        surfaceEdges.emplace_back(SurfaceEdgeAllocator{*memoryAllocator});
+      } else {
+        surfaceEdges.emplace_back();
+      }
+    }
+  }
+
+  SurfaceEdgeVector& surfaceEdgesAt(std::size_t index)
+  {
+    assert(index < surfaceEdgeCount);
+    if (useSmallSurfaceEdges) {
+      assert(index < kSmallSurfaceEdgeCapacity);
+      assert(smallSurfaceEdges[index].has_value());
+      return *smallSurfaceEdges[index];
+    }
+    return surfaceEdges[index];
+  }
+
+  dart::common::MemoryAllocator* memoryAllocator = nullptr;
+  bool useSmallSurfaceEdges = true;
+  std::size_t surfaceEdgeCount = 0u;
+  std::array<std::optional<SurfaceEdgeVector>, kSmallSurfaceEdgeCapacity>
+      smallSurfaceEdges;
+  std::vector<SurfaceEdgeVector, SurfaceEdgeVectorAllocator> surfaceEdges;
+  std::vector<SurfaceWorldAabb, SurfaceWorldAabbAllocator> surfaceAabbs;
+  std::vector<double, SurfaceMarginAllocator> surfaceMargins;
+  std::vector<double, SurfaceMarginAllocator> motionBounds;
+  std::vector<dcd::SweepItem, SweepItemAllocator> sweepItems;
+  std::vector<CandidatePair, CandidatePairAllocator> candidatePairs;
 };
 
 struct RigidIpcAssemblyScratch
 {
+  explicit RigidIpcAssemblyScratch(
+      dart::common::MemoryAllocator* allocator = nullptr)
+    : pairs(allocator),
+      barrierTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
+      objectiveTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
+      articulationResiduals(
+          SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
+      articulationJacobianTriplets(
+          BarrierTripletAllocator{allocatorOrDefault(allocator)})
+  {
+  }
+
   RigidIpcSurfacePairScratch pairs;
-  std::vector<Eigen::Triplet<double>> barrierTriplets;
-  std::vector<Eigen::Triplet<double>> objectiveTriplets;
+  std::vector<BarrierTriplet, BarrierTripletAllocator> barrierTriplets;
+  std::vector<BarrierTriplet, BarrierTripletAllocator> objectiveTriplets;
+  std::vector<double, SurfaceMarginAllocator> articulationResiduals;
+  std::vector<BarrierTriplet, BarrierTripletAllocator>
+      articulationJacobianTriplets;
 };
 
 struct RigidIpcLineSearchScratch
 {
+  explicit RigidIpcLineSearchScratch(
+      dart::common::MemoryAllocator* allocator = nullptr)
+    : pairs(allocator)
+  {
+  }
+
   RigidIpcSurfacePairScratch pairs;
 };
+
+} // namespace
+
+struct RigidIpcProjectedNewtonSolveScratchWorkspace
+{
+  explicit RigidIpcProjectedNewtonSolveScratchWorkspace(
+      dart::common::MemoryAllocator* allocator = nullptr)
+    : assemblyScratch(allocator), lineSearchScratch(allocator)
+  {
+  }
+
+  RigidIpcAssemblyScratch assemblyScratch;
+  RigidIpcLineSearchScratch lineSearchScratch;
+};
+
+namespace {
 
 SurfaceWorldAabb computeSurfaceWorldAabb(const RigidIpcBarrierSurface& surface)
 {
@@ -231,11 +354,12 @@ double surfaceMotionBound(
 /// still apply that exact cull. This replaces the all-pairs O(N^2) enumeration
 /// with O(N log N + overlapping pairs) for large scenes. Surfaces with empty
 /// AABBs carry no primitives and are omitted (they contribute no constraints).
+template <typename SweepItemVector, typename CandidatePairVector>
 void collectCandidateSurfacePairs(
     std::span<const SurfaceWorldAabb> aabbs,
     std::span<const double> margins,
-    std::vector<dcd::SweepItem>& items,
-    std::vector<std::pair<std::size_t, std::size_t>>& pairs)
+    SweepItemVector& items,
+    CandidatePairVector& pairs)
 {
   items.clear();
   items.reserve(aabbs.size());
@@ -478,9 +602,10 @@ void initializeGlobalAssembly(
   assembly.equalityJacobian.resize(0, static_cast<Eigen::Index>(dofCount));
 }
 
+template <typename TripletVector>
 void scatterReducedBarrier(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::size_t bodyA,
     const std::size_t bodyB,
     const RigidIpcReducedBarrierResult& reduced)
@@ -530,9 +655,10 @@ void scatterReducedBarrier(
   }
 }
 
+template <typename TripletVector>
 void scatterReducedFriction(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::size_t bodyA,
     const std::size_t bodyB,
     const RigidIpcReducedFrictionResult& reduced)
@@ -582,9 +708,10 @@ void scatterReducedFriction(
   }
 }
 
+template <typename TripletVector>
 void addActiveConstraint(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const RigidIpcBarrierPrimitive primitive,
     const std::size_t bodyA,
     const std::size_t bodyB,
@@ -600,9 +727,10 @@ void addActiveConstraint(
       RigidIpcBarrierConstraint{primitive, bodyA, bodyB, vertices, reduced});
 }
 
+template <typename TripletVector>
 void addActiveFrictionConstraint(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const RigidIpcBarrierPrimitive primitive,
     const std::size_t bodyA,
     const std::size_t bodyB,
@@ -753,9 +881,10 @@ RigidIpcReducedFrictionResult evaluateFrictionConstraint(
   return {};
 }
 
+template <typename TripletVector>
 void addLaggedFrictionTerms(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::span<const RigidIpcBarrierSurface> surfaces,
     const std::span<const RigidIpcBarrierSurface> laggedSurfaces,
     const RigidIpcFrictionOptions& frictionOptions,
@@ -802,9 +931,10 @@ void addLaggedFrictionTerms(
   }
 }
 
+template <typename TripletVector>
 void addBodyDynamicsTerm(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::size_t body,
     const RigidIpcBarrierSurface& surface,
     const RigidIpcBodyDynamicsTerm& term)
@@ -842,9 +972,10 @@ void addBodyDynamicsTerm(
   ++assembly.activeDynamicsTerms;
 }
 
+template <typename TripletVector>
 void scatterArticulationJacobianBlock(
     const RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::size_t rowOffset,
     const std::size_t body,
     const Matrix3x6d& jacobian)
@@ -872,10 +1003,11 @@ void scatterArticulationJacobianBlock(
   }
 }
 
+template <typename ResidualVector, typename TripletVector>
 void addArticulationConstraintRows(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<double>& residuals,
-    std::vector<Eigen::Triplet<double>>& jacobianTriplets,
+    ResidualVector& residuals,
+    TripletVector& jacobianTriplets,
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcArticulationConstraintInput& input)
 {
@@ -944,10 +1076,13 @@ void addArticulationConstraintRows(
           input.type, input.bodyA, input.bodyB, residual});
 }
 
+template <typename ResidualVector, typename TripletVector>
 void addArticulationConstraintRows(
     RigidIpcBarrierAssembly& assembly,
     std::span<const RigidIpcBarrierSurface> surfaces,
-    std::span<const RigidIpcArticulationConstraintInput> constraints)
+    std::span<const RigidIpcArticulationConstraintInput> constraints,
+    ResidualVector& residuals,
+    TripletVector& jacobianTriplets)
 {
   if (constraints.empty()) {
     assembly.equalityResidual.resize(0);
@@ -955,9 +1090,9 @@ void addArticulationConstraintRows(
     return;
   }
 
-  std::vector<double> residuals;
+  residuals.clear();
   residuals.reserve(3 * constraints.size());
-  std::vector<Eigen::Triplet<double>> jacobianTriplets;
+  jacobianTriplets.clear();
   jacobianTriplets.reserve(12 * constraints.size());
   for (const RigidIpcArticulationConstraintInput& constraint : constraints) {
     addArticulationConstraintRows(
@@ -1045,21 +1180,29 @@ void recordLineSearchCandidate(
   }
 }
 
-RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
+RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
     const RigidIpcBarrierAssembly& assembly,
     const RigidIpcLineSearchResult* lineSearch,
-    const RigidIpcProjectedNewtonOptions& options)
+    const RigidIpcProjectedNewtonOptions& options,
+    RigidIpcProjectedNewtonStep& result,
+    dart::common::MemoryAllocator* allocator = nullptr)
 {
   assert(assembly.hessian.rows() == assembly.gradient.size());
   assert(assembly.hessian.cols() == assembly.gradient.size());
   assert(assembly.equalityJacobian.cols() == assembly.gradient.size());
   assert(assembly.equalityJacobian.rows() == assembly.equalityResidual.size());
 
-  RigidIpcProjectedNewtonStep result;
+  result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+  result.success = false;
+  result.converged = false;
+  result.lineSearchBlocked = false;
+  result.stats = RigidIpcProjectedNewtonStats{};
+
   const Eigen::Index dofs = assembly.gradient.size();
   const Eigen::Index equalityRows = assembly.equalityResidual.size();
   const bool hasEqualityRows = equalityRows > 0;
-  result.delta = Eigen::VectorXd::Zero(dofs);
+  result.delta.resize(dofs);
+  result.delta.setZero();
   result.stats.dofs = static_cast<std::size_t>(dofs);
   result.stats.gradientNorm = assembly.gradient.norm();
 
@@ -1097,8 +1240,12 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 
   Eigen::VectorXd rawStep;
   if (hasEqualityRows) {
+    dart::common::MemoryAllocator& changeOfVariableAllocator
+        = allocator ? *allocator : dart::common::MemoryAllocator::GetDefault();
     const auto changeOfVariable = newton_barrier::makeEqualityChangeOfVariable(
-        assembly.equalityJacobian, assembly.equalityResidual);
+        assembly.equalityJacobian,
+        assembly.equalityResidual,
+        changeOfVariableAllocator);
     if (!changeOfVariable.valid) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
@@ -1163,7 +1310,7 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
   result.delta = stepScale * rawStep;
   result.stats.stepScale = stepScale;
   result.stats.stepNorm = result.delta.norm();
-  result.stats.gradientDotStep = assembly.gradient.dot(result.delta);
+  result.stats.gradientDotStep = assembly.gradient.dot(result.delta.asEigen());
   if ((!hasEqualityRows && !(result.stats.gradientDotStep < 0.0))
       || !std::isfinite(result.stats.gradientDotStep)) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
@@ -1179,10 +1326,23 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
   return result;
 }
 
-void applyRigidIpcNewtonDelta(
-    std::vector<RigidIpcBarrierSurface>& surfaces,
+RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     const RigidIpcBarrierAssembly& assembly,
-    const Eigen::VectorXd& delta)
+    const RigidIpcLineSearchResult* lineSearch,
+    const RigidIpcProjectedNewtonOptions& options,
+    dart::common::MemoryAllocator* allocator = nullptr)
+{
+  RigidIpcProjectedNewtonStep result;
+  computeRigidIpcProjectedNewtonStepInto(
+      assembly, lineSearch, options, result, allocator);
+  return result;
+}
+
+template <typename Derived>
+void applyRigidIpcNewtonDelta(
+    auto& surfaces,
+    const RigidIpcBarrierAssembly& assembly,
+    const Eigen::MatrixBase<Derived>& delta)
 {
   assert(assembly.bodyDofOffsets.size() == surfaces.size());
   for (std::size_t body = 0; body < surfaces.size(); ++body) {
@@ -1192,9 +1352,9 @@ void applyRigidIpcNewtonDelta(
     }
     assert(static_cast<Eigen::Index>(offset + 6) <= delta.size());
     surfaces[body].pose.position
-        += delta.segment<3>(static_cast<Eigen::Index>(offset));
+        += delta.template segment<3>(static_cast<Eigen::Index>(offset));
     surfaces[body].pose.rotation
-        += delta.segment<3>(static_cast<Eigen::Index>(offset + 3));
+        += delta.template segment<3>(static_cast<Eigen::Index>(offset + 3));
   }
 }
 
@@ -1827,30 +1987,27 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
   RigidIpcBarrierAssembly assembly;
   initializeGlobalAssembly(surfaces, assembly);
 
-  std::vector<std::vector<SurfaceEdge>>& surfaceEdges
-      = scratch.pairs.surfaceEdges;
-  surfaceEdges.resize(surfaces.size());
-  std::vector<SurfaceWorldAabb>& surfaceAabbs = scratch.pairs.surfaceAabbs;
+  scratch.pairs.resizeSurfaceEdges(surfaces.size());
+  auto& surfaceAabbs = scratch.pairs.surfaceAabbs;
   surfaceAabbs.clear();
   surfaceAabbs.reserve(surfaces.size());
   for (std::size_t body = 0; body < surfaces.size(); ++body) {
-    buildSurfaceEdges(surfaces[body], surfaceEdges[body]);
+    buildSurfaceEdges(surfaces[body], scratch.pairs.surfaceEdgesAt(body));
     surfaceAabbs.push_back(computeSurfaceWorldAabb(surfaces[body]));
   }
 
-  std::vector<Eigen::Triplet<double>>& triplets = scratch.barrierTriplets;
+  auto& triplets = scratch.barrierTriplets;
   triplets.clear();
   const double activationDistance
       = std::sqrt(std::max(0.0, options.squaredActivationDistance));
-  std::vector<double>& surfaceMargins = scratch.pairs.surfaceMargins;
+  auto& surfaceMargins = scratch.pairs.surfaceMargins;
   surfaceMargins.assign(surfaces.size(), 0.5 * activationDistance);
   collectCandidateSurfacePairs(
       surfaceAabbs,
       surfaceMargins,
       scratch.pairs.sweepItems,
       scratch.pairs.candidatePairs);
-  const std::vector<std::pair<std::size_t, std::size_t>>& candidatePairs
-      = scratch.pairs.candidatePairs;
+  const auto& candidatePairs = scratch.pairs.candidatePairs;
   for (const auto& candidatePair : candidatePairs) {
     const std::size_t bodyA = candidatePair.first;
     const std::size_t bodyB = candidatePair.second;
@@ -1893,7 +2050,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
       }
 
       for (std::size_t pointA = 0; pointA < a.vertices.size(); ++pointA) {
-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
           const auto reduced = rigidIpcPointEdgeReducedBarrier(
               a.vertices[pointA],
               a.pose,
@@ -1915,7 +2072,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
         }
       }
       for (std::size_t pointB = 0; pointB < b.vertices.size(); ++pointB) {
-        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+        for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
           const auto reduced = rigidIpcPointEdgeReducedBarrier(
               b.vertices[pointB],
               b.pose,
@@ -1937,8 +2094,8 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
         }
       }
 
-      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+      for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
+        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
           const auto reduced = rigidIpcEdgeEdgeReducedBarrier(
               a.vertices[edgeA.vertexA],
               a.vertices[edgeA.vertexB],
@@ -2099,7 +2256,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
   }
 
   const std::size_t termCount = std::min(dynamicsTerms.size(), surfaces.size());
-  std::vector<Eigen::Triplet<double>>& triplets = scratch.objectiveTriplets;
+  auto& triplets = scratch.objectiveTriplets;
   triplets.clear();
   triplets.reserve(6 * termCount);
   if (useLaggedFriction) {
@@ -2115,7 +2272,12 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     addBodyDynamicsTerm(
         assembly, triplets, body, surfaces[body], dynamicsTerms[body]);
   }
-  addArticulationConstraintRows(assembly, surfaces, articulationConstraints);
+  addArticulationConstraintRows(
+      assembly,
+      surfaces,
+      articulationConstraints,
+      scratch.articulationResiduals,
+      scratch.articulationJacobianTriplets);
 
   if (!triplets.empty()) {
     Eigen::SparseMatrix<double> dynamicsHessian(
@@ -2151,18 +2313,16 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
   const collision::native::CcdOption ccdOption
       = newton_barrier::makeLineSearchCcdOption(options);
 
-  std::vector<std::vector<SurfaceEdge>>& surfaceEdges
-      = scratch.pairs.surfaceEdges;
-  surfaceEdges.resize(startSurfaces.size());
-  std::vector<SurfaceWorldAabb>& startAabbs = scratch.pairs.surfaceAabbs;
+  scratch.pairs.resizeSurfaceEdges(startSurfaces.size());
+  auto& startAabbs = scratch.pairs.surfaceAabbs;
   startAabbs.clear();
   startAabbs.reserve(startSurfaces.size());
-  std::vector<double>& motionBounds = scratch.pairs.motionBounds;
+  auto& motionBounds = scratch.pairs.motionBounds;
   motionBounds.clear();
   motionBounds.reserve(startSurfaces.size());
   for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
     assertMatchingSurfaceTopology(startSurfaces[body], endSurfaces[body]);
-    buildSurfaceEdges(startSurfaces[body], surfaceEdges[body]);
+    buildSurfaceEdges(startSurfaces[body], scratch.pairs.surfaceEdgesAt(body));
     startAabbs.push_back(computeSurfaceWorldAabb(startSurfaces[body]));
     motionBounds.push_back(
         surfaceMotionBound(startSurfaces[body], endSurfaces[body]));
@@ -2175,7 +2335,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
   // lands within the tolerance band of the activation threshold.
   const double convergeAbs = std::max(ccdOption.tolerance, 1e-12);
 
-  std::vector<double>& surfaceMargins = scratch.pairs.surfaceMargins;
+  auto& surfaceMargins = scratch.pairs.surfaceMargins;
   surfaceMargins.resize(startSurfaces.size());
   for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
     surfaceMargins[body]
@@ -2186,8 +2346,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
       surfaceMargins,
       scratch.pairs.sweepItems,
       scratch.pairs.candidatePairs);
-  const std::vector<std::pair<std::size_t, std::size_t>>& candidatePairs
-      = scratch.pairs.candidatePairs;
+  const auto& candidatePairs = scratch.pairs.candidatePairs;
   for (const auto& candidatePair : candidatePairs) {
     const std::size_t bodyA = candidatePair.first;
     const std::size_t bodyB = candidatePair.second;
@@ -2244,7 +2403,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
       }
 
       for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {
-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
           collision::native::CcdPrimitiveResult ccdResult;
           ++result.stats.pointEdgeChecks;
           const bool hit = rigidIpcPointEdgeCcd(
@@ -2271,7 +2430,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
         }
       }
       for (std::size_t pointB = 0; pointB < b0.vertices.size(); ++pointB) {
-        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+        for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
           collision::native::CcdPrimitiveResult ccdResult;
           ++result.stats.pointEdgeChecks;
           const bool hit = rigidIpcPointEdgeCcd(
@@ -2298,8 +2457,8 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
         }
       }
 
-      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+      for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
+        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
           collision::native::CcdPrimitiveResult ccdResult;
           ++result.stats.edgeEdgeChecks;
           const bool hit = rigidIpcEdgeEdgeCcd(
@@ -2504,6 +2663,65 @@ double minActiveSquaredDistance(const RigidIpcBarrierAssembly& assembly)
 
 } // namespace
 
+RigidIpcProjectedNewtonSolveScratch::RigidIpcProjectedNewtonSolveScratch(
+    dart::common::MemoryAllocator& allocator)
+  : memoryAllocator(&allocator),
+    laggedSurfaces(SurfaceAllocator{allocator}),
+    lineSearchStartSurfaces(SurfaceAllocator{allocator}),
+    candidateSurfaces(SurfaceAllocator{allocator}),
+    acceptedSurfaces(SurfaceAllocator{allocator}),
+    bestDecreasingSurfaces(SurfaceAllocator{allocator}),
+    step(allocator),
+    workspace(allocator.construct<RigidIpcProjectedNewtonSolveScratchWorkspace>(
+        &allocator))
+{
+}
+
+RigidIpcProjectedNewtonSolveScratch::~RigidIpcProjectedNewtonSolveScratch()
+{
+  if (memoryAllocator != nullptr && workspace != nullptr) {
+    memoryAllocator->destroy(workspace);
+  }
+}
+
+RigidIpcProjectedNewtonSolveScratch::RigidIpcProjectedNewtonSolveScratch(
+    RigidIpcProjectedNewtonSolveScratch&& other) noexcept
+  : memoryAllocator(other.memoryAllocator),
+    laggedSurfaces(std::move(other.laggedSurfaces)),
+    lineSearchStartSurfaces(std::move(other.lineSearchStartSurfaces)),
+    candidateSurfaces(std::move(other.candidateSurfaces)),
+    acceptedSurfaces(std::move(other.acceptedSurfaces)),
+    bestDecreasingSurfaces(std::move(other.bestDecreasingSurfaces)),
+    step(std::move(other.step)),
+    workspace(std::exchange(other.workspace, nullptr))
+{
+  other.memoryAllocator = nullptr;
+}
+
+RigidIpcProjectedNewtonSolveScratch&
+RigidIpcProjectedNewtonSolveScratch::operator=(
+    RigidIpcProjectedNewtonSolveScratch&& other) noexcept
+{
+  if (this == &other) {
+    return *this;
+  }
+
+  if (memoryAllocator != nullptr && workspace != nullptr) {
+    memoryAllocator->destroy(workspace);
+  }
+
+  memoryAllocator = other.memoryAllocator;
+  laggedSurfaces = std::move(other.laggedSurfaces);
+  lineSearchStartSurfaces = std::move(other.lineSearchStartSurfaces);
+  candidateSurfaces = std::move(other.candidateSurfaces);
+  acceptedSurfaces = std::move(other.acceptedSurfaces);
+  bestDecreasingSurfaces = std::move(other.bestDecreasingSurfaces);
+  step = std::move(other.step);
+  workspace = std::exchange(other.workspace, nullptr);
+  other.memoryAllocator = nullptr;
+  return *this;
+}
+
 RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options)
@@ -2512,6 +2730,30 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   RigidIpcProjectedNewtonSolveScratch scratch;
   solveRigidIpcProjectedNewtonBarrierSystem(surfaces, options, result, scratch);
   return result;
+}
+
+void prewarmRigidIpcProjectedNewtonAssemblyScratch(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions,
+    RigidIpcProjectedNewtonSolveScratch& scratch)
+{
+  RigidIpcAssemblyScratch localAssemblyScratch(scratch.memoryAllocator);
+  RigidIpcAssemblyScratch& assemblyScratch
+      = scratch.workspace != nullptr ? scratch.workspace->assemblyScratch
+                                     : localAssemblyScratch;
+  static_cast<void>(assembleRigidIpcObjectiveSystemWithScratch(
+      surfaces,
+      laggedSurfaces,
+      dynamicsTerms,
+      articulationConstraints,
+      barrierOptions,
+      frictionOptions,
+      assemblyScratch));
 }
 
 void solveRigidIpcProjectedNewtonBarrierSystem(
@@ -2525,26 +2767,32 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   result.failed = false;
   result.assembly = RigidIpcBarrierAssembly{};
   result.lineSearch = RigidIpcLineSearchResult{};
-  result.lastStep = RigidIpcProjectedNewtonStep{};
+  result.lastStep.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+  result.lastStep.success = false;
+  result.lastStep.converged = false;
+  result.lastStep.lineSearchBlocked = false;
+  result.lastStep.stats = RigidIpcProjectedNewtonStats{};
   result.stats = RigidIpcProjectedNewtonSolveStats{};
   result.surfaces.assign(surfaces.begin(), surfaces.end());
 
-  std::vector<RigidIpcBarrierSurface>& laggedSurfaces = scratch.laggedSurfaces;
-  std::vector<RigidIpcBarrierSurface>& lineSearchStartSurfaces
-      = scratch.lineSearchStartSurfaces;
-  std::vector<RigidIpcBarrierSurface>& candidateSurfaces
-      = scratch.candidateSurfaces;
-  std::vector<RigidIpcBarrierSurface>& acceptedSurfaces
-      = scratch.acceptedSurfaces;
-  std::vector<RigidIpcBarrierSurface>& bestDecreasingSurfaces
-      = scratch.bestDecreasingSurfaces;
+  auto& laggedSurfaces = scratch.laggedSurfaces;
+  auto& lineSearchStartSurfaces = scratch.lineSearchStartSurfaces;
+  auto& candidateSurfaces = scratch.candidateSurfaces;
+  auto& acceptedSurfaces = scratch.acceptedSurfaces;
+  auto& bestDecreasingSurfaces = scratch.bestDecreasingSurfaces;
   laggedSurfaces.assign(surfaces.begin(), surfaces.end());
   lineSearchStartSurfaces.reserve(surfaces.size());
   candidateSurfaces.reserve(surfaces.size());
   acceptedSurfaces.reserve(surfaces.size());
   bestDecreasingSurfaces.reserve(surfaces.size());
-  RigidIpcAssemblyScratch assemblyScratch;
-  RigidIpcLineSearchScratch lineSearchScratch;
+  RigidIpcAssemblyScratch localAssemblyScratch(scratch.memoryAllocator);
+  RigidIpcLineSearchScratch localLineSearchScratch(scratch.memoryAllocator);
+  RigidIpcAssemblyScratch& assemblyScratch
+      = scratch.workspace != nullptr ? scratch.workspace->assemblyScratch
+                                     : localAssemblyScratch;
+  RigidIpcLineSearchScratch& lineSearchScratch
+      = scratch.workspace != nullptr ? scratch.workspace->lineSearchScratch
+                                     : localLineSearchScratch;
 
   // Kinematic (prescribed-motion) obstacles advance from their start pose to
   // their end pose over the step. `result.surfaces`/`laggedSurfaces` hold the
@@ -2560,14 +2808,13 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       break;
     }
   }
-  const auto applyKinematicLag
-      = [&surfaces](std::vector<RigidIpcBarrierSurface>& lag) {
-          for (std::size_t i = 0; i < lag.size(); ++i) {
-            if (surfaces[i].kinematic) {
-              lag[i].pose = surfaces[i].kinematicStartPose;
-            }
-          }
-        };
+  const auto applyKinematicLag = [&surfaces](auto& lag) {
+    for (std::size_t i = 0; i < lag.size(); ++i) {
+      if (surfaces[i].kinematic) {
+        lag[i].pose = surfaces[i].kinematicStartPose;
+      }
+    }
+  };
   if (hasKinematic) {
     applyKinematicLag(laggedSurfaces);
   }
@@ -2650,9 +2897,9 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   // relative floor (filled once the initial gradient norm is known below).
   RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
 
-  const auto makeKinematicLineSearchStart
-      = [&]() -> const std::vector<RigidIpcBarrierSurface>& {
-    lineSearchStartSurfaces = result.surfaces;
+  const auto makeKinematicLineSearchStart = [&]() {
+    lineSearchStartSurfaces.assign(
+        result.surfaces.begin(), result.surfaces.end());
     for (std::size_t i = 0; i < lineSearchStartSurfaces.size(); ++i) {
       if (surfaces[i].kinematic) {
         lineSearchStartSurfaces[i].pose = surfaces[i].kinematicStartPose;
@@ -2692,7 +2939,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           return bodyAIsKinematic || bodyBIsKinematic;
         };
   const auto kinematicCandidateAllowsFullStep
-      = [&](const std::vector<RigidIpcBarrierSurface>& candidateSurfaces) {
+      = [&](const auto& candidateSurfaces) {
           if (!hasKinematic || !options.useLineSearch) {
             return true;
           }
@@ -2761,8 +3008,13 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                 result.stats.initialGradientNorm);
       }
 
-      RigidIpcProjectedNewtonStep step
-          = computeRigidIpcProjectedNewtonStep(result.assembly, newtonOptions);
+      RigidIpcProjectedNewtonStep& step
+          = computeRigidIpcProjectedNewtonStepInto(
+              result.assembly,
+              nullptr,
+              newtonOptions,
+              scratch.step,
+              scratch.memoryAllocator);
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
@@ -2792,9 +3044,10 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       if (options.useLineSearch) {
-        candidateSurfaces = result.surfaces;
+        candidateSurfaces.assign(
+            result.surfaces.begin(), result.surfaces.end());
         applyRigidIpcNewtonDelta(
-            candidateSurfaces, result.assembly, step.delta);
+            candidateSurfaces, result.assembly, step.delta.asEigen());
         // The Newton delta only moves dynamic surfaces, so candidateSurfaces
         // holds each kinematic obstacle at its END pose. Sweep from a start
         // configuration with kinematic obstacles at their START pose so the
@@ -2824,8 +3077,12 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           result.failed = true;
           return;
         }
-        step = computeRigidIpcProjectedNewtonStep(
-            result.assembly, result.lineSearch, newtonOptions);
+        computeRigidIpcProjectedNewtonStepInto(
+            result.assembly,
+            &result.lineSearch,
+            newtonOptions,
+            step,
+            scratch.memoryAllocator);
         result.lastStep = step;
         if (step.lineSearchBlocked) {
           if (adaptive.enabled && iteration < options.maxIterations
@@ -2883,9 +3140,12 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
         for (std::size_t backtrack = 0;
              backtrack <= newtonOptions.maxBacktrackingIterations;
              ++backtrack) {
-          candidateSurfaces = result.surfaces;
+          candidateSurfaces.assign(
+              result.surfaces.begin(), result.surfaces.end());
           applyRigidIpcNewtonDelta(
-              candidateSurfaces, result.assembly, trialScale * step.delta);
+              candidateSurfaces,
+              result.assembly,
+              trialScale * step.delta.asEigen());
           if (!kinematicCandidateAllowsFullStep(candidateSurfaces)) {
             hasUnsafeKinematicCandidate = true;
             if (backtrack == newtonOptions.maxBacktrackingIterations) {
@@ -2955,11 +3215,13 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           scaleRigidIpcNewtonStep(step, trialScale);
           result.lastStep = step;
         }
-        result.surfaces = acceptedSurfaces;
+        result.surfaces.assign(
+            acceptedSurfaces.begin(), acceptedSurfaces.end());
       }
 
       if (!acceptedCandidate) {
-        applyRigidIpcNewtonDelta(result.surfaces, result.assembly, step.delta);
+        applyRigidIpcNewtonDelta(
+            result.surfaces, result.assembly, step.delta.asEigen());
       }
       ++result.stats.acceptedSteps;
       ++result.stats.iterations;
@@ -2990,7 +3252,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       return;
     }
 
-    laggedSurfaces = result.surfaces;
+    laggedSurfaces.assign(result.surfaces.begin(), result.surfaces.end());
     if (hasKinematic) {
       applyKinematicLag(laggedSurfaces);
     }

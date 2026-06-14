@@ -34,12 +34,16 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
 #include <limits>
 #include <span>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include <cstddef>
@@ -196,6 +200,36 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
 class AvbdScalarRowInventory
 {
 public:
+  using RecordAllocator = ::dart::common::StlAllocator<AvbdScalarRowRecord>;
+  using RecordVector = std::vector<AvbdScalarRowRecord, RecordAllocator>;
+  using DescriptorAllocator
+      = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
+  using DescriptorVector
+      = std::vector<AvbdScalarRowDescriptor, DescriptorAllocator>;
+
+  //==============================================================================
+  AvbdScalarRowInventory() = default;
+
+  //==============================================================================
+  explicit AvbdScalarRowInventory(::dart::common::MemoryAllocator& allocator)
+    : mRecords(RecordAllocator{allocator}),
+      mPreviousRecords(RecordAllocator{allocator}),
+      mDescriptorScratch(DescriptorAllocator{allocator})
+  {
+  }
+
+  //==============================================================================
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<RecordAllocator, Allocator>>>
+  explicit AvbdScalarRowInventory(const Allocator& allocator)
+    : mRecords(RecordAllocator{allocator}),
+      mPreviousRecords(RecordAllocator{allocator}),
+      mDescriptorScratch(DescriptorAllocator{allocator})
+  {
+  }
+
   //==============================================================================
   void syncActiveRows(
       std::span<const AvbdScalarRowDescriptor> descriptors,
@@ -272,6 +306,7 @@ public:
   {
     if (descriptorCount == 0u) {
       mRecords.clear();
+      mDescriptorScratch.clear();
       return;
     }
 
@@ -295,12 +330,12 @@ public:
       }
     }
 
-    std::vector<AvbdScalarRowDescriptor> descriptors;
-    descriptors.reserve(descriptorCount);
+    mDescriptorScratch.clear();
+    mDescriptorScratch.reserve(descriptorCount);
     for (std::size_t i = 0; i < descriptorCount; ++i) {
-      descriptors.push_back(descriptorAt(i));
+      mDescriptorScratch.push_back(descriptorAt(i));
     }
-    syncActiveRows(descriptors, options);
+    syncActiveRows(mDescriptorScratch, options);
   }
 
   //==============================================================================
@@ -308,6 +343,7 @@ public:
   {
     mRecords.reserve(capacity);
     mPreviousRecords.reserve(capacity);
+    mDescriptorScratch.reserve(capacity);
   }
 
   //==============================================================================
@@ -326,6 +362,7 @@ public:
   void clear() noexcept
   {
     mRecords.clear();
+    mDescriptorScratch.clear();
   }
 
   //==============================================================================
@@ -342,13 +379,13 @@ public:
   }
 
   //==============================================================================
-  [[nodiscard]] std::vector<AvbdScalarRowRecord>& records() noexcept
+  [[nodiscard]] RecordVector& records() noexcept
   {
     return mRecords;
   }
 
   //==============================================================================
-  [[nodiscard]] const std::vector<AvbdScalarRowRecord>& records() const noexcept
+  [[nodiscard]] const RecordVector& records() const noexcept
   {
     return mRecords;
   }
@@ -395,8 +432,9 @@ private:
     return nullptr;
   }
 
-  std::vector<AvbdScalarRowRecord> mRecords;
-  std::vector<AvbdScalarRowRecord> mPreviousRecords;
+  RecordVector mRecords;
+  RecordVector mPreviousRecords;
+  DescriptorVector mDescriptorScratch;
 };
 
 } // namespace dart::simulation::detail::deformable_vbd
