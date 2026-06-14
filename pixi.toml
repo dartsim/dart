@@ -701,8 +701,17 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_deformable_psd_projection_cuda \
   --target test_vbd_block_descent_cuda \
   --target test_lcp_jacobi_batch_cuda \
+  --target test_newton_assembly_solve_cuda \
+  --target test_contact_candidate_filter_cuda \
+  --target test_ccd_line_search_cuda \
+  --target test_barrier_friction_kernel_cuda \
   --target bm_cuda_rigid_body_state_batch \
   --target bm_plan083_gpu_psd_projection \
+  --target bm_plan083_gpu_contact_candidates \
+  --target bm_plan083_gpu_ccd_line_search \
+  --target bm_plan083_gpu_barrier_friction \
+  --target bm_newton_assembly_solve_cuda \
+  --target bm_plan083_gpu_scene_parity \
   --target bm_vbd_cuda
 """,
 ], depends-on = [
@@ -1162,6 +1171,21 @@ python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_psd_projection" \
   --benchmark_filter='BM_Plan083PsdProjection(Cpu|Cuda)/1024(/real_time)?$' \
   --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_contact_candidates" \
+  --benchmark_filter='BM_Plan083ContactCandidate(Cpu|Cuda)/4096(/real_time)?$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_ccd_line_search" \
+  --benchmark_filter='BM_Plan083CcdLineSearch(Cpu|Cuda)/4096(/real_time)?$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_barrier_friction" \
+  --benchmark_filter='BM_Plan083BarrierFrictionLocal(Cpu|Cuda)/4096(/real_time)?$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_newton_assembly_solve_cuda" \
+  --benchmark_filter='BM_NewtonAssemblySolve(Cpu|Cuda)/4096(/real_time)?$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_scene_parity" \
+  --benchmark_filter='BM_Plan083SceneParity(Cpu|Cuda)/1024/16(/real_time)?$' \
+  --benchmark_min_time=0.001s
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
   --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
@@ -1485,6 +1509,12 @@ bm-plan083-cpu-abd-bullet-medium-packet = { cmd = "python scripts/write_plan083_
 bm-plan083-cpu-abd-bullet-large-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_large", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-abd-complex-geometry-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_complex_geometry", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-fem-coupling-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_fem_coupling", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-abd-cards-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_house_of_cards", depends-on = [
   "config",
 ] }
@@ -1532,6 +1562,31 @@ bm-plan083-cpu-windmill-packet = { cmd = "python scripts/write_plan083_cpu_scene
 ] }
 bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
 bm-plan083-gpu-psd-packet = { cmd = "python scripts/write_plan083_gpu_psd_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-contact-candidates-packet = { cmd = "python scripts/write_plan083_gpu_contact_candidate_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-ccd-line-search-packet = { cmd = "python scripts/write_plan083_gpu_ccd_line_search_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-barrier-friction-packet = { cmd = "python scripts/write_plan083_gpu_barrier_friction_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-newton-assembly-solve-packet = { cmd = "python scripts/write_newton_assembly_solve_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-scene-parity-packet = { cmd = "python scripts/write_plan083_gpu_scene_parity_packet.py", depends-on = [
   { task = "build-cuda", args = [
     "Release",
   ] },

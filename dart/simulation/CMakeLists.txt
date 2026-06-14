@@ -88,9 +88,17 @@ if(DART_ENABLE_EXPERIMENTAL_CUDA)
   add_library(
     ${cuda_target_name}
     STATIC
+    compute/cuda/barrier_friction_kernel_cuda.cpp
+    compute/cuda/barrier_friction_kernel_cuda.cu
+    compute/cuda/ccd_line_search_cuda.cpp
+    compute/cuda/ccd_line_search_cuda.cu
     compute/cuda/cuda_runtime.cpp
+    compute/cuda/contact_candidate_filter_cuda.cpp
+    compute/cuda/contact_candidate_filter_cuda.cu
     compute/cuda/lcp_jacobi_batch_cuda.cpp
     compute/cuda/lcp_jacobi_batch_cuda.cu
+    compute/cuda/newton_assembly_solve_cuda.cpp
+    compute/cuda/newton_assembly_solve_cuda.cu
     compute/cuda/rigid_body_state_batch_cuda.cpp
     compute/cuda/rigid_body_state_batch_cuda.cu
     compute/cuda/deformable_psd_projection_cuda.cpp
