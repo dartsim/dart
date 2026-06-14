@@ -1,5 +1,76 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Articulated Contact Runtime Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is a viable
+   milestone PR candidate when the maintainer approves publication; keep this
+   follow-up branch for subsequent PR(s) unless the maintainer explicitly
+   chooses a broader checkpoint scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark runtime guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `66b2a5583d9 Gate LCP world box contact benchmarks concretely`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; this continuation fetched and
+  merged `origin/main` with `Already up to date.`
+
+What this checkpoint changes:
+
+- `RunArticulatedUnifiedContactBenchmark()` now rechecks the exact generated
+  runtime problem with the selected solver's concrete `supportsProblem(problem)`
+  predicate before timing the row.
+- The registration path intentionally keeps the existing cheap representative
+  support probes. A concrete all-contact-count registration precompute was
+  tested and rejected because it made benchmark-list startup spend minutes
+  constructing large articulated contact cases before filtering.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the articulated benchmark guard.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/(Ground|RigidImpact|CrossLinkImpact)/(Pgs|Admm|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/Ground/Pgs/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Result:
+
+- Row-list validation passed and listed expected Pgs, Admm, and
+  BoxedSemiSmoothNewton rows for the three articulated unified-contact cases.
+- The sampled Pgs ground row passed with `contract_ok=1` and
+  `solver_supports_problem=1`.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 World Box Contact Concrete Args
 
 This is the latest hand-off. Older sections below are historical checkpoints

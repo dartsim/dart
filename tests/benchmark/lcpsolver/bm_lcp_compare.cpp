@@ -9411,6 +9411,11 @@ void RunArticulatedUnifiedContactBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Articulated unified contact case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
