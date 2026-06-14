@@ -48,7 +48,6 @@
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mesh_loader.hpp"
-#include "dart/utils/urdf/backward_compatibility.hpp"
 #include "dart/utils/urdf/include_urdf.hpp"
 
 #include <tinyxml2.h>
