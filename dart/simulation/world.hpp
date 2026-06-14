@@ -489,6 +489,19 @@ public:
       double stiffness,
       const Eigen::Vector3d& parentAnchor,
       const Eigen::Vector3d& childAnchor);
+  /// Check whether a named rigid-body distance spring exists.
+  bool hasRigidBodyDistanceSpring(std::string_view name) const;
+  /// Read the rest length and material stiffness for a named distance spring.
+  ///
+  /// Throws if no spring with `name` exists.
+  std::pair<double, double> getRigidBodyDistanceSpringParameters(
+      std::string_view name) const;
+  /// Retune an existing rigid-body distance spring.
+  ///
+  /// This may be called after `enterSimulationMode()` so interactive tooling
+  /// can expose the spring's public rest-length and stiffness controls.
+  void setRigidBodyDistanceSpringParameters(
+      std::string_view name, double restLength, double stiffness);
   /// Get any supported public joint between free rigid bodies by name.
   ///
   /// This returns fixed, revolute, prismatic, and spherical rigid-body joints.

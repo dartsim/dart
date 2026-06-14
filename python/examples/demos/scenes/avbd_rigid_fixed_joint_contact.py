@@ -10,8 +10,9 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
+_TIME_STEP = 0.004
 _BASE_HALF = np.array([0.18, 0.18, 0.18])
 _PAYLOAD_HALF = np.array([0.24, 0.16, 0.16])
 _GROUND_HALF = np.array([1.6, 0.65, 0.08])
@@ -51,7 +52,7 @@ def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=0.004, gravity=(0.0, 0.0, -9.81))
+    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, -9.81))
 
     ground = world.add_rigid_body(
         "avbd_fixed_joint_ground",
@@ -125,26 +126,89 @@ def build() -> SceneSetup:
         bridge.sync()
         sync_connector()
 
+    offset_history: deque[float] = deque(maxlen=120)
+    clearance_history: deque[float] = deque(maxlen=120)
+    speed_history: deque[float] = deque(maxlen=120)
+    contact_history: deque[float] = deque(maxlen=120)
+    _last_metrics: dict[str, float] = {}
+
+    def sample_metrics() -> dict[str, float]:
+        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
+        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
+        offset_error = float(
+            np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET)
+        )
+        clearance = float(payload_pos[2] - _PAYLOAD_HALF[2])
+        speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
+        contact_count = float(len(world.collide()))
+        return {
+            "captured_offset_error": offset_error,
+            "payload_ground_clearance": clearance,
+            "payload_speed": speed,
+            "contact_count": contact_count,
+            "base_x": float(base_pos[0]),
+            "payload_x": float(payload_pos[0]),
+            "world_time": float(world.time),
+        }
+
+    def record_metrics() -> dict[str, float]:
+        _last_metrics.clear()
+        _last_metrics.update(sample_metrics())
+        offset_history.append(_last_metrics["captured_offset_error"])
+        clearance_history.append(_last_metrics["payload_ground_clearance"])
+        speed_history.append(_last_metrics["payload_speed"])
+        contact_history.append(_last_metrics["contact_count"])
+        return _last_metrics
+
+    def capture_metrics() -> dict[str, object]:
+        if not _last_metrics:
+            record_metrics()
+        offset_values = list(offset_history)
+        clearance_values = list(clearance_history)
+        speed_values = list(speed_history)
+        contact_values = list(contact_history)
+        return {
+            "row": "avbd_rigid_fixed_joint_contact",
+            "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
+            "constraint": "fixed_joint_contact_path",
+            "related_source_row": "contact",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(world.time),
+            "joint_name": str(fixed_joint.name),
+            "fixed_joint_count": float(world.num_rigid_body_fixed_joints),
+            "captured_offset_error": float(_last_metrics["captured_offset_error"]),
+            "payload_ground_clearance": float(
+                _last_metrics["payload_ground_clearance"]
+            ),
+            "payload_speed": float(_last_metrics["payload_speed"]),
+            "contact_count": float(_last_metrics["contact_count"]),
+            "base_x": float(_last_metrics["base_x"]),
+            "payload_x": float(_last_metrics["payload_x"]),
+            "metrics": dict(_last_metrics),
+            "history": {
+                "samples": float(len(offset_values)),
+                "max_captured_offset_error": max(offset_values, default=0.0),
+                "min_payload_ground_clearance": min(clearance_values, default=0.0),
+                "max_payload_speed": max(speed_values, default=0.0),
+                "max_contact_count": max(contact_values, default=0.0),
+            },
+        }
+
     def pre_step() -> None:
         bridge.pre_step()
+        record_metrics()
         sync_connector()
 
     bridge.sync()
     sync_connector()
-
-    offset_history: deque[float] = deque(maxlen=120)
-    clearance_history: deque[float] = deque(maxlen=120)
-    speed_history: deque[float] = deque(maxlen=120)
+    record_metrics()
 
     def build_panel(builder: object, context: object) -> None:
-        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
-        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
-        offset_error = float(np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET))
-        clearance = float(payload_pos[2] - _PAYLOAD_HALF[2])
-        speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
-        offset_history.append(offset_error)
-        clearance_history.append(clearance)
-        speed_history.append(speed)
+        metrics = _last_metrics or record_metrics()
+        offset_error = float(metrics["captured_offset_error"])
+        clearance = float(metrics["payload_ground_clearance"])
+        speed = float(metrics["payload_speed"])
 
         found_joint = world.get_rigid_body_fixed_joint(fixed_joint.name) or fixed_joint
         builder.text("solver: rigid AVBD fixed joint + default contact")
@@ -174,6 +238,7 @@ def build() -> SceneSetup:
             "connector": connector,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )
 

@@ -127,8 +127,23 @@ DART 7 C++ artifacts are published.
 
 ```bash
 pixi install
+# Smoke the Python-first DART 7 rigid-body demo surface.
+pixi run py-demos -- --scene rigid_body --headless --frames 1
+
+# Open the curated rigid-body GUI verifier.
+pixi run py-demos
+pixi run py-demos -- --scene rigid_solver_compare
+
+# Capture docked visual evidence for the solver comparison.
+pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui
+
+# Optional C++ World-only companion smoke.
 pixi run demos -- --scene rigid_body --headless --frames 1
 ```
+
+The full 36-row rigid-body visual verification workflow, `Rigid Workflow`
+search terms, and capture commands are in the
+[Python demos README](python/examples/demos/README.md#rigid-body-visual-verification-workflow).
 
 ## Documentation
 

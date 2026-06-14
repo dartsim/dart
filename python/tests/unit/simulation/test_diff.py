@@ -155,6 +155,60 @@ def test_contact_gradient_mode_reflects_through_world():
     assert world.contact_gradient_mode == sx.ContactGradientMode.COMPLEMENTARITY_AWARE
 
 
+def _build_pre_contact_surrogate_scene(sx, mode):
+    world = sx.World(
+        time_step=1e-3,
+        differentiable=True,
+        contact_solver_method=sx.ContactSolverMethod.BOXED_LCP,
+        contact_gradient_mode=mode,
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box(np.array([5.0, 5.0, 0.5])))
+    ground.friction = 0.0
+
+    sphere = world.add_rigid_body("sphere", mass=2.0, position=(0.0, 0.0, 1.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    sphere.friction = 0.0
+    sphere.linear_velocity = np.array([0.0, 0.0, -0.5])
+    return world
+
+
+def test_pre_contact_surrogate_public_step_derivatives():
+    sx = _simulation()
+    if _cache_reports_diff_disabled():
+        pytest.skip("DART_BUILD_DIFF is disabled")
+
+    analytic_world = _build_pre_contact_surrogate_scene(
+        sx, sx.ContactGradientMode.ANALYTIC
+    )
+    surrogate_world = _build_pre_contact_surrogate_scene(
+        sx, sx.ContactGradientMode.PRE_CONTACT_SURROGATE
+    )
+    assert len(analytic_world.collide()) == 0
+    assert len(surrogate_world.collide()) == 0
+
+    analytic_world.step()
+    surrogate_world.step()
+    np.testing.assert_allclose(
+        np.asarray(analytic_world.state_vector),
+        np.asarray(surrogate_world.state_vector),
+        atol=1e-12,
+    )
+
+    analytic_jac = np.asarray(analytic_world.get_step_derivatives().state_jacobian)
+    surrogate_jac = np.asarray(surrogate_world.get_step_derivatives().state_jacobian)
+    freefall = np.zeros((6, 6))
+    freefall[:3, :3] = np.eye(3)
+    freefall[:3, 3:] = 1e-3 * np.eye(3)
+    freefall[3:, 3:] = np.eye(3)
+
+    np.testing.assert_allclose(analytic_jac, freefall, atol=1e-9)
+    assert np.max(np.abs(surrogate_jac - freefall)) > 1e-3
+    assert surrogate_jac[5, 5] < 0.5
+    assert surrogate_jac[3, 3] == pytest.approx(1.0, abs=1e-9)
+
+
 def test_state_and_control_vectors_roundtrip():
     sx = _simulation()
     world = _build_frictionless_sphere_scene(sx)

@@ -57,12 +57,12 @@ msgid "GCC 11.2 or later"
 msgstr "GCC 11.2 이상"
 
 #: ../../build.rst:20 7bb766abc1e04800890a4e96e779dfff
-msgid "Windows 2022 or later"
-msgstr "윈도우즈 2022 이상"
+msgid "Windows Server 2025 or later"
+msgstr "윈도우즈 서버 2025 이상"
 
 #: ../../build.rst:20 b02ac10d67b1423b84ff6fcacdd3469f
-msgid "Visual Studio 2022"
-msgstr "비주얼 스튜디오 2022"
+msgid "Visual Studio 2026"
+msgstr "비주얼 스튜디오 2026"
 
 #: ../../build.rst:22 92f35b5450ec4d2f9df9432b4a3edb23
 msgid "macOS 13 or later"
