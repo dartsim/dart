@@ -2337,7 +2337,7 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 ctest \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --output-on-failure \
-  -LE simulation
+  -LE "simulation|gui"
 """,
 ], depends-on = [
   "build-asan",
