@@ -45,27 +45,6 @@ file(GLOB srcs "*.cpp")
 set(target_name ${PROJECT_NAME}-utils-urdf)
 set(component_name utils-urdf)
 
-set(
-  DART_UTILS_BACKWARDCOMPATIBILITY_HPP_IN
-  ${CMAKE_CURRENT_SOURCE_DIR}/BackwardCompatibility.hpp.in
-)
-set(
-  DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT
-  ${CMAKE_CURRENT_BINARY_DIR}/backward_compatibility.hpp
-)
-if(DART_VERBOSE)
-  message(STATUS ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT})
-endif()
-configure_file(
-  ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_IN}
-  ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
-  @ONLY
-)
-install(
-  FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
-  DESTINATION include/dart/utils/urdf
-)
-
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
 target_link_libraries(${target_name} PUBLIC dart-utils urdfdom)
