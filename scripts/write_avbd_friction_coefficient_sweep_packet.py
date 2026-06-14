@@ -17,7 +17,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
+from avbd_packet_schema import (  # noqa: E402
+    AVBD_PACKET_SCHEMA_VERSION,
+    make_resolved_solver_identity,
+)
 
 DEFAULT_OUTPUT = Path(
     "docs/plans/104-vertex-block-descent-solver/"
@@ -31,12 +34,12 @@ RIGID_BODIES = 12
 COLLISION_SHAPES = 12
 SOURCE_SCENE_INDEX = 2
 TIME_STEP = 1.0 / 60.0
-RESOLVED_SOLVER_IDENTITY = {
-    "avbd_rigid_contact_config_emplaced": False,
-    "recorded_from": "friction coefficient sweep benchmark scene counters",
-    "rigid_contact_solver": "sequential_impulse",
-    "rigid_point_joint_solver": "none",
-}
+RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
+    resolved_rigid_contact_family="sequential-impulse",
+    rigid_point_joint_solver="none",
+    avbd_rigid_contact_config_emplaced=False,
+    recorded_from="friction coefficient sweep benchmark scene counters",
+)
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _SVG_SIZE_RE = re.compile(

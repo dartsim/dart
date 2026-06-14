@@ -77,7 +77,7 @@
 - Coordinates with PLAN-030 (deferred GPU/batched differentiable track) and
   PLAN-081 (deferred differentiable-deformable track); neither blocks the
   rigid-body analytic CPU method.
-- The Dojo track coordinates with PLAN-082 (variational integration) and the
+- The Dojo track coordinates with PLAN-084 (variational integration) and the
   rigid-body solver roadmap because it would require a separate maximal-coordinate
   variational/NCP/IPM path rather than an extension of the existing boxed-LCP
   reverse pass.

@@ -52,8 +52,8 @@
 #include "dart/simulation/compute/world_step_stage.hpp"
 #include "dart/simulation/constraint/loop_closure.hpp"
 #include "dart/simulation/constraint/loop_closure_spec.hpp"
-#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/detail/world_step_schedule.hpp"
 #include "dart/simulation/detail/world_storage.hpp"
@@ -348,11 +348,10 @@ struct World::ReplayState
     VectorState armature;
     VectorState coulombFriction;
     double breakForce = 0.0;
-    bool hasAvbdStiffnessState = true;
-    double avbdStartStiffness = 1.0;
-    double avbdLinearStiffness = std::numeric_limits<double>::infinity();
-    double avbdAngularStiffness = std::numeric_limits<double>::infinity();
-    double avbdMaxStiffness = std::numeric_limits<double>::infinity();
+    // Mirrors the presence and values of the comps::AvbdJointStiffness sidecar
+    // for replay-frame layout change detection.
+    bool hasAvbdStiffnessState = false;
+    comps::AvbdJointStiffness avbdStiffness;
     JointLimitsState limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
@@ -615,8 +614,14 @@ bool sameReplayJointLimits(
 }
 
 template <typename JointLayout>
-bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
+bool sameReplayJointLayout(
+    const comps::Joint& joint,
+    const comps::AvbdJointStiffness* avbdStiffness,
+    const JointLayout& layout)
 {
+  const bool hasAvbdStiffnessState = avbdStiffness != nullptr;
+  const comps::AvbdJointStiffness resolvedStiffness
+      = hasAvbdStiffnessState ? *avbdStiffness : comps::AvbdJointStiffness{};
   return joint.type == layout.type && joint.actuatorType == layout.actuatorType
          && std::string_view{joint.name}
                 == std::string_view{layout.name.data(), layout.name.size()}
@@ -627,11 +632,14 @@ bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
          && sameReplayVector(joint.armature, layout.armature)
          && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
          && joint.breakForce == layout.breakForce
-         && joint.hasAvbdStiffnessState == layout.hasAvbdStiffnessState
-         && joint.avbdStartStiffness == layout.avbdStartStiffness
-         && joint.avbdLinearStiffness == layout.avbdLinearStiffness
-         && joint.avbdAngularStiffness == layout.avbdAngularStiffness
-         && joint.avbdMaxStiffness == layout.avbdMaxStiffness
+         && hasAvbdStiffnessState == layout.hasAvbdStiffnessState
+         && resolvedStiffness.startStiffness
+                == layout.avbdStiffness.startStiffness
+         && resolvedStiffness.linearStiffness
+                == layout.avbdStiffness.linearStiffness
+         && resolvedStiffness.angularStiffness
+                == layout.avbdStiffness.angularStiffness
+         && resolvedStiffness.maxStiffness == layout.avbdStiffness.maxStiffness
          && sameReplayJointLimits(joint.limits, layout.limits)
          && joint.axis.isApprox(layout.axis, 0.0)
          && joint.axis2.isApprox(layout.axis2, 0.0)
@@ -2056,7 +2064,7 @@ struct WorldStepPipelineStages
         hasDeformableBodies,
         /*includeKinematics=*/true);
     for (const auto slot : schedule) {
-      prepareStage(slot, world);
+      stageForSlot(slot).prepare(world);
     }
   }
 
@@ -2126,42 +2134,6 @@ private:
   {
     for (const auto slot : schedule) {
       pipeline.addStage(stageForSlot(slot));
-    }
-  }
-
-  void prepareStage(Slot slot, World& world)
-  {
-    if (!detail::builtInWorldStepScheduleNeedsPreparation(slot)) {
-      return;
-    }
-
-    switch (slot) {
-      case Slot::RigidBodyVelocity:
-        rigidBodyVelocity.prepare(world);
-        return;
-      case Slot::RigidBodyContact:
-        rigidBodyContact.prepare(world);
-        return;
-      case Slot::RigidIpcContact:
-        rigidIpcContact.prepare(world);
-        return;
-      case Slot::MultibodyVariationalIntegration:
-        multibodyVariational.prepare(world);
-        return;
-      case Slot::UnifiedConstraint:
-        unifiedConstraint.prepare(world);
-        return;
-      case Slot::DeformableDynamics:
-        deformableDynamics.prepare(world);
-        return;
-      case Slot::Kinematics:
-        kinematics.prepare(world);
-        return;
-      case Slot::RigidBodyPosition: // LCOV_EXCL_LINE
-      case Slot::MultibodyVelocity:
-      case Slot::MultibodyForwardDynamics:
-      case Slot::MultibodyPosition:
-        return; // LCOV_EXCL_LINE
     }
   }
 };
@@ -3354,6 +3326,7 @@ World::World(const WorldOptions& options)
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
+    m_strictSolverResolution(options.strictSolverResolution),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
     m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
@@ -3644,6 +3617,79 @@ void World::prepareStepPipelineCacheForCurrentConfiguration()
       cache.hasAdvanceableRigidBodies,
       cache.hasMultibodyStructure,
       cache.hasDeformableBodies);
+  recordResolvedConfiguration();
+}
+
+//==============================================================================
+void World::recordResolvedConfiguration()
+{
+  // PLAN-091 WP-091.11: snapshot the resolved per-domain method families
+  // (requested -> resolved, with reasons). Known silent substitutions are
+  // recorded as substitution notes; under strictSolverResolution they become an
+  // error instead.
+  m_resolvedConfiguration.reset();
+
+  const char* rigidSolver = "unknown";
+  switch (m_rigidBodySolver) {
+    case RigidBodySolver::SequentialImpulse:
+      rigidSolver = "sequential-impulse";
+      break;
+    case RigidBodySolver::Ipc:
+      rigidSolver = "ipc";
+      break;
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"rigid-body", rigidSolver, rigidSolver, "as requested"});
+
+  const char* contactMethod = "unknown";
+  switch (m_contactSolverMethod) {
+    case ContactSolverMethod::SequentialImpulse:
+      contactMethod = "sequential-impulse";
+      break;
+    case ContactSolverMethod::BoxedLcp:
+      contactMethod = "boxed-lcp";
+      break;
+  }
+  // The internal AVBD rigid-contact opt-in is not facade-selectable (it is
+  // emplaced per body), so when it is present the resolved contact path differs
+  // from the requested `ContactSolverMethod`: configured contacts run AVBD and
+  // the rest fall back to sequential impulse (PLAN-091 WP-091.1). Record that
+  // substitution explicitly instead of letting it happen silently.
+  const detail::WorldRegistry& registry = m_storage->registry;
+  const auto* avbdStorage = registry.storage<comps::RigidAvbdContactConfig>();
+  const bool hasAvbdContactConfigs
+      = avbdStorage != nullptr && avbdStorage->size() != 0u;
+  if (hasAvbdContactConfigs) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact",
+         contactMethod,
+         std::string(contactMethod) + " + avbd (opt-in)",
+         "internal AVBD rigid-contact opt-in active on some bodies; configured "
+         "contacts run AVBD, the rest run sequential impulse (not "
+         "facade-selectable -- PLAN-091 WP-091.1)"});
+  } else {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact", contactMethod, contactMethod, "as requested"});
+  }
+
+  const char* multibody = "unknown";
+  switch (m_multibodyIntegrationMethod) {
+    case MultibodyIntegrationMethod::SemiImplicit:
+      multibody = "semi-implicit";
+      break;
+    case MultibodyIntegrationMethod::Variational:
+      multibody = "variational";
+      break;
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"multibody", multibody, multibody, "as requested"});
+
+  DART_SIMULATION_THROW_T_IF(
+      m_strictSolverResolution && m_resolvedConfiguration.hasSubstitution(),
+      InvalidArgumentException,
+      "strict solver resolution is enabled and the World substituted a solver "
+      "method it did not request; inspect getResolvedConfiguration() for the "
+      "recorded substitution");
 }
 
 //==============================================================================
@@ -4153,7 +4199,6 @@ Joint World::addArticulatedJoint(
   joint.name = std::move(actualName);
   joint.parentLink = parentEntity;
   joint.childLink = childEntity;
-  joint.hasAvbdStiffnessState = false;
   if (articulatedPointJointUsesAxis(componentType)) {
     joint.axis = axis.normalized();
   }
@@ -4791,9 +4836,11 @@ Joint World::addRigidBodyJoint(
   joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
-  joint.hasAvbdStiffnessState = true;
-  joint.avbdStartStiffness = defaultAvbdConfig.startStiffness;
-  joint.avbdMaxStiffness = defaultAvbdConfig.maxStiffness;
+  comps::AvbdJointStiffness defaultStiffness;
+  defaultStiffness.startStiffness = defaultAvbdConfig.startStiffness;
+  defaultStiffness.maxStiffness = defaultAvbdConfig.maxStiffness;
+  m_storage->registry.emplace_or_replace<comps::AvbdJointStiffness>(
+      jointEntity, defaultStiffness);
   if (!detail::deformable_vbd::configureAvbdRigidWorldPointJointFromCurrentPose(
           m_storage->registry,
           jointEntity,
@@ -5988,6 +6035,83 @@ bool World::isStepProfilingEnabled() const noexcept
 }
 
 //==============================================================================
+const compute::ResolvedSolverConfiguration& World::getResolvedConfiguration()
+    const noexcept
+{
+  return m_resolvedConfiguration;
+}
+
+//==============================================================================
+compute::StepMetrics World::computeStepMetrics() const
+{
+  // PLAN-091 WP-091.24 (foundational slice): a read-only snapshot of the
+  // World's physical invariants. This is a pure query -- it reads body state
+  // and gravity and runs no step, mutates no registry/cache field, and so
+  // cannot perturb a trajectory (the default-step goldens stay bit-identical).
+  // Conventions match the rest of the library exactly (RigidBody energy/
+  // momentum accessors and compute::computeMultibodyMechanicalEnergy), so the
+  // numbers are consistent across the facade.
+  compute::StepMetrics metrics;
+
+  const detail::WorldRegistry& registry = m_storage->registry;
+  const Eigen::Vector3d& gravity = m_gravity;
+
+  // Free rigid bodies: full world-frame state is stored, so kinetic/potential
+  // energy and linear/angular momentum are computed directly. Static and
+  // kinematic bodies carry no dynamics degrees of freedom and contribute no
+  // mechanical energy or momentum, so they are skipped (mirroring the contact
+  // solver's infinite-mass treatment).
+  const auto rigidView = registry.view<comps::RigidBodyTag>();
+  for (const auto entity : rigidView) {
+    if (registry.all_of<comps::StaticBodyTag>(entity)
+        || registry.all_of<comps::KinematicBodyTag>(entity)) {
+      continue;
+    }
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
+    const auto& transform = registry.get<comps::Transform>(entity);
+
+    const Eigen::Matrix3d rotation
+        = transform.orientation.normalized().toRotationMatrix();
+    const Eigen::Matrix3d worldInertia
+        = rotation * mass.inertia * rotation.transpose();
+
+    metrics.kineticEnergy
+        += 0.5 * mass.mass * velocity.linear.squaredNorm()
+           + 0.5 * velocity.angular.dot(worldInertia * velocity.angular);
+    metrics.potentialEnergy += -mass.mass * gravity.dot(transform.position);
+
+    const Eigen::Vector3d linear = mass.mass * velocity.linear;
+    metrics.linearMomentum += linear;
+    metrics.angularMomentum
+        += transform.position.cross(linear) + worldInertia * velocity.angular;
+  }
+
+  // Multibodies: link world-frame velocities are not stored (they are derived
+  // from the joint degrees of freedom by forward kinematics), so both the
+  // kinetic and potential terms are taken from the variational integrator's own
+  // energy helper, which evaluates them on the VarTree's forward-kinematics
+  // world transforms. This makes the per-domain split physical -- an earlier
+  // version derived potential from the stored comps::Link::worldTransform
+  // cache, whose gauge did not match the helper (yielding negative kinetic
+  // energy at rest). World-frame multibody-link momentum aggregation still
+  // needs the link Jacobian and is deferred to a later WP-091.24 slice.
+  const auto structureView = registry.view<comps::MultibodyStructure>();
+  for (const auto structureEntity : structureView) {
+    const auto& structure
+        = structureView.get<comps::MultibodyStructure>(structureEntity);
+
+    const auto terms = compute::computeMultibodyMechanicalEnergyTerms(
+        registry, structure, gravity);
+    metrics.kineticEnergy += terms.kinetic;
+    metrics.potentialEnergy += terms.potential;
+  }
+
+  metrics.totalEnergy = metrics.kineticEnergy + metrics.potentialEnergy;
+  return metrics;
+}
+
+//==============================================================================
 const compute::WorldStepProfile& World::getLastStepProfile() const noexcept
 {
 #if DART_BUILD_PROFILE
@@ -6123,7 +6247,10 @@ void World::restoreReplayFrame(std::size_t index)
         "Cannot restore replay frame: Joint entity layout changed");
     DART_SIMULATION_THROW_T_IF(
         !sameReplayJointLayout(
-            m_storage->registry.get<comps::Joint>(state.entity), state.layout),
+            m_storage->registry.get<comps::Joint>(state.entity),
+            m_storage->registry.try_get<comps::AvbdJointStiffness>(
+                state.entity),
+            state.layout),
         InvalidOperationException,
         "Cannot restore replay frame: Joint entity layout changed");
   }
@@ -6470,11 +6597,14 @@ void World::recordReplayFrame()
     captureReplayVector(joint.armature, state.layout.armature);
     captureReplayVector(joint.coulombFriction, state.layout.coulombFriction);
     state.layout.breakForce = joint.breakForce;
-    state.layout.hasAvbdStiffnessState = joint.hasAvbdStiffnessState;
-    state.layout.avbdStartStiffness = joint.avbdStartStiffness;
-    state.layout.avbdLinearStiffness = joint.avbdLinearStiffness;
-    state.layout.avbdAngularStiffness = joint.avbdAngularStiffness;
-    state.layout.avbdMaxStiffness = joint.avbdMaxStiffness;
+    if (const auto* avbdStiffness
+        = m_storage->registry.try_get<comps::AvbdJointStiffness>(entity)) {
+      state.layout.hasAvbdStiffnessState = true;
+      state.layout.avbdStiffness = *avbdStiffness;
+    } else {
+      state.layout.hasAvbdStiffnessState = false;
+      state.layout.avbdStiffness = comps::AvbdJointStiffness{};
+    }
     captureReplayJointLimits(joint.limits, state.layout.limits);
     state.layout.axis = joint.axis;
     state.layout.axis2 = joint.axis2;

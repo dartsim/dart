@@ -36,6 +36,8 @@
 #include <dart/simulation/compute/execution_profile.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <Eigen/Core>
+
 #include <chrono>
 #include <string>
 #include <string_view>
@@ -135,6 +137,131 @@ struct DART_SIMULATION_API WorldStepProfile
 
   /// Clears the profile back to the empty state.
   void reset() noexcept;
+};
+
+/// One finalize-time solver-resolution decision: which method family the World
+/// requested for a domain, which it actually resolved, and why. When
+/// `requested == resolved` the stage ran as requested; when they differ the
+/// World substituted a method, and the substitution is recorded here instead of
+/// happening silently.
+struct DART_SIMULATION_API ResolvedConfigurationNote
+{
+  /// Domain the decision applies to, e.g. "rigid-body", "rigid-contact",
+  /// "multibody".
+  std::string domain;
+
+  /// Requested method-family name.
+  std::string requested;
+
+  /// Resolved method-family name actually used by the step.
+  std::string resolved;
+
+  /// Reason the resolution differs from the request, or "as requested".
+  std::string reason;
+
+  /// True when the resolved family differs from the requested family.
+  [[nodiscard]] bool isSubstitution() const noexcept
+  {
+    return requested != resolved;
+  }
+};
+
+/// The per-domain solver families the World resolved at
+/// `enterSimulationMode`, exposed alongside the step profile (see
+/// `World::getResolvedConfiguration`). Every resolution is recorded with its
+/// reason so a scene can no longer silently substitute a method.
+///
+/// PLAN-091 WP-091.11 slice 1: this records the resolved families (requested ==
+/// resolved today); later slices classify the known silent substitutions
+/// (for example AVBD rigid contact running sequential impulse) as recorded
+/// decisions or strict-mode errors.
+struct DART_SIMULATION_API ResolvedSolverConfiguration
+{
+  std::vector<ResolvedConfigurationNote> notes;
+
+  [[nodiscard]] bool isEmpty() const noexcept
+  {
+    return notes.empty();
+  }
+  void reset() noexcept
+  {
+    notes.clear();
+  }
+
+  /// True if any domain resolved to a different family than requested.
+  [[nodiscard]] bool hasSubstitution() const noexcept;
+
+  /// Compact, human- and agent-readable table, one
+  /// `domain: requested -> resolved (reason)` row per note.
+  [[nodiscard]] std::string toSummaryText() const;
+};
+
+/// Solver-agnostic, per-domain physical quantities of one World at its current
+/// state, computed by `World::computeStepMetrics()`.
+///
+/// This is a pure value object: it carries only plain scalars and `Vector3d`
+/// momenta and names no solver, backend, registry, or component type. It is the
+/// metrics surface PLAN-091 WP-091.24 builds its energy/momentum-conservation
+/// and order-of-convergence validation on, and it reads the same from C++,
+/// Python, or a log -- a snapshot of physical invariants that is stable across
+/// solver choices. `computeStepMetrics()` is a read-only query: it inspects the
+/// current World state (body mass, velocity, pose, inertia, gravity) without
+/// running a step or mutating any state, so it never perturbs a trajectory.
+///
+/// Energy and momentum conventions match the rest of the simulation library:
+///   - kinetic energy `0.5 m |v|^2 + 0.5 w^T I_world w` per rigid body, and the
+///     multibody spatial form `0.5 V^T G V` (see
+///     `compute::computeMultibodyMechanicalEnergy`);
+///   - gravitational potential `- sum_i m_i g . x_i^com`, zero reference at the
+///     world origin (consistent with `RigidBody::getPotentialEnergy` and the
+///     variational integrator's energy diagnostic);
+///   - linear momentum `sum_i m_i v_i`;
+///   - angular momentum about the world origin
+///     `sum_i (x_i^com x m_i v_i + I_world,i w_i)`.
+struct DART_SIMULATION_API StepMetrics
+{
+  /// Total translational + rotational kinetic energy of every dynamic body.
+  /// Rigid bodies contribute their body kinetic energy; multibodies contribute
+  /// the variational integrator's own kinetic term (evaluated on the
+  /// forward-kinematics link velocities), so the per-domain kinetic/potential
+  /// split is physical for both domains.
+  double kineticEnergy = 0.0;
+
+  /// Total gravitational potential energy (zero reference at the world origin).
+  double potentialEnergy = 0.0;
+
+  /// `kineticEnergy + potentialEnergy`. For a passive (force-free) system this
+  /// is the conserved mechanical energy the conservation gates track; for
+  /// multibodies it equals `computeMultibodyMechanicalEnergy`.
+  double totalEnergy = 0.0;
+
+  /// Total linear momentum `sum_i m_i v_i` (world frame).
+  Eigen::Vector3d linearMomentum = Eigen::Vector3d::Zero();
+
+  /// Total angular momentum about the world origin (world frame).
+  Eigen::Vector3d angularMomentum = Eigen::Vector3d::Zero();
+
+  /// Number of active rigid contacts at the current state.
+  ///
+  /// Populating this requires a narrow-phase contact pass, which mutates the
+  /// World's collision-query cache and so cannot run from the read-only
+  /// `computeStepMetrics()` query. This foundational WP-091.24 slice therefore
+  /// leaves it at 0; a later slice adds an explicit contact-metrics path.
+  std::size_t activeContactCount = 0;
+
+  /// Maximum penetration depth over active rigid contacts (meters). Left at 0
+  /// for the same read-only reason as `activeContactCount`.
+  double maxPenetrationDepth = 0.0;
+
+  /// RIQN/solver iterations performed on the last step, when the active solver
+  /// exposes it; 0 otherwise. The default step profile records per-stage timing
+  /// only, so this is 0 until a later slice threads solver-iteration data
+  /// through the profile rather than inventing a value here.
+  std::size_t lastStepIterations = 0;
+
+  /// Final solver residual norm on the last step, when available; 0 otherwise
+  /// (same provenance caveat as `lastStepIterations`).
+  double lastStepResidual = 0.0;
 };
 
 } // namespace dart::simulation::compute

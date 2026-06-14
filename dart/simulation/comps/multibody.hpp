@@ -48,7 +48,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MultibodyTag
 {
-  DART_SIMULATION_TAG_COMPONENT(MultibodyTag);
+  DART_SIMULATION_TAG_COMPONENT(MultibodyTag, "comps.MultibodyTag");
 };
 
 /// Component storing Multibody structure (links, joints)
@@ -58,7 +58,8 @@ struct MultibodyTag
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MultibodyStructure
 {
-  DART_SIMULATION_STATE_COMPONENT(MultibodyStructure);
+  DART_SIMULATION_STATE_COMPONENT(
+      MultibodyStructure, "comps.MultibodyStructure");
 
   using EntityVector
       = std::vector<entt::entity, dart::common::StlAllocator<entt::entity>>;

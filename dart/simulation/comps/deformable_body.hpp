@@ -55,13 +55,14 @@ using DeformableVector = std::vector<T, dart::common::StlAllocator<T>>;
 /// Tag marking an entity as a deformable body.
 struct DeformableBodyTag
 {
-  DART_SIMULATION_TAG_COMPONENT(DeformableBodyTag);
+  DART_SIMULATION_TAG_COMPONENT(DeformableBodyTag, "comps.DeformableBodyTag");
 };
 
 /// Internal per-node state for a deformable body.
 struct DeformableNodeState
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeformableNodeState);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableNodeState, "comps.DeformableNodeState");
 
   using Vector3Vector = DeformableVector<Eigen::Vector3d>;
   using ScalarVector = DeformableVector<double>;
@@ -96,7 +97,8 @@ struct DeformableSpringEdge
 /// Internal spring model for a deformable body.
 struct DeformableSpringModel
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeformableSpringModel);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableSpringModel, "comps.DeformableSpringModel");
 
   using EdgeVector = DeformableVector<DeformableSpringEdge>;
 
@@ -132,7 +134,8 @@ struct DeformableTetrahedron
 /// Internal mesh topology and rest configuration for a deformable body.
 struct DeformableMeshTopology
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeformableMeshTopology);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableMeshTopology, "comps.DeformableMeshTopology");
 
   using Vector3Vector = DeformableVector<Eigen::Vector3d>;
   using SurfaceTriangleVector = DeformableVector<DeformableSurfaceTriangle>;
@@ -159,7 +162,8 @@ struct DeformableMeshTopology
 /// Internal material properties for a deformable body.
 struct DeformableMaterial
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeformableMaterial);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableMaterial, "comps.DeformableMaterial");
 
   double density = 1.0;
   double youngsModulus = 1.0e5;
@@ -231,7 +235,8 @@ struct DeformableNeumannBoundary
 /// Internal scripted boundary-condition state for deformable scene replays.
 struct DeformableBoundaryConditions
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeformableBoundaryConditions);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableBoundaryConditions, "comps.DeformableBoundaryConditions");
 
   using DirichletVector = DeformableVector<DeformableDirichletBoundary>;
   using NeumannVector = DeformableVector<DeformableNeumannBoundary>;

@@ -38,6 +38,7 @@
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/rigid_contact_assembly.hpp"
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
@@ -57,70 +58,6 @@
 #include <cmath>
 
 namespace dart::simulation::detail {
-
-namespace {
-
-//==============================================================================
-double inverseMassOf(const comps::MassProperties& mass)
-{
-  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-}
-
-//==============================================================================
-Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
-{
-  const double norm = orientation.norm();
-  if (!(norm > 0.0) || !std::isfinite(norm)) {
-    return Eigen::Quaterniond::Identity();
-  }
-  return Eigen::Quaterniond(orientation.coeffs() / norm);
-}
-
-//==============================================================================
-Eigen::Matrix3d inverseWorldInertiaOf(
-    const comps::MassProperties& mass, const comps::Transform& transform)
-{
-  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
-    return Eigen::Matrix3d::Zero();
-  }
-  const Eigen::Matrix3d rotation
-      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-  const Eigen::Matrix3d worldInertia
-      = rotation * mass.inertia * rotation.transpose();
-  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    return Eigen::Matrix3d::Zero();
-  }
-  return solver.solve(Eigen::Matrix3d::Identity());
-}
-
-//==============================================================================
-double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->restitution;
-  }
-  return 0.0;
-}
-
-//==============================================================================
-double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->friction;
-  }
-  return 1.0;
-}
-
-//==============================================================================
-bool hasPrescribedRigidBodyContactResponse(
-    const detail::WorldRegistry& registry, entt::entity entity)
-{
-  return registry.all_of<comps::StaticBodyTag>(entity)
-         || registry.all_of<comps::KinematicBodyTag>(entity);
-}
-
-} // namespace
 
 //==============================================================================
 void BoxedLcpContactScratch::reserve(
@@ -281,7 +218,7 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   // residual penetration after the impulse solve; the slow-contact velocity
   // bias prevents taller coupled stacks from accumulating downward drift
   // between projections.
-  constexpr double restitutionThreshold = 1e-3;
+  constexpr double restitutionThreshold = kRigidContactRestitutionThreshold;
   constexpr double penetrationSlop = 1e-4;
   constexpr double baumgarteFactor = 0.2;
   constexpr double baumgarteApproachThreshold = -0.25;
@@ -486,7 +423,7 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   // perceptibly altering the physics. It is applied only to friction rows so
   // the frictionless normal-only behavior stays bit-for-bit identical to the
   // pre-friction path.
-  constexpr double kConstraintForceMixing = 1e-5;
+  constexpr double kConstraintForceMixing = kRigidContactFrictionCfm;
   for (Eigen::Index row = n; row < rows; ++row) {
     A(row, row) += A(row, row) * kConstraintForceMixing;
   }

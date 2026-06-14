@@ -8,8 +8,8 @@ hard-barrier rung deferred. This document owns the durable design rationale for
 the **linear-time variational integrator** in the DART 7 simulation
 `World` integration family. It owns architecture and math rationale, not
 timeline or status. Sequencing, phase gates, and acceptance criteria live in
-PLAN-082
-(`docs/plans/082-variational-integrator-solver.md` and its `contact-roadmap.md`
+PLAN-084
+(`docs/plans/084-variational-integrator-solver.md` and its `contact-roadmap.md`
 sidecar); the implementation tracker, measured paper-experiment replication, and
 the per-gate evidence live in `docs/dev_tasks/variational_integrator_solver/`
 (`README.md`, `RESUME.md`, `paper-experiment-replication.md`).
@@ -290,7 +290,7 @@ The pattern is proven in-tree: the deformable solver stores
   binary-format **version bump**. A world loaded mid-trajectory must carry
   `qᵏ⁻¹` and **not** re-bootstrap (a bootstrap-done flag), so save/load is
   bit-reproducible. An iterative root-finder with a tolerance is a determinism
-  risk; PLAN-082 gates repeated-run determinism explicitly.
+  risk; PLAN-084 gates repeated-run determinism explicitly.
 
 ### Coexistence with other solvers/backends
 
@@ -301,7 +301,7 @@ The pattern is proven in-tree: the deformable solver stores
   shares no representation with articulated generalized coordinates. The VI is
   **CPU-only** for now; no GPU/batch synergy is claimed.
 - **Python (`dartpy.simulation`):** the integration-family selector
-  is the only new public surface and must bind cleanly; PLAN-082 includes a
+  is the only new public surface and must bind cleanly; PLAN-084 includes a
   binding + import-coverage slice.
 
 ## Contact, Friction, And Constraints (durable rationale)
@@ -309,7 +309,7 @@ The pattern is proven in-tree: the deformable solver stores
 The paper handles only joint (equality) constraints via reduced coordinates;
 closed loops, contact, and friction are out of scope (Sec. 5). The **durable
 design constraint** (the sequencing lives in
-`082-variational-integrator-solver/contact-roadmap.md`):
+`084-variational-integrator-solver/contact-roadmap.md`):
 
 - **Contact/friction can enter the VI only as a generalized force / spatial
   impulse** in the DEL residual (`Fᵏ`, `Qᵢ`, `Fᵢ^{ext}`). RIQN's `Δt·M⁻¹`
@@ -358,7 +358,7 @@ and the optional C4 hard barrier remain separate follow-up work.
 
 ## Verification Approach
 
-Concrete numeric gates live in PLAN-082; the _approach_ mirrors the paper's own
+Concrete numeric gates live in PLAN-084; the _approach_ mirrors the paper's own
 experiments (reference repo `experiments/`: `energy_conservation`, `convergence`,
 `iteration_numbers`, `performance_comparisons`), realized as DART tests/benchmarks:
 

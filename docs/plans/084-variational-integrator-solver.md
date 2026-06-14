@@ -1,6 +1,6 @@
-# PLAN-082: Linear-Time Variational Integrator (Discrete-Mechanics Solver)
+# PLAN-084: Linear-Time Variational Integrator (Discrete-Mechanics Solver)
 
-- Operating state: `PLAN-082` in [`dashboard.md`](dashboard.md)
+- Operating state: `PLAN-084` in [`dashboard.md`](dashboard.md)
 - Outcome: the DART 7 `World` offers a **variational integrator** as a
   selectable integration family for multibody systems — symplectic,
   near-energy-conserving (for smooth conservative forcing at fixed `Δt`), and
@@ -33,7 +33,7 @@
 - Public facade / capability matrix:
   [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md)
 - Contact/friction/inequality-constraint roadmap:
-  [`082-variational-integrator-solver/contact-roadmap.md`](082-variational-integrator-solver/contact-roadmap.md)
+  [`084-variational-integrator-solver/contact-roadmap.md`](084-variational-integrator-solver/contact-roadmap.md)
 - Research catalog entry: `lee-vi-2016` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - Active implementation tracking: `docs/dev_tasks/variational_integrator_solver/`
@@ -42,10 +42,10 @@
 ## Relationship To Other Plans
 
 - **PLAN-080 (rigid-body solver)** owns floating-base articulated dynamics and
-  is the natural owner of the shared O(n) impulse-ABI; PLAN-082 Phase A2/B1
+  is the natural owner of the shared O(n) impulse-ABI; PLAN-084 Phase A2/B1
   coordinate with it rather than forking that work.
 - **PLAN-081 (deformable IPC)** owns the barrier/CCD/tangent kernels that
-  PLAN-082's deferred contact phase would adapt.
+  PLAN-084's deferred contact phase would adapt.
 - The VI is additive and opt-in; the default integration family stays
   semi-implicit Euler.
 
