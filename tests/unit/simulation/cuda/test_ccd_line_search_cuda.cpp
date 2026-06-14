@@ -48,19 +48,35 @@ namespace {
 cuda::PointTriangleCcdLineSearchPair makePair(
     const Eigen::Vector3d& pointStart,
     const Eigen::Vector3d& pointEnd,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aEnd,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bEnd,
+    const Eigen::Vector3d& cStart,
+    const Eigen::Vector3d& cEnd)
 {
   cuda::PointTriangleCcdLineSearchPair pair;
   for (int i = 0; i < 3; ++i) {
     pair.pointStart[i] = pointStart[i];
     pair.pointEnd[i] = pointEnd[i];
-    pair.triangleA[i] = a[i];
-    pair.triangleB[i] = b[i];
-    pair.triangleC[i] = c[i];
+    pair.triangleAStart[i] = aStart[i];
+    pair.triangleAEnd[i] = aEnd[i];
+    pair.triangleBStart[i] = bStart[i];
+    pair.triangleBEnd[i] = bEnd[i];
+    pair.triangleCStart[i] = cStart[i];
+    pair.triangleCEnd[i] = cEnd[i];
   }
   return pair;
+}
+
+cuda::PointTriangleCcdLineSearchPair makePair(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointEnd,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  return makePair(pointStart, pointEnd, a, a, b, b, c, c);
 }
 
 cuda::EdgeEdgeCcdLineSearchPair makeEdgeEdgePair(
@@ -102,12 +118,12 @@ dc::ContinuousCollisionStepResult cpuResult(
   return dc::pointTriangleStepBound(
       vec3(pair.pointStart),
       vec3(pair.pointEnd),
-      vec3(pair.triangleA),
-      vec3(pair.triangleA),
-      vec3(pair.triangleB),
-      vec3(pair.triangleB),
-      vec3(pair.triangleC),
-      vec3(pair.triangleC),
+      vec3(pair.triangleAStart),
+      vec3(pair.triangleAEnd),
+      vec3(pair.triangleBStart),
+      vec3(pair.triangleBEnd),
+      vec3(pair.triangleCStart),
+      vec3(pair.triangleCEnd),
       cpuOptions);
 }
 
@@ -143,6 +159,24 @@ std::vector<cuda::PointTriangleCcdLineSearchPair> makeFixture()
       makePair({0.25, 0.0, 0.2}, {0.25, 0.0, 0.1}, a, b, c),
       makePair({2.0, 0.0, 0.2}, {2.0, 0.0, -0.2}, a, b, c),
       makePair({0.0, 0.0, 0.3}, {0.0, 0.0, -0.1}, a, b, c),
+      makePair(
+          {0.0, 0.0, 0.0},
+          {0.0, 0.0, 0.0},
+          {-1.0, -1.0, 0.2},
+          {-1.0, -1.0, -0.2},
+          {1.0, -1.0, 0.2},
+          {1.0, -1.0, -0.2},
+          {0.0, 1.0, 0.2},
+          {0.0, 1.0, -0.2}),
+      makePair(
+          {0.25, 0.25, 0.0},
+          {0.25, 0.25, 0.0},
+          {0.0, 0.0, 0.2},
+          {0.0, 0.0, -0.2},
+          {1.0, 0.0, 0.2},
+          {1.0, 0.0, -0.2},
+          {0.0, 1.0, 0.2},
+          {0.0, 1.0, 0.2}),
   };
 }
 

@@ -38,11 +38,36 @@
 #include <algorithm>
 #include <limits>
 #include <span>
+#include <string>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::math {
+namespace {
+
+constexpr int kMaxStrictInteriorFastPathSize = 192;
+
+bool validateParameters(
+    const ApgdSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.epsilonForDivision)
+      || params.epsilonForDivision <= 0.0) {
+    if (message) {
+      *message = "APGD epsilon_for_division must be positive";
+    }
+    return false;
+  }
+  if (params.restartCheckInterval < 0) {
+    if (message) {
+      *message = "APGD restart_check_interval must be non-negative";
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
 
 ApgdSolver::ApgdSolver()
 {
@@ -100,6 +125,12 @@ LcpResult ApgdSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int nSkip = padding(n);
   const int maxIterations = std::max(
@@ -109,6 +140,9 @@ LcpResult ApgdSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
   const double relativeTolerance = (options.relativeTolerance > 0)
                                        ? options.relativeTolerance
                                        : mDefaultOptions.relativeTolerance;
@@ -119,6 +153,44 @@ LcpResult ApgdSolver::solve(
   if (!std::isfinite(relaxation) || relaxation <= 0.0 || relaxation > 2.0) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Relaxation parameter must be in (0, 2]";
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart
+      && n <= kMaxStrictInteriorFastPathSize) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    if (problem.isStandardLcp(absTolerance)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolerance);
+    result.validated = options.validateSolution;
     return result;
   }
 
@@ -314,10 +386,7 @@ LcpResult ApgdSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(

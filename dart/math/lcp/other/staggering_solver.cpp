@@ -76,6 +76,35 @@ StaggeringSolver::StaggeringSolver()
 }
 
 //==============================================================================
+bool StaggeringSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  if (problem.empty()) {
+    return true;
+  }
+
+  if (!LcpSolver::supportsProblem(problem, standardTolerance)) {
+    return false;
+  }
+
+  if (problem.getType(standardTolerance) != LcpProblemType::FrictionIndex) {
+    return false;
+  }
+
+  bool hasNormalBlock = false;
+  bool hasFrictionBlock = false;
+  for (Eigen::Index i = 0; i < problem.findex.size(); ++i) {
+    if (problem.findex[i] >= 0) {
+      hasFrictionBlock = true;
+    } else {
+      hasNormalBlock = true;
+    }
+  }
+
+  return hasNormalBlock && hasFrictionBlock;
+}
+
+//==============================================================================
 LcpResult StaggeringSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
@@ -130,6 +159,32 @@ LcpResult StaggeringSolver::solve(
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Relaxation parameter must be in (0, 2]";
     return result;
+  }
+
+  if (!options.warmStart && problem.hasFrictionIndex()) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    Eigen::VectorXd fastW;
+    if (detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW)) {
+      Eigen::VectorXd loEffFast;
+      Eigen::VectorXd hiEffFast;
+      std::string boundsMessage;
+      if (!detail::computeEffectiveBounds(
+              lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+        result.status = LcpSolverStatus::InvalidProblem;
+        result.message = boundsMessage;
+        return result;
+      }
+
+      result.status = LcpSolverStatus::Success;
+      result.iterations = 0;
+      result.residual
+          = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+      result.complementarity = detail::complementarityInfinityNorm(
+          x, fastW, loEffFast, hiEffFast, compTolOpt);
+      result.validated = options.validateSolution;
+      return result;
+    }
   }
 
   std::vector<int> normalIndices;

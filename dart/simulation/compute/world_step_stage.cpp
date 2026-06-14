@@ -2463,6 +2463,8 @@ struct InterBodySurfaceContactResult
   bool hit = false;
   bool indeterminate = false;
   double stepBound = 1.0;
+  std::size_t pointTrianglePairCapacity = 0;
+  std::size_t edgeEdgePairCapacity = 0;
   std::size_t pointTriangleCandidateCount = 0;
   std::size_t edgeEdgeCandidateCount = 0;
   dc::ContinuousCollisionStepStats stats;
@@ -2573,6 +2575,56 @@ bool surfaceContactPointAllowed(
 {
   return pointMask.empty()
          || (point < pointMask.size() && pointMask[point] != 0u);
+}
+
+//==============================================================================
+std::size_t countSurfaceContactCandidatePoints(
+    const std::size_t pointCount, std::span<const std::uint8_t> pointMask)
+{
+  if (pointMask.empty()) {
+    return pointCount;
+  }
+
+  const std::size_t limit = std::min(pointCount, pointMask.size());
+  return static_cast<std::size_t>(std::count_if(
+      pointMask.begin(),
+      pointMask.begin() + limit,
+      [](const std::uint8_t value) { return value != 0u; }));
+}
+
+//==============================================================================
+std::size_t candidatePairCapacity(
+    const std::size_t pointTrianglePairCapacity,
+    const std::size_t edgeEdgePairCapacity)
+{
+  return pointTrianglePairCapacity + edgeEdgePairCapacity;
+}
+
+//==============================================================================
+std::size_t candidateRejectedPairCount(
+    const std::size_t pairCapacity,
+    const std::size_t pointTriangleCandidateCount,
+    const std::size_t edgeEdgeCandidateCount)
+{
+  const std::size_t candidateCount
+      = pointTriangleCandidateCount + edgeEdgeCandidateCount;
+  return pairCapacity > candidateCount ? pairCapacity - candidateCount : 0u;
+}
+
+//==============================================================================
+void accumulateCandidateFilterPressure(
+    std::size_t& pairCapacityCounter,
+    std::size_t& rejectedPairsCounter,
+    const std::size_t pointTrianglePairCapacity,
+    const std::size_t edgeEdgePairCapacity,
+    const std::size_t pointTriangleCandidateCount,
+    const std::size_t edgeEdgeCandidateCount)
+{
+  const std::size_t pairCapacity
+      = candidatePairCapacity(pointTrianglePairCapacity, edgeEdgePairCapacity);
+  pairCapacityCounter += pairCapacity;
+  rejectedPairsCounter += candidateRejectedPairCount(
+      pairCapacity, pointTriangleCandidateCount, edgeEdgeCandidateCount);
 }
 
 //==============================================================================
@@ -2709,6 +2761,11 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
       obstacle.surfaceTriangles,
       margin,
       scratch.interBodyObstacleTriangleItems);
+  aggregate.pointTrianglePairCapacity
+      = scratch.interBodyCurrentPointItems.size()
+            * scratch.interBodyObstacleTriangleItems.size()
+        + scratch.interBodyObstaclePointItems.size()
+              * scratch.interBodyCurrentTriangleItems.size();
 
   dc::detail::visitSweepPairs(
       scratch.interBodyCurrentPointItems,
@@ -2762,6 +2819,8 @@ InterBodySurfaceContactResult interBodySurfaceContactStepBound(
       obstacle.surfaceEdges,
       margin,
       scratch.interBodyObstacleEdgeItems);
+  aggregate.edgeEdgePairCapacity = scratch.interBodyCurrentEdgeItems.size()
+                                   * scratch.interBodyObstacleEdgeItems.size();
   dc::detail::visitSweepPairs(
       scratch.interBodyCurrentEdgeItems,
       scratch.interBodyObstacleEdgeItems,
@@ -5234,10 +5293,25 @@ bool applySurfaceContactCcdLimit(
       contactScratch.sweepScratch);
   filterSurfaceContactPointCandidates(
       contactScratch.candidates, contactScratch.surfaceContactPointMask);
+  const std::size_t pointTrianglePairCapacity
+      = countSurfaceContactCandidatePoints(
+            contactScratch.candidates.stats.pointCount,
+            contactScratch.surfaceContactPointMask)
+        * contactScratch.candidates.stats.triangleCount;
+  const std::size_t edgeEdgePairCapacity
+      = contactScratch.candidates.stats.edgeCount
+        * contactScratch.candidates.stats.edgeCount;
   stats.surfaceContactPointTriangleCandidates
       += contactScratch.candidates.pointTriangleCandidates.size();
   stats.surfaceContactEdgeEdgeCandidates
       += contactScratch.candidates.edgeEdgeCandidates.size();
+  accumulateCandidateFilterPressure(
+      stats.surfaceContactCandidatePairCapacity,
+      stats.surfaceContactCandidateRejectedPairs,
+      pointTrianglePairCapacity,
+      edgeEdgePairCapacity,
+      contactScratch.candidates.pointTriangleCandidates.size(),
+      contactScratch.candidates.edgeEdgeCandidates.size());
 
   const auto result = dc::contactCandidateStepBound(
       current,
@@ -5331,6 +5405,13 @@ bool applyInterBodySurfaceContactCcdLimit(
         += result.pointTriangleCandidateCount;
     stats.interBodySurfaceContactEdgeEdgeCandidates
         += result.edgeEdgeCandidateCount;
+    accumulateCandidateFilterPressure(
+        stats.interBodySurfaceContactCandidatePairCapacity,
+        stats.interBodySurfaceContactCandidateRejectedPairs,
+        result.pointTrianglePairCapacity,
+        result.edgeEdgePairCapacity,
+        result.pointTriangleCandidateCount,
+        result.edgeEdgeCandidateCount);
     stats.interBodySurfaceContactCcdPointTriangleChecks
         += result.stats.pointTriangleChecks;
     stats.interBodySurfaceContactCcdEdgeEdgeChecks
@@ -5515,6 +5596,13 @@ bool applyStaticRigidSurfaceCcdLimit(
         += result.pointTriangleCandidateCount;
     stats.staticRigidSurfaceCcdEdgeEdgeCandidates
         += result.edgeEdgeCandidateCount;
+    accumulateCandidateFilterPressure(
+        stats.staticRigidSurfaceCcdCandidatePairCapacity,
+        stats.staticRigidSurfaceCcdCandidateRejectedPairs,
+        result.pointTrianglePairCapacity,
+        result.edgeEdgePairCapacity,
+        result.pointTriangleCandidateCount,
+        result.edgeEdgeCandidateCount);
     stats.staticRigidSurfaceCcdPointTriangleChecks
         += result.stats.pointTriangleChecks;
     stats.staticRigidSurfaceCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;
@@ -5656,6 +5744,13 @@ bool applyMovingRigidSurfaceCcdLimit(
         += result.pointTriangleCandidateCount;
     stats.movingRigidSurfaceCcdEdgeEdgeCandidates
         += result.edgeEdgeCandidateCount;
+    accumulateCandidateFilterPressure(
+        stats.movingRigidSurfaceCcdCandidatePairCapacity,
+        stats.movingRigidSurfaceCcdCandidateRejectedPairs,
+        result.pointTrianglePairCapacity,
+        result.edgeEdgePairCapacity,
+        result.pointTriangleCandidateCount,
+        result.edgeEdgeCandidateCount);
     stats.movingRigidSurfaceCcdPointTriangleChecks
         += result.stats.pointTriangleChecks;
     stats.movingRigidSurfaceCcdEdgeEdgeChecks += result.stats.edgeEdgeChecks;

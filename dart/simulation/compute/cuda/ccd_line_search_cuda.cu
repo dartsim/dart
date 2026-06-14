@@ -66,12 +66,6 @@ __device__ double dot(const Vec3 a, const Vec3 b)
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-__device__ Vec3 cross(const Vec3 a, const Vec3 b)
-{
-  return Vec3{
-      a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
-}
-
 __device__ double squaredNorm(const Vec3 value)
 {
   return dot(value, value);
@@ -92,27 +86,70 @@ __device__ Vec3 loadVec3(const double values[3])
   return Vec3{values[0], values[1], values[2]};
 }
 
-__device__ bool pointInTriangle(
+__device__ Vec3 closestPointOnTriangle(
     const Vec3 point, const Vec3 a, const Vec3 b, const Vec3 c)
 {
-  const Vec3 v0 = b - a;
-  const Vec3 v1 = c - a;
-  const Vec3 v2 = point - a;
-  const double d00 = dot(v0, v0);
-  const double d01 = dot(v0, v1);
-  const double d11 = dot(v1, v1);
-  const double d20 = dot(v2, v0);
-  const double d21 = dot(v2, v1);
-  const double denom = d00 * d11 - d01 * d01;
-  if (fabs(denom) <= 1e-24) {
-    return false;
+  const Vec3 ab = b - a;
+  const Vec3 ac = c - a;
+  const Vec3 ap = point - a;
+
+  const double d1 = dot(ab, ap);
+  const double d2 = dot(ac, ap);
+  if (d1 <= 0.0 && d2 <= 0.0) {
+    return a;
   }
 
-  const double v = (d11 * d20 - d01 * d21) / denom;
-  const double w = (d00 * d21 - d01 * d20) / denom;
-  const double u = 1.0 - v - w;
-  constexpr double kTolerance = 1e-12;
-  return u >= -kTolerance && v >= -kTolerance && w >= -kTolerance;
+  const Vec3 bp = point - b;
+  const double d3 = dot(ab, bp);
+  const double d4 = dot(ac, bp);
+  if (d3 >= 0.0 && d4 <= d3) {
+    return b;
+  }
+
+  const double vc = d1 * d4 - d3 * d2;
+  if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0) {
+    const double v = d1 / (d1 - d3);
+    return a + v * ab;
+  }
+
+  const Vec3 cp = point - c;
+  const double d5 = dot(ab, cp);
+  const double d6 = dot(ac, cp);
+  if (d6 >= 0.0 && d5 <= d6) {
+    return c;
+  }
+
+  const double vb = d5 * d2 - d1 * d6;
+  if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0) {
+    const double w = d2 / (d2 - d6);
+    return a + w * ac;
+  }
+
+  const double va = d3 * d6 - d5 * d4;
+  if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0) {
+    const double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+    return b + w * (c - b);
+  }
+
+  const double denom = 1.0 / (va + vb + vc);
+  const double v = vb * denom;
+  const double w = vc * denom;
+  return a + v * ab + w * ac;
+}
+
+__device__ double pointTriangleDistanceAt(
+    const PointTriangleCcdLineSearchPair& pair,
+    const Vec3 pointVelocity,
+    const Vec3 triangleAVelocity,
+    const Vec3 triangleBVelocity,
+    const Vec3 triangleCVelocity,
+    const double t)
+{
+  const Vec3 point = loadVec3(pair.pointStart) + t * pointVelocity;
+  const Vec3 a = loadVec3(pair.triangleAStart) + t * triangleAVelocity;
+  const Vec3 b = loadVec3(pair.triangleBStart) + t * triangleBVelocity;
+  const Vec3 c = loadVec3(pair.triangleCStart) + t * triangleCVelocity;
+  return norm(point - closestPointOnTriangle(point, a, b, c));
 }
 
 __device__ double edgeEdgeSquaredDistance(
@@ -168,6 +205,7 @@ __global__ void pointTriangleCcdLineSearchKernel(
     const PointTriangleCcdLineSearchPair* pairs,
     const double minSeparation,
     const double tolerance,
+    const int maxIterations,
     double* stepBounds,
     std::uint8_t* hits,
     std::uint8_t* indeterminate,
@@ -184,69 +222,89 @@ __global__ void pointTriangleCcdLineSearchKernel(
   indeterminate[index] = 0u;
 
   const PointTriangleCcdLineSearchPair pair = pairs[index];
-  const Vec3 p0 = loadVec3(pair.pointStart);
-  const Vec3 p1 = loadVec3(pair.pointEnd);
-  const Vec3 a = loadVec3(pair.triangleA);
-  const Vec3 b = loadVec3(pair.triangleB);
-  const Vec3 c = loadVec3(pair.triangleC);
-  const Vec3 normal = cross(b - a, c - a);
-  const double normalNorm = sqrt(squaredNorm(normal));
-  if (normalNorm <= 1e-12) {
-    indeterminate[index] = 1u;
+  Vec3 pointVelocity = loadVec3(pair.pointEnd) - loadVec3(pair.pointStart);
+  Vec3 triangleAVelocity
+      = loadVec3(pair.triangleAEnd) - loadVec3(pair.triangleAStart);
+  Vec3 triangleBVelocity
+      = loadVec3(pair.triangleBEnd) - loadVec3(pair.triangleBStart);
+  Vec3 triangleCVelocity
+      = loadVec3(pair.triangleCEnd) - loadVec3(pair.triangleCStart);
+
+  const Vec3 mean = 0.25
+                    * (pointVelocity + triangleAVelocity + triangleBVelocity
+                       + triangleCVelocity);
+  pointVelocity = pointVelocity - mean;
+  triangleAVelocity = triangleAVelocity - mean;
+  triangleBVelocity = triangleBVelocity - mean;
+  triangleCVelocity = triangleCVelocity - mean;
+
+  const double relativeSpeedBound
+      = norm(pointVelocity)
+        + fmax(
+            fmax(norm(triangleAVelocity), norm(triangleBVelocity)),
+            norm(triangleCVelocity));
+  const double threshold = fmax(0.0, minSeparation);
+  const double effectiveTolerance = fmax(0.0, tolerance);
+  constexpr double kEpsilon = 1e-12;
+
+  double distance = pointTriangleDistanceAt(
+      pair,
+      pointVelocity,
+      triangleAVelocity,
+      triangleBVelocity,
+      triangleCVelocity,
+      0.0);
+  const double initialClearance = distance - threshold;
+  if (initialClearance <= 0.0) {
+    hits[index] = 1u;
     stepBounds[index] = 0.0;
     return;
   }
 
-  const double signedStart = dot(p0 - a, normal) / normalNorm;
-  const double signedEnd = dot(p1 - a, normal) / normalNorm;
-  const double threshold = fmax(0.0, minSeparation);
-  const double effectiveTolerance = fmax(0.0, tolerance);
-  const double effectiveThreshold = threshold + effectiveTolerance;
+  if (relativeSpeedBound <= kEpsilon) {
+    return;
+  }
 
-  if (fabs(signedStart) <= effectiveThreshold) {
-    if (pointInTriangle(p0, a, b, c)) {
+  constexpr double kStepFactor = 0.9;
+  const double convergeAbs = fmax(effectiveTolerance, kEpsilon);
+  const int iterationCount = maxIterations < 1 ? 1 : maxIterations;
+
+  double t = 0.0;
+  for (int iter = 0; iter < iterationCount; ++iter) {
+    const double clearance = distance - threshold;
+    if (clearance <= convergeAbs) {
       hits[index] = 1u;
-      stepBounds[index] = 0.0;
-    }
-    return;
-  }
-
-  const bool startsAbove = signedStart > effectiveThreshold;
-  const bool startsBelow = signedStart < -effectiveThreshold;
-  const bool endsAbove = signedEnd > effectiveThreshold;
-  const bool endsBelow = signedEnd < -effectiveThreshold;
-  if ((startsAbove && endsAbove) || (startsBelow && endsBelow)) {
-    return;
-  }
-
-  double alpha = 1.0;
-  if (startsAbove) {
-    const double denom = signedStart - signedEnd;
-    if (denom <= 0.0) {
+      stepBounds[index] = clamp01(t);
       return;
     }
-    alpha = (signedStart - threshold) / denom;
-  } else if (startsBelow) {
-    const double denom = signedEnd - signedStart;
-    if (denom <= 0.0) {
+
+    if (t + clearance / relativeSpeedBound >= 1.0) {
+      const double finalDistance = pointTriangleDistanceAt(
+          pair,
+          pointVelocity,
+          triangleAVelocity,
+          triangleBVelocity,
+          triangleCVelocity,
+          1.0);
+      if (finalDistance - threshold <= convergeAbs) {
+        hits[index] = 1u;
+        stepBounds[index] = 1.0;
+      }
       return;
     }
-    alpha = (-threshold - signedStart) / denom;
-  } else {
-    return;
-  }
-  if (!(alpha >= 0.0 && alpha <= 1.0)) {
-    return;
+
+    t += kStepFactor * clearance / relativeSpeedBound;
+    distance = pointTriangleDistanceAt(
+        pair,
+        pointVelocity,
+        triangleAVelocity,
+        triangleBVelocity,
+        triangleCVelocity,
+        t);
   }
 
-  const Vec3 pointAtImpact = p0 + alpha * (p1 - p0);
-  if (!pointInTriangle(pointAtImpact, a, b, c)) {
-    return;
-  }
-
-  const double conservativeScale = fmax(0.0, 1.0 - effectiveTolerance);
-  hits[index] = 1u;
-  stepBounds[index] = fmin(1.0, fmax(0.0, alpha * conservativeScale));
+  indeterminate[index] = 1u;
+  stepBounds[index] = 0.0;
 }
 
 __device__ double edgeEdgeDistanceAt(
@@ -352,6 +410,7 @@ cudaError_t launchPointTriangleCcdLineSearchKernel(
     const PointTriangleCcdLineSearchPair* pairs,
     double minSeparation,
     double tolerance,
+    int maxIterations,
     double* stepBounds,
     std::uint8_t* hits,
     std::uint8_t* indeterminate,
@@ -367,6 +426,7 @@ cudaError_t launchPointTriangleCcdLineSearchKernel(
       pairs,
       minSeparation,
       tolerance,
+      maxIterations,
       stepBounds,
       hits,
       indeterminate,

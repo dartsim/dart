@@ -48,6 +48,8 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -82,6 +84,24 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveSingletonBlock(
+    const BlockData& block, const double bEff, double& value)
+{
+  if (block.indices.size() != 1 || block.findex[0] >= 0) {
+    return false;
+  }
+
+  const double diagonal = block.A(0, 0);
+  if (!std::isfinite(diagonal)
+      || diagonal <= std::numeric_limits<double>::epsilon()
+      || !std::isfinite(bEff)) {
+    return false;
+  }
+
+  value = std::clamp(bEff / diagonal, block.lo[0], block.hi[0]);
+  return std::isfinite(value);
 }
 
 bool buildBlockData(
@@ -333,11 +353,60 @@ LcpResult BlockedJacobiSolver::solve(
     return result;
   }
 
+  auto tryExactFastPath = [&]() -> bool {
+    Eigen::VectorXd fastW;
+    bool exactFastPath = false;
+    if (!options.warmStart) {
+      const double validationTolerance = std::max(absTol, compTolOpt);
+      if (problem.isStandardLcp(absTol)) {
+        exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+            problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.isBoxedLcp()) {
+        exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.hasFrictionIndex()) {
+        exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      }
+    }
+
+    if (!exactFastPath) {
+      return false;
+    }
+
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return true;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return true;
+  };
+
+  if (options.customOptions == nullptr && tryExactFastPath()) {
+    return result;
+  }
+
   std::vector<BlockData> blocks;
   std::string blockMessage;
   if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &blockMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = blockMessage;
+    return result;
+  }
+
+  if (tryExactFastPath()) {
     return result;
   }
 
@@ -390,8 +459,29 @@ LcpResult BlockedJacobiSolver::solve(
 
   auto solveBlock = [&](const BlockData& block,
                         const Eigen::VectorXd& xPrev,
+                        const Eigen::VectorXd* AxPrev,
                         Eigen::VectorXd& xNext) {
     const auto m = std::ssize(block.indices);
+    auto axAt = [&](const int globalIndex) {
+      return AxPrev ? (*AxPrev)[globalIndex] : A.row(globalIndex).dot(xPrev);
+    };
+
+    if (m == 1 && block.findex[0] < 0) {
+      const int globalIndex = block.indices[0];
+      const double axBlock = axAt(globalIndex);
+      const double axSelf = block.A(0, 0) * xPrev[globalIndex];
+      const double bEff = block.baseB[0] - (axBlock - axSelf);
+      double value = 0.0;
+      if (solveSingletonBlock(block, bEff, value)) {
+        xNext[globalIndex] = value;
+
+        LcpResult blockResult;
+        blockResult.status = LcpSolverStatus::Success;
+        blockResult.iterations = 1;
+        return blockResult;
+      }
+    }
+
     Eigen::VectorXd xBlock(m);
     for (int r = 0; r < m; ++r) {
       xBlock[r] = xPrev[block.indices[r]];
@@ -400,13 +490,26 @@ LcpResult BlockedJacobiSolver::solve(
     Eigen::VectorXd AxBlock(m);
     for (int r = 0; r < m; ++r) {
       const int globalIndex = block.indices[r];
-      AxBlock[r] = A.row(globalIndex).dot(xPrev);
+      AxBlock[r] = axAt(globalIndex);
     }
 
     const Eigen::VectorXd AxSelf = block.A * xBlock;
     const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
     LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (detail::trySolveInteriorFrictionIndexLcp(
+            subProblem, absTol, validationTolerance, xBlock)) {
+      for (int r = 0; r < m; ++r) {
+        xNext[block.indices[r]] = xBlock[r];
+      }
+
+      LcpResult blockResult;
+      blockResult.status = LcpSolverStatus::Success;
+      blockResult.iterations = 1;
+      return blockResult;
+    }
+
     const bool useDirect
         = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
     DirectSolver directSolver;
@@ -429,18 +532,28 @@ LcpResult BlockedJacobiSolver::solve(
   const int requestedWorkers = std::max(1, params->workerThreads);
   const int workerCount = std::min(
       requestedWorkers, std::max(1, static_cast<int>(blocks.size())));
+  const bool useSnapshotProduct = (findex.array() < 0).all();
 
   for (int iter = 0; iter < maxIterations && !converged; ++iter) {
     iterationsUsed = iter + 1;
 
     const Eigen::VectorXd xPrev = x;
+    Eigen::VectorXd AxPrev;
+    const Eigen::VectorXd* axPrevSnapshot = nullptr;
+    if (useSnapshotProduct) {
+      AxPrev = A * xPrev;
+      axPrevSnapshot = &AxPrev;
+    }
     Eigen::VectorXd xNext = x;
 
     std::vector<LcpResult> blockResults(blocks.size());
     auto solveBlockRange = [&](const int begin, const int end) {
       for (int blockIndex = begin; blockIndex < end; ++blockIndex) {
         blockResults[static_cast<std::size_t>(blockIndex)] = solveBlock(
-            blocks[static_cast<std::size_t>(blockIndex)], xPrev, xNext);
+            blocks[static_cast<std::size_t>(blockIndex)],
+            xPrev,
+            axPrevSnapshot,
+            xNext);
       }
     };
 

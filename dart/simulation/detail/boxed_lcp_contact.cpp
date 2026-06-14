@@ -43,6 +43,7 @@
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/lcp_utils.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
@@ -519,7 +520,26 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   scratch.systemF.resize(static_cast<std::size_t>(rows));
   Eigen::Map<Eigen::VectorXd> f(scratch.systemF.data(), rows);
   f.setZero();
-  solver.solve(A, b, lo, hi, findex, f, scratch.dantzig, options);
+  // Degenerate flat contact stacks can hit a non-positive pivot; allow the
+  // pivoting solve to terminate early and fall back to the bounded iterative
+  // solver when it fails or returns a non-finite contact force. The pivoting
+  // solve stays on the allocator-backed scratch; the rare degenerate fallback
+  // uses a temporary that does not touch the world allocator.
+  options.earlyTermination = true;
+  const math::LcpResult result
+      = solver.solve(A, b, lo, hi, findex, f, scratch.dantzig, options);
+  if (!result.succeeded() || !f.allFinite()) {
+    Eigen::VectorXd fallbackForce = f;
+    math::PgsSolver fallback;
+    math::LcpOptions fallbackOptions = math::LcpOptions::realTime();
+    fallbackOptions.maxIterations = 120;
+    fallbackOptions.relativeTolerance = 1e-6;
+    fallbackOptions.validateSolution = false;
+    fallbackOptions.warmStart = fallbackForce.allFinite();
+    const math::LcpProblem problem(A, b, lo, hi, findex);
+    fallback.solve(problem, fallbackForce, fallbackOptions);
+    f = fallbackForce;
+  }
   for (Eigen::Index i = 0; i < n; ++i) {
     // Normal impulses are push-only; sanitize non-finite/negative values.
     if (!std::isfinite(f[i]) || f[i] < 0.0) {

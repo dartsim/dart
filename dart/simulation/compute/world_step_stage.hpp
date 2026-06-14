@@ -76,6 +76,8 @@ struct DeformableSolverStats
   std::size_t staticGroundBarrierCcdLimitedSteps = 0;
   std::size_t staticGroundBarrierCcdZeroStepCount = 0;
   std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactCandidatePairCapacity = 0;
+  std::size_t surfaceContactCandidateRejectedPairs = 0;
   std::size_t surfaceContactPointTriangleCandidates = 0;
   std::size_t surfaceContactEdgeEdgeCandidates = 0;
   std::size_t surfaceContactCcdPointTriangleChecks = 0;
@@ -86,6 +88,8 @@ struct DeformableSolverStats
   std::size_t surfaceContactCcdLimitedSteps = 0;
   std::size_t surfaceContactCcdZeroStepCount = 0;
   std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactCandidatePairCapacity = 0;
+  std::size_t interBodySurfaceContactCandidateRejectedPairs = 0;
   std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
   std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
   std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
@@ -101,6 +105,8 @@ struct DeformableSolverStats
   std::size_t staticRigidSurfaceCcdTriangleCount = 0;
   std::size_t staticRigidSurfaceCcdEdgeCount = 0;
   std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t staticRigidSurfaceCcdCandidateRejectedPairs = 0;
   std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
   std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
   std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
@@ -117,6 +123,8 @@ struct DeformableSolverStats
   std::size_t movingRigidSurfaceCcdTriangleCount = 0;
   std::size_t movingRigidSurfaceCcdEdgeCount = 0;
   std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t movingRigidSurfaceCcdCandidateRejectedPairs = 0;
   std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
   std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
   std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;

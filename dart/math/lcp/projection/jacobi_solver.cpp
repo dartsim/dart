@@ -48,6 +48,9 @@
 namespace dart::math {
 namespace {
 
+constexpr int kMaxStrictInteriorFastPathSize = 96;
+constexpr int kMaxFrictionIndexExactFastPathSize = 192;
+
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
   if (A.size() == 0) {
@@ -159,6 +162,41 @@ LcpResult JacobiSolver::solve(
   if (params->workerThreads <= 0) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Worker thread count must be positive";
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (n <= kMaxStrictInteriorFastPathSize && problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (
+        n <= kMaxFrictionIndexExactFastPathSize && problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolOpt);
+    result.validated = options.validateSolution;
     return result;
   }
 

@@ -39,7 +39,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
 
     lines = result.stdout.strip().splitlines()
     # One bounded command per curated DART 7 World surface.
-    assert len(lines) == 5
+    assert len(lines) == 6
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
@@ -55,6 +55,15 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     # New DART 7 solver-family end-to-end World-step surfaces.
     assert "dashboard_rigid_world.json" in result.stdout
     assert "BM_RigidWorldStep_(SequentialImpulse|Ipc)/.*" in result.stdout
+    assert "dashboard_lcp_solvers.json" in result.stdout
+    assert "BM_LcpCompare/Standard/(.*/12|Direct/3)$" in result.stdout
+    assert "BM_LcpCompare/Boxed/.*/12$" in result.stdout
+    assert "BM_LcpCompare/FrictionIndex/.*/4$" in result.stdout
+    assert "BM_LcpWorldContact/FrictionIndex/.*/4$" in result.stdout
+    assert "BM_LcpWorldBoxContact/FrictionIndex/.*/4$" in result.stdout
+    assert "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$" in result.stdout
+    assert "BM_LcpWorldStackStep_BoxedLcp/(3|4)/200$" in result.stdout
+    assert "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$" in result.stdout
     assert "dashboard_vbd_world.json" in result.stdout
     assert "BM_VbdWorldStep(Default|Vbd)/.*" in result.stdout
     assert "dashboard_deformable_world.json" in result.stdout
@@ -139,6 +148,32 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
     assert "dashboard_world.json" in result.stdout
     assert "--benchmark_min_time=2ms" in result.stdout
     assert "--benchmark_repetitions=2" in result.stdout
+
+
+def test_dashboard_surface_runner_can_select_lcp_solver_surface(tmp_path):
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--surface",
+            "lcp-solvers",
+            "--output-dir",
+            str(tmp_path),
+            "--dry-run",
+        ],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    )
+
+    lines = result.stdout.strip().splitlines()
+    assert len(lines) == 1
+    assert "--target lcp_compare" in result.stdout
+    assert "dashboard_lcp_solvers.json" in result.stdout
+    assert "BM_LcpCompare/Standard/(.*/12|Direct/3)$" in result.stdout
+    assert "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$" in result.stdout
+    assert "BM_LcpWorldStackStep_BoxedLcp/(3|4)/200$" in result.stdout
+    assert "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$" in result.stdout
 
 
 def test_dashboard_surface_runner_fails_when_output_has_no_rows(tmp_path, monkeypatch):
