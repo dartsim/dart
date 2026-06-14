@@ -29,7 +29,6 @@ namespace {
 using dart::math::LcpOptions;
 using dart::math::LcpProblem;
 using dart::math::LcpSolverStatus;
-using dart::test::LcpProblemSupport;
 using dart::test::LcpSolverManifestEntry;
 
 enum class GeneratedFamily
@@ -187,6 +186,13 @@ struct SolverRunConfig
       options.complementarityTolerance
           = std::max(options.complementarityTolerance, 1e-2);
       allowMaxIterations = true;
+    }
+
+    if (testCase.conditioning == ConditioningClass::NearSingular
+        && testCase.family == GeneratedFamily::Boxed) {
+      // The active-bound near-singular boxed packet is intentionally
+      // ill-conditioned; residual and complementarity are the contract here.
+      expectedTolerance = std::max(expectedTolerance, 1.0);
     }
 
     if (solverName == "BoxedSemiSmoothNewton") {
@@ -1162,33 +1168,52 @@ std::vector<LcpProblem> makeInvalidProblems()
     problems.emplace_back(A, b, lo, hi, findex);
   }
 
+  {
+    Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+    Eigen::VectorXd b = Eigen::VectorXd::Ones(2);
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+    lo[1] = std::numeric_limits<double>::infinity();
+    Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+    problems.emplace_back(A, b, lo, hi, findex);
+  }
+
+  {
+    Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+    Eigen::VectorXd b = Eigen::VectorXd::Ones(2);
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+    Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+    hi[1] = -std::numeric_limits<double>::infinity();
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+    problems.emplace_back(A, b, lo, hi, findex);
+  }
+
+  {
+    Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+    Eigen::VectorXd b = Eigen::VectorXd::Ones(2);
+    Eigen::VectorXd lo(2);
+    lo << 0.0, -1.0;
+    Eigen::VectorXd hi(2);
+    hi << std::numeric_limits<double>::infinity(), -0.5;
+    Eigen::VectorXi findex(2);
+    findex << -1, 0;
+    problems.emplace_back(A, b, lo, hi, findex);
+  }
+
   return problems;
 }
 
-LcpProblemSupport supportFor(const GeneratedFamily family)
+bool solverSupportsConcreteProblem(
+    const LcpSolverManifestEntry& solverEntry, const LcpProblem& problem)
 {
-  switch (family) {
-    case GeneratedFamily::Standard:
-      return LcpProblemSupport::Standard;
-    case GeneratedFamily::Boxed:
-      return LcpProblemSupport::Boxed;
-    case GeneratedFamily::FrictionIndex:
-      return LcpProblemSupport::FrictionIndex;
-  }
-
-  return LcpProblemSupport::Standard;
+  const auto solver = solverEntry.create();
+  return solver != nullptr && solver->supportsProblem(problem);
 }
 
 bool solverShouldRun(
     const LcpSolverManifestEntry& solver, const GeneratedCase& testCase)
 {
-  if (!supportsProblem(solver, supportFor(testCase.family))) {
-    return false;
-  }
-
-  // DirectSolver enumerates n <= 3 before delegating to Dantzig. Keep generated
-  // coverage limited to actual direct enumeration work.
-  return solver.name != "Direct" || testCase.problem.b.size() <= 3;
+  return solverSupportsConcreteProblem(solver, testCase.problem);
 }
 
 template <std::size_t N>

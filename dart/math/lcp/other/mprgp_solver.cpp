@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -60,17 +62,6 @@ double matrixInfinityNorm(const Eigen::MatrixXd& A)
 double vectorInfinityNorm(const Eigen::VectorXd& v)
 {
   return v.size() > 0 ? v.cwiseAbs().maxCoeff() : 0.0;
-}
-
-bool isStandardLcp(
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    double absTol)
-{
-  return (lo.array().abs().maxCoeff() <= absTol)
-         && (hi.array() == std::numeric_limits<double>::infinity()).all()
-         && (findex.array() < 0).all();
 }
 
 bool isSymmetric(const Eigen::MatrixXd& A, double tol)
@@ -108,6 +99,42 @@ const MprgpSolver::Parameters& MprgpSolver::getParameters() const
 }
 
 //==============================================================================
+bool MprgpSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  if (!LcpSolver::supportsProblem(problem, standardTolerance)) {
+    return false;
+  }
+
+  if (problem.empty()) {
+    return true;
+  }
+
+  if (!std::isfinite(mParameters.epsilonForDivision)
+      || mParameters.epsilonForDivision <= 0.0) {
+    return false;
+  }
+
+  if (!std::isfinite(mParameters.symmetryTolerance)
+      || mParameters.symmetryTolerance < 0.0) {
+    return false;
+  }
+
+  if (!isSymmetric(problem.A, mParameters.symmetryTolerance)) {
+    return false;
+  }
+
+  if (mParameters.checkPositiveDefinite) {
+    Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+    if (llt.info() != Eigen::Success) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 LcpResult MprgpSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
@@ -140,7 +167,7 @@ LcpResult MprgpSolver::solve(
   const double absTol = (options.absoluteTolerance > 0.0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  if (!isStandardLcp(lo, hi, findex, absTol)) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }
@@ -186,12 +213,56 @@ LcpResult MprgpSolver::solve(
     return fallback.solve(problem, x, options);
   }
 
+  Eigen::LLT<Eigen::MatrixXd> positiveDefiniteFactorization;
+  bool hasPositiveDefiniteFactorization = false;
   if (params->checkPositiveDefinite) {
-    Eigen::LLT<Eigen::MatrixXd> llt(A);
-    if (llt.info() != Eigen::Success) {
+    positiveDefiniteFactorization.compute(A);
+    if (positiveDefiniteFactorization.info() != Eigen::Success) {
       DantzigSolver fallback;
       return fallback.solve(problem, x, options);
     }
+    hasPositiveDefiniteFactorization = true;
+  }
+
+  Eigen::VectorXd fastW;
+  bool strictInteriorFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
+    if (hasPositiveDefiniteFactorization) {
+      Eigen::VectorXd candidate = positiveDefiniteFactorization.solve(b);
+      if (candidate.allFinite()
+          && candidate.minCoeff() > std::max(0.0, absTol)) {
+        fastW = A * candidate - b;
+        if (detail::validateSolution(
+                candidate, fastW, lo, hi, std::max(absTol, compTolOpt))) {
+          x = std::move(candidate);
+          strictInteriorFastPath = true;
+        }
+      }
+    } else {
+      strictInteriorFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTolOpt), x, &fastW);
+    }
+  }
+
+  if (strictInteriorFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolOpt);
+    result.validated = options.validateSolution;
+    return result;
   }
 
   Eigen::VectorXd w;
@@ -241,6 +312,44 @@ LcpResult MprgpSolver::solve(
   std::vector<int> activePrev(n, 0);
   bool resetDirection = true;
 
+  auto finishStalledIteration = [&](const std::string& message) -> LcpResult {
+    if (!updateMetrics()) {
+      return result;
+    }
+
+    result.iterations = iterationsUsed;
+    result.residual = residual;
+    result.complementarity = complementarity;
+
+    if (residual <= tol && complementarity <= compTol) {
+      result.status = LcpSolverStatus::Success;
+    } else if (
+        std::isfinite(residual) && std::isfinite(complementarity)
+        && x.allFinite()) {
+      result.status = LcpSolverStatus::MaxIterations;
+      result.message = message;
+    } else {
+      result.status = LcpSolverStatus::NumericalError;
+      result.message = message;
+    }
+
+    if (options.validateSolution && result.status == LcpSolverStatus::Success) {
+      const double validationTol = std::max(tol, compTol);
+      std::string validationMessage;
+      const bool valid = detail::validateSolution(
+          x, w, loEff, hiEff, validationTol, &validationMessage);
+      result.validated = true;
+      if (!valid) {
+        result.status = LcpSolverStatus::NumericalError;
+        result.message = validationMessage.empty()
+                             ? "Solution validation failed"
+                             : validationMessage;
+      }
+    }
+
+    return result;
+  };
+
   for (const auto iter : std::views::iota(0, maxIterations)) {
     if (converged) {
       break;
@@ -262,9 +371,8 @@ LcpResult MprgpSolver::solve(
     }
 
     if (pg.cwiseAbs().maxCoeff() <= params->epsilonForDivision) {
-      result.status = LcpSolverStatus::Failed;
-      result.message = "Projected gradient vanished before convergence";
-      return result;
+      return finishStalledIteration(
+          "Projected gradient vanished before convergence");
     }
 
     const bool activeChanged = (active != activePrev);
@@ -292,9 +400,8 @@ LcpResult MprgpSolver::solve(
       Ap = A * p;
       denom = p.dot(Ap);
       if (!std::isfinite(denom) || denom <= params->epsilonForDivision) {
-        result.status = LcpSolverStatus::NumericalError;
-        result.message = "MPRGP direction is not positive definite";
-        return result;
+        return finishStalledIteration(
+            "MPRGP direction is not positive definite");
       }
     }
 

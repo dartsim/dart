@@ -133,7 +133,7 @@ bool SolveLCP(int n, Scalar* A, Scalar* x, Scalar* b, Scalar* w,
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
 using namespace dart::math;
 
@@ -145,10 +145,18 @@ DantzigSolver solver;
 LcpResult result = solver.solve(problem, x, solver.getDefaultOptions());
 ```
 
+Strictly interior standard LCPs without a warm start take the shared validated
+linear-solve fast path through the `LcpProblem` solver interface before
+allocating the ODE-derived pivot workspace. Boxed LCPs without friction-index
+coupling take the shared projected-active-set exact solve through the same
+front door, with the final candidate accepted only when it passes boxed
+solution validation. Friction-index, warm-started, and low-level matrix/scratch
+calls keep the legacy Dantzig pivoting path.
+
 The underlying ODE-derived implementation is also available directly:
 
 ```cpp
-#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
 
 using namespace dart::math;
 
@@ -206,7 +214,7 @@ $$z^T w = 0$$
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
+#include <dart/math/lcp/pivoting/lemke_solver.hpp>
 
 using namespace dart::math;
 
@@ -261,7 +269,7 @@ For each active set $S \subseteq \{1, \ldots, n\}$:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/DirectSolver.hpp>
+#include <dart/math/lcp/pivoting/direct_solver.hpp>
 
 using namespace dart::math;
 
@@ -354,7 +362,7 @@ Notes:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/BaraffSolver.hpp>
+#include <dart/math/lcp/pivoting/baraff_solver.hpp>
 
 using namespace dart::math;
 
@@ -374,6 +382,9 @@ auto result = solver.solve(problem, x, options);
 
 > Note: DART's implementation assumes symmetric PSD matrices and currently uses
 > direct solves per pivot (no incremental factorization yet).
+> `supportsProblem(problem)` reports only that native symmetric-PSD subset;
+> boxed, friction-indexed, non-symmetric, and indefinite packets delegate to the
+> boxed-capable pivoting solver through `solve()`.
 
 ### Properties
 
@@ -421,6 +432,12 @@ Dantzig, Lemke, Baraff, and Direct on contact-normal subproblems; Direct rows
 are limited to 1-, 2-, and 3-row subproblems so they measure enumeration rather
 than Dantzig fallback. This is contact-normal evidence, not full friction-index
 contact support for Lemke, Baraff, or Direct.
+For strictly interior standard LCPs, Dantzig, Lemke, and Baraff first try the
+shared validated LLT-first linear-solve fast path. The helper falls back to LU
+when the LLT candidate is unavailable or fails validation. The fast path is
+accepted only when the candidate is strictly positive and passes the standard
+LCP solution validator; otherwise the solver continues through its pivoting
+implementation or existing fallback path.
 
 ## When to Use Pivoting Methods
 
@@ -470,7 +487,7 @@ contact support for Lemke, Baraff, or Direct.
 
 ### For Future Implementations
 
-- Add incremental factorization to Baraff for faster inner solves
+- Add incremental factorization to Baraff for faster active-bound inner solves
 - Use sparse matrix representations when possible
 - Implement efficient pivoting strategies
 - Add comprehensive unit tests

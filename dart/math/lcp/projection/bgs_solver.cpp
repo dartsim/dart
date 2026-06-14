@@ -45,10 +45,13 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
+constexpr int kMaxStrictInteriorFastPathSize = 192;
 
 struct BlockData
 {
@@ -79,6 +82,24 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveSingletonBlock(
+    const BlockData& block, const double bEff, double& value)
+{
+  if (block.indices.size() != 1 || block.findex[0] >= 0) {
+    return false;
+  }
+
+  const double diagonal = block.A(0, 0);
+  if (!std::isfinite(diagonal)
+      || diagonal <= std::numeric_limits<double>::epsilon()
+      || !std::isfinite(bEff)) {
+    return false;
+  }
+
+  value = std::clamp(bEff / diagonal, block.lo[0], block.hi[0]);
+  return std::isfinite(value);
 }
 
 bool buildBlockData(
@@ -324,10 +345,59 @@ LcpResult BgsSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
+  auto tryExactFastPath = [&]() -> bool {
+    Eigen::VectorXd fastW;
+    bool exactFastPath = false;
+    if (!options.warmStart && n <= kMaxStrictInteriorFastPathSize) {
+      const double validationTolerance = std::max(absTol, compTolOpt);
+      if (problem.isStandardLcp(absTol)) {
+        exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+            problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.isBoxedLcp()) {
+        exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.hasFrictionIndex()) {
+        exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      }
+    }
+
+    if (!exactFastPath) {
+      return false;
+    }
+
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return true;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return true;
+  };
+
+  if (options.customOptions == nullptr && tryExactFastPath()) {
+    return result;
+  }
+
   std::vector<BlockData> blocks;
   if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
+    return result;
+  }
+
+  if (tryExactFastPath()) {
     return result;
   }
 
@@ -390,6 +460,19 @@ LcpResult BgsSolver::solve(
 
     for (const auto& block : blocks) {
       const auto m = std::ssize(block.indices);
+      if (m == 1) {
+        const int globalIndex = block.indices[0];
+        const double diagonal = block.A(0, 0);
+        const double bEff
+            = block.baseB[0]
+              - (A.row(globalIndex).dot(x) - diagonal * x[globalIndex]);
+        double value = x[globalIndex];
+        if (solveSingletonBlock(block, bEff, value)) {
+          x[globalIndex] = value;
+          continue;
+        }
+      }
+
       Eigen::VectorXd xBlock(m);
       for (int r = 0; r < m; ++r) {
         xBlock[r] = x[block.indices[r]];
@@ -405,6 +488,15 @@ LcpResult BgsSolver::solve(
       const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
       LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+      const double validationTolerance = std::max(absTol, compTolOpt);
+      if (detail::trySolveInteriorFrictionIndexLcp(
+              subProblem, absTol, validationTolerance, xBlock)) {
+        for (int r = 0; r < m; ++r) {
+          x[block.indices[r]] = xBlock[r];
+        }
+        continue;
+      }
+
       const bool useDirect
           = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
       const LcpResult blockResult
