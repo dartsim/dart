@@ -8,11 +8,12 @@ stop-only snapshot lower in this file.
 
 Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
 is an unpublished follow-up branch based on PR #2991 head `6f41e9529bf`. It
-currently contains local commit `09a98956a5e`, which avoids repeated AVBD rigid
-inertia orientation normalization and adds focused lower-triangle/full-helper
-regression coverage. The branch is clean after the commit. Do not push, open a
-PR, resolve review threads, comment, retrigger reviews, or mutate CI without
-explicit maintainer approval.
+currently contains the local inertia-orientation cleanup commit plus handoff-doc
+refreshes. The kept implementation avoids repeated AVBD rigid inertia
+orientation normalization and adds focused lower-triangle/full-helper
+regression coverage. The branch was clean before this handoff refresh. Do not
+push, open a PR, resolve review threads, comment, retrigger reviews, or mutate
+CI without explicit maintainer approval.
 
 Current verified checkpoint PR state: after explicit maintainer approval, PR
 #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin and is
@@ -37,11 +38,18 @@ orientation-error helpers still normalize their inputs. Focused regression
 coverage compares the lower-triangle inertia helper against the full symmetric
 helper for scaled current and target quaternions. Validation passed the target
 rebuild, the new focused test, the full `test_avbd_rigid_block` suite (100
-tests), and `pixi run lint`; earlier same-slice validation passed
-`pixi run build` and `pixi run test-unit` before the regression was added. The
-benchmark smoke ran under high load and is inconclusive, so this is hot-path
-overhead evidence only. It does not refresh a tracked packet, close the 2D Soft
-Body CPU gap, push a follow-up PR, or claim GPU/paper-number parity.
+tests), `pixi run lint`, `pixi run build`, and `pixi run test-unit` (161
+tests). Same-session benchmark smoke rebuilt PR head `6f41e9529bf` and this
+local branch under similar load: PR head recorded
+`BM_AvbdDemo2dSoftBodyStep` at 1.810 ms median CPU, while the local inertia
+cleanup recorded 1.792 ms median CPU. Treat that as narrow smoke only because
+CPU scaling was enabled and tracked source/native packets were not regenerated.
+A broader normalized-orientation reuse probe for assembly world-point/angular
+row helpers was also built and tested, but it measured 1.821 ms median CPU
+versus the 1.792 ms current-branch baseline, so the probe was reverted and no
+code from it is kept. This local branch does not refresh a tracked packet,
+close the 2D Soft Body CPU gap, push a follow-up PR, or claim GPU/paper-number
+parity.
 
 Latest pushed PR slice: the rigid contact stage now skips the per-contact
 `rigidAvbdContactStageConfig()` scan unless the registry has

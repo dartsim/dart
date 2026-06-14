@@ -9,22 +9,29 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up (2026-06-14): new unpublished branch
+- Latest local follow-up (2026-06-14): unpublished branch
   `avbd/soft-body-inertia-orientation-cache` is based on PR #2991 head
-  `6f41e9529bf` and currently has local commit `09a98956a5e`. The slice avoids
-  repeated AVBD rigid inertia orientation normalization in
+  `6f41e9529bf` and currently carries the local inertia-orientation cleanup
+  commit plus handoff-doc refreshes. The kept implementation avoids repeated
+  AVBD rigid inertia orientation normalization in
   `addAvbdRigidBodyInertiaTermLowerTriangle()` by sharing the already
   normalized current orientation and normalizing the inertial target once before
   the hot body-block assembly. Focused regression coverage now compares the
   lower-triangle inertia helper against the full symmetric helper for scaled
   current and target quaternions. Validation passed the target rebuild,
   `test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.LowerTriangleInertiaTermMatchesFullForScaledOrientations'`,
-  the full `test_avbd_rigid_block` suite (100 tests), and `pixi run lint`.
-  Earlier same-slice validation passed `pixi run build` and
-  `pixi run test-unit` before the regression was added. The benchmark smoke was
-  high-load and inconclusive, so this is hot-path overhead evidence only; it
-  does not refresh any tracked source-row packet, close the 2D Soft Body CPU
-  gap, push a follow-up PR, or claim GPU/paper-number parity.
+  the full `test_avbd_rigid_block` suite (100 tests), `pixi run lint`,
+  `pixi run build`, and `pixi run test-unit` (161 tests). A same-session
+  A/B smoke rebuilt PR head `6f41e9529bf` and this local branch under similar
+  load: PR head recorded `BM_AvbdDemo2dSoftBodyStep` at 1.810 ms median CPU,
+  while the local inertia cleanup recorded 1.792 ms median CPU. Treat that as
+  narrow smoke only because CPU scaling was enabled and tracked source/native
+  packets were not regenerated. A broader normalized-orientation reuse probe
+  for assembly world-point/angular-row helpers was also built and tested, but
+  it measured 1.821 ms median CPU versus the 1.792 ms current-branch baseline,
+  so the probe was reverted and no code from it is kept. This branch does not
+  refresh any tracked source-row packet, close the 2D Soft Body CPU gap, push a
+  follow-up PR, or claim GPU/paper-number parity.
 - Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
   #2991 branch `avbd/source-row-extraction-precheck` is pushed to origin at
   `6f41e9529bf` after verifying the latest `origin/main` was already merged.
