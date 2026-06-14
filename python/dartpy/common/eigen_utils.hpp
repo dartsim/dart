@@ -12,10 +12,10 @@
 
 namespace dart::python_nb {
 
-namespace detail {
-
 // Returns the element stride (in elements) for the given axis of a numpy
 // ndarray, falling back to a C-contiguous layout when strides are unavailable.
+// Kept at binding-namespace scope (not detail) so binding sources may share it
+// without crossing the public/internal API boundary.
 inline int64_t numpyStride(const nanobind::ndarray<double>& array, size_t axis)
 {
   if (array.stride_ptr()) {
@@ -27,6 +27,8 @@ inline int64_t numpyStride(const nanobind::ndarray<double>& array, size_t axis)
   }
   return s;
 }
+
+namespace detail {
 
 template <typename Array>
 inline Eigen::Vector3d vector3FromArray(const Array& values)
@@ -126,7 +128,7 @@ inline Eigen::VectorXd toVector(const nanobind::handle& value)
     if (array.ndim() == 1) {
       Eigen::VectorXd out(array.shape(0));
       const double* base = array.data();
-      const int64_t s0 = detail::numpyStride(array, 0);
+      const int64_t s0 = numpyStride(array, 0);
       for (const auto i : std::views::iota(Eigen::Index{0}, out.size())) {
         out[i] = base[i * s0];
       }
@@ -135,8 +137,8 @@ inline Eigen::VectorXd toVector(const nanobind::handle& value)
     if (array.ndim() == 2 && array.shape(1) == 1) {
       Eigen::VectorXd out(array.shape(0));
       const double* base = array.data();
-      const int64_t s0 = detail::numpyStride(array, 0);
-      const int64_t s1 = detail::numpyStride(array, 1);
+      const int64_t s0 = numpyStride(array, 0);
+      const int64_t s1 = numpyStride(array, 1);
       for (const auto i : std::views::iota(Eigen::Index{0}, out.size())) {
         out[i] = base[i * s0 + 0 * s1];
       }
@@ -145,8 +147,8 @@ inline Eigen::VectorXd toVector(const nanobind::handle& value)
     if (array.ndim() == 2 && array.shape(0) == 1) {
       Eigen::VectorXd out(array.shape(1));
       const double* base = array.data();
-      const int64_t s0 = detail::numpyStride(array, 0);
-      const int64_t s1 = detail::numpyStride(array, 1);
+      const int64_t s0 = numpyStride(array, 0);
+      const int64_t s1 = numpyStride(array, 1);
       for (const auto i : std::views::iota(Eigen::Index{0}, out.size())) {
         out[i] = base[0 * s0 + i * s1];
       }
