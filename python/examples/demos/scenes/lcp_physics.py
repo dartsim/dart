@@ -32,7 +32,7 @@ _BENCHMARK_COMMAND = (
     f"pixi run bm lcp_compare -- --benchmark_filter={_BENCHMARK_SMOKE_FILTER}"
 )
 _STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY = True
-_STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0])
+_STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0, 1.5])
 _STANDALONE_SUCCESS_STATUSES = {"Success", "MaxIterations"}
 _STANDALONE_PROBLEM_SUITE_LABEL = "Representative solver suite"
 
@@ -1931,7 +1931,9 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
 
 
 def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
-    problem = dart.LcpProblem(np.eye(3), _STANDALONE_SMOKE_EXPECTED)
+    problem = dart.LcpProblem(
+        np.eye(_STANDALONE_SMOKE_EXPECTED.size), _STANDALONE_SMOKE_EXPECTED
+    )
     options = dart.LcpOptions.high_accuracy()
     options.max_iterations = 1000
 
@@ -1941,6 +1943,7 @@ def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
         solver = solver_type()
         result, solution = solver.solve(problem, options=options)
         native_standard = bool(solver.supports_standard_lcp())
+        native_problem = bool(solver.supports_problem(problem))
         rows.append(
             {
                 "name": support_row["name"],
@@ -1948,7 +1951,8 @@ def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
                 "native_standard": native_standard,
                 "native_boxed": bool(solver.supports_boxed_lcp()),
                 "native_findex": bool(solver.supports_friction_index()),
-                "solve_route": "native" if native_standard else "delegated",
+                "native_problem": native_problem,
+                "solve_route": "native" if native_problem else "delegated",
                 "status": dart.lcp_solver_status_to_string(result.status),
                 "iterations": int(result.iterations),
                 "residual": float(result.residual),

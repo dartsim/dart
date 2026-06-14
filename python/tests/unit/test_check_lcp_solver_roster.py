@@ -666,7 +666,7 @@ def test_lcp_solver_roster_reads_demo_standalone_smoke_metadata() -> None:
     metadata = module.parse_demo_standalone_smoke_metadata()
 
     assert metadata["_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY"] is True
-    assert metadata["_STANDALONE_SMOKE_EXPECTED"] == (1.0, 0.5, 2.0)
+    assert metadata["_STANDALONE_SMOKE_EXPECTED"] == (1.0, 0.5, 2.0, 1.5)
     assert metadata["_STANDALONE_SUCCESS_STATUSES"] == {"Success", "MaxIterations"}
     module.check_demo_standalone_smoke_metadata()
 

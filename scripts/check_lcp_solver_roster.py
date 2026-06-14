@@ -896,7 +896,7 @@ def check_demo_representative_requirements() -> None:
 
 def check_demo_standalone_smoke_metadata() -> None:
     metadata = parse_demo_standalone_smoke_metadata()
-    expected_solution = (1.0, 0.5, 2.0)
+    expected_solution = (1.0, 0.5, 2.0, 1.5)
     expected_statuses = {"Success", "MaxIterations"}
 
     errors: list[str] = []

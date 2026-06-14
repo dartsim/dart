@@ -1,5 +1,76 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Standalone Smoke Route Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`; do not add it to the checkpoint PR
+   unless the maintainer explicitly chooses that scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   standalone smoke route guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `d6e9a06ed17 Route LCP smoke tests through concrete support`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+
+What this checkpoint changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` now uses a four-row standard
+  standalone smoke packet and labels each solver's smoke route from
+  `solver.supports_problem(problem)` for that exact packet.
+- The table still displays manifest/category native coverage separately, which
+  makes Direct's delegated route visible without erasing its standard category
+  support.
+- `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/unit/test_check_lcp_solver_roster.py`, and
+  `scripts/check_lcp_solver_roster.py` pin the new smoke packet and concrete
+  route expectation.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or runtime world demo behavior.
+
+Verification completed for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k standalone
+```
+
+Result:
+
+- Focused LCP panel metadata test passed with 1 test and 154 deselected.
+- Focused standalone roster metadata tests passed with 5 tests and 58
+  deselected.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Concrete Smoke Routing Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

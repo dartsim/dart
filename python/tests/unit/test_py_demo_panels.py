@@ -1725,14 +1725,22 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     smoke_by_name = {row["name"]: row for row in info["standalone_solver_rows"]}
     assert len(smoke_by_name) == len(info["standalone_solver_rows"])
     assert set(smoke_by_name) == expected_solver_names
+    smoke_problem = dart.LcpProblem(
+        np.eye(lcp_physics._STANDALONE_SMOKE_EXPECTED.size),
+        lcp_physics._STANDALONE_SMOKE_EXPECTED,
+    )
     for name, manifest_row in solver_by_name.items():
         smoke_row = smoke_by_name[name]
+        solver = getattr(dart, lcp_physics._SOLVER_CLASS_NAMES[name])()
+        native_problem = bool(solver.supports_problem(smoke_problem))
         assert smoke_row["native_standard"] is manifest_row["standard"]
         assert smoke_row["native_boxed"] is manifest_row["boxed"]
         assert smoke_row["native_findex"] is manifest_row["findex"]
-        assert smoke_row["solve_route"] == (
-            "native" if manifest_row["standard"] else "delegated"
-        )
+        assert smoke_row["native_problem"] is native_problem
+        assert smoke_row["solve_route"] == ("native" if native_problem else "delegated")
+    assert smoke_by_name["Direct"]["native_standard"] is True
+    assert smoke_by_name["Direct"]["native_problem"] is False
+    assert smoke_by_name["Direct"]["solve_route"] == "delegated"
     assert max(row["solution_error"] for row in info["standalone_solver_rows"]) < 1e-4
     assert max(row["residual"] for row in info["standalone_solver_rows"]) < 1e-3
     assert (
