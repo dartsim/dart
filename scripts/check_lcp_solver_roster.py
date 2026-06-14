@@ -2113,12 +2113,11 @@ def check_performance_profile_evidence(
             else:
                 observed_native_solvers_by_category[category].add(solver_name)
 
-            expected_support = {
+            expected_form_support = {
                 counter: _solver_support(entry, support_category)
                 for support_category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
             }
-            expected_support["solver_supports_problem"] = native_category_supported
-            for key, expected in expected_support.items():
+            for key, expected in expected_form_support.items():
                 expected_value = 1 if expected else 0
                 actual = _csv_counter_as_int(row, key)
                 if actual != expected_value:
@@ -2126,6 +2125,13 @@ def check_performance_profile_evidence(
                         f"row {row_number}: {key} {row[key]!r} != "
                         f"{expected_value} for {solver_name}/{category}"
                     )
+            concrete_support = _csv_counter_as_int(row, "solver_supports_problem")
+            if concrete_support != 1:
+                errors.append(
+                    f"row {row_number}: solver_supports_problem "
+                    f"{row['solver_supports_problem']!r} != 1 for "
+                    f"{solver_name}/{category}"
+                )
 
             expected_problem_type = {key: 0 for key in PROBLEM_TYPE_COUNTERS}
             expected_problem_type[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] = 1

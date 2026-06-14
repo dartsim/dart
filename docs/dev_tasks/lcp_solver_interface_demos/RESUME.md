@@ -1,5 +1,72 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Concrete Evidence Support Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`; do not add it to the checkpoint PR
+   unless the maintainer explicitly chooses that scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   concrete evidence support guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `4f1d522486f Use surface for LCP standalone case metadata`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` no longer derives
+  `solver_supports_problem` from category support. It keeps manifest-derived
+  validation for `solver_supports_standard`, `solver_supports_boxed`, and
+  `solver_supports_friction_index`, then validates `solver_supports_problem`
+  as an independent concrete evidence-row requirement.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers a supported
+  Standard/Dantzig row with `solver_supports_problem=0`.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, demo runtime
+  behavior, bindings, stubs, or public APIs.
+
+Verification completed for this checkpoint:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_profile_evidence_rejects_concrete_support_mismatch -q
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+```
+
+Result:
+
+- Focused concrete-support evidence test passed with 1 test.
+- Full roster unit test file passed with 64 tests.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Standalone Surface Classification Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

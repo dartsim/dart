@@ -1625,6 +1625,22 @@ def test_lcp_profile_evidence_rejects_unsupported_solver_category(
         module.check_performance_profile_evidence(manifest, path)
 
 
+def test_lcp_profile_evidence_rejects_concrete_support_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row() | {"solver_supports_problem": "0"})
+
+    with pytest.raises(AssertionError, match="solver_supports_problem '0' != 1"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
 def test_lcp_profile_evidence_rejects_problem_dimension_mismatch(
     tmp_path: Path,
 ) -> None:
