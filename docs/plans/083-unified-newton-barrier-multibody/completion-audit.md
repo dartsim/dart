@@ -40,7 +40,7 @@ moves entirely into durable plan sidecars.
   partially promoted: rigid IPC now covers point/fixed and hinge constraints,
   opt-in BDF-2, deformable surface obstacles, reduced lying-flat/Candy
   self-surface contact candidate and CCD diagnostics, reduced hanging-bridge,
-  pulley, umbrella, terrain vehicle, and ragdoll
+  pulley, umbrella, terrain vehicle, ragdoll, and precession
   inter-body/static-rigid/moving-rigid external CCD sidecar witness sets, a
   reduced Candy static-rigid/moving-rigid surface CCD witness pair, a reduced
   ABD/FEM external surface CCD sidecar witness set, public built-in external
@@ -83,6 +83,10 @@ moves entirely into durable plan sidecars.
   limited step), one static-rigid surface CCD sidecar witness (34 hits and one
   limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
   one limited step). The reduced ragdoll figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced precession figure row
   now carries one inter-body surface CCD sidecar witness (33 hits and one
   limited step), one static-rigid surface CCD sidecar witness (34 hits and one
   limited step), and one moving-rigid surface CCD sidecar witness (1 hit and

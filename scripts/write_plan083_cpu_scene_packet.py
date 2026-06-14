@@ -2703,6 +2703,9 @@ def _make_precession_packet(
     spin_rate = _finite_number(row, "spin_rate_rad_s")
     if spin_rate <= 1e-9:
         raise Plan083CpuScenePacketError("precession spin rate was lost")
+    sidecar_payload = _external_surface_ccd_sidecar_payload(
+        row, scene_label="precession"
+    )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -2710,7 +2713,10 @@ def _make_precession_packet(
             "scene_id": "plan083_precession",
             "benchmark_row": _packet_row_name(row),
             "paper_scale": False,
-            "runtime_path": "rigid IPC World::step",
+            "runtime_path": (
+                "rigid IPC World::step plus deformable IPC World::step "
+                "external surface CCD sidecar"
+            ),
             "step_count": 1,
             "wall_time_ns": timing_ns,
             "body_count": body_count,
@@ -2723,9 +2729,11 @@ def _make_precession_packet(
             "wheel_height_m": _finite_number(row, "wheel_height_m"),
             "wheel_ground_clearance_m": ground_clearance,
             "spin_rate_rad_s": spin_rate,
+            **sidecar_payload,
             "limitation_status": (
-                "Reduced rolling-wheel runtime smoke packet only; angular-velocity "
-                "sweep, rolling-contact model, and Table 2 timing remain planned."
+                "Reduced rolling-wheel runtime smoke packet plus external surface "
+                "CCD sidecar only; angular-velocity sweep, rolling-contact model, "
+                "and Table 2 timing remain planned."
             ),
         },
         "benchmarks": rows,

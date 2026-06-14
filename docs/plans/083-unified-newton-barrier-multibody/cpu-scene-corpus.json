@@ -221,9 +221,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/precession/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-precession-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/precession.json",
-      "expected_invariant": "Reduced rolling-wheel contact scene stays finite, non-penetrating, and spinning while stepping through the rigid IPC World path.",
-      "limitation_status": "Reduced rolling-wheel smoke and CPU packet only; angular-velocity sweep, rolling-contact model, and Table 2 timing remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced precession wheel scene through World::step, and bm-plan083-cpu-precession-packet validates the reduced benchmark packet. Paper angular-velocity sweep remains planned."
+      "expected_invariant": "Reduced rolling-wheel contact scene stays finite, non-penetrating, and spinning while stepping through the rigid IPC World path, and the row's deformable IPC sidecar records nonzero inter-body, static-rigid, and moving-rigid external surface CCD counters.",
+      "limitation_status": "Reduced rolling-wheel runtime smoke and external surface CCD sidecar CPU packet only; angular-velocity sweep, rolling-contact model, paper-scale 5-body/4k-node reproduction, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced precession wheel scene through World::step, and bm-plan083-cpu-precession-packet validates the reduced benchmark packet with a deformable IPC sidecar reporting 68 surface-contact builds, 660 point-triangle CCD checks, 1224 edge-edge CCD checks, 67 inter-body candidate builds, 33 inter-body point-triangle candidates, 33 inter-body CCD hits, 35 static-rigid candidate builds, 68 static-rigid point-triangle checks, 102 static-rigid edge-edge checks, 34 static-rigid CCD hits, 3 moving-rigid candidate builds, 2 moving-rigid point-triangle checks, 41 moving-rigid edge-edge checks, and 1 moving-rigid CCD hit. Paper angular-velocity sweep remains planned."
     },
     {
       "row_id": "unb-fig-24",

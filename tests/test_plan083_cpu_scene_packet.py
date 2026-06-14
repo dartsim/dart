@@ -678,6 +678,12 @@ def _precession_packet(**overrides):
         "wheel_height_m": 0.16,
         "wheel_ground_clearance_m": 0.0,
         "spin_rate_rad_s": 8.1,
+        "external_surface_ccd_sidecar_scene_count": 1,
+        "deformable_sidecar_body_count": 3,
+        "deformable_sidecar_node_count": 31,
+        "deformable_sidecar_edge_count": 68,
+        "deformable_sidecar_surface_triangle_count": 32,
+        **_external_surface_ccd_sidecar_counters(),
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -1357,6 +1363,14 @@ def test_plan083_cpu_scene_packet_accepts_reduced_precession() -> None:
     assert row["active_constraints"] == 8
     assert row["active_friction_constraints"] == 8
     assert row["wall_time_ns"] == 6.0e6
+    assert (
+        row["runtime_path"]
+        == "rigid IPC World::step plus deformable IPC World::step external surface CCD sidecar"
+    )
+    assert row["external_surface_ccd_sidecar_scene_count"] == 1
+    assert row["inter_body_surface_contact_ccd_hits"] == 33
+    assert row["static_rigid_surface_ccd_hits"] == 34
+    assert row["moving_rigid_surface_ccd_hits"] == 1
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_ragdoll() -> None:
@@ -1903,6 +1917,28 @@ def test_plan083_cpu_scene_packet_rejects_precession_without_spin() -> None:
     with pytest.raises(module.Plan083CpuScenePacketError, match="spin rate"):
         module.make_packet(
             _precession_packet(spin_rate_rad_s=0.0),
+            max_equality_residual=1e-8,
+            scene="precession",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_precession_without_sidecar() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _precession_packet(external_surface_ccd_sidecar_scene_count=0),
+            max_equality_residual=1e-8,
+            scene="precession",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_precession_without_external_ccd() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _precession_packet(moving_rigid_surface_ccd_hits=0),
             max_equality_residual=1e-8,
             scene="precession",
         )
