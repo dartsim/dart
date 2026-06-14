@@ -414,6 +414,35 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   serialized into benchmark packets (consumes WP-091.1 schema).
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.10, WP-091.1.
+- Execution plan (committable slices, each golden-trajectory-verified before
+  the next, landing on the consolidated PLAN-091 branch): **(1) Resolved-config
+  report.** Add a `compute::ResolvedSolverConfiguration` value object (requested
+  vs resolved per-domain family — rigid-body solver, contact method, multibody
+  integration — plus a `std::vector` of substitution/decision notes with
+  reasons). Record it in `enterSimulationMode` from the already-resolved
+  members (`m_rigidBodySolver`, `m_contactSolverMethod`,
+  `m_multibodyIntegrationMethod`) and expose it via
+  `getResolvedConfiguration()` alongside `getLastStepProfile()`. Additive only,
+  so the goldens are unchanged; covered by a new unit test. **(2) Make the
+  known silent substitutions explicit.** Enumerate the current finalize-time
+  and stage-entry fallbacks (the WP-091.1 finding: AVBD rigid contact silently
+  runs sequential impulse when no body carries the opt-in config; the
+  variational scene-support fallbacks) and, at finalize, classify each as a
+  recorded decision (default) or an error under a strict flag on `WorldOptions`.
+  This consumes the validate\* hooks already in `enterSimulationMode`. Re-verify
+  goldens (a recorded decision must not change the chosen path; only reporting
+  changes). **(3) Capability-derived schedule.** Have each built-in family
+  declare a minimal capability set (domain + supported joints/actuators/shapes
+  - differentiability) and derive `makeBuiltInWorldStepSchedule` inclusion from
+    declared domain presence plus those capabilities rather than the current
+    hand-listed domain-presence flags, keeping the emitted schedule identical for
+    every existing scene (golden + `test_world_step_schedule` parity). **(4)
+    Packet serialization.** Serialize the resolved-config report into the
+    benchmark packet writers via the WP-091.1 `resolved_solver_identity` schema
+    (the schema field already exists; this populates it from the report instead
+    of by hand). Each slice is one commit with its own focused tests; the packet
+    is done when slice 4 lands and a previously-silent-substitution scene errors
+    (strict) or records the substitution in a packet.
 
 #### WP-091.12 Single selection idiom
 
