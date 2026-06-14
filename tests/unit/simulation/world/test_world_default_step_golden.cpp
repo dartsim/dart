@@ -459,6 +459,15 @@ void runSceneGoldenTest(const Scene& scene)
   const std::filesystem::path path = goldenPath(scene.id);
 
   if (regenerateRequested()) {
+    // Refuse to serialize a golden the correctness layer just rejected: the
+    // analytical anchors use non-fatal EXPECT_*, so guard the write on the
+    // current test having no failures. Without this, a gravity / integrator /
+    // contact regression would still leave an updated (physically wrong) golden
+    // on disk during the regen workflow.
+    ASSERT_FALSE(::testing::Test::HasFailure())
+        << scene.id
+        << ": analytical anchors failed; refusing to regenerate a physically "
+           "invalid golden. Fix the physics, then regenerate.";
     writeGolden(path, scene, actual);
     GTEST_SKIP() << "regenerated golden " << path;
     return;

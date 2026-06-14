@@ -203,11 +203,14 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   compare-mode passes 5/5 consecutive runs and two regenerations produce
   byte-identical goldens (same-toolchain bitwise determinism); an injected
   gravity perturbation makes `DefaultStepGolden.FreeFall` fail (snapshot
-  `lin_z` drift `1e-5` ≫ tolerance), and — demonstrating the correctness
-  layer's value — perturbing the scene's gravity while leaving the analytical
-  profile makes the closed-form anchor fail **even in regen mode**, so the
-  snapshot cannot launder a physically wrong trajectory; reverting restores
-  green. Re-verified green after merging the latest `main` (#2992, which
+  `lin_z` drift `1e-5` ≫ tolerance). Demonstrating the correctness layer's
+  value: perturbing the scene's gravity while leaving the analytical profile
+  makes the closed-form anchor fail, and regeneration is then **refused** —
+  `writeGolden` is gated on `::testing::Test::HasFailure()`, so the
+  physically wrong golden is not serialized (verified: the `free_fall.tsv`
+  sha256 is byte-identical before and after a bad-physics regen attempt). The
+  snapshot path therefore cannot launder a physically wrong trajectory.
+  Reverting restores green. Re-verified green after merging the latest `main` (#2992, which
   touched `world.cpp`/`rigid_body.cpp`), confirming #2992 preserved
   default-step behavior. Gates: `pixi run lint` (formatting clean),
   `pixi run build`, and `pixi run test-unit` (161/161, no regressions) all
