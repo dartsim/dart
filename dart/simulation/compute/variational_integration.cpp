@@ -4083,6 +4083,41 @@ double computeMultibodyMechanicalEnergy(
 }
 
 //==============================================================================
+MultibodyMechanicalEnergyTerms computeMultibodyMechanicalEnergyTerms(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity)
+{
+  MultibodyMechanicalEnergyTerms terms;
+  if (structure.links.empty()) {
+    return terms;
+  }
+  MultibodyVariationalTreeScratch treeScratch;
+  VariationalStepScratch stepScratch;
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
+
+  stepScratch.currentSpatialVelocities.resize(tree.links.size());
+  gatherVelocity(registry, tree, stepScratch.velocity);
+  currentSpatialVelocitiesInto(
+      tree, stepScratch.velocity, stepScratch.currentSpatialVelocities);
+
+  // Mirrors computeMultibodyMechanicalEnergy's per-link terms exactly (same
+  // VarTree forward-kinematics world transforms), so terms.kinetic +
+  // terms.potential equals that function's mechanical-energy return value.
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto& link = tree.links[i];
+    const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
+    terms.kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
+    const auto& linkComp = registry.get<comps::Link>(structure.links[i]);
+    const Eigen::Vector3d comWorld
+        = link.worldTransform * linkComp.mass.localCenterOfMass;
+    terms.potential -= linkComp.mass.mass * gravity.dot(comWorld);
+  }
+  return terms;
+}
+
+//==============================================================================
 Eigen::VectorXd computeMultibodyInverseMassProduct(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,

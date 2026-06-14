@@ -221,26 +221,18 @@ struct DART_SIMULATION_API ResolvedSolverConfiguration
 struct DART_SIMULATION_API StepMetrics
 {
   /// Total translational + rotational kinetic energy of every dynamic body.
-  ///
-  /// Exact for rigid bodies. **Limitation:** for multibody-containing worlds
-  /// the per-domain kinetic/potential SPLIT is currently NOT reliable — the
-  /// multibody contribution is derived as `mechanical - sum(-m g . com_world)`,
-  /// whose potential gauge does not match the integrator's mechanical-energy
-  /// potential (it can be negative at rest). Only `totalEnergy` is physical for
-  /// multibodies; a later WP-091.24 slice computes the split consistently
-  /// (link-Jacobian kinetic energy).
+  /// Rigid bodies contribute their body kinetic energy; multibodies contribute
+  /// the variational integrator's own kinetic term (evaluated on the
+  /// forward-kinematics link velocities), so the per-domain kinetic/potential
+  /// split is physical for both domains.
   double kineticEnergy = 0.0;
 
   /// Total gravitational potential energy (zero reference at the world origin).
-  /// See the `kineticEnergy` limitation: the multibody split is not yet
-  /// reliable.
   double potentialEnergy = 0.0;
 
   /// `kineticEnergy + potentialEnergy`. For a passive (force-free) system this
-  /// is the conserved mechanical energy the conservation gates track. This
-  /// total IS reliable for both rigid and multibody worlds (the multibody
-  /// contribution is the exact `computeMultibodyMechanicalEnergy`); only the
-  /// kinetic/potential split above is unreliable for multibodies.
+  /// is the conserved mechanical energy the conservation gates track; for
+  /// multibodies it equals `computeMultibodyMechanicalEnergy`.
   double totalEnergy = 0.0;
 
   /// Total linear momentum `sum_i m_i v_i` (world frame).

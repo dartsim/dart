@@ -6088,31 +6088,23 @@ compute::StepMetrics World::computeStepMetrics() const
   }
 
   // Multibodies: link world-frame velocities are not stored (they are derived
-  // from the joint degrees of freedom by forward kinematics), so the total
-  // mechanical energy is taken from the same exported helper the variational
-  // integrator's energy diagnostic uses -- guaranteeing this value matches that
-  // path bit-for-bit. The gravitational potential is split out with the same
-  // `- m g . x_com` convention so kinetic = mechanical - potential stays
-  // consistent. World-frame multibody-link momentum aggregation needs the link
-  // Jacobian and is deferred to a later WP-091.24 slice.
+  // from the joint degrees of freedom by forward kinematics), so both the
+  // kinetic and potential terms are taken from the variational integrator's own
+  // energy helper, which evaluates them on the VarTree's forward-kinematics
+  // world transforms. This makes the per-domain split physical -- an earlier
+  // version derived potential from the stored comps::Link::worldTransform
+  // cache, whose gauge did not match the helper (yielding negative kinetic
+  // energy at rest). World-frame multibody-link momentum aggregation still
+  // needs the link Jacobian and is deferred to a later WP-091.24 slice.
   const auto structureView = registry.view<comps::MultibodyStructure>();
   for (const auto structureEntity : structureView) {
     const auto& structure
         = structureView.get<comps::MultibodyStructure>(structureEntity);
 
-    const double mechanical = compute::computeMultibodyMechanicalEnergy(
+    const auto terms = compute::computeMultibodyMechanicalEnergyTerms(
         registry, structure, gravity);
-
-    double potential = 0.0;
-    for (const auto linkEntity : structure.links) {
-      const auto& link = registry.get<comps::Link>(linkEntity);
-      const Eigen::Vector3d comWorld
-          = link.worldTransform * link.mass.localCenterOfMass;
-      potential += -link.mass.mass * gravity.dot(comWorld);
-    }
-
-    metrics.potentialEnergy += potential;
-    metrics.kineticEnergy += mechanical - potential;
+    metrics.kineticEnergy += terms.kinetic;
+    metrics.potentialEnergy += terms.potential;
   }
 
   metrics.totalEnergy = metrics.kineticEnergy + metrics.potentialEnergy;

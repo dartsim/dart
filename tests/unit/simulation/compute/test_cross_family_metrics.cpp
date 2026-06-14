@@ -347,13 +347,17 @@ TEST(CrossFamilyMetrics, MultibodyIntegrationFamiliesAgreeOnConservedEnergy)
     ASSERT_TRUE(isFinite(run.afterRoll)) << family;
 
     // Sanity: the raised pendulum has non-trivial mechanical energy to
-    // conserve. We gate on totalEnergy (the well-tested multibody metric the
-    // variational integrator's own energy diagnostic exposes); the metrics
-    // surface derives multibody kineticEnergy as `mechanical - potential` from
-    // two separately evaluated potential terms, so the kinetic/potential SPLIT
-    // is not a reliable physical zero at rest -- only their sum (totalEnergy)
-    // is the conserved invariant this comparison can stand on.
+    // conserve. The multibody kinetic/potential split is taken from the
+    // variational integrator's own forward-kinematics terms (PLAN-091 WP-091.24
+    // fix), so it is physical: released from rest, the kinetic energy is ~0 and
+    // the potential carries the total. (An earlier version derived the split
+    // from the stored comps::Link transform cache, whose frame gauge differed,
+    // giving a non-physical negative kinetic energy at rest.)
     ASSERT_GT(std::abs(run.atRelease.totalEnergy), 1e-6) << family;
+    EXPECT_NEAR(run.atRelease.kineticEnergy, 0.0, 1e-6)
+        << family << " released-from-rest multibody kinetic energy must be ~0";
+    EXPECT_GE(run.afterRoll.kineticEnergy, -1e-9)
+        << family << " physical kinetic energy must be non-negative";
 
     // (2) Per-family conserved invariant: total mechanical energy is preserved
     // across the 20 s swing. Tolerance 1% relative drift. Both families are

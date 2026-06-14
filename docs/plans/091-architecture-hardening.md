@@ -830,18 +830,25 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   agree within 2%). IPC is documented-excluded (it only handles free mesh-like
   bodies, not a sphere pair). Tolerances are physically derived (conservation
   budgets), comfortably above the observed spreads, so non-flaky.
-  `test_cross_family_metrics` 2/2, golden 3/3. **Finding (recorded as a
-  follow-up):** the `StepMetrics` multibody kinetic/potential SPLIT is not
-  physical — derived as `mechanical - sum(-m g . com_world)`, whose potential
-  gauge differs from `computeMultibodyMechanicalEnergy`'s, so multibody
-  `kineticEnergy` can be negative at rest; only `totalEnergy` is reliable for
-  multibodies (now documented on the fields). A later slice computes the split
-  consistently (link-Jacobian kinetic energy). **Remaining:** the
+  `test_cross_family_metrics` 2/2, golden 3/3. **Multibody split fix (landed):**
+  the `StepMetrics` multibody kinetic/potential split was initially non-physical
+  (it derived potential from the stored `comps::Link::worldTransform` cache,
+  whose frame gauge differs from the variational integrator's, giving negative
+  multibody `kineticEnergy` at rest). Fixed by exposing the split from the
+  trusted helper itself: a new `compute::MultibodyMechanicalEnergyTerms` +
+  `computeMultibodyMechanicalEnergyTerms(...)` returns the kinetic/potential
+  terms computed on the SAME VarTree forward-kinematics transforms as
+  `computeMultibodyMechanicalEnergy` (so `kinetic + potential` equals it
+  exactly), and `computeStepMetrics` now uses it. `test_cross_family_metrics`
+  now asserts the released-from-rest pendulum has `kineticEnergy ≈ 0` (both
+  families), proving the fix; `test_variational_integration` 178/178 (the
+  trusted helper is unchanged); golden 3/3; lint, `check-api-boundaries`,
+  `check-dart7-promotion-surface` green. **Remaining:** the
   registered scene-builder corpus, the single harness binary + manifest-driven
   packet writer (replacing the per-scene script fleet), the cross-family
   dashboard row set, contact/iteration metric population (needs a non-const
-  narrow-phase pass), the consistent multibody kinetic/potential split +
-  world-frame link momentum aggregation, and the order-of-convergence
+  narrow-phase pass), world-frame multibody-link momentum aggregation, and the
+  order-of-convergence
   (dt-halving) validation sweep. NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
