@@ -16,14 +16,20 @@ moves entirely into durable plan sidecars.
 
 ## Evidence Snapshot
 
-Latest branch-local delta (2026-06-14): runtime deformable `World::step`
-diagnostics now expose candidate pair capacity and rejected pair counts for
-self-surface, inter-body deformable, static rigid surface CCD, and moving rigid
-surface CCD candidate paths. The counters are serialized by the PLAN-083 CPU
-scene packet writer and validated for capacity/rejection consistency. This
-improves CPU runtime evidence for contact-filter pressure, but it is still not
-GPU `World::step` contact-candidate construction, a production GPU runtime
-filtering path, a speedup gate, or paper-scale scene behavior.
+Latest branch-local delta (2026-06-14): the private GPU contact-candidate
+packet's reduced scene-owned filtered candidate-buffer row now carries a
+matching `World::step` self-surface contact-filter diagnostic witness from the
+same generated DART `World` surface. The packet writer rejects missing or
+mismatched runtime diagnostic counters and requires the runtime per-build pair
+capacity to match the reduced filtered packet capacity. Fresh CUDA evidence
+records 33 runtime candidate builds, 7,274,496 candidate pairs per build,
+240,058,368 total runtime candidate pairs, and 239,908,992 rejected runtime
+pairs, while the filtered GPU row still covers 7,274,496 possible pairs, keeps
+2,048 candidates, and rejects 7,272,448 pairs. This improves the reduced
+packet bridge between private GPU candidate filtering and `World::step`
+runtime filter-pressure evidence, but it is still not production runtime scene
+filtering inside `World::step`, GPU `World::step` contact-candidate
+construction, a speedup gate, or paper-scale scene behavior.
 
 | Artifact                 | Row count | Status counts                          |
 | ------------------------ | --------- | -------------------------------------- |
@@ -123,10 +129,10 @@ filtering path, a speedup gate, or paper-scale scene behavior.
   scene-owned runtime candidate buffers, scene-owned runtime sweep broad-phase
   rows, a reduced combined scene runtime sweep-filter row, a reduced
   combined scene runtime candidate-filter row, and a reduced scene-owned
-  filtered candidate-buffer row extracted from one DART `World` deformable
-  surface, but production runtime scene filtering inside
-  `World::step`, GPU `World::step` contact candidate construction, and speedup
-  remain unproven.
+  filtered candidate-buffer row with a matching `World::step` self-surface
+  filter-pressure witness extracted from one DART `World` deformable surface,
+  but production runtime scene filtering inside `World::step`, GPU
+  `World::step` contact candidate construction, and speedup remain unproven.
   The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
   point-triangle/edge-edge CCD/line-search packet is in-progress because
   parity exists for reduced endpoint-linear, 8-sample trajectory, continuous

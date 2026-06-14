@@ -160,6 +160,16 @@ struct CombinedSweptCandidateSweepFixture
   SweptEdgeEdgeSweepFixture edgeEdge;
 };
 
+struct WorldStepSurfaceContactCounters
+{
+  std::size_t lineSearchTrials = 0;
+  std::size_t candidateBuilds = 0;
+  std::size_t candidatePairCapacity = 0;
+  std::size_t rejectedPairs = 0;
+  std::size_t pointTriangleCandidates = 0;
+  std::size_t edgeEdgeCandidates = 0;
+};
+
 struct RuntimeSweepCandidateBufferFixture
 {
   std::vector<Eigen::Vector3d> start;
@@ -176,6 +186,13 @@ struct RuntimeSweepCandidateBufferFixture
   std::vector<std::uint32_t> candidateEdgeBIndices;
   std::vector<double> edgeEdgeEndpointSquaredDistances;
   std::size_t sceneBodyCount = 0;
+  WorldStepSurfaceContactCounters worldStepSurfaceContact;
+};
+
+struct CombinedSceneSweptCandidateSweepFixture
+{
+  CombinedSweptCandidateSweepFixture sweep;
+  WorldStepSurfaceContactCounters worldStepSurfaceContact;
 };
 
 void appendPoint(
@@ -933,7 +950,7 @@ sx::DeformableBodyOptions makeSceneRuntimeCandidateBodyOptions(
 }
 
 RuntimeSweepCandidateBufferFixture makeSceneRuntimeCandidateBufferFixture(
-    const int pairCount)
+    const int pairCount, const bool captureWorldStepSurfaceContact = false)
 {
   sx::World world;
   world.setTimeStep(kSceneRuntimeCandidateTimeStep);
@@ -958,6 +975,22 @@ RuntimeSweepCandidateBufferFixture makeSceneRuntimeCandidateBufferFixture(
   }
 
   populateRuntimeSweepCandidateBuffers(fixture);
+  if (captureWorldStepSurfaceContact) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    fixture.worldStepSurfaceContact.lineSearchTrials
+        = diagnostics.lineSearchTrials;
+    fixture.worldStepSurfaceContact.candidateBuilds
+        = diagnostics.surfaceContactCandidateBuilds;
+    fixture.worldStepSurfaceContact.candidatePairCapacity
+        = diagnostics.surfaceContactCandidatePairCapacity;
+    fixture.worldStepSurfaceContact.rejectedPairs
+        = diagnostics.surfaceContactCandidateRejectedPairs;
+    fixture.worldStepSurfaceContact.pointTriangleCandidates
+        = diagnostics.surfaceContactPointTriangleCandidates;
+    fixture.worldStepSurfaceContact.edgeEdgeCandidates
+        = diagnostics.surfaceContactEdgeEdgeCandidates;
+  }
   return fixture;
 }
 
@@ -1002,39 +1035,45 @@ SweptEdgeEdgeSweepFixture makeSceneSweptEdgeEdgeSweepFixture(
   return fixture;
 }
 
-CombinedSweptCandidateSweepFixture makeSceneCombinedSweptCandidateSweepFixture(
-    const int pairCount)
+CombinedSceneSweptCandidateSweepFixture
+makeSceneCombinedSweptCandidateSweepFixture(
+    const int pairCount, const bool captureWorldStepSurfaceContact = false)
 {
   const RuntimeSweepCandidateBufferFixture runtimeFixture
-      = makeSceneRuntimeCandidateBufferFixture(pairCount);
+      = makeSceneRuntimeCandidateBufferFixture(
+          pairCount, captureWorldStepSurfaceContact);
 
-  CombinedSweptCandidateSweepFixture fixture;
+  CombinedSceneSweptCandidateSweepFixture fixture;
+  fixture.worldStepSurfaceContact = runtimeFixture.worldStepSurfaceContact;
 
-  fixture.pointTriangle.startPositions = runtimeFixture.startPositions;
-  fixture.pointTriangle.endPositions = runtimeFixture.endPositions;
-  fixture.pointTriangle.triangles = runtimeFixture.triangleIndices;
-  fixture.pointTriangle.pointCount = runtimeFixture.startPositions.size() / 3u;
-  fixture.pointTriangle.triangleCount
+  fixture.sweep.pointTriangle.startPositions = runtimeFixture.startPositions;
+  fixture.sweep.pointTriangle.endPositions = runtimeFixture.endPositions;
+  fixture.sweep.pointTriangle.triangles = runtimeFixture.triangleIndices;
+  fixture.sweep.pointTriangle.pointCount
+      = runtimeFixture.startPositions.size() / 3u;
+  fixture.sweep.pointTriangle.triangleCount
       = runtimeFixture.triangleIndices.size() / 3u;
-  fixture.pointTriangle.pairCapacity
-      = fixture.pointTriangle.pointCount * fixture.pointTriangle.triangleCount;
-  fixture.pointTriangle.sceneBodyCount = runtimeFixture.sceneBodyCount;
-  fixture.pointTriangle.pointIndices.reserve(fixture.pointTriangle.pointCount);
-  for (std::size_t point = 0; point < fixture.pointTriangle.pointCount;
+  fixture.sweep.pointTriangle.pairCapacity
+      = fixture.sweep.pointTriangle.pointCount
+        * fixture.sweep.pointTriangle.triangleCount;
+  fixture.sweep.pointTriangle.sceneBodyCount = runtimeFixture.sceneBodyCount;
+  fixture.sweep.pointTriangle.pointIndices.reserve(
+      fixture.sweep.pointTriangle.pointCount);
+  for (std::size_t point = 0; point < fixture.sweep.pointTriangle.pointCount;
        ++point) {
-    fixture.pointTriangle.pointIndices.push_back(
+    fixture.sweep.pointTriangle.pointIndices.push_back(
         static_cast<std::uint32_t>(point));
   }
-  appendSweptPointTriangleSweepCandidates(fixture.pointTriangle);
+  appendSweptPointTriangleSweepCandidates(fixture.sweep.pointTriangle);
 
-  fixture.edgeEdge.startPositions = runtimeFixture.startPositions;
-  fixture.edgeEdge.endPositions = runtimeFixture.endPositions;
-  fixture.edgeEdge.edgeIndices = runtimeFixture.edgeIndices;
-  fixture.edgeEdge.edgeCount = runtimeFixture.edgeIndices.size() / 2u;
-  fixture.edgeEdge.pairCapacity
-      = fixture.edgeEdge.edgeCount * fixture.edgeEdge.edgeCount;
-  fixture.edgeEdge.sceneBodyCount = runtimeFixture.sceneBodyCount;
-  appendSweptEdgeEdgeSweepCandidates(fixture.edgeEdge);
+  fixture.sweep.edgeEdge.startPositions = runtimeFixture.startPositions;
+  fixture.sweep.edgeEdge.endPositions = runtimeFixture.endPositions;
+  fixture.sweep.edgeEdge.edgeIndices = runtimeFixture.edgeIndices;
+  fixture.sweep.edgeEdge.edgeCount = runtimeFixture.edgeIndices.size() / 2u;
+  fixture.sweep.edgeEdge.pairCapacity
+      = fixture.sweep.edgeEdge.edgeCount * fixture.sweep.edgeEdge.edgeCount;
+  fixture.sweep.edgeEdge.sceneBodyCount = runtimeFixture.sceneBodyCount;
+  appendSweptEdgeEdgeSweepCandidates(fixture.sweep.edgeEdge);
 
   return fixture;
 }
@@ -1248,15 +1287,15 @@ void recordCombinedRuntimeCandidateBufferCounters(
 
 void recordFilteredCombinedCandidateBufferCounters(
     benchmark::State& state,
-    const CombinedSweptCandidateSweepFixture& fixture,
+    const CombinedSceneSweptCandidateSweepFixture& fixture,
     const double maxError)
 {
   const std::size_t pointTrianglePairCapacity
-      = fixture.pointTriangle.pairCapacity;
-  const std::size_t edgeEdgePairCapacity = fixture.edgeEdge.pairCapacity;
+      = fixture.sweep.pointTriangle.pairCapacity;
+  const std::size_t edgeEdgePairCapacity = fixture.sweep.edgeEdge.pairCapacity;
   const std::size_t pointTriangleCandidates
-      = fixture.pointTriangle.acceptedCount;
-  const std::size_t edgeEdgeCandidates = fixture.edgeEdge.acceptedCount;
+      = fixture.sweep.pointTriangle.acceptedCount;
+  const std::size_t edgeEdgeCandidates = fixture.sweep.edgeEdge.acceptedCount;
   const std::size_t pairCapacity
       = pointTrianglePairCapacity + edgeEdgePairCapacity;
   const std::size_t candidateCount
@@ -1280,12 +1319,27 @@ void recordFilteredCombinedCandidateBufferCounters(
   state.counters["edge_edge_rejected_count"]
       = static_cast<double>(edgeEdgePairCapacity - edgeEdgeCandidates);
   state.counters["points"]
-      = static_cast<double>(fixture.pointTriangle.pointCount);
+      = static_cast<double>(fixture.sweep.pointTriangle.pointCount);
   state.counters["triangles"]
-      = static_cast<double>(fixture.pointTriangle.triangleCount);
-  state.counters["edges"] = static_cast<double>(fixture.edgeEdge.edgeCount);
+      = static_cast<double>(fixture.sweep.pointTriangle.triangleCount);
+  state.counters["edges"]
+      = static_cast<double>(fixture.sweep.edgeEdge.edgeCount);
   state.counters["scene_bodies"]
-      = static_cast<double>(fixture.pointTriangle.sceneBodyCount);
+      = static_cast<double>(fixture.sweep.pointTriangle.sceneBodyCount);
+  state.counters["world_step_line_search_trials"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.lineSearchTrials);
+  state.counters["world_step_surface_contact_candidate_builds"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.candidateBuilds);
+  state.counters["world_step_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.candidatePairCapacity);
+  state.counters["world_step_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.rejectedPairs);
+  state.counters["world_step_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          fixture.worldStepSurfaceContact.pointTriangleCandidates);
+  state.counters["world_step_surface_contact_edge_edge_candidates"]
+      = static_cast<double>(fixture.worldStepSurfaceContact.edgeEdgeCandidates);
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * pairCapacity));
@@ -2158,23 +2212,29 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCpu(
   std::size_t acceptedCount = 0;
   for (auto _ : state) {
     SweptCandidateSweepFixture pointTriangleFixture;
-    pointTriangleFixture.startPositions = fixture.pointTriangle.startPositions;
-    pointTriangleFixture.endPositions = fixture.pointTriangle.endPositions;
-    pointTriangleFixture.pointIndices = fixture.pointTriangle.pointIndices;
-    pointTriangleFixture.triangles = fixture.pointTriangle.triangles;
-    pointTriangleFixture.pointCount = fixture.pointTriangle.pointCount;
-    pointTriangleFixture.triangleCount = fixture.pointTriangle.triangleCount;
-    pointTriangleFixture.pairCapacity = fixture.pointTriangle.pairCapacity;
-    pointTriangleFixture.sceneBodyCount = fixture.pointTriangle.sceneBodyCount;
+    pointTriangleFixture.startPositions
+        = fixture.sweep.pointTriangle.startPositions;
+    pointTriangleFixture.endPositions
+        = fixture.sweep.pointTriangle.endPositions;
+    pointTriangleFixture.pointIndices
+        = fixture.sweep.pointTriangle.pointIndices;
+    pointTriangleFixture.triangles = fixture.sweep.pointTriangle.triangles;
+    pointTriangleFixture.pointCount = fixture.sweep.pointTriangle.pointCount;
+    pointTriangleFixture.triangleCount
+        = fixture.sweep.pointTriangle.triangleCount;
+    pointTriangleFixture.pairCapacity
+        = fixture.sweep.pointTriangle.pairCapacity;
+    pointTriangleFixture.sceneBodyCount
+        = fixture.sweep.pointTriangle.sceneBodyCount;
     appendSweptPointTriangleSweepCandidates(pointTriangleFixture);
 
     SweptEdgeEdgeSweepFixture edgeEdgeFixture;
-    edgeEdgeFixture.startPositions = fixture.edgeEdge.startPositions;
-    edgeEdgeFixture.endPositions = fixture.edgeEdge.endPositions;
-    edgeEdgeFixture.edgeIndices = fixture.edgeEdge.edgeIndices;
-    edgeEdgeFixture.edgeCount = fixture.edgeEdge.edgeCount;
-    edgeEdgeFixture.pairCapacity = fixture.edgeEdge.pairCapacity;
-    edgeEdgeFixture.sceneBodyCount = fixture.edgeEdge.sceneBodyCount;
+    edgeEdgeFixture.startPositions = fixture.sweep.edgeEdge.startPositions;
+    edgeEdgeFixture.endPositions = fixture.sweep.edgeEdge.endPositions;
+    edgeEdgeFixture.edgeIndices = fixture.sweep.edgeEdge.edgeIndices;
+    edgeEdgeFixture.edgeCount = fixture.sweep.edgeEdge.edgeCount;
+    edgeEdgeFixture.pairCapacity = fixture.sweep.edgeEdge.pairCapacity;
+    edgeEdgeFixture.sceneBodyCount = fixture.sweep.edgeEdge.sceneBodyCount;
     appendSweptEdgeEdgeSweepCandidates(edgeEdgeFixture);
 
     acceptedCount
@@ -2186,7 +2246,7 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCpu(
   }
 
   benchmark::DoNotOptimize(acceptedCount);
-  recordCombinedSweptCandidateSweepCounters(state, fixture, 0.0);
+  recordCombinedSweptCandidateSweepCounters(state, fixture.sweep, 0.0);
 }
 BENCHMARK(BM_Plan083SceneRuntimeCombinedSweepFilterCpu)
     ->Arg(4096)
@@ -2210,16 +2270,16 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCuda(
 
   for (auto _ : state) {
     cuda::buildSweptPointTriangleSweepCuda(
-        fixture.pointTriangle.startPositions,
-        fixture.pointTriangle.endPositions,
-        fixture.pointTriangle.pointIndices,
-        fixture.pointTriangle.triangles,
+        fixture.sweep.pointTriangle.startPositions,
+        fixture.sweep.pointTriangle.endPositions,
+        fixture.sweep.pointTriangle.pointIndices,
+        fixture.sweep.pointTriangle.triangles,
         kActivationDistance,
         pointTriangleResult);
     cuda::buildSweptEdgeEdgeSweepCuda(
-        fixture.edgeEdge.startPositions,
-        fixture.edgeEdge.endPositions,
-        fixture.edgeEdge.edgeIndices,
+        fixture.sweep.edgeEdge.startPositions,
+        fixture.sweep.edgeEdge.endPositions,
+        fixture.sweep.edgeEdge.edgeIndices,
         kActivationDistance,
         edgeEdgeResult);
     benchmark::DoNotOptimize(pointTriangleResult.acceptedPointIndices.data());
@@ -2231,35 +2291,37 @@ static void BM_Plan083SceneRuntimeCombinedSweepFilterCuda(
   }
 
   if (pointTriangleResult.acceptedEndpointSquaredDistances.size()
-      == fixture.pointTriangle.cpuAcceptedEndpointSquaredDistances.size()) {
-    for (std::size_t i = 0;
-         i < fixture.pointTriangle.cpuAcceptedEndpointSquaredDistances.size();
+      == fixture.sweep.pointTriangle.cpuAcceptedEndpointSquaredDistances
+             .size()) {
+    for (std::size_t i = 0; i < fixture.sweep.pointTriangle
+                                    .cpuAcceptedEndpointSquaredDistances.size();
          ++i) {
       maxError = std::max(
           maxError,
           std::abs(
               pointTriangleResult.acceptedEndpointSquaredDistances[i]
-              - fixture.pointTriangle.cpuAcceptedEndpointSquaredDistances[i]));
+              - fixture.sweep.pointTriangle
+                    .cpuAcceptedEndpointSquaredDistances[i]));
     }
   } else {
     maxError = std::numeric_limits<double>::infinity();
   }
   if (edgeEdgeResult.acceptedEndpointSquaredDistances.size()
-      == fixture.edgeEdge.cpuAcceptedEndpointSquaredDistances.size()) {
+      == fixture.sweep.edgeEdge.cpuAcceptedEndpointSquaredDistances.size()) {
     for (std::size_t i = 0;
-         i < fixture.edgeEdge.cpuAcceptedEndpointSquaredDistances.size();
+         i < fixture.sweep.edgeEdge.cpuAcceptedEndpointSquaredDistances.size();
          ++i) {
       maxError = std::max(
           maxError,
           std::abs(
               edgeEdgeResult.acceptedEndpointSquaredDistances[i]
-              - fixture.edgeEdge.cpuAcceptedEndpointSquaredDistances[i]));
+              - fixture.sweep.edgeEdge.cpuAcceptedEndpointSquaredDistances[i]));
     }
   } else {
     maxError = std::numeric_limits<double>::infinity();
   }
 
-  recordCombinedSweptCandidateSweepCounters(state, fixture, maxError);
+  recordCombinedSweptCandidateSweepCounters(state, fixture.sweep, maxError);
   state.counters["gpu_pair_capacity"] = static_cast<double>(
       pointTriangleResult.pairCapacity + edgeEdgeResult.pairCapacity);
   state.counters["gpu_point_triangle_pair_capacity"]
@@ -2801,28 +2863,34 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCpu(
     benchmark::State& state)
 {
   const auto fixture = makeSceneCombinedSweptCandidateSweepFixture(
-      static_cast<int>(state.range(0)));
+      static_cast<int>(state.range(0)), true);
 
   std::size_t candidateCount = 0;
   for (auto _ : state) {
     SweptCandidateSweepFixture pointTriangleFixture;
-    pointTriangleFixture.startPositions = fixture.pointTriangle.startPositions;
-    pointTriangleFixture.endPositions = fixture.pointTriangle.endPositions;
-    pointTriangleFixture.pointIndices = fixture.pointTriangle.pointIndices;
-    pointTriangleFixture.triangles = fixture.pointTriangle.triangles;
-    pointTriangleFixture.pointCount = fixture.pointTriangle.pointCount;
-    pointTriangleFixture.triangleCount = fixture.pointTriangle.triangleCount;
-    pointTriangleFixture.pairCapacity = fixture.pointTriangle.pairCapacity;
-    pointTriangleFixture.sceneBodyCount = fixture.pointTriangle.sceneBodyCount;
+    pointTriangleFixture.startPositions
+        = fixture.sweep.pointTriangle.startPositions;
+    pointTriangleFixture.endPositions
+        = fixture.sweep.pointTriangle.endPositions;
+    pointTriangleFixture.pointIndices
+        = fixture.sweep.pointTriangle.pointIndices;
+    pointTriangleFixture.triangles = fixture.sweep.pointTriangle.triangles;
+    pointTriangleFixture.pointCount = fixture.sweep.pointTriangle.pointCount;
+    pointTriangleFixture.triangleCount
+        = fixture.sweep.pointTriangle.triangleCount;
+    pointTriangleFixture.pairCapacity
+        = fixture.sweep.pointTriangle.pairCapacity;
+    pointTriangleFixture.sceneBodyCount
+        = fixture.sweep.pointTriangle.sceneBodyCount;
     appendSweptPointTriangleSweepCandidates(pointTriangleFixture);
 
     SweptEdgeEdgeSweepFixture edgeEdgeFixture;
-    edgeEdgeFixture.startPositions = fixture.edgeEdge.startPositions;
-    edgeEdgeFixture.endPositions = fixture.edgeEdge.endPositions;
-    edgeEdgeFixture.edgeIndices = fixture.edgeEdge.edgeIndices;
-    edgeEdgeFixture.edgeCount = fixture.edgeEdge.edgeCount;
-    edgeEdgeFixture.pairCapacity = fixture.edgeEdge.pairCapacity;
-    edgeEdgeFixture.sceneBodyCount = fixture.edgeEdge.sceneBodyCount;
+    edgeEdgeFixture.startPositions = fixture.sweep.edgeEdge.startPositions;
+    edgeEdgeFixture.endPositions = fixture.sweep.edgeEdge.endPositions;
+    edgeEdgeFixture.edgeIndices = fixture.sweep.edgeEdge.edgeIndices;
+    edgeEdgeFixture.edgeCount = fixture.sweep.edgeEdge.edgeCount;
+    edgeEdgeFixture.pairCapacity = fixture.sweep.edgeEdge.pairCapacity;
+    edgeEdgeFixture.sceneBodyCount = fixture.sweep.edgeEdge.sceneBodyCount;
     appendSweptEdgeEdgeSweepCandidates(edgeEdgeFixture);
 
     candidateCount
@@ -2851,7 +2919,7 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCuda(
   }
 
   const auto fixture = makeSceneCombinedSweptCandidateSweepFixture(
-      static_cast<int>(state.range(0)));
+      static_cast<int>(state.range(0)), true);
   cuda::SweptPointTriangleSweepResult pointTriangleSweepResult;
   cuda::SweptEdgeEdgeSweepResult edgeEdgeSweepResult;
   cuda::SweptPointTriangleCandidateBufferResult pointTriangleBufferResult;
@@ -2860,29 +2928,29 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCuda(
 
   for (auto _ : state) {
     cuda::buildSweptPointTriangleSweepCuda(
-        fixture.pointTriangle.startPositions,
-        fixture.pointTriangle.endPositions,
-        fixture.pointTriangle.pointIndices,
-        fixture.pointTriangle.triangles,
+        fixture.sweep.pointTriangle.startPositions,
+        fixture.sweep.pointTriangle.endPositions,
+        fixture.sweep.pointTriangle.pointIndices,
+        fixture.sweep.pointTriangle.triangles,
         kActivationDistance,
         pointTriangleSweepResult);
     cuda::buildSweptEdgeEdgeSweepCuda(
-        fixture.edgeEdge.startPositions,
-        fixture.edgeEdge.endPositions,
-        fixture.edgeEdge.edgeIndices,
+        fixture.sweep.edgeEdge.startPositions,
+        fixture.sweep.edgeEdge.endPositions,
+        fixture.sweep.edgeEdge.edgeIndices,
         kActivationDistance,
         edgeEdgeSweepResult);
     cuda::evaluateSweptPointTriangleCandidateBufferCuda(
-        fixture.pointTriangle.startPositions,
-        fixture.pointTriangle.endPositions,
-        fixture.pointTriangle.triangles,
+        fixture.sweep.pointTriangle.startPositions,
+        fixture.sweep.pointTriangle.endPositions,
+        fixture.sweep.pointTriangle.triangles,
         pointTriangleSweepResult.acceptedPointIndices,
         pointTriangleSweepResult.acceptedTriangleIndices,
         pointTriangleBufferResult);
     cuda::evaluateSweptEdgeEdgeCandidateBufferCuda(
-        fixture.edgeEdge.startPositions,
-        fixture.edgeEdge.endPositions,
-        fixture.edgeEdge.edgeIndices,
+        fixture.sweep.edgeEdge.startPositions,
+        fixture.sweep.edgeEdge.endPositions,
+        fixture.sweep.edgeEdge.edgeIndices,
         edgeEdgeSweepResult.acceptedEdgeAIndices,
         edgeEdgeSweepResult.acceptedEdgeBIndices,
         edgeEdgeBufferResult);
@@ -2894,11 +2962,11 @@ static void BM_Plan083SceneRuntimeFilteredCandidateBufferCuda(
 
   maxError = updateMaxDistanceError(
       pointTriangleBufferResult.endpointSquaredDistances,
-      fixture.pointTriangle.cpuAcceptedEndpointSquaredDistances,
+      fixture.sweep.pointTriangle.cpuAcceptedEndpointSquaredDistances,
       maxError);
   maxError = updateMaxDistanceError(
       edgeEdgeBufferResult.endpointSquaredDistances,
-      fixture.edgeEdge.cpuAcceptedEndpointSquaredDistances,
+      fixture.sweep.edgeEdge.cpuAcceptedEndpointSquaredDistances,
       maxError);
 
   recordFilteredCombinedCandidateBufferCounters(state, fixture, maxError);

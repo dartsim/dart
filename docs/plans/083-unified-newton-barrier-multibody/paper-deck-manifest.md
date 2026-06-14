@@ -149,6 +149,17 @@ pressure evidence only; the GPU `World::step` contact-candidate construction,
 production GPU runtime filtering, speedup gate, and paper-scale behavior remain
 future `abd-future-gpu` evidence.
 
+The 2026-06-14 GPU contact-candidate bridge slice extends the private
+contact-candidate packet's reduced scene-owned filtered candidate-buffer row
+with a matching `World::step` self-surface filter-pressure witness from the
+same generated DART `World` surface. The row records 33 runtime candidate
+builds, 7,274,496 candidate pairs per build, 240,058,368 total runtime pairs,
+239,908,992 rejected runtime pairs, and exact CPU/GPU packet parity within
+`5.551115123125783e-17`. This is still reduced packet evidence only; production
+runtime scene filtering inside `World::step`, GPU `World::step` contact
+candidate construction, speedup-gate completion, and paper-scale behavior
+remain future `abd-future-gpu` evidence.
+
 ## Py-Demos Category Targets
 
 | Category target               | Rows                                                                                                                                                                                                         |
