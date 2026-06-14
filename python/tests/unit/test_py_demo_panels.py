@@ -967,6 +967,27 @@ class _FakePanelBuilder:
         self.events.append("end_table")
 
 
+def _table_rows(events: list[str], table_label: str) -> list[list[str]]:
+    table_prefix = f"table:{table_label}:"
+    table_index = next(
+        index for index, event in enumerate(events) if event.startswith(table_prefix)
+    )
+    rows: list[list[str]] = []
+    current_row: list[str] | None = None
+    for event in events[table_index + 1 :]:
+        if event == "end_table":
+            break
+        if event == "table_row":
+            if current_row is not None:
+                rows.append(current_row)
+            current_row = []
+        elif event.startswith("text:") and current_row is not None:
+            current_row.append(event.removeprefix("text:"))
+    if current_row is not None:
+        rows.append(current_row)
+    return rows
+
+
 class _ScriptedPanelBuilder(_FakePanelBuilder):
     def __init__(
         self,
@@ -2522,6 +2543,19 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "text:solver manifest: 24 solvers, 23 standard, 15 boxed, "
         "16 friction-index"
     ) in builder.events
+    assert "table:lcp_physics_metrics:Metric,Sequential,Boxed LCP" in builder.events
+    assert _table_rows(builder.events, "lcp_physics_metrics") == [
+        ["step", "0.000 ms", "0.000 ms"],
+        ["contacts", "0", "0"],
+        ["sliding speed", "0.000 m/s", "0.000 m/s"],
+        ["ramp slide", "0.0000 m", "0.0000 m"],
+        ["billiard momentum error", "0.000e+00", "0.000e+00"],
+        ["billiard energy error", "0.000e+00", "0.000e+00"],
+        ["billiard symmetry error", "0.0000 m", "0.0000 m"],
+        ["stack lateral drift", "0.0000 m", "0.0000 m"],
+        ["card spread", "0.0000 m", "0.0000 m"],
+        ["card height loss", "0.0000 m", "0.0000 m"],
+    ]
     assert (
         "table:lcp_live_packet_cards:Packet,Metric,Benchmark analog"
         in builder.events
