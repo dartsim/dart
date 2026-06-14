@@ -32,7 +32,7 @@ _BENCHMARK_COMMAND = (
     f"pixi run bm lcp_compare -- --benchmark_filter={_BENCHMARK_SMOKE_FILTER}"
 )
 _STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY = True
-_STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0])
+_STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0, 1.5])
 _STANDALONE_SUCCESS_STATUSES = {"Success", "MaxIterations"}
 _STANDALONE_PROBLEM_SUITE_LABEL = "Representative solver suite"
 
@@ -387,7 +387,10 @@ _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
             "solver_supports_standard, solver_supports_boxed, "
             "solver_supports_friction_index, solver_supports_problem"
         ),
-        "meaning": "Concrete native support flags for each solver and problem row.",
+        "meaning": (
+            "Native form support flags plus concrete problem support for each "
+            "solver row."
+        ),
     },
     {
         "fields": (
@@ -484,7 +487,7 @@ _PROFILE_CATEGORY_SUPPORT_FIELDS = {
     "FrictionIndex": "solver_supports_friction_index",
 }
 _PROFILE_EVIDENCE_REQUIRED_SURFACES = tuple(_PROFILE_CATEGORY_SUPPORT_FIELDS)
-_PROFILE_SOLVER_SUPPORT_FIELDS = {
+_PROFILE_FORM_SUPPORT_FIELDS = {
     "solver_supports_standard": "standard",
     "solver_supports_boxed": "boxed",
     "solver_supports_friction_index": "findex",
@@ -669,7 +672,7 @@ def _validate_performance_profile_evidence_row(
             "mismatched LCP performance profile evidence row: "
             f"{surface}/{solver} solver family counters are not one-hot"
         )
-    for field, solver_support_key in _PROFILE_SOLVER_SUPPORT_FIELDS.items():
+    for field, solver_support_key in _PROFILE_FORM_SUPPORT_FIELDS.items():
         value = _as_int_counter(row, field)
         expected = 1 if solver_support_row[solver_support_key] else 0
         if value != expected:
@@ -1219,7 +1222,6 @@ class _StandaloneProblemCase:
     name: str
     label: str
     surface: str
-    support_key: str
     challenge: str
     make_problem: Callable[[], tuple[dart.LcpProblem, np.ndarray]]
     tolerance: float = 1e-4
@@ -1852,7 +1854,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="standard_spd",
         label="Standard SPD",
         surface="standard",
-        support_key="standard",
         challenge="well-conditioned exact baseline",
         make_problem=_make_standard_spd_case,
     ),
@@ -1860,7 +1861,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="ill_conditioned_standard",
         label="Ill-conditioned standard",
         surface="standard",
-        support_key="standard",
         challenge="large mass-ratio style conditioning",
         make_problem=_make_ill_conditioned_standard_case,
         tolerance=2e-4,
@@ -1869,7 +1869,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="near_singular_standard",
         label="Near-singular standard",
         surface="standard",
-        support_key="standard",
         challenge="weakly constrained mode with regularization pressure",
         make_problem=_make_near_singular_standard_case,
         tolerance=2e-4,
@@ -1878,7 +1877,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="boxed_active_bounds",
         label="Boxed active bounds",
         surface="boxed",
-        support_key="boxed",
         challenge="mixed lower, interior, and upper active sets",
         make_problem=_make_boxed_active_bounds_case,
         tolerance=2e-4,
@@ -1887,7 +1885,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="mass_ratio_boxed",
         label="Mass-ratio boxed",
         surface="boxed",
-        support_key="boxed",
         challenge="large mass-ratio conditioning with active bounds",
         make_problem=_make_mass_ratio_boxed_case,
         tolerance=5e-4,
@@ -1896,7 +1893,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="singular_degenerate_boxed",
         label="Singular degenerate boxed",
         surface="boxed",
-        support_key="boxed",
         challenge="rank-deficient complementarity with opposing active bounds",
         make_problem=_make_singular_degenerate_boxed_case,
         tolerance=2e-4,
@@ -1905,7 +1901,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="friction_index_contact",
         label="Friction-index contact",
         surface="findex",
-        support_key="findex",
         challenge="normal-scaled tangential friction bounds",
         make_problem=_make_friction_index_contact_case,
     ),
@@ -1913,7 +1908,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="active_friction_index_contact",
         label="Active friction-index contact",
         surface="findex",
-        support_key="findex",
         challenge="two-contact active tangential bounds with coupled normals",
         make_problem=_make_active_friction_index_contact_case,
         tolerance=2e-4,
@@ -1922,7 +1916,6 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         name="moderate_scale_standard",
         label="Moderate-scale standard",
         surface="standard",
-        support_key="standard",
         challenge="scalability smoke with banded coupling",
         make_problem=_make_moderate_scale_standard_case,
         tolerance=2e-4,
@@ -1931,7 +1924,9 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
 
 
 def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
-    problem = dart.LcpProblem(np.eye(3), _STANDALONE_SMOKE_EXPECTED)
+    problem = dart.LcpProblem(
+        np.eye(_STANDALONE_SMOKE_EXPECTED.size), _STANDALONE_SMOKE_EXPECTED
+    )
     options = dart.LcpOptions.high_accuracy()
     options.max_iterations = 1000
 
@@ -1941,6 +1936,7 @@ def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
         solver = solver_type()
         result, solution = solver.solve(problem, options=options)
         native_standard = bool(solver.supports_standard_lcp())
+        native_problem = bool(solver.supports_problem(problem))
         rows.append(
             {
                 "name": support_row["name"],
@@ -1948,7 +1944,8 @@ def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
                 "native_standard": native_standard,
                 "native_boxed": bool(solver.supports_boxed_lcp()),
                 "native_findex": bool(solver.supports_friction_index()),
-                "solve_route": "native" if native_standard else "delegated",
+                "native_problem": native_problem,
+                "solve_route": "native" if native_problem else "delegated",
                 "status": dart.lcp_solver_status_to_string(result.status),
                 "iterations": int(result.iterations),
                 "residual": float(result.residual),
@@ -2536,7 +2533,7 @@ def build() -> SceneSetup:
             )
             builder.text(f"benchmark smoke: {_BENCHMARK_COMMAND}")
             if builder.begin_table(
-                "lcp_solver_manifest", ["Solver", "Family", "Coverage"]
+                "lcp_solver_manifest", ["Solver", "Family", "Native forms"]
             ):
                 for row in _SOLVER_SUPPORT_ROWS:
                     builder.table_next_row()
@@ -2627,7 +2624,7 @@ def build() -> SceneSetup:
                 [
                     "Solver",
                     "Family",
-                    "Native coverage",
+                    "Native forms",
                     "Route",
                     "Status",
                     "Error",
@@ -2660,8 +2657,8 @@ def build() -> SceneSetup:
                     "Rows",
                     "FI contacts",
                     "Challenge",
-                    "Native",
-                    "Delegated",
+                    "Native OK",
+                    "Delegated OK",
                     "Max error",
                     "Max comp",
                     "Max residual",
@@ -2771,7 +2768,7 @@ def build() -> SceneSetup:
                 "lcp_solver_profile",
                 [
                     "Solver",
-                    "Native cases",
+                    "Concrete native cases",
                     "OK",
                     "Native OK",
                     "Delegated OK",

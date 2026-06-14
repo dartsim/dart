@@ -967,6 +967,27 @@ class _FakePanelBuilder:
         self.events.append("end_table")
 
 
+def _table_rows(events: list[str], table_label: str) -> list[list[str]]:
+    table_prefix = f"table:{table_label}:"
+    table_index = next(
+        index for index, event in enumerate(events) if event.startswith(table_prefix)
+    )
+    rows: list[list[str]] = []
+    current_row: list[str] | None = None
+    for event in events[table_index + 1 :]:
+        if event == "end_table":
+            break
+        if event == "table_row":
+            if current_row is not None:
+                rows.append(current_row)
+            current_row = []
+        elif event.startswith("text:") and current_row is not None:
+            current_row.append(event.removeprefix("text:"))
+    if current_row is not None:
+        rows.append(current_row)
+    return rows
+
+
 class _ScriptedPanelBuilder(_FakePanelBuilder):
     def __init__(
         self,
@@ -1704,14 +1725,22 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     smoke_by_name = {row["name"]: row for row in info["standalone_solver_rows"]}
     assert len(smoke_by_name) == len(info["standalone_solver_rows"])
     assert set(smoke_by_name) == expected_solver_names
+    smoke_problem = dart.LcpProblem(
+        np.eye(lcp_physics._STANDALONE_SMOKE_EXPECTED.size),
+        lcp_physics._STANDALONE_SMOKE_EXPECTED,
+    )
     for name, manifest_row in solver_by_name.items():
         smoke_row = smoke_by_name[name]
+        solver = getattr(dart, lcp_physics._SOLVER_CLASS_NAMES[name])()
+        native_problem = bool(solver.supports_problem(smoke_problem))
         assert smoke_row["native_standard"] is manifest_row["standard"]
         assert smoke_row["native_boxed"] is manifest_row["boxed"]
         assert smoke_row["native_findex"] is manifest_row["findex"]
-        assert smoke_row["solve_route"] == (
-            "native" if manifest_row["standard"] else "delegated"
-        )
+        assert smoke_row["native_problem"] is native_problem
+        assert smoke_row["solve_route"] == ("native" if native_problem else "delegated")
+    assert smoke_by_name["Direct"]["native_standard"] is True
+    assert smoke_by_name["Direct"]["native_problem"] is False
+    assert smoke_by_name["Direct"]["solve_route"] == "delegated"
     assert max(row["solution_error"] for row in info["standalone_solver_rows"]) < 1e-4
     assert max(row["residual"] for row in info["standalone_solver_rows"]) < 1e-3
     assert (
@@ -1732,17 +1761,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "friction_index_contact": 24,
         "active_friction_index_contact": 24,
         "moderate_scale_standard": 24,
-    }
-    expected_native_problem_counts = {
-        "standard_spd": 23,
-        "ill_conditioned_standard": 23,
-        "near_singular_standard": 22,
-        "boxed_active_bounds": 15,
-        "mass_ratio_boxed": 15,
-        "singular_degenerate_boxed": 15,
-        "friction_index_contact": 16,
-        "active_friction_index_contact": 16,
-        "moderate_scale_standard": 22,
     }
     expected_problem_types = {
         "standard_spd": "Standard",
@@ -1912,6 +1930,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     } == {"delegated"}
     for case_name, expected_count in expected_problem_counts.items():
         summary_row = problem_summary_by_case[case_name]
+        case_rows = [row for row in problem_rows if row["case"] == case_name]
+        native_case_rows = [row for row in case_rows if row["native_supported"]]
+        delegated_case_rows = [
+            row for row in case_rows if not row["native_supported"]
+        ]
         assert summary_row["solver_count"] == expected_count
         assert summary_row["problem_type"] == expected_problem_types[case_name]
         assert summary_row["lcp_dimension"] == expected_problem_dimensions[case_name]
@@ -1923,35 +1946,28 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
             summary_row["findex_contact_count"]
             == expected_findex_contact_counts[case_name]
         )
+        assert {row["problem_type"] for row in case_rows} == {
+            expected_problem_types[case_name]
+        }
+        assert {row["lcp_dimension"] for row in case_rows} == {
+            expected_problem_dimensions[case_name]
+        }
         assert {
-            row["problem_type"] for row in problem_rows if row["case"] == case_name
-        } == {expected_problem_types[case_name]}
-        assert {
-            row["lcp_dimension"] for row in problem_rows if row["case"] == case_name
-        } == {expected_problem_dimensions[case_name]}
-        assert {
-            row["findex_row_count"]
-            for row in problem_rows
-            if row["case"] == case_name
+            row["findex_row_count"] for row in case_rows
         } == {expected_findex_row_counts[case_name]}
         assert {
-            row["findex_contact_count"]
-            for row in problem_rows
-            if row["case"] == case_name
+            row["findex_contact_count"] for row in case_rows
         } == {expected_findex_contact_counts[case_name]}
-        assert summary_row["native_solver_count"] == expected_native_problem_counts[
-            case_name
-        ]
-        assert (
-            summary_row["delegated_solver_count"]
-            == expected_count - expected_native_problem_counts[case_name]
+        assert summary_row["native_solver_count"] == len(native_case_rows)
+        assert summary_row["delegated_solver_count"] == len(delegated_case_rows)
+        assert summary_row["contract_ok_count"] == sum(
+            1 for row in case_rows if row["contract_ok"]
         )
-        assert summary_row["contract_ok_count"] == expected_count
-        assert summary_row["native_contract_ok_count"] == expected_native_problem_counts[
-            case_name
-        ]
-        assert summary_row["delegated_contract_ok_count"] == (
-            expected_count - expected_native_problem_counts[case_name]
+        assert summary_row["native_contract_ok_count"] == sum(
+            1 for row in native_case_rows if row["contract_ok"]
+        )
+        assert summary_row["delegated_contract_ok_count"] == sum(
+            1 for row in delegated_case_rows if row["contract_ok"]
         )
         assert summary_row["max_solution_error"] <= expected_case_tolerances.get(
             case_name, 2e-4
@@ -1964,8 +1980,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_native_elapsed_us"] >= 0.0
         assert summary_row["slowest_solver"] in solver_by_name
         assert summary_row["slowest_elapsed_us"] >= summary_row["fastest_elapsed_us"]
-        case_rows = [row for row in problem_rows if row["case"] == case_name]
-        native_case_rows = [row for row in case_rows if row["native_supported"]]
         fastest_row = min(case_rows, key=lambda row: row["elapsed_us"])
         fastest_native_row = min(native_case_rows, key=lambda row: row["elapsed_us"])
         slowest_row = max(case_rows, key=lambda row: row["elapsed_us"])
@@ -1982,7 +1996,6 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
             slowest_row["elapsed_us"]
         )
     for solver_name, profile_row in solver_profile_by_name.items():
-        manifest_row = solver_by_name[solver_name]
         solver_problem_rows = [
             row for row in problem_rows if row["solver"] == solver_name
         ]
@@ -1992,25 +2005,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         delegated_solver_problem_rows = [
             row for row in solver_problem_rows if not row["native_supported"]
         ]
-        expected_native_case_count = (
-            4 * int(manifest_row["standard"])
-            + 3 * int(manifest_row["boxed"])
-            + 2 * int(manifest_row["findex"])
-        )
-        if solver_name == "Direct":
-            expected_native_case_count = 2
-        assert profile_row["problem_count"] == len(expected_problem_counts)
-        assert profile_row["native_case_count"] == expected_native_case_count
-        assert (
-            profile_row["delegated_case_count"]
-            == len(expected_problem_counts) - expected_native_case_count
-        )
-        assert profile_row["contract_ok_count"] == len(expected_problem_counts)
-        assert profile_row["native_contract_ok_count"] == expected_native_case_count
-        assert (
-            profile_row["delegated_contract_ok_count"]
-            == len(expected_problem_counts) - expected_native_case_count
-        )
+        assert len(solver_problem_rows) == len(expected_problem_counts)
         assert profile_row["max_solution_error"] <= max(
             expected_case_tolerances.values(), default=2e-4
         )
@@ -2522,51 +2517,87 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "text:solver manifest: 24 solvers, 23 standard, 15 boxed, "
         "16 friction-index"
     ) in builder.events
+    assert "table:lcp_physics_metrics:Metric,Sequential,Boxed LCP" in builder.events
+    assert _table_rows(builder.events, "lcp_physics_metrics") == [
+        ["step", "0.000 ms", "0.000 ms"],
+        ["contacts", "0", "0"],
+        ["sliding speed", "0.000 m/s", "0.000 m/s"],
+        ["ramp slide", "0.0000 m", "0.0000 m"],
+        ["billiard momentum error", "0.000e+00", "0.000e+00"],
+        ["billiard energy error", "0.000e+00", "0.000e+00"],
+        ["billiard symmetry error", "0.0000 m", "0.0000 m"],
+        ["stack lateral drift", "0.0000 m", "0.0000 m"],
+        ["card spread", "0.0000 m", "0.0000 m"],
+        ["card height loss", "0.0000 m", "0.0000 m"],
+    ]
     assert (
         "table:lcp_live_packet_cards:Packet,Metric,Benchmark analog"
         in builder.events
     )
-    for live_packet_row in info["live_packet_rows"]:
-        assert f"text:{live_packet_row['packet']}" in builder.events
-        assert f"text:{live_packet_row['metric']}" in builder.events
-        assert f"text:{live_packet_row['benchmark']}" in builder.events
-    assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
-    assert "text:std + boxed + findex" in builder.events
-    assert "text:std only; boxed/findex delegate" in builder.events
-    assert "text:findex only; std/boxed delegate" in builder.events
+    assert _table_rows(builder.events, "lcp_live_packet_cards") == [
+        [
+            live_packet_row["packet"],
+            live_packet_row["metric"],
+            live_packet_row["benchmark"],
+        ]
+        for live_packet_row in info["live_packet_rows"]
+    ]
+    assert "table:lcp_solver_manifest:Solver,Family,Native forms" in builder.events
+    assert _table_rows(builder.events, "lcp_solver_manifest") == [
+        [
+            solver_row["name"],
+            solver_row["family"],
+            lcp_physics._coverage_label(solver_row),
+        ]
+        for solver_row in solver_rows
+    ]
     assert (
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events
     )
-    for benchmark_row in info["benchmark_packet_rows"]:
-        assert f"text:{benchmark_row['packet']}" in builder.events
-        assert f"text:{benchmark_row['surface']}" in builder.events
-        assert f"text:{benchmark_row['benchmark_filter']}" in builder.events
-        assert f"text:{benchmark_row['coverage']}" in builder.events
+    assert _table_rows(builder.events, "lcp_benchmark_packets") == [
+        [
+            benchmark_row["packet"],
+            benchmark_row["surface"],
+            benchmark_row["benchmark_filter"],
+            benchmark_row["coverage"],
+        ]
+        for benchmark_row in info["benchmark_packet_rows"]
+    ]
     assert (
         "table:lcp_representative_requirement_coverage:Requirement,Live packet,"
         "Benchmark packet,Metrics,Evidence"
         in builder.events
     )
-    for requirement_row in info["representative_requirement_rows"]:
-        assert f"text:{requirement_row['requirement']}" in builder.events
-        assert f"text:{requirement_row['live_packet']}" in builder.events
-        assert f"text:{requirement_row['benchmark_packet']}" in builder.events
-        assert f"text:{requirement_row['metrics']}" in builder.events
-        assert f"text:{requirement_row['evidence']}" in builder.events
+    assert _table_rows(
+        builder.events, "lcp_representative_requirement_coverage"
+    ) == [
+        [
+            requirement_row["requirement"],
+            requirement_row["live_packet"],
+            requirement_row["benchmark_packet"],
+            requirement_row["metrics"],
+            requirement_row["evidence"],
+        ]
+        for requirement_row in info["representative_requirement_rows"]
+    ]
     assert (
         "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
         "Current leaders,Current laggards,Takeaway"
         in builder.events
     )
-    for profile_row in info["performance_profile_rows"]:
-        assert f"text:{profile_row['surface']}" in builder.events
-        assert f"text:{profile_row['artifact']}" in builder.events
-        assert f"text:{profile_row['evidence_artifact']}" in builder.events
-        assert f"text:{profile_row['problem_sizes']}" in builder.events
-        assert f"text:{profile_row['current_leaders']}" in builder.events
-        assert f"text:{profile_row['current_laggards']}" in builder.events
-        assert f"text:{profile_row['takeaway']}" in builder.events
+    assert _table_rows(builder.events, "lcp_performance_profiles") == [
+        [
+            profile_row["surface"],
+            profile_row["artifact"],
+            profile_row["evidence_artifact"],
+            profile_row["problem_sizes"],
+            profile_row["current_leaders"],
+            profile_row["current_laggards"],
+            profile_row["takeaway"],
+        ]
+        for profile_row in info["performance_profile_rows"]
+    ]
     assert (
         f"text:profile smoke: {lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND}"
         in builder.events
@@ -2575,177 +2606,192 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_performance_profile_evidence_schema:Field(s),Meaning"
         in builder.events
     )
-    for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
-        assert any(schema_row["fields"] in event for event in builder.events)
-        assert any(schema_row["meaning"] in event for event in builder.events)
+    assert _table_rows(
+        builder.events, "lcp_performance_profile_evidence_schema"
+    ) == [
+        [schema_row["fields"], schema_row["meaning"]]
+        for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    ]
     assert (
         "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
         "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
         in builder.events
     )
-    for evidence_summary_row in info["performance_profile_evidence_summary_rows"]:
-        assert f"text:{evidence_summary_row['surface']}" in builder.events
-        assert f"text:{evidence_summary_row['rows']}" in builder.events
-        assert f"text:{evidence_summary_row['solvers']}" in builder.events
-        assert f"text:{evidence_summary_row['dimensions']}" in builder.events
-        assert f"text:{evidence_summary_row['contacts']}" in builder.events
-        assert f"text:{evidence_summary_row['contract_ok']}" in builder.events
-        assert f"text:{evidence_summary_row['max_iterations']}" in builder.events
-        assert f"text:{evidence_summary_row['max_residual']}" in builder.events
-        assert (
-            f"text:{evidence_summary_row['max_complementarity']}"
-            in builder.events
-        )
-        assert (
-            f"text:{evidence_summary_row['max_bound_violation']}"
-            in builder.events
-        )
+    assert _table_rows(
+        builder.events, "lcp_performance_profile_evidence_summary"
+    ) == [
+        [
+            evidence_summary_row["surface"],
+            evidence_summary_row["rows"],
+            evidence_summary_row["solvers"],
+            evidence_summary_row["dimensions"],
+            evidence_summary_row["contacts"],
+            evidence_summary_row["contract_ok"],
+            evidence_summary_row["max_iterations"],
+            evidence_summary_row["max_residual"],
+            evidence_summary_row["max_complementarity"],
+            evidence_summary_row["max_bound_violation"],
+        ]
+        for evidence_summary_row in info["performance_profile_evidence_summary_rows"]
+    ]
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
-        "table:lcp_standalone_solver_smoke:Solver,Family,Native coverage,Route,"
+        "table:lcp_standalone_solver_smoke:Solver,Family,Native forms,Route,"
         "Status,Error,Residual,Complementarity"
         in builder.events
     )
-    for smoke_row in info["standalone_solver_rows"]:
-        assert f"text:{smoke_row['family']}" in builder.events
-        assert (
-            f"text:{lcp_physics._smoke_coverage_label(smoke_row)}"
-            in builder.events
-        )
-    assert "text:delegated" in builder.events
-    assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
-    assert (
-        f"text:{smoke_by_name['Dantzig']['complementarity']:.2e}"
-        in builder.events
-    )
+    assert _table_rows(builder.events, "lcp_standalone_solver_smoke") == [
+        [
+            smoke_row["name"],
+            smoke_row["family"],
+            lcp_physics._smoke_coverage_label(smoke_row),
+            smoke_row["solve_route"],
+            f"{smoke_row['status']} ({smoke_row['iterations']} it)",
+            f"{smoke_row['solution_error']:.2e}",
+            f"{smoke_row['residual']:.2e}",
+            f"{smoke_row['complementarity']:.2e}",
+        ]
+        for smoke_row in info["standalone_solver_rows"]
+    ]
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
-        "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
-        "Fastest native,Slowest"
+        "Challenge,Native OK,Delegated OK,Max error,Max comp,Max residual,"
+        "Fastest,Fastest native,Slowest"
         in builder.events
     )
-    for summary_row in problem_summary_rows:
-        assert f"text:{summary_row['label']}" in builder.events
-        assert f"text:{summary_row['problem_type']}" in builder.events
-        assert f"text:{summary_row['lcp_dimension']}" in builder.events
-        assert f"text:{summary_row['findex_contact_count']}" in builder.events
-        assert f"text:{summary_row['challenge']}" in builder.events
-        assert (
-            f"text:{summary_row['native_contract_ok_count']}/"
-            f"{summary_row['native_solver_count']}"
-            in builder.events
-        )
-        assert (
-            f"text:{summary_row['delegated_contract_ok_count']}/"
-            f"{summary_row['delegated_solver_count']}"
-            in builder.events
-        )
-        assert f"text:{summary_row['max_solution_error']:.2e}" in builder.events
-        assert f"text:{summary_row['max_complementarity']:.2e}" in builder.events
-        assert f"text:{summary_row['max_residual']:.2e}" in builder.events
-        assert (
-            f"text:{summary_row['fastest_solver']} "
-            f"({summary_row['fastest_elapsed_us']:.1f} us)"
-            in builder.events
-        )
-        assert (
-            f"text:{summary_row['fastest_native_solver']} "
-            f"({summary_row['fastest_native_elapsed_us']:.1f} us)"
-            in builder.events
-        )
-        assert (
-            f"text:{summary_row['slowest_solver']} "
-            f"({summary_row['slowest_elapsed_us']:.1f} us)"
-            in builder.events
-        )
-    for challenge in (
-        "large mass-ratio conditioning with active bounds",
-        "rank-deficient complementarity with opposing active bounds",
-        "two-contact active tangential bounds with coupled normals",
-        "scalability smoke with banded coupling",
-    ):
-        assert any(challenge in event for event in builder.events)
+    assert _table_rows(builder.events, "lcp_representative_solver_suite") == [
+        [
+            summary_row["label"],
+            summary_row["problem_type"],
+            str(summary_row["lcp_dimension"]),
+            str(summary_row["findex_contact_count"]),
+            summary_row["challenge"],
+            (
+                f"{summary_row['native_contract_ok_count']}/"
+                f"{summary_row['native_solver_count']}"
+            ),
+            (
+                f"{summary_row['delegated_contract_ok_count']}/"
+                f"{summary_row['delegated_solver_count']}"
+            ),
+            f"{summary_row['max_solution_error']:.2e}",
+            f"{summary_row['max_complementarity']:.2e}",
+            f"{summary_row['max_residual']:.2e}",
+            (
+                f"{summary_row['fastest_solver']} "
+                f"({summary_row['fastest_elapsed_us']:.1f} us)"
+            ),
+            (
+                f"{summary_row['fastest_native_solver']} "
+                f"({summary_row['fastest_native_elapsed_us']:.1f} us)"
+            ),
+            (
+                f"{summary_row['slowest_solver']} "
+                f"({summary_row['slowest_elapsed_us']:.1f} us)"
+            ),
+        ]
+        for summary_row in problem_summary_rows
+    ]
     assert (
         "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
         "Contract,Iterations,Error,Residual,Complementarity,us"
         in builder.events
     )
-    for problem_row in problem_rows:
-        assert f"text:{problem_row['label']}" in builder.events
-        assert f"text:{problem_row['solver']}" in builder.events
-        assert f"text:{problem_row['solve_route']}" in builder.events
-        assert f"text:{problem_row['status']}" in builder.events
-        assert (
-            f"text:{'OK' if problem_row['contract_ok'] else 'Fail'}"
-            in builder.events
-        )
-        assert f"text:{problem_row['iterations']}" in builder.events
-        assert f"text:{problem_row['solution_error']:.2e}" in builder.events
-        assert f"text:{problem_row['residual']:.2e}" in builder.events
-        assert f"text:{problem_row['complementarity']:.2e}" in builder.events
-        assert f"text:{problem_row['elapsed_us']:.1f}" in builder.events
+    assert _table_rows(builder.events, "lcp_representative_solver_details") == [
+        [
+            problem_row["label"],
+            problem_row["solver"],
+            problem_row["solve_route"],
+            problem_row["status"],
+            "OK" if problem_row["contract_ok"] else "Fail",
+            str(problem_row["iterations"]),
+            f"{problem_row['solution_error']:.2e}",
+            f"{problem_row['residual']:.2e}",
+            f"{problem_row['complementarity']:.2e}",
+            f"{problem_row['elapsed_us']:.1f}",
+        ]
+        for problem_row in problem_rows
+    ]
     assert (
         "table:lcp_solver_selection_guide:Family,Solvers,Best fit,Strength,"
         "Tradeoff,Evidence cue"
         in builder.events
     )
-    for guidance_row in info["solver_guidance_rows"]:
-        assert f"text:{guidance_row['family']}" in builder.events
-        assert f"text:{guidance_row['solvers']}" in builder.events
-        assert f"text:{guidance_row['best_fit']}" in builder.events
-        assert f"text:{guidance_row['strength']}" in builder.events
-        assert f"text:{guidance_row['tradeoff']}" in builder.events
-        assert f"text:{guidance_row['evidence']}" in builder.events
+    assert _table_rows(builder.events, "lcp_solver_selection_guide") == [
+        [
+            guidance_row["family"],
+            guidance_row["solvers"],
+            guidance_row["best_fit"],
+            guidance_row["strength"],
+            guidance_row["tradeoff"],
+            guidance_row["evidence"],
+        ]
+        for guidance_row in info["solver_guidance_rows"]
+    ]
     assert (
-        "table:lcp_solver_profile:Solver,Native cases,OK,Native OK,Delegated OK,"
-        "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
+        "table:lcp_solver_profile:Solver,Concrete native cases,OK,Native OK,"
+        "Delegated OK,Total us,Worst error,Worst residual,Worst comp,Slowest case,"
+        "Slowest us"
         in builder.events
     )
-    for profile_row in solver_profile_rows:
-        assert f"text:{profile_row['solver']}" in builder.events
-        assert f"text:{profile_row['native_surfaces']}" in builder.events
-        assert (
-            f"text:{profile_row['contract_ok_count']}/"
-            f"{profile_row['problem_count']}"
-            in builder.events
-        )
-        assert (
-            f"text:{profile_row['native_contract_ok_count']}/"
-            f"{profile_row['native_case_count']}"
-            in builder.events
-        )
-        assert (
-            f"text:{profile_row['delegated_contract_ok_count']}/"
-            f"{profile_row['delegated_case_count']}"
-            in builder.events
-        )
-        assert f"text:{profile_row['total_elapsed_us']:.1f}" in builder.events
-        assert f"text:{profile_row['max_solution_error']:.2e}" in builder.events
-        assert f"text:{profile_row['max_residual']:.2e}" in builder.events
-        assert f"text:{profile_row['max_complementarity']:.2e}" in builder.events
-        assert f"text:{profile_row['slowest_case']}" in builder.events
-        assert f"text:{profile_row['slowest_elapsed_us']:.1f}" in builder.events
+    assert _table_rows(builder.events, "lcp_solver_profile") == [
+        [
+            profile_row["solver"],
+            profile_row["native_surfaces"],
+            f"{profile_row['contract_ok_count']}/{profile_row['problem_count']}",
+            (
+                f"{profile_row['native_contract_ok_count']}/"
+                f"{profile_row['native_case_count']}"
+            ),
+            (
+                f"{profile_row['delegated_contract_ok_count']}/"
+                f"{profile_row['delegated_case_count']}"
+            ),
+            f"{profile_row['total_elapsed_us']:.1f}",
+            f"{profile_row['max_solution_error']:.2e}",
+            f"{profile_row['max_residual']:.2e}",
+            f"{profile_row['max_complementarity']:.2e}",
+            profile_row["slowest_case"],
+            f"{profile_row['slowest_elapsed_us']:.1f}",
+        ]
+        for profile_row in solver_profile_rows
+    ]
     assert (
         "table:lcp_advanced_solver_parameters:Solver,Surface,Parameters,Defaults,"
         "Benchmark"
         in builder.events
     )
-    for parameter_row in parameter_rows:
-        assert f"text:{parameter_row['solver']}" in builder.events
-        assert f"text:{parameter_row['surface']}" in builder.events
-        assert f"text:{parameter_row['parameters']}" in builder.events
-        assert f"text:{parameter_row['defaults']}" in builder.events
-        assert f"text:{parameter_row['benchmark_filter']}" in builder.events
-    for plot_prefix in (
-        "plot:Sequential billiard momentum error:",
-        "plot:Boxed LCP billiard momentum error:",
-        "plot:Sequential billiard energy error:",
-        "plot:Boxed LCP billiard energy error:",
-        "plot:Sequential billiard symmetry error:",
-        "plot:Boxed LCP billiard symmetry error:",
-    ):
-        assert any(event.startswith(plot_prefix) for event in builder.events)
+    assert _table_rows(builder.events, "lcp_advanced_solver_parameters") == [
+        [
+            parameter_row["solver"],
+            parameter_row["surface"],
+            parameter_row["parameters"],
+            parameter_row["defaults"],
+            parameter_row["benchmark_filter"],
+        ]
+        for parameter_row in parameter_rows
+    ]
+    assert [
+        event.removeprefix("plot:").rsplit(":", 1)[0]
+        for event in builder.events
+        if event.startswith("plot:")
+    ] == [
+        "Sequential step ms",
+        "Boxed LCP step ms",
+        "Sequential ramp slide",
+        "Boxed LCP ramp slide",
+        "Sequential billiard momentum error",
+        "Boxed LCP billiard momentum error",
+        "Sequential billiard energy error",
+        "Boxed LCP billiard energy error",
+        "Sequential billiard symmetry error",
+        "Boxed LCP billiard symmetry error",
+        "Sequential stack drift",
+        "Boxed LCP stack drift",
+        "Sequential card spread",
+        "Boxed LCP card spread",
+    ]
 
 
 def test_lcp_physics_updates_live_metrics_headlessly() -> None:

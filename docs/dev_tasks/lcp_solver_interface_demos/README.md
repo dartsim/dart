@@ -1,5 +1,1989 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Remaining Standalone Runner Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. PR #3001 (the milestone) is merged into `main` as `07fd0c9315a`. This
+   `followup/lcp-solver-demo-panel-guards` branch is a clean linear stack on
+   `origin/main` carrying the standalone LCP benchmark-guard audit, ready to be
+   published as the next PR.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+What this checkpoint changes:
+
+- Concrete `supportsProblem` runtime guards were added to the remaining
+  standalone solver-on-problem benchmark runners that still timed a solve
+  without a support recheck: the threading benchmarks
+  (`RunJacobiSolverThreadingBenchmark`,
+  `RunRedBlackGaussSeidelThreadingBenchmark`,
+  `RunBlockedJacobiThreadingBenchmark`); the `RunBenchmark<>` template helper
+  (covers `BM_LcpCompare_Dantzig_Scaled`, `BM_LcpCompare_Pgs_Scaled`,
+  `BM_LCP_COMPARE_SMOKE`); `RunStaggeringContactPipelineSweepBenchmark`; and
+  `RunInteriorPointPathSweepBenchmark`.
+- `RunMprgpSpdCheckSweepBenchmark` is intentionally NOT guarded: its
+  registration registers all 12 cases unconditionally and
+  `MprgpSolver::supportsProblem` is parameter-dependent
+  (`Parameters::checkPositiveDefinite` defaults to `true`), so the sweep
+  deliberately benchmarks the PD-check across conditioning kinds and a
+  `supportsProblem` guard would reject the very rows it exists to measure.
+- With this, every standalone solver-on-problem benchmark runner is guarded
+  (except the intentional MPRGP exception). The only remaining benchmark
+  categories do NOT fit the standalone "supportsProblem-before-solve" pattern:
+  the `BM_LcpValidation_*` micro-benchmarks, the `BM_LcpWorld*Step_BoxedLcp`
+  World-step benchmarks, and the CUDA batch runners.
+- No solver implementation, public API, demo, binding, stub, or generated CSV
+  change outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run build`, `clang-format --dry-run --Werror`, and `git diff --check`
+  passed.
+- `BM_LCP_COMPARE` run across all newly-guarded families: 92 rows ran, 0 skipped
+  by the guards (defensive backstops), `contract_ok=1` for all (InteriorPoint's
+  12 rows and Staggering's 24 rows confirm 0 skips).
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. The follow-up branch is ready to be published as the next PR; otherwise
+   continue from the documented remaining categories.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Milestone PR #3001 Merged; Follow-up Rebased Onto Main
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state — in particular, the older
+"draft PR" / "no associated PR" wording is now SUPERSEDED: PR #3001 merged.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. The milestone is DONE: PR #3001
+   ("Add standalone LCP solver interface, comparison demos, and benchmarks")
+   was squash-merged into `main` as `07fd0c9315a`. The standalone LCP interface,
+   `lcp_physics` demo, dartpy bindings, roster checker, performance-profile
+   pipeline, benchmarks, and docs are now on `main`. The
+   `feature/lcp-solver-interface-demos` branch was auto-deleted on merge.
+3. This `followup/lcp-solver-demo-panel-guards` branch was rebased `--onto`
+   `origin/main` (base was the now-deleted feature tip `7ab2546ebd7`). Its 29
+   follow-up commits replayed with zero conflicts; the net follow-up diff is
+   byte-identical to before the rebase and all 29 commits are preserved verbatim
+   (range-diff: 29 `=`). It is a clean linear stack of 29 commits on
+   `origin/main`, ready to become the next PR when approved, or to keep
+   accumulating bounded audit gaps.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Branch state at this hand-off:
+
+- `followup/lcp-solver-demo-panel-guards` rebased onto `origin/main`
+  (`07fd0c9315a`): 29 follow-up commits ahead, 0 merge commits (clean linear
+  history); same 10 follow-up files as before the rebase.
+- Local safety backup of the pre-rebase tip: branch
+  `backup/followup-pre-rebase-d5f408` and tag `backup-followup-pre-rebase` at
+  `d5f408ee764`. Delete once the rebase is confirmed good.
+
+Verification after the rebase (on the merged-`main` base), all green:
+
+- `pixi run build` → 89/89, no errors.
+- `pixi run python scripts/check_lcp_solver_roster.py` → 24 solvers.
+- `test_lcp.py` + `test_py_demo_panels.py` → 237 passed.
+- `BM_LCP_COMPARE` parameter-sweep rows → 160 ran, 0 skipped, `contract_ok=1`.
+- An independent adversarial audit confirmed the reconciliation is correct (no
+  commits lost, no feature scaffolding re-added), the parameter-sweep guard
+  commit is complete for its scope, and the new `main` commits (Eigen5 #2997,
+  GUI #2984, ASan #3006, CI #2999) pose no rebase risk.
+
+Remaining audit gaps (next concrete steps, one bounded gap per checkpoint):
+
+- The threading benchmarks (`BM_LcpJacobiSolverThreading*`,
+  `BM_LcpRedBlackGaussSeidelSolverThreadingBanded_Standard`,
+  `BM_LcpBlockedJacobiSolverThreadingBanded_Standard`) — Standard SPD only;
+  guards would be purely defensive.
+- The StandardSpd-conditioning sweeps `RunMprgpSpdCheckSweepBenchmark` and
+  `RunInteriorPointPathSweepBenchmark`. MPRGP needs a PARAMETER-AWARE guard
+  (`supportsProblem` honours `Parameters::checkPositiveDefinite`, default
+  `true`, so a default-solver guard would skip near-singular rows the sweep
+  intends to time). `InteriorPointSolver` does not override `supportsProblem`
+  (not parameter-dependent), so it can take a plain guard; it is deferred with
+  MPRGP as the coherent conditioning-sweep follow-up.
+- The scaled/smoke template benchmarks (`BM_LcpCompare_Dantzig_Scaled`,
+  `BM_LcpCompare_Pgs_Scaled`, `BM_LCP_COMPARE_SMOKE`).
+- The `RunStaggeringContactPipelineSweepBenchmark` sweep.
+- Separate categories needing their own design (do NOT fit the standalone
+  "supportsProblem-before-solve" pattern): the `BM_LcpValidation_*` micro-
+  benchmarks (time `computeEffectiveBounds`), the `BM_LcpWorld*Step_BoxedLcp`
+  World-step benchmarks (boxed-LCP contact pipeline via `World::step`), and the
+  CUDA batch runners (GPU kernels rather than the `LcpSolver` interface).
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Solver Parameter Sweep Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. The checkpoint branch `feature/lcp-solver-interface-demos` HAS been published
+   as a draft milestone PR (see below); its tip advanced past `80b3e60e3c5` by
+   merging the latest `origin/main` twice during publication.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`, merged up to the published
+   checkpoint tip. Keep this follow-up for subsequent PR(s) unless the
+   maintainer explicitly decides to fold it into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Milestone PR status (NEW):
+
+- Draft PR https://github.com/dartsim/dart/pull/3001
+  (`feature/lcp-solver-interface-demos` -> `main`) was opened with maintainer
+  approval as the intermediate milestone (draft: CI validates, not yet
+  requesting merge). Published checkpoint tip `7ab2546ebd7` merged `origin/main`
+  at `891dedde086`; the only conflict was `python/examples/demos/registry.py`,
+  resolved by keeping both `LCP_PHYSICS` and `GUI_FIDELITY_DEBUG_VISUALS`.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `e21e5673327 Merge branch 'feature/lcp-solver-interface-demos' into followup/lcp-solver-demo-panel-guards`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `7ab2546ebd7`
+  (draft PR #3001).
+- Current known `origin/main` is `891dedde086`; the follow-up branch contains it
+  via the checkpoint merge.
+
+Solver parameter sweep guard status:
+
+- The 12 family-parameterized solver parameter-sweep benchmark runners now
+  recheck the generated problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row: the Pgs,
+  SymmetricPsor, and RedBlackGaussSeidel relaxation sweeps; the
+  BoxedSemiSmoothNewton line-search sweep; the BlockPartition sweep (BGS and
+  BlockedJacobi branches); and the Apgd restart, Tgs iteration-budget, Nncg
+  PGS-iterations, SubspaceMinimization PGS-iterations, ShockPropagation layer,
+  Admm rho, and Sap regularization sweeps.
+- `RunPivotingScaleSweepBenchmark` already guarded its rows through
+  `SolverSupportsConcreteProblem` and was not changed.
+- `RunMprgpSpdCheckSweepBenchmark` and `RunInteriorPointPathSweepBenchmark` were
+  deliberately left unguarded here: their StandardSpd-conditioning rows
+  benchmark near-singular matrices on purpose and their native support is
+  parameter-dependent (`MprgpSolver::Parameters::checkPositiveDefinite` defaults
+  to `true`), so a default-solver guard would skip intended rows. They need a
+  parameter-aware guard and remain a separate bounded follow-up.
+- The registration paths already filter these rows through concrete support; the
+  new runtime guards make stale or manual registrations fail explicitly instead
+  of timing unsupported parameter-sweep cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- Listing and running all 12 guarded sweep families (160 rows) via
+  `BM_LCP_COMPARE --benchmark_filter='BM_Lcp(PgsRelaxationSweep|SymmetricPsorRelaxationSweep|RedBlackGaussSeidelRelaxationSweep|BoxedSemiSmoothNewtonLineSearchSweep|BlockPartitionSweep|ApgdRestartSweep|TgsIterationBudgetSweep|NncgPgsIterationsSweep|SubspaceMinimizationPgsIterationsSweep|ShockPropagationLayerSweep|AdmmRhoSweep|SapRegularizationSweep)/' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed: 160 rows ran, none were skipped by the new guard, and every row
+  reported `contract_ok=1`.
+- `clang-format --dry-run --Werror` on `bm_lcp_compare.cpp`, `git diff --check`,
+  and the default build passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap
+   (remaining unguarded scalar runners: the three Jacobi/RedBlackGaussSeidel/
+   BlockedJacobi threading benchmarks, the MPRGP/InteriorPoint conditioning
+   sweeps noted above, the StaggeringContactPipeline sweep, and the scaled/smoke
+   template benchmarks; plus the CUDA batch runners, which use GPU kernels
+   rather than the LcpSolver interface).
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Serial Contact Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `56cd11aa77a Guard LCP pathological benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; the continuation fetched and
+  merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Serial contact/runtime guard status:
+
+- Manifest batch and grouped batch serial benchmark runners now recheck every
+  generated batch problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- World contact and world stack contact scalar benchmark runners now recheck
+  the generated fixture problem with the selected solver's concrete support
+  predicate before timing the row.
+- World contact, stress-stack contact, and contact-pipeline32 serial batch
+  runners now recheck every generated batch problem before timing the row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported serial contact or manifest/grouped batch cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(BatchSerial/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|GroupedBatchSerial/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|WorldContact/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldStackContact/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactBatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactStressBatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactPipeline32BatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton))'`
+  passed. It listed representative manifest batch, grouped batch, world
+  contact, world stack contact, and serial world-contact batch rows.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_Lcp(BatchSerial/Standard/Dantzig/24/4|GroupedBatchSerial/FrictionIndex/Pgs/2|WorldContact/FrictionIndex/Pgs/1|WorldStackContact/FrictionIndex/Pgs/2|WorldContactBatchSerial/FrictionIndex/Pgs|WorldContactStressBatchSerial/FrictionIndex/Pgs|WorldContactPipeline32BatchSerial/FrictionIndex/Pgs)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. All sampled rows ran with `contract_ok=1`; scalar world-contact rows
+  also reported `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed after the
+  serial contact runtime guard and handoff edits.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Pathological Benchmark Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `c355b915cad Guard LCP parallel batch benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; the continuation fetched and
+  merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Pathological benchmark status:
+
+- Mildly ill-conditioned, near-singular, and singular-degenerate scalar
+  benchmark runners now recheck the generated problem with the selected
+  solver's concrete `supportsProblem(problem)` predicate before timing the row.
+- Mildly ill-conditioned, near-singular, singular-degenerate friction-index,
+  and singular-degenerate standard/boxed serial batch runners now recheck every
+  generated batch problem with the selected solver's concrete support predicate
+  before timing the row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported pathological cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(MildIllConditioned/(Standard32|CoupledFrictionIndex8)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|MildIllConditionedBatchSerial/(Standard32|CoupledFrictionIndex8)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|NearSingular/(Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|ShockPropagation|BoxedSemiSmoothNewton)|NearSingularBatchSerial/(Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|ShockPropagation|BoxedSemiSmoothNewton)|SingularDegenerate/(Standard16|Boxed16|CoupledFrictionIndex6)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|SingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/(Pgs|Dantzig)|SingularDegenerateStandardBoxedBatchSerial/(Standard16|Boxed16)/(Dantzig|Pgs|BoxedSemiSmoothNewton))'`
+  passed. It listed representative pathological scalar and serial batch rows.
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpSingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/.*'`
+  passed and confirmed the concrete registered singular friction-index serial
+  batch solvers are `Admm`, `Sap`, and `BoxedSemiSmoothNewton`.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_Lcp(MildIllConditioned/CoupledFrictionIndex8/Pgs|MildIllConditionedBatchSerial/CoupledFrictionIndex8/Pgs/4|NearSingular/Boxed8/ShockPropagation|NearSingularBatchSerial/Boxed8/ShockPropagation/4|SingularDegenerate/CoupledFrictionIndex6/BoxedSemiSmoothNewton|SingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/Admm/4|SingularDegenerateStandardBoxedBatchSerial/Boxed16/BoxedSemiSmoothNewton/4)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. All sampled rows ran with `contract_ok=1`; scalar rows also reported
+  `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed after the
+  pathological benchmark guard and handoff edits.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Parallel Batch Fixture Runtime Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `63542369912 Guard active-set scale benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; the continuation fetched and
+  merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Parallel batch fixture status:
+
+- `ParallelBatchFixture` now rechecks every generated batch problem with each
+  selected solver instance's concrete `supportsProblem(problem)` predicate
+  before adding that problem node to the compute graph.
+- This covers the shared generic parallel-batch path used by manifest,
+  grouped, production active-set transition, ill-conditioned, near-singular,
+  singular-degenerate, world contact, and dense world-box contact batch rows.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guard makes stale or manual registrations fail explicitly
+  before graph execution.
+- `ParallelNewtonWarmStartBatchFixture` already had its own concrete support
+  guard and was not changed in this checkpoint.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guard.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(BatchParallel/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs)|GroupedBatchParallel/FrictionIndex/Pgs|ProductionActiveSetTransitionBatchParallel/(Standard32|CoupledFrictionIndex24)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|MildIllConditionedBatchParallel/(Standard32|CoupledFrictionIndex8)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|NearSingularBatchParallel/(Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|ShockPropagation|BoxedSemiSmoothNewton)|SingularDegenerateFrictionIndexBatchParallel/CoupledFrictionIndex6/(Pgs|Dantzig)|SingularDegenerateStandardBoxedBatchParallel/(Standard16|Boxed16)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|WorldContactBatchParallel/FrictionIndex/(Dantzig|Pgs)|WorldBoxContactBatchParallel/FrictionIndex/(Dantzig|Pgs))'`
+  passed. It listed representative generic parallel-batch rows across the
+  shared fixture.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_Lcp(BatchParallel/Standard/Dantzig/24/4|GroupedBatchParallel/FrictionIndex/Pgs/2|ProductionActiveSetTransitionBatchParallel/CoupledFrictionIndex24/BoxedSemiSmoothNewton/4|MildIllConditionedBatchParallel/CoupledFrictionIndex8/Pgs/4|NearSingularBatchParallel/Boxed8/ShockPropagation/4|SingularDegenerateStandardBoxedBatchParallel/Boxed16/BoxedSemiSmoothNewton/4|WorldContactBatchParallel/FrictionIndex/Pgs|WorldBoxContactBatchParallel/FrictionIndex/Pgs/4/4)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. All sampled rows ran with `contract_ok=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed after the
+  fixture guard and handoff edits.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Active-Set Scale Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `086fe916fd4 Guard LCP base benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; the prior continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Active-set scale benchmark status:
+
+- `RunLargerActiveSetTransitionBenchmark()` now rechecks the exact generated
+  active-set scale problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- `RunProductionActiveSetTransitionBatchSerialBenchmark()` now rechecks every
+  generated production active-set batch problem with the selected solver's
+  concrete support predicate before timing the serial batch row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported cases.
+- The generic `ParallelBatchFixture` still needs a separate follow-up audit
+  because it is shared by multiple benchmark families.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition/(Standard32|Boxed32|CoupledFrictionIndex8|CoupledFrictionIndex24)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpProductionActiveSetTransitionBatchSerial/(Standard32|Boxed32|CoupledFrictionIndex8|CoupledFrictionIndex24)/(Dantzig|Pgs|BoxedSemiSmoothNewton)'`
+  passed. It listed representative active-set scale rows plus serial
+  production batch rows.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpLargerActiveSetTransition/CoupledFrictionIndex8/Pgs$|BM_LcpProductionActiveSetTransition/CoupledFrictionIndex24/BoxedSemiSmoothNewton$|BM_LcpProductionActiveSetTransitionBatchSerial/Standard32/Dantzig/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The scalar rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`; the serial batch row ran with `contract_ok=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed after the
+  benchmark guard edits.
+- `pixi run -e cuda test-all` passed all seven groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests. The
+  documentation phase still emitted the known `dartpy._world_render_bridge`
+  autodoc warnings, but the docs build passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   The generic parallel batch fixture support check is a known candidate.
+4. Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Base Benchmark Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `4c3c8faef46 Guard LCP contact sweep benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; this continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Base benchmark status:
+
+- `RunManifestBenchmark()` now rechecks the exact manifest benchmark problem
+  with the selected solver's concrete `supportsProblem(problem)` predicate
+  before timing the row.
+- `RunActiveSetTransitionBenchmark()` now rechecks the generated active-set
+  transition problem with the selected solver's concrete support predicate.
+- `RunActiveFrictionIndexContactBenchmark()` now rechecks the generated active
+  friction-index contact problem with the selected solver's concrete support
+  predicate.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `git fetch origin` followed by `git merge origin/main` passed as a no-op;
+  `origin/main` remained `9de4ac6af873`.
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpActiveSetTransition/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpActiveFrictionIndexContact/FrictionIndex/(Pgs|Admm|BoxedSemiSmoothNewton)'`
+  passed. It listed representative manifest, active-set transition, and
+  active friction-index contact rows for the guarded benchmark families.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$|BM_LcpActiveSetTransition/FrictionIndex/Pgs$|BM_LcpActiveFrictionIndexContact/FrictionIndex/Admm$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The sampled rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed.
+- `pixi run -e cuda test-all` passed all 7 groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Contact Sweep Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `23c97994a2d Guard articulated LCP contact benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Contact sweep benchmark status:
+
+- `RunContactSolverComparisonSweepBenchmark()` now rechecks the exact generated
+  contact fixture problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- `RunContactNormalStandardSweepBenchmark()` now rechecks the exact generated
+  normal-only standard subproblem with the same concrete support predicate.
+- The registration paths already filter these rows through concrete generated
+  problem support; the new runtime guards make stale or manual registrations
+  fail explicitly instead of timing unsupported cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `git fetch origin` followed by `git merge origin/main` passed as a no-op;
+  `origin/main` remained `9de4ac6af873`.
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpContactSolverComparisonSweep/(Admm|Sap|BoxedSemiSmoothNewton)/(WorldSeparated1|WorldStack32|ArticulatedGround16)|BM_LcpContactNormalStandardSweep/(Direct|Dantzig|MPRGP|Baraff)/(WorldSeparated1|WorldStack32|ArticulatedGround16)'`
+  passed. It listed representative Admm/Sap/BoxedSemiSmoothNewton comparison
+  rows and preserved concrete Direct filtering for the normal-standard sweep.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpContactSolverComparisonSweep/Admm/WorldSeparated1$|BM_LcpContactNormalStandardSweep/Direct/WorldSeparated1$|BM_LcpContactNormalStandardSweep/MPRGP/WorldSeparated16$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The sampled rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed.
+- `pixi run -e cuda test-all` passed all 7 groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Articulated Contact Runtime Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `66b2a5583d9 Gate LCP world box contact benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Articulated unified-contact benchmark status:
+
+- `RunArticulatedUnifiedContactBenchmark()` now rechecks the exact generated
+  runtime problem with the selected solver's concrete `supportsProblem(problem)`
+  predicate before timing the row.
+- The registration path intentionally keeps the existing cheap representative
+  support probes. Precomputing every articulated contact-count candidate at
+  benchmark startup was tested and rejected because it made benchmark listing
+  spend minutes constructing large generated contact cases before filtering.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the articulated benchmark guard.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/(Ground|RigidImpact|CrossLinkImpact)/(Pgs|Admm|BoxedSemiSmoothNewton)'`
+  passed and listed the expected Pgs, Admm, and BoxedSemiSmoothNewton rows for
+  the three articulated unified-contact cases.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/Ground/Pgs/1$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed with `contract_ok=1` and `solver_supports_problem=1`.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - World Box Contact Concrete Args
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `8f77280a4d3 Gate LCP Newton warm-start benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; the prior continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+World box contact benchmark status:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers
+  `BM_LcpWorldBoxContact/FrictionIndex` args from concrete generated
+  world-box contact problems instead of a single one-box support probe.
+- `BM_LcpWorldBoxContactBatch{Serial,Parallel}/FrictionIndex` now prebuilds
+  each candidate world-box batch once, keeps the existing solver-specific
+  candidate policy, and filters published args through
+  `supportsProblem(problem)` for every generated problem in the batch.
+- The single and serial-batch runners keep runtime support guards so a stale
+  registration path reports unsupported concrete cases explicitly rather than
+  timing them.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside benchmark registration and benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex/(Pgs|Admm)|BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/(Pgs|Admm)'`
+  passed and listed the expected Pgs and Admm single, serial-batch, and
+  parallel-batch rows.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex/Pgs/1$|BM_LcpWorldBoxContactBatchSerial/FrictionIndex/Admm/24/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. Both sampled rows ran with `contract_ok=1`; the single row reported
+  `solver_supports_problem=1`.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Newton Warm-Start Concrete Gates
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is viable as
+   a milestone PR candidate when approved; keep this follow-up for subsequent
+   PR(s) unless the maintainer explicitly decides to fold it into the
+   checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `1be53bf6384 Clarify LCP demo native support labels`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Newton warm-start benchmark status:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now computes the
+  `BM_LcpNewtonWarmStart*` single, serial-batch, and parallel-batch benchmark
+  rows from concrete `supportsProblem(problem)` checks for each generated
+  StandardActiveSet problem instead of hardcoding the size rows.
+- The Newton warm-start benchmark runners also keep runtime support guards so a
+  stale registration path skips with an explicit error rather than timing a
+  problem the concrete solver does not support.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside benchmark registration and benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_LcpNewtonWarmStart(BatchSerial|BatchParallel)?/StandardActiveSet/(MinimumMapNewton|FischerBurmeisterNewton|PenalizedFischerBurmeisterNewton)/(None|Pgs|GradientDescent|PgsThenGradient)'`
+  passed and listed the expected single, serial-batch, and parallel-batch rows
+  for all three standard Newton solvers, four warm-start modes, and sizes
+  32/64/128 in this simulation-enabled build.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpNewtonWarmStart/StandardActiveSet/FischerBurmeisterNewton/Pgs/32$|BM_LcpNewtonWarmStartBatchSerial/StandardActiveSet/PenalizedFischerBurmeisterNewton/PgsThenGradient/32/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. Both sampled rows ran with `contract_ok=1`; the single row reported
+  `solver_supports_problem=1`.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Demo Native Support Labels
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `9e494992d71 Clarify LCP profile support diagnostics`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Demo native support label status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now labels static manifest
+  support columns as native forms and concrete representative rows as concrete
+  native cases, keeping the py-demo visible wording aligned with the
+  form-versus-concrete support split.
+- The representative solver-suite table now labels native/delegated columns as
+  `Native OK` and `Delegated OK`, matching the displayed
+  contract-ok-over-count values.
+- `python/tests/unit/test_py_demo_panels.py` now pins the updated table headers
+  so future UI changes cannot collapse form support and concrete native-case
+  wording back into a generic coverage label.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, bindings, stubs, public APIs, and runtime solve
+  behavior were not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with 155 tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Profile Evidence Support Diagnostics
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `c7f26bce76b Clarify LCP evidence form support schema`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Profile evidence support diagnostics status:
+
+- `scripts/lcp_performance_profile.py` now reports form-support counter drift
+  separately from concrete `solver_supports_problem` drift when writing
+  current-schema profile evidence CSV rows.
+- `python/tests/unit/test_lcp_performance_profile.py` now asserts those
+  diagnostics independently so the profile writer preserves the same
+  form-versus-concrete distinction as the roster checker and demo schema.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, demo runtime behavior, bindings, stubs, and public APIs
+  were not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q -k current_schema_counters`
+  passed with 6 tests and 62 deselected.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with 68 tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Evidence Schema Form Support Naming
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `d95daaf9605 Separate LCP concrete evidence support checks`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Evidence schema form-support naming status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now describes the performance
+  evidence support counters as native form support plus concrete problem
+  support, matching the C++ benchmark counter sources.
+- The demo helper map was renamed from `_PROFILE_SOLVER_SUPPORT_FIELDS` to
+  `_PROFILE_FORM_SUPPORT_FIELDS` so only the standard/boxed/friction-index form
+  counters are treated as manifest-derived support flags.
+- `scripts/check_lcp_solver_roster.py` now guards the renamed helper in the
+  static demo schema check.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, bindings, stubs, and public APIs were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_solver_roster_rejects_demo_profile_column_drift python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_solver_roster_reads_demo_profile_evidence_schema_rows -q`
+  passed with 2 tests.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_evidence_schema_rows_cover_required_columns python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_evidence_schema_is_exposed_in_info -q`
+  passed with 2 tests.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with 64 tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Concrete Evidence Support Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `4f1d522486f Use surface for LCP standalone case metadata`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Concrete evidence support status:
+
+- `scripts/check_lcp_solver_roster.py` now validates the three form support
+  counters from the solver manifest and validates `solver_supports_problem` as
+  a separate concrete evidence-row requirement.
+- `python/tests/unit/test_check_lcp_solver_roster.py` now includes a supported
+  Standard/Dantzig evidence row with `solver_supports_problem=0`, proving the
+  checker rejects stale concrete-support evidence independently of category
+  support.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, demo runtime behavior, bindings, stubs, and public APIs
+  were not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py::test_lcp_profile_evidence_rejects_concrete_support_mismatch -q`
+  passed with 1 test.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with 64 tests.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Standalone Surface Classification Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `6d5e8c7c97d Derive LCP demo native counts from concrete rows`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Standalone surface classification status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now stores each standalone
+  problem case surface once. The redundant `support_key` field was removed from
+  `_StandaloneProblemCase` and `_STANDALONE_PROBLEM_CASES`.
+- `scripts/check_lcp_solver_roster.py` now parses and validates `surface` as the
+  single standalone case classification key instead of checking that
+  `support_key` duplicates it.
+- `python/tests/unit/test_check_lcp_solver_roster.py` now covers the simplified
+  standalone case metadata and stale-row rejection path.
+- Solver implementations, concrete support predicates, benchmark registration
+  code, generated profile/evidence CSVs, bindings, stubs, and public APIs were
+  not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k standalone`
+  passed with 5 tests and 58 deselected.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Concrete Native Count Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `b222e5d20f2 Route LCP demo smoke through concrete support`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; `git fetch origin` followed by
+  `git merge origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Concrete native count guard status:
+
+- `python/tests/unit/test_py_demo_panels.py` now derives standalone problem
+  summary and solver profile native/delegated counts from the concrete
+  `native_supported` rows.
+- The test no longer maintains a duplicate hardcoded native-count table or a
+  manifest-category formula with a Direct special case for the profile count.
+- Explicit sentinels for known concrete support boundaries remain: Direct's
+  partial standard native surface, MPRGP's standard-only surface, Dantzig's full
+  surface coverage, and the known delegated rows for near-singular, moderate
+  scale, boxed, and friction-index cases.
+- Solver implementations, demo runtime behavior, benchmark registration code,
+  generated profile/evidence CSVs, bindings, stubs, and public APIs were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with 155 tests.
+- `pixi run lint` passed, including `scripts/check_lcp_solver_roster.py`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Standalone Smoke Route Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `d6e9a06ed17 Route LCP smoke tests through concrete support`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Standalone smoke route status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now builds the standalone
+  solver smoke packet from `_STANDALONE_SMOKE_EXPECTED`, uses a four-row
+  standard problem, records `native_problem`, and labels the smoke route from
+  `solver.supports_problem(problem)` instead of the category-level
+  `supports_standard_lcp()` flag.
+- The rendered `Native forms` summary remains the manifest/category support
+  summary, so rows can now distinguish a solver that supports a standard
+  category from one that natively supports this exact smoke packet.
+- `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/unit/test_check_lcp_solver_roster.py`, and
+  `scripts/check_lcp_solver_roster.py` now pin the four-row smoke packet and
+  require Direct to report a delegated smoke route while retaining its standard
+  category support.
+- Solver implementations, benchmark registration code, generated
+  profile/evidence CSVs, bindings, stubs, public APIs, and runtime world demo
+  behavior were not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k standalone`
+  passed with 5 tests and 58 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Concrete Smoke Routing Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `7ab235eace9 Guard LCP overview table displays`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Concrete smoke routing status:
+
+- `tests/unit/math/lcp/test_all_solvers_smoke.cpp` now routes the
+  `BoxedProblemHandledCorrectly` and `FrictionProblemDoesNotCrash`
+  native-versus-delegated expectations through the constructed solver's
+  concrete `supportsProblem(problem.problem)` result instead of the manifest
+  support booleans.
+- The manifest support booleans remain covered as metadata by the manifest
+  matching tests; this slice protects runtime smoke paths if a solver's
+  concrete native domain becomes narrower than its category-level manifest row.
+- Solver implementations, benchmark registration code, py-demo metadata,
+  generated profile CSVs, generated evidence CSVs, bindings, stubs, public
+  APIs, and demo runtime behavior were not intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `pixi run test-lcpsolver` passed with 17/17 tests, including
+  `UNIT_math_lcp_math_lcp_all_solvers_smoke`.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Overview Tables Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `d1c5d693764 Guard LCP advanced parameter display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Overview table row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks the remaining LCP
+  overview/profile/smoke tables as exact grouped rows instead of loose text
+  membership.
+- The guard covers `lcp_live_packet_cards`, `lcp_solver_manifest`,
+  `lcp_benchmark_packets`, `lcp_representative_requirement_coverage`,
+  `lcp_performance_profiles`, `lcp_performance_profile_evidence_schema`,
+  `lcp_performance_profile_evidence_summary`, and
+  `lcp_standalone_solver_smoke`.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Advanced Solver Parameter Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `db019a43c53 Guard LCP solver profile display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Advanced solver parameter row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks
+  `lcp_advanced_solver_parameters` as exact grouped rows instead of loose text
+  membership.
+- The guard covers each advanced solver parameter row's solver, surface,
+  parameter summary, defaults summary, and benchmark-filter cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Solver Profile Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `ae7e7fb546d Guard LCP solver selection display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Solver profile row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks `lcp_solver_profile` as
+  exact grouped rows instead of loose text membership.
+- The guard covers each solver profile row's solver, native-case surface list,
+  total OK ratio, native OK ratio, delegated OK ratio, total elapsed-us, worst
+  error, worst residual, worst complementarity, slowest case, and slowest-us
+  cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Solver Selection Guide Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `3dbe0f93fda Guard LCP representative detail display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Solver selection guide row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks
+  `lcp_solver_selection_guide` as exact grouped rows instead of loose text
+  membership.
+- The guard covers each solver guidance row's family, solvers, best-fit,
+  strength, tradeoff, and evidence-cue cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Representative Detail Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `17ea56cdeb0 Guard LCP representative suite display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; this branch already contained
+  it and `git merge --no-edit origin/main` reported `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Representative detail row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks
+  `lcp_representative_solver_details` as exact grouped rows instead of loose
+  text membership.
+- The guard covers each representative problem/solver row's problem label,
+  solver, route, status, contract result, iterations, solution error, residual,
+  complementarity, and elapsed-us cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Representative Suite Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `b462c644fc8 Guard LCP live metrics table display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Representative suite row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks
+  `lcp_representative_solver_suite` as exact grouped rows instead of loose text
+  membership.
+- The guard covers each representative problem's label, type, LCP row count,
+  friction-index contact count, challenge text, native/delegated OK counts,
+  max error, max complementarity, max residual, fastest solver, fastest native
+  solver, and slowest solver cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Live Metrics Table Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `27035eb7903 Guard LCP live plot display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Live metrics table display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now reconstructs rendered table
+  rows from the fake panel event stream and checks the complete
+  `lcp_physics_metrics` table as grouped rows.
+- The guard covers the table header plus step time, contacts, sliding speed,
+  ramp slide, billiard momentum error, billiard energy error, billiard symmetry
+  error, stack drift, card spread, and card height loss cells for both
+  sequential and boxed LCP lanes.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Live Plot Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `cffcf9aa65c Guard LCP evidence schema display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Live plot display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks the complete ordered set
+  of live LCP plot labels rendered by the panel, not only the billiard
+  momentum/energy/symmetry series.
+- The guard covers sequential and boxed LCP step time, ramp slide, billiard
+  momentum error, billiard energy error, billiard symmetry error, stack drift,
+  and card spread plots.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Evidence Schema Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `708c5306bde Guard LCP solver manifest display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Performance evidence schema display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks every rendered
+  performance-profile evidence-schema row with exact field and meaning table
+  cells, not broad substring matches anywhere in the panel event stream.
+- The guard remains tied to
+  `lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS` so schema ownership
+  stays in the demo metadata.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Solver Manifest Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `be51f5e1ba7 Guard LCP standalone smoke display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Solver manifest display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks every rendered solver
+  manifest row, not only the table header and a few representative coverage
+  labels.
+- The guard covers each row's solver name, solver family, and coverage label
+  derived from the solver support flags.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-14 Current Continuation - Standalone Solver Smoke Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Standalone solver smoke display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks every rendered
+  standalone solver smoke row, not only family/coverage cells plus a Dantzig
+  residual/complementarity spot check.
+- The guard covers each row's solver name, family, native coverage label,
+  native/delegated route, status with iteration count, solution error,
+  residual, and complementarity cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Performance Evidence Summary Display Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
