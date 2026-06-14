@@ -1,5 +1,64 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Representative Suite Row Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this section as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`; keep that split unless the
+   maintainer explicitly decides to fold the follow-up into the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `b462c644fc8 Guard LCP live metrics table display`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af87`; it was merged into the
+  checkpoint branch by `80b3e60e3c5`.
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Representative suite row display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks
+  `lcp_representative_solver_suite` as exact grouped rows instead of loose text
+  membership.
+- The guard covers each representative problem's label, type, LCP row count,
+  friction-index contact count, challenge text, native/delegated OK counts,
+  max error, max complementarity, max residual, fastest solver, fastest native
+  solver, and slowest solver cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Live Metrics Table Display Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
