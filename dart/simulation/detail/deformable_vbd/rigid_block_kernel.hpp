@@ -78,10 +78,9 @@ inline Eigen::Quaterniond normalizeAvbdRigidOrientation(
 }
 
 //==============================================================================
-inline Eigen::Vector3d avbdRigidRotationVector(
-    const Eigen::Quaterniond& orientation)
+inline Eigen::Vector3d avbdRigidRotationVectorFromNormalized(
+    const Eigen::Quaterniond& q)
 {
-  const Eigen::Quaterniond q = normalizeAvbdRigidOrientation(orientation);
   const Eigen::Vector3d vector = q.vec();
   const double vectorNorm = vector.norm();
   if (vectorNorm <= 0.0 || !std::isfinite(vectorNorm)) {
@@ -95,6 +94,14 @@ inline Eigen::Vector3d avbdRigidRotationVector(
     angle += 2.0 * kAvbdRigidPi;
   }
   return (angle / vectorNorm) * vector;
+}
+
+//==============================================================================
+inline Eigen::Vector3d avbdRigidRotationVector(
+    const Eigen::Quaterniond& orientation)
+{
+  const Eigen::Quaterniond q = normalizeAvbdRigidOrientation(orientation);
+  return avbdRigidRotationVectorFromNormalized(q);
 }
 
 //==============================================================================
@@ -457,6 +464,15 @@ inline Matrix6d avbdRigidBodyMassMatrix(
 }
 
 //==============================================================================
+inline Eigen::Vector3d avbdRigidBodyOrientationErrorFromNormalized(
+    const Eigen::Quaterniond& orientation,
+    const Eigen::Quaterniond& targetOrientation)
+{
+  return avbdRigidRotationVectorFromNormalized(
+      orientation * targetOrientation.conjugate());
+}
+
+//==============================================================================
 inline Eigen::Vector3d avbdRigidBodyOrientationError(
     const Eigen::Quaterniond& orientation,
     const Eigen::Quaterniond& targetOrientation)
@@ -464,7 +480,7 @@ inline Eigen::Vector3d avbdRigidBodyOrientationError(
   const Eigen::Quaterniond current = normalizeAvbdRigidOrientation(orientation);
   const Eigen::Quaterniond target
       = normalizeAvbdRigidOrientation(targetOrientation);
-  return avbdRigidRotationVector(current * target.conjugate());
+  return avbdRigidBodyOrientationErrorFromNormalized(current, target);
 }
 
 //==============================================================================
@@ -504,8 +520,11 @@ inline void addAvbdRigidBodyInertiaTermLowerTriangle(
   const Eigen::Matrix3d rotation = orientation.toRotationMatrix();
   const Eigen::Matrix3d worldInertia
       = rotation * bodyInertia * rotation.transpose();
-  const Eigen::Vector3d orientationError = avbdRigidBodyOrientationError(
-      state.orientation, inertialTarget.orientation);
+  const Eigen::Quaterniond targetOrientation
+      = normalizeAvbdRigidOrientation(inertialTarget.orientation);
+  const Eigen::Vector3d orientationError
+      = avbdRigidBodyOrientationErrorFromNormalized(
+          orientation, targetOrientation);
 
   block.force.head<3>().noalias()
       -= invDt2 * mass * (state.position - inertialTarget.position);
