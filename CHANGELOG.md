@@ -9,6 +9,8 @@
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
+  - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
+    do not require `clang-scan-deps` while DART has no C++ module sources.
   - Removed the `dart/common/filesystem.hpp` compatibility header; include `<filesystem>` and use `std::filesystem`/`std::error_code` directly.
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
   - Renamed component meta headers to `All.hpp` and added the `dart/all.hpp` umbrella header; deprecated `<component>.hpp`/`all.hpp` headers now forward to `All.hpp`. ([#2047](https://github.com/dartsim/dart/pull/2047), [#2070](https://github.com/dartsim/dart/pull/2070), [#2084](https://github.com/dartsim/dart/pull/2084), [#2166](https://github.com/dartsim/dart/pull/2166))

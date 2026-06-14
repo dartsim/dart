@@ -9,22 +9,31 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up (2026-06-14): local branch
-  `avbd/source-row-extraction-precheck` started this follow-up clean at
-  `f8f57b78b8f`, ahead of `origin/avbd/source-row-extraction-precheck` by seven
-  commits. GitHub PR #2991 still points at remote head `f21059197f4` and
-  reports `DIRTY` because the local review fixes, `origin/main` merge, and
-  follow-up commits have not been pushed. Pushes, review-thread resolution, PR
-  comments, and review retriggers still require explicit maintainer approval.
-- Latest local follow-up (2026-06-14): the current PR #2991 Codex review
-  surface has two unresolved bot threads. The older
-  numeric-equivalent friction-env packet thread is covered locally by
+- Latest local follow-up (2026-06-14): after explicit maintainer approval, PR
+  #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
+  `fffb5bf45ba` after merging the latest `origin/main`. The Dynamic Friction
+  panel-label thread from Codex review `4492237805` is covered on the pushed
+  branch by deriving the plotted high-friction speed label from `max_friction`
+  and by integration coverage for the
+  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. The older
+  numeric-equivalent friction-env packet thread is also covered on the pushed
+  branch by
   `test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env`.
-  The newer Dynamic Friction panel-label thread from review `4492237805` is
-  fixed locally by deriving the plotted high-friction speed label from
-  `max_friction`, with integration coverage for the
-  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. No GitHub reply,
-  thread resolution, push, or review retrigger has been performed.
+  The two Codex bot threads remain unresolved on GitHub because no bot replies
+  or thread-resolution mutations were performed.
+- Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
+  exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
+  CMake 4.3 emitted C++20 module dependency-scanning rules that invoked missing
+  `clang-scan-deps` even though DART has no C++ module sources. The local
+  follow-up disables `CMAKE_CXX_SCAN_FOR_MODULES` at the root project and adds
+  a changelog note. `pixi run lint`, `pixi run build`, and the post-push
+  `pixi run test-unit` passed. A fresh Clang/Ninja smoke configure without
+  `clang-scan-deps` generated no `.ddi`, `clang-scan-deps`, or
+  `CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND` Ninja rules and reached normal
+  `.o` compilation for `dart-collision-native`; local Clang 22 then failed on
+  missing standard C++ header `cmath`, which is a local toolchain issue rather
+  than the hosted scanner failure. This CI fix is local only until another
+  maintainer-approved push.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
   contact friction solve now returns when a clamped tangent impulse delta is
   exactly zero and skips static/prescribed endpoint velocity writes for tangent

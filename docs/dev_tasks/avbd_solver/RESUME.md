@@ -6,13 +6,11 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current verified branch state: `avbd/source-row-extraction-precheck` started
-this follow-up clean at `f8f57b78b8f`, ahead of
-`origin/avbd/source-row-extraction-precheck` by seven commits. PR #2991 still
-points at remote head `f21059197f4` and reports `DIRTY` on GitHub because the
-local review fixes, `origin/main` merge, and follow-up commits have not been
-pushed. Pushes, review-thread resolution, PR comments, and review re-triggers
-still require explicit maintainer approval.
+Current verified branch state: after explicit maintainer approval, PR #2991
+branch `avbd/source-row-extraction-precheck` was pushed to origin at
+`fffb5bf45ba` after merging the latest `origin/main`. Review-thread
+resolution, PR comments, review re-triggers, and any further push still require
+explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -36,24 +34,39 @@ a narrow fixed-cost cleanup for the
 refresh the tracked friction-sweep packet, close the frictionless source-row
 CPU gap, or claim GPU parity.
 
-Review follow-up addressed locally: a read-only GitHub thread refresh still
-shows two unresolved Codex bot threads on PR #2991. The older
-numeric-equivalent friction-env thread is covered locally by the focused packet
-writer regression. The newer review `4492237805` thread noted that the Dynamic
+Review follow-up addressed on the pushed branch: a read-only GitHub thread
+refresh still shows two unresolved Codex bot threads on PR #2991. The older
+numeric-equivalent friction-env thread is covered by the focused packet writer
+regression. The newer review `4492237805` thread noted that the Dynamic
 Friction panel still plotted `Friction 5 speed` when
 `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` changed the maximum friction.
 The panel label now derives from `max_friction`, the value is recorded in
 `SceneSetup.info`, and the focused integration test builds the panel under the
 `2.5` override and asserts that `Friction 2.5 speed` replaces the stale
-`Friction 5 speed` label. No GitHub reply, thread resolution, push, or review
+`Friction 5 speed` label. No GitHub reply, thread resolution, or review
 retrigger has been performed.
 
-Merge state: `origin/main` at `c4c5ed87eae4` has been merged locally into the
-PR branch after the review-fix commit and committed as `5c43ed6f843`. The only
-manual conflict was `scripts/capture_py_demo.py`; it was resolved by preserving
-this branch's `--env`/`--metadata` capture overrides and `main`'s
-visual-verification resolved-solver-identity / scene-metrics manifest support.
-No push has been performed.
+Merge state: `origin/main` at `c4c5ed87eae4` was merged after the review-fix
+commit as `5c43ed6f843`; the only manual conflict was
+`scripts/capture_py_demo.py`, resolved by preserving this branch's
+`--env`/`--metadata` capture overrides and `main`'s visual-verification
+resolved-solver-identity / scene-metrics manifest support. The branch was then
+updated again with latest `origin/main` at `9de4ac6af87` before the approved
+push, committed as `fffb5bf45ba`.
+
+Hosted CI follow-up: pushed head `fffb5bf45ba` exposed a `DART GUI Smoke
+(Clang)` failure in the CI Linux run before ordinary compilation. CMake 4.3
+emitted C++20 module dependency-scanning rules that invoked missing
+`clang-scan-deps` even though DART has no C++ module sources. The local
+follow-up disables `CMAKE_CXX_SCAN_FOR_MODULES` at the root project and adds a
+changelog note. `pixi run lint`, `pixi run build`, and the post-push
+`pixi run test-unit` passed. A fresh Clang/Ninja smoke configure without
+`clang-scan-deps` generated no `.ddi`, `clang-scan-deps`, or
+`CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND` Ninja rules and reached normal
+`.o` compilation for `dart-collision-native`; local Clang 22 then failed on
+missing standard C++ header `cmath`, which is a local toolchain issue rather
+than the hosted scanner failure. This CI fix is local only until another
+maintainer-approved push.
 
 Validation for the latest friction tangent no-op slice:
 
