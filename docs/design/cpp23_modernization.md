@@ -77,6 +77,28 @@ Each phase ends green (build + `test-unit`) and is committed as a checkpoint.
   SoA/SDF/LCP buffer rewrites; keep `generator`/`chunk`/`stacktrace` out until
   libc++ ships them.
 
+## Execution status
+
+Landed on `dart7-cpp23-modernization` (each commit green: build + 162/162 unit
+tests, validated against the default and CUDA pixi environments):
+
+| Phase              | State                   | What landed                                                                                                                                                                                                                                                         | Follow-on                                                                                                                                     |
+| ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 Enablement       | **Done**                | `feature_support.hpp`, `DART_UNREACHABLE`, smoke test                                                                                                                                                                                                               | —                                                                                                                                             |
+| 1 Mechanical       | **Done**                | `std::to_underlying` (Joint, SDF/URDF parsers, GizmoFlags); `DART_UNREACHABLE` at the one provably-unreachable site (`Skeleton::allocateBodyNodeMemory`). An audit confirmed the other ~144 `DART_ASSERT(false)` are reachable input validation and correctly stay. | static `operator()` on stateless functors                                                                                                     |
+| 2 C++23 bump       | **Done**                | All 17 targets → `cxx_std_23`; redundant `target_compile_features` consolidated to sources of truth                                                                                                                                                                 | —                                                                                                                                             |
+| 3 Deducing-this    | **Pattern established** | `Mesh` accessor pairs collapsed (`getVertices`/`getVertexNormals`)                                                                                                                                                                                                  | extend to `lie_group` CRTP bases, `castable-impl`, dynamics accessors; P2128 multidim `operator[]` on matrix types                            |
+| 4 Vocabulary types | **Core done**           | `Result` reimplemented on `std::expected` (API preserved)                                                                                                                                                                                                           | `optional` monadic ops in parsers; `bool`+out-param solver/IK/IO → `std::expected` via new overloads                                          |
+| 5 Guarded/ranges   | **Pattern established** | `std::ranges::contains` membership checks                                                                                                                                                                                                                           | `std::print` via fmt at debug sites (note: Eigen `<<` streams need fmt formatters); `flat_map`/`move_only_function` behind `DART_HAS_*` gates |
+| 6 mdspan           | **Deferred (by gate)**  | —                                                                                                                                                                                                                                                                   | blocked by libstdc++ `<mdspan>` only in GCC 16 (Linux floor is GCC 15); revisit or vendor Kokkos                                              |
+
+The "Pattern established" / "Core done" phases ship a validated, representative
+conversion plus the infrastructure (the `DART_HAS_*` gates and `DART_UNREACHABLE`)
+so the remaining sites can be swept incrementally without re-litigating the
+portability or API-compatibility design. The deeper sweeps are deliberately
+staged to keep each PR reviewable and to protect the public ABI / dartpy
+surface (see Phase 4's new-overload rule).
+
 ## What NOT to do
 
 - No `std::generator` or `views::chunk`/`slide`/`cartesian_product` — they break
