@@ -2276,8 +2276,7 @@ void* Skeleton::allocateBodyNodeMemory(BodyNodePoolKind kind)
       return mSoftBodyNodePool->allocate();
   }
 
-  DART_ASSERT(false);
-  return nullptr;
+  DART_UNREACHABLE();
 }
 
 //==============================================================================

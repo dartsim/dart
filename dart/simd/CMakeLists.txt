@@ -66,7 +66,7 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_compile_features(dart-simd INTERFACE cxx_std_20)
+target_compile_features(dart-simd INTERFACE cxx_std_23)
 
 # Install headers
 foreach(header ${simd_headers})

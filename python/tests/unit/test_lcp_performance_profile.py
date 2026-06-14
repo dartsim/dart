@@ -1004,8 +1004,11 @@ def test_lcp_profile_evidence_csv_rejects_invalid_current_schema_values(
             {"solver_family_pivoting": 0.0, "solver_family_projection": 1.0},
             "invalid solver family counters",
         ),
-        ({"solver_supports_problem": 0.0}, "invalid solver support counters"),
-        ({"solver_supports_boxed": 0.0}, "invalid solver support counters"),
+        (
+            {"solver_supports_problem": 0.0},
+            "invalid concrete solver support counter",
+        ),
+        ({"solver_supports_boxed": 0.0}, "invalid solver form support counters"),
         (
             {"problem_type_standard": 0.0, "problem_type_boxed": 1.0},
             "invalid problem type counters",

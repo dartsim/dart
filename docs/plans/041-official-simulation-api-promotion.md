@@ -285,8 +285,8 @@ Current intended sequence:
    registries, backend types, public entity IDs, public ECS helper inheritance,
    or direct registry access. The current `getRegistry()` escape hatch and any
    equivalent storage access must be hidden from the promoted facade. Gate with
-   `pixi run check-api-boundaries` and
-   `pixi run check-api-boundary-inventory`.
+   `pixi run check-api-boundaries` (and optionally produce the on-demand
+   `pixi run report-api-boundary-inventory` signal report).
 4. **C++ facade prerequisite (workstream 5).** Keep the public ECS-backed
    facade under `dart::simulation` with opaque ownership or wrappers so no
    public header includes `<entt/entt.hpp>`. Gate with `pixi run build`,
@@ -308,7 +308,7 @@ Current intended sequence:
    with `git merge-tree`. Gate with `pixi run build`, `pixi run test-unit`,
    `pixi run test-simulation-quick`, `pixi run test-py`,
    `pixi run generate-stubs`, `pixi run api-docs-py`,
-   `pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
+   `pixi run check-api-boundaries`,
    `pixi run check-dart7-final-world-promotion`, a macOS
    case-insensitive-filesystem build, an installed-package C++ smoke, and a
    wheel import smoke.
@@ -410,7 +410,6 @@ For the planning PR:
 For implementation PRs, select by touched scope:
 
 - `pixi run check-api-boundaries`
-- `pixi run check-api-boundary-inventory`
 - `pixi run check-dart7-promotion-surface`
 - `pixi run check-dart7-promotion-package-contract`
 - `pixi run check-dart7-promotion-installed-package`

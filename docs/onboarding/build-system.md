@@ -35,7 +35,7 @@
 
 - **CMake Version:** ≥ 4.2.3
 - **Build Generator:** Ninja (via pixi) / CMake default
-- **C++ Standard:** C++20
+- **C++ Standard:** C++23
 - **Package Manager:** pixi (conda-forge based)
 - **Python:** Python 3 (for dartpy bindings)
 

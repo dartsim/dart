@@ -472,7 +472,7 @@ function(dart_library)
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
-  target_compile_features(${_ARG_NAME} PUBLIC cxx_std_20)
+  target_compile_features(${_ARG_NAME} PUBLIC cxx_std_23)
 
   target_link_libraries(
     ${_ARG_NAME}
@@ -2308,8 +2308,8 @@ function(dart_create_library)
   dart_apply_strict_symbol_visibility(${ARG_NAME})
   dart_maybe_apply_coverage_config(${ARG_NAME})
 
-  # Set C++20 standard (modern CMake approach)
-  target_compile_features(${ARG_NAME} PUBLIC cxx_std_20)
+  # Set C++23 standard (modern CMake approach)
+  target_compile_features(${ARG_NAME} PUBLIC cxx_std_23)
 
   # Add compile definition for source directory (used for relative paths in logging).
   target_compile_definitions(

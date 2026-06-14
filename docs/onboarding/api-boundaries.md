@@ -31,11 +31,12 @@ The boundary is not defined by one file name or one macro. A DART API is public
 only when the header layout, documentation, tests, symbol visibility, and
 language bindings all treat it as supported.
 
-The current generated inventory lives in
-[api-boundary-inventory.md](api-boundary-inventory.md). Update it with
-`pixi run update-api-boundary-inventory` after public header or dartpy binding
-changes, and use `pixi run check-api-boundary-inventory` to verify it is
-current.
+The enforced policy source of truth is `scripts/check_api_boundaries.py` plus
+`scripts/check_api_boundaries_allowlist.txt`; run `pixi run check-api-boundaries`
+to verify the boundary policy after public header or dartpy binding changes. An
+on-demand, human-readable signal report can be produced with
+`pixi run report-api-boundary-inventory` (written to an untracked build path and
+not committed).
 
 ## API Categories
 

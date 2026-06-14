@@ -38,7 +38,14 @@
 
 #include <dart/config.hpp>
 
+// clang-format off
+// Taskflow's work-stealing queue uses std::bit_ceil/std::bit_width without
+// including <bit>. libc++ (unlike libstdc++) does not pull <bit> in transitively
+// under C++23, so include it explicitly before Taskflow.
+#include <bit>
+
 #include <taskflow/taskflow.hpp>
+// clang-format on
 
 #include <memory>
 #include <unordered_map>

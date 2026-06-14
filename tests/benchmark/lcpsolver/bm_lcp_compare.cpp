@@ -3259,6 +3259,10 @@ void RunBenchmark(
     const std::string& label)
 {
   Solver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError("Benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(state, solver, problem, options, label);
 }
 
@@ -3396,6 +3400,11 @@ void RunJacobiSolverThreadingBenchmark(
   options.customOptions = &params;
 
   dart::math::JacobiSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -3453,6 +3462,11 @@ void RunRedBlackGaussSeidelThreadingBenchmark(benchmark::State& state)
   options.customOptions = &params;
 
   dart::math::RedBlackGaussSeidelSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -3500,6 +3514,11 @@ void RunBlockedJacobiThreadingBenchmark(benchmark::State& state)
   options.customOptions = &params;
 
   dart::math::BlockedJacobiSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Threading benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -3579,6 +3598,8 @@ enum class StandardSpdProblemKind
 
 constexpr int kNewtonWarmStartPgsIterations = 5;
 constexpr int kNewtonWarmStartGradientIterations = 5;
+constexpr std::array<int, 3> kNewtonWarmStartProblemSizes{{32, 64, 128}};
+constexpr int kNewtonWarmStartBatchSize = 4;
 
 struct RelaxationSweepCase
 {
@@ -6919,6 +6940,12 @@ struct ParallelBatchFixture
         errorMessage = "LCP solver factory returned null";
         return;
       }
+      if (!solver->supportsProblem(problems[index])) {
+        valid = false;
+        errorMessage
+            = "LCP parallel batch case exceeds concrete solver support";
+        return;
+      }
 
       solvers.push_back(std::move(solver));
       solutions[index] = Eigen::VectorXd::Zero(problems[index].b.size());
@@ -6993,6 +7020,13 @@ struct ParallelNewtonWarmStartBatchFixture
       if (solver == nullptr) {
         valid = false;
         errorMessage = "LCP solver factory returned null";
+        return;
+      }
+      if (!solver->supportsProblem(problems[index])) {
+        valid = false;
+        errorMessage
+            = "Newton warm-start parallel batch case exceeds concrete solver "
+              "support";
         return;
       }
 
@@ -7180,6 +7214,11 @@ void RunManifestBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Manifest benchmark case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7219,6 +7258,11 @@ void RunActiveSetTransitionBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active-set transition case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7251,6 +7295,11 @@ void RunActiveFrictionIndexContactBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active friction-index contact case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7280,6 +7329,11 @@ void RunPgsRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::PgsSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7313,6 +7367,11 @@ void RunSymmetricPsorRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::SymmetricPsorSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7346,6 +7405,11 @@ void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::RedBlackGaussSeidelSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7390,6 +7454,11 @@ void RunBoxedSsnLineSearchSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::BoxedSemiSmoothNewtonSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7555,6 +7624,11 @@ void RunBlockPartitionSweepBenchmark(
     params.blockSizes = blockSizes;
     options.customOptions = &params;
     dart::math::BgsSolver solver;
+    if (!solver.supportsProblem(problem)) {
+      state.SkipWithError(
+          "Parameter sweep benchmark case exceeds concrete solver support");
+      return;
+    }
     RunBenchmarkWithSolver(
         state, solver, problem, options, MakeLabel("BGS", label));
   } else if (testCase.solverName == "BlockedJacobi") {
@@ -7562,6 +7636,11 @@ void RunBlockPartitionSweepBenchmark(
     params.blockSizes = blockSizes;
     options.customOptions = &params;
     dart::math::BlockedJacobiSolver solver;
+    if (!solver.supportsProblem(problem)) {
+      state.SkipWithError(
+          "Parameter sweep benchmark case exceeds concrete solver support");
+      return;
+    }
     RunBenchmarkWithSolver(
         state, solver, problem, options, MakeLabel("BlockedJacobi", label));
   } else {
@@ -7590,6 +7669,11 @@ void RunApgdRestartSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::ApgdSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7622,6 +7706,11 @@ void RunTgsIterationBudgetSweepBenchmark(
       = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
 
   dart::math::TgsSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7659,6 +7748,11 @@ void RunNncgPgsIterationsSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::NncgSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7696,6 +7790,11 @@ void RunSubspacePgsIterationsSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::SubspaceMinimizationSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7732,6 +7831,11 @@ void RunShockPropagationLayerSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::ShockPropagationSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7814,6 +7918,11 @@ void RunInteriorPointPathSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::InteriorPointSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Interior-point path sweep case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7854,6 +7963,11 @@ void RunAdmmRhoSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::AdmmSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7893,6 +8007,11 @@ void RunSapRegularizationSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::SapSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7931,6 +8050,11 @@ void RunNewtonWarmStartBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Newton warm-start case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -7959,6 +8083,45 @@ std::vector<LcpProblem> MakeNewtonWarmStartBatchProblems(
   return problems;
 }
 
+std::vector<int> GetConcreteNewtonWarmStartProblemSizes(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::vector<int> problemSizes;
+  for (const int problemSize : kNewtonWarmStartProblemSizes) {
+    const auto problem = MakeStandardActiveSetTransitionProblem(
+        problemSize, 80'000u + static_cast<unsigned>(problemSize));
+    if (SolverSupportsConcreteProblem(solver, problem)) {
+      problemSizes.push_back(problemSize);
+    }
+  }
+
+  return problemSizes;
+}
+
+std::vector<std::array<int, 2>> GetConcreteNewtonWarmStartBatchArgs(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::vector<std::array<int, 2>> args;
+  for (const int problemSize : kNewtonWarmStartProblemSizes) {
+    const auto problems = MakeNewtonWarmStartBatchProblems(
+        problemSize, kNewtonWarmStartBatchSize);
+    if (SolverSupportsConcreteProblemBatch(solver, problems)) {
+      args.push_back({problemSize, kNewtonWarmStartBatchSize});
+    }
+  }
+
+  return args;
+}
+
+void AddNewtonWarmStartBatchArgs(
+    benchmark::Benchmark* registeredBenchmark,
+    const std::vector<std::array<int, 2>>& args)
+{
+  for (const auto [problemSize, batchSize] : args) {
+    registeredBenchmark->Args({problemSize, batchSize});
+  }
+}
+
 void RunNewtonWarmStartBatchSerialBenchmark(
     benchmark::State& state,
     const dart::test::LcpSolverManifestEntry& solverEntry,
@@ -7974,6 +8137,13 @@ void RunNewtonWarmStartBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Newton warm-start batch case exceeds concrete solver support");
     return;
   }
 
@@ -8072,6 +8242,11 @@ void RunLargerActiveSetTransitionBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active-set scale case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8144,6 +8319,14 @@ void RunProductionActiveSetTransitionBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Production active-set transition batch case exceeds concrete solver "
+        "support");
     return;
   }
 
@@ -8252,6 +8435,11 @@ void RunMildIllConditionedBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Mildly ill-conditioned case exceeds concrete solver support");
     return;
   }
 
@@ -8521,6 +8709,13 @@ void RunMildIllConditionedBatchSerialBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Mildly ill-conditioned batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -8623,6 +8818,10 @@ void RunNearSingularBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError("Near-singular case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8674,6 +8873,13 @@ void RunNearSingularBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Near-singular batch case exceeds concrete solver support");
     return;
   }
 
@@ -8772,6 +8978,11 @@ void RunSingularDegenerateBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Singular-degenerate case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8840,6 +9051,14 @@ void RunSingularDegenerateFrictionIndexBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Singular-degenerate friction-index batch case exceeds concrete "
+        "solver support");
     return;
   }
 
@@ -8926,6 +9145,14 @@ void RunSingularDegenerateStandardBoxedBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Singular-degenerate standard/boxed batch case exceeds concrete "
+        "solver support");
     return;
   }
 
@@ -9015,6 +9242,12 @@ void RunManifestBatchBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError("Manifest batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -9063,6 +9296,12 @@ void RunGroupedBatchSerialBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError("Grouped batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -9101,6 +9340,10 @@ void RunWorldContactBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError("World contact case exceeds concrete solver support");
     return;
   }
 
@@ -9142,6 +9385,11 @@ void RunWorldBoxContactBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "World box contact case exceeds concrete solver support");
     return;
   }
 
@@ -9277,6 +9525,11 @@ void RunWorldStackContactBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "World stack contact case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -9346,6 +9599,11 @@ void RunArticulatedUnifiedContactBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Articulated unified contact case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -9406,6 +9664,11 @@ void RunStaggeringContactPipelineSweepBenchmark(
   options.complementarityTolerance = 1e-6;
 
   dart::math::StaggeringSolver solver;
+  if (!solver.supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Staggering contact pipeline case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -9474,6 +9737,11 @@ void RunContactSolverComparisonSweepBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "Contact solver comparison case exceeds concrete solver support");
     return;
   }
 
@@ -9556,6 +9824,11 @@ void RunContactNormalStandardSweepBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(*problem)) {
+    state.SkipWithError(
+        "Contact-normal standard case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -9620,6 +9893,13 @@ void RunWorldContactBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(batch->problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "World contact batch case exceeds concrete solver support");
     return;
   }
 
@@ -9765,6 +10045,13 @@ void RunWorldBoxContactBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(batch->problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "World box contact batch case exceeds concrete solver support");
     return;
   }
 
@@ -12261,40 +12548,41 @@ void RegisterNewtonWarmStartBenchmarks()
       continue;
     }
 
-    for (const auto mode : kModes) {
-      const auto name = MakeNewtonWarmStartBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          name.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBenchmark(state, solver, mode);
-          })
-          ->Arg(32)
-          ->Arg(64)
-          ->Arg(128);
+    const auto problemSizes = GetConcreteNewtonWarmStartProblemSizes(solver);
+    const auto batchArgs = GetConcreteNewtonWarmStartBatchArgs(solver);
+    if (problemSizes.empty() && batchArgs.empty()) {
+      continue;
+    }
 
-      const auto serialBatchName
-          = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          serialBatchName.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
-          })
-          ->Args({32, 4})
-          ->Args({64, 4})
-          ->Args({128, 4});
+    for (const auto mode : kModes) {
+      if (!problemSizes.empty()) {
+        const auto name = MakeNewtonWarmStartBenchmarkName(solver, mode);
+        auto* registeredBenchmark = benchmark::RegisterBenchmark(
+            name.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBenchmark(state, solver, mode);
+            });
+        AddBenchmarkArgs(registeredBenchmark, problemSizes);
+      }
+
+      if (!batchArgs.empty()) {
+        const auto serialBatchName
+            = MakeNewtonWarmStartBatchSerialBenchmarkName(solver, mode);
+        auto* serialBatchBenchmark = benchmark::RegisterBenchmark(
+            serialBatchName.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBatchSerialBenchmark(state, solver, mode);
+            });
+        AddNewtonWarmStartBatchArgs(serialBatchBenchmark, batchArgs);
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
-      const auto parallelBatchName
-          = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
-      benchmark::RegisterBenchmark(
-          parallelBatchName.c_str(),
-          [solver, mode](benchmark::State& state) {
-            RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
-          })
-          ->Args({32, 4})
-          ->Args({64, 4})
-          ->Args({128, 4});
+        const auto parallelBatchName
+            = MakeNewtonWarmStartBatchParallelBenchmarkName(solver, mode);
+        auto* parallelBatchBenchmark = benchmark::RegisterBenchmark(
+            parallelBatchName.c_str(), [solver, mode](benchmark::State& state) {
+              RunNewtonWarmStartBatchParallelBenchmark(state, solver, mode);
+            });
+        AddNewtonWarmStartBatchArgs(parallelBatchBenchmark, batchArgs);
 #endif
+      }
     }
   }
 }
@@ -13083,20 +13371,27 @@ std::vector<BenchmarkArgProblem> MakeWorldStackContactBenchmarkArgProblems()
   return argProblems;
 }
 
-std::optional<LcpProblem> MakeWorldBoxContactSupportProbe()
-{
-  std::string errorMessage;
-  auto fixture = MakeWorldBoxContactBenchmarkProblem(errorMessage, 0, 1);
-  if (!fixture.has_value()) {
-    return std::nullopt;
-  }
-
-  return std::move(fixture->problem);
-}
-
 std::vector<int> GetWorldBoxContactBenchmarkArgs()
 {
   return {1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 192, 256};
+}
+
+std::vector<BenchmarkArgProblem> MakeWorldBoxContactBenchmarkArgProblems()
+{
+  std::vector<BenchmarkArgProblem> argProblems;
+  for (const int boxCount : GetWorldBoxContactBenchmarkArgs()) {
+    std::string errorMessage;
+    auto fixture
+        = MakeWorldBoxContactBenchmarkProblem(errorMessage, 0, boxCount);
+    if (!fixture.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        BenchmarkArgProblem{boxCount, std::move(fixture->problem)});
+  }
+
+  return argProblems;
 }
 
 struct ArticulatedContactBenchmarkProbe
@@ -13140,10 +13435,81 @@ std::optional<WorldContactBenchmarkBatch> MakeWorldContactBatchSupportProbe(
   return MakeWorldContactBenchmarkBatch(errorMessage, batchKind);
 }
 
-std::optional<WorldContactBenchmarkBatch> MakeWorldBoxContactBatchSupportProbe()
+std::vector<BatchBenchmarkArg> GetWorldBoxContactBatchArgCandidates()
 {
-  std::string errorMessage;
-  return MakeWorldBoxContactBenchmarkBatch(1, 1, errorMessage);
+  constexpr int batchSize = 4;
+  return {
+      {1, batchSize},
+      {4, batchSize},
+      {8, batchSize},
+      {16, batchSize},
+      {24, batchSize},
+      {32, batchSize},
+      {48, batchSize},
+      {64, batchSize},
+      {96, batchSize},
+      {128, batchSize},
+      {192, batchSize},
+      {256, batchSize}};
+}
+
+bool ShouldRunWorldBoxContactBatchArg(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const BatchBenchmarkArg& arg)
+{
+  if (solver.name == "Pgs") {
+    return true;
+  }
+  if (solver.name == "Admm" && arg.problemArg == 256) {
+    return false;
+  }
+
+  return arg.problemArg == 24 || arg.problemArg == 64 || arg.problemArg == 96
+         || arg.problemArg == 128 || arg.problemArg == 192
+         || arg.problemArg == 256;
+}
+
+struct WorldBoxContactBatchArgProblems
+{
+  BatchBenchmarkArg arg;
+  std::vector<LcpProblem> problems;
+};
+
+std::vector<WorldBoxContactBatchArgProblems>
+MakeWorldBoxContactBatchArgProblems()
+{
+  std::vector<WorldBoxContactBatchArgProblems> argProblems;
+  for (const auto candidate : GetWorldBoxContactBatchArgCandidates()) {
+    std::string errorMessage;
+    auto batch = MakeWorldBoxContactBenchmarkBatch(
+        candidate.problemArg, candidate.batchSize, errorMessage);
+    if (!batch.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        WorldBoxContactBatchArgProblems{candidate, std::move(batch->problems)});
+  }
+
+  return argProblems;
+}
+
+std::vector<BatchBenchmarkArg> GetConcreteWorldBoxContactBatchArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const std::vector<WorldBoxContactBatchArgProblems>& argProblems)
+{
+  std::vector<BatchBenchmarkArg> args;
+  for (const auto& candidate : argProblems) {
+    if (!ShouldRunWorldBoxContactBatchArg(solver, candidate.arg)) {
+      continue;
+    }
+
+    if (SolverSupportsConcreteProblemBatch(solver, candidate.problems)) {
+      args.push_back(candidate.arg);
+    }
+  }
+
+  return args;
 }
 
 void RegisterWorldContactBenchmarks()
@@ -13169,16 +13535,14 @@ void RegisterWorldContactBenchmarks()
 
 void RegisterWorldBoxContactBenchmarks()
 {
-  const auto supportProbe = MakeWorldBoxContactSupportProbe();
-  if (!supportProbe.has_value()) {
-    return;
-  }
+  const auto argProblems = MakeWorldBoxContactBenchmarkArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
-    if (!SolverSupportsConcreteProblem(solver, *supportProbe)) {
+    const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
+    if (args.empty()) {
       continue;
     }
 
@@ -13189,7 +13553,7 @@ void RegisterWorldBoxContactBenchmarks()
             [solver](benchmark::State& state) {
               RunWorldBoxContactBenchmark(state, solver);
             }),
-        GetWorldBoxContactBenchmarkArgs());
+        args);
   }
 }
 
@@ -13385,66 +13749,31 @@ void RegisterWorldContactBatchBenchmarks()
 
 void RegisterWorldBoxContactBatchBenchmarks()
 {
-  const auto supportProbe = MakeWorldBoxContactBatchSupportProbe();
-  if (!supportProbe.has_value()) {
-    return;
-  }
-
-  const auto addWorldBoxContactBatchArgs
-      = [](benchmark::Benchmark* registeredBenchmark,
-           const dart::test::LcpSolverManifestEntry& solver) {
-          if (solver.name == "Pgs") {
-            registeredBenchmark->Args({1, 4})
-                ->Args({4, 4})
-                ->Args({8, 4})
-                ->Args({16, 4})
-                ->Args({24, 4})
-                ->Args({32, 4})
-                ->Args({48, 4})
-                ->Args({64, 4})
-                ->Args({96, 4})
-                ->Args({128, 4})
-                ->Args({192, 4})
-                ->Args({256, 4});
-            return;
-          }
-
-          registeredBenchmark->Args({24, 4})
-              ->Args({64, 4})
-              ->Args({96, 4})
-              ->Args({128, 4})
-              ->Args({192, 4});
-          if (solver.name != "Admm") {
-            registeredBenchmark->Args({256, 4});
-          }
-        };
+  const auto argProblems = MakeWorldBoxContactBatchArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
-    if (!SolverSupportsConcreteProblemBatch(solver, supportProbe->problems)) {
+    const auto args = GetConcreteWorldBoxContactBatchArgs(solver, argProblems);
+    if (args.empty()) {
       continue;
     }
 
     const auto serialName = MakeWorldBoxContactBatchSerialBenchmarkName(solver);
-    addWorldBoxContactBatchArgs(
-        benchmark::RegisterBenchmark(
-            serialName.c_str(),
-            [solver](benchmark::State& state) {
-              RunWorldBoxContactBatchSerialBenchmark(state, solver);
-            }),
-        solver);
+    auto* serialBatchBenchmark = benchmark::RegisterBenchmark(
+        serialName.c_str(), [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchSerialBenchmark(state, solver);
+        });
+    AddBatchBenchmarkArgs(serialBatchBenchmark, args);
 
     const auto parallelName
         = MakeWorldBoxContactBatchParallelBenchmarkName(solver);
-    addWorldBoxContactBatchArgs(
-        benchmark::RegisterBenchmark(
-            parallelName.c_str(),
-            [solver](benchmark::State& state) {
-              RunWorldBoxContactBatchParallelBenchmark(state, solver);
-            }),
-        solver);
+    auto* parallelBatchBenchmark = benchmark::RegisterBenchmark(
+        parallelName.c_str(), [solver](benchmark::State& state) {
+          RunWorldBoxContactBatchParallelBenchmark(state, solver);
+        });
+    AddBatchBenchmarkArgs(parallelBatchBenchmark, args);
   }
 }
 #endif

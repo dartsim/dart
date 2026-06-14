@@ -46,6 +46,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -65,13 +66,13 @@ enum class GizmoFlags : unsigned int
 constexpr GizmoFlags operator|(GizmoFlags lhs, GizmoFlags rhs)
 {
   return static_cast<GizmoFlags>(
-      static_cast<unsigned int>(lhs) | static_cast<unsigned int>(rhs));
+      std::to_underlying(lhs) | std::to_underlying(rhs));
 }
 
 constexpr GizmoFlags operator&(GizmoFlags lhs, GizmoFlags rhs)
 {
   return static_cast<GizmoFlags>(
-      static_cast<unsigned int>(lhs) & static_cast<unsigned int>(rhs));
+      std::to_underlying(lhs) & std::to_underlying(rhs));
 }
 
 constexpr bool hasGizmoFlag(GizmoFlags flags, GizmoFlags flag)

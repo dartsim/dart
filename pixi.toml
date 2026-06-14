@@ -284,7 +284,7 @@ lint-architecture-page = { cmd = [
   "scripts/check_architecture_page_lint.py",
 ] }
 
-update-api-boundary-inventory = { cmd = [
+report-api-boundary-inventory = { cmd = [
   "python",
   "scripts/generate_api_boundary_inventory.py",
 ] }
@@ -298,7 +298,6 @@ lint = { depends-on = [
   "lint-py",
   "lint-yaml",
   "lint-toml",
-  "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
@@ -393,12 +392,6 @@ check-architecture-page = { cmd = [
   "scripts/check_architecture_page_lint.py",
 ] }
 
-check-api-boundary-inventory = { cmd = [
-  "python",
-  "scripts/generate_api_boundary_inventory.py",
-  "--check",
-] }
-
 sync-ai-commands = { cmd = ["python", "scripts/sync_ai_commands.py"] }
 check-ai-commands = { cmd = [
   "python",
@@ -433,7 +426,6 @@ check-lint = { depends-on = [
   "check-lcp-solver-roster",
   "check-avbd-packets",
   "check-architecture-page",
-  "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
 
@@ -2240,6 +2232,22 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --ex
     "Release",
   ] },
 ] }
+# Tier 2 simulation scope — every simulation test INCLUDING the long poles,
+# run parallel + load-aware. This is what the authoritative verify-full gate
+# (scripts/test_all.py) uses for its simulation phase so the
+# test_rigid_ipc_paper_experiments long pole overlaps the rest of the suite
+# instead of bounding a serial run (runtimes:
+# docs/design/local_verification_pipeline.md).
+test-simulation-full = { cmd = "python scripts/ctest_tier.py -L simulation", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+  { task = "build-simulation-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
 # Uses read-only check-lint (not autofix lint): a gate must not mutate sources
 # while builds run in parallel. Run `pixi run lint` first to auto-fix.
 verify = { depends-on = [
@@ -2470,7 +2478,6 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-py",
   "lint-yaml",
-  "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
@@ -2501,7 +2508,6 @@ check-lint = { depends-on = [
   "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-lcp-solver-roster",
-  "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
 

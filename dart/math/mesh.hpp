@@ -35,6 +35,7 @@
 
 #include <Eigen/Core>
 
+#include <utility>
 #include <vector>
 
 namespace dart {
