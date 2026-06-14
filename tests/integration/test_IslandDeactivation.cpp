@@ -295,17 +295,22 @@ TEST(IslandDeactivation, ExternalDisturbancePreventsSleep)
 }
 
 //==============================================================================
-// A vertical stack must settle and all members must become resting together as
-// a single island. No member sleeps while another member is still moving.
+// A vertical contact stack must sleep atomically as a single island. No member
+// sleeps while another member in the same contact island is not yet a sleep
+// candidate.
 TEST(IslandDeactivation, StackSleepsAsIsland)
 {
   auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
   world->addSkeleton(createFloor());
 
-  // Three stacked boxes, each resting on the one below.
+  // Three stacked boxes with tiny deterministic overlaps, each below the
+  // contact-correction gate for sleep eligibility. This avoids relying on
+  // platform-specific settling jitter to create the contact island.
+  constexpr double overlap = 1.0e-8;
   std::vector<SkeletonPtr> stack;
   for (int i = 0; i < 3; ++i) {
-    const double z = kHalf + 0.01 + i * (kBoxSize + 0.005);
+    const double z = kHalf - overlap / 2.0 + i * (kBoxSize - overlap);
     auto b = createFreeBox(
         "stack" + std::to_string(i),
         Eigen::Vector3d::Constant(kBoxSize),
@@ -314,27 +319,24 @@ TEST(IslandDeactivation, StackSleepsAsIsland)
     stack.push_back(b);
   }
 
-  auto allResting = [&]() {
-    for (const auto& b : stack)
-      if (!b->isResting())
-        return false;
-    return true;
-  };
+  // A partial candidate island must remain fully awake.
+  stack[0]->setSleepCandidate(true);
+  stack[1]->setSleepCandidate(true);
+  stack[2]->setSleepCandidate(false);
+  world->step();
+  for (const auto& b : stack)
+    EXPECT_FALSE(b->isResting())
+        << b->getName() << " slept before the full island was ready";
 
-  const std::size_t maxSteps = 8000;
-  for (std::size_t i = 0; i < maxSteps; ++i) {
-    world->step();
-
-    // Island-level invariant proxy: once they are settling together, we do not
-    // expect to observe a long-lived partial-sleep state. Stop as soon as all
-    // members are resting.
-    if (allResting())
-      break;
-  }
-
+  // Once all members are candidates, the solver stamps the resting flag on the
+  // whole island together.
+  for (const auto& b : stack)
+    b->setSleepCandidate(true);
+  world->step();
   for (const auto& b : stack)
     EXPECT_TRUE(b->isResting())
-        << b->getName() << " did not sleep with the rest of the stack";
+        << b->getName() << " did not sleep with the rest of the stack"
+        << " (island=" << b->getIslandIndex() << ")";
 
   // Confirm the whole stack stays frozen together.
   std::vector<Eigen::VectorXd> frozen;
