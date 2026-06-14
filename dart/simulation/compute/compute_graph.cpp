@@ -37,22 +37,106 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <new>
 #include <queue>
 #include <unordered_map>
 #include <utility>
+
+#include <cstdint>
 
 namespace dart::simulation::compute {
 
 namespace {
 
+using NodePointerAllocator = dart::common::StlAllocator<ComputeNode*>;
+using NodePointerVector = std::vector<ComputeNode*, NodePointerAllocator>;
+using IndexAllocator = dart::common::StlAllocator<std::size_t>;
+using IndexVector = std::vector<std::size_t, IndexAllocator>;
+using IndexVectorAllocator = dart::common::StlAllocator<IndexVector>;
+using IndexVectorVector = std::vector<IndexVector, IndexVectorAllocator>;
+using ByteAllocator = dart::common::StlAllocator<std::uint8_t>;
+using ByteVector = std::vector<std::uint8_t, ByteAllocator>;
+using NodeIndexLookupAllocator = dart::common::StlAllocator<
+    std::pair<const ComputeNode* const, std::size_t>>;
+using NodeIndexLookup = std::unordered_map<
+    const ComputeNode*,
+    std::size_t,
+    std::hash<const ComputeNode*>,
+    std::equal_to<const ComputeNode*>,
+    NodeIndexLookupAllocator>;
+
 //==============================================================================
-bool containsPointer(
-    const std::vector<ComputeNode*>& nodes, const ComputeNode* node)
+template <typename Nodes>
+NodePointerVector collectNodePointers(
+    const Nodes& nodes, dart::common::MemoryAllocator& allocator)
 {
-  return std::ranges::find(nodes, node) != nodes.end();
+  NodePointerVector result(NodePointerAllocator{allocator});
+  result.reserve(nodes.size());
+  for (const auto& node : nodes) {
+    result.push_back(node.get());
+  }
+  return result;
+}
+
+//==============================================================================
+NodeIndexLookup makeNodeIndexLookup(
+    dart::common::MemoryAllocator& allocator, std::size_t capacity)
+{
+  NodeIndexLookup lookup(
+      0,
+      std::hash<const ComputeNode*>{},
+      std::equal_to<const ComputeNode*>{},
+      NodeIndexLookupAllocator{allocator});
+  lookup.reserve(capacity);
+  return lookup;
+}
+
+//==============================================================================
+IndexVectorVector makeIndexAdjacency(
+    dart::common::MemoryAllocator& allocator, std::size_t count)
+{
+  IndexVectorVector adjacency(IndexVectorAllocator{allocator});
+  adjacency.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    adjacency.emplace_back(IndexAllocator{allocator});
+  }
+  return adjacency;
 }
 
 } // namespace
+
+//==============================================================================
+ComputeGraph::ComputeGraph()
+  : ComputeGraph(dart::common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+ComputeGraph::ComputeGraph(dart::common::MemoryAllocator& allocator)
+  : m_allocator(&allocator),
+    m_nodes(ComputeNodePtrAllocator{allocator}),
+    m_edges(EdgeAllocator{allocator}),
+    m_nodesByName(
+        0,
+        std::hash<std::string>{},
+        std::equal_to<std::string>{},
+        NodeNameLookupAllocator{allocator}),
+    m_topologicalOrderCache(TopologicalOrderAllocator{allocator})
+{
+}
+
+//==============================================================================
+void ComputeGraph::ComputeNodeDeleter::operator()(
+    ComputeNode* node) const noexcept
+{
+  if (node == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : dart::common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(node);
+}
 
 //==============================================================================
 ComputeNode& ComputeGraph::addNode(
@@ -72,11 +156,21 @@ ComputeNode& ComputeGraph::addNode(
       "A compute node named '{}' already exists",
       nameString);
 
-  auto node
-      = std::make_unique<ComputeNode>(nameString, std::move(fn), metadata);
+  auto node = ComputeNodePtr(
+      m_allocator->construct<ComputeNode>(
+          nameString, std::move(fn), std::move(metadata)),
+      ComputeNodeDeleter{m_allocator});
+  if (node == nullptr) {
+    throw std::bad_alloc();
+  }
   auto* nodePtr = node.get();
   m_nodes.push_back(std::move(node));
-  m_nodesByName.emplace(nameString, nodePtr);
+  try {
+    m_nodesByName.emplace(nameString, nodePtr);
+  } catch (...) {
+    m_nodes.pop_back();
+    throw;
+  }
   invalidateTraversalCache();
   return *nodePtr;
 }
@@ -138,23 +232,25 @@ std::vector<ComputeNode*> ComputeGraph::getNodes() const
 //==============================================================================
 std::vector<ComputeNode*> ComputeGraph::getTopologicalOrder() const
 {
-  return getTopologicalOrderView();
+  const auto order = getTopologicalOrderView();
+  return std::vector<ComputeNode*>{order.begin(), order.end()};
 }
 
 //==============================================================================
-const std::vector<ComputeNode*>& ComputeGraph::getTopologicalOrderView() const
+std::span<ComputeNode* const> ComputeGraph::getTopologicalOrderView() const
 {
   if (!m_topologicalOrderCacheValid) {
     m_topologicalOrderCache = buildTopologicalOrder(true);
     m_topologicalOrderCacheValid = true;
   }
-  return m_topologicalOrderCache;
+  return std::span<ComputeNode* const>{
+      m_topologicalOrderCache.data(), m_topologicalOrderCache.size()};
 }
 
 //==============================================================================
 std::vector<std::vector<ComputeNode*>> ComputeGraph::getParallelLevels() const
 {
-  const auto& order = getTopologicalOrderView();
+  const auto order = getTopologicalOrderView();
   if (order.empty()) {
     return {};
   }
@@ -242,19 +338,18 @@ bool ComputeGraph::validate() const
 std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
 {
   std::vector<ComputeResourceHazard> hazards;
-  std::vector<ComputeNode*> nodes = getNodes();
+  NodePointerVector nodes = collectNodePointers(m_nodes, *m_allocator);
   const auto count = nodes.size();
   if (count < 2) {
     return hazards;
   }
 
-  std::unordered_map<const ComputeNode*, std::size_t> indexByNode;
-  indexByNode.reserve(count);
+  NodeIndexLookup indexByNode = makeNodeIndexLookup(*m_allocator, count);
   for (std::size_t i = 0; i < count; ++i) {
     indexByNode.emplace(nodes[i], i);
   }
 
-  std::vector<std::vector<std::size_t>> dependents(count);
+  IndexVectorVector dependents = makeIndexAdjacency(*m_allocator, count);
   for (const auto& edge : m_edges) {
     dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
   }
@@ -263,18 +358,21 @@ std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
   // explicit dependency path orders them. Unordered pairs may run concurrently.
   // The precomputed index map and adjacency keep this O(N * (N + E)) instead of
   // rescanning all edges and linear-searching for each visited node.
-  std::vector<std::vector<bool>> reachable(
-      count, std::vector<bool>(count, false));
-  std::vector<std::size_t> stack;
+  ByteVector reachable(count * count, 0u, ByteAllocator{*m_allocator});
+  const auto isReachable = [&](std::size_t from, std::size_t to) -> auto& {
+    return reachable[from * count + to];
+  };
+  IndexVector stack(IndexAllocator{*m_allocator});
+  stack.reserve(count);
   for (std::size_t i = 0; i < count; ++i) {
     stack.assign(dependents[i].begin(), dependents[i].end());
     while (!stack.empty()) {
       const auto j = stack.back();
       stack.pop_back();
-      if (reachable[i][j]) {
+      if (isReachable(i, j) != 0u) {
         continue;
       }
-      reachable[i][j] = true;
+      isReachable(i, j) = 1u;
       for (const auto to : dependents[j]) {
         stack.push_back(to);
       }
@@ -283,7 +381,7 @@ std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
 
   for (std::size_t i = 0; i < count; ++i) {
     for (std::size_t j = i + 1; j < count; ++j) {
-      if (reachable[i][j] || reachable[j][i]) {
+      if (isReachable(i, j) != 0u || isReachable(j, i) != 0u) {
         continue;
       }
 
@@ -295,7 +393,11 @@ std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
           }
           hazards.push_back(
               ComputeResourceHazard{
-                  nodes[i], nodes[j], first.resource, first.mode, second.mode});
+                  nodes[i],
+                  nodes[j],
+                  std::string(first.resource.begin(), first.resource.end()),
+                  first.mode,
+                  second.mode});
         }
       }
     }
@@ -331,8 +433,10 @@ bool ComputeGraph::ownsNode(const ComputeNode& node) const
 bool ComputeGraph::wouldCreateCycle(
     const ComputeNode& from, const ComputeNode& to) const
 {
-  std::vector<ComputeNode*> stack{const_cast<ComputeNode*>(&to)};
-  std::vector<ComputeNode*> visited;
+  NodePointerVector stack(NodePointerAllocator{*m_allocator});
+  stack.push_back(const_cast<ComputeNode*>(&to));
+  NodePointerVector visited(NodePointerAllocator{*m_allocator});
+  visited.reserve(m_nodes.size());
 
   while (!stack.empty()) {
     auto* current = stack.back();
@@ -342,7 +446,7 @@ bool ComputeGraph::wouldCreateCycle(
       return true;
     }
 
-    if (containsPointer(visited, current)) {
+    if (std::ranges::find(visited, current) != visited.end()) {
       continue;
     }
     visited.push_back(current);
@@ -358,20 +462,19 @@ bool ComputeGraph::wouldCreateCycle(
 }
 
 //==============================================================================
-std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
+ComputeGraph::TopologicalOrderVector ComputeGraph::buildTopologicalOrder(
     bool throwOnCycle) const
 {
-  std::vector<ComputeNode*> nodes = getNodes();
+  NodePointerVector nodes = collectNodePointers(m_nodes, *m_allocator);
   const auto count = nodes.size();
 
-  std::unordered_map<const ComputeNode*, std::size_t> indexByNode;
-  indexByNode.reserve(count);
+  NodeIndexLookup indexByNode = makeNodeIndexLookup(*m_allocator, count);
   for (std::size_t i = 0; i < count; ++i) {
     indexByNode.emplace(nodes[i], i);
   }
 
-  std::vector<std::vector<std::size_t>> dependents(count);
-  std::vector<std::size_t> indegree(count, 0);
+  IndexVectorVector dependents = makeIndexAdjacency(*m_allocator, count);
+  IndexVector indegree(count, 0, IndexAllocator{*m_allocator});
   for (const auto& edge : m_edges) {
     if (!edge.from || !edge.to || !ownsNode(*edge.from)
         || !ownsNode(*edge.to)) {
@@ -380,7 +483,7 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
             InvalidOperationException,
             "Compute graph contains an edge with nodes outside the graph");
       }
-      return {};
+      return TopologicalOrderVector(TopologicalOrderAllocator{*m_allocator});
     }
     dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
     ++indegree[indexByNode.at(edge.to)];
@@ -389,15 +492,15 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
   // Kahn's algorithm with a min-heap on node index so ties break by node
   // construction order, matching the previous linear-scan behavior in
   // O((N + E) log N) instead of O(N^2).
-  std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<>>
-      ready;
+  std::priority_queue<std::size_t, IndexVector, std::greater<>> ready{
+      std::greater<>{}, IndexVector(IndexAllocator{*m_allocator})};
   for (std::size_t i = 0; i < count; ++i) {
     if (indegree[i] == 0) {
       ready.push(i);
     }
   }
 
-  std::vector<ComputeNode*> order;
+  TopologicalOrderVector order(TopologicalOrderAllocator{*m_allocator});
   order.reserve(count);
   while (!ready.empty()) {
     const auto i = ready.top();

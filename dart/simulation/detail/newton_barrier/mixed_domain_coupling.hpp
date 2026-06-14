@@ -35,6 +35,9 @@
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/newton_barrier/primitive_distance.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
@@ -94,15 +97,32 @@ struct MixedDomainEdge
 
 struct MixedDomainSurface
 {
+  using VertexAllocator = dart::common::StlAllocator<Eigen::Vector3d>;
+  using EdgeAllocator = dart::common::StlAllocator<MixedDomainEdge>;
+  using TriangleAllocator = dart::common::StlAllocator<Eigen::Vector3i>;
+  using VertexVector = std::vector<Eigen::Vector3d, VertexAllocator>;
+  using EdgeVector = std::vector<MixedDomainEdge, EdgeAllocator>;
+  using TriangleVector = std::vector<Eigen::Vector3i, TriangleAllocator>;
+
+  MixedDomainSurface() = default;
+
+  explicit MixedDomainSurface(dart::common::MemoryAllocator& allocator)
+    : startVertices(VertexAllocator{allocator}),
+      endVertices(VertexAllocator{allocator}),
+      edges(EdgeAllocator{allocator}),
+      triangles(TriangleAllocator{allocator})
+  {
+  }
+
   MixedDomainType domain = MixedDomainType::Rigid;
   std::size_t domainInstance = 0;
   bool active = true;
   bool dynamic = true;
   double frictionCoefficient = 0.0;
-  std::vector<Eigen::Vector3d> startVertices;
-  std::vector<Eigen::Vector3d> endVertices;
-  std::vector<MixedDomainEdge> edges;
-  std::vector<Eigen::Vector3i> triangles;
+  VertexVector startVertices;
+  VertexVector endVertices;
+  EdgeVector edges;
+  TriangleVector triangles;
 };
 
 struct MixedDomainCandidateOptions
@@ -148,7 +168,19 @@ struct MixedDomainCandidateStats
 
 struct MixedDomainCandidateSet
 {
-  std::vector<MixedDomainContactCandidate> candidates;
+  using CandidateAllocator
+      = dart::common::StlAllocator<MixedDomainContactCandidate>;
+  using CandidateVector
+      = std::vector<MixedDomainContactCandidate, CandidateAllocator>;
+
+  MixedDomainCandidateSet() = default;
+
+  explicit MixedDomainCandidateSet(dart::common::MemoryAllocator& allocator)
+    : candidates(CandidateAllocator{allocator})
+  {
+  }
+
+  CandidateVector candidates;
   MixedDomainCandidateStats stats;
 };
 
@@ -203,10 +235,14 @@ inline bool validVertexIndex(
 }
 
 //==============================================================================
-inline std::vector<MixedDomainEdge> collectSurfaceEdges(
-    const MixedDomainSurface& surface)
+inline MixedDomainSurface::EdgeVector collectSurfaceEdges(
+    const MixedDomainSurface& surface,
+    dart::common::MemoryAllocator* allocator = nullptr)
 {
-  std::vector<MixedDomainEdge> edges = surface.edges;
+  MixedDomainSurface::EdgeVector edges{
+      allocator != nullptr ? MixedDomainSurface::EdgeAllocator{*allocator}
+                           : MixedDomainSurface::EdgeAllocator{}};
+  edges.assign(surface.edges.begin(), surface.edges.end());
   for (MixedDomainEdge& edge : edges) {
     edge = makeMixedDomainEdge(edge.a, edge.b);
   }
@@ -363,10 +399,10 @@ inline MixedDomainSurface makeMixedDomainSurface(
   surface.domain = domain;
   surface.domainInstance = domainInstance;
   surface.dynamic = dynamic;
-  surface.startVertices = vertices;
-  surface.endVertices = std::move(vertices);
-  surface.triangles = std::move(triangles);
-  surface.edges = std::move(edges);
+  surface.startVertices.assign(vertices.begin(), vertices.end());
+  surface.endVertices.assign(vertices.begin(), vertices.end());
+  surface.triangles.assign(triangles.begin(), triangles.end());
+  surface.edges.assign(edges.begin(), edges.end());
   return surface;
 }
 
@@ -375,21 +411,33 @@ inline void setMixedDomainEndVertices(
     MixedDomainSurface& surface, std::vector<Eigen::Vector3d> vertices)
 {
   if (vertices.size() == surface.startVertices.size()) {
-    surface.endVertices = std::move(vertices);
+    surface.endVertices.assign(vertices.begin(), vertices.end());
   }
 }
 
 //==============================================================================
 inline MixedDomainCandidateSet buildMixedDomainContactCandidates(
     std::span<const MixedDomainSurface> surfaces,
-    const MixedDomainCandidateOptions& options = {})
+    const MixedDomainCandidateOptions& options = {},
+    dart::common::MemoryAllocator* allocator = nullptr)
 {
-  MixedDomainCandidateSet set;
+  MixedDomainCandidateSet set = allocator != nullptr
+                                    ? MixedDomainCandidateSet{*allocator}
+                                    : MixedDomainCandidateSet{};
   set.stats.surfaceCount = surfaces.size();
 
-  std::vector<std::vector<MixedDomainEdge>> edges;
+  using EdgeVector = MixedDomainSurface::EdgeVector;
+  using EdgeVectorAllocator = dart::common::StlAllocator<EdgeVector>;
+  using EdgeVectorList = std::vector<EdgeVector, EdgeVectorAllocator>;
+  using AabbAllocator = dart::common::StlAllocator<detail::MixedDomainAabb>;
+  using AabbVector = std::vector<detail::MixedDomainAabb, AabbAllocator>;
+
+  EdgeVectorList edges{
+      allocator != nullptr ? EdgeVectorAllocator{*allocator}
+                           : EdgeVectorAllocator{}};
   edges.reserve(surfaces.size());
-  std::vector<detail::MixedDomainAabb> aabbs;
+  AabbVector aabbs{
+      allocator != nullptr ? AabbAllocator{*allocator} : AabbAllocator{}};
   aabbs.reserve(surfaces.size());
   const double activationDistance = std::max(0.0, options.activationDistance);
 
@@ -401,7 +449,7 @@ inline MixedDomainCandidateSet buildMixedDomainContactCandidates(
       }
       ++set.stats.domainCounts[detail::domainIndex(surface.domain)];
     }
-    edges.push_back(detail::collectSurfaceEdges(surface));
+    edges.push_back(detail::collectSurfaceEdges(surface, allocator));
     aabbs.push_back(detail::makeSweptSurfaceAabb(surface, activationDistance));
   }
 

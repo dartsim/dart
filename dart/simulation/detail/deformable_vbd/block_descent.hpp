@@ -42,10 +42,13 @@
 #include <dart/simulation/detail/deformable_vbd/vertex_block_kernel.hpp>
 #include <dart/simulation/detail/deformable_vbd/vertex_coloring.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
 #include <array>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -71,13 +74,36 @@ struct SpringElement
 /// of every spring touching vertex `v`.
 struct SpringAdjacency
 {
-  std::vector<std::vector<std::uint32_t>> incidentSprings;
+  using IncidentSpringVector
+      = std::vector<std::uint32_t, ::dart::common::StlAllocator<std::uint32_t>>;
+  using IncidentSpringVectorAllocator
+      = ::dart::common::StlAllocator<IncidentSpringVector>;
+  using IncidentSpringRows
+      = std::vector<IncidentSpringVector, IncidentSpringVectorAllocator>;
+
+  SpringAdjacency()
+    : SpringAdjacency(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit SpringAdjacency(::dart::common::MemoryAllocator& allocator)
+    : incidentSprings(IncidentSpringVectorAllocator{allocator}),
+      m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
+  IncidentSpringRows incidentSprings;
 
   static SpringAdjacency build(
-      std::size_t vertexCount, const std::vector<SpringElement>& springs)
+      std::size_t vertexCount,
+      std::span<const SpringElement> springs,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
   {
-    SpringAdjacency adjacency;
-    adjacency.incidentSprings.resize(vertexCount);
+    SpringAdjacency adjacency(allocator);
+    adjacency.resize(vertexCount);
     for (std::uint32_t s = 0; s < springs.size(); ++s) {
       const SpringElement& spring = springs[s];
       if (spring.a < vertexCount) {
@@ -89,13 +115,32 @@ struct SpringAdjacency
     }
     return adjacency;
   }
+
+private:
+  void resize(std::size_t vertexCount)
+  {
+    if (vertexCount < incidentSprings.size()) {
+      incidentSprings.resize(vertexCount);
+      return;
+    }
+    incidentSprings.reserve(vertexCount);
+    while (incidentSprings.size() < vertexCount) {
+      incidentSprings.emplace_back(
+          ::dart::common::StlAllocator<std::uint32_t>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 /// Build the vertex-graph coloring induced by a spring list.
 inline VertexColoring colorSprings(
-    std::size_t vertexCount, const std::vector<SpringElement>& springs)
+    std::size_t vertexCount,
+    std::span<const SpringElement> springs,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const SpringElement& spring : springs) {
     adjacency.addEdge(spring.a, spring.b);
   }
@@ -159,9 +204,9 @@ namespace detail {
 inline VertexBlock assembleVertexBlock(
     std::uint32_t vertex,
     const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     const SpringAdjacency& adjacency,
     double springStiffness,
     double timeStep,
@@ -206,10 +251,10 @@ inline VertexBlock assembleVertexBlock(
 /// SpringAdjacency::build).
 inline BlockDescentStats blockDescentMassSpring(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const VertexColoring& coloring,
@@ -279,10 +324,10 @@ inline BlockDescentStats blockDescentMassSpring(
 /// and convergence without depending on the solver-internal objective.
 inline double massSpringObjective(
     const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep)
 {
@@ -307,9 +352,9 @@ inline double massSpringObjective(
 /// Find the finite-stiffness row for `springIndex`. World-generated rows are
 /// stored in spring order, but the fallback scan keeps the standalone driver
 /// robust for tests that pass sparse or reordered row arrays.
+template <typename SpringRows>
 inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
-    const std::vector<AvbdSpringFiniteStiffnessRow>& rows,
-    std::uint32_t springIndex)
+    const SpringRows& rows, std::uint32_t springIndex)
 {
   if (springIndex < rows.size() && rows[springIndex].spring == springIndex) {
     return &rows[springIndex];
@@ -326,10 +371,10 @@ inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
 /// Find the finite-stiffness material row for `tetIndex`. Rows generated from a
 /// tetrahedral mesh are normally stored in tet order, but tests and future row
 /// generation can pass sparse or reordered arrays.
+template <typename TetRows>
 inline const AvbdTetMaterialFiniteStiffnessRow*
 findAvbdTetMaterialFiniteStiffnessRow(
-    const std::vector<AvbdTetMaterialFiniteStiffnessRow>& rows,
-    std::uint32_t tetIndex)
+    const TetRows& rows, std::uint32_t tetIndex)
 {
   if (tetIndex < rows.size() && rows[tetIndex].tet == tetIndex) {
     return &rows[tetIndex];
@@ -348,15 +393,16 @@ findAvbdTetMaterialFiniteStiffnessRow(
 /// then the row stiffness is increased toward the material stiffness after the
 /// sweep based on the observed spring constraint error. These rows
 /// intentionally carry no dual value.
+template <typename SpringRows = std::vector<AvbdSpringFiniteStiffnessRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
-    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    SpringRows& springRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
@@ -463,29 +509,38 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// switch between static and dynamic Coulomb modes. Full contact-manifold
 /// friction persistence, broader self-contact friction envelopes, tetrahedral
 /// row mixing, and parallel dual scheduling remain later slices.
+template <
+    typename PositionVector,
+    typename FixedMask,
+    typename ContactRows = std::vector<AvbdHalfSpaceContactRow>,
+    typename AttachmentRows = std::vector<AvbdPointAttachmentRow>,
+    typename SpringRows = std::vector<AvbdSpringFiniteStiffnessRow>,
+    typename FrictionRows = std::vector<AvbdHalfSpaceFrictionRow>,
+    typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
+    typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
-    std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    PositionVector& positions,
+    std::span<const double> masses,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
-    std::vector<AvbdHalfSpaceContactRow>& contactRows,
-    std::vector<AvbdPointAttachmentRow>& attachmentRows,
-    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    ContactRows& contactRows,
+    AttachmentRows& attachmentRows,
+    SpringRows& springRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
     const AvbdHalfSpaceContactOptions& contactOptions,
     const AvbdPointAttachmentOptions& attachmentOptions,
     const AvbdSpringFiniteStiffnessOptions& springOptions,
-    std::vector<AvbdHalfSpaceFrictionRow>* frictionRows = nullptr,
+    FrictionRows* frictionRows = nullptr,
     const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr,
-    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    SelfContactRows* selfContactRows = nullptr,
     const SelfContactAdjacency* selfContact = nullptr,
     const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
-    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    SelfContactFrictionRows* selfContactFrictionRows = nullptr,
     const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
@@ -767,13 +822,36 @@ struct TetMeshElement
 /// (0..3) within that tet.
 struct TetAdjacency
 {
-  std::vector<std::vector<std::pair<std::uint32_t, std::uint8_t>>> incidentTets;
+  using IncidentTet = std::pair<std::uint32_t, std::uint8_t>;
+  using IncidentTetVector
+      = std::vector<IncidentTet, ::dart::common::StlAllocator<IncidentTet>>;
+  using IncidentTetVectorAllocator
+      = ::dart::common::StlAllocator<IncidentTetVector>;
+  using IncidentTetRows
+      = std::vector<IncidentTetVector, IncidentTetVectorAllocator>;
+
+  TetAdjacency() : TetAdjacency(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit TetAdjacency(::dart::common::MemoryAllocator& allocator)
+    : incidentTets(IncidentTetVectorAllocator{allocator}),
+      m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
+  IncidentTetRows incidentTets;
 
   static TetAdjacency build(
-      std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+      std::size_t vertexCount,
+      std::span<const TetMeshElement> tets,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
   {
-    TetAdjacency adjacency;
-    adjacency.incidentTets.resize(vertexCount);
+    TetAdjacency adjacency(allocator);
+    adjacency.resize(vertexCount);
     for (std::uint32_t t = 0; t < tets.size(); ++t) {
       for (std::uint8_t local = 0; local < 4; ++local) {
         const std::uint32_t vertex = tets[t].vertices[local];
@@ -784,14 +862,33 @@ struct TetAdjacency
     }
     return adjacency;
   }
+
+private:
+  void resize(std::size_t vertexCount)
+  {
+    if (vertexCount < incidentTets.size()) {
+      incidentTets.resize(vertexCount);
+      return;
+    }
+    incidentTets.reserve(vertexCount);
+    while (incidentTets.size() < vertexCount) {
+      incidentTets.emplace_back(
+          ::dart::common::StlAllocator<IncidentTet>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 /// Build the vertex-graph coloring induced by a tetrahedral mesh (each tet is a
 /// 4-vertex clique in the vertex graph).
 inline VertexColoring colorTetMesh(
-    std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+    std::size_t vertexCount,
+    std::span<const TetMeshElement> tets,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const TetMeshElement& tet : tets) {
     adjacency.addTetrahedron(
         tet.vertices[0], tet.vertices[1], tet.vertices[2], tet.vertices[3]);
@@ -851,9 +948,9 @@ inline void addFemTetTerm(
 inline VertexBlock assembleTetVertexBlock(
     std::uint32_t vertex,
     const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     const TetAdjacency& adjacency,
     double mu,
     double lambda,
@@ -905,10 +1002,10 @@ inline VertexBlock assembleTetVertexBlock(
 /// colorTetMesh / TetAdjacency::build).
 inline BlockDescentStats blockDescentTetMesh(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep,
@@ -984,24 +1081,30 @@ inline BlockDescentStats blockDescentTetMesh(
 /// self-contact rows let pure-tet scenes share the same hard normal/friction
 /// row path as the mass-spring envelope; when they are absent, the existing
 /// lagged VBD self-contact penalty remains available.
+template <
+    typename PositionVector,
+    typename FixedMask,
+    typename TetRows = std::vector<AvbdTetMaterialFiniteStiffnessRow>,
+    typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
+    typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
-    std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    PositionVector& positions,
+    std::span<const double> masses,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep,
-    std::vector<AvbdTetMaterialFiniteStiffnessRow>& tetRows,
+    TetRows& tetRows,
     const VertexColoring& coloring,
     const TetAdjacency& adjacency,
     const BlockDescentOptions& options,
     const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions,
     const SelfContactAdjacency* selfContact = nullptr,
-    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    SelfContactRows* selfContactRows = nullptr,
     const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
-    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    SelfContactFrictionRows* selfContactFrictionRows = nullptr,
     const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
@@ -1217,10 +1320,10 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
 /// Neo-Hookean body. Provided for convergence/energy-decrease verification.
 inline double tetMeshObjective(
     const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep)
@@ -1256,10 +1359,12 @@ inline double tetMeshObjective(
 /// that mixes distance springs and volumetric Neo-Hookean tetrahedra.
 inline VertexColoring colorDeformable(
     std::size_t vertexCount,
-    const std::vector<SpringElement>& springs,
-    const std::vector<TetMeshElement>& tets)
+    std::span<const SpringElement> springs,
+    std::span<const TetMeshElement> tets,
+    ::dart::common::MemoryAllocator& allocator
+    = ::dart::common::MemoryAllocator::GetDefault())
 {
-  VertexAdjacency adjacency(vertexCount);
+  VertexAdjacency adjacency(vertexCount, allocator);
   for (const SpringElement& spring : springs) {
     adjacency.addEdge(spring.a, spring.b);
   }
@@ -1279,14 +1384,14 @@ namespace detail {
 /// Stable Neo-Hookean tetrahedra.
 inline VertexBlock assembleDeformableVertexBlock(
     std::uint32_t vertex,
-    const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const double> masses,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const SpringElement> springs,
     const SpringAdjacency& springAdjacency,
     double springStiffness,
     bool clampSpringHessian,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     const TetAdjacency& tetAdjacency,
     double mu,
     double lambda,
@@ -1366,31 +1471,38 @@ inline VertexBlock assembleDeformableVertexBlock(
 /// stiffness-proportional damping opposing the per-step displacement; it
 /// requires `stepStartPositions` (the positions x^t at the start of the step)
 /// and is a no-op when that is null or the coefficient is zero.
+template <
+    typename PositionVector,
+    typename FixedMask,
+    typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
+    typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats blockDescentDeformable(
-    std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
-    const std::vector<std::uint8_t>& fixed,
-    const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    PositionVector& positions,
+    std::span<const double> masses,
+    const FixedMask& fixed,
+    std::span<const Eigen::Vector3d> inertialTargets,
+    std::span<const SpringElement> springs,
     double springStiffness,
     const SpringAdjacency& springAdjacency,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     const TetAdjacency& tetAdjacency,
     double timeStep,
     const VertexColoring& coloring,
     const BlockDescentOptions& options,
-    const std::vector<Eigen::Vector3d>* stepStartPositions = nullptr,
-    const std::vector<ContactPlane>* contactPlanes = nullptr,
+    std::span<const Eigen::Vector3d> stepStartPositions = {},
+    std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
-    const SelfContactAdjacency* selfContact = nullptr)
+    const SelfContactAdjacency* selfContact = nullptr,
+    ChebyshevTwoStepsBackVector* chebyshevTwoStepsBackScratch = nullptr,
+    ChebyshevBeforeSweepVector* chebyshevBeforeSweepScratch = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
   const double invDt2 = 1.0 / (timeStep * timeStep);
   const bool useRayleigh
-      = options.rayleighDamping > 0.0 && stepStartPositions != nullptr;
+      = options.rayleighDamping > 0.0 && !stepStartPositions.empty();
 
   const auto assemble = [&](std::uint32_t vertex) {
     const SelfContactAdjacency* blockSelfContact
@@ -1422,21 +1534,21 @@ inline BlockDescentStats blockDescentDeformable(
       addRayleighDamping(
           block,
           elasticHessian,
-          positions[vertex] - (*stepStartPositions)[vertex],
+          positions[vertex] - stepStartPositions[vertex],
           options.rayleighDamping,
           timeStep);
       if (selfContact != nullptr) {
         addSelfContactTerms(block, vertex, *selfContact, positions);
       }
     }
-    if (contactPlanes != nullptr && vertex < contactPlanes->size()) {
-      const ContactPlane& plane = (*contactPlanes)[vertex];
+    if (!contactPlanes.empty() && vertex < contactPlanes.size()) {
+      const ContactPlane& plane = contactPlanes[vertex];
       addHalfSpacePenaltyContact(block, positions[vertex], plane);
-      if (contactFriction > 0.0 && stepStartPositions != nullptr) {
+      if (contactFriction > 0.0 && !stepStartPositions.empty()) {
         addHalfSpaceFriction(
             block,
             positions[vertex],
-            (*stepStartPositions)[vertex],
+            stepStartPositions[vertex],
             plane,
             contactFriction);
       }
@@ -1446,16 +1558,22 @@ inline BlockDescentStats blockDescentDeformable(
 
   const double convergenceSquared
       = options.convergenceDisplacement * options.convergenceDisplacement;
-  std::vector<Eigen::Vector3d> twoStepsBack;
+  ChebyshevTwoStepsBackVector localTwoStepsBack;
+  ChebyshevBeforeSweepVector localBeforeSweep;
+  ChebyshevTwoStepsBackVector& twoStepsBack
+      = chebyshevTwoStepsBackScratch != nullptr ? *chebyshevTwoStepsBackScratch
+                                                : localTwoStepsBack;
+  ChebyshevBeforeSweepVector& beforeSweep
+      = chebyshevBeforeSweepScratch != nullptr ? *chebyshevBeforeSweepScratch
+                                               : localBeforeSweep;
   if (options.useChebyshev) {
-    twoStepsBack = positions;
+    twoStepsBack.assign(positions.begin(), positions.end());
   }
   double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
-    std::vector<Eigen::Vector3d> beforeSweep;
     if (options.useChebyshev) {
-      beforeSweep = positions;
+      beforeSweep.assign(positions.begin(), positions.end());
     }
     double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
@@ -1480,7 +1598,7 @@ inline BlockDescentStats blockDescentDeformable(
           }
         }
       }
-      twoStepsBack = beforeSweep;
+      twoStepsBack.assign(beforeSweep.begin(), beforeSweep.end());
     }
     if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
       break;
@@ -1503,12 +1621,12 @@ inline BlockDescentStats blockDescentDeformable(
 /// objective G(x) for convergence/energy-decrease verification.
 inline double deformableObjective(
     const std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep)
@@ -1552,10 +1670,10 @@ inline double deformableObjective(
 /// updated in place.
 inline BlockDescentStats blockDescentMassSpringGround(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const std::vector<ContactPlane>& planes,
@@ -1614,15 +1732,16 @@ inline BlockDescentStats blockDescentMassSpringGround(
 /// dual pass updates the row lambda/stiffness after every sweep. Row
 /// generation, persistent row-ID mapping, friction, and multi-contact manifolds
 /// are layered on top of this primitive.
+template <typename ContactRows = std::vector<AvbdHalfSpaceContactRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdGround(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
-    std::vector<AvbdHalfSpaceContactRow>& contactRows,
+    ContactRows& contactRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
@@ -1707,15 +1826,16 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
 /// is the first non-contact hard-row kernel slice: a full 3D attachment is
 /// represented by scalar rows, usually one per world axis, so row identity,
 /// warm starting, force bounds, and stiffness growth remain per scalar row.
+template <typename AttachmentRows = std::vector<AvbdPointAttachmentRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
-    std::vector<AvbdPointAttachmentRow>& attachmentRows,
+    AttachmentRows& attachmentRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
@@ -1792,11 +1912,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
 /// step). `positions` is updated in place.
 inline BlockDescentStats blockDescentMassSpringGroundFriction(
     std::vector<Eigen::Vector3d>& positions,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<Eigen::Vector3d>& stepStartPositions,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const std::vector<ContactPlane>& planes,

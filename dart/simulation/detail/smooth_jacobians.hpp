@@ -41,19 +41,60 @@
 // is not part of the DART 7 public-facade promotion target. In-tree tests may
 // include it directly.
 
+#include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <entt/fwd.hpp>
+#include <entt/entity/entity.hpp>
+
+#include <vector>
 
 namespace dart::simulation::comps {
 struct MultibodyStructure;
 } // namespace dart::simulation::comps
 
 namespace dart::simulation::detail {
+
+/// One generalized coordinate used by the contact-free differentiable
+/// multibody Jacobian path.
+struct ContactFreeStepCoordinate
+{
+  entt::entity joint = entt::null;
+  Eigen::Index local = 0;
+};
+
+using ContactFreeStepCoordinateAllocator
+    = common::StlAllocator<ContactFreeStepCoordinate>;
+using ContactFreeStepCoordinateScratch = std::
+    vector<ContactFreeStepCoordinate, ContactFreeStepCoordinateAllocator>;
+
+/// Reusable dynamics-term storage for contact-free differentiable Jacobians.
+///
+/// The contact-free derivative path evaluates base dynamics terms and, for
+/// manifold/fallback joints, perturbed dynamics terms. This bundle lets the
+/// World keep the DART-owned tree/RNEA scratch and the caller-owned Eigen
+/// result capacity across same-shape Jacobian calls.
+struct ContactFreeStepDynamicsTermsScratch
+{
+  explicit ContactFreeStepDynamicsTermsScratch(
+      common::MemoryAllocator& allocator
+      = common::MemoryAllocator::GetDefault())
+    : dynamicsTermsScratch(allocator)
+  {
+    // Empty.
+  }
+
+  compute::MultibodyDynamicsTermsScratch dynamicsTermsScratch;
+  compute::MultibodyDynamicsTerms baseTerms;
+  compute::MultibodyDynamicsTerms plusTerms;
+  compute::MultibodyDynamicsTerms minusTerms;
+};
 
 /// Analytic contact-free single-step Jacobian for ONE multibody, evaluated at
 /// its current (pre-step) joint state. Supports fixed, revolute, prismatic,
@@ -109,6 +150,9 @@ namespace dart::simulation::detail {
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::VectorXd& tau);
+    const Eigen::Ref<const Eigen::VectorXd>& tau,
+    ContactFreeStepCoordinateScratch* coordinateScratch = nullptr,
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch = nullptr,
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch = nullptr);
 
 } // namespace dart::simulation::detail

@@ -35,6 +35,9 @@
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -43,6 +46,7 @@
 #include <array>
 #include <limits>
 #include <span>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -78,10 +82,9 @@ inline Eigen::Quaterniond normalizeAvbdRigidOrientation(
 }
 
 //==============================================================================
-inline Eigen::Vector3d avbdRigidRotationVector(
-    const Eigen::Quaterniond& orientation)
+inline Eigen::Vector3d avbdRigidRotationVectorFromNormalized(
+    const Eigen::Quaterniond& q)
 {
-  const Eigen::Quaterniond q = normalizeAvbdRigidOrientation(orientation);
   const Eigen::Vector3d vector = q.vec();
   const double vectorNorm = vector.norm();
   if (vectorNorm <= 0.0 || !std::isfinite(vectorNorm)) {
@@ -95,6 +98,14 @@ inline Eigen::Vector3d avbdRigidRotationVector(
     angle += 2.0 * kAvbdRigidPi;
   }
   return (angle / vectorNorm) * vector;
+}
+
+//==============================================================================
+inline Eigen::Vector3d avbdRigidRotationVector(
+    const Eigen::Quaterniond& orientation)
+{
+  const Eigen::Quaterniond q = normalizeAvbdRigidOrientation(orientation);
+  return avbdRigidRotationVectorFromNormalized(q);
 }
 
 //==============================================================================
@@ -322,6 +333,66 @@ struct AvbdRigidBlockDescentStats
 
 struct AvbdRigidBodyRowIndexScratch
 {
+  using SizeAllocator = ::dart::common::StlAllocator<std::size_t>;
+  using KeyAllocator = ::dart::common::StlAllocator<std::uint64_t>;
+  using SizeVector = std::vector<std::size_t, SizeAllocator>;
+  using KeyVector = std::vector<std::uint64_t, KeyAllocator>;
+
+  AvbdRigidBodyRowIndexScratch() = default;
+
+  explicit AvbdRigidBodyRowIndexScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : attachmentRowOffsets(SizeAllocator{allocator}),
+      attachmentRowIndices(SizeAllocator{allocator}),
+      attachmentRowCursor(SizeAllocator{allocator}),
+      attachmentRowBodyKeys(KeyAllocator{allocator}),
+      pointPairRowOffsets(SizeAllocator{allocator}),
+      pointPairRowIndices(SizeAllocator{allocator}),
+      pointPairRowCursor(SizeAllocator{allocator}),
+      pointPairRowBodyKeys(KeyAllocator{allocator}),
+      distanceSpringRowOffsets(SizeAllocator{allocator}),
+      distanceSpringRowIndices(SizeAllocator{allocator}),
+      distanceSpringRowCursor(SizeAllocator{allocator}),
+      distanceSpringRowBodyKeys(KeyAllocator{allocator}),
+      angularPairRowOffsets(SizeAllocator{allocator}),
+      angularPairRowIndices(SizeAllocator{allocator}),
+      angularPairRowCursor(SizeAllocator{allocator}),
+      angularPairRowBodyKeys(KeyAllocator{allocator}),
+      frictionPairRowOffsets(SizeAllocator{allocator}),
+      frictionPairRowIndices(SizeAllocator{allocator}),
+      frictionPairRowCursor(SizeAllocator{allocator}),
+      frictionPairRowBodyKeys(KeyAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<SizeAllocator, Allocator>>>
+  explicit AvbdRigidBodyRowIndexScratch(const Allocator& allocator)
+    : attachmentRowOffsets(SizeAllocator{allocator}),
+      attachmentRowIndices(SizeAllocator{allocator}),
+      attachmentRowCursor(SizeAllocator{allocator}),
+      attachmentRowBodyKeys(KeyAllocator{allocator}),
+      pointPairRowOffsets(SizeAllocator{allocator}),
+      pointPairRowIndices(SizeAllocator{allocator}),
+      pointPairRowCursor(SizeAllocator{allocator}),
+      pointPairRowBodyKeys(KeyAllocator{allocator}),
+      distanceSpringRowOffsets(SizeAllocator{allocator}),
+      distanceSpringRowIndices(SizeAllocator{allocator}),
+      distanceSpringRowCursor(SizeAllocator{allocator}),
+      distanceSpringRowBodyKeys(KeyAllocator{allocator}),
+      angularPairRowOffsets(SizeAllocator{allocator}),
+      angularPairRowIndices(SizeAllocator{allocator}),
+      angularPairRowCursor(SizeAllocator{allocator}),
+      angularPairRowBodyKeys(KeyAllocator{allocator}),
+      frictionPairRowOffsets(SizeAllocator{allocator}),
+      frictionPairRowIndices(SizeAllocator{allocator}),
+      frictionPairRowCursor(SizeAllocator{allocator}),
+      frictionPairRowBodyKeys(KeyAllocator{allocator})
+  {
+  }
+
   void clear()
   {
     attachmentRowOffsets.clear();
@@ -364,10 +435,10 @@ struct AvbdRigidBodyRowIndexScratch
               ? bodyCapacity + 1u
               : bodyCapacity;
     const auto reserveFamily = [offsetCapacity](
-                                   std::vector<std::size_t>& offsets,
-                                   std::vector<std::size_t>& indices,
-                                   std::vector<std::size_t>& cursor,
-                                   std::vector<std::uint64_t>& keys,
+                                   auto& offsets,
+                                   auto& indices,
+                                   auto& cursor,
+                                   auto& keys,
                                    std::size_t rowCapacity,
                                    std::size_t indexCapacity) {
       offsets.reserve(offsetCapacity);
@@ -413,30 +484,30 @@ struct AvbdRigidBodyRowIndexScratch
         2u * frictionPairRowCapacity);
   }
 
-  std::vector<std::size_t> attachmentRowOffsets;
-  std::vector<std::size_t> attachmentRowIndices;
-  std::vector<std::size_t> attachmentRowCursor;
-  std::vector<std::uint64_t> attachmentRowBodyKeys;
+  SizeVector attachmentRowOffsets;
+  SizeVector attachmentRowIndices;
+  SizeVector attachmentRowCursor;
+  KeyVector attachmentRowBodyKeys;
   std::size_t attachmentRowBodyCount = 0u;
-  std::vector<std::size_t> pointPairRowOffsets;
-  std::vector<std::size_t> pointPairRowIndices;
-  std::vector<std::size_t> pointPairRowCursor;
-  std::vector<std::uint64_t> pointPairRowBodyKeys;
+  SizeVector pointPairRowOffsets;
+  SizeVector pointPairRowIndices;
+  SizeVector pointPairRowCursor;
+  KeyVector pointPairRowBodyKeys;
   std::size_t pointPairRowBodyCount = 0u;
-  std::vector<std::size_t> distanceSpringRowOffsets;
-  std::vector<std::size_t> distanceSpringRowIndices;
-  std::vector<std::size_t> distanceSpringRowCursor;
-  std::vector<std::uint64_t> distanceSpringRowBodyKeys;
+  SizeVector distanceSpringRowOffsets;
+  SizeVector distanceSpringRowIndices;
+  SizeVector distanceSpringRowCursor;
+  KeyVector distanceSpringRowBodyKeys;
   std::size_t distanceSpringRowBodyCount = 0u;
-  std::vector<std::size_t> angularPairRowOffsets;
-  std::vector<std::size_t> angularPairRowIndices;
-  std::vector<std::size_t> angularPairRowCursor;
-  std::vector<std::uint64_t> angularPairRowBodyKeys;
+  SizeVector angularPairRowOffsets;
+  SizeVector angularPairRowIndices;
+  SizeVector angularPairRowCursor;
+  KeyVector angularPairRowBodyKeys;
   std::size_t angularPairRowBodyCount = 0u;
-  std::vector<std::size_t> frictionPairRowOffsets;
-  std::vector<std::size_t> frictionPairRowIndices;
-  std::vector<std::size_t> frictionPairRowCursor;
-  std::vector<std::uint64_t> frictionPairRowBodyKeys;
+  SizeVector frictionPairRowOffsets;
+  SizeVector frictionPairRowIndices;
+  SizeVector frictionPairRowCursor;
+  KeyVector frictionPairRowBodyKeys;
   std::size_t frictionPairRowBodyCount = 0u;
 };
 
@@ -457,6 +528,15 @@ inline Matrix6d avbdRigidBodyMassMatrix(
 }
 
 //==============================================================================
+inline Eigen::Vector3d avbdRigidBodyOrientationErrorFromNormalized(
+    const Eigen::Quaterniond& orientation,
+    const Eigen::Quaterniond& targetOrientation)
+{
+  return avbdRigidRotationVectorFromNormalized(
+      orientation * targetOrientation.conjugate());
+}
+
+//==============================================================================
 inline Eigen::Vector3d avbdRigidBodyOrientationError(
     const Eigen::Quaterniond& orientation,
     const Eigen::Quaterniond& targetOrientation)
@@ -464,7 +544,7 @@ inline Eigen::Vector3d avbdRigidBodyOrientationError(
   const Eigen::Quaterniond current = normalizeAvbdRigidOrientation(orientation);
   const Eigen::Quaterniond target
       = normalizeAvbdRigidOrientation(targetOrientation);
-  return avbdRigidRotationVector(current * target.conjugate());
+  return avbdRigidBodyOrientationErrorFromNormalized(current, target);
 }
 
 //==============================================================================
@@ -504,8 +584,11 @@ inline void addAvbdRigidBodyInertiaTermLowerTriangle(
   const Eigen::Matrix3d rotation = orientation.toRotationMatrix();
   const Eigen::Matrix3d worldInertia
       = rotation * bodyInertia * rotation.transpose();
-  const Eigen::Vector3d orientationError = avbdRigidBodyOrientationError(
-      state.orientation, inertialTarget.orientation);
+  const Eigen::Quaterniond targetOrientation
+      = normalizeAvbdRigidOrientation(inertialTarget.orientation);
+  const Eigen::Vector3d orientationError
+      = avbdRigidBodyOrientationErrorFromNormalized(
+          orientation, targetOrientation);
 
   block.force.head<3>().noalias()
       -= invDt2 * mass * (state.position - inertialTarget.position);
@@ -1969,11 +2052,50 @@ inline void applyAvbdRigidBodyStep(
 //==============================================================================
 struct AvbdRigidContactManifoldRowScratch
 {
-  std::vector<AvbdRigidContactManifoldPoint> activeContacts;
-  std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> contactLocalPoints;
-  std::vector<AvbdScalarRowDescriptor> normalDescriptors;
-  std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
-  std::vector<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
+  using ContactAllocator
+      = ::dart::common::StlAllocator<AvbdRigidContactManifoldPoint>;
+  using ContactLocalPointAllocator = ::dart::common::StlAllocator<
+      std::pair<Eigen::Vector3d, Eigen::Vector3d>>;
+  using DescriptorAllocator
+      = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
+  using FrictionDirectionAllocator = ::dart::common::StlAllocator<
+      std::pair<AvbdScalarRowKey, Eigen::Vector3d>>;
+
+  AvbdRigidContactManifoldRowScratch() = default;
+
+  explicit AvbdRigidContactManifoldRowScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : activeContacts(ContactAllocator{allocator}),
+      contactLocalPoints(ContactLocalPointAllocator{allocator}),
+      normalDescriptors(DescriptorAllocator{allocator}),
+      frictionDescriptors(DescriptorAllocator{allocator}),
+      previousFrictionDirections(FrictionDirectionAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<ContactAllocator, Allocator>>>
+  explicit AvbdRigidContactManifoldRowScratch(const Allocator& allocator)
+    : activeContacts(ContactAllocator{allocator}),
+      contactLocalPoints(ContactLocalPointAllocator{allocator}),
+      normalDescriptors(DescriptorAllocator{allocator}),
+      frictionDescriptors(DescriptorAllocator{allocator}),
+      previousFrictionDirections(FrictionDirectionAllocator{allocator})
+  {
+  }
+
+  std::vector<AvbdRigidContactManifoldPoint, ContactAllocator> activeContacts;
+  std::vector<
+      std::pair<Eigen::Vector3d, Eigen::Vector3d>,
+      ContactLocalPointAllocator>
+      contactLocalPoints;
+  std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> normalDescriptors;
+  std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> frictionDescriptors;
+  std::vector<
+      std::pair<AvbdScalarRowKey, Eigen::Vector3d>,
+      FrictionDirectionAllocator>
       previousFrictionDirections;
 };
 
@@ -1985,35 +2107,143 @@ struct AvbdRigidPointJointActiveAxis
 
 struct AvbdRigidPointJointRowScratch
 {
-  std::vector<AvbdRigidPointJointActiveAxis> activeRows;
-  std::vector<AvbdScalarRowDescriptor> descriptors;
+  using ActiveAxisAllocator
+      = ::dart::common::StlAllocator<AvbdRigidPointJointActiveAxis>;
+  using DescriptorAllocator
+      = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
+
+  AvbdRigidPointJointRowScratch() = default;
+
+  explicit AvbdRigidPointJointRowScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : activeRows(ActiveAxisAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<ActiveAxisAllocator, Allocator>>>
+  explicit AvbdRigidPointJointRowScratch(const Allocator& allocator)
+    : activeRows(ActiveAxisAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
+  std::vector<AvbdRigidPointJointActiveAxis, ActiveAxisAllocator> activeRows;
+  std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> descriptors;
 };
 
 struct AvbdRigidAngularMotorRowScratch
 {
-  std::vector<const AvbdRigidAngularMotor*> activeRows;
-  std::vector<AvbdScalarRowDescriptor> descriptors;
+  using MotorAllocator
+      = ::dart::common::StlAllocator<const AvbdRigidAngularMotor*>;
+  using DescriptorAllocator
+      = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
+
+  AvbdRigidAngularMotorRowScratch() = default;
+
+  explicit AvbdRigidAngularMotorRowScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : activeRows(MotorAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<MotorAllocator, Allocator>>>
+  explicit AvbdRigidAngularMotorRowScratch(const Allocator& allocator)
+    : activeRows(MotorAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
+  std::vector<const AvbdRigidAngularMotor*, MotorAllocator> activeRows;
+  std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> descriptors;
 };
 
 struct AvbdRigidMotorRowScratch
 {
-  std::vector<const AvbdRigidLinearMotor*> activeLinearRows;
-  std::vector<const AvbdRigidAngularMotor*> activeAngularRows;
+  using LinearMotorPointerAllocator
+      = ::dart::common::StlAllocator<const AvbdRigidLinearMotor*>;
+  using AngularMotorPointerAllocator
+      = ::dart::common::StlAllocator<const AvbdRigidAngularMotor*>;
+
+  AvbdRigidMotorRowScratch() = default;
+
+  explicit AvbdRigidMotorRowScratch(::dart::common::MemoryAllocator& allocator)
+    : activeLinearRows(LinearMotorPointerAllocator{allocator}),
+      activeAngularRows(AngularMotorPointerAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<LinearMotorPointerAllocator, Allocator>>>
+  explicit AvbdRigidMotorRowScratch(const Allocator& allocator)
+    : activeLinearRows(LinearMotorPointerAllocator{allocator}),
+      activeAngularRows(AngularMotorPointerAllocator{allocator})
+  {
+  }
+
+  void clear()
+  {
+    activeLinearRows.clear();
+    activeAngularRows.clear();
+  }
+
+  std::vector<const AvbdRigidLinearMotor*, LinearMotorPointerAllocator>
+      activeLinearRows;
+  std::vector<const AvbdRigidAngularMotor*, AngularMotorPointerAllocator>
+      activeAngularRows;
 };
 
 struct AvbdRigidDistanceSpringRowScratch
 {
-  std::vector<const AvbdRigidBodyPointPairDistanceSpringRow*> activeRows;
+  using DistanceSpringPointerAllocator = ::dart::common::StlAllocator<
+      const AvbdRigidBodyPointPairDistanceSpringRow*>;
+
+  AvbdRigidDistanceSpringRowScratch() = default;
+
+  explicit AvbdRigidDistanceSpringRowScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : activeRows(DistanceSpringPointerAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<DistanceSpringPointerAllocator, Allocator>>>
+  explicit AvbdRigidDistanceSpringRowScratch(const Allocator& allocator)
+    : activeRows(DistanceSpringPointerAllocator{allocator})
+  {
+  }
+
+  void clear()
+  {
+    activeRows.clear();
+  }
+
+  std::vector<
+      const AvbdRigidBodyPointPairDistanceSpringRow*,
+      DistanceSpringPointerAllocator>
+      activeRows;
 };
 
 //==============================================================================
+template <typename NormalRowVector, typename FrictionRowVector>
 inline void buildAvbdRigidContactManifoldRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& normalRows,
-    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    NormalRowVector& normalRows,
+    FrictionRowVector& frictionRows,
     AvbdRigidContactManifoldRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -2334,13 +2564,14 @@ inline void buildAvbdRigidContactManifoldRows(
 }
 
 //==============================================================================
+template <typename NormalRowVector, typename FrictionRowVector>
 inline void buildAvbdRigidContactManifoldRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidContactManifoldPoint> contacts,
     AvbdScalarRowInventory& normalInventory,
     AvbdScalarRowInventory& frictionInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& normalRows,
-    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionRows,
+    NormalRowVector& normalRows,
+    FrictionRowVector& frictionRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   AvbdRigidContactManifoldRowScratch scratch;
@@ -2356,11 +2587,12 @@ inline void buildAvbdRigidContactManifoldRows(
 }
 
 //==============================================================================
+template <typename LinearRowVector>
 inline void buildAvbdRigidPointJointRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    LinearRowVector& linearRows,
     AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -2475,11 +2707,12 @@ inline void buildAvbdRigidPointJointRows(
 }
 
 //==============================================================================
+template <typename LinearRowVector>
 inline void buildAvbdRigidPointJointRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
+    LinearRowVector& linearRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   AvbdRigidPointJointRowScratch scratch;
@@ -2488,11 +2721,12 @@ inline void buildAvbdRigidPointJointRows(
 }
 
 //==============================================================================
+template <typename AngularRowVector>
 inline void buildAvbdRigidPointJointAngularRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AngularRowVector& angularRows,
     AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -2606,11 +2840,12 @@ inline void buildAvbdRigidPointJointAngularRows(
 }
 
 //==============================================================================
+template <typename AngularRowVector>
 inline void buildAvbdRigidPointJointAngularRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& angularInventory,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    AngularRowVector& angularRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   AvbdRigidPointJointRowScratch scratch;
@@ -2619,11 +2854,12 @@ inline void buildAvbdRigidPointJointAngularRows(
 }
 
 //==============================================================================
+template <typename MotorRowVector>
 inline void buildAvbdRigidAngularMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidAngularMotor> motors,
     AvbdScalarRowInventory& motorInventory,
-    std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
+    MotorRowVector& motorRows,
     double timeStep,
     AvbdRigidAngularMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
@@ -2716,11 +2952,12 @@ inline void buildAvbdRigidAngularMotorRows(
 }
 
 //==============================================================================
+template <typename MotorRowVector>
 inline void buildAvbdRigidAngularMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidAngularMotor> motors,
     AvbdScalarRowInventory& motorInventory,
-    std::vector<AvbdRigidBodyAngularPairRow>& motorRows,
+    MotorRowVector& motorRows,
     double timeStep,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -2736,13 +2973,14 @@ inline void buildAvbdRigidAngularMotorRows(
 }
 
 //==============================================================================
+template <typename LinearMotorRowVector, typename AngularMotorRowVector>
 inline void buildAvbdRigidMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidLinearMotor> linearMotors,
     std::span<const AvbdRigidAngularMotor> angularMotors,
     AvbdScalarRowInventory& motorInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearMotorRows,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularMotorRows,
+    LinearMotorRowVector& linearMotorRows,
+    AngularMotorRowVector& angularMotorRows,
     double timeStep,
     AvbdRigidMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
@@ -2938,13 +3176,14 @@ inline void buildAvbdRigidMotorRows(
 }
 
 //==============================================================================
+template <typename LinearMotorRowVector, typename AngularMotorRowVector>
 inline void buildAvbdRigidMotorRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidLinearMotor> linearMotors,
     std::span<const AvbdRigidAngularMotor> angularMotors,
     AvbdScalarRowInventory& motorInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearMotorRows,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularMotorRows,
+    LinearMotorRowVector& linearMotorRows,
+    AngularMotorRowVector& angularMotorRows,
     double timeStep,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -2962,13 +3201,14 @@ inline void buildAvbdRigidMotorRows(
 }
 
 //==============================================================================
+template <typename LinearRowVector, typename AngularRowVector>
 inline void buildAvbdRigidPointJointConstraintRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     AvbdScalarRowInventory& angularInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    LinearRowVector& linearRows,
+    AngularRowVector& angularRows,
     AvbdRigidPointJointRowScratch& linearScratch,
     AvbdRigidPointJointRowScratch& angularScratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
@@ -2990,13 +3230,14 @@ inline void buildAvbdRigidPointJointConstraintRows(
 }
 
 //==============================================================================
+template <typename LinearRowVector, typename AngularRowVector>
 inline void buildAvbdRigidPointJointConstraintRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidPointJoint> joints,
     AvbdScalarRowInventory& linearInventory,
     AvbdScalarRowInventory& angularInventory,
-    std::vector<AvbdRigidBodyPointPairRow>& linearRows,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularRows,
+    LinearRowVector& linearRows,
+    AngularRowVector& angularRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   AvbdRigidPointJointRowScratch linearScratch;
@@ -3014,11 +3255,12 @@ inline void buildAvbdRigidPointJointConstraintRows(
 }
 
 //==============================================================================
+template <typename SpringRowVector>
 inline void buildAvbdRigidDistanceSpringRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
     AvbdScalarRowInventory& springInventory,
-    std::vector<AvbdRigidBodyPointPairDistanceSpringRow>& springRows,
+    SpringRowVector& springRows,
     AvbdRigidDistanceSpringRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
@@ -3113,11 +3355,12 @@ inline void buildAvbdRigidDistanceSpringRows(
 }
 
 //==============================================================================
+template <typename SpringRowVector>
 inline void buildAvbdRigidDistanceSpringRows(
-    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyState> states,
     std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
     AvbdScalarRowInventory& springInventory,
-    std::vector<AvbdRigidBodyPointPairDistanceSpringRow>& springRows,
+    SpringRowVector& springRows,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   AvbdRigidDistanceSpringRowScratch scratch;
@@ -3140,13 +3383,17 @@ inline std::uint64_t avbdRigidBodyPairRowKey(
 }
 
 //==============================================================================
-template <typename Rows, typename KeyFn>
+template <
+    typename Rows,
+    typename KeyFn,
+    typename KeyVector,
+    typename OffsetVector>
 inline bool avbdRigidRowIndexLayoutMatches(
     const Rows& rows,
     std::size_t bodyCount,
     std::size_t cachedBodyCount,
-    const std::vector<std::uint64_t>& cachedKeys,
-    const std::vector<std::size_t>& offsets,
+    const KeyVector& cachedKeys,
+    const OffsetVector& offsets,
     KeyFn keyOf)
 {
   if (cachedBodyCount != bodyCount || offsets.size() != bodyCount + 1u
@@ -3163,12 +3410,12 @@ inline bool avbdRigidRowIndexLayoutMatches(
 }
 
 //==============================================================================
-template <typename Rows, typename KeyFn>
+template <typename Rows, typename KeyFn, typename KeyVector>
 inline void avbdRigidRefreshRowIndexLayoutKeys(
     const Rows& rows,
     std::size_t bodyCount,
     std::size_t& cachedBodyCount,
-    std::vector<std::uint64_t>& cachedKeys,
+    KeyVector& cachedKeys,
     KeyFn keyOf)
 {
   cachedBodyCount = bodyCount;
@@ -3180,17 +3427,22 @@ inline void avbdRigidRefreshRowIndexLayoutKeys(
 }
 
 //==============================================================================
+template <
+    typename AttachmentRowVector,
+    typename PointPairRowVector,
+    typename AngularPairRowVector,
+    typename FrictionPairRowVector>
 inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
-    std::vector<AvbdRigidBodyState>& states,
-    const std::vector<double>& masses,
-    const std::vector<Eigen::Matrix3d>& bodyInertias,
-    const std::vector<std::uint8_t>& fixed,
+    std::span<AvbdRigidBodyState> states,
+    std::span<const double> masses,
+    std::span<const Eigen::Matrix3d> bodyInertias,
+    std::span<const std::uint8_t> fixed,
     std::span<const AvbdRigidBodyState> inertialTargets,
     double timeStep,
-    std::vector<AvbdRigidBodyPointAttachmentRow>& attachmentRows,
-    std::vector<AvbdRigidBodyPointPairRow>& pointPairRows,
-    std::vector<AvbdRigidBodyAngularPairRow>& angularPairRows,
-    std::vector<AvbdRigidBodyPointPairFrictionRows>& frictionPairRows,
+    AttachmentRowVector& attachmentRows,
+    PointPairRowVector& pointPairRows,
+    AngularPairRowVector& angularPairRows,
+    FrictionPairRowVector& frictionPairRows,
     const AvbdRigidBlockDescentOptions& options,
     const AvbdRigidPointAttachmentOptions& rowOptions,
     const AvbdRigidPointPairFrictionOptions& frictionOptions,

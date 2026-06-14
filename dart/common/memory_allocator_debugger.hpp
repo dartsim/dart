@@ -97,13 +97,19 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
+  struct AllocationRecord
+  {
+    size_t bytes = 0;
+    size_t alignment = 0;
+  };
+
   T mInternalAllocator;
 
   size_t mSize = 0;
 
   size_t mPeak = 0;
 
-  std::unordered_map<void*, size_t> mMapPointerToSize;
+  std::unordered_map<void*, AllocationRecord> mMapPointerToAllocation;
 
   mutable std::mutex mMutex;
 };

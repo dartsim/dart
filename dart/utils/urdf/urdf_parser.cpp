@@ -48,7 +48,6 @@
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/mesh_loader.hpp"
-#include "dart/utils/urdf/backward_compatibility.hpp"
 #include "dart/utils/urdf/include_urdf.hpp"
 
 #include <tinyxml2.h>
@@ -61,6 +60,7 @@
 #include <numeric>
 #include <ranges>
 #include <unordered_map>
+#include <utility>
 
 #include <cmath>
 
@@ -556,7 +556,7 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
     default: {
       DART_ERROR(
           "Unsupported RootJointType '{}'. Using Floating instead.",
-          static_cast<int>(options.mDefaultRootJointType)); // LCOV_EXCL_LINE
+          std::to_underlying(options.mDefaultRootJointType)); // LCOV_EXCL_LINE
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
@@ -937,7 +937,8 @@ dynamics::ShapePtr UrdfParser::createShape(
       // Resolve relative URIs.
       common::Uri absoluteUri;
       if (!absoluteUri.fromRelativeUri(
-              _baseUri, std::string_view{mesh->filename})) {
+              _baseUri,
+              std::string_view(mesh->filename.data(), mesh->filename.size()))) {
         DART_WARN(
             "Failed resolving mesh URI '{}' relative to '{}'.",
             mesh->filename,

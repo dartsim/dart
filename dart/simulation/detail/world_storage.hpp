@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/compute/multibody_dynamics.hpp>
+#include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
@@ -58,9 +60,18 @@ struct WorldStorage
   using DifferentiableParameter = std::pair<entt::entity, PhysicalParameter>;
   using DifferentiableParameterAllocator
       = dart::common::StlAllocator<DifferentiableParameter>;
+  using DifferentiableTorqueAllocator = dart::common::StlAllocator<double>;
   using CollisionPairKey = std::pair<entt::entity, entt::entity>;
+  using CollisionPairAllocator = dart::common::StlAllocator<CollisionPairKey>;
+  using IgnoredCollisionPairSet = std::set<
+      CollisionPairKey,
+      std::less<CollisionPairKey>,
+      CollisionPairAllocator>;
 
   explicit WorldStorage(dart::common::MemoryAllocator& allocator);
+
+  /// Free allocator backing World-owned storage and internal scratch helpers.
+  dart::common::MemoryAllocator& memoryAllocator;
 
   /// The ECS registry holding every entity and component owned by the World.
   WorldRegistry registry;
@@ -73,6 +84,24 @@ struct WorldStorage
   std::vector<DifferentiableParameter, DifferentiableParameterAllocator>
       differentiableParameters;
 
+  /// Reusable torque collection scratch for differentiable multibody
+  /// derivatives. This avoids rebuilding a default-allocator std::vector on
+  /// every differentiable step.
+  std::vector<double, DifferentiableTorqueAllocator>
+      differentiableTorqueScratch;
+
+  /// Reusable coordinate collection scratch for the differentiable contact-free
+  /// multibody Jacobian path.
+  ContactFreeStepCoordinateScratch differentiableCoordinateScratch;
+
+  /// Reusable inverse-dynamics derivative scratch for the differentiable
+  /// contact-free multibody Jacobian path.
+  compute::MultibodyInverseDynamicsScratch differentiableInverseDynamicsScratch;
+
+  /// Reusable dynamics-term scratch for the differentiable contact-free
+  /// multibody Jacobian path.
+  ContactFreeStepDynamicsTermsScratch differentiableDynamicsTermsScratch;
+
   /// Cached explicit Jacobians of the most recent differentiable step.
   /// Populated only when the World opted into differentiable simulation and
   /// differentiable support is compiled (`DART_HAS_DIFF`); always empty
@@ -82,7 +111,7 @@ struct WorldStorage
   /// Persistent pair-level collision-query exclusions, stored with canonical
   /// endpoint ordering. This scene-level filter is applied after broad-phase
   /// candidate generation and before narrow-phase contact generation.
-  std::set<CollisionPairKey> ignoredCollisionPairs;
+  IgnoredCollisionPairSet ignoredCollisionPairs;
 };
 
 } // namespace dart::simulation::detail

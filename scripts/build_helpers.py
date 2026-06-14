@@ -112,7 +112,7 @@ def run_cmake_build(build_dir: Path, build_type: str, target: str):
     try:
         _run_build(cmd + load_suffix)
         return
-    except (subprocess.CalledProcessError, OSError):
+    except subprocess.CalledProcessError, OSError:
         # If parallelism was explicitly configured, honor that failure.
         if parallel_env and parallel_env.strip():
             raise

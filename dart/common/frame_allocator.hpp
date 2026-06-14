@@ -314,16 +314,11 @@ public:
 
     const std::size_t bytes = n * sizeof(T);
     void* p;
-    // Keep frame-backed STL storage dense for one-shot registry builds; the
-    // large-allocation cache coloring policy belongs to persistent arenas.
-    const bool colorStorage = false;
-    // Cache-line alignment helps large value pages, over-aligned SIMD payloads,
-    // and bulk storage pages. Smaller scalar allocations stay compact on the
-    // default 32-byte frame invariant to reduce cache/TLB pressure.
+    // Cache-line alignment helps large value pages and over-aligned SIMD
+    // payloads. Smaller scalar arrays stay compact on the default 32-byte
+    // frame invariant to reduce cache/TLB pressure during one-shot bake work.
     if constexpr (alignof(T) > 32 || sizeof(T) >= 64) {
-      p = mArena->allocateStlStorageCacheAligned(bytes, colorStorage);
-    } else if (bytes > 2048) {
-      p = mArena->allocateStlStorageCacheAligned(bytes, colorStorage);
+      p = mArena->allocateStlStorageCacheAligned(bytes, false);
     } else {
       p = mArena->allocateDefaultAligned(bytes);
     }

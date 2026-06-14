@@ -495,12 +495,11 @@ def test_lcp_solver_roster_reads_demo_standalone_problem_cases() -> None:
 
     assert cases_by_name["standard_spd"]["label"] == "Standard SPD"
     assert cases_by_name["standard_spd"]["surface"] == "standard"
-    assert cases_by_name["standard_spd"]["support_key"] == "standard"
     assert cases_by_name["standard_spd"]["make_problem"] == "_make_standard_spd_case"
     assert cases_by_name["standard_spd"]["tolerance"] == pytest.approx(1e-4)
     assert cases_by_name["mass_ratio_boxed"]["surface"] == "boxed"
     assert cases_by_name["mass_ratio_boxed"]["tolerance"] == pytest.approx(5e-4)
-    assert cases_by_name["friction_index_contact"]["support_key"] == "findex"
+    assert cases_by_name["friction_index_contact"]["surface"] == "findex"
     assert cases_by_name["active_friction_index_contact"]["challenge"] == (
         "two-contact active tangential bounds with coupled normals"
     )
@@ -516,7 +515,6 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
             "name": "duplicate_case",
             "label": "Duplicate case",
             "surface": "standard",
-            "support_key": "boxed",
             "challenge": "",
             "make_problem": "_missing_case",
             "tolerance": 0.0,
@@ -525,7 +523,6 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
             "name": "duplicate_case",
             "label": "Duplicate case",
             "surface": "mystery",
-            "support_key": "unknown",
             "challenge": "stale metadata",
             "make_problem": "_make_standard_spd_case",
             "tolerance": float("nan"),
@@ -554,10 +551,8 @@ def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
     assert "duplicate standalone problem names ['duplicate_case']" in message
     assert "duplicate standalone problem labels ['Duplicate case']" in message
     assert "duplicate_case: missing fields ['challenge']" in message
-    assert "surface 'standard' does not match support_key 'boxed'" in message
     assert "unknown make_problem function '_missing_case'" in message
     assert "unknown surface 'mystery'" in message
-    assert "unknown support_key 'unknown'" in message
     assert "tolerance must be positive and finite" in message
     assert "missing representative surfaces ['boxed', 'findex']" in message
 
@@ -666,7 +661,7 @@ def test_lcp_solver_roster_reads_demo_standalone_smoke_metadata() -> None:
     metadata = module.parse_demo_standalone_smoke_metadata()
 
     assert metadata["_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY"] is True
-    assert metadata["_STANDALONE_SMOKE_EXPECTED"] == (1.0, 0.5, 2.0)
+    assert metadata["_STANDALONE_SMOKE_EXPECTED"] == (1.0, 0.5, 2.0, 1.5)
     assert metadata["_STANDALONE_SUCCESS_STATUSES"] == {"Success", "MaxIterations"}
     module.check_demo_standalone_smoke_metadata()
 
@@ -1627,6 +1622,22 @@ def test_lcp_profile_evidence_rejects_unsupported_solver_category(
         )
 
     with pytest.raises(AssertionError, match="not native-supported"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
+def test_lcp_profile_evidence_rejects_concrete_support_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row() | {"solver_supports_problem": "0"})
+
+    with pytest.raises(AssertionError, match="solver_supports_problem '0' != 1"):
         module.check_performance_profile_evidence(manifest, path)
 
 

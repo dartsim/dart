@@ -11,7 +11,6 @@ assimp = ">=6.0.5,<7"
 benchmark = ">=1.9.5,<2"
 black = ">=26.5.1,<27"
 clang-format = ">=22.1.7,<23"
-cli11 = ">=2.6.2,<3"
 cmake = ">=4.2.3,<5"
 codespell = ">=2.4.2,<3"
 console_bridge = ">=1.0.2,<2"
@@ -285,7 +284,7 @@ lint-architecture-page = { cmd = [
   "scripts/check_architecture_page_lint.py",
 ] }
 
-update-api-boundary-inventory = { cmd = [
+report-api-boundary-inventory = { cmd = [
   "python",
   "scripts/generate_api_boundary_inventory.py",
 ] }
@@ -299,7 +298,6 @@ lint = { depends-on = [
   "lint-py",
   "lint-yaml",
   "lint-toml",
-  "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
@@ -394,12 +392,6 @@ check-architecture-page = { cmd = [
   "scripts/check_architecture_page_lint.py",
 ] }
 
-check-api-boundary-inventory = { cmd = [
-  "python",
-  "scripts/generate_api_boundary_inventory.py",
-  "--check",
-] }
-
 sync-ai-commands = { cmd = ["python", "scripts/sync_ai_commands.py"] }
 check-ai-commands = { cmd = [
   "python",
@@ -434,7 +426,6 @@ check-lint = { depends-on = [
   "check-lcp-solver-roster",
   "check-avbd-packets",
   "check-architecture-page",
-  "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
 
@@ -2241,6 +2232,22 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --ex
     "Release",
   ] },
 ] }
+# Tier 2 simulation scope — every simulation test INCLUDING the long poles,
+# run parallel + load-aware. This is what the authoritative verify-full gate
+# (scripts/test_all.py) uses for its simulation phase so the
+# test_rigid_ipc_paper_experiments long pole overlaps the rest of the suite
+# instead of bounding a serial run (runtimes:
+# docs/design/local_verification_pipeline.md).
+test-simulation-full = { cmd = "python scripts/ctest_tier.py -L simulation", depends-on = [
+  { task = "build-tests", args = [
+    "ON",
+    "Release",
+  ] },
+  { task = "build-simulation-tests", args = [
+    "ON",
+    "Release",
+  ] },
+] }
 # Uses read-only check-lint (not autofix lint): a gate must not mutate sources
 # while builds run in parallel. Run `pixi run lint` first to auto-fix.
 verify = { depends-on = [
@@ -2471,7 +2478,6 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-py",
   "lint-yaml",
-  "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
@@ -2502,7 +2508,6 @@ check-lint = { depends-on = [
   "check-dart7-clean-break-policy",
   "check-api-boundaries",
   "check-lcp-solver-roster",
-  "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
 
@@ -3016,7 +3021,7 @@ test-gz = { cmd = """
 ] }
 
 #======================
-# Feature: Python 3.12 Wheel Building
+# Feature: Python Wheel Building (shared notes)
 #======================
 #
 # IMPORTANT NOTES:
@@ -3025,252 +3030,6 @@ test-gz = { cmd = """
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
 # - Wheel builds enable the Filament-backed dartpy.gui surface and fetch the
 #   pinned upstream Filament SDK when a packaged Filament provider is not used.
-
-[feature.py312-wheel]
-channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
-
-[feature.py312-wheel.dependencies]
-python = "3.12.*"
-pip = ">=26.1.2,<27"
-scikit-build-core = ">=0.12.1,<0.13"
-nanobind = ">=2.12.0,<3"
-cmake = ">=4.2.3,<5"
-ninja = ">=1.13.2,<2"
-assimp = ">=6.0.5,<7"
-console_bridge = ">=1.0.2,<2"
-eigen = ">=5.0.1,<6"
-fmt = ">=12.1.0,<13"
-glfw = ">=3.4,<4"
-imgui = ">=1.92.8,<2"
-libboost-devel = ">=1.91.0,<2"
-libjpeg-turbo = ">=3.1.4.1,<4"
-octomap = ">=1.10.0,<2"
-libpng = ">=1.6.58,<2"
-tinyxml2 = ">=11.0.0,<12"
-urdfdom = ">=5.1.2,<6"
-numpy = ">=2.4.6,<3"
-# Testing and publishing
-uv = ">=0.11.19,<0.12"
-twine = ">=6.2.0,<7"
-
-[feature.py312-wheel.target.linux-64.dependencies]
-auditwheel = ">=6.7.0,<7"
-patchelf = ">=0.17.2,<0.18"
-mesalib = ">=26.0.3,<27"
-libglvnd = ">=1.7.0,<2"
-
-[feature.py312-wheel.target.osx-64.dependencies]
-delocate = ">=0.13.0,<0.14"
-
-[feature.py312-wheel.target.osx-arm64.dependencies]
-delocate = ">=0.13.0,<0.14"
-
-[feature.py312-wheel.target.win-64.dependencies]
-delvewheel = ">=1.13.0,<2"
-
-[feature.py312-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-linux-core", args = [
-    "cp312",
-  ] },
-] }
-
-[feature.py312-wheel.target.win-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-windows-core", args = [
-    "cp312",
-  ] },
-] }
-
-[feature.py312-wheel.tasks]
-wheel-verify = { depends-on = [
-  { task = "wheel-verify-core", args = [
-    "cp312",
-  ] },
-] }
-
-wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp312"] }] }
-
-wheel-upload = { depends-on = [
-  { task = "wheel-upload-core", args = [
-    "cp312",
-  ] },
-] }
-
-wheel-upload-test = { depends-on = [
-  { task = "wheel-upload-test-core", args = [
-    "cp312",
-  ] },
-] }
-
-wheel-publish-test = { depends-on = [
-  "wheel-build",
-  "wheel-repair",
-  "wheel-verify",
-  "wheel-test",
-  "wheel-upload-test",
-] }
-
-wheel-publish = { depends-on = [
-  "wheel-build",
-  "wheel-repair",
-  "wheel-verify",
-  "wheel-test",
-  "wheel-upload",
-] }
-
-# macOS-specific: imgui needs to be built from source (not available on conda-forge for macOS)
-[feature.py312-wheel.target.osx-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-# delocate-wheel repairs in-place when -w points to the same directory as the source wheel.
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp312",
-    "x86_64",
-  ] },
-] }
-
-[feature.py312-wheel.target.osx-arm64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp312",
-    "arm64",
-  ] },
-] }
-
-#======================
-# Feature: Python 3.13 Wheel Building
-#======================
-
-[feature.py313-wheel]
-channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
-
-[feature.py313-wheel.dependencies]
-python = "3.13.*"
-pip = ">=26.1.2,<27"
-scikit-build-core = ">=0.12.1,<0.13"
-nanobind = ">=2.12.0,<3"
-cmake = ">=4.2.3,<5"
-ninja = ">=1.13.2,<2"
-assimp = ">=6.0.5,<7"
-console_bridge = ">=1.0.2,<2"
-eigen = ">=5.0.1,<6"
-fmt = ">=12.1.0,<13"
-glfw = ">=3.4,<4"
-imgui = ">=1.92.8,<2"
-libboost-devel = ">=1.91.0,<2"
-libjpeg-turbo = ">=3.1.4.1,<4"
-octomap = ">=1.10.0,<2"
-libpng = ">=1.6.58,<2"
-tinyxml2 = ">=11.0.0,<12"
-urdfdom = ">=5.1.2,<6"
-numpy = ">=2.4.6,<3"
-# Testing and publishing
-uv = ">=0.11.19,<0.12"
-twine = ">=6.2.0,<7"
-
-[feature.py313-wheel.target.linux-64.dependencies]
-auditwheel = ">=6.7.0,<7"
-patchelf = ">=0.17.2,<0.18"
-mesalib = ">=26.0.3,<27"
-libglvnd = ">=1.7.0,<2"
-
-[feature.py313-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-# auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-linux-core", args = [
-    "cp313",
-  ] },
-] }
-
-[feature.py313-wheel.target.osx-64.dependencies]
-delocate = ">=0.13.0,<0.14"
-
-[feature.py313-wheel.target.osx-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-# delocate-wheel repairs in-place. No extra cleanup needed.
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp313",
-    "x86_64",
-  ] },
-] }
-
-[feature.py313-wheel.target.win-64.dependencies]
-delvewheel = ">=1.13.0,<2"
-
-[feature.py313-wheel.target.win-64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-windows-core", args = [
-    "cp313",
-  ] },
-] }
-
-[feature.py313-wheel.tasks]
-wheel-verify = { depends-on = [
-  { task = "wheel-verify-core", args = [
-    "cp313",
-  ] },
-] }
-
-wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
-
-wheel-upload = { depends-on = [
-  { task = "wheel-upload-core", args = [
-    "cp313",
-  ] },
-] }
-
-wheel-upload-test = { depends-on = [
-  { task = "wheel-upload-test-core", args = [
-    "cp313",
-  ] },
-] }
-
-wheel-publish-test = { depends-on = [
-  "wheel-build",
-  "wheel-repair",
-  "wheel-verify",
-  "wheel-test",
-  "wheel-upload-test",
-] }
-
-wheel-publish = { depends-on = [
-  "wheel-build",
-  "wheel-repair",
-  "wheel-verify",
-  "wheel-test",
-  "wheel-upload",
-] }
-
-[feature.py313-wheel.target.osx-arm64.dependencies]
-delocate = ">=0.13.0,<0.14"
-
-[feature.py313-wheel.target.osx-arm64.tasks]
-wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
-
-# delocate-wheel repairs in-place. No extra cleanup needed.
-wheel-repair = { depends-on = [
-  { task = "wheel-repair-macos-core", args = [
-    "cp313",
-    "arm64",
-  ] },
-] }
 
 #======================
 # Feature: Python 3.14 Wheel Building
@@ -3406,10 +3165,8 @@ default = ["py-default"]
 collision-reference = ["py-default", "collision-reference"]
 cuda = ["py-default", "cuda"]
 gazebo = ["gazebo"]
-py312-wheel = ["py312-wheel"]
-py313-wheel = ["py313-wheel"]
 py314-wheel = ["py314-wheel"]
 
 [feature.py-default.dependencies]
 assimp = ">=6.0.5,<7"
-python = "3.12.*"
+python = "3.14.*"

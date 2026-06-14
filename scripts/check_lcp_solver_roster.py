@@ -315,7 +315,7 @@ def parse_demo_profile_evidence_schema() -> dict[str, Any]:
     targets = {
         "_PROFILE_CATEGORY_SUPPORT_FIELDS",
         "_PROFILE_EVIDENCE_REQUIRED_SURFACES",
-        "_PROFILE_SOLVER_SUPPORT_FIELDS",
+        "_PROFILE_FORM_SUPPORT_FIELDS",
         "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS",
         "_PROFILE_PROBLEM_TYPE_FIELDS",
         "_SOLVER_IDENTITY_SCHEMA_VERSION",
@@ -607,7 +607,6 @@ def parse_demo_standalone_problem_case_rows() -> list[dict[str, Any]]:
             "name",
             "label",
             "surface",
-            "support_key",
             "challenge",
             "make_problem",
         )
@@ -631,7 +630,6 @@ def parse_demo_standalone_problem_case_rows() -> list[dict[str, Any]]:
                 "name": _evaluate_demo_expression(keywords["name"], {}),
                 "label": _evaluate_demo_expression(keywords["label"], {}),
                 "surface": _evaluate_demo_expression(keywords["surface"], {}),
-                "support_key": _evaluate_demo_expression(keywords["support_key"], {}),
                 "challenge": _evaluate_demo_expression(keywords["challenge"], {}),
                 "make_problem": make_problem_node.id,
                 "tolerance": (
@@ -896,7 +894,7 @@ def check_demo_representative_requirements() -> None:
 
 def check_demo_standalone_smoke_metadata() -> None:
     metadata = parse_demo_standalone_smoke_metadata()
-    expected_solution = (1.0, 0.5, 2.0)
+    expected_solution = (1.0, 0.5, 2.0, 1.5)
     expected_statuses = {"Success", "MaxIterations"}
 
     errors: list[str] = []
@@ -907,7 +905,7 @@ def check_demo_standalone_smoke_metadata() -> None:
         smoke_expected = tuple(
             float(value) for value in metadata["_STANDALONE_SMOKE_EXPECTED"]
         )
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         smoke_expected = ()
     if smoke_expected != expected_solution:
         errors.append(
@@ -944,7 +942,6 @@ def check_demo_standalone_problem_cases() -> None:
         "name",
         "label",
         "surface",
-        "support_key",
         "challenge",
         "make_problem",
         "tolerance",
@@ -976,17 +973,8 @@ def check_demo_standalone_problem_cases() -> None:
             errors.append(f"{case}: missing fields {missing_fields}")
 
         surface = str(row.get("surface", ""))
-        support_key = str(row.get("support_key", ""))
         if surface and surface not in expected_surfaces:
             errors.append(f"{case}: unknown surface {surface!r}")
-        if support_key and support_key not in expected_surfaces:
-            errors.append(f"{case}: unknown support_key {support_key!r}")
-        if surface in expected_surfaces and support_key in expected_surfaces:
-            if surface != support_key:
-                errors.append(
-                    f"{case}: surface {surface!r} does not match "
-                    f"support_key {support_key!r}"
-                )
 
         make_problem = str(row.get("make_problem", ""))
         if make_problem and make_problem not in function_names:
@@ -994,7 +982,7 @@ def check_demo_standalone_problem_cases() -> None:
 
         try:
             tolerance = float(row.get("tolerance", "nan"))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             tolerance = math.nan
         if not math.isfinite(tolerance) or tolerance <= 0.0:
             errors.append(f"{case}: tolerance must be positive and finite")
@@ -1277,14 +1265,14 @@ def check_demo_performance_profiles() -> None:
 def check_demo_profile_evidence_required_columns() -> None:
     demo_schema = parse_demo_profile_evidence_schema()
     demo_columns = tuple(demo_schema["_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"])
-    expected_solver_support_fields = {
+    expected_form_support_fields = {
         counter: PROFILE_KEY_BY_CATEGORY[category]
         for category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
     }
     expected = {
         "_PROFILE_CATEGORY_SUPPORT_FIELDS": FORM_SUPPORT_COUNTER_BY_CATEGORY,
         "_PROFILE_EVIDENCE_REQUIRED_SURFACES": PROFILE_CATEGORIES,
-        "_PROFILE_SOLVER_SUPPORT_FIELDS": expected_solver_support_fields,
+        "_PROFILE_FORM_SUPPORT_FIELDS": expected_form_support_fields,
         "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTER_BY_CATEGORY,
         "_PROFILE_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTERS,
         "_SOLVER_IDENTITY_SCHEMA_VERSION": SOLVER_IDENTITY_SCHEMA_VERSION,
@@ -2125,12 +2113,11 @@ def check_performance_profile_evidence(
             else:
                 observed_native_solvers_by_category[category].add(solver_name)
 
-            expected_support = {
+            expected_form_support = {
                 counter: _solver_support(entry, support_category)
                 for support_category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
             }
-            expected_support["solver_supports_problem"] = native_category_supported
-            for key, expected in expected_support.items():
+            for key, expected in expected_form_support.items():
                 expected_value = 1 if expected else 0
                 actual = _csv_counter_as_int(row, key)
                 if actual != expected_value:
@@ -2138,6 +2125,13 @@ def check_performance_profile_evidence(
                         f"row {row_number}: {key} {row[key]!r} != "
                         f"{expected_value} for {solver_name}/{category}"
                     )
+            concrete_support = _csv_counter_as_int(row, "solver_supports_problem")
+            if concrete_support != 1:
+                errors.append(
+                    f"row {row_number}: solver_supports_problem "
+                    f"{row['solver_supports_problem']!r} != 1 for "
+                    f"{solver_name}/{category}"
+                )
 
             expected_problem_type = {key: 0 for key in PROBLEM_TYPE_COUNTERS}
             expected_problem_type[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] = 1

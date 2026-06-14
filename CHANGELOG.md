@@ -7,8 +7,22 @@
 - Breaking Changes
   - Increased required C++ standard from C++17 to C++20. ([#2068](https://github.com/dartsim/dart/pull/2068))
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  - Increased the required C++ standard from C++20 to C++23, and consolidated the
+    standard declaration onto the library targets so it propagates transitively
+    (removing redundant `target_compile_features` calls). Adopted the C++23
+    facilities that compile on every CI toolchain (`std::expected` as the storage
+    for `dart::common::Result`, `std::to_underlying`, and `std::unreachable` via a
+    new `DART_UNREACHABLE` macro), and added `dart/common/feature_support.hpp` to
+    gate features that are not yet uniformly available across the supported
+    toolchains (deducing-this and `std::ranges::contains` need GCC 14/15; `std::print`,
+    `std::flat_map`/`std::flat_set`, `std::move_only_function`, `std::generator`,
+    `std::mdspan`). See `docs/design/cpp23_modernization.md`.
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
+  - Increased the minimum required Python version for dartpy from 3.12 to 3.14
+    (the default `python3` in Ubuntu 26.04 LTS). The development environment and
+    the published wheel matrix now target Python 3.14 only; 3.12 and 3.13 wheels
+    are no longer built. `[tool.mypy]` now type-checks against Python 3.14.
   - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
     do not require `clang-scan-deps` while DART has no C++ module sources.
   - Fixed the DART GUI smoke runner to use an absolute build-library path so
@@ -681,7 +695,29 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rigid AVBD contact stage now also reuses its extracted point-joint input
     scratch, solve-row scratch, and per-body row-index scratch, and avoids
     copying already-predicted inertial targets in the World contact path. The
-    rigid contact stage also no longer
+    variational articulated point-joint stage now also reuses an
+    allocator-backed large-structure link-index map from compliant-loop scratch,
+    so same-shape baked steps do not rebuild default STL lookup storage.
+    The contact-free differentiable multibody derivative path now also routes
+    analytic inverse-dynamics derivative spatial-vector scratch through
+    `MultibodyInverseDynamicsScratch`, and `World` retains that scratch with
+    the free allocator for same-shape differentiable steps. It now also keeps
+    contact-free coordinate collection in World-owned scratch instead of
+    rebuilding a default-allocator vector for every differentiable step.
+    Variational mechanical-energy diagnostics can now reuse caller-owned
+    variational tree and step scratch, including allocator-backed spatial
+    velocity storage, instead of rebuilding that DART-owned diagnostic scratch
+    on each same-shape energy sample.
+    Variational inverse-mass product helpers can now write into caller-owned
+    output while reusing caller-owned variational tree and linear-solve scratch,
+    avoiding repeated same-shape direct-helper heap traffic after warmup.
+    Variational loop-constraint linearization helpers can now reuse
+    caller-owned variational tree and projection scratch while retaining output
+    payload capacity across same-shape diagnostic calls.
+    Variational contact point-force helpers can now overwrite caller-owned
+    output storage, avoiding return-by-value payload allocation for repeated
+    same-shape direct contact diagnostics after warmup.
+    The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the
     authoritative query.
@@ -976,18 +1012,77 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume
     structured counters instead of parsing debug text.
+  - Hardened `dart::common::MemoryAllocatorDebugger` so aligned allocations
+    keep their requested alignment in the debug record and mismatched aligned
+    deallocations are rejected without forwarding to the wrapped allocator.
+    The debugger destructor now also releases any still-tracked allocations
+    with the recorded size/alignment after reporting the leak.
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
   - Added a read-only Memory panel to the standalone `dartsim` editor for
     frame-scratch counters, `MemoryManager` debug counters, and ECS storage
     capacity diagnostics.
+  - Routed experimental `World` live joint payload storage through bounded
+    inline joint vectors for supported 0-6 DOF joints, and routed multibody
+    link/joint adjacency vectors through the World free allocator during normal
+    multibody creation. The persistent-storage allocator gate now covers
+    6-DOF floating-joint creation and live joint payload/limit assignment under
+    the global heap counter.
+  - Rebound allocator-aware component vectors loaded by experimental
+    `World::loadBinary()` to the loaded World's free allocator so serialized
+    multibody adjacency, deformable persistent payloads, and variational state
+    continue through the World memory hierarchy after round-trip.
+  - Routed public experimental `Joint::setPosition()` and frame subtree
+    dirtying traversal scratch through the owning World's free allocator, and
+    extended the persistent-storage allocator gate to cover public 6-DOF joint
+    payload and limit setters under the global heap counter.
+  - Reused AVBD rigid-world contact transform-writeback frame-dirty traversal
+    scratch from the allocator-aware snapshot, so same-shape detail writeback
+    paths do not grow a default-allocator traversal vector.
+  - Routed experimental `World` collision-query cache shape specs, object
+    keys, object-id lookup, native object entries, and live rigid-body joint
+    pair scratch through the World free allocator. Cached contact result
+    storage now uses the same World allocator behind private span-based
+    contact-query access, while the public `collide()` convenience API still
+    returns an ordinary `std::vector<Contact>`. Same-shape contact-query cache
+    coverage now checks that DART-owned cache storage grows from the World
+    allocator once and then reuses capacity.
+  - Routed Rigid IPC projected-Newton step delta scratch through the provided
+    free allocator, preserved zero-iteration rejected-solve behavior for the
+    contact-free diagonal fast path, and pre-reserved free-list block metadata
+    so allocator-backed stage prepare does not grow bookkeeping storage through
+    global `operator new` during no-heap checks.
+  - Routed experimental `World::saveBinary()` ignored collision-pair filter
+    storage through the same World allocator already used by persistent
+    ignored-pair storage, and added peak/live allocator coverage for the
+    temporary save vector.
+  - Routed experimental `World` dynamic rigid-body collection scratch for
+    state/control vector helpers through the World free allocator, and added
+    no-global-heap plus peak/live coverage through `getNumDofs()`.
+  - Reused experimental differentiable `World` multibody torque collection
+    scratch through World-owned free-list storage, passed that scratch into the
+    contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`
+    copy, and made the diff-only contact-parameter helper accept a span so it
+    can consume allocator-backed World parameter registration storage.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
-    hierarchy.
+    hierarchy. Clear/rebuild no-growth coverage includes compact, production,
+    and complementary default-solver deformable contact-family storage paths,
+    plus AVBD/VBD self-contact, ground-friction, variational loop-closure, and
+    boxed-LCP multibody contact storage paths, plus active kinematic IPC
+    surface-CCD trace, rigid AVBD contact/joint storage, and variational
+    contact dual-state storage. The semi-implicit multibody dynamics path now
+    has the same rebuild-boundary guard for its baked private dynamics storage.
   - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
     entity lists and dependency nodes instead of allocating per execute.
+    `BatchedRigidBodyIntegrationStage` now also accepts a `MemoryManager` and
+    routes its force and frame-order scratch vectors through the provided
+    allocator root for custom allocator-aware stage use.
+    `WorldStepPipeline` overflow stage-pointer storage can now also borrow a
+    DART allocator, and the built-in World pipeline cache routes that spillover
+    path through the World free allocator.
   - Extended experimental `World` base-allocator no-growth coverage to baked
     rigid-body resting contact, non-cross articulated resting contact, and
     same-DOF cross-articulated link-contact scenes after contact prewarm.
@@ -1010,7 +1105,18 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     fallback world gates cover mixed/different-DOF, stacked, and coupled
     multi-row cross-articulated contact scenes for base-allocator no-growth and
     first baked-step global-heap no-allocation by priming unified constraint
-    scratch during `enterSimulationMode()`. Public multibody link-contact
+    scratch during `enterSimulationMode()`. Semi-implicit multibody dynamics
+    scratch now constructs its DART-owned tree, contact, row, constrained-DOF,
+    RNEA, and body-Jacobian containers from the World allocator, and the
+    external-force body-Jacobian path now reuses that baked scratch instead of
+    allocating a step-local Jacobian vector. The split semi-implicit multibody
+    contact/unified stages now also skip collision queries when no relevant
+    collision shapes exist, keeping pure external-force multibody steps inside
+    the baked no-heap gate. The rigid contact stage now also treats
+    empty collision-geometry components as query-empty for contact-stage
+    prepare/execute, avoiding unnecessary no-shape contact queries while
+    preserving shape-backed rigid, link, and boxed-LCP contact paths. Public
+    multibody link-contact
     assembly now has reusable scratch storage that can be borrowed by the
     in-place unified assembler without same-shape heap growth, and the
     boxed-LCP fallback gates include larger five- and eight-multibody stacked
@@ -1018,17 +1124,101 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contact set. Unified island solves now reserve island traversal scratch and
     build the local row remap once per solve instead of once per island, and
     successful unified link impulse application can reuse the same solve scratch
-    for generalized-impulse and velocity-delta buffers.
+    for generalized-impulse and velocity-delta buffers. The unified constraint
+    stage's multibody staging vectors now borrow the stage allocator as well,
+    and its rigid problem, unified problem row/block storage, and boxed-LCP
+    solve scratch vectors now route through the same allocator root.
     Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
     scratch instead of allocating local traversal vectors, and the
     resting-contact no-op predicate reuses stage-owned per-body contact-power
     and stationary-flag scratch. The rigid IPC projected-Newton loop now reuses
     solve-local surface buffers across line-search and sufficient-decrease
     backtracking candidates, and its repeated solve-internal barrier assembly
-    and line-search calls reuse surface-pair/triplet scratch, including the
-    lagged-friction barrier pass. The rigid IPC contact stage now uses the
-    caller-owned projected-Newton solve overload so per-solve surface candidate
-    buffers persist in stage scratch across steps.
+    and line-search calls reuse allocator-backed surface-pair, sweep-item,
+    candidate-pair, triplet, articulation equality-row, and equality
+    change-of-variable index scratch, including the lagged-friction barrier
+    pass. The rigid IPC contact stage now uses the caller-owned
+    projected-Newton solve overload so per-solve surface candidate buffers
+    persist in stage scratch across steps. Mixed rigid/deformable IPC
+    surface preparation now also routes BDF2 history, articulation input,
+    mixed-domain surface payload, candidate, edge, and AABB scratch through the
+    stage's World allocator and has a focused global-heap no-allocation prepare
+    guard. Deformable self-contact and inter-body surface-CCD preparation now
+    also keeps per-body surface topology/contact-mask storage plus edge,
+    sweep-item, and sweep-link buffers in the World allocator-backed solver
+    scratch. VBD/AVBD deformable scratch now also constructs AVBD scalar-row
+    inventories, descriptor metadata, static-contact feature IDs, and friction
+    warm-start lookup buffers from the World allocator, and its AVBD solve row
+    arrays now use allocator-backed scratch through allocator-aware row-kernel
+    contracts. Static contact-plane scratch and AVBD attachment fixed-mask
+    scratch now borrow that allocator as well, and Chebyshev history scratch
+    preserves caller-provided allocator storage. Baked VBD spring/tet topology
+    element lists now also use the World allocator through span-based read-only
+    topology inputs, and cached VBD coloring plus spring/tetrahedron/self-contact
+    incident adjacency now preserve
+    caller-provided allocators for their nested vectors. Default deformable
+    solver scratch now also constructs inertial targets, iterate, gradient,
+    direction, candidate, previous-step, external-acceleration, and
+    fixed/boundary/count-mask storage from the World allocator.
+    The variational multibody stage now reuses baked inverse-dynamics scratch
+    for its initial-guess bias query instead of calling the public
+    return-by-value helper on same-shape steps. It also reuses baked dense
+    loop-closure projection storage for Jacobians, inverse-mass transpose
+    blocks, constraint-mass factorization, lambda, correction vectors,
+    projection row bounds, and bounded/hard row partitions, and refreshes the
+    projection tree configuration in place instead of rebuilding topology from
+    the registry on every projection iteration. The variational
+    stage now also keeps its tree topology, link-index map, and child-list
+    storage in baked scratch across same-shape steps, preserving same-shape
+    link-index map nodes instead of repopulating them in the step loop. That
+    baked variational tree scratch now constructs its pimpl, link vector,
+    per-link child lists, and link-index map from the World free allocator;
+    its nested inverse-dynamics scratch pimpl and dynamics-tree vectors now
+    borrow the same allocator when baked or first used by the World stage.
+    Baked variational ground-contact point scratch and augmented-Lagrangian
+    solver dual scratch now also keep their reusable vectors on the World free
+    allocator, and contact-evaluation transform/Jacobian scratch vectors borrow
+    that allocator before baked contact-force evaluation. Variational
+    loop-closure constraint staging, step, linear-solve, projection, and
+    Anderson scratch vectors now use the same World allocator for baked stage
+    storage, and the AL contact dual-update post-transform list follows that
+    allocator as well.
+    Contact-heavy variational dual-state vectors now also borrow the World
+    free allocator when baked or first created by the World stage; pre-existing
+    dual-state components are rebound before sizing, and binary state
+    serialization handles allocator-aware trivial vectors.
+    The sibling variational ground-contact config now stores contact-point link
+    indices and local positions in World allocator-backed vectors and rebinds
+    loaded/default-constructed configs before baked contact scratch is built.
+    Variational two-step state history vectors now also borrow the World free
+    allocator after bake/lazy creation, including allocator-aware save/load
+    deserialization of the SE(3) transform and 6D momentum lists. Finite
+    stiffness AVBD point-joint compliant-loop rows now live in baked
+    allocator-backed variational scratch as well, so the World-stage path reuses
+    row descriptors, scalar-row inventories, and hook constraint storage without
+    copying that hook state into default-heap vectors on same-shape steps.
+    Variational velocity-actuator projection now counts rows during bake, writes
+    actuator targets directly into the reusable projection residual/Jacobian, and
+    applies projection retractions through existing scratch instead of allocating
+    a per-step constraint vector or per-joint retract result. Pure compliant
+    variational ground contact now evaluates directly from baked ground-contact
+    scratch and contact-evaluation vectors instead of constructing the
+    augmented-Lagrangian solver's dual vector; AL contact still owns solver
+    dual scratch only when a positive dual-update cadence requires it.
+    World registry rebuild gates now also cover the existing compact and
+    production mixed default-deformable direct-sparse, matrix-free, FEM, and
+    contact-family storage paths across `World::clear()` and rebuild.
+    `ComputeGraph` construction can now borrow a DART allocator for owned
+    nodes, the node-name lookup table, dependency-edge storage, and the
+    topological-order cache while exposing read-only edge/order spans.
+    Allocator-aware graph traversal now also keeps cycle-detection,
+    topological-order rebuild, and resource-hazard scratch on that supplied
+    allocator instead of falling back to the global heap.
+    The rigid IPC contact stage now keeps its projected-Newton solve graph in
+    prewarmed stage scratch and bypasses the full solver for the exact
+    single-dynamic-body contact-free quadratic, so baked dynamics-only IPC
+    steps avoid solver-private heap allocation while preserving the existing
+    one-body IPC update.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
@@ -1039,14 +1229,20 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     buffers are now stage/entity scratch-backed too, and VBD
     topology/static-contact scratch is primed during `enterSimulationMode()`, so
     baked surface-snapshot steps and first-baked-step active VBD static rigid
-    surface-CCD point crossing do not allocate from the global heap. Scripted
-    deformable boundary processing now
+    surface-CCD point crossing do not allocate from the global heap. Reusable
+    self-contact and inter-body surface-contact candidate/sweep buffers can now
+    borrow the World free allocator when solver scratch components are created.
+    Scripted deformable boundary processing now
     reuses per-body Dirichlet/Neumann count masks instead of allocating local
     per-node vectors each step. Default projected-Newton deformable solves now
     reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
     pattern, and solution scratch for covered mass-spring and static rigid
-    surface-CCD steps, and FEM rest-shape caches are primed for covered
-    one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
+    surface-CCD steps. The sparse-pattern, triplet assembly, PSD block batch,
+    and matrix-free block/diagonal scratch vectors can now borrow the World free
+    allocator when the solver scratch component is created, and FEM rest-shape
+    caches plus lagged friction normal/contact arrays now use that
+    allocator-backed component for covered one-tetrahedron FEM and frictional
+    projected-Newton steps. Self-contact barrier scratch is
     sized from bake-primed candidates for covered two-triangle
     projected-Newton self-contact steps. AVBD ground contact/friction rows and
     self-contact normal/friction rows, including a rectangular self-contact
@@ -1056,8 +1252,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     storage instead of map allocation or per-row linear scans. Rigid
     AVBD contact projection now reuses stage-owned snapshot, point-joint,
     row-counter, row-inventory, and solve scratch for covered active rigid
-    contacts and no-contact fixed-joint rows, with baked base-allocator and
-    global-heap no-growth guards. Active inter-body deformable surface-CCD
+    contacts and no-contact fixed-joint rows; large motor and distance-spring
+    row staging also borrows allocator-backed scratch for generated
+    descriptors, active-row lists, and thresholded fracture-index results, with
+    baked base-allocator and global-heap no-growth guards. The pure rigid
+    boxed-LCP contact branch now reuses prewarmed stage-owned solver scratch for
+    its contact normals, body lookup, dense work matrices/vectors, and Dantzig
+    buffers under the same baked no-growth gates. Active inter-body
+    deformable surface-CCD
     crossings and two non-square production-scale deformable frictional
     self-contact grids now have the same baked no-growth guard coverage.
   - Added deformable `World::step` diagnostics for runtime surface-contact

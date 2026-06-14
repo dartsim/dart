@@ -9,6 +9,98 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest follow-up (2026-06-14): with explicit maintainer approval, branch
+  `avbd/soft-body-inertia-orientation-cache` merged the latest `origin/main`
+  (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), was pushed to
+  origin, and was opened as follow-up PR #3004 into `main`, bundling the 2D/3D
+  Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
+  the refreshed Spring/Spring Ratio packets, and the contact-skip regression
+  test. PR #2991 is merged at `f6fecbc5bd5`; the AVBD CPU-win, GPU, and
+  paper-number gates remain open and no parity is claimed. Review-thread
+  resolution, bot replies, and CI mutations still require explicit maintainer
+  approval. The dated bullets below are historical slice snapshots.
+- Latest local follow-up (2026-06-14): branch
+  `avbd/soft-body-inertia-orientation-cache` now carries a local
+  regression, `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
+  that locks in the rigid contact stage's ignored-pair no-contact fast path. The
+  test steps a world holding one ignored, overlapping rigid-body pair plus a
+  non-ignored body dropped onto static ground and asserts the dropped body is
+  still caught on the ground (the collision query is not skipped) while the
+  ignored pair keeps overlapping. A temporary mutation that skipped the query
+  whenever any ignored pair existed made the dropped body free-fall and failed
+  the test, confirming it guards the `shouldSkipRigidBodyContactQuery` audit
+  branch; the mutation was reverted. Validation passed the `test_world` rebuild,
+  the focused contact/ignored-pair cluster (5 tests), `pixi run lint`, and
+  `pixi run test-unit` (161 tests). This slice adds no production-code change,
+  refreshes no tracked packet, and claims no CPU/GPU/paper-number parity. (PR
+  #2991 is now merged to `main` at `f6fecbc5bd5`.)
+- Latest local follow-up (2026-06-14): branch
+  `avbd/soft-body-inertia-orientation-cache` now refreshes the 2D/3D
+  Spring/Spring Ratio tracked packets after the spring-connected ignored-pair
+  slices. The packet writers require the `ignored_collision_pairs` benchmark
+  counter, and the four refreshed packets record 1 ignored pair for Spring and
+  7 adjacent ignored pairs for Spring Ratio. The same-host packet evidence
+  records DART about 4.02x slower for 2D Spring, 4.48x slower for 2D Spring
+  Ratio, 2.47x slower for 3D Spring, and 3.57x slower for 3D Spring Ratio, so
+  all four CPU-win gates remain open. This local evidence refresh does not
+  push a follow-up PR, resolve GitHub review threads, add GPU packets, or claim
+  paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` now extends the Spring/Spring
+  Ratio contact-filtering slice to the 3D source rows. The 3D Python scenes
+  and matching C++ benchmark constructors explicitly ignore the radial
+  spring-connected rigid body collision pairs; focused Python coverage asserts
+  the Spring row has one ignored pair and Spring Ratio has seven adjacent
+  ignored pairs, with non-adjacent Spring Ratio links still collidable. The
+  benchmark smoke records `ignored_collision_pairs=1` and `7` on
+  `BM_AvbdDemo3dSpringStep` and `BM_AvbdDemo3dSpringRatioStep`, respectively.
+  Validation passed the affected benchmark target rebuild, focused Python
+  regressions, the Spring/Spring Ratio benchmark smoke, `git diff --check`,
+  `pixi run lint`, `pixi run build`, and `pixi run -e cuda test-all` on the
+  visible NVIDIA RTX 5000 Ada host. This is local source-row configuration
+  evidence only; it does not refresh any tracked packet, close the 3D
+  Spring/Spring Ratio CPU gates, push a follow-up PR, resolve GitHub review
+  threads, or claim GPU/paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` now carries a conservative
+  Spring/Spring Ratio contact-filtering slice on top of the local
+  inertia-orientation cleanup. The Python source rows and matching C++
+  benchmark constructors explicitly ignore the spring-connected rigid body
+  collision pairs, and the rigid contact stage's no-contact fast path now
+  honors ignored dynamic rigid-body pairs before deciding that the collision
+  query can be skipped. Focused Python coverage asserts the Spring row has one
+  ignored pair and Spring Ratio has seven adjacent ignored pairs; benchmark
+  counters expose the same counts. Validation passed the target rebuild,
+  focused C++ contact/allocator tests, focused Python Spring/Spring Ratio
+  regressions, a Spring/Spring Ratio benchmark smoke, `git diff --check`,
+  `pixi run lint`, `pixi run build`, `pixi run test-unit` (161 tests), and
+  `pixi run -e cuda test-all` on the visible NVIDIA RTX 5000 Ada host. This is
+  local source-row path evidence only; it does not refresh any tracked packet,
+  close a CPU-win gate, push a follow-up PR, resolve GitHub review threads, or
+  claim GPU/paper-number parity.
+- Latest local follow-up (2026-06-14): unpublished branch
+  `avbd/soft-body-inertia-orientation-cache` is based on PR #2991 head
+  `6f41e9529bf` and currently carries the local inertia-orientation cleanup
+  commit plus handoff-doc refreshes. The kept implementation avoids repeated
+  AVBD rigid inertia orientation normalization in
+  `addAvbdRigidBodyInertiaTermLowerTriangle()` by sharing the already
+  normalized current orientation and normalizing the inertial target once before
+  the hot body-block assembly. Focused regression coverage now compares the
+  lower-triangle inertia helper against the full symmetric helper for scaled
+  current and target quaternions. Validation passed the target rebuild,
+  `test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.LowerTriangleInertiaTermMatchesFullForScaledOrientations'`,
+  the full `test_avbd_rigid_block` suite (100 tests), `pixi run lint`,
+  `pixi run build`, and `pixi run test-unit` (161 tests). A same-session
+  A/B smoke rebuilt PR head `6f41e9529bf` and this local branch under similar
+  load: PR head recorded `BM_AvbdDemo2dSoftBodyStep` at 1.810 ms median CPU,
+  while the local inertia cleanup recorded 1.792 ms median CPU. Treat that as
+  narrow smoke only because CPU scaling was enabled and tracked source/native
+  packets were not regenerated. A broader normalized-orientation reuse probe
+  for assembly world-point/angular-row helpers was also built and tested, but
+  it measured 1.821 ms median CPU versus the 1.792 ms current-branch baseline,
+  so the probe was reverted and no code from it is kept. This branch does not
+  refresh any tracked source-row packet, close the 2D Soft Body CPU gap, push a
+  follow-up PR, or claim GPU/paper-number parity.
 - Latest CI follow-up (2026-06-14): PR #2991's Linux `Release Tests`
   AddressSanitizer phase reached 218/219 passing CTests, then
   `EXAMPLE_dart_demos_list` aborted with `Failed loading SDL3 library`. The
@@ -20,8 +112,8 @@ Corpus matrix:
   and
   `ASAN_OPTIONS=detect_leaks=1 pixi run -- ctest --test-dir build/default/cpp/asan -R EXAMPLE_dart_demos_list --output-on-failure -V`.
 - Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
-  #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-  `1265b12054c` after verifying the latest `origin/main` was already merged.
+  #2991 branch `avbd/source-row-extraction-precheck` is pushed to origin at
+  `6f41e9529bf` after verifying the latest `origin/main` was already merged.
   Hosted CI restarted on that head. The Dynamic Friction
   panel-label thread from Codex review `4492237805` is covered on the pushed
   branch by deriving the plotted high-friction speed label from `max_friction`
@@ -33,8 +125,9 @@ Corpus matrix:
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
 - Latest pushed follow-up (2026-06-14): the AVBD contact-config guard is now on
-  PR head `1265b12054c`: the rigid contact stage skips the per-contact
-  `rigidAvbdContactStageConfig()` scan unless the registry has
+  implementation commit `1265b12054c`, with the current PR head including the
+  later handoff-doc refresh at `6f41e9529bf`: the rigid contact stage skips the
+  per-contact `rigidAvbdContactStageConfig()` scan unless the registry has
   `RigidAvbdContactConfig` storage. The `/0` Dynamic Friction benchmark moved
   from a 7.837 us median CPU step before the edit to 7.409 us after it under
   lower but still noisy local load with CPU scaling enabled. Focused default

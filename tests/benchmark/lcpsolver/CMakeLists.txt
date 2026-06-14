@@ -109,7 +109,7 @@ foreach(
     BM_DOT_PRODUCT
     BM_MATRIX_MULTIPLY
 )
-  target_compile_features(${benchmark_target} PRIVATE cxx_std_20)
+  target_compile_features(${benchmark_target} PRIVATE cxx_std_23)
 endforeach()
 
 # Add to formatting

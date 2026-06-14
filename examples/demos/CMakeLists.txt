@@ -40,7 +40,7 @@ target_compile_definitions(
   demos_scenes
   PUBLIC DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
 )
-target_compile_features(demos_scenes PUBLIC cxx_std_20)
+target_compile_features(demos_scenes PUBLIC cxx_std_23)
 set_target_properties(demos_scenes PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
   dart_format_add(${demos_scene_sources})

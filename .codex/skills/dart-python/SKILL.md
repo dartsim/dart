@@ -41,9 +41,9 @@ pixi run generate-stubs  # Generate type stubs
 ## Wheel Building
 
 ```bash
-pixi run -e py312-wheel wheel-build
-pixi run -e py312-wheel wheel-repair  # Linux only
-pixi run -e py312-wheel wheel-test
+pixi run -e py314-wheel wheel-build
+pixi run -e py314-wheel wheel-repair  # Linux only
+pixi run -e py314-wheel wheel-test
 ```
 
 ## Key Patterns

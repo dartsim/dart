@@ -280,7 +280,7 @@ def _counter_to_int(value) -> int | None:
         return None
     try:
         numeric = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     if not math.isfinite(numeric):
         return None
@@ -296,7 +296,7 @@ def _finite_float(value) -> float | None:
         return None
     try:
         numeric = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     if not math.isfinite(numeric):
         return None
@@ -814,12 +814,12 @@ def _validate_profile_evidence_csv_row(
         if _counter_to_int(data.get(counter)) != expected:
             raise RuntimeError(
                 "Cannot write LCP performance profile evidence with invalid "
-                f"solver support counters for {category}/{solver}/{problem_size}"
+                f"solver form support counters for {category}/{solver}/{problem_size}"
             )
     if _counter_to_int(data.get("solver_supports_problem")) != 1:
         raise RuntimeError(
             "Cannot write LCP performance profile evidence with invalid "
-            f"solver support counters for {category}/{solver}/{problem_size}"
+            f"concrete solver support counter for {category}/{solver}/{problem_size}"
         )
 
     problem_type_values = {
