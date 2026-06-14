@@ -1,5 +1,85 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Serial Contact Runtime Guards
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch remains `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch is a viable
+   milestone PR candidate when the maintainer approves publication; keep this
+   follow-up branch for subsequent PR(s) unless the maintainer explicitly
+   chooses a broader checkpoint scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark runtime guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `56cd11aa77a Guard LCP pathological benchmarks concretely`.
+- The stacked base branch `feature/lcp-solver-interface-demos` remains at
+  `80b3e60e3c5` and has no associated PR.
+- Current known `origin/main` is `9de4ac6af873`; the continuation fetched and
+  merged `origin/main` with `Already up to date.`
+
+What this checkpoint changes:
+
+- Manifest batch and grouped batch serial benchmark runners now recheck every
+  generated batch problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- World contact and world stack contact scalar benchmark runners now recheck
+  the generated fixture problem with the selected solver's concrete support
+  predicate before timing the row.
+- World contact, stress-stack contact, and contact-pipeline32 serial batch
+  runners now recheck every generated batch problem before timing the row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported serial contact or manifest/grouped batch cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(BatchSerial/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|GroupedBatchSerial/(Standard|Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|WorldContact/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldStackContact/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactBatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactStressBatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton)|WorldContactPipeline32BatchSerial/FrictionIndex/(Pgs|Dantzig|BoxedSemiSmoothNewton))'
+pixi run bm lcp_compare -- --benchmark_filter='BM_Lcp(BatchSerial/Standard/Dantzig/24/4|GroupedBatchSerial/FrictionIndex/Pgs/2|WorldContact/FrictionIndex/Pgs/1|WorldStackContact/FrictionIndex/Pgs/2|WorldContactBatchSerial/FrictionIndex/Pgs|WorldContactStressBatchSerial/FrictionIndex/Pgs|WorldContactPipeline32BatchSerial/FrictionIndex/Pgs)$' --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+git diff --check
+pixi run build
+```
+
+Result:
+
+- Row-list validation passed and listed representative manifest batch, grouped
+  batch, world contact, world stack contact, and serial world-contact batch
+  rows.
+- The sampled manifest/grouped/contact rows passed with `contract_ok=1`; scalar
+  world-contact rows also reported `solver_supports_problem=1`.
+- Lint, whitespace checks, and the default build passed.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-14 Pathological Benchmark Runtime Guards
 
 This is the latest hand-off. Older sections below are historical checkpoints

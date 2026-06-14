@@ -9153,6 +9153,12 @@ void RunManifestBatchBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError("Manifest batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -9201,6 +9207,12 @@ void RunGroupedBatchSerialBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError("Grouped batch case exceeds concrete solver support");
+    return;
+  }
 
   BatchBenchmarkCounters counters;
   for (auto _ : state) {
@@ -9239,6 +9251,10 @@ void RunWorldContactBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError("World contact case exceeds concrete solver support");
     return;
   }
 
@@ -9418,6 +9434,11 @@ void RunWorldStackContactBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!solver->supportsProblem(fixture->problem)) {
+    state.SkipWithError(
+        "World stack contact case exceeds concrete solver support");
     return;
   }
 
@@ -9778,6 +9799,13 @@ void RunWorldContactBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(batch->problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "World contact batch case exceeds concrete solver support");
     return;
   }
 
