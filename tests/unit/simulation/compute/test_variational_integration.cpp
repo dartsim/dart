@@ -2439,6 +2439,66 @@ TEST(VariationalIntegration, AvbdCompliantPointJointConfigPullsLinkEndpoint)
 
 TEST(
     VariationalIntegration,
+    AvbdCompliantPointJointConfigRemovalRestoresFreeMotion)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setTimeStep(0.002);
+
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
+  joint.childLink = entt::null;
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = Eigen::Vector3d::Zero();
+  config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  config.startStiffness = 1000.0;
+  config.maxStiffness = 1000.0;
+
+  world.enterSimulationMode();
+  world.step();
+
+  registry.remove<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  body.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+
+  double maxTranslation = 0.0;
+  double maxYaw = 0.0;
+  for (int k = 0; k < 80; ++k) {
+    body.applyForce(10.0 * Eigen::Vector3d::UnitX());
+    body.applyForce(
+        2.0 * Eigen::Vector3d::UnitY(), 0.5 * Eigen::Vector3d::UnitX());
+    world.step();
+    const Eigen::Isometry3d transform = body.getWorldTransform();
+    maxTranslation = std::max(maxTranslation, transform.translation().x());
+    maxYaw = std::max(
+        maxYaw,
+        std::abs(
+            std::atan2(transform.linear()(1, 0), transform.linear()(0, 0))));
+  }
+
+  EXPECT_GT(maxTranslation, 2e-2);
+  EXPECT_GT(maxYaw, 1e-2);
+}
+
+TEST(
+    VariationalIntegration,
     AvbdCompliantPointJointConfigRampsStiffnessAcrossSteps)
 {
   struct Result

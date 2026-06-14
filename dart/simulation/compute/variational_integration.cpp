@@ -4474,8 +4474,12 @@ void MultibodyVariationalIntegrationStage::execute(
           registry, entity, worldFreeAllocator);
       compliantScratch->constraints.clear();
     } else {
-      compliantScratch
+      auto* existingScratch
           = registry.try_get<VariationalCompliantLoopScratch>(entity);
+      if (existingScratch != nullptr) {
+        existingScratch->clear();
+        compliantScratch = existingScratch;
+      }
     }
     appendAvbdRigidWorldArticulatedPointJointConstraints(
         registry, entity, constraints, compliantScratch);
