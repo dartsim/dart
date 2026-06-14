@@ -91,6 +91,7 @@
 #include <numbers>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -391,6 +392,23 @@ public:
       dart::simulation::compute::ComputeExecutor&) override
   {
     // Empty final stage for tests that need to isolate built-in solver stages.
+  }
+};
+
+class ThrowingWorldStage final
+  : public dart::simulation::compute::WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "throwing";
+  }
+
+  void execute(
+      dart::simulation::World&,
+      dart::simulation::compute::ComputeExecutor&) override
+  {
+    throw std::runtime_error("throwing stage");
   }
 };
 
@@ -20521,6 +20539,37 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
   EXPECT_EQ(world.getFrame(), 1u);
 }
+
+#if DART_BUILD_PROFILE
+TEST(World, StepProfilingPreservesLastCompleteProfileAfterStageFailure)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  world.setStepProfilingEnabled(true);
+  compute::SequentialExecutor executor;
+
+  NoOpWorldStage successfulStage;
+  compute::WorldStepPipeline successfulPipeline;
+  successfulPipeline.addStage(successfulStage);
+  world.step(executor, successfulPipeline);
+
+  const auto completedProfile = world.getLastStepProfile();
+  ASSERT_EQ(completedProfile.stages.size(), 1u);
+  EXPECT_EQ(completedProfile.stages[0].name, "noop");
+
+  ThrowingWorldStage throwingStage;
+  compute::WorldStepPipeline failingPipeline;
+  failingPipeline.addStage(throwingStage);
+  EXPECT_THROW(world.step(executor, failingPipeline), std::runtime_error);
+
+  const auto& retainedProfile = world.getLastStepProfile();
+  ASSERT_EQ(retainedProfile.stages.size(), completedProfile.stages.size());
+  EXPECT_EQ(retainedProfile.stages[0].name, completedProfile.stages[0].name);
+  EXPECT_EQ(retainedProfile.stepCount, completedProfile.stepCount);
+}
+#endif
 
 // Test that custom pipelines can exceed the inline storage threshold while
 // built-in pipelines keep the inline no-allocation fast path.

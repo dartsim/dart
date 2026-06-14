@@ -5698,7 +5698,9 @@ void World::stepPipelineOnce(
 
 #if DART_BUILD_PROFILE
   if (m_stepProfilingEnabled) {
-    pipeline.executeProfiled(*this, executor, m_lastStepProfile);
+    compute::WorldStepProfile stepProfile;
+    pipeline.executeProfiled(*this, executor, stepProfile);
+    m_lastStepProfile = std::move(stepProfile);
   } else {
     pipeline.execute(*this, executor);
   }
