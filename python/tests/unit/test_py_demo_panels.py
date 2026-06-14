@@ -2608,17 +2608,20 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     for smoke_row in info["standalone_solver_rows"]:
+        assert f"text:{smoke_row['name']}" in builder.events
         assert f"text:{smoke_row['family']}" in builder.events
         assert (
             f"text:{lcp_physics._smoke_coverage_label(smoke_row)}"
             in builder.events
         )
-    assert "text:delegated" in builder.events
-    assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
-    assert (
-        f"text:{smoke_by_name['Dantzig']['complementarity']:.2e}"
-        in builder.events
-    )
+        assert f"text:{smoke_row['solve_route']}" in builder.events
+        assert (
+            f"text:{smoke_row['status']} ({smoke_row['iterations']} it)"
+            in builder.events
+        )
+        assert f"text:{smoke_row['solution_error']:.2e}" in builder.events
+        assert f"text:{smoke_row['residual']:.2e}" in builder.events
+        assert f"text:{smoke_row['complementarity']:.2e}" in builder.events
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
         "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
