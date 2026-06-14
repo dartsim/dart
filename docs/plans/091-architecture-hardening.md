@@ -849,12 +849,29 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   and measures the discretization error in the height-encoding
   `computeStepMetrics().potentialEnergy` at `dt` and `dt/2`; it asserts the
   error is measurable and that halving `dt` genuinely reduces it (ratio in
-  `[0.05, 0.7]`, scheme-agnostic and non-flaky). **Remaining:** the
-  registered scene-builder corpus, the single harness binary + manifest-driven
-  packet writer (replacing the per-scene script fleet), the cross-family
-  dashboard row set, contact/iteration metric population (needs a non-const
-  narrow-phase pass), world-frame multibody-link momentum aggregation, and a
-  corpus-wide order-of-convergence sweep (this seeds it for one scene).
+  `[0.05, 0.7]`, scheme-agnostic and non-flaky). **Scene-corpus + harness
+  (landed):** `tests/unit/simulation/compute/test_cross_family_corpus.cpp`
+  generalizes the cross-family comparison into a registered scene corpus — a
+  `SceneCase` registry whose entries declare a scene builder, the solver-family
+  AXIS they exercise (`RigidContactMethod` via `WorldOptions.contactSolverMethod`
+  vs `MultibodyIntegration` via `setMultibodyOptions`), the families to run, the
+  step count, a physical `Invariant` (conserves-linear-momentum /
+  conserves-total-energy / settles-on-static-support), and an anti-no-op
+  "ran" signal — plus a single harness test (`AllScenesRunUnderEveryFamily`)
+  that runs every (scene, family) pair from one loop, logs the `StepMetrics`
+  rows tagged `<scene>:<family>`, and asserts finiteness, the per-family
+  invariant, that each pair genuinely advanced the scene, and cross-family
+  gross-outcome agreement (robust conservation-budget tolerances). Four cases:
+  `rigid_head_on` + `sphere_drop` (rigid-contact axis) and `pendulum_1link` +
+  `pendulum_2link` (integration axis); the 2-link case confirms the two
+  integration families are genuinely distinct paths (final energy −18.2298 vs
+  −18.2052). `test_cross_family_corpus` 1/1, golden 3/3, lint +
+  `check-api-boundaries` green; pure-additive (no library change). **Remaining:**
+  a standalone harness binary + manifest-driven packet writer (replacing the
+  per-scene script fleet) and the cross-family dashboard row set,
+  contact/iteration metric population (needs a non-const narrow-phase pass),
+  world-frame multibody-link momentum aggregation, and a corpus-wide
+  order-of-convergence sweep (this seeds it for one scene).
   NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
