@@ -8,8 +8,10 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR. Fresh resume recon found the branch clean
 at `544126e69fe` (`Record HMM diff contact Jacobian handoff`) before this
-slice; this slice is one local commit on top, leaving the branch ahead of
-`origin/pr/hmm-phase45-replay-snapshot-allocators` by 42 commits.
+slice; the profiling slice landed as `886c630fadd` (`Reuse profiled World step
+snapshots`). Before checkpoint PR publication, the branch merged `origin/main`
+at `c4c5ed87eae` via merge commit `53a5d0066f7` to satisfy the published-PR
+base-merge rule.
 
 Latest committed slice: profiled `World::step()` now reuses the existing
 `WorldStepProfile` snapshot instead of replacing it with a newly returned
@@ -39,7 +41,7 @@ or a newly proven DART-owned stage scratch gap; do not broaden public
 return-by-value convenience APIs unless built-in World code consumes that
 storage.
 
-Validation for this slice:
+Validation for the profiling slice before the pre-PR base merge:
 
 ```bash
 pixi run cmake --build build/default/cpp/Release --target test_world_step_profiling -j 8
@@ -49,6 +51,19 @@ pixi run build/default/cpp/Release/bin/test_world_step_profiling
 pixi run lint
 git diff --check
 pixi run build
+pixi run -e cuda test-all
+```
+
+Post-base-merge checkpoint validation:
+
+```bash
+pixi run lint
+git diff --check
+pixi run build
+pixi run cmake --build build/default/cpp/Release --target test_world_step_profiling -j 8
+pixi run build/default/cpp/Release/bin/test_world_step_profiling
+pixi run -e cuda cmake --build build/cuda/cpp/Release --target test_world_step_profiling -j 8
+pixi run -e cuda build/cuda/cpp/Release/bin/test_world_step_profiling
 ```
 
 Before publishing or opening a PR from this branch, get explicit maintainer
