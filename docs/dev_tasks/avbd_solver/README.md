@@ -22,10 +22,13 @@ Corpus matrix:
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
 - Latest local follow-up (2026-06-14): the local branch is now ahead of
-  `origin/avbd/source-row-extraction-precheck` by two unpushed CI-fix commits:
+  `origin/avbd/source-row-extraction-precheck` by three unpushed CI-fix commits:
   `000c1ccb535` disables CMake C++ module scanning, and the second local commit
-  fixes the GUI smoke runner's runtime library path. The PR remote head remains
-  `fffb5bf45ba`; any further push still requires explicit maintainer approval.
+  fixes the GUI smoke runner's runtime library path. The third local commit
+  adds focused unit coverage proving the runner prepends an absolute build
+  library path to `LD_LIBRARY_PATH` for relative build directories. The PR
+  remote head remains `fffb5bf45ba`; any further push still requires explicit
+  maintainer approval.
 - Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
   exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
   CMake 4.3 emitted C++20 module dependency-scanning rules that invoked missing
@@ -46,8 +49,11 @@ Corpus matrix:
   working directory, so the loader could fall back to an installed DART library
   that required unavailable `libfcl.so.0.7`. The runner now prepends the
   absolute build-library path, and `pixi run test-dart-gui-smoke` passes
-  31/31 smoke tests. This second CI-smoke fix is local only until another
-  maintainer-approved push.
+  31/31 smoke tests. Focused regression coverage now passes
+  `pixi run pytest python/tests/unit/test_run_cpp_example.py::test_runtime_env_prepends_absolute_build_library_path -q`,
+  the full `python/tests/unit/test_run_cpp_example.py` file passes, and
+  `pixi run lint` passes. This CI-smoke fix and regression are local only until
+  another maintainer-approved push.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
   contact friction solve now returns when a clamped tangent impulse delta is
   exactly zero and skips static/prescribed endpoint velocity writes for tangent

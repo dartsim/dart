@@ -9,11 +9,12 @@ stop-only snapshot lower in this file.
 Current verified branch state: after explicit maintainer approval, PR #2991
 branch `avbd/source-row-extraction-precheck` was pushed to origin at
 `fffb5bf45ba` after merging the latest `origin/main`. The local branch is now
-ahead of `origin/avbd/source-row-extraction-precheck` by two unpushed CI-fix
-commits: `000c1ccb535` disables CMake C++ module scanning, and the second local
-commit fixes the GUI smoke runner's runtime library path. Review-thread resolution,
-PR comments, review re-triggers, and any further push still require explicit
-maintainer approval.
+ahead of `origin/avbd/source-row-extraction-precheck` by three unpushed CI-fix
+commits: `000c1ccb535` disables CMake C++ module scanning, the second local
+commit fixes the GUI smoke runner's runtime library path, and the third local
+commit adds focused unit coverage for the absolute runtime library path.
+Review-thread resolution, PR comments, review re-triggers, and any further push
+still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -78,8 +79,11 @@ because `scripts/run_cpp_example.py` prepended a relative build library path to
 so the loader could fall back to an installed DART library that required
 unavailable `libfcl.so.0.7`. The runner now prepends the absolute
 build-library path, and `pixi run test-dart-gui-smoke` passes 31/31 smoke
-tests. This second CI-smoke fix is local only until another maintainer-approved
-push.
+tests. Focused regression coverage now passes
+`pixi run pytest python/tests/unit/test_run_cpp_example.py::test_runtime_env_prepends_absolute_build_library_path -q`,
+the full `python/tests/unit/test_run_cpp_example.py` file passes, and
+`pixi run lint` passes. This CI-smoke fix and regression are local only until
+another maintainer-approved push.
 
 Validation for the latest friction tangent no-op slice:
 
