@@ -267,7 +267,9 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     });
     constexpr auto colladaExtensions
         = std::to_array<std::string_view>({".dae", ".zae"});
-    return std::ranges::find(colladaExtensions, std::string_view{extension})
+    return std::ranges::find(
+               colladaExtensions,
+               std::string_view(extension.data(), extension.size()))
            != colladaExtensions.end();
   };
 

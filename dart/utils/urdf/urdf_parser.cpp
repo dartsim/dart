@@ -938,7 +938,8 @@ dynamics::ShapePtr UrdfParser::createShape(
       // Resolve relative URIs.
       common::Uri absoluteUri;
       if (!absoluteUri.fromRelativeUri(
-              _baseUri, std::string_view{mesh->filename})) {
+              _baseUri,
+              std::string_view(mesh->filename.data(), mesh->filename.size()))) {
         DART_WARN(
             "Failed resolving mesh URI '{}' relative to '{}'.",
             mesh->filename,

@@ -1250,7 +1250,7 @@ dynamics::ShapePtr readShape(
     Eigen::Vector3d scale = getValueVector3d(meshEle, "scale");
 
     const common::Uri meshUri = common::Uri::createFromRelativeUri(
-        baseUri, std::string_view{filename});
+        baseUri, std::string_view(filename.data(), filename.size()));
 
     auto loader = std::make_unique<utils::MeshLoaderd>();
     auto triMeshUnique = loader->load(meshUri.toString(), retriever);
