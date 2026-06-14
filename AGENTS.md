@@ -5,7 +5,7 @@ concise and expand other documents instead.
 
 ## Project Overview
 
-**WHAT**: C++20 physics engine for robotics simulation with Python bindings (dartpy)
+**WHAT**: C++23 physics engine for robotics simulation with Python bindings (dartpy)
 **WHY**: Research-grade dynamics for robotics, animation, and machine learning
 **HOW**: Build/test with `pixi run` tasks; format with `pixi run lint` before commits
 

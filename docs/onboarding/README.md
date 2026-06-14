@@ -26,7 +26,7 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++23
 physics engine for robotics, animation, and machine learning. It exposes
 transparent kinematics, dynamics, collision, constraint-solving, model-loading,
 and Python-binding foundations so researchers can build on DART rather than
@@ -126,7 +126,7 @@ DART addresses the need for:
 
 | Category                | Technology         | Purpose                   |
 | ----------------------- | ------------------ | ------------------------- |
-| **Core Language**       | C++20              | Main implementation       |
+| **Core Language**       | C++23              | Main implementation       |
 | **Build System**        | CMake 4.2.3+       | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x     | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+       | Math operations           |

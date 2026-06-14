@@ -18,7 +18,7 @@ DART is supported on the following operating systems and compilers:
 | Windows Server 2025 or later | Visual Studio 2026 |
 | macOS 13 or later            | Clang 13 or later  |
 
-> **Note:** DART requires C++20. See [Compatibility Policy](compatibility-policy.md) for details on how platform requirements are determined.
+> **Note:** DART requires C++23. See [Compatibility Policy](compatibility-policy.md) for details on how platform requirements are determined.
 
 ## Prerequisites
 
