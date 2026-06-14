@@ -11013,23 +11013,6 @@ void RigidIpcContactStage::prepare(World& world)
   assembly.bodyDofOffsets.reserve(m_scratch->surfaces.size());
   assembly.activeArticulationConstraints.reserve(
       m_scratch->articulationConstraints.size());
-  std::size_t primitiveCapacity = 0u;
-  for (std::size_t i = 0; i < m_scratch->surfaces.size(); ++i) {
-    const auto& a = m_scratch->surfaces[i];
-    const std::size_t edgeCountA = 3u * a.triangles.size();
-    for (std::size_t j = i + 1; j < m_scratch->surfaces.size(); ++j) {
-      const auto& b = m_scratch->surfaces[j];
-      const std::size_t edgeCountB = 3u * b.triangles.size();
-      primitiveCapacity += a.vertices.size() * b.vertices.size();
-      primitiveCapacity += a.vertices.size() * edgeCountB;
-      primitiveCapacity += b.vertices.size() * edgeCountA;
-      primitiveCapacity += a.vertices.size() * b.triangles.size();
-      primitiveCapacity += b.vertices.size() * a.triangles.size();
-      primitiveCapacity += edgeCountA * edgeCountB;
-    }
-  }
-  assembly.activeConstraints.reserve(primitiveCapacity);
-  assembly.activeFrictionConstraints.reserve(primitiveCapacity);
 
   sxdetail::RigidIpcBarrierOptions barrierOptions;
   barrierOptions.squaredActivationDistance

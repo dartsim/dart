@@ -2289,6 +2289,37 @@ void configureDynamicRigidIpcMeshSolveScene(dart::simulation::World& world)
   body.setForce(Eigen::Vector3d(4.0, 0.0, 0.0));
 }
 
+dart::simulation::CollisionShape makePlanarGridCollisionShape(
+    const std::size_t gridSize)
+{
+  namespace sx = dart::simulation;
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(gridSize * gridSize);
+  for (std::size_t y = 0; y < gridSize; ++y) {
+    for (std::size_t x = 0; x < gridSize; ++x) {
+      vertices.emplace_back(
+          static_cast<double>(x), static_cast<double>(y), 0.0);
+    }
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(2u * (gridSize - 1u) * (gridSize - 1u));
+  for (std::size_t y = 0; y + 1u < gridSize; ++y) {
+    for (std::size_t x = 0; x + 1u < gridSize; ++x) {
+      const auto v00 = static_cast<int>(y * gridSize + x);
+      const auto v10 = static_cast<int>(y * gridSize + x + 1u);
+      const auto v01 = static_cast<int>((y + 1u) * gridSize + x);
+      const auto v11 = static_cast<int>((y + 1u) * gridSize + x + 1u);
+      triangles.emplace_back(v00, v10, v01);
+      triangles.emplace_back(v10, v11, v01);
+    }
+  }
+
+  return sx::CollisionShape::makeMesh(
+      std::move(vertices), std::move(triangles));
+}
+
 void configureActiveRigidIpcMeshBarrierScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -17717,6 +17748,35 @@ TEST(World, RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics)
 
   EXPECT_NEAR(body.getTranslation().x(), 0.12, 1e-8);
   EXPECT_NEAR(body.getLinearVelocity().x(), 1.2, 1e-8);
+}
+
+TEST(World, RigidIpcSimulationModeBakeSkipsInactivePrimitivePairReserve)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions worldOptions;
+  worldOptions.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  worldOptions.gravity = Eigen::Vector3d::Zero();
+  worldOptions.freeListInitialAllocation = 32u * 1024u * 1024u;
+  worldOptions.freeListGrowthPolicy
+      = dart::common::FreeListAllocator::GrowthPolicy::FixedCapacity;
+  sx::World world(worldOptions);
+
+  const sx::CollisionShape mesh = makePlanarGridCollisionShape(12u);
+
+  sx::RigidBodyOptions leftOptions;
+  leftOptions.mass = 1.0;
+  auto left = world.addRigidBody("left", leftOptions);
+  left.setCollisionShape(mesh);
+
+  sx::RigidBodyOptions rightOptions;
+  rightOptions.mass = 1.0;
+  rightOptions.position = Eigen::Vector3d(100.0, 0.0, 0.0);
+  auto right = world.addRigidBody("right", rightOptions);
+  right.setCollisionShape(mesh);
+
+  EXPECT_NO_THROW(world.enterSimulationMode());
+  EXPECT_TRUE(world.isSimulationMode());
 }
 
 // Test that the opt-in BDF-2 rigid IPC path builds its inertial target from
