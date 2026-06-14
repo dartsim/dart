@@ -1,6 +1,6 @@
 # Resume: AVBD Solver
 
-## Current Resume Handoff (2026-06-13)
+## Current Resume Handoff (2026-06-14)
 
 The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
@@ -12,13 +12,21 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact position
-correction now skips no-op position writes to prescribed/static bodies while
-preserving the same inverse-mass-weighted correction for dynamic endpoints.
-This targets the static-ground side of the
-`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. This does not
-refresh the tracked friction-sweep packet, close the frictionless source-row CPU
-gap, or claim GPU parity.
+Latest local slice: the default sequential-impulse rigid contact assembly now
+skips prescribed/static endpoint arm and tangent effective-mass work while
+preserving dynamic endpoint impulse math. This extends the static-ground-side
+cleanup for the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row.
+This does not refresh the tracked friction-sweep packet, close the frictionless
+source-row CPU gap, or claim GPU parity.
+
+Review follow-up addressed locally: PR review `4492237805` noted that the
+Dynamic Friction panel still plotted `Friction 5 speed` when
+`DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` changed the maximum friction.
+The panel label now derives from `max_friction`, the value is recorded in
+`SceneSetup.info`, and the focused integration test builds the panel under the
+`2.5` override and asserts that `Friction 2.5 speed` replaces the stale
+`Friction 5 speed` label. No GitHub reply, thread resolution, push, or review
+retrigger has been performed.
 
 Validation for the latest local slice:
 
@@ -26,6 +34,35 @@ Validation for the latest local slice:
   passed.
 - `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
   passed, 5 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-static-arm-skip-20260614.json --benchmark_out_format=json'`
+  passed after this kept edit. It recorded a 7.04 us median CPU step under
+  load average `1.84, 2.00, 1.34` with CPU scaling enabled and 1.22% CV. This
+  is path smoke only because same-source native timing, visual captures, and
+  packet regeneration were not rerun.
+- `PYTHONPATH=build/default/cpp/Release/python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env -q`
+  passed, 1 test. The explicit `PYTHONPATH`/`LD_LIBRARY_PATH` were required
+  because the ambient dartpy import path did not resolve the in-tree build's
+  runtime libraries; the ambient command failed before collection with
+  `cannot import name '_dartpy'`.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `git diff --check` passed.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The run
+  overlapped other DART/CUDA work on the machine; slow stages included
+  `test_rigid_ipc_paper_experiments` at 560.12 s, `test_world` at 340.00 s,
+  the simulation-label `test_lcp_jacobi_batch_cuda` at 223.85 s, and the final
+  CUDA smoke `test_lcp_jacobi_batch_cuda` at 227.23 s. The documentation stage
+  emitted the existing four autodoc warnings about the generated
+  `dartpy._world_render_bridge` stub import, but the command passed. Final
+  CUDA benchmark smokes also passed under CPU-scaling warnings and load
+  averages around 20-26, so treat those timings as smoke evidence only.
+
+Previous static-position checkpoint validation, before this local slice, is
+retained for context:
+
 - `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=0 PYTHONPATH=build/default/cpp/Release/python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run python - <<'PY' ...`
   profiled the Python `avbd_demo2d_dynamic_friction` source-shaped scene after
   five steps. The last-step profile reported wall time 0.033 ms with
@@ -34,14 +71,15 @@ Validation for the latest local slice:
   required because the ambient dartpy import path did not resolve the in-tree
   build's runtime libraries.
 - `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-current-20260613.json --benchmark_out_format=json'`
-  passed before this kept edit. It recorded a 7.62 us median CPU step under
-  load average `7.06, 7.73, 8.81` with CPU scaling enabled and 10.3% CV.
+  passed before the static-position checkpoint. It recorded a 7.62 us median
+  CPU step under load average `7.06, 7.73, 8.81` with CPU scaling enabled and
+  10.3% CV.
 - `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-static-position-write-guard.json --benchmark_out_format=json'`
-  passed after this kept edit. It recorded a 7.78 us median CPU step under load
-  average `19.85, 12.52, 9.51` with CPU scaling enabled and 2.9% CV. This is
-  path smoke only because same-source native timing, visual captures, and
-  packet regeneration were not rerun, and the host was busy with other DART
-  builds.
+  passed after the static-position checkpoint. It recorded a 7.78 us median
+  CPU step under load average `19.85, 12.52, 9.51` with CPU scaling enabled
+  and 2.9% CV. This is path smoke only because same-source native timing,
+  visual captures, and packet regeneration were not rerun, and the host was
+  busy with other DART builds.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `pixi run test-unit` passed, 161 tests.

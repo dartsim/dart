@@ -201,6 +201,7 @@ def build() -> SceneSetup:
 
     high_friction_speed_history: deque[float] = deque(maxlen=160)
     zero_friction_speed_history: deque[float] = deque(maxlen=160)
+    high_friction_speed_label = f"Friction {max_friction:.3g} speed"
 
     def build_panel(builder: object, context: object) -> None:
         high_friction_speed = float(
@@ -220,7 +221,7 @@ def build() -> SceneSetup:
         builder.text(f"high-friction speed: {high_friction_speed:.3f} m/s")
         builder.text(f"zero-friction speed: {zero_friction_speed:.3f} m/s")
         builder.text(f"world time: {world.time:.3f} s")
-        builder.plot_lines("Friction 5 speed", list(high_friction_speed_history))
+        builder.plot_lines(high_friction_speed_label, list(high_friction_speed_history))
         builder.plot_lines("Friction 0 speed", list(zero_friction_speed_history))
         builder.separator()
         bridge.build_control_panel(builder, context)
@@ -235,6 +236,7 @@ def build() -> SceneSetup:
             "ground": ground,
             "boxes": boxes,
             "max_dynamic_box_friction": max_friction,
+            "high_friction_speed_label": high_friction_speed_label,
             "source_demo_row": "avbd-demo2d dynamic friction",
             "source_demo_reference": _source_row(max_friction),
         },

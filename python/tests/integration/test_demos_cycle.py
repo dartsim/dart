@@ -896,7 +896,41 @@ def test_avbd_demo2d_dynamic_friction_scene_max_friction_env(
     boxes = setup.info["boxes"]
     source = setup.info["source_demo_reference"]
 
+    class _PanelBuilder:
+        def __init__(self) -> None:
+            self.plots: list[str] = []
+
+        def text(self, value: str) -> None:
+            pass
+
+        def plot_lines(self, label: str, values: list[float]) -> None:
+            self.plots.append(label)
+
+        def separator(self) -> None:
+            pass
+
+        def checkbox(self, label: str, value: bool) -> tuple[bool, bool]:
+            return False, value
+
+        def slider(
+            self, label: str, value: float, minimum: float, maximum: float
+        ) -> tuple[bool, float]:
+            return False, value
+
+        def item_tooltip(self, text: str) -> None:
+            pass
+
+        def same_line(self) -> None:
+            pass
+
+        def button(self, label: str) -> bool:
+            return False
+
+    panel_builder = _PanelBuilder()
+    setup.panels[0].build(panel_builder, object())
+
     assert setup.info["max_dynamic_box_friction"] == pytest.approx(2.5)
+    assert setup.info["high_friction_speed_label"] == "Friction 2.5 speed"
     assert source["source_shapes"]["boxes"]["friction_range"] == (2.5, 0.0)
     assert source["parameters"]["max_dynamic_box_friction"] == pytest.approx(2.5)
     assert [box.friction for box in boxes] == pytest.approx(
@@ -905,6 +939,8 @@ def test_avbd_demo2d_dynamic_friction_scene_max_friction_env(
     assert np.asarray(boxes[0].linear_velocity, dtype=float).tolist() == pytest.approx(
         [10.0, 0.0, 0.0]
     )
+    assert "Friction 2.5 speed" in panel_builder.plots
+    assert "Friction 5 speed" not in panel_builder.plots
 
 
 def test_avbd_demo2d_static_friction_scene_matches_source_row() -> None:

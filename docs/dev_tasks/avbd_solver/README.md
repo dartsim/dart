@@ -9,6 +9,23 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact assembly now skips prescribed/static endpoint arm and tangent
+  effective-mass work while preserving dynamic endpoint impulse math. This
+  extends the static-ground-side cleanup for the
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a `/0` benchmark smoke
+  recorded a 7.04 us median CPU step under load average `1.84, 2.00, 1.34`
+  with CPU scaling enabled. The same local follow-up addresses PR review
+  `4492237805` by deriving the Dynamic Friction panel's high-friction speed
+  label from `max_friction`, with integration coverage for the
+  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. Full validation
+  passed `pixi run lint`, `pixi run build`, `pixi run test-unit`, focused
+  Python regression, `git diff --check`, and `pixi run -e cuda test-all` on
+  the visible NVIDIA RTX 5000 Ada host. This is local path and review-fix
+  evidence only. It does not refresh the tracked friction-sweep packet, close
+  the frictionless source-row CPU gap, resolve the GitHub review thread, or
+  claim GPU parity.
 - Latest local follow-up: PLAN-091 WP-091.1 relabels the AVBD contact-scene
   evidence rows: no `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene
   emplaces the internal AVBD rigid-contact opt-in config

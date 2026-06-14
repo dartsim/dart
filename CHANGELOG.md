@@ -364,7 +364,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     mass, skips zero-angular normal velocity/effective-mass work, avoids
     no-op angular velocity updates for centered normal rows, and returns early
     when a normal impulse iteration produces no velocity change. Positional
-    contact correction also skips no-op writes to prescribed/static bodies.
+    contact correction also skips no-op writes to prescribed/static bodies, and
+    contact assembly skips prescribed/static endpoint arm and tangent-mass
+    work while preserving dynamic endpoint impulse math.
     During simulation bake, the rigid contact stage now
     reserves ordinary and AVBD contact scratch from the collision-shape capacity
     estimate and prewarms collision-query cache storage without generating

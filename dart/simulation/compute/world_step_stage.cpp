@@ -9818,17 +9818,27 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     constraint.transformB = &transformB;
     constraint.normal = contact.normal;
     constraint.depth = contact.depth;
-    constraint.armA = contact.point - transformA.position;
-    constraint.armB = contact.point - transformB.position;
     constraint.staticA = staticA;
     constraint.staticB = staticB;
+    constraint.armA = Eigen::Vector3d::Zero();
+    if (!staticA) {
+      constraint.armA = contact.point - transformA.position;
+    }
+    constraint.armB = Eigen::Vector3d::Zero();
+    if (!staticB) {
+      constraint.armB = contact.point - transformB.position;
+    }
     constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
     constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
     constraint.friction = std::sqrt(
         frictionOf(registry, entityA) * frictionOf(registry, entityB));
 
-    constraint.normalArmCrossA = constraint.armA.cross(constraint.normal);
-    constraint.normalArmCrossB = constraint.armB.cross(constraint.normal);
+    constraint.normalArmCrossA = staticA
+                                     ? Eigen::Vector3d::Zero()
+                                     : constraint.armA.cross(constraint.normal);
+    constraint.normalArmCrossB = staticB
+                                     ? Eigen::Vector3d::Zero()
+                                     : constraint.armB.cross(constraint.normal);
     constraint.hasNormalAngularA
         = !staticA && hasContactNormalAngularTerm(constraint.normalArmCrossA);
     constraint.hasNormalAngularB
@@ -9910,13 +9920,18 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       constraint.tangent1 = constraint.normal.unitOrthogonal();
       constraint.tangent2 = constraint.normal.cross(constraint.tangent1);
       const auto tangentMass = [&](const Eigen::Vector3d& tangent) {
-        const Eigen::Vector3d crossTangentA = constraint.armA.cross(tangent);
-        const Eigen::Vector3d crossTangentB = constraint.armB.cross(tangent);
-        return constraint.invMassA + constraint.invMassB
-               + tangent.dot((constraint.invInertiaA * crossTangentA)
-                                 .cross(constraint.armA))
-               + tangent.dot((constraint.invInertiaB * crossTangentB)
-                                 .cross(constraint.armB));
+        double result = constraint.invMassA + constraint.invMassB;
+        if (!constraint.staticA) {
+          const Eigen::Vector3d crossTangentA = constraint.armA.cross(tangent);
+          result += tangent.dot(
+              (constraint.invInertiaA * crossTangentA).cross(constraint.armA));
+        }
+        if (!constraint.staticB) {
+          const Eigen::Vector3d crossTangentB = constraint.armB.cross(tangent);
+          result += tangent.dot(
+              (constraint.invInertiaB * crossTangentB).cross(constraint.armB));
+        }
+        return result;
       };
       constraint.tangentMass1 = tangentMass(constraint.tangent1);
       constraint.tangentMass2 = tangentMass(constraint.tangent2);
