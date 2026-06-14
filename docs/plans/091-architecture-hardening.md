@@ -843,13 +843,19 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   now asserts the released-from-rest pendulum has `kineticEnergy ≈ 0` (both
   families), proving the fix; `test_variational_integration` 178/178 (the
   trusted helper is unchanged); golden 3/3; lint, `check-api-boundaries`,
-  `check-dart7-promotion-surface` green. **Remaining:** the
+  `check-dart7-promotion-surface` green. **Order-of-convergence seed (landed):**
+  `test_world.cpp` `ComputeStepMetricsPotentialEnergyConvergesWithTimeStep`
+  drops a free rigid body under constant gravity (exact `y(T) = y0 - ½ g T²`)
+  and measures the discretization error in the height-encoding
+  `computeStepMetrics().potentialEnergy` at `dt` and `dt/2`; it asserts the
+  error is measurable and that halving `dt` genuinely reduces it (ratio in
+  `[0.05, 0.7]`, scheme-agnostic and non-flaky). **Remaining:** the
   registered scene-builder corpus, the single harness binary + manifest-driven
   packet writer (replacing the per-scene script fleet), the cross-family
   dashboard row set, contact/iteration metric population (needs a non-const
-  narrow-phase pass), world-frame multibody-link momentum aggregation, and the
-  order-of-convergence
-  (dt-halving) validation sweep. NOTE: independent of this
+  narrow-phase pass), world-frame multibody-link momentum aggregation, and a
+  corpus-wide order-of-convergence sweep (this seeds it for one scene).
+  NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
   rigid-IPC allocation-counter off-by-one) introduced by the merged main

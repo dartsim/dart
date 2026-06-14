@@ -22320,3 +22320,51 @@ TEST(World, ComputeStepMetricsConservesLinearMomentumThroughCollision)
   // A passive contact can only remove kinetic energy, never add it.
   EXPECT_LE(after.kineticEnergy, initial.kineticEnergy + 1e-9);
 }
+
+TEST(World, ComputeStepMetricsPotentialEnergyConvergesWithTimeStep)
+{
+  namespace sx = dart::simulation;
+
+  // Order-of-convergence seed (PLAN-091 WP-091.24 validation layer): a single
+  // free rigid body falling under constant gravity has the exact closed form
+  // y(T) = y0 - 1/2 g T^2. computeStepMetrics().potentialEnergy = m g_mag y
+  // encodes that height, so the discretization error in the reported potential
+  // energy shrinks as the time step shrinks. Halving dt must reduce the error
+  // (the integrator is consistent), confirmed here without assuming the scheme.
+  const double gMag = 9.81;
+  const double mass = 2.0;
+  const double y0 = 5.0;
+  const double totalTime = 0.5;
+
+  const auto peError = [&](double dt) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, -gMag, 0.0));
+    world.setTimeStep(dt);
+    sx::RigidBodyOptions options;
+    options.mass = mass;
+    options.position = Eigen::Vector3d(0.0, y0, 0.0);
+    world.addRigidBody("faller", options);
+    world.enterSimulationMode();
+    const int steps = static_cast<int>(std::lround(totalTime / dt));
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+    }
+    const double yExact = y0 - 0.5 * gMag * totalTime * totalTime;
+    const double peExact = mass * gMag * yExact; // -m g.x with g = (0,-g,0).
+    return std::abs(world.computeStepMetrics().potentialEnergy - peExact);
+  };
+
+  const double coarse = peError(1.0e-3); //  500 steps to T.
+  const double fine = peError(5.0e-4);   // 1000 steps to T.
+
+  // There must be a measurable (and bounded) discretization error to converge.
+  ASSERT_GT(coarse, 1.0e-9) << "no measurable discretization error to converge";
+  EXPECT_LT(coarse, 1.0);
+  // Consistency: halving dt reduces the error. A first-order scheme gives a
+  // ratio near 0.5, a second-order one near 0.25; the [0.05, 0.7] band asserts
+  // genuine convergence (error shrinks > 30%) without assuming the exact order,
+  // and is wide enough not to flake on round-off.
+  const double ratio = fine / coarse;
+  EXPECT_GT(ratio, 0.05) << "convergence ratio " << ratio;
+  EXPECT_LT(ratio, 0.7) << "convergence ratio " << ratio;
+}
