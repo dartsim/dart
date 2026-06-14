@@ -226,11 +226,8 @@ bool SolveLCPWithScratch(
   scratch.ell.resize(nSize);
   scratch.p.resize(nSize);
   scratch.C.resize(nSize);
-  if (scratch.stateCapacity < nSize) {
-    scratch.state = std::make_unique<bool[]>(nSize);
-    scratch.stateCapacity = nSize;
-  }
-  std::fill_n(scratch.state.get(), nSize, false);
+  scratch.reserveState(nSize);
+  std::fill_n(scratch.state, nSize, false);
   scratch.rowPointers.resize(nSize);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
@@ -251,7 +248,7 @@ bool SolveLCPWithScratch(
       scratch.dell.data(),
       scratch.ell.data(),
       scratch.deltaW.data(),
-      scratch.state.get(),
+      scratch.state,
       findex,
       scratch.p.data(),
       scratch.C.data());

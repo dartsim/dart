@@ -36,12 +36,17 @@
 #include <dart/simulation/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace dart::simulation::detail {
@@ -113,10 +118,45 @@ enum class RigidIpcArticulationConstraintType
 
 struct RigidIpcBarrierSurface
 {
+  using VertexAllocator = dart::common::StlAllocator<Eigen::Vector3d>;
+  using TriangleAllocator = dart::common::StlAllocator<Eigen::Vector3i>;
+  using VertexVector = std::vector<Eigen::Vector3d, VertexAllocator>;
+  using TriangleVector = std::vector<Eigen::Vector3i, TriangleAllocator>;
+
+  RigidIpcBarrierSurface() = default;
+
+  explicit RigidIpcBarrierSurface(dart::common::MemoryAllocator& allocator)
+    : vertices(VertexAllocator{allocator}),
+      triangles(TriangleAllocator{allocator})
+  {
+  }
+
+  RigidIpcBarrierSurface(const RigidIpcBarrierSurface&) = default;
+  RigidIpcBarrierSurface(RigidIpcBarrierSurface&&) noexcept = default;
+  RigidIpcBarrierSurface& operator=(RigidIpcBarrierSurface&&) noexcept
+      = default;
+
+  RigidIpcBarrierSurface& operator=(const RigidIpcBarrierSurface& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    body = other.body;
+    pose = other.pose;
+    vertices.assign(other.vertices.begin(), other.vertices.end());
+    triangles.assign(other.triangles.begin(), other.triangles.end());
+    frictionCoefficient = other.frictionCoefficient;
+    dynamic = other.dynamic;
+    kinematic = other.kinematic;
+    kinematicStartPose = other.kinematicStartPose;
+    return *this;
+  }
+
   std::size_t body = 0;
   RigidIpcPose pose;
-  std::vector<Eigen::Vector3d> vertices;
-  std::vector<Eigen::Vector3i> triangles;
+  VertexVector vertices;
+  TriangleVector triangles;
   double frictionCoefficient = 1.0;
   bool dynamic = true;
   // Kinematic (prescribed-motion) obstacle: holds no solver DOFs (dynamic ==
@@ -184,15 +224,93 @@ struct RigidIpcBarrierAssembly
 {
   static constexpr std::size_t npos = std::numeric_limits<std::size_t>::max();
 
+  using BodyDofOffsetAllocator = dart::common::StlAllocator<std::size_t>;
+  using ConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcBarrierConstraint>;
+  using FrictionConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcFrictionConstraint>;
+  using ArticulationConstraintAllocator
+      = dart::common::StlAllocator<RigidIpcArticulationConstraint>;
+  using BodyDofOffsetVector = std::vector<std::size_t, BodyDofOffsetAllocator>;
+  using ConstraintVector
+      = std::vector<RigidIpcBarrierConstraint, ConstraintAllocator>;
+  using FrictionConstraintVector
+      = std::vector<RigidIpcFrictionConstraint, FrictionConstraintAllocator>;
+  using ArticulationConstraintVector = std::
+      vector<RigidIpcArticulationConstraint, ArticulationConstraintAllocator>;
+
+  RigidIpcBarrierAssembly() = default;
+
+  explicit RigidIpcBarrierAssembly(dart::common::MemoryAllocator& allocator)
+    : bodyDofOffsets(BodyDofOffsetAllocator{allocator}),
+      activeConstraints(ConstraintAllocator{allocator}),
+      activeFrictionConstraints(FrictionConstraintAllocator{allocator}),
+      activeArticulationConstraints(ArticulationConstraintAllocator{allocator})
+  {
+  }
+
+  RigidIpcBarrierAssembly(const RigidIpcBarrierAssembly&) = default;
+  RigidIpcBarrierAssembly(RigidIpcBarrierAssembly&&) noexcept = default;
+
+  RigidIpcBarrierAssembly& operator=(const RigidIpcBarrierAssembly& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    value = other.value;
+    gradient = other.gradient;
+    hessian = other.hessian;
+    equalityResidual = other.equalityResidual;
+    equalityJacobian = other.equalityJacobian;
+    bodyDofOffsets.assign(
+        other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
+    activeConstraints.assign(
+        other.activeConstraints.begin(), other.activeConstraints.end());
+    activeFrictionConstraints.assign(
+        other.activeFrictionConstraints.begin(),
+        other.activeFrictionConstraints.end());
+    activeArticulationConstraints.assign(
+        other.activeArticulationConstraints.begin(),
+        other.activeArticulationConstraints.end());
+    activeDynamicsTerms = other.activeDynamicsTerms;
+    return *this;
+  }
+
+  RigidIpcBarrierAssembly& operator=(RigidIpcBarrierAssembly&& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    value = other.value;
+    gradient = std::move(other.gradient);
+    hessian = std::move(other.hessian);
+    equalityResidual = std::move(other.equalityResidual);
+    equalityJacobian = std::move(other.equalityJacobian);
+    bodyDofOffsets.assign(
+        other.bodyDofOffsets.begin(), other.bodyDofOffsets.end());
+    activeConstraints.assign(
+        other.activeConstraints.begin(), other.activeConstraints.end());
+    activeFrictionConstraints.assign(
+        other.activeFrictionConstraints.begin(),
+        other.activeFrictionConstraints.end());
+    activeArticulationConstraints.assign(
+        other.activeArticulationConstraints.begin(),
+        other.activeArticulationConstraints.end());
+    activeDynamicsTerms = other.activeDynamicsTerms;
+    return *this;
+  }
+
   double value = 0.0;
   Eigen::VectorXd gradient;
   Eigen::SparseMatrix<double> hessian;
   Eigen::VectorXd equalityResidual;
   Eigen::SparseMatrix<double> equalityJacobian;
-  std::vector<std::size_t> bodyDofOffsets;
-  std::vector<RigidIpcBarrierConstraint> activeConstraints;
-  std::vector<RigidIpcFrictionConstraint> activeFrictionConstraints;
-  std::vector<RigidIpcArticulationConstraint> activeArticulationConstraints;
+  BodyDofOffsetVector bodyDofOffsets;
+  ConstraintVector activeConstraints;
+  FrictionConstraintVector activeFrictionConstraints;
+  ArticulationConstraintVector activeArticulationConstraints;
   std::size_t activeDynamicsTerms = 0;
 };
 
@@ -308,14 +426,96 @@ struct RigidIpcProjectedNewtonStats
   bool lineSearchLimited = false;
 };
 
+class RigidIpcProjectedNewtonDelta
+{
+public:
+  using Allocator = dart::common::StlAllocator<double>;
+  using Vector = std::vector<double, Allocator>;
+  using EigenMap = Eigen::Map<Eigen::VectorXd>;
+  using ConstEigenMap = Eigen::Map<const Eigen::VectorXd>;
+
+  RigidIpcProjectedNewtonDelta() = default;
+
+  explicit RigidIpcProjectedNewtonDelta(
+      dart::common::MemoryAllocator& allocator)
+    : m_values(Allocator{allocator})
+  {
+  }
+
+  [[nodiscard]] Eigen::Index size() const noexcept
+  {
+    return static_cast<Eigen::Index>(m_values.size());
+  }
+
+  void resize(Eigen::Index size)
+  {
+    m_values.resize(static_cast<std::size_t>(std::max<Eigen::Index>(0, size)));
+  }
+
+  void setZero()
+  {
+    std::fill(m_values.begin(), m_values.end(), 0.0);
+  }
+
+  [[nodiscard]] double norm() const
+  {
+    return asEigen().norm();
+  }
+
+  [[nodiscard]] double& operator[](Eigen::Index index) noexcept
+  {
+    return m_values[static_cast<std::size_t>(index)];
+  }
+
+  [[nodiscard]] double operator[](Eigen::Index index) const noexcept
+  {
+    return m_values[static_cast<std::size_t>(index)];
+  }
+
+  [[nodiscard]] EigenMap asEigen() noexcept
+  {
+    return EigenMap(m_values.data(), size());
+  }
+
+  [[nodiscard]] ConstEigenMap asEigen() const noexcept
+  {
+    return ConstEigenMap(m_values.data(), size());
+  }
+
+  template <typename Derived>
+  RigidIpcProjectedNewtonDelta& operator=(
+      const Eigen::MatrixBase<Derived>& values)
+  {
+    resize(values.size());
+    asEigen() = values;
+    return *this;
+  }
+
+  RigidIpcProjectedNewtonDelta& operator*=(double scale)
+  {
+    asEigen() *= scale;
+    return *this;
+  }
+
+private:
+  Vector m_values;
+};
+
 struct RigidIpcProjectedNewtonStep
 {
+  RigidIpcProjectedNewtonStep() = default;
+
+  explicit RigidIpcProjectedNewtonStep(dart::common::MemoryAllocator& allocator)
+    : delta(allocator)
+  {
+  }
+
   RigidIpcProjectedNewtonStatus status
       = RigidIpcProjectedNewtonStatus::FactorizationFailed;
   bool success = false;
   bool converged = false;
   bool lineSearchBlocked = false;
-  Eigen::VectorXd delta;
+  RigidIpcProjectedNewtonDelta delta;
   RigidIpcProjectedNewtonStats stats;
 
   [[nodiscard]] bool hasDescentDirection() const noexcept
@@ -348,13 +548,30 @@ struct RigidIpcAdaptiveStiffnessOptions
 
 struct RigidIpcProjectedNewtonSolveOptions
 {
+  using DynamicsTermAllocator
+      = dart::common::StlAllocator<RigidIpcBodyDynamicsTerm>;
+  using ArticulationConstraintInputAllocator
+      = dart::common::StlAllocator<RigidIpcArticulationConstraintInput>;
+
+  RigidIpcProjectedNewtonSolveOptions() = default;
+
+  explicit RigidIpcProjectedNewtonSolveOptions(
+      dart::common::MemoryAllocator& allocator)
+    : dynamicsTerms(DynamicsTermAllocator{allocator}),
+      articulationConstraints(ArticulationConstraintInputAllocator{allocator})
+  {
+  }
+
   RigidIpcBarrierOptions barrier;
   RigidIpcFrictionOptions friction;
   RigidIpcLineSearchOptions lineSearch;
   RigidIpcProjectedNewtonOptions newton;
   RigidIpcAdaptiveStiffnessOptions adaptiveStiffness;
-  std::vector<RigidIpcBodyDynamicsTerm> dynamicsTerms;
-  std::vector<RigidIpcArticulationConstraintInput> articulationConstraints;
+  std::vector<RigidIpcBodyDynamicsTerm, DynamicsTermAllocator> dynamicsTerms;
+  std::vector<
+      RigidIpcArticulationConstraintInput,
+      ArticulationConstraintInputAllocator>
+      articulationConstraints;
   std::size_t maxIterations = 16;
   std::size_t frictionIterations = 1;
   double stepTolerance = 1e-10;
@@ -395,11 +612,23 @@ struct RigidIpcProjectedNewtonSolveStats
 
 struct RigidIpcProjectedNewtonSolveResult
 {
+  using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
+
+  RigidIpcProjectedNewtonSolveResult() = default;
+
+  explicit RigidIpcProjectedNewtonSolveResult(
+      dart::common::MemoryAllocator& allocator)
+    : surfaces(SurfaceAllocator{allocator}),
+      assembly(allocator),
+      lastStep(allocator)
+  {
+  }
+
   RigidIpcProjectedNewtonSolveStatus status
       = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
   bool converged = false;
   bool failed = false;
-  std::vector<RigidIpcBarrierSurface> surfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> surfaces;
   RigidIpcBarrierAssembly assembly;
   RigidIpcLineSearchResult lineSearch;
   RigidIpcProjectedNewtonStep lastStep;
@@ -411,13 +640,34 @@ struct RigidIpcProjectedNewtonSolveResult
   }
 };
 
-struct RigidIpcProjectedNewtonSolveScratch
+struct RigidIpcProjectedNewtonSolveScratchWorkspace;
+
+struct DART_SIMULATION_API RigidIpcProjectedNewtonSolveScratch
 {
-  std::vector<RigidIpcBarrierSurface> laggedSurfaces;
-  std::vector<RigidIpcBarrierSurface> lineSearchStartSurfaces;
-  std::vector<RigidIpcBarrierSurface> candidateSurfaces;
-  std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
-  std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+  using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
+
+  RigidIpcProjectedNewtonSolveScratch() = default;
+  explicit RigidIpcProjectedNewtonSolveScratch(
+      dart::common::MemoryAllocator& allocator);
+  ~RigidIpcProjectedNewtonSolveScratch();
+
+  RigidIpcProjectedNewtonSolveScratch(
+      const RigidIpcProjectedNewtonSolveScratch&) = delete;
+  RigidIpcProjectedNewtonSolveScratch& operator=(
+      const RigidIpcProjectedNewtonSolveScratch&) = delete;
+  RigidIpcProjectedNewtonSolveScratch(
+      RigidIpcProjectedNewtonSolveScratch&& other) noexcept;
+  RigidIpcProjectedNewtonSolveScratch& operator=(
+      RigidIpcProjectedNewtonSolveScratch&& other) noexcept;
+
+  dart::common::MemoryAllocator* memoryAllocator = nullptr;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> laggedSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> lineSearchStartSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> candidateSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> acceptedSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> bestDecreasingSurfaces;
+  RigidIpcProjectedNewtonStep step;
+  RigidIpcProjectedNewtonSolveScratchWorkspace* workspace = nullptr;
 };
 
 /// Evaluates the IPC point-triangle barrier after rigid pose interpolation.
@@ -783,6 +1033,20 @@ DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options,
     RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch);
+
+/// Prewarm solve-local projected-Newton assembly scratch for a same-shape
+/// solve. This performs assembly work but does not mutate input surfaces or
+/// solver results; allocator-backed storage owned by @p scratch remains
+/// reserved for later solves.
+DART_SIMULATION_API void prewarmRigidIpcProjectedNewtonAssemblyScratch(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcProjectedNewtonSolveScratch& scratch);
 
 /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.

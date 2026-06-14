@@ -164,14 +164,25 @@ enum class ActuatorType
 /// effort. Unbounded coordinates use +/- infinity.
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
+static constexpr Eigen::Index kMaxJointDof = 6;
+using JointVector = Eigen::
+    Matrix<double, Eigen::Dynamic, 1, Eigen::ColMajor, kMaxJointDof, 1>;
+
+inline JointVector makeJointVector(Eigen::Index size, double value)
+{
+  JointVector result(size);
+  result.setConstant(value);
+  return result;
+}
+
 struct JointLimits
 {
-  Eigen::VectorXd lower;         ///< Position lower bounds
-  Eigen::VectorXd upper;         ///< Position upper bounds
-  Eigen::VectorXd velocityLower; ///< Velocity lower bounds
-  Eigen::VectorXd velocityUpper; ///< Velocity upper bounds
-  Eigen::VectorXd effortLower;   ///< Actuation effort lower bounds
-  Eigen::VectorXd effortUpper;   ///< Actuation effort upper bounds
+  JointVector lower;         ///< Position lower bounds
+  JointVector upper;         ///< Position upper bounds
+  JointVector velocityLower; ///< Velocity lower bounds
+  JointVector velocityUpper; ///< Velocity upper bounds
+  JointVector effortLower;   ///< Actuation effort lower bounds
+  JointVector effortUpper;   ///< Actuation effort upper bounds
 };
 
 /// Joint component (single joint in articulated body)
@@ -198,27 +209,27 @@ struct Joint
   ActuatorType actuatorType = ActuatorType::Force;
   std::string name;
 
-  Eigen::VectorXd position;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd acceleration;
-  Eigen::VectorXd torque;
+  JointVector position;
+  JointVector velocity;
+  JointVector acceleration;
+  JointVector torque;
 
   /// Passive joint dynamics (per generalized coordinate).
-  Eigen::VectorXd springStiffness;
-  Eigen::VectorXd dampingCoefficient;
-  Eigen::VectorXd restPosition;
+  JointVector springStiffness;
+  JointVector dampingCoefficient;
+  JointVector restPosition;
 
   /// Rotor/reflected inertia added to the joint-space mass-matrix diagonal
   /// (per generalized coordinate).
-  Eigen::VectorXd armature;
+  JointVector armature;
 
   /// Coulomb (dry) friction force/torque magnitude that opposes joint motion
   /// (per generalized coordinate).
-  Eigen::VectorXd coulombFriction;
+  JointVector coulombFriction;
 
   /// Commanded target velocity used by the Velocity actuator type (per
   /// generalized coordinate).
-  Eigen::VectorXd commandVelocity;
+  JointVector commandVelocity;
 
   /// Maximum AVBD constraint force before the joint is marked broken. A value
   /// of 0 disables automatic breakage.

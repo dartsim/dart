@@ -11,7 +11,6 @@ assimp = ">=6.0.5,<7"
 benchmark = ">=1.9.5,<2"
 black = ">=26.5.1,<27"
 clang-format = ">=22.1.7,<23"
-cli11 = ">=2.6.2,<3"
 cmake = ">=4.2.3,<5"
 codespell = ">=2.4.2,<3"
 console_bridge = ">=1.0.2,<2"
@@ -1542,6 +1541,9 @@ bm-plan083-cpu-abd-wrecking-ball-packet = { cmd = "python scripts/write_plan083_
   "config",
 ] }
 bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-external-surface-ccd-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene external_surface_ccd", depends-on = [
   "config",
 ] }
 bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [

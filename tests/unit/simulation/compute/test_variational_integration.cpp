@@ -1223,10 +1223,63 @@ TEST(VariationalIntegration, LoopClosureConstraintScratchIsBaked)
       = registry.get<sxc::MultibodyVariationalScratch>(*structures.begin());
   const auto constraintCapacity = scratch.constraints.capacity();
   EXPECT_GE(constraintCapacity, 1u);
+  EXPECT_EQ(scratch.tree.linkCount(), 6u);
+  EXPECT_EQ(scratch.tree.dofCount(), 5u);
+  ASSERT_EQ(scratch.step.currentSpatialVelocities.size(), 6u);
+  EXPECT_EQ(scratch.step.position.size(), 5);
+  EXPECT_EQ(scratch.step.velocity.size(), 5);
+  EXPECT_EQ(scratch.step.appliedForce.size(), 5);
+  EXPECT_EQ(scratch.step.nextPosition.size(), 5);
+  EXPECT_EQ(scratch.step.residual.size(), 5);
+  EXPECT_EQ(scratch.step.zeroAcceleration.size(), 5);
+  ASSERT_EQ(scratch.anderson.stepDeltas.size(), 5u);
+  ASSERT_EQ(scratch.anderson.iterateDeltas.size(), 5u);
+  EXPECT_EQ(scratch.anderson.stepDeltas.front().size(), 5);
+  EXPECT_EQ(scratch.anderson.iterateDeltas.front().size(), 5);
+  EXPECT_EQ(scratch.anderson.stepMatrix.rows(), 5);
+  EXPECT_EQ(scratch.anderson.stepMatrix.cols(), 5);
+  EXPECT_EQ(scratch.anderson.mixMatrix.rows(), 5);
+  EXPECT_EQ(scratch.anderson.mixMatrix.cols(), 5);
+  EXPECT_GE(scratch.anderson.jointDelta.size(), 1);
+  ASSERT_EQ(scratch.linearSolve.articulated.size(), 6u);
+  ASSERT_EQ(scratch.linearSolve.forceProjector.size(), 6u);
+  ASSERT_EQ(scratch.linearSolve.motionProjector.size(), 6u);
+  EXPECT_EQ(scratch.linearSolve.rhs.size(), 5);
+  EXPECT_EQ(scratch.linearSolve.result.size(), 5);
+  EXPECT_GE(scratch.linearSolve.jointWork.size(), 1);
+  EXPECT_GE(scratch.linearSolve.jointSolveWork.size(), 1);
+  EXPECT_EQ(scratch.linearSolve.forceProjector.back().rows(), 6);
+  EXPECT_EQ(scratch.linearSolve.forceProjector.back().cols(), 1);
+  EXPECT_EQ(scratch.linearSolve.jointMatrix.back().rows(), 1);
+  EXPECT_EQ(scratch.linearSolve.jointMatrix.back().cols(), 1);
+  ASSERT_EQ(scratch.projection.jacobians.size(), 6u);
+  EXPECT_EQ(scratch.projection.jacobians.back().rows(), 6);
+  EXPECT_EQ(scratch.projection.jacobians.back().cols(), 5);
+  EXPECT_EQ(scratch.projection.residual.size(), 3);
+  EXPECT_EQ(scratch.projection.jacobian.rows(), 3);
+  EXPECT_EQ(scratch.projection.jacobian.cols(), 5);
+  EXPECT_EQ(scratch.projection.inverseMassJt.rows(), 5);
+  EXPECT_EQ(scratch.projection.inverseMassJt.cols(), 3);
+  EXPECT_EQ(scratch.projection.constraintMass.rows(), 3);
+  EXPECT_EQ(scratch.projection.constraintMass.cols(), 3);
+  EXPECT_EQ(scratch.projection.correction.size(), 5);
 
   for (int i = 0; i < 4; ++i) {
     world.step();
     EXPECT_EQ(scratch.constraints.capacity(), constraintCapacity);
+    EXPECT_EQ(scratch.tree.linkCount(), 6u);
+    EXPECT_EQ(scratch.tree.dofCount(), 5u);
+    EXPECT_EQ(scratch.anderson.stepDeltas.size(), 5u);
+    EXPECT_EQ(scratch.anderson.stepMatrix.rows(), 5);
+    EXPECT_EQ(scratch.anderson.stepMatrix.cols(), 5);
+    EXPECT_EQ(scratch.step.position.size(), 5);
+    EXPECT_EQ(scratch.step.residual.size(), 5);
+    EXPECT_EQ(scratch.step.zeroAcceleration.size(), 5);
+    EXPECT_EQ(scratch.linearSolve.result.size(), 5);
+    EXPECT_EQ(scratch.linearSolve.rhs.size(), 5);
+    EXPECT_EQ(scratch.projection.residual.size(), 3);
+    EXPECT_EQ(scratch.projection.jacobian.rows(), 3);
+    EXPECT_EQ(scratch.projection.inverseMassJt.cols(), 3);
   }
 }
 
@@ -2382,6 +2435,66 @@ TEST(VariationalIntegration, AvbdCompliantPointJointConfigPullsLinkEndpoint)
   EXPECT_LT(compliant.maxTranslation, 0.5 * free.maxTranslation);
   EXPECT_GT(free.maxYaw, 1e-2);
   EXPECT_LT(compliant.maxYaw, 0.5 * free.maxYaw);
+}
+
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPointJointConfigRemovalRestoresFreeMotion)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setTimeStep(0.002);
+
+  auto robot = world.addMultibody("floater");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "float";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+  joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
+  joint.childLink = entt::null;
+
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = Eigen::Vector3d::Zero();
+  config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  config.startStiffness = 1000.0;
+  config.maxStiffness = 1000.0;
+
+  world.enterSimulationMode();
+  world.step();
+
+  registry.remove<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  ASSERT_FALSE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  body.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+
+  double maxTranslation = 0.0;
+  double maxYaw = 0.0;
+  for (int k = 0; k < 80; ++k) {
+    body.applyForce(10.0 * Eigen::Vector3d::UnitX());
+    body.applyForce(
+        2.0 * Eigen::Vector3d::UnitY(), 0.5 * Eigen::Vector3d::UnitX());
+    world.step();
+    const Eigen::Isometry3d transform = body.getWorldTransform();
+    maxTranslation = std::max(maxTranslation, transform.translation().x());
+    maxYaw = std::max(
+        maxYaw,
+        std::abs(
+            std::atan2(transform.linear()(1, 0), transform.linear()(0, 0))));
+  }
+
+  EXPECT_GT(maxTranslation, 2e-2);
+  EXPECT_GT(maxYaw, 1e-2);
 }
 
 TEST(
