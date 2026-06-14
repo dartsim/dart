@@ -592,7 +592,7 @@ def _prepare_filament_run_args(
 
 
 def _prepend_runtime_library_path(env: dict[str, str], build_dir: Path) -> None:
-    lib_dir = build_dir / "lib"
+    lib_dir = build_dir.resolve() / "lib"
     if sys.platform.startswith("linux"):
         _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
     elif sys.platform == "darwin":

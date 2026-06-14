@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 import importlib.util
 import json
 import pathlib
+import os
 
 import pytest
 
@@ -3185,3 +3186,50 @@ def test_visual_capture_forwards_scripted_pointer_force_drag(
     assert "2:320,180:140,-50:5" in demo_args
     assert "--scripted-demo-event-log" in demo_args
     assert str(tmp_path / "events.jsonl") in demo_args
+
+
+def test_visual_capture_records_env_and_metadata(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen_env: dict[str, str | None] = {}
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        seen_env["DART_TEST_CAPTURE_VALUE"] = os.environ.get(
+            "DART_TEST_CAPTURE_VALUE"
+        )
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
+        frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
+        frames.mkdir(parents=True)
+        _write_ppm(screenshot, bytes([255, 0, 0, 0, 255, 0]))
+        _write_ppm(frames / "frame_000001.ppm", bytes([255, 0, 0, 0, 255, 0]))
+        return 0
+
+    monkeypatch.setenv("DART_TEST_CAPTURE_VALUE", "old")
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+    output = tmp_path / "capture"
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_ipc_slide",
+            "--frames",
+            "1",
+            "--width",
+            "2",
+            "--height",
+            "1",
+            "--env",
+            "DART_TEST_CAPTURE_VALUE=new",
+            "--metadata",
+            "max_friction=2.5",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    assert seen_env["DART_TEST_CAPTURE_VALUE"] == "new"
+    assert os.environ["DART_TEST_CAPTURE_VALUE"] == "old"
+    manifest = capture_py_demo.json.loads((output / "manifest.json").read_text())
+    assert manifest["scene_environment"] == {"DART_TEST_CAPTURE_VALUE": "new"}
+    assert manifest["metadata"] == {"max_friction": "2.5"}

@@ -653,8 +653,15 @@ its own line so status updates remain git-history friendly.
   and visual/CPU benchmark smoke through configured `World::step()` solve-budget
   fields with
   [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-  visual/benchmark evidence, while keeping the same-hardware comparison and GPU
-  gates open. Solver-identity relabel (PLAN-091 WP-091.1): no
+  visual/benchmark evidence, while
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` adds dashboard-selected
+  25/50/100/200 max-iteration sweep coverage for that same paper-scale fixture
+  with finite replay counters, tracked benchmark/stability evidence in
+  [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+  and a rendered
+  [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
+  The same-hardware comparison and GPU gates remain open. Solver-identity
+  relabel (PLAN-091 WP-091.1): no
   `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene emplaces the internal
   AVBD rigid-contact opt-in config (`comps::RigidAvbdContactConfig`), because
   AVBD contact is not facade-selectable, so every rigid contact in the
@@ -1002,8 +1009,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-anchored public one-DOF motor break/reset
   re-engagement, movable-movable same-multibody revolute/prismatic motor
   break/reset with explicit off-origin anchors covered in C++/dartpy,
-  direct/private and current-pose movable-pair revolute plus non-cardinal
-  current-pose revolute/prismatic motor-axis coverage, public
+  direct/private movable-pair fixed/revolute/prismatic reset plus
+  direct/private and current-pose spherical linear-row reset, current-pose
+  movable-pair fixed/revolute/prismatic reset, and non-cardinal motor-axis
+  coverage, public
   same-multibody/world-anchored articulated revolute/prismatic
   floating-endpoint plus selected off-origin-anchor facade non-cardinal
   motor-axis coverage,
@@ -1047,8 +1056,11 @@ its own line so status updates remain git-history friendly.
   articulated-chain smoke py-demo plus dashboard row, a focused 50-link/50,000:1
   finite/reset stability smoke and matching
   `BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
-  through configured `World::step()` solve-budget fields, world-anchor
-  coverage, and a
+  through configured `World::step()` solve-budget fields, the new
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` dashboard-selected
+  25/50/100/200 max-iteration sweep row plus benchmark/stability packet and
+  rendered SVG plot,
+  world-anchor coverage, and a
   per-multibody link-index cache in the
   articulated point-joint extractor so same-multibody/world-link AVBD private
   rows no longer rescan structure membership for every point-joint config.
@@ -1074,16 +1086,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link one-DOF and public movable-pair finite-limit plus
   broken-state save/load/reset coverage with non-cardinal axis-basis checks,
   private generated current-pose movable-pair fixed, one-DOF, and spherical
-  broken-state save/load/reset coverage,
-  private spherical movable-pair linear-row reset coverage, private fixed-row reset,
-  narrow breakable benchmark rows, world-fixed reset,
-  same-multibody/world-anchored one-DOF motor break/skip and
-  reset/re-engagement, including the focused dartpy same-multibody/world-link
-  revolute/prismatic explicit-anchor stepping regressions with post-reset
-  endpoint/axis-shape assertions including non-cardinal same-multibody pair and
-  world-link reset cases,
-  spherical linear-row break/skip and reset including the focused dartpy
-  spherical stepping regression,
+  broken-state save/load/reset coverage, with narrow breakable benchmark rows,
+  world-fixed reset, non-cardinal dartpy same-multibody/world-link one-DOF
+  reset endpoint/axis-shape checks, and dartpy fixed/spherical reset
+  endpoint-shape checks now treated as covered current evidence,
   matched-metadata empty-scene baseline smoke, the 2D Fracture/3D Breakable
   source-demo fixed-joint break/reset coverage, the first non-empty
   `avbd-demo2d` Ground, Motor, Hanging Rope, Fracture, Dynamic Friction, Static
@@ -1112,15 +1118,11 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link endpoint-shape assertions, and
   same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
   save/load/reset persistence including explicit-anchor fixed and selected
-  non-cardinal one-DOF motor rows with restored effort-limit state plus
+  non-cardinal one-DOF motor rows with restored effort-limit state, with the
   dartpy same-multibody/world-link fixed/spherical and one-DOF binary
-  round-trips and direct break/skip/reset non-cardinal basis checks, plus
-  dartpy fixed point-joint break/skip/reset
-  stepping for same-multibody and world-link explicit all-axis anchor rows
-  with endpoint-shape assertions, dartpy same-multibody/world-link spherical
-  linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
-  one-DOF motor break/skip/reset endpoint/axis-shape assertions and
-  re-engagement,
+  round-trips, direct break/skip/reset non-cardinal basis checks, fixed and
+  spherical reset endpoint-shape assertions, and explicit-anchor one-DOF motor
+  reset endpoint/axis-shape assertions now treated as current evidence,
   broaden rigid-contact feature persistence beyond the current
   box/sphere/cylinder/capsule/plane/mesh known/unknown shape-frame feature
   identity tests, endpoint-A/B explicit-shape local-point evidence, actual

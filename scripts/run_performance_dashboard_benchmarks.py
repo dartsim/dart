@@ -81,7 +81,7 @@ BENCHMARK_SPECS = [
     # revolute/prismatic/breakable motor, same-multibody/world-anchored one-DOF
     # breakable motors, and breakable rows routed through the AVBD projection
     # paths, with narrow and paper-scale high mass-ratio articulated-chain
-    # smoke rows.
+    # smoke rows plus the paper-scale high-ratio iteration-count sweep.
     BenchmarkSpec(
         surface="avbd-world",
         target="bm_avbd_rigid_fixed_joint",
@@ -92,6 +92,7 @@ BENCHMARK_SPECS = [
             "BM_AvbdDemo2dFractureStep$|"
             "BM_AvbdDemo2dGroundStep$|"
             "BM_AvbdDemo2dDynamicFrictionStep$|"
+            "BM_AvbdDemo2dFrictionCoefficientSweep/.*|"
             "BM_AvbdDemo2dStaticFrictionStep$|"
             "BM_AvbdDemo2dPyramidStep$|"
             "BM_AvbdDemo2dCardsStep$|"
@@ -120,6 +121,7 @@ BENCHMARK_SPECS = [
             "BM_AvbdDemo3dBreakableStep$|"
             "BM_AvbdArticulatedHighRatioChainStep$|"
             "BM_AvbdPaperScaleHighRatioChainStep$|"
+            "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*|"
             "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
             "|SphericalBreakableJoint)"
             "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
