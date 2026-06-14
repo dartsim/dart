@@ -2564,6 +2564,23 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
         in builder.events
     )
+    for evidence_summary_row in info["performance_profile_evidence_summary_rows"]:
+        assert f"text:{evidence_summary_row['surface']}" in builder.events
+        assert f"text:{evidence_summary_row['rows']}" in builder.events
+        assert f"text:{evidence_summary_row['solvers']}" in builder.events
+        assert f"text:{evidence_summary_row['dimensions']}" in builder.events
+        assert f"text:{evidence_summary_row['contacts']}" in builder.events
+        assert f"text:{evidence_summary_row['contract_ok']}" in builder.events
+        assert f"text:{evidence_summary_row['max_iterations']}" in builder.events
+        assert f"text:{evidence_summary_row['max_residual']}" in builder.events
+        assert (
+            f"text:{evidence_summary_row['max_complementarity']}"
+            in builder.events
+        )
+        assert (
+            f"text:{evidence_summary_row['max_bound_violation']}"
+            in builder.events
+        )
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
