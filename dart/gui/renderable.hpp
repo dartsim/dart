@@ -180,6 +180,17 @@ struct RenderableDescriptor
   std::size_t shapeFrameVersion = 0;
   std::size_t shapeNodeVersion = 0;
   std::size_t shapeVersion = 0;
+  /// Cache key for the renderable's creation-only GPU resources. The viewer
+  /// keeps a renderable across frames while this value is unchanged, refreshing
+  /// only the cheap per-frame state in place: worldTransform, the rgba base
+  /// color, shadow flags, and the metallic/roughness/reflectance PBR overrides.
+  /// Everything else -- geometry, textures, mesh/alpha materials, point-cloud
+  /// data -- is bound when the renderable is first built. A custom descriptor
+  /// provider that mutates any of those in place (or clears a PBR override back
+  /// to its default) MUST change renderResourceVersion to force a rebuild;
+  /// otherwise the edit is silently ignored after the first frame. The standard
+  /// extraction path computes this automatically from the resource-affecting
+  /// fields, so this caveat only applies to hand-built descriptors.
   std::size_t renderResourceVersion = 0;
 };
 
