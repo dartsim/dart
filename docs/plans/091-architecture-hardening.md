@@ -809,10 +809,15 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   energy comparison (`test_variational_integration.cpp`,
   `PendulumConservesEnergyOverLongHorizon` / `SelectableThroughWorldStep`) now
   consumes `computeStepMetrics().totalEnergy` instead of internal registry
-  access, at identical tolerances (178/178). A conservation test
-  (`test_world.cpp` `ComputeStepMetricsConservesFreeBodyInvariants`) asserts a
-  free body conserves linear+angular momentum and kinetic energy to 1e-9 over
-  500 steps. Gates: `pixi run lint`, `pixi run check-api-boundaries`,
+  access, at identical tolerances (178/178). Two conservation tests in
+  `test_world.cpp` seed the validation layer:
+  `ComputeStepMetricsConservesFreeBodyInvariants` asserts a free body conserves
+  linear+angular momentum and kinetic energy to 1e-9 over 500 steps, and
+  `ComputeStepMetricsConservesLinearMomentumThroughCollision` drives a 1-D
+  head-on two-body inelastic collision (restitution 0, gravity-free) and asserts
+  total linear momentum is conserved through the contact while kinetic energy is
+  dissipated (never gained) — validating the public metrics on a contact-bearing
+  multi-body scene. Gates: `pixi run lint`, `pixi run check-api-boundaries`,
   `pixi run check-dart7-promotion-surface` green; golden 3/3. **Remaining:** the
   registered scene-builder corpus, the single harness binary + manifest-driven
   packet writer (replacing the per-scene script fleet), the cross-family

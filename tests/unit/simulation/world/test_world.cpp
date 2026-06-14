@@ -22260,3 +22260,63 @@ TEST(World, ComputeStepMetricsConservesFreeBodyInvariants)
       1e-9 * initial.kineticEnergy);
   EXPECT_DOUBLE_EQ(after.potentialEnergy, 0.0);
 }
+
+TEST(World, ComputeStepMetricsConservesLinearMomentumThroughCollision)
+{
+  namespace sx = dart::simulation;
+
+  // Two free rigid bodies on a 1-D head-on course, no gravity and no
+  // static/kinematic bodies: the only forces are the internal contact impulses
+  // between them, so total linear momentum is conserved (Newton's third law),
+  // while the default restitution-0 inelastic contact dissipates kinetic
+  // energy. computeStepMetrics() must report both, validating the public
+  // metrics across a contact-bearing multi-body scene (PLAN-091 WP-091.24
+  // validation layer).
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions a;
+  a.mass = 1.0;
+  a.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  a.position = Eigen::Vector3d(-1.2, 0.0, 0.0);
+  a.linearVelocity = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("a", a);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions b;
+  b.mass = 2.0;
+  b.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  b.position = Eigen::Vector3d(1.2, 0.0, 0.0);
+  b.linearVelocity = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", b);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+  // Total linear momentum = m_a v_a + m_b v_b = 1*1.5 + 2*(-0.5) = +0.5 along
+  // x.
+  EXPECT_NEAR(initial.linearMomentum.x(), 0.5, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.y(), 0.0, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.z(), 0.0, 1e-12);
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+
+  // Long enough for the 1.4 m gap (closing at 2 m/s, ~0.7 s) to close and the
+  // contact to resolve.
+  const int steps = 1500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Total linear momentum is conserved through the contact (no external force).
+  EXPECT_LT((after.linearMomentum - initial.linearMomentum).norm(), 1e-8);
+  // The inelastic collision dissipated most of the kinetic energy, proving a
+  // real contact was exercised (a perfectly-inelastic head-on collision retains
+  // only the common-velocity kinetic energy P^2 / (2 (m_a + m_b))).
+  EXPECT_LT(after.kineticEnergy, 0.5 * initial.kineticEnergy);
+  // A passive contact can only remove kinetic energy, never add it.
+  EXPECT_LE(after.kineticEnergy, initial.kineticEnergy + 1e-9);
+}
