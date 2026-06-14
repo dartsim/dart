@@ -650,11 +650,11 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   block and stage it, then `postLoadComponent` materializes the sidecar only
   when the legacy flag was set (absent ⇒ defaults), preserving round-trip both
   ways. The 22 `config.avbdMaxStiffness` reads in `world_step_stage.cpp` are the
-  *deformable* AVBD config (a name collision) and are correctly untouched.
+  _deformable_ AVBD config (a name collision) and are correctly untouched.
   Behavior-preserving: `test_serialization` 54/54 (round-trip), golden 3/3
   (trajectories unchanged), `test_avbd_rigid_block` 105/105,
   `test_boxed_lcp_contact` 122/122 (plus `test_joint` 5/5 and `test_world
-  --gtest_filter='*Avbd*:*Joint*'` 87/87, which exercise the JointLayout
+--gtest_filter='*Avbd*:*Joint*'` 87/87, which exercise the JointLayout
   cache-equality path); `pixi run lint` and `pixi run check-api-boundaries`
   green. Net +279/−138 across 11 files. Residual: the v20 round-trip is fully
   tested, but the legacy v17–v19 inline-stiffness read path is validated by
@@ -728,7 +728,7 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   rework, since the component split converts most heap-fragmented payloads
   into slab storage — prefer it when both are available.
 
-#### WP-091.23 Stable serialization identity
+#### WP-091.23 Stable serialization identity [claimed]
 
 - Objective: on-disk component identity is an explicit stable ID plus schema
   version, not a compiler-mangled type name.
@@ -740,6 +740,28 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   proves stability; format decision recorded.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: none (cheaper before WP-091.20 multiplies components).
+- Evidence: the four component-category macros
+  (`DART_SIMULATION_{PROPERTY,STATE,TAG,CACHE}_COMPONENT` in
+  `comps/component_category.hpp`) now take an explicit `StableId` string literal
+  whose value `getTypeName()` returns, replacing the compiler-mangled
+  `typeid(TypeName).name()`; the SerializerRegistry keys components by that
+  stable ID. Every serializable component declares a unique dotted ID
+  (`comps.<Type>` / `compute.<Type>` — e.g. `comps.Joint`,
+  `comps.AvbdJointStiffness`, `compute.MultibodyVariationalState`). Clean break
+  recorded: `kBinaryFormatVersion` bumped 20 → 21 (`io/binary_io.hpp`
+  changelog) — DART 7 has no compatibility debt, so packets ≤ v20 with
+  mangled-name identities no longer round-trip components; the in-memory
+  round-trip tests save/load in the new ID format. Three new tests in
+  `tests/unit/simulation/world/test_serialization.cpp`:
+  `ComponentsReturnExplicitStableId` (asserts components return their literal ID
+  and `!= typeid().name()`), `RegisteredIdsAreUniqueAndNotMangled` (iterates the
+  live registry — uniqueness + not-mangled guard), and
+  `RoundTripIsKeyedByStableIdNotCppType` (looks the serializer up by the literal
+  `"comps.ContactMaterial"`, proving the on-disk identity is decoupled from the
+  C++ type). Behavior-preserving (non-goal: changing what is serialized):
+  `test_serialization` 57/57 (54 + 3), golden 3/3 (trajectories bit-identical),
+  `test_avbd_rigid_block` 105/105; `pixi run lint` and
+  `pixi run check-api-boundaries` green. 17 files changed.
 
 #### WP-091.24 Metrics contract, scene corpus, one harness
 

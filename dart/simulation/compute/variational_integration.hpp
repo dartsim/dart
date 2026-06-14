@@ -66,7 +66,8 @@ struct VariationalProjectionRowBounds
 /// remapping pass is needed.
 struct MultibodyVariationalState
 {
-  DART_SIMULATION_STATE_COMPONENT(MultibodyVariationalState);
+  DART_SIMULATION_STATE_COMPONENT(
+      MultibodyVariationalState, "compute.MultibodyVariationalState");
 
   using DeltaTransformVector = std::
       vector<Eigen::Isometry3d, dart::common::StlAllocator<Eigen::Isometry3d>>;
@@ -581,7 +582,8 @@ struct VariationalAndersonScratch
 /// should be sized during bake and reused by the step loop.
 struct MultibodyVariationalScratch
 {
-  DART_SIMULATION_CACHE_COMPONENT(MultibodyVariationalScratch);
+  DART_SIMULATION_CACHE_COMPONENT(
+      MultibodyVariationalScratch, "compute.MultibodyVariationalScratch");
 
   using PostContactTransformAllocator
       = dart::common::StlAllocator<Eigen::Isometry3d>;

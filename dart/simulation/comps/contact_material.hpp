@@ -43,7 +43,7 @@ namespace dart::simulation::comps {
 /// behavior of a body with no material attached: no bounce, friction one.
 struct ContactMaterial
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(ContactMaterial);
+  DART_SIMULATION_PROPERTY_COMPONENT(ContactMaterial, "comps.ContactMaterial");
 
   double restitution = 0.0;
   double friction = 1.0;

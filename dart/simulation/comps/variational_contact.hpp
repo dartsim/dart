@@ -42,7 +42,8 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct VariationalContact
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(VariationalContact);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      VariationalContact, "comps.VariationalContact");
 
   using LinkIndexVector
       = std::vector<std::size_t, dart::common::StlAllocator<std::size_t>>;

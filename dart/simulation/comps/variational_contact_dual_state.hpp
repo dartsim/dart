@@ -36,7 +36,8 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct VariationalContactDualState
 {
-  DART_SIMULATION_STATE_COMPONENT(VariationalContactDualState);
+  DART_SIMULATION_STATE_COMPONENT(
+      VariationalContactDualState, "comps.VariationalContactDualState");
 
   using DualVector = std::vector<double, dart::common::StlAllocator<double>>;
 

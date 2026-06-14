@@ -203,7 +203,7 @@ struct JointLimits
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Joint
 {
-  DART_SIMULATION_STATE_COMPONENT(Joint);
+  DART_SIMULATION_STATE_COMPONENT(Joint, "comps.Joint");
 
   JointType type = JointType::Revolute;
   ActuatorType actuatorType = ActuatorType::Force;
@@ -301,7 +301,8 @@ struct Joint
 /// **Internal Implementation Detail** - Not exposed in public API
 struct AvbdJointStiffness
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(AvbdJointStiffness);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      AvbdJointStiffness, "comps.AvbdJointStiffness");
 
   /// AVBD point-joint row starting stiffness.
   double startStiffness = 1.0;
