@@ -11,8 +11,10 @@ branch `avbd/source-row-extraction-precheck` was pushed to origin at
 `1265b12054c` after verifying latest `origin/main` was already merged. The
 previous three CI-fix commits and the AVBD contact-config guard follow-up are
 now on the PR branch, hosted CI restarted, and the local branch is aligned with
-origin. Review-thread resolution, PR comments, review re-triggers, and any
-further push still require explicit maintainer approval.
+origin. The latest CI follow-up fixes the remaining Linux Release
+AddressSanitizer `EXAMPLE_dart_demos_list` runtime-library failure.
+Review-thread resolution, PR comments, review re-triggers, and any further push
+still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -57,6 +59,15 @@ The panel label now derives from `max_friction`, the value is recorded in
 `2.5` override and asserts that `Friction 2.5 speed` replaces the stale
 `Friction 5 speed` label. No GitHub reply, thread resolution, or review
 retrigger has been performed.
+
+Latest CI follow-up: PR #2991's Linux `Release Tests` AddressSanitizer phase
+passed 218/219 CTests before `EXAMPLE_dart_demos_list` aborted with
+`Failed loading SDL3 library`. The failure is isolated to the manually
+registered `dart-demos --list` CTest, which previously did not inherit the
+runtime-library path setup used by the normal DART test helpers. The test now
+prepends `${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}` and the build-tree
+DART library directory to the platform runtime library path on non-Apple
+platforms.
 
 Merge state: `origin/main` at `c4c5ed87eae4` was merged after the review-fix
 commit as `5c43ed6f843`; the only manual conflict was
@@ -119,6 +130,17 @@ Validation for the latest AVBD config-guard slice:
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `pixi run test-unit` passed, 161 tests.
+
+Validation for the latest ASan `dart-demos --list` CI follow-up:
+
+- `pixi run config-asan` passed and generated the CTest entry with
+  `LD_LIBRARY_PATH` prepends for `.pixi/envs/default/lib` and
+  `build/default/cpp/asan/lib`.
+- `pixi run -- cmake --build build/default/cpp/asan --target dart-demos -j 8`
+  passed.
+- `ASAN_OPTIONS=detect_leaks=1 pixi run -- ctest --test-dir build/default/cpp/asan -R EXAMPLE_dart_demos_list --output-on-failure -V`
+  passed, 1 test. The verbose CTest output showed the runtime-library
+  modifications and listed the demo catalog without the SDL load failure.
 
 Validation for the latest friction tangent no-op slice:
 
