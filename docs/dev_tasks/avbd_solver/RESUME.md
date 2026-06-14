@@ -8,10 +8,10 @@ stop-only snapshot lower in this file.
 
 Current verified branch state: after explicit maintainer approval, PR #2991
 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-`0bf4ca6b8ae` after verifying latest `origin/main` was already merged. The
-previous three CI-fix commits are now on the PR branch, hosted CI restarted,
-and the local branch contains the AVBD contact-config guard follow-up described
-below. Review-thread resolution, PR comments, review re-triggers, and any
+`1265b12054c` after verifying latest `origin/main` was already merged. The
+previous three CI-fix commits and the AVBD contact-config guard follow-up are
+now on the PR branch, hosted CI restarted, and the local branch is aligned with
+origin. Review-thread resolution, PR comments, review re-triggers, and any
 further push still require explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and

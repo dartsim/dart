@@ -9,9 +9,9 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest local follow-up (2026-06-14): after explicit maintainer approval, PR
+- Latest pushed follow-up (2026-06-14): after explicit maintainer approval, PR
   #2991 branch `avbd/source-row-extraction-precheck` was pushed to origin at
-  `0bf4ca6b8ae` after verifying the latest `origin/main` was already merged.
+  `1265b12054c` after verifying the latest `origin/main` was already merged.
   Hosted CI restarted on that head. The Dynamic Friction
   panel-label thread from Codex review `4492237805` is covered on the pushed
   branch by deriving the plotted high-friction speed label from `max_friction`
@@ -22,9 +22,8 @@ Corpus matrix:
   `test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env`.
   The two Codex bot threads remain unresolved on GitHub because no bot replies
   or thread-resolution mutations were performed.
-- Latest local follow-up (2026-06-14): the local branch is now ahead of
-  `origin/avbd/source-row-extraction-precheck` only by the AVBD contact-config
-  guard follow-up: the rigid contact stage now skips the per-contact
+- Latest pushed follow-up (2026-06-14): the AVBD contact-config guard is now on
+  PR head `1265b12054c`: the rigid contact stage skips the per-contact
   `rigidAvbdContactStageConfig()` scan unless the registry has
   `RigidAvbdContactConfig` storage. The `/0` Dynamic Friction benchmark moved
   from a 7.837 us median CPU step before the edit to 7.409 us after it under
@@ -34,8 +33,8 @@ Corpus matrix:
   `pixi run lint`, `pixi run build`, and `pixi run test-unit` (161 tests).
   This is path smoke only; it does not refresh the tracked friction-sweep
   packet, close the frictionless source-row CPU gap, resolve the GitHub review
-  threads, or claim GPU parity. Any further push still requires explicit
-  maintainer approval.
+  threads, or claim GPU parity. The local branch is aligned with origin; any
+  further push still requires explicit maintainer approval.
 - Latest local follow-up (2026-06-14): hosted CI for pushed head `fffb5bf45ba`
   exposed a `DART GUI Smoke (Clang)` failure before ordinary compilation:
   CMake 4.3 emitted C++20 module dependency-scanning rules that invoked missing
