@@ -2540,6 +2540,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Current leaders,Current laggards,Takeaway"
         in builder.events
     )
+    for profile_row in info["performance_profile_rows"]:
+        assert f"text:{profile_row['surface']}" in builder.events
+        assert f"text:{profile_row['artifact']}" in builder.events
+        assert f"text:{profile_row['evidence_artifact']}" in builder.events
+        assert f"text:{profile_row['problem_sizes']}" in builder.events
+        assert f"text:{profile_row['current_leaders']}" in builder.events
+        assert f"text:{profile_row['current_laggards']}" in builder.events
+        assert f"text:{profile_row['takeaway']}" in builder.events
     assert (
         f"text:profile smoke: {lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND}"
         in builder.events

@@ -1,5 +1,63 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Performance Profile Display Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `8883be91dc6 Guard LCP benchmark packet display` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `8883be91dc6 Guard LCP benchmark packet display`.
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by one hundred thirteen commits.
+- Current known `origin/main` is `c4c5ed87eae`; it was merged into this branch
+  by `0043424aff7`.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Performance profile display status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks every rendered
+  performance profile row, not only the performance profile table header,
+  profile-smoke command, and metadata.
+- The guard covers each row's surface, profile CSV, evidence CSV, problem
+  sizes, current leaders, current laggards, and takeaway cells.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata`
+  passed with 1 test and 154 deselected.
+- `pixi run lint` passed, including `lint-lcp-solver-roster`,
+  `lint-avbd-packets`, and AI command sync.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Benchmark Packet Display Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
