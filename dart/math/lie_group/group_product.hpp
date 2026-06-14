@@ -71,10 +71,16 @@ struct traits<::dart::math::GroupProduct<S, ComponentsT...>>
   using ConstComponentMap = ::Eigen::Map<const Component<Index>>;
 
   // LieGroup common
-  static constexpr int Dim = (ComponentsT<S>::Dim + ...);
-  static constexpr int DoF = (ComponentsT<S>::DoF + ...);
-  static constexpr int MatrixRepDim = (ComponentsT<S>::MatrixRepDim + ...);
-  static constexpr int ParamSize = (ComponentsT<S>::ParamSize + ...);
+  static constexpr int Dim = ::dart::math::detail::sumGroupProductStaticSizes<
+      ComponentsT<S>::Dim...>();
+  static constexpr int DoF = ::dart::math::detail::sumGroupProductStaticSizes<
+      ComponentsT<S>::DoF...>();
+  static constexpr int MatrixRepDim
+      = ::dart::math::detail::sumGroupProductStaticSizes<
+          ComponentsT<S>::MatrixRepDim...>();
+  static constexpr int ParamSize
+      = ::dart::math::detail::sumGroupProductStaticSizes<
+          ComponentsT<S>::ParamSize...>();
   using LieGroup = ::dart::math::GroupProduct<S, ComponentsT...>;
   using InverseType = ::dart::math::GroupProductInverse<LieGroup>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
@@ -111,6 +117,12 @@ public:
   using ConstComponentMap = typename Base::template ConstComponentMap<Index>;
 
   // LieGroup common
+  static constexpr int Dim = ::Eigen::internal::traits<GroupProduct>::Dim;
+  static constexpr int DoF = ::Eigen::internal::traits<GroupProduct>::DoF;
+  static constexpr int MatrixRepDim
+      = ::Eigen::internal::traits<GroupProduct>::MatrixRepDim;
+  static constexpr int ParamSize
+      = ::Eigen::internal::traits<GroupProduct>::ParamSize;
   using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Params = typename Base::Params;

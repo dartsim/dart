@@ -36,7 +36,10 @@ jobs:
     needs: changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Tests (${{ matrix.build_type }})
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
+    env:
+      # Pin the VS 2026 image required by DART's Windows toolchain floor.
+      DART_WINDOWS_CMAKE_GENERATOR: Visual Studio 18 2026
     # Fail fast on a regression instead of waiting for the ~6h default kill.
     # Sized generously for a first cold-sccache Ninja build.
     timeout-minutes: 120
