@@ -9,8 +9,18 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest follow-up (2026-06-14): with explicit maintainer approval, branch
+  `avbd/soft-body-inertia-orientation-cache` merged the latest `origin/main`
+  (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), was pushed to
+  origin, and was submitted as a follow-up PR into `main`, bundling the 2D/3D
+  Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
+  the refreshed Spring/Spring Ratio packets, and the contact-skip regression
+  test. PR #2991 is merged at `f6fecbc5bd5`; the AVBD CPU-win, GPU, and
+  paper-number gates remain open and no parity is claimed. Review-thread
+  resolution, bot replies, and CI mutations still require explicit maintainer
+  approval. The dated bullets below are historical slice snapshots.
 - Latest local follow-up (2026-06-14): branch
-  `avbd/soft-body-inertia-orientation-cache` now carries an unpushed local
+  `avbd/soft-body-inertia-orientation-cache` now carries a local
   regression, `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
   that locks in the rigid contact stage's ignored-pair no-contact fast path. The
   test steps a world holding one ignored, overlapping rigid-body pair plus a
@@ -22,9 +32,8 @@ Corpus matrix:
   branch; the mutation was reverted. Validation passed the `test_world` rebuild,
   the focused contact/ignored-pair cluster (5 tests), `pixi run lint`, and
   `pixi run test-unit` (161 tests). This slice adds no production-code change,
-  refreshes no tracked packet, opens no follow-up PR, resolves no GitHub review
-  threads, and claims no CPU/GPU/paper-number parity. (PR #2991 is now merged to
-  `main` at `f6fecbc5bd5`.)
+  refreshes no tracked packet, and claims no CPU/GPU/paper-number parity. (PR
+  #2991 is now merged to `main` at `f6fecbc5bd5`.)
 - Latest local follow-up (2026-06-14): branch
   `avbd/soft-body-inertia-orientation-cache` now refreshes the 2D/3D
   Spring/Spring Ratio tracked packets after the spring-connected ignored-pair

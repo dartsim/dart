@@ -6,30 +6,45 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current local follow-up branch state: `avbd/soft-body-inertia-orientation-cache`
-is a follow-up branch based on the now-merged PR #2991 head `6f41e9529bf`. Its
-spring-filter and packet-refresh commits up to `679d03cc03b` are published to
-`origin/avbd/soft-body-inertia-orientation-cache` (local matches origin at that
-head); on top of that the branch carries one unpushed local commit adding the
+Current follow-up branch / PR state: `avbd/soft-body-inertia-orientation-cache`
+is a follow-up branch built on the now-merged PR #2991, which landed on `main`
+as squash commit `f6fecbc5bd5`. The branch is based on the original pre-squash
+PR head `6f41e9529bf` (that commit is not itself in `main`'s linear history).
+With explicit maintainer approval the branch was merged with the latest
+`origin/main` (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), pushed
+to origin, and submitted as a follow-up PR into `main`. It carries the 2D/3D
+Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
+the refreshed Spring/Spring Ratio packets (whose writers record the
+`ignored_collision_pairs` invariant), the
 `World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`
-contact-skip regression test. It otherwise contains the local 2D/3D
-Spring/Spring Ratio tracked-packet refresh for the spring-connected
-ignored-pair slices, plus the previous 3D Spring/Spring Ratio
-ignored-collision-pair slice, the previous 2D Spring/Spring Ratio
-contact-filtering slice, inertia-orientation cleanup, and handoff-doc refreshes.
-The Spring/Spring Ratio packet writers explicitly record ignored-pair benchmark
-invariants in the refreshed packet JSON. Do not push, open a PR, resolve review
-threads, comment, retrigger reviews, or mutate CI without explicit maintainer
-approval.
+contact-skip regression test, and handoff-doc refreshes. Review-thread
+resolution, bot replies, review re-triggers, and CI mutations on this PR still
+require explicit maintainer approval.
 
-Current verified checkpoint PR state: PR #2991 (branch
-`avbd/source-row-extraction-precheck` into `main`) is now MERGED at merge commit
+Previous checkpoint PR state: PR #2991 (branch
+`avbd/source-row-extraction-precheck` into `main`) is MERGED at merge commit
 `f6fecbc5bd5` (merged 2026-06-14), carrying the source-row coverage and
 contact-precheck work, the three CI-fix commits, the AVBD contact-config guard
 follow-up, and the handoff-doc refreshes; its CI rollup passed with no failed
-checks. The follow-up branch above is not yet in a PR. Review-thread
-resolution, PR comments, review re-triggers, opening a follow-up PR, and any
-push still require explicit maintainer approval.
+checks.
+
+Follow-up items identified in PR review (deferred, not blocking this PR):
+
+- A positive test that the contact-skip fast path actually fires when every
+  dynamic-involving candidate pair is ignored. Note: with all pairs ignored the
+  skip path and the ordinary ignored-pair filter both yield zero contacts, so
+  this is behaviorally indistinguishable at the World API and would need
+  white-box instrumentation to have teeth; deferred for that reason.
+- Extend the contact-skip regression to exercise the prescribed-response audit
+  branch (both-endpoints-prescribed skip, and prescribed-vs-non-prescribed
+  not-ignored leaving the query enabled), which the current four-plain-body test
+  does not reach.
+- Hoist `makeCollisionPairKey` into a shared detail header so the contact-stage
+  audit and `World::setCollisionPairIgnored` cannot drift out of sync (currently
+  duplicated verbatim in `world_step_stage.cpp` and `world.cpp`).
+- Upgrade the regenerated Spring/Spring Ratio packets from legacy
+  `schema_version` 1 (currently `LEGACY_IDENTITY_EXEMPT`) to version 2 with a
+  `resolved_solver_identity` so the packet-identity check covers them.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
