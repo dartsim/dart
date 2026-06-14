@@ -1,5 +1,109 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Solver Parameter Sweep Runtime Guards
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The checkpoint PR candidate
+   branch `feature/lcp-solver-interface-demos` HAS been published as a draft
+   milestone PR (see below). Its tip was advanced by merging the latest
+   `origin/main` twice during publication; do not assume the old
+   `80b3e60e3c5` tip.
+3. This work is a local stacked follow-up on
+   `followup/lcp-solver-demo-panel-guards`, which was merged up to the published
+   checkpoint tip so the stack stays consistent. Keep this follow-up branch for
+   subsequent PR(s) unless the maintainer explicitly chooses a broader scope.
+4. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark runtime guard does not complete the broad objective.
+5. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Milestone PR status (NEW):
+
+- Draft PR https://github.com/dartsim/dart/pull/3001
+  (`feature/lcp-solver-interface-demos` -> `main`) was opened with maintainer
+  approval as the intermediate milestone. It is a draft (CI validates; not yet
+  requesting merge). Published checkpoint tip: `7ab2546ebd7` (after merging
+  `origin/main` at `891dedde086`, resolving one `registry.py` conflict by
+  keeping both `LCP_PHYSICS` and `GUI_FIDELITY_DEBUG_VISUALS`).
+
+Current branch before this checkpoint commit:
+
+- `followup/lcp-solver-demo-panel-guards`
+- Current local tip before this edit:
+  `e21e5673327 Merge branch 'feature/lcp-solver-interface-demos' into followup/lcp-solver-demo-panel-guards`.
+- The stacked base branch `feature/lcp-solver-interface-demos` is at
+  `7ab2546ebd7` and is published as draft PR #3001.
+- Current known `origin/main` is `891dedde086`; the follow-up branch contains it
+  via the checkpoint merge.
+
+What this checkpoint changes:
+
+- The 12 family-parameterized solver parameter-sweep benchmark runners now
+  recheck the generated problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row: the Pgs,
+  SymmetricPsor, and RedBlackGaussSeidel relaxation sweeps; the
+  BoxedSemiSmoothNewton line-search sweep; the BlockPartition sweep (both BGS
+  and BlockedJacobi branches); the Apgd restart, Tgs iteration-budget,
+  Nncg PGS-iterations, SubspaceMinimization PGS-iterations, ShockPropagation
+  layer, Admm rho, and Sap regularization sweeps.
+- `RunPivotingScaleSweepBenchmark` already guarded its rows through
+  `SolverSupportsConcreteProblem`; it was not changed.
+- Deliberately NOT changed: `RunMprgpSpdCheckSweepBenchmark` and
+  `RunInteriorPointPathSweepBenchmark`. These StandardSpd-conditioning sweeps
+  benchmark near-singular matrices on purpose, and their native support is
+  parameter-dependent (`MprgpSolver::Parameters::checkPositiveDefinite` defaults
+  to `true`). A default-constructed-solver `supportsProblem` guard would skip
+  rows the sweep intends to time, so guarding them needs a parameter-aware
+  check and remains a separate bounded follow-up.
+- The registration paths already filter these rows through concrete support; the
+  new runtime guards make stale or manual registrations fail explicitly instead
+  of timing unsupported parameter-sweep cases.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+```bash
+# All 12 guarded sweep families list and run (160 rows), none skipped:
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_Lcp(PgsRelaxationSweep|SymmetricPsorRelaxationSweep|RedBlackGaussSeidelRelaxationSweep|BoxedSemiSmoothNewtonLineSearchSweep|BlockPartitionSweep|ApgdRestartSweep|TgsIterationBudgetSweep|NncgPgsIterationsSweep|SubspaceMinimizationPgsIterationsSweep|ShockPropagationLayerSweep|AdmmRhoSweep|SapRegularizationSweep)/' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+clang-format --dry-run --Werror tests/benchmark/lcpsolver/bm_lcp_compare.cpp
+git diff --check
+pixi run build   # benchmark target recompiled cleanly
+```
+
+Result:
+
+- All 160 registered parameter-sweep rows ran; none were skipped by the new
+  guard (the guard is a defensive backstop; registration already filters), and
+  every row reported `contract_ok=1`.
+- clang-format, whitespace checks, and the benchmark build passed.
+
+How to resume:
+
+```bash
+git checkout followup/lcp-solver-demo-panel-guards
+git status -sb
+git log --oneline --decorate -8
+```
+
+Before committing or publishing any branch, rerun `pixi run lint`,
+`git diff --check`, and any broader gate warranted by the final diff. Then
+continue the broader LCP interface/demo audit from the next concrete gap
+(remaining unguarded scalar runners: the 3 Jacobi/RedBlackGaussSeidel/
+BlockedJacobi threading benchmarks, the MPRGP/InteriorPoint conditioning sweeps
+noted above, the StaggeringContactPipeline sweep, and the scaled/smoke template
+benchmarks; plus the CUDA batch runners, which use GPU kernels rather than the
+LcpSolver interface).
+
 ## Current Reality - 2026-06-14 Serial Contact Runtime Guards
 
 This is the latest hand-off. Older sections below are historical checkpoints

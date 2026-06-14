@@ -7310,6 +7310,11 @@ void RunPgsRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::PgsSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7343,6 +7348,11 @@ void RunSymmetricPsorRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::SymmetricPsorSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7376,6 +7386,11 @@ void RunRedBlackGaussSeidelRelaxationSweepBenchmark(
   options.relaxation = testCase.relaxation;
 
   dart::math::RedBlackGaussSeidelSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7420,6 +7435,11 @@ void RunBoxedSsnLineSearchSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::BoxedSemiSmoothNewtonSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7585,6 +7605,11 @@ void RunBlockPartitionSweepBenchmark(
     params.blockSizes = blockSizes;
     options.customOptions = &params;
     dart::math::BgsSolver solver;
+    if (!solver.supportsProblem(problem)) {
+      state.SkipWithError(
+          "Parameter sweep benchmark case exceeds concrete solver support");
+      return;
+    }
     RunBenchmarkWithSolver(
         state, solver, problem, options, MakeLabel("BGS", label));
   } else if (testCase.solverName == "BlockedJacobi") {
@@ -7592,6 +7617,11 @@ void RunBlockPartitionSweepBenchmark(
     params.blockSizes = blockSizes;
     options.customOptions = &params;
     dart::math::BlockedJacobiSolver solver;
+    if (!solver.supportsProblem(problem)) {
+      state.SkipWithError(
+          "Parameter sweep benchmark case exceeds concrete solver support");
+      return;
+    }
     RunBenchmarkWithSolver(
         state, solver, problem, options, MakeLabel("BlockedJacobi", label));
   } else {
@@ -7620,6 +7650,11 @@ void RunApgdRestartSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::ApgdSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7652,6 +7687,11 @@ void RunTgsIterationBudgetSweepBenchmark(
       = testCase.family == BenchmarkProblemFamily::FrictionIndex ? 2e-3 : 1e-3;
 
   dart::math::TgsSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7689,6 +7729,11 @@ void RunNncgPgsIterationsSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::NncgSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7726,6 +7771,11 @@ void RunSubspacePgsIterationsSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::SubspaceMinimizationSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7762,6 +7812,11 @@ void RunShockPropagationLayerSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::ShockPropagationSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7884,6 +7939,11 @@ void RunAdmmRhoSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::AdmmSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
@@ -7923,6 +7983,11 @@ void RunSapRegularizationSweepBenchmark(
   options.customOptions = &params;
 
   dart::math::SapSolver solver;
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Parameter sweep benchmark case exceeds concrete solver support");
+    return;
+  }
   RunBenchmarkWithSolver(
       state,
       solver,
