@@ -35,6 +35,8 @@
 #include <dart/simulation/compute/compute_graph.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <entt/entt.hpp>
 
 #include <string>
@@ -55,6 +57,7 @@ class DART_SIMULATION_API WorldKinematicsGraph
 {
 public:
   explicit WorldKinematicsGraph(World& world);
+  WorldKinematicsGraph(World& world, dart::common::MemoryAllocator& allocator);
 
   void rebuild();
   [[nodiscard]] bool isTopologyCurrent() const noexcept;
@@ -71,12 +74,14 @@ private:
     entt::entity entity;
     ComputeNode* node;
   };
+  using EntityNodeAllocator = dart::common::StlAllocator<EntityNode>;
 
   [[nodiscard]] ComputeNode* findNode(entt::entity entity) const;
 
   World& m_world;
+  dart::common::MemoryAllocator* m_allocator = nullptr;
   ComputeGraph m_graph;
-  std::vector<EntityNode> m_entityNodes;
+  std::vector<EntityNode, EntityNodeAllocator> m_entityNodes;
   std::uint64_t m_frameTopologyRevision = 0;
 };
 

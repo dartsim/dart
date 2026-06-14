@@ -82,6 +82,8 @@ FreeListAllocator::FreeListAllocator(
     GrowthPolicy growthPolicy)
   : mBaseAllocator(baseAllocator), mGrowthPolicy(growthPolicy)
 {
+  // Avoid bookkeeping-vector growth on the first few hot-path block expansions.
+  mAllocatedBlocks.reserve(8);
   allocateMemoryBlock(initialAllocation);
 }
 

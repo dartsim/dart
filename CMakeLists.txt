@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 4.2.3)
 
 project(dart)
 
-# DART does not use C++20 modules. Avoid requiring clang-scan-deps for ordinary
-# Clang builds under CMake's C++20 source scanning.
+# DART does not use C++20 modules. Keep dependency scanning disabled so Clang
+# builds do not require clang-scan-deps on CI runners.
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)

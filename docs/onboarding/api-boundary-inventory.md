@@ -14,7 +14,7 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 489
+- C++ public headers scanned: 490
 - C++ headers with exposed implementation debt: 120
 - C++ headers with compatibility signals: 50
 - dartpy binding sources scanned: 162
@@ -35,7 +35,7 @@ documented downstream migration or removal condition is satisfied.
 | optimizer  | 8       | 3         | 5             | 0            | 0            |
 | sensor     | 3       | 3         | 0             | 0            | 0            |
 | simd       | 16      | 11        | 0             | 0            | 5            |
-| simulation | 92      | 74        | 1             | 0            | 17           |
+| simulation | 93      | 75        | 1             | 0            | 17           |
 | top-level  | 3       | 2         | 1             | 0            | 0            |
 | utils      | 17      | 8         | 7             | 0            | 2            |
 
@@ -147,15 +147,15 @@ documented downstream migration or removal condition is satisfied.
 | dart/simulation/common/logging.hpp                         | simulation | 0                | 7                  | `detail::log(`<br>`::dart::simulation::common::detail::log( \`                                                                                      |
 | dart/simulation/comps/joint.hpp                            | simulation | 0                | 1                  | `/// dart::simulation::detail::registryOf(world).emplace<NeuralJointComponent>(jointEntity);`                                                       |
 | dart/simulation/compute/multibody_constraint.hpp           | simulation | 1                | 1                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
-| dart/simulation/compute/multibody_dynamics.hpp             | simulation | 1                | 8                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
+| dart/simulation/compute/multibody_dynamics.hpp             | simulation | 1                | 24                 | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
 | dart/simulation/compute/rigid_body_constraint.hpp          | simulation | 1                | 3                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`const detail::WorldRegistry& registry, std::span<const Contact> contacts);`        |
 | dart/simulation/compute/rigid_body_integration_kernel.hpp  | simulation | 1                | 1                  | `#include <dart/simulation/compute/detail/rigid_integration_core.hpp>`<br>`detail::integrateOrientationSemiImplicitBody(`                           |
 | dart/simulation/compute/unified_constraint.hpp             | simulation | 1                | 6                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
-| dart/simulation/compute/variational_integration.hpp        | simulation | 1                | 6                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
+| dart/simulation/compute/variational_integration.hpp        | simulation | 1                | 9                  | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`detail::WorldRegistry& registry,`                                                  |
 | dart/simulation/ecs/component_access.hpp                   | simulation | 2                | 8                  | `#include <dart/simulation/detail/entity_conversion.hpp>`<br>`#include <dart/simulation/detail/world_registry_access.hpp>`                          |
 | dart/simulation/entity.hpp                                 | simulation | 0                | 1                  | `friend struct detail::EntityAccess;`                                                                                                               |
-| dart/simulation/io/auto_serialization.hpp                  | simulation | 0                | 38                 | `} else if constexpr (detail::IsVector3dList<FieldType>) {`<br>`detail::writeVector3dList(out, field);`                                             |
-| dart/simulation/io/binary_io.hpp                           | simulation | 0                | 8                  | `template <detail::TriviallyCopyable T>`<br>`detail::writeBytes(out, detail::asBytes(value));`                                                      |
+| dart/simulation/io/auto_serialization.hpp                  | simulation | 0                | 54                 | `} else if constexpr (detail::IsVector3dList<FieldType>) {`<br>`detail::writeVector3dList(out, field);`                                             |
+| dart/simulation/io/binary_io.hpp                           | simulation | 0                | 10                 | `template <detail::TriviallyCopyable T>`<br>`detail::writeBytes(out, detail::asBytes(value));`                                                      |
 | dart/simulation/io/serializer.hpp                          | simulation | 1                | 11                 | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`const ::dart::simulation::detail::WorldRegistry& registry,`                        |
 | dart/simulation/space/auto_mapper.hpp                      | simulation | 0                | 11                 | `if constexpr (detail::ArithmeticField<FieldType>) {`<br>`} else if constexpr (detail::IsometryField<FieldType>) {`                                 |
 | dart/simulation/space/component_mapper.hpp                 | simulation | 1                | 21                 | `#include <dart/simulation/detail/world_registry_types.hpp>`<br>`/// detail::WorldRegistry must also implement this interface. Keeping it`          |

@@ -51,9 +51,17 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <entt/fwd.hpp>
 
+#include <span>
+#include <unordered_map>
 #include <vector>
 
 #include <cstddef>
@@ -115,6 +123,91 @@ struct DART_SIMULATION_API BoxedLcpContactSnapshot
   }
 };
 
+// Per-contact constraint, mirroring the sequential-impulse stage so the two
+// paths assemble the same physics: a normal row plus two tangential friction
+// rows spanning the contact plane (box Coulomb model).
+struct BoxedLcpContactNormal
+{
+  entt::entity bodyA{entt::null};
+  entt::entity bodyB{entt::null};
+  bool staticA = false;
+  bool staticB = false;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  Eigen::Vector3d tangent1 = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
+  Eigen::Vector3d armA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d armB = Eigen::Vector3d::Zero();
+  double bias = 0.0; // Baumgarte/restitution bias as a target normal velocity.
+  double friction = 0.0; // Combined Coulomb friction coefficient mu.
+};
+
+struct DART_SIMULATION_API BoxedLcpContactScratch
+{
+  using NormalAllocator = dart::common::StlAllocator<BoxedLcpContactNormal>;
+  using DoubleAllocator = dart::common::StlAllocator<double>;
+  using IntAllocator = dart::common::StlAllocator<int>;
+  using DoubleVector = std::vector<double, DoubleAllocator>;
+  using IntVector = std::vector<int, IntAllocator>;
+  using BodyColumnPair = std::pair<const entt::entity, std::size_t>;
+  using BodyColumnAllocator = dart::common::StlAllocator<BodyColumnPair>;
+  using BodyColumnMap = std::unordered_map<
+      entt::entity,
+      std::size_t,
+      std::hash<entt::entity>,
+      std::equal_to<entt::entity>,
+      BodyColumnAllocator>;
+
+  BoxedLcpContactScratch() = default;
+
+  explicit BoxedLcpContactScratch(dart::common::MemoryAllocator& allocator)
+    : normals(NormalAllocator{allocator}),
+      bodyColumn(
+          0u,
+          std::hash<entt::entity>{},
+          std::equal_to<entt::entity>{},
+          BodyColumnAllocator{allocator}),
+      systemA(DoubleAllocator{allocator}),
+      systemB(DoubleAllocator{allocator}),
+      systemLo(DoubleAllocator{allocator}),
+      systemHi(DoubleAllocator{allocator}),
+      systemF(DoubleAllocator{allocator}),
+      systemFindex(IntAllocator{allocator}),
+      systemJ(DoubleAllocator{allocator}),
+      Minv(DoubleAllocator{allocator}),
+      vFree(DoubleAllocator{allocator}),
+      JMinv(DoubleAllocator{allocator}),
+      jtImpulse(DoubleAllocator{allocator}),
+      deltaV(DoubleAllocator{allocator}),
+      dantzig(allocator)
+  {
+  }
+
+  void reserve(std::size_t contactCapacity, std::size_t bodyCapacity);
+  void clearProblem();
+
+  std::vector<BoxedLcpContactNormal, NormalAllocator> normals;
+  BodyColumnMap bodyColumn;
+  BoxedLcpContactSnapshot snapshot;
+  DoubleVector systemA;
+  DoubleVector systemB;
+  DoubleVector systemLo;
+  DoubleVector systemHi;
+  DoubleVector systemF;
+  IntVector systemFindex;
+  DoubleVector systemJ;
+  DoubleVector Minv;
+  DoubleVector vFree;
+  DoubleVector JMinv;
+  DoubleVector jtImpulse;
+  DoubleVector deltaV;
+  math::DantzigSolver::Scratch dantzig;
+};
+
+DART_SIMULATION_API void reserveBoxedLcpContactScratch(
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    BoxedLcpContactScratch& scratch);
+
 /// Assemble and solve the Coulomb-friction boxed LCP for the active rigid-body
 /// contacts of `world` (one normal row plus two tangential friction rows per
 /// contact), apply the resulting impulses to the affected body velocities
@@ -133,7 +226,20 @@ struct DART_SIMULATION_API BoxedLcpContactSnapshot
 ///         when there is no active rigid-body normal constraint.
 [[nodiscard]] DART_SIMULATION_API BoxedLcpContactSnapshot solveBoxedLcpContacts(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep);
+
+[[nodiscard]] DART_SIMULATION_API BoxedLcpContactSnapshot&
+solveBoxedLcpContacts(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    double timeStep,
+    BoxedLcpContactScratch& scratch);
+
+DART_SIMULATION_API void applyBoxedLcpContacts(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    double timeStep,
+    BoxedLcpContactScratch& scratch);
 
 } // namespace dart::simulation::detail
