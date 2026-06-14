@@ -134,9 +134,10 @@ static_assert(
 static_assert(
     DART_HAS_STD_RANGES_ZIP,
     "std::views::zip must be available on DART's C++23 floor");
-static_assert(
-    DART_HAS_STD_RANGES_ENUMERATE,
-    "std::views::enumerate must be available on DART's C++23 floor");
+// NOTE: std::views::enumerate is intentionally NOT required here. libc++ (the
+// macOS floor) does not implement it at all -- only libstdc++ ships it -- so it
+// is a "guard" feature, used behind DART_HAS_STD_RANGES_ENUMERATE with a
+// fallback rather than unconditionally. See docs/design/cpp23_modernization.md.
 #endif
 
 namespace {

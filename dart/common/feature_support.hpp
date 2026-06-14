@@ -48,12 +48,13 @@
 // docs/design/cpp23_modernization.md. In short:
 //
 //   - "Adopt now" features (expected, optional monadic ops, to_underlying,
-//     unreachable, deducing this, multidimensional subscript, ranges
-//     zip/enumerate/to) are guaranteed on DART's pinned compiler floor and may
-//     be used unconditionally once the project compiles as C++23.
-//   - "Guard" features (print, flat_map/flat_set, move_only_function) may be
-//     absent on some supported standard libraries and MUST be used behind the
-//     matching macro with a fallback.
+//     unreachable, deducing this, multidimensional subscript, ranges zip/to)
+//     are guaranteed on DART's pinned compiler floor and may be used
+//     unconditionally once the project compiles as C++23.
+//   - "Guard" features (print, flat_map/flat_set, move_only_function, ranges
+//     enumerate) may be absent on some supported standard libraries -- libc++,
+//     DART's macOS floor, does not implement std::views::enumerate -- and MUST
+//     be used behind the matching macro with a fallback.
 //   - "Deferred" features (generator, ranges chunk/slide, mdspan) are missing
 //     from libc++ and/or the GCC 15 libstdc++ floor; do not use them yet.
 

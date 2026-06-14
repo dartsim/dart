@@ -27,23 +27,28 @@ worst-case upstream compilers:
 Consequences that shape every decision below:
 
 - There is **no AppleClang** in the matrix — macOS CI runs entirely through
-  `pixi run` on the conda toolchain. The usual "AppleClang lags" deferral does
-  **not** apply to DART; core-language C++23 and `move_only_function` clear on
-  every platform.
+  `pixi run` on the conda toolchain, which `pixi.toml` pins explicitly
+  (`clangxx_osx-arm64`/`clangxx_osx-64` + `libcxx` 22). Without that pin CMake
+  silently selects the system AppleClang (17 on `macos-latest`), which lacks
+  deducing-this (needs Clang ≥ 18) and whose SDK libc++ lacks `views::zip`. The
+  usual "AppleClang lags" deferral does **not** apply to DART; core-language
+  C++23 and `move_only_function` clear on every platform.
 - The real gate is **library** completeness: libc++ 22 still lacks
-  `std::generator`, `views::chunk`/`slide`/`cartesian_product`, `<stacktrace>`,
-  `<spanstream>`; and libstdc++ ships `<mdspan>` only from GCC 16 (our Linux
-  floor is GCC 15).
+  `std::generator`, `views::chunk`/`slide`/`cartesian_product`,
+  `views::enumerate`, `<stacktrace>`, `<spanstream>`; and libstdc++ ships
+  `<mdspan>` only from GCC 16 (our Linux floor is GCC 15). `views::enumerate` is
+  a **guard** feature (libstdc++ 15 ships it; libc++ 22 does not) rather than
+  adopt-now.
 - MSVC has no stable `/std:c++23`; CMake maps `cxx_std_23` to `/std:c++latest`,
   so Windows rides _preview_ C++23. Keep Windows on the adopt-now subset.
 
 ## Portability gate
 
-| Bucket                 | Features                                                                                                                                                                                                                                          | Rule                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **Adopt now**          | `std::expected`, `optional` monadic ops, `std::to_underlying`, `std::unreachable` (via `DART_UNREACHABLE`), deducing-this, multidim `operator[]`, static `operator()`, `[[assume]]`/relaxed `constexpr`, ranges `zip`/`enumerate`/`to`/`contains` | Use unconditionally once compiling as C++23.                                               |
-| **Adopt with guard**   | `std::print` (use `fmt::print`), `flat_map`/`flat_set`, `move_only_function`                                                                                                                                                                      | Use only behind the matching `DART_HAS_*` macro with a fallback.                           |
-| **Defer (do not use)** | `std::generator`, `views::chunk`/`slide`/`cartesian_product`, `<stacktrace>`, `<spanstream>`, `std::mdspan` (vendor Kokkos if needed), `import std`                                                                                               | Blocked by libc++/GCC 15 gaps. Treat as a hard lint. Never use `mdspan` in CUDA `.cu` TUs. |
+| Bucket                 | Features                                                                                                                                                                                                                              | Rule                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Adopt now**          | `std::expected`, `optional` monadic ops, `std::to_underlying`, `std::unreachable` (via `DART_UNREACHABLE`), deducing-this, multidim `operator[]`, static `operator()`, `[[assume]]`/relaxed `constexpr`, ranges `zip`/`to`/`contains` | Use unconditionally once compiling as C++23.                                               |
+| **Adopt with guard**   | `std::print` (use `fmt::print`), `flat_map`/`flat_set`, `move_only_function`, `views::enumerate` (libc++ lacks it; libstdc++ has it)                                                                                                  | Use only behind the matching `DART_HAS_*` macro with a fallback.                           |
+| **Defer (do not use)** | `std::generator`, `views::chunk`/`slide`/`cartesian_product`, `<stacktrace>`, `<spanstream>`, `std::mdspan` (vendor Kokkos if needed), `import std`                                                                                   | Blocked by libc++/GCC 15 gaps. Treat as a hard lint. Never use `mdspan` in CUDA `.cu` TUs. |
 
 ## Phased rollout
 
@@ -70,9 +75,9 @@ Each phase ends green (build + `test-unit`) and is committed as a checkpoint.
   ops in parsers; convert `bool`+out-param solver/IK/IO signatures via **new
   overloads** to protect ABI/dartpy/gz-physics.
 - **Phase 5 — Guarded / optional.** `std::print` via fmt at debug/HUD/benchmark
-  sites; safe-subset ranges (`zip`/`enumerate`/`contains`/`to`) for parallel-array
-  loops; `flat_map`/`flat_set` and `move_only_function` only behind feature-test
-  guards with std fallbacks.
+  sites; safe-subset ranges (`zip`/`contains`/`to`) for parallel-array loops;
+  `views::enumerate`, `flat_map`/`flat_set` and `move_only_function` only behind
+  feature-test guards with std fallbacks.
 - **Phase 6 — Deferred.** Optionally vendor Kokkos `mdspan` to unblock the
   SoA/SDF/LCP buffer rewrites; keep `generator`/`chunk`/`stacktrace` out until
   libc++ ships them.
