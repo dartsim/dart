@@ -11,8 +11,6 @@
 # This file only includes test subdirectories. Each subdirectory defines its own tests.
 # Uses the DART simulation CMake helpers.
 
-cmake_minimum_required(VERSION 3.22.1)
-
 # Include DART utility functions
 include(dart_defs)
 
@@ -183,6 +181,30 @@ if(DART_SIMULATION_BUILD_TESTS)
     dart_add_simulation_test(
       test_lcp_jacobi_batch_cuda
       ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_lcp_jacobi_batch_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    dart_add_simulation_test(
+      test_newton_assembly_solve_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_newton_assembly_solve_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    dart_add_simulation_test(
+      test_contact_candidate_filter_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_contact_candidate_filter_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    dart_add_simulation_test(
+      test_ccd_line_search_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_ccd_line_search_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    dart_add_simulation_test(
+      test_barrier_friction_kernel_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_barrier_friction_kernel_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-cuda
       LABEL simulation-cuda
     )

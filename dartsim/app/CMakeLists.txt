@@ -10,8 +10,6 @@
 # ../engine and ../ui; this directory holds only main.cpp so it can use the
 # backend-hidden GUI application macro (which requires a single main.cpp).
 
-cmake_minimum_required(VERSION 3.22.1)
-
 set(application_target dartsim)
 
 if(NOT DART_IN_SOURCE_BUILD)

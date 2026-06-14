@@ -133,6 +133,36 @@ if(DART_SIMULATION_BUILD_BENCHMARKS)
       LABEL "simulation-cuda"
     )
     dart_add_simulation_benchmark(
+      bm_plan083_gpu_contact_candidates
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan083_gpu_contact_candidates.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
+      bm_plan083_gpu_ccd_line_search
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan083_gpu_ccd_line_search.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
+      bm_plan083_gpu_barrier_friction
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan083_gpu_barrier_friction.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
+      bm_newton_assembly_solve_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_newton_assembly_solve_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
+      bm_plan083_gpu_scene_parity
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan083_gpu_scene_parity.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL "simulation-cuda"
+    )
+    dart_add_simulation_benchmark(
       bm_vbd_cuda
       ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_cuda.cpp
       LIBRARY ${PROJECT_NAME}-simulation-cuda

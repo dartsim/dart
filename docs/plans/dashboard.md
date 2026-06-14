@@ -317,8 +317,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  Phase 6 CPU corpus follow-up on
-  `simx/plan083-phase-6-abd-comparison-packets`. PR #2960 landed
+  consolidated follow-up on
+  `simx/plan083-gpu-contact-candidate-packet` / PR #2978. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -330,11 +330,37 @@ its own line so status updates remain git-history friendly.
   change-of-variable rigid IPC path, and the reduced affine point-triangle
   micro-solve diagnostic; PR #2974 added reduced ABD runtime-step evidence for
   `abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
-  and `abd-chain-96`. The current follow-up adds reduced ABD gears/Bullet
-  comparison packets without claiming gear assets, Bullet/reference baselines,
-  GPU parity, or paper-scale parity. The completion audit still records
-  PLAN-083 as incomplete while planned manifest and non-PSD GPU parity rows
-  remain, so dev-task retirement needs maintainer direction before deletion.
+  and `abd-chain-96`; PR #2976 adds reduced ABD gears/Bullet comparison
+  packets without claiming gear assets, Bullet/reference baselines, GPU parity,
+  or paper-scale parity. PR #2978 is the single consolidated follow-up for the
+  remaining private packet work: it adds point-triangle and edge-edge contact
+  stencil parity plus brute-force all-pairs point-triangle and edge-edge
+  candidate masks and motion-aware swept-AABB point-triangle/edge-edge
+  candidate-list packets with device-side compacted candidate ids and distance
+  metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
+  compact runtime sweep-buffer endpoint-distance packets, reduced
+  scene-owned runtime candidate-buffer packets, and reduced scene-owned
+  runtime sweep broad-phase packets,
+  endpoint-linear
+  point-triangle and
+  edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
+  plus point-triangle
+  primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
+  tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge
+  primitive barrier-Hessian parity, point-triangle/point-point/point-edge
+  primitive barrier-Hessian PSD-projection parity, reduced scene-owned
+  point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
+  rows, reduced diagonal assembly/solve plus
+  pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge scene
+  state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
+  and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
+  contact rows, runtime scene filtering, rigid curved trajectories,
+  equality-reduced/global sparse assembly and factorization, GPU `World::step`,
+  paper-scale assets, full runtime affine/FEM coupling, and accepted reference
+  timings as future evidence. The
+  completion audit still records PLAN-083 as incomplete while in-progress
+  CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
+  direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

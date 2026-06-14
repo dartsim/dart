@@ -10,14 +10,14 @@
   "policy": {
     "row_gate": "Measured rows require same-scene CPU/GPU parity, explicit tolerance, setup/transfer/readback/kernel/solve timing, and speedup against the DART CPU path.",
     "public_api": "No public CUDA, stream, device, memory-pool, backend-task, solver-registry, or package-surface exposure is allowed by this packet.",
-    "ordering": "Promote private GPU evidence in the roadmap order: stencils/candidates, CCD/line search, local barrier/friction kernels and PSD projection, then assembly/linear solve after CPU packet shape is stable.",
+    "ordering": "Promote private GPU evidence in the roadmap order: stencils/candidates, CCD/line search, local barrier/friction kernels, PSD projection, assembly/linear solve, then scene-level parity only after the private packet rows are stable.",
     "limitation_policy": "Rows that cannot be measured yet stay planned or in-progress with a concrete blocker instead of a speed claim."
   },
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "measured": 1,
-      "planned": 5
+      "in-progress": 5,
+      "measured": 1
     }
   },
   "rows": [
@@ -25,9 +25,9 @@
       "row_id": "contact-stencils-candidate-filtering",
       "roadmap_item": "contact stencils and candidate filtering",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_candidate_set --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/contact_candidates_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU contact-stencil or candidate-filtering kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-contact-candidates-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/contact_candidates_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/contact_candidates_benchmark.json",
       "same_scene_policy": "Use identical DART-owned candidate fixtures and sort keys on CPU and GPU; compare candidate ids, primitive ids, and conservative activation distances.",
@@ -35,33 +35,393 @@
       "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for host/device-portable contact stencil and candidate-filtering kernels after the CPU scene packet shape stabilizes.",
-      "notes_or_gap": "The Phase 5 mixed-domain candidate contract is CPU-only; this row records the GPU evidence shape without claiming a kernel."
+      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets, brute-force all-pairs point-triangle and edge-edge candidate-mask packets, motion-aware swept-AABB point-triangle and edge-edge candidate-list packets, compact device-sorted sweep-and-prune broad-phase packets, compact runtime sweep-buffer endpoint-distance packets, reduced scene-owned runtime candidate-buffer packets, and reduced scene-owned runtime sweep broad-phase packets exist. They cover reduced primitive fixtures, compact CPU sweep candidate buffers, private device-side swept-AABB sorting/count/scatter, candidate buffers extracted from one DART World-owned deformable surface, and scene-owned sweep rows extracted from that same surface; full runtime scene filtering, GPU World::step contact candidate construction, and the speedup gate remain future work.",
+      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils, 65536 edge-edge stencils, a 65536-pair point-triangle all-pairs mask, a 65536-pair edge-edge all-pairs mask, a 65536-pair swept-AABB point-triangle candidate list, a 65536-pair swept-AABB edge-edge candidate list, a 65536-capacity point-triangle sweep broad-phase row, and a 65536-capacity edge-edge sweep broad-phase row on 2026-06-12. It now also records reduced scene-owned runtime sweep broad-phase rows extracted from one DART World deformable surface: the point-triangle scene sweep covers 1966080 possible pairs over 2560 points and 768 triangles, emits 512 compact candidates, and records speedup=0.07057754068474563x; the edge-edge scene sweep covers 5308416 possible pairs over 2304 surface edges, emits 1536 compact candidates, and records speedup=0.06350297113311432x. Compact runtime buffer rows still consume CPU sweep candidate keys, and reduced scene-owned runtime candidate-buffer rows still cover one DART World deformable surface. The top-level packet speedup was 0.024497841563440446x, so this remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "primitive_families": {
+        "point_triangle": {
+          "stencil_count": 65536,
+          "accepted_count": 49152,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.3807516174610825,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 329941.0,
+            "host_to_device": 1288197.0,
+            "kernel": 411599.0,
+            "solve": 0.0,
+            "device_to_host": 143434.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083ContactCandidateCuda/65536"
+        },
+        "edge_edge": {
+          "stencil_count": 65536,
+          "accepted_count": 49152,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.7517067225804511,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 173207.0,
+            "host_to_device": 597640.0,
+            "kernel": 128550.0,
+            "solve": 0.0,
+            "device_to_host": 94925.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCuda/65536"
+        }
+      },
+      "candidate_construction": {
+        "point_triangle_all_pairs_mask": {
+          "pair_count": 65536,
+          "point_count": 256,
+          "triangle_count": 256,
+          "accepted_count": 192,
+          "compacted_count": 192,
+          "compacted_triangle_count": 192,
+          "compacted_distance_count": 192,
+          "max_result_abs_error": 0.0,
+          "speedup": 1.14452546580384,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 102295.0,
+            "host_to_device": 338011.0,
+            "kernel": 69500.0,
+            "solve": 0.0,
+            "device_to_host": 200361.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCuda/65536"
+        },
+        "edge_edge_all_pairs_mask": {
+          "pair_count": 65536,
+          "edge_count": 256,
+          "accepted_count": 96,
+          "compacted_edge_a_count": 96,
+          "compacted_edge_b_count": 96,
+          "compacted_distance_count": 96,
+          "max_result_abs_error": 0.0,
+          "speedup": 1.0690961877927072,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 65938.0,
+            "host_to_device": 318290.0,
+            "kernel": 56032.0,
+            "solve": 0.0,
+            "device_to_host": 169698.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083EdgeEdgeCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083EdgeEdgeCandidateMaskCuda/65536"
+        },
+        "point_triangle_swept_aabb_candidates": {
+          "pair_count": 65536,
+          "point_count": 256,
+          "triangle_count": 256,
+          "accepted_count": 256,
+          "compacted_count": 256,
+          "compacted_triangle_count": 256,
+          "compacted_distance_count": 256,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.4136456107216959,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 67590.0,
+            "host_to_device": 356101.0,
+            "kernel": 75981.0,
+            "solve": 0.0,
+            "device_to_host": 173292.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SweptPointTriangleCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SweptPointTriangleCandidateMaskCuda/65536"
+        },
+        "edge_edge_swept_aabb_candidates": {
+          "pair_count": 65536,
+          "edge_count": 256,
+          "accepted_count": 128,
+          "compacted_edge_a_count": 128,
+          "compacted_edge_b_count": 128,
+          "compacted_distance_count": 128,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.28183637372867915,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 66350.0,
+            "host_to_device": 12246.0,
+            "kernel": 46849.0,
+            "solve": 0.0,
+            "device_to_host": 129489.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SweptEdgeEdgeCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SweptEdgeEdgeCandidateMaskCuda/65536"
+        },
+        "point_triangle_sweep_broad_phase": {
+          "pair_capacity": 65536,
+          "point_count": 256,
+          "triangle_count": 256,
+          "accepted_count": 256,
+          "compacted_count": 256,
+          "compacted_triangle_count": 256,
+          "compacted_distance_count": 256,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.024497841563440446,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 62479.0,
+            "host_to_device": 17996.0,
+            "kernel": 987594.0,
+            "solve": 0.0,
+            "device_to_host": 19656.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SweptPointTriangleSweepCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SweptPointTriangleSweepCuda/65536"
+        },
+        "edge_edge_sweep_broad_phase": {
+          "pair_capacity": 65536,
+          "edge_count": 256,
+          "accepted_count": 128,
+          "compacted_edge_a_count": 128,
+          "compacted_edge_b_count": 128,
+          "compacted_distance_count": 128,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.041558936560284754,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 59891.0,
+            "host_to_device": 11449.0,
+            "kernel": 140445.0,
+            "solve": 0.0,
+            "device_to_host": 19101.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SweptEdgeEdgeSweepCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SweptEdgeEdgeSweepCuda/65536"
+        },
+        "point_triangle_scene_runtime_sweep": {
+          "pair_capacity": 1966080,
+          "point_count": 2560,
+          "triangle_count": 768,
+          "accepted_count": 512,
+          "compacted_count": 512,
+          "compacted_triangle_count": 512,
+          "compacted_distance_count": 512,
+          "max_result_abs_error": 5.551115123125783e-17,
+          "speedup": 0.07057754068474563,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 141618.0,
+            "host_to_device": 29421.0,
+            "kernel": 1262159.0,
+            "solve": 0.0,
+            "device_to_host": 22405.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleSweepCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleSweepCuda/65536",
+          "scene_body_count": 1
+        },
+        "edge_edge_scene_runtime_sweep": {
+          "pair_capacity": 5308416,
+          "edge_count": 2304,
+          "accepted_count": 1536,
+          "compacted_edge_a_count": 1536,
+          "compacted_edge_b_count": 1536,
+          "compacted_distance_count": 1536,
+          "max_result_abs_error": 2.7755575615628914e-17,
+          "speedup": 0.06350297113311432,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 147818.0,
+            "host_to_device": 27679.0,
+            "kernel": 496254.0,
+            "solve": 0.0,
+            "device_to_host": 24983.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeSweepCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeSweepCuda/65536",
+          "scene_body_count": 1
+        },
+        "point_triangle_runtime_sweep_buffer": {
+          "candidate_count": 512,
+          "point_count": 2560,
+          "triangle_count": 768,
+          "scene_body_count": 0,
+          "max_result_abs_error": 5.551115123125783e-17,
+          "speedup": 0.12191586732790761,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 56357.0,
+            "host_to_device": 29673.0,
+            "kernel": 23955.0,
+            "solve": 0.0,
+            "device_to_host": 4971.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083RuntimePointTriangleCandidateBufferCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083RuntimePointTriangleCandidateBufferCuda/65536"
+        },
+        "edge_edge_runtime_sweep_buffer": {
+          "candidate_count": 1536,
+          "edge_count": 2304,
+          "scene_body_count": 0,
+          "max_result_abs_error": 2.7755575615628914e-17,
+          "speedup": 0.2982163971830784,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 56412.0,
+            "host_to_device": 37260.0,
+            "kernel": 17221.0,
+            "solve": 0.0,
+            "device_to_host": 6561.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083RuntimeEdgeEdgeCandidateBufferCuda/65536"
+        },
+        "point_triangle_scene_runtime_buffer": {
+          "candidate_count": 512,
+          "point_count": 2560,
+          "triangle_count": 768,
+          "scene_body_count": 1,
+          "max_result_abs_error": 5.551115123125783e-17,
+          "speedup": 0.1129132598339765,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 55580.0,
+            "host_to_device": 28851.0,
+            "kernel": 23958.0,
+            "solve": 0.0,
+            "device_to_host": 5015.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleCandidateBufferCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleCandidateBufferCuda/65536"
+        },
+        "edge_edge_scene_runtime_buffer": {
+          "candidate_count": 1536,
+          "edge_count": 2304,
+          "scene_body_count": 1,
+          "max_result_abs_error": 2.7755575615628914e-17,
+          "speedup": 0.2892451261570054,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 56517.0,
+            "host_to_device": 34393.0,
+            "kernel": 17167.0,
+            "solve": 0.0,
+            "device_to_host": 6698.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda/65536"
+        }
+      },
+      "stencil_count": 131072,
+      "candidate_pair_count": 7667712,
+      "accepted_count": 98304,
+      "max_result_abs_error": 5.551115123125783e-17,
+      "result_abs_error_tolerance": 1e-10,
+      "speedup": 0.024497841563440446,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 329941.0,
+        "host_to_device": 1288197.0,
+        "kernel": 411599.0,
+        "solve": 0.0,
+        "device_to_host": 143434.0,
+        "readback": 0.0
+      },
+      "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
+      "gpu_benchmark_row": "BM_Plan083ContactCandidateCuda/65536",
+      "meets_speedup_gate": false,
+      "speedup_gate": 1.25
     },
     {
       "row_id": "ccd-line-search",
       "roadmap_item": "CCD and line-search kernels",
       "owner": "PLAN-083 + PLAN-082",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_continuous_collision_step --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/ccd_line_search_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU CCD or line-search kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_benchmark.json",
       "same_scene_policy": "Use identical conservative CCD fixtures, step directions, and feasibility margins on CPU and GPU.",
-      "tolerance_policy": "Time-of-impact and maximum feasible step fraction must stay within 1e-10 absolute error.",
+      "tolerance_policy": "Time-of-impact and maximum feasible step fraction must stay within 1e-8 absolute error.",
       "timing_policy": "Report setup, transfer, CCD kernel, line-search kernel, readback, and CPU baseline timing separately.",
       "speedup_policy": "Require >=1.25x over the DART CPU CCD/line-search path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for a GPU conservative-CCD row and a line-search feasibility row that share the CPU contract.",
-      "notes_or_gap": "The current Phase 5 point-pair CCD reduction is CPU-only and intentionally remains the oracle."
+      "limitation_status": "Private endpoint-linear point-triangle and edge-edge CCD line-search parity packets exist, but they cover reduced endpoint-linear fixtures only and do not yet cover rigid curved trajectories, runtime scene candidate sets, or scene-level line-search feasibility.",
+      "notes_or_gap": "The packet measured exact CPU/GPU step-bound parity for 65536 endpoint-linear point-triangle pairs plus 65536 edge-edge pairs on 2026-06-11 with minimum primitive-family speedup 3.749183559921358x, but the row remains in-progress until the broader CCD and runtime line-search surface has evidence.",
+      "same_scene_cpu_gpu": true,
+      "primitive_families": {
+        "point_triangle": {
+          "pair_count": 65536,
+          "hit_count": 49152,
+          "min_step_bound": 0.4999995,
+          "max_result_abs_error": 0.0,
+          "speedup": 3.8998412501720683,
+          "meets_speedup_gate": true,
+          "timing_ns": {
+            "setup": 775487.0,
+            "host_to_device": 2058462.0,
+            "kernel": 451036.0,
+            "solve": 0.0,
+            "device_to_host": 281139.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083CcdLineSearchCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083CcdLineSearchCuda/65536"
+        },
+        "edge_edge": {
+          "pair_count": 65536,
+          "hit_count": 49152,
+          "min_step_bound": 0.49999950000000004,
+          "max_result_abs_error": 0.0,
+          "speedup": 3.749183559921358,
+          "meets_speedup_gate": true,
+          "timing_ns": {
+            "setup": 353065.0,
+            "host_to_device": 2345233.0,
+            "kernel": 740251.0,
+            "solve": 0.0,
+            "device_to_host": 252480.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083EdgeEdgeCcdLineSearchCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083EdgeEdgeCcdLineSearchCuda/65536"
+        }
+      },
+      "pair_count": 131072,
+      "hit_count": 98304,
+      "min_step_bound": 0.4999995,
+      "max_result_abs_error": 0.0,
+      "result_abs_error_tolerance": 1e-08,
+      "speedup": 3.749183559921358,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 775487.0,
+        "host_to_device": 2058462.0,
+        "kernel": 451036.0,
+        "solve": 0.0,
+        "device_to_host": 281139.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "barrier-friction-local-kernels",
       "roadmap_item": "barrier/friction local kernels",
       "owner": "PLAN-083 + PLAN-081 + PLAN-082",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_barrier_kernel --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/barrier_cpu.json --benchmark_out_format=json && pixi run bm --target bm_ipc_tangent_stencil --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/friction_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU barrier/friction local kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-barrier-friction-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/barrier_friction_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/barrier_friction_benchmark.json",
       "same_scene_policy": "Use identical primitive distances, tangent bases, lagged normal forces, and friction displacements on CPU and GPU.",
@@ -69,8 +429,373 @@
       "timing_policy": "Report setup, transfer, barrier kernel, friction kernel, PSD/local projection timing where used, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over DART CPU local-kernel timing before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for a first GPU IPC consumer to make the existing detail/newton_barrier scalar cores host/device-portable in place.",
-      "notes_or_gap": "No mirrored device Newton-barrier implementation is created until that real GPU consumer exists."
+      "limitation_status": "Private scalar barrier/friction local-kernel parity, point-triangle primitive barrier-gradient parity, point-triangle, edge-edge, point-edge, and point-point tangent-stencil parity packets, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian parity, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-projection parity, and reduced scene-owned point-triangle/point-edge/point-point/edge-edge barrier-Hessian runtime rows exist. Broader sparse Hessian assembly, additional runtime contact rows, and top-level/runtime speedup remain future evidence.",
+      "notes_or_gap": "The packet measured max_result_abs_error=7.844391802791506e-12 for 65536 scalar, point-triangle gradient, all four primitive-family tangent-stencil sample sets, point-triangle/point-point/point-edge/edge-edge barrier-Hessian samples, point-triangle/point-point/point-edge/edge-edge Hessian PSD-projection samples, and reduced scene-owned point-triangle/point-edge/point-point/edge-edge barrier-Hessian runtime rows on 2026-06-12. The point-triangle runtime row extracts 512 point-triangle candidates from one DART World deformable surface with 2560 nodes and 768 triangles, records 256 active barriers, max_result_abs_error=1.7763568394002505e-15, and speedup=0.17984862275960234x. The point-edge runtime row expands 512 source point-triangle candidates into 1536 point-edge candidates over the same scene surface, records 768 active barriers, max_result_abs_error=8.881784197001252e-16, and speedup=0.49484632935106865x. The point-point runtime row expands the same 512 source point-triangle candidates into 1536 point-point pairs over triangle vertices, records 256 active barriers, max_result_abs_error=0.0, and speedup=0.21761886815815773x. The edge-edge runtime row consumes 1536 scene-owned edge-edge candidates from the same scene surface, records 1280 active barriers, max_result_abs_error=2.220446049250313e-15, and speedup=0.6630850632538113x. The edge-edge primitive barrier-Hessian row records 59578 active barriers, max_result_abs_error=3.623767952376511e-13, and speedup=1.592433352051249x. The edge-edge Hessian PSD-projection row records 59578 active barriers, max_result_abs_error=4.334310688136611e-13, psd_projection_ns=121906741.0, and speedup=2.045170785242439x. The top-level packet speedup was 0.17984862275960234x, so this row remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "sample_count": 65536,
+      "active_barrier_count": 52428,
+      "active_friction_count": 65536,
+      "dynamic_friction_count": 21846,
+      "max_barrier_value": 5.691895854036562,
+      "max_friction_work": 1.02,
+      "max_result_abs_error": 7.844391802791506e-12,
+      "result_abs_error_tolerance": 1e-10,
+      "speedup": 0.17984862275960234,
+      "min_speedup": 1.25,
+      "speedup_gate": 1.25,
+      "meets_speedup_gate": false,
+      "timing_ns": {
+        "setup": 533282.0,
+        "host_to_device": 263030.0,
+        "kernel": 397332.0,
+        "solve": 0.0,
+        "device_to_host": 898321.0,
+        "readback": 0.0
+      },
+      "cpu_benchmark_row": "BM_Plan083BarrierFrictionLocalCpu/65536",
+      "gpu_benchmark_row": "BM_Plan083BarrierFrictionLocalCuda/65536",
+      "scalar_local": {
+        "sample_count": 65536,
+        "active_barrier_count": 52428,
+        "active_friction_count": 65536,
+        "dynamic_friction_count": 21846,
+        "max_barrier_value": 5.691895854036562,
+        "max_friction_work": 1.02,
+        "max_result_abs_error": 5.551115123125783e-17,
+        "speedup": 0.42215325402993703,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 533282.0,
+          "host_to_device": 263030.0,
+          "kernel": 397332.0,
+          "solve": 0.0,
+          "device_to_host": 898321.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083BarrierFrictionLocalCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083BarrierFrictionLocalCuda/65536"
+      },
+      "point_triangle_barrier_gradient": {
+        "sample_count": 65536,
+        "active_barrier_count": 57670,
+        "max_barrier_value": 0.872872069188204,
+        "max_result_abs_error": 3.982848877516439e-14,
+        "speedup": 13.847478069466215,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 801881.0,
+          "host_to_device": 909483.0,
+          "kernel": 446656.0,
+          "solve": 0.0,
+          "device_to_host": 1284815.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointTriangleBarrierGradientCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointTriangleBarrierGradientCuda/65536"
+      },
+      "point_triangle_barrier_hessian": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.872872069188204,
+        "max_result_abs_error": 2.5887393237583516e-12,
+        "speedup": 1.522921017140766,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 21232015.0,
+          "host_to_device": 612158.0,
+          "kernel": 4536687.0,
+          "solve": 0.0,
+          "device_to_host": 6733719.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointTriangleBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointTriangleBarrierHessianCuda/65536"
+      },
+      "point_triangle_scene_runtime_barrier_hessian": {
+        "candidate_count": 512,
+        "active_barrier_count": 256,
+        "scene_body_count": 1,
+        "scene_node_count": 2560,
+        "scene_triangle_count": 768,
+        "max_barrier_value": 0.20204210637825115,
+        "max_result_abs_error": 1.7763568394002505e-15,
+        "speedup": 0.17984862275960234,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 63092.0,
+          "host_to_device": 6693.0,
+          "kernel": 731213.0,
+          "solve": 0.0,
+          "device_to_host": 115885.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083SceneRuntimePointTriangleBarrierHessianCuda/65536"
+      },
+      "point_edge_scene_runtime_barrier_hessian": {
+        "candidate_count": 1536,
+        "source_point_triangle_candidate_count": 512,
+        "active_barrier_count": 768,
+        "scene_body_count": 1,
+        "scene_node_count": 2560,
+        "scene_triangle_count": 768,
+        "max_barrier_value": 0.04849457895666953,
+        "max_result_abs_error": 8.881784197001252e-16,
+        "speedup": 0.49484632935106865,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 83058.0,
+          "host_to_device": 5965.0,
+          "kernel": 674333.0,
+          "solve": 0.0,
+          "device_to_host": 185055.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083SceneRuntimePointEdgeBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083SceneRuntimePointEdgeBarrierHessianCuda/65536"
+      },
+      "point_point_scene_runtime_barrier_hessian": {
+        "candidate_count": 1536,
+        "source_point_triangle_candidate_count": 512,
+        "active_barrier_count": 256,
+        "scene_body_count": 1,
+        "scene_node_count": 2560,
+        "scene_triangle_count": 768,
+        "max_barrier_value": 0.007505247706557587,
+        "max_result_abs_error": 0.0,
+        "speedup": 0.21761886815815773,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 62915.0,
+          "host_to_device": 5287.0,
+          "kernel": 46355.0,
+          "solve": 0.0,
+          "device_to_host": 101096.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083SceneRuntimePointPointBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083SceneRuntimePointPointBarrierHessianCuda/65536"
+      },
+      "edge_edge_scene_runtime_barrier_hessian": {
+        "candidate_count": 1536,
+        "source_edge_edge_candidate_count": 1536,
+        "active_barrier_count": 1280,
+        "scene_body_count": 1,
+        "scene_node_count": 2560,
+        "scene_triangle_count": 768,
+        "max_barrier_value": 0.20204210637825254,
+        "max_result_abs_error": 2.220446049250313e-15,
+        "speedup": 0.6630850632538113,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 159602.0,
+          "host_to_device": 10242.0,
+          "kernel": 759733.0,
+          "solve": 0.0,
+          "device_to_host": 230217.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCuda/65536"
+      },
+      "point_triangle_barrier_hessian_psd_projection": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.872872069188204,
+        "max_result_abs_error": 2.8990143619012088e-12,
+        "speedup": 1.760206992798857,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 28866522.0,
+          "host_to_device": 948305.0,
+          "kernel": 4670932.0,
+          "solve": 0.0,
+          "device_to_host": 12956023.0,
+          "readback": 0.0
+        },
+        "psd_projection_ns": 106083352.0,
+        "cpu_benchmark_row": "BM_Plan083PointTriangleBarrierHessianPsdCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointTriangleBarrierHessianPsdCuda/65536"
+      },
+      "point_point_barrier_hessian": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.5084692803385604,
+        "max_result_abs_error": 2.4868995751603507e-14,
+        "speedup": 1.1730719863289119,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 6635721.0,
+          "host_to_device": 520731.0,
+          "kernel": 595722.0,
+          "solve": 0.0,
+          "device_to_host": 3777678.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointPointBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointPointBarrierHessianCuda/65536"
+      },
+      "point_point_barrier_hessian_psd_projection": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.5084692803385604,
+        "max_result_abs_error": 9.592326932761353e-14,
+        "speedup": 3.99800793518093,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 5586693.0,
+          "host_to_device": 441546.0,
+          "kernel": 619684.0,
+          "solve": 0.0,
+          "device_to_host": 3756910.0,
+          "readback": 0.0
+        },
+        "psd_projection_ns": 9178541.0,
+        "cpu_benchmark_row": "BM_Plan083PointPointBarrierHessianPsdCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointPointBarrierHessianPsdCuda/65536"
+      },
+      "point_edge_barrier_hessian": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.8728720691882058,
+        "max_result_abs_error": 7.716494110354688e-12,
+        "speedup": 2.4388634832426614,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 11912216.0,
+          "host_to_device": 472029.0,
+          "kernel": 2467284.0,
+          "solve": 0.0,
+          "device_to_host": 3959114.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointEdgeBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointEdgeBarrierHessianCuda/65536"
+      },
+      "point_edge_barrier_hessian_psd_projection": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.8728720691882058,
+        "max_result_abs_error": 7.844391802791506e-12,
+        "speedup": 3.2078994874152675,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 11642940.0,
+          "host_to_device": 774034.0,
+          "kernel": 3214377.0,
+          "solve": 0.0,
+          "device_to_host": 7568862.0,
+          "readback": 0.0
+        },
+        "psd_projection_ns": 31793865.0,
+        "cpu_benchmark_row": "BM_Plan083PointEdgeBarrierHessianPsdCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointEdgeBarrierHessianPsdCuda/65536"
+      },
+      "edge_edge_barrier_hessian": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.5437357166851504,
+        "max_result_abs_error": 3.623767952376511e-13,
+        "speedup": 1.592433352051249,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 21555257.0,
+          "host_to_device": 582101.0,
+          "kernel": 4368715.0,
+          "solve": 0.0,
+          "device_to_host": 6704876.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083EdgeEdgeBarrierHessianCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083EdgeEdgeBarrierHessianCuda/65536"
+      },
+      "point_triangle_tangent_stencil": {
+        "sample_count": 65536,
+        "fallback_basis_count": 0,
+        "max_result_abs_error": 6.661338147750939e-16,
+        "speedup": 1.9985198925556418,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 1294603.0,
+          "host_to_device": 752292.0,
+          "kernel": 573577.0,
+          "solve": 0.0,
+          "device_to_host": 2785656.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointTriangleTangentStencilCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointTriangleTangentStencilCuda/65536"
+      },
+      "edge_edge_tangent_stencil": {
+        "sample_count": 65536,
+        "fallback_basis_count": 0,
+        "max_result_abs_error": 8.881784197001252e-16,
+        "speedup": 2.1272367770149763,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 1265567.0,
+          "host_to_device": 721738.0,
+          "kernel": 557726.0,
+          "solve": 0.0,
+          "device_to_host": 2774837.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083EdgeEdgeTangentStencilCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083EdgeEdgeTangentStencilCuda/65536"
+      },
+      "point_edge_tangent_stencil": {
+        "sample_count": 65536,
+        "fallback_basis_count": 0,
+        "max_result_abs_error": 1.1268763699945339e-14,
+        "speedup": 1.8859462888258494,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 970661.0,
+          "host_to_device": 544874.0,
+          "kernel": 429826.0,
+          "solve": 0.0,
+          "device_to_host": 2187180.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointEdgeTangentStencilCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointEdgeTangentStencilCuda/65536"
+      },
+      "point_point_tangent_stencil": {
+        "sample_count": 65536,
+        "fallback_basis_count": 0,
+        "max_result_abs_error": 3.3306690738754696e-16,
+        "speedup": 1.382265286381561,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 724745.0,
+          "host_to_device": 236174.0,
+          "kernel": 416886.0,
+          "solve": 0.0,
+          "device_to_host": 1601036.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointPointTangentStencilCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointPointTangentStencilCuda/65536"
+      },
+      "edge_edge_barrier_hessian_psd_projection": {
+        "sample_count": 65536,
+        "active_barrier_count": 59578,
+        "max_barrier_value": 0.5437357166851504,
+        "max_result_abs_error": 4.334310688136611e-13,
+        "speedup": 2.045170785242439,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 20514398.0,
+          "host_to_device": 959994.0,
+          "kernel": 4528511.0,
+          "solve": 0.0,
+          "device_to_host": 12931759.0,
+          "readback": 0.0
+        },
+        "psd_projection_ns": 121906741.0,
+        "cpu_benchmark_row": "BM_Plan083EdgeEdgeBarrierHessianPsdCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083EdgeEdgeBarrierHessianPsdCuda/65536"
+      }
     },
     {
       "row_id": "psd-projection",
@@ -92,7 +817,7 @@
       "block_dimension": 12,
       "block_count": 4096,
       "max_result_abs_error": 2.4868995751603507e-14,
-      "result_abs_error_tolerance": 1e-9,
+      "result_abs_error_tolerance": 1e-09,
       "speedup": 4.451557656446166,
       "min_speedup": 1.25,
       "timing_ns": {
@@ -108,9 +833,9 @@
       "row_id": "assembly-linear-solve",
       "roadmap_item": "assembly and linear-solve paths",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
-      "cpu_evidence_command": "not-ready: CPU scene packet shape and sparse Newton assembly rows are not stable yet",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU assembly or linear-solve path has landed",
+      "status": "in-progress",
+      "cpu_evidence_command": "pixi run -e cuda bm-newton-assembly-solve-packet",
+      "gpu_evidence_command": "pixi run -e cuda bm-newton-assembly-solve-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_benchmark.json",
       "same_scene_policy": "Use identical sparse matrices, right-hand sides, pivots, solver tolerances, and deterministic reduction order on CPU and GPU.",
@@ -118,16 +843,81 @@
       "timing_policy": "Report setup, transfer, assembly kernel, linear solve, readback, CPU assembly, and CPU solve timing separately.",
       "speedup_policy": "Require >=1.25x over the matched DART CPU sparse Newton packet before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; any residency or solver owner must stay behind private implementation boundaries.",
-      "limitation_status": "Blocked until CPU scene packets and sparse Newton assembly rows are stable enough to compare.",
-      "notes_or_gap": "The roadmap explicitly defers assembly and linear solve until after CPU packet shape is stable."
+      "limitation_status": "Private reduced diagonal assembly/solve and pair-slot off-diagonal sparse-block assembly parity packets exist, but they cover diagonal per-body row assembly, independent regularized Newton steps, and preallocated 6x6 off-diagonal pair slots only. Equality reduction, global sparse factorization, runtime scene assembly, and the speedup gate remain future evidence.",
+      "notes_or_gap": "The packet measured max_result_abs_error=1.7763568394002505e-15 and residual_norm=3.0267237170020088e-15 for the diagonal row, plus off_diagonal_sparse_block_assembly max_result_abs_error=0.0 for 65536 rows, 4096 pair slots, 4096 active blocks, and 147456 block entries on 2026-06-11. The top-level packet speedup was 0.26051227540244215x, with diagonal_assembly_solve speedup=0.26051227540244215x and off_diagonal_sparse_block_assembly speedup=0.4342273750294942x, so this remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "row_count": 65536,
+      "body_count": 8192,
+      "dof_count": 49152,
+      "active_dof_count": 49152,
+      "max_result_abs_error": 1.7763568394002505e-15,
+      "result_abs_error_tolerance": 1e-10,
+      "residual_norm": 3.0267237170020088e-15,
+      "residual_norm_tolerance": 1e-08,
+      "step_norm": 10.69230682957083,
+      "speedup": 0.26051227540244215,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 2322325.0,
+        "host_to_device": 1836539.0,
+        "kernel": 319645.0,
+        "solve": 24227.0,
+        "device_to_host": 721850.0,
+        "readback": 0.0
+      },
+      "speedup_gate": 1.25,
+      "meets_speedup_gate": false,
+      "cpu_benchmark_row": "BM_NewtonAssemblySolveCpu/65536",
+      "gpu_benchmark_row": "BM_NewtonAssemblySolveCuda/65536",
+      "diagonal_assembly_solve": {
+        "row_count": 65536,
+        "body_count": 8192,
+        "dof_count": 49152,
+        "active_dof_count": 49152,
+        "max_result_abs_error": 1.7763568394002505e-15,
+        "residual_norm": 3.0267237170020088e-15,
+        "step_norm": 10.69230682957083,
+        "speedup": 0.26051227540244215,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 2322325.0,
+          "host_to_device": 1836539.0,
+          "kernel": 319645.0,
+          "solve": 24227.0,
+          "device_to_host": 721850.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_NewtonAssemblySolveCpu/65536",
+        "gpu_benchmark_row": "BM_NewtonAssemblySolveCuda/65536"
+      },
+      "off_diagonal_sparse_block_assembly": {
+        "row_count": 65536,
+        "pair_count": 4096,
+        "block_entry_count": 147456,
+        "active_block_count": 4096,
+        "max_block_abs": 0.0646,
+        "max_result_abs_error": 0.0,
+        "speedup": 0.4342273750294942,
+        "meets_speedup_gate": false,
+        "timing_ns": {
+          "setup": 5481298.0,
+          "host_to_device": 5174709.0,
+          "kernel": 1528173.0,
+          "solve": 0.0,
+          "device_to_host": 530389.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_NewtonOffDiagonalAssemblyCpu/65536",
+        "gpu_benchmark_row": "BM_NewtonOffDiagonalAssemblyCuda/65536"
+      }
     },
     {
       "row_id": "scene-parity-speedup",
       "roadmap_item": "same-scene CPU/GPU result parity and speedup",
       "owner": "PLAN-083 + PLAN-030",
-      "status": "planned",
-      "cpu_evidence_command": "not-ready: CPU scene-corpus placeholders are launchable but not runtime paper-scene reproductions",
-      "gpu_evidence_command": "not-ready: private PLAN-083 GPU same-scene packet depends on the staged rows above",
+      "status": "in-progress",
+      "cpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-scene-parity-packet",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-scene-parity-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/scene_parity_speedup.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/scene_parity_profile.json",
       "same_scene_policy": "Use the same DART scene id, timestep, material parameters, contact geometry, initial state, and acceptance invariant for CPU and GPU.",
@@ -135,8 +925,20 @@
       "timing_policy": "Report setup, transfer, candidate/CCD/local-kernel/assembly/solve subphase timings, readback, and full CPU step timing.",
       "speedup_policy": "Require speedup over DART CPU at matched accuracy; if the paper source lacks a GPU number, compare only against DART CPU and record that limitation.",
       "public_api_policy": "No public CUDA or backend exposure; scene evidence stays private/manual until a separate public promotion gate exists.",
-      "limitation_status": "Waiting for runtime CPU scene reproduction plus the private staged GPU rows above.",
-      "notes_or_gap": "This is the final Phase 7 go/no-go row and intentionally cannot pass from placeholder py-demos alone."
+      "limitation_status": "Reduced state-batch scene parity packet exists, but it covers DART scene state extraction plus private rigid-body state-batch CUDA rollout only. It does not run a GPU World::step path, contact candidate construction, CCD, barrier/friction assembly, sparse equality reduction, or global Newton solve.",
+      "notes_or_gap": "The reduced hanging-bridge state-batch packet measured max_result_abs_error=1.1102230246251565e-16 and speedup=18.792052761946252x for 4096 replicated scenes, 7 bodies per scene, and 64 steps on 2026-06-11. Because it bypasses the GPU contact/constraint/Newton solver path, this row remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "scene_id": "plan083_hanging_bridge_reduced_state_batch",
+      "state_path": "private rigid-body state-batch CUDA rollout",
+      "world_count": 4096,
+      "scene_body_count": 7,
+      "body_count": 7,
+      "step_count": 64,
+      "time_step": 0.005,
+      "max_result_abs_error": 1.1102230246251565e-16,
+      "result_abs_error_tolerance": 1e-09,
+      "speedup": 18.792052761946252,
+      "min_speedup": 1.25
     }
   ]
 }

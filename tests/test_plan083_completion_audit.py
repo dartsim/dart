@@ -124,5 +124,6 @@ def test_plan083_completion_audit_requires_blocked_cpu_and_gpu_rows() -> None:
         "audit must block CPU packet completion while CPU rows remain planned" in errors
     )
     assert (
-        "audit must block GPU packet completion while GPU rows remain planned" in errors
+        "audit must block GPU packet completion while GPU rows remain incomplete"
+        in errors
     )
