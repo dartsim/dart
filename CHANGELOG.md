@@ -1060,6 +1060,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     global-heap no-growth guards. Active inter-body deformable surface-CCD
     crossings and two non-square production-scale deformable frictional
     self-contact grids now have the same baked no-growth guard coverage.
+  - Added deformable `World::step` diagnostics for runtime surface-contact
+    candidate pair capacity and rejected pair counts across self-surface,
+    inter-body deformable, static rigid surface CCD, and moving rigid surface
+    CCD candidate paths, with matching dartpy/stub exposure and PLAN-083 CPU
+    scene packet validation.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
@@ -2952,6 +2957,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added point-point curved CCD to rigid IPC conservative line search so
     vertex-vertex barrier rows can limit unsafe steps and report point-point
     diagnostics.
+  - Tightened the private PLAN-083 CUDA CCD/line-search packet so sampled
+    rigid-curved point-triangle and edge-edge rows are generated from rigid IPC
+    pose interpolation and validated against continuous curved rigid IPC ACCD
+    reference-prefix counters before the packet can be recorded.
   - Hardened the opt-in experimental rigid IPC world-step stage so malformed
     runtime mesh topology, non-finite mesh vertices, and invalid box extents
     are skipped before internal barrier assembly or CCD.
@@ -3224,6 +3233,40 @@ Capsule Rod (IPC)` py-demos scene.
     The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
     `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
     toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Extended public deformable solver diagnostics with built-in `World::step`
+    self-surface and external inter-body/static-rigid/moving-rigid surface
+    contact candidate and CCD activity counters (PLAN-083 reduced CPU
+    observability). `DeformableSolverDiagnostics` and dartpy
+    `last_deformable_solver_diagnostics` now report surface-contact candidate
+    builds, point-triangle and edge-edge candidate counts, CCD check counts, CCD
+    hits, limited steps, zero-step counts, and rigid obstacle snapshot counts so
+    benchmark packets and debugger surfaces can observe the default deformable
+    line-search path without exposing internal solver state or device/backend
+    APIs. The PLAN-083 reduced CPU scene packet rows now serialize and validate
+    those external surface CCD counters alongside the existing self-surface
+    counters, and the dedicated `unb-alg-barriers` CPU packet row exercises
+    nonzero inter-body/static-rigid/moving-rigid surface CCD counter evidence,
+    including a mixed reduced `World::step` witness that activates all three
+    external families in one step. The reduced lying-flat benchmark packet now
+    also carries nonzero inter-body, static-rigid, and moving-rigid surface CCD
+    witnesses. The reduced hanging-bridge benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced pulley benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced umbrella benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced terrain vehicle benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses. The reduced ragdoll benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses. The reduced precession benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses, and the reduced Candy benchmark packet now carries
+    nonzero static-rigid and moving-rigid surface CCD witnesses. The reduced
+    ABD/FEM benchmark packet now also requires nonzero inter-body,
+    static-rigid, and moving-rigid external surface CCD sidecar witnesses while
+    keeping paper-scale mixed-scene, full runtime affine/FEM, and GPU parity
+    claims deferred.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`

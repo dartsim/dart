@@ -887,6 +887,105 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.projectedNewtonIterativeMaxError;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
+  diagnostics.surfaceContactCandidateBuilds
+      = stats.surfaceContactCandidateBuilds;
+  diagnostics.surfaceContactCandidatePairCapacity
+      = stats.surfaceContactCandidatePairCapacity;
+  diagnostics.surfaceContactCandidateRejectedPairs
+      = stats.surfaceContactCandidateRejectedPairs;
+  diagnostics.surfaceContactPointTriangleCandidates
+      = stats.surfaceContactPointTriangleCandidates;
+  diagnostics.surfaceContactEdgeEdgeCandidates
+      = stats.surfaceContactEdgeEdgeCandidates;
+  diagnostics.surfaceContactCcdPointTriangleChecks
+      = stats.surfaceContactCcdPointTriangleChecks;
+  diagnostics.surfaceContactCcdEdgeEdgeChecks
+      = stats.surfaceContactCcdEdgeEdgeChecks;
+  diagnostics.surfaceContactCcdHits = stats.surfaceContactCcdHits;
+  diagnostics.surfaceContactCcdLimitedSteps
+      = stats.surfaceContactCcdLimitedSteps;
+  diagnostics.surfaceContactCcdZeroStepCount
+      = stats.surfaceContactCcdZeroStepCount;
+  diagnostics.interBodySurfaceContactCandidateBuilds
+      = stats.interBodySurfaceContactCandidateBuilds;
+  diagnostics.interBodySurfaceContactCandidatePairCapacity
+      = stats.interBodySurfaceContactCandidatePairCapacity;
+  diagnostics.interBodySurfaceContactCandidateRejectedPairs
+      = stats.interBodySurfaceContactCandidateRejectedPairs;
+  diagnostics.interBodySurfaceContactPointTriangleCandidates
+      = stats.interBodySurfaceContactPointTriangleCandidates;
+  diagnostics.interBodySurfaceContactEdgeEdgeCandidates
+      = stats.interBodySurfaceContactEdgeEdgeCandidates;
+  diagnostics.interBodySurfaceContactCcdPointTriangleChecks
+      = stats.interBodySurfaceContactCcdPointTriangleChecks;
+  diagnostics.interBodySurfaceContactCcdEdgeEdgeChecks
+      = stats.interBodySurfaceContactCcdEdgeEdgeChecks;
+  diagnostics.interBodySurfaceContactCcdHits
+      = stats.interBodySurfaceContactCcdHits;
+  diagnostics.interBodySurfaceContactCcdLimitedSteps
+      = stats.interBodySurfaceContactCcdLimitedSteps;
+  diagnostics.interBodySurfaceContactCcdZeroStepCount
+      = stats.interBodySurfaceContactCcdZeroStepCount;
+  diagnostics.staticRigidSurfaceCcdSnapshotBuilds
+      = stats.staticRigidSurfaceCcdSnapshotBuilds;
+  diagnostics.staticRigidSurfaceCcdBoxCount
+      = stats.staticRigidSurfaceCcdBoxCount;
+  diagnostics.staticRigidSurfaceCcdSphereCount
+      = stats.staticRigidSurfaceCcdSphereCount;
+  diagnostics.staticRigidSurfaceCcdTriangleCount
+      = stats.staticRigidSurfaceCcdTriangleCount;
+  diagnostics.staticRigidSurfaceCcdEdgeCount
+      = stats.staticRigidSurfaceCcdEdgeCount;
+  diagnostics.staticRigidSurfaceCcdCandidateBuilds
+      = stats.staticRigidSurfaceCcdCandidateBuilds;
+  diagnostics.staticRigidSurfaceCcdCandidatePairCapacity
+      = stats.staticRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.staticRigidSurfaceCcdCandidateRejectedPairs
+      = stats.staticRigidSurfaceCcdCandidateRejectedPairs;
+  diagnostics.staticRigidSurfaceCcdPointTriangleCandidates
+      = stats.staticRigidSurfaceCcdPointTriangleCandidates;
+  diagnostics.staticRigidSurfaceCcdEdgeEdgeCandidates
+      = stats.staticRigidSurfaceCcdEdgeEdgeCandidates;
+  diagnostics.staticRigidSurfaceCcdPointTriangleChecks
+      = stats.staticRigidSurfaceCcdPointTriangleChecks;
+  diagnostics.staticRigidSurfaceCcdEdgeEdgeChecks
+      = stats.staticRigidSurfaceCcdEdgeEdgeChecks;
+  diagnostics.staticRigidSurfaceCcdHits = stats.staticRigidSurfaceCcdHits;
+  diagnostics.staticRigidSurfaceCcdLimitedSteps
+      = stats.staticRigidSurfaceCcdLimitedSteps;
+  diagnostics.staticRigidSurfaceCcdZeroStepCount
+      = stats.staticRigidSurfaceCcdZeroStepCount;
+  diagnostics.movingRigidSurfaceCcdSnapshotBuilds
+      = stats.movingRigidSurfaceCcdSnapshotBuilds;
+  diagnostics.movingRigidSurfaceCcdBoxCount
+      = stats.movingRigidSurfaceCcdBoxCount;
+  diagnostics.movingRigidSurfaceCcdSampleCount
+      = stats.movingRigidSurfaceCcdSampleCount;
+  diagnostics.movingRigidSurfaceCcdInflatedBoxCount
+      = stats.movingRigidSurfaceCcdInflatedBoxCount;
+  diagnostics.movingRigidSurfaceCcdTriangleCount
+      = stats.movingRigidSurfaceCcdTriangleCount;
+  diagnostics.movingRigidSurfaceCcdEdgeCount
+      = stats.movingRigidSurfaceCcdEdgeCount;
+  diagnostics.movingRigidSurfaceCcdCandidateBuilds
+      = stats.movingRigidSurfaceCcdCandidateBuilds;
+  diagnostics.movingRigidSurfaceCcdCandidatePairCapacity
+      = stats.movingRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.movingRigidSurfaceCcdCandidateRejectedPairs
+      = stats.movingRigidSurfaceCcdCandidateRejectedPairs;
+  diagnostics.movingRigidSurfaceCcdPointTriangleCandidates
+      = stats.movingRigidSurfaceCcdPointTriangleCandidates;
+  diagnostics.movingRigidSurfaceCcdEdgeEdgeCandidates
+      = stats.movingRigidSurfaceCcdEdgeEdgeCandidates;
+  diagnostics.movingRigidSurfaceCcdPointTriangleChecks
+      = stats.movingRigidSurfaceCcdPointTriangleChecks;
+  diagnostics.movingRigidSurfaceCcdEdgeEdgeChecks
+      = stats.movingRigidSurfaceCcdEdgeEdgeChecks;
+  diagnostics.movingRigidSurfaceCcdHits = stats.movingRigidSurfaceCcdHits;
+  diagnostics.movingRigidSurfaceCcdLimitedSteps
+      = stats.movingRigidSurfaceCcdLimitedSteps;
+  diagnostics.movingRigidSurfaceCcdZeroStepCount
+      = stats.movingRigidSurfaceCcdZeroStepCount;
   diagnostics.frictionDissipation = stats.frictionDissipation;
   diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
   diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;

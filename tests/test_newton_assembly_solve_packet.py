@@ -65,6 +65,48 @@ def _benchmark_data(**overrides):
         solve_kernel_ns=4.0,
         device_to_host_ns=5.0,
     )
+    scene_assembly_cpu = _row(
+        "BM_NewtonSceneRuntimeAssemblySolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.25,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    scene_assembly_gpu = _row(
+        "BM_NewtonSceneRuntimeAssemblySolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_active_dofs=1920,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_step_norm=0.25,
+        gpu_residual_norm=1e-14,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        solve_kernel_ns=4.0,
+        device_to_host_ns=5.0,
+    )
     off_diagonal_cpu = _row(
         "BM_NewtonOffDiagonalAssemblyCpu/1024",
         rows=1024,
@@ -93,8 +135,904 @@ def _benchmark_data(**overrides):
         solve_kernel_ns=0.0,
         device_to_host_ns=5.0,
     )
+    scene_off_diagonal_cpu = _row(
+        "BM_NewtonSceneRuntimeOffDiagonalAssemblyCpu/1024",
+        rows=288,
+        pairs=288,
+        block_entries=10368,
+        active_blocks=288,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_block_abs=0.25,
+        max_result_abs_error=0.0,
+    )
+    scene_off_diagonal_gpu = _row(
+        "BM_NewtonSceneRuntimeOffDiagonalAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=288,
+        pairs=288,
+        block_entries=10368,
+        active_blocks=288,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=288,
+        gpu_pairs=288,
+        gpu_active_blocks=288,
+        gpu_max_block_abs=0.25,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        solve_kernel_ns=0.0,
+        device_to_host_ns=5.0,
+    )
+    scene_sparse_graph_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphAssemblyCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        max_block_abs=0.25,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_graph_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_max_diagonal=10.0,
+        gpu_max_gradient_abs=1.0,
+        gpu_max_block_abs=0.25,
+        max_result_abs_error=8e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        incidence_kernel_ns=3.0,
+        diagonal_kernel_ns=4.0,
+        sparse_block_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
+    scene_sparse_graph_unique_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=240,
+        block_entries=8640,
+        edge_slots=288,
+        unique_edges=240,
+        duplicate_edge_slots=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        max_block_abs=0.25,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_graph_unique_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=240,
+        block_entries=8640,
+        edge_slots=288,
+        unique_edges=240,
+        duplicate_edge_slots=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=240,
+        gpu_block_entries=8640,
+        gpu_edge_slots=288,
+        gpu_unique_edges=240,
+        gpu_duplicate_edge_slots=48,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_max_diagonal=10.0,
+        gpu_max_gradient_abs=1.0,
+        gpu_max_block_abs=0.25,
+        max_result_abs_error=5e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        incidence_kernel_ns=3.0,
+        diagonal_kernel_ns=4.0,
+        unique_edge_mark_kernel_ns=5.0,
+        sparse_block_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    scene_nonlinear_equality_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_constraint_residual_abs=0.05,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_max_constraint_residual_abs=0.05,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        max_result_abs_error=9e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        constraint_kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    scene_nonlinear_equality_solve_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualitySolveCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        max_constraint_residual_abs=0.05,
+        max_post_solve_linearized_residual_abs=0.01,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        step_norm=2.5,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_solve_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualitySolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_active_dofs=960,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_regularization=0.05,
+        gpu_max_constraint_residual_abs=0.05,
+        gpu_max_post_solve_linearized_residual_abs=0.01,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        gpu_step_norm=2.5,
+        max_result_abs_error=7e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        solve_kernel_ns=3.0,
+        post_residual_kernel_ns=4.0,
+        device_to_host_ns=5.0,
+    )
+    scene_nonlinear_equality_convergence_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityConvergenceCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        max_iterations=8,
+        completed_iterations=5,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        residual_tolerance=1e-5,
+        converged=1,
+        initial_max_constraint_residual_abs=0.05,
+        final_max_constraint_residual_abs=5e-6,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        step_norm=2.75,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_convergence_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityConvergenceCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        max_iterations=8,
+        completed_iterations=5,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        residual_tolerance=1e-5,
+        converged=1,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_active_dofs=960,
+        gpu_max_iterations=8,
+        gpu_completed_iterations=5,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_regularization=0.05,
+        gpu_residual_tolerance=1e-5,
+        gpu_converged=1,
+        gpu_initial_max_constraint_residual_abs=0.05,
+        gpu_final_max_constraint_residual_abs=5e-6,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        gpu_step_norm=2.75,
+        max_result_abs_error=8e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        iteration_kernel_ns=3.0,
+        residual_kernel_ns=4.0,
+        convergence_readback_ns=5.0,
+        final_assembly_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    sparse_residual_cpu = _row(
+        "BM_NewtonSparseResidualCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        active_dofs=768,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        output_norm=4.0,
+        max_output_abs=0.75,
+        max_result_abs_error=0.0,
+    )
+    sparse_residual_gpu = _row(
+        "BM_NewtonSparseResidualCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        active_dofs=768,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_blocks=128,
+        gpu_active_dofs=768,
+        gpu_output_norm=4.0,
+        gpu_max_output_abs=0.75,
+        max_result_abs_error=3e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        gradient_seed_ns=4.0,
+        diagonal_kernel_ns=5.0,
+        off_diagonal_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    scene_sparse_residual_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseResidualCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        output_norm=9.0,
+        max_output_abs=1.25,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_residual_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseResidualCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_active_dofs=1920,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_output_norm=9.0,
+        gpu_max_output_abs=1.25,
+        max_result_abs_error=6e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        gradient_seed_ns=4.0,
+        diagonal_kernel_ns=5.0,
+        off_diagonal_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    sparse_jacobi_cpu = _row(
+        "BM_NewtonSparseJacobiSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        iterations=16,
+        active_dofs=768,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.5,
+        residual_norm=3e-14,
+        max_residual_abs=1e-14,
+        max_result_abs_error=0.0,
+    )
+    sparse_jacobi_gpu = _row(
+        "BM_NewtonSparseJacobiSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        iterations=16,
+        active_dofs=768,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_blocks=128,
+        gpu_iterations=16,
+        gpu_active_dofs=768,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=1e-14,
+        max_result_abs_error=4e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
+    scene_sparse_jacobi_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseJacobiSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        iterations=16,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=2.5,
+        residual_norm=3e-14,
+        max_residual_abs=7e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_jacobi_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseJacobiSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        iterations=16,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_iterations=16,
+        gpu_active_dofs=1920,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_step_norm=2.5,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=7e-15,
+        max_result_abs_error=6e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
+    sparse_cg_cpu = _row(
+        "BM_NewtonSparseCgSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        max_iterations=32,
+        completed_iterations=12,
+        active_dofs=768,
+        converged=1,
+        residual_tolerance=1e-12,
+        initial_residual_norm=14.0,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.5,
+        residual_norm=2e-14,
+        max_residual_abs=8e-15,
+        max_result_abs_error=0.0,
+    )
+    sparse_cg_gpu = _row(
+        "BM_NewtonSparseCgSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        max_iterations=32,
+        completed_iterations=12,
+        active_dofs=768,
+        converged=1,
+        residual_tolerance=1e-12,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_blocks=128,
+        gpu_max_iterations=32,
+        gpu_completed_iterations=12,
+        gpu_active_dofs=768,
+        gpu_converged=1,
+        gpu_residual_tolerance=1e-12,
+        gpu_initial_residual_norm=14.0,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=2e-14,
+        gpu_max_residual_abs=8e-15,
+        max_result_abs_error=5e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
+    scene_sparse_cg_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseCgSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        max_iterations=32,
+        completed_iterations=13,
+        active_dofs=1920,
+        converged=1,
+        residual_tolerance=1e-12,
+        initial_residual_norm=18.0,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=2.75,
+        residual_norm=4e-14,
+        max_residual_abs=9e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_cg_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseCgSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        max_iterations=32,
+        completed_iterations=13,
+        active_dofs=1920,
+        converged=1,
+        residual_tolerance=1e-12,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_max_iterations=32,
+        gpu_completed_iterations=13,
+        gpu_active_dofs=1920,
+        gpu_converged=1,
+        gpu_residual_tolerance=1e-12,
+        gpu_initial_residual_norm=18.0,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_step_norm=2.75,
+        gpu_residual_norm=4e-14,
+        gpu_max_residual_abs=9e-15,
+        max_result_abs_error=7e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
+    direct_sparse_cpu = _row(
+        "BM_NewtonDirectSparseSolveCpu/1024",
+        rows=1024,
+        bodies=4,
+        dofs=24,
+        blocks=4,
+        block_entries=144,
+        active_dofs=24,
+        regularization=0.25,
+        factorized=1,
+        min_factor_pivot=4.0,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.75,
+        residual_norm=2e-14,
+        max_residual_abs=7e-15,
+        max_result_abs_error=0.0,
+    )
+    direct_sparse_gpu = _row(
+        "BM_NewtonDirectSparseSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=4,
+        dofs=24,
+        blocks=4,
+        block_entries=144,
+        active_dofs=24,
+        regularization=0.25,
+        factorized=1,
+        gpu_rows=1024,
+        gpu_bodies=4,
+        gpu_dofs=24,
+        gpu_blocks=4,
+        gpu_active_dofs=24,
+        gpu_regularization=0.25,
+        gpu_min_factor_pivot=4.0,
+        gpu_step_norm=0.75,
+        gpu_residual_norm=2e-14,
+        gpu_max_residual_abs=7e-15,
+        max_result_abs_error=8e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        dense_matrix_kernel_ns=4.0,
+        factor_solve_kernel_ns=5.0,
+        final_residual_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    scene_direct_sparse_cpu = _row(
+        "BM_NewtonSceneRuntimeDirectSparseSolveCpu/1024",
+        rows=8,
+        bodies=8,
+        dofs=48,
+        blocks=6,
+        block_entries=216,
+        active_dofs=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        selected_scene_nodes=8,
+        selected_scene_edge_pairs=6,
+        regularization=0.25,
+        factorized=1,
+        min_factor_pivot=3.5,
+        max_diagonal=9.5,
+        max_gradient_abs=1.25,
+        step_norm=0.65,
+        residual_norm=3e-14,
+        max_residual_abs=8e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_direct_sparse_gpu = _row(
+        "BM_NewtonSceneRuntimeDirectSparseSolveCuda/1024",
+        real_time=4.5,
+        cpu_time=4.5,
+        rows=8,
+        bodies=8,
+        dofs=48,
+        blocks=6,
+        block_entries=216,
+        active_dofs=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        selected_scene_nodes=8,
+        selected_scene_edge_pairs=6,
+        regularization=0.25,
+        factorized=1,
+        gpu_rows=8,
+        gpu_bodies=8,
+        gpu_dofs=48,
+        gpu_blocks=6,
+        gpu_active_dofs=48,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_selected_scene_nodes=8,
+        gpu_selected_scene_edge_pairs=6,
+        gpu_regularization=0.25,
+        gpu_min_factor_pivot=3.5,
+        gpu_step_norm=0.65,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=8e-15,
+        max_result_abs_error=9e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        dense_matrix_kernel_ns=4.0,
+        factor_solve_kernel_ns=5.0,
+        final_residual_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    equality_cpu = _row(
+        "BM_NewtonEqualityReducedSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        reduction_entries=768,
+        reduced_dofs=384,
+        active_reduced_dofs=384,
+        max_diagonal=12.0,
+        max_gradient_abs=1.25,
+        step_norm=0.5,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    equality_gpu = _row(
+        "BM_NewtonEqualityReducedSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        reduction_entries=768,
+        reduced_dofs=384,
+        active_reduced_dofs=384,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_reduction_entries=768,
+        gpu_reduced_dofs=384,
+        gpu_active_reduced_dofs=384,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=2e-14,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        reduction_kernel_ns=4.0,
+        solve_kernel_ns=5.0,
+        expansion_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
+    scene_equality_cpu = _row(
+        "BM_NewtonSceneRuntimeEqualityReducedSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        reduction_entries=1920,
+        reduced_dofs=960,
+        active_reduced_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=13.0,
+        max_gradient_abs=1.5,
+        step_norm=0.75,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    scene_equality_gpu = _row(
+        "BM_NewtonSceneRuntimeEqualityReducedSolveCuda/1024",
+        real_time=8.0,
+        cpu_time=8.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        reduction_entries=1920,
+        reduced_dofs=960,
+        active_reduced_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_reduction_entries=1920,
+        gpu_reduced_dofs=960,
+        gpu_active_reduced_dofs=960,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_step_norm=0.75,
+        gpu_residual_norm=4e-14,
+        max_result_abs_error=3e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        reduction_kernel_ns=4.0,
+        solve_kernel_ns=5.0,
+        expansion_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     gpu.update(overrides)
-    return {"benchmarks": [cpu, gpu, off_diagonal_cpu, off_diagonal_gpu]}
+    return {
+        "benchmarks": [
+            cpu,
+            gpu,
+            scene_assembly_cpu,
+            scene_assembly_gpu,
+            off_diagonal_cpu,
+            off_diagonal_gpu,
+            scene_off_diagonal_cpu,
+            scene_off_diagonal_gpu,
+            scene_sparse_graph_cpu,
+            scene_sparse_graph_gpu,
+            scene_sparse_graph_unique_cpu,
+            scene_sparse_graph_unique_gpu,
+            scene_nonlinear_equality_cpu,
+            scene_nonlinear_equality_gpu,
+            scene_nonlinear_equality_solve_cpu,
+            scene_nonlinear_equality_solve_gpu,
+            scene_nonlinear_equality_convergence_cpu,
+            scene_nonlinear_equality_convergence_gpu,
+            sparse_residual_cpu,
+            sparse_residual_gpu,
+            scene_sparse_residual_cpu,
+            scene_sparse_residual_gpu,
+            sparse_jacobi_cpu,
+            sparse_jacobi_gpu,
+            scene_sparse_jacobi_cpu,
+            scene_sparse_jacobi_gpu,
+            sparse_cg_cpu,
+            sparse_cg_gpu,
+            scene_sparse_cg_cpu,
+            scene_sparse_cg_gpu,
+            direct_sparse_cpu,
+            direct_sparse_gpu,
+            scene_direct_sparse_cpu,
+            scene_direct_sparse_gpu,
+            equality_cpu,
+            equality_gpu,
+            scene_equality_cpu,
+            scene_equality_gpu,
+        ]
+    }
 
 
 def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
@@ -115,13 +1053,322 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 1e-12
-    assert row["residual_norm"] == 1e-14
+    assert row["max_result_abs_error"] == 9e-12
+    assert row["residual_norm"] == 4e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
+    scene = row["scene_runtime_diagonal_assembly_solve"]
+    assert scene["row_count"] == 320
+    assert scene["nominal_row_count"] == 1024
+    assert scene["scene_body_count"] == 1
+    assert scene["scene_node_count"] == 320
+    assert scene["scene_triangle_count"] == 96
+    assert scene["body_count"] == 320
+    assert scene["dof_count"] == 1920
+    assert scene["active_dof_count"] == 1920
+    assert scene["max_result_abs_error"] == 2e-12
+    assert scene["residual_norm"] == 1e-14
     assert row["off_diagonal_sparse_block_assembly"]["pair_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["active_block_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["max_result_abs_error"] == 1e-12
+    scene_off_diagonal = row["scene_runtime_off_diagonal_sparse_block_assembly"]
+    assert scene_off_diagonal["row_count"] == 288
+    assert scene_off_diagonal["nominal_row_count"] == 1024
+    assert scene_off_diagonal["scene_body_count"] == 1
+    assert scene_off_diagonal["scene_node_count"] == 320
+    assert scene_off_diagonal["scene_triangle_count"] == 96
+    assert scene_off_diagonal["scene_edge_pair_count"] == 288
+    assert scene_off_diagonal["pair_count"] == 288
+    assert scene_off_diagonal["block_entry_count"] == 10368
+    assert scene_off_diagonal["active_block_count"] == 288
+    assert scene_off_diagonal["max_result_abs_error"] == 2e-12
+    scene_sparse_graph = row["scene_runtime_sparse_graph_assembly"]
+    assert scene_sparse_graph["row_count"] == 320
+    assert scene_sparse_graph["nominal_row_count"] == 1024
+    assert scene_sparse_graph["scene_body_count"] == 1
+    assert scene_sparse_graph["scene_node_count"] == 320
+    assert scene_sparse_graph["scene_triangle_count"] == 96
+    assert scene_sparse_graph["scene_edge_pair_count"] == 288
+    assert scene_sparse_graph["body_count"] == 320
+    assert scene_sparse_graph["dof_count"] == 1920
+    assert scene_sparse_graph["block_count"] == 288
+    assert scene_sparse_graph["block_entry_count"] == 10368
+    assert scene_sparse_graph["max_result_abs_error"] == 8e-12
+    assert scene_sparse_graph["max_diagonal"] == 10.0
+    assert scene_sparse_graph["max_gradient_abs"] == 1.0
+    assert scene_sparse_graph["max_block_abs"] == 0.25
+    assert scene_sparse_graph["timing_ns"]["incidence"] == 3.0
+    assert scene_sparse_graph["timing_ns"]["diagonal"] == 4.0
+    assert scene_sparse_graph["timing_ns"]["sparse_blocks"] == 5.0
+    scene_sparse_graph_unique = row["scene_runtime_sparse_graph_unique_assembly"]
+    assert scene_sparse_graph_unique["row_count"] == 320
+    assert scene_sparse_graph_unique["nominal_row_count"] == 1024
+    assert scene_sparse_graph_unique["scene_body_count"] == 1
+    assert scene_sparse_graph_unique["scene_node_count"] == 320
+    assert scene_sparse_graph_unique["scene_triangle_count"] == 96
+    assert scene_sparse_graph_unique["edge_slot_count"] == 288
+    assert scene_sparse_graph_unique["unique_edge_count"] == 240
+    assert scene_sparse_graph_unique["duplicate_edge_slot_count"] == 48
+    assert scene_sparse_graph_unique["body_count"] == 320
+    assert scene_sparse_graph_unique["dof_count"] == 1920
+    assert scene_sparse_graph_unique["block_count"] == 240
+    assert scene_sparse_graph_unique["block_entry_count"] == 8640
+    assert scene_sparse_graph_unique["max_result_abs_error"] == 5e-12
+    assert scene_sparse_graph_unique["max_diagonal"] == 10.0
+    assert scene_sparse_graph_unique["max_gradient_abs"] == 1.0
+    assert scene_sparse_graph_unique["max_block_abs"] == 0.25
+    assert scene_sparse_graph_unique["timing_ns"]["incidence"] == 3.0
+    assert scene_sparse_graph_unique["timing_ns"]["diagonal"] == 4.0
+    assert scene_sparse_graph_unique["timing_ns"]["edge_mark"] == 5.0
+    assert scene_sparse_graph_unique["timing_ns"]["sparse_blocks"] == 6.0
+    scene_nonlinear_equality = row["scene_runtime_nonlinear_equality_assembly"]
+    assert scene_nonlinear_equality["row_count"] == 576
+    assert scene_nonlinear_equality["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality["scene_body_count"] == 1
+    assert scene_nonlinear_equality["scene_node_count"] == 320
+    assert scene_nonlinear_equality["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality["body_count"] == 320
+    assert scene_nonlinear_equality["dof_count"] == 1920
+    assert scene_nonlinear_equality["constraint_count"] == 288
+    assert scene_nonlinear_equality["block_count"] == 288
+    assert scene_nonlinear_equality["block_entry_count"] == 10368
+    assert scene_nonlinear_equality["max_constraint_residual_abs"] == 0.05
+    assert scene_nonlinear_equality["max_result_abs_error"] == 9e-12
+    assert scene_nonlinear_equality["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality["timing_ns"]["constraints"] == 3.0
+    scene_nonlinear_equality_solve = row["scene_runtime_nonlinear_equality_solve"]
+    assert scene_nonlinear_equality_solve["row_count"] == 576
+    assert scene_nonlinear_equality_solve["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality_solve["scene_body_count"] == 1
+    assert scene_nonlinear_equality_solve["scene_node_count"] == 320
+    assert scene_nonlinear_equality_solve["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality_solve["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality_solve["body_count"] == 320
+    assert scene_nonlinear_equality_solve["dof_count"] == 1920
+    assert scene_nonlinear_equality_solve["constraint_count"] == 288
+    assert scene_nonlinear_equality_solve["block_count"] == 288
+    assert scene_nonlinear_equality_solve["block_entry_count"] == 10368
+    assert scene_nonlinear_equality_solve["active_dof_count"] == 960
+    assert scene_nonlinear_equality_solve["regularization"] == 0.05
+    assert scene_nonlinear_equality_solve["max_constraint_residual_abs"] == 0.05
+    assert (
+        scene_nonlinear_equality_solve["max_post_solve_linearized_residual_abs"] == 0.01
+    )
+    assert scene_nonlinear_equality_solve["max_result_abs_error"] == 7e-12
+    assert scene_nonlinear_equality_solve["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality_solve["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality_solve["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality_solve["step_norm"] == 2.5
+    assert scene_nonlinear_equality_solve["timing_ns"]["solve"] == 3.0
+    assert scene_nonlinear_equality_solve["timing_ns"]["post_residual"] == 4.0
+    scene_nonlinear_equality_convergence = row[
+        "scene_runtime_nonlinear_equality_convergence"
+    ]
+    assert scene_nonlinear_equality_convergence["row_count"] == 576
+    assert scene_nonlinear_equality_convergence["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality_convergence["scene_body_count"] == 1
+    assert scene_nonlinear_equality_convergence["scene_node_count"] == 320
+    assert scene_nonlinear_equality_convergence["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality_convergence["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality_convergence["body_count"] == 320
+    assert scene_nonlinear_equality_convergence["dof_count"] == 1920
+    assert scene_nonlinear_equality_convergence["constraint_count"] == 288
+    assert scene_nonlinear_equality_convergence["block_count"] == 288
+    assert scene_nonlinear_equality_convergence["block_entry_count"] == 10368
+    assert scene_nonlinear_equality_convergence["active_dof_count"] == 960
+    assert scene_nonlinear_equality_convergence["regularization"] == 0.05
+    assert scene_nonlinear_equality_convergence["residual_tolerance"] == 1e-5
+    assert scene_nonlinear_equality_convergence["max_iteration_count"] == 8
+    assert scene_nonlinear_equality_convergence["completed_iteration_count"] == 5
+    assert scene_nonlinear_equality_convergence["converged"] is True
+    assert (
+        scene_nonlinear_equality_convergence["initial_max_constraint_residual_abs"]
+        == 0.05
+    )
+    assert (
+        scene_nonlinear_equality_convergence["final_max_constraint_residual_abs"]
+        == 5e-6
+    )
+    assert scene_nonlinear_equality_convergence["max_result_abs_error"] == 8e-12
+    assert scene_nonlinear_equality_convergence["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality_convergence["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality_convergence["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality_convergence["step_norm"] == 2.75
+    assert scene_nonlinear_equality_convergence["timing_ns"]["iterations"] == 3.0
+    assert scene_nonlinear_equality_convergence["timing_ns"]["residuals"] == 4.0
+    assert (
+        scene_nonlinear_equality_convergence["timing_ns"]["convergence_readback"] == 5.0
+    )
+    assert scene_nonlinear_equality_convergence["timing_ns"]["final_assembly"] == 6.0
+    sparse = row["sparse_block_residual"]
+    assert sparse["body_count"] == 128
+    assert sparse["dof_count"] == 768
+    assert sparse["block_count"] == 128
+    assert sparse["block_entry_count"] == 4608
+    assert sparse["active_dof_count"] == 768
+    assert sparse["max_result_abs_error"] == 3e-12
+    assert sparse["output_norm"] == 4.0
+    assert sparse["timing_ns"]["gradient_seed"] == 4.0
+    assert sparse["timing_ns"]["off_diagonal"] == 6.0
+    scene_sparse = row["scene_runtime_sparse_block_residual"]
+    assert scene_sparse["row_count"] == 320
+    assert scene_sparse["nominal_row_count"] == 1024
+    assert scene_sparse["scene_body_count"] == 1
+    assert scene_sparse["scene_node_count"] == 320
+    assert scene_sparse["scene_triangle_count"] == 96
+    assert scene_sparse["scene_edge_pair_count"] == 288
+    assert scene_sparse["body_count"] == 320
+    assert scene_sparse["dof_count"] == 1920
+    assert scene_sparse["block_count"] == 288
+    assert scene_sparse["block_entry_count"] == 10368
+    assert scene_sparse["active_dof_count"] == 1920
+    assert scene_sparse["max_result_abs_error"] == 6e-12
+    assert scene_sparse["output_norm"] == 9.0
+    assert scene_sparse["max_output_abs"] == 1.25
+    assert scene_sparse["timing_ns"]["gradient_seed"] == 4.0
+    assert scene_sparse["timing_ns"]["off_diagonal"] == 6.0
+    jacobi = row["sparse_block_jacobi_solve"]
+    assert jacobi["body_count"] == 128
+    assert jacobi["dof_count"] == 768
+    assert jacobi["block_count"] == 128
+    assert jacobi["block_entry_count"] == 4608
+    assert jacobi["iteration_count"] == 16
+    assert jacobi["active_dof_count"] == 768
+    assert jacobi["max_result_abs_error"] == 4e-12
+    assert jacobi["residual_norm"] == 3e-14
+    assert jacobi["max_residual_abs"] == 1e-14
+    assert jacobi["step_norm"] == 0.5
+    assert jacobi["timing_ns"]["iterations"] == 4.0
+    assert jacobi["timing_ns"]["final_residual"] == 5.0
+    scene_jacobi = row["scene_runtime_sparse_jacobi_solve"]
+    assert scene_jacobi["row_count"] == 320
+    assert scene_jacobi["nominal_row_count"] == 1024
+    assert scene_jacobi["scene_body_count"] == 1
+    assert scene_jacobi["scene_node_count"] == 320
+    assert scene_jacobi["scene_triangle_count"] == 96
+    assert scene_jacobi["scene_edge_pair_count"] == 288
+    assert scene_jacobi["body_count"] == 320
+    assert scene_jacobi["dof_count"] == 1920
+    assert scene_jacobi["block_count"] == 288
+    assert scene_jacobi["block_entry_count"] == 10368
+    assert scene_jacobi["iteration_count"] == 16
+    assert scene_jacobi["active_dof_count"] == 1920
+    assert scene_jacobi["max_result_abs_error"] == 6e-12
+    assert scene_jacobi["residual_norm"] == 3e-14
+    assert scene_jacobi["max_residual_abs"] == 7e-15
+    assert scene_jacobi["step_norm"] == 2.5
+    assert scene_jacobi["timing_ns"]["iterations"] == 4.0
+    assert scene_jacobi["timing_ns"]["final_residual"] == 5.0
+    cg = row["sparse_block_cg_solve"]
+    assert cg["body_count"] == 128
+    assert cg["dof_count"] == 768
+    assert cg["block_count"] == 128
+    assert cg["block_entry_count"] == 4608
+    assert cg["max_iteration_count"] == 32
+    assert cg["completed_iteration_count"] == 12
+    assert cg["active_dof_count"] == 768
+    assert cg["converged"] is True
+    assert cg["residual_tolerance"] == 1e-12
+    assert cg["initial_residual_norm"] == 14.0
+    assert cg["max_result_abs_error"] == 5e-12
+    assert cg["residual_norm"] == 2e-14
+    assert cg["max_residual_abs"] == 8e-15
+    assert cg["step_norm"] == 0.5
+    assert cg["timing_ns"]["iterations"] == 4.0
+    assert cg["timing_ns"]["final_residual"] == 5.0
+    scene_cg = row["scene_runtime_sparse_cg_solve"]
+    assert scene_cg["row_count"] == 320
+    assert scene_cg["nominal_row_count"] == 1024
+    assert scene_cg["scene_body_count"] == 1
+    assert scene_cg["scene_node_count"] == 320
+    assert scene_cg["scene_triangle_count"] == 96
+    assert scene_cg["scene_edge_pair_count"] == 288
+    assert scene_cg["body_count"] == 320
+    assert scene_cg["dof_count"] == 1920
+    assert scene_cg["block_count"] == 288
+    assert scene_cg["block_entry_count"] == 10368
+    assert scene_cg["max_iteration_count"] == 32
+    assert scene_cg["completed_iteration_count"] == 13
+    assert scene_cg["active_dof_count"] == 1920
+    assert scene_cg["converged"] is True
+    assert scene_cg["residual_tolerance"] == 1e-12
+    assert scene_cg["initial_residual_norm"] == 18.0
+    assert scene_cg["max_result_abs_error"] == 7e-12
+    assert scene_cg["residual_norm"] == 4e-14
+    assert scene_cg["max_residual_abs"] == 9e-15
+    assert scene_cg["step_norm"] == 2.75
+    assert scene_cg["timing_ns"]["iterations"] == 4.0
+    assert scene_cg["timing_ns"]["final_residual"] == 5.0
+    direct = row["direct_sparse_factor_solve"]
+    assert direct["row_count"] == 1024
+    assert direct["body_count"] == 4
+    assert direct["dof_count"] == 24
+    assert direct["max_supported_dof_count"] == 48
+    assert direct["block_count"] == 4
+    assert direct["block_entry_count"] == 144
+    assert direct["active_dof_count"] == 24
+    assert direct["regularization"] == 0.25
+    assert direct["factorized"] is True
+    assert direct["minimum_factor_pivot"] == 4.0
+    assert direct["max_result_abs_error"] == 8e-12
+    assert direct["residual_norm"] == 2e-14
+    assert direct["max_residual_abs"] == 7e-15
+    assert direct["step_norm"] == 0.75
+    assert direct["timing_ns"]["dense_matrix"] == 4.0
+    assert direct["timing_ns"]["factor_solve"] == 5.0
+    assert direct["timing_ns"]["final_residual"] == 6.0
+    scene_direct = row["scene_runtime_direct_sparse_factor_solve"]
+    assert scene_direct["row_count"] == 8
+    assert scene_direct["nominal_row_count"] == 1024
+    assert scene_direct["scene_body_count"] == 1
+    assert scene_direct["scene_node_count"] == 320
+    assert scene_direct["scene_triangle_count"] == 96
+    assert scene_direct["selected_scene_node_count"] == 8
+    assert scene_direct["selected_scene_edge_pair_count"] == 6
+    assert scene_direct["body_count"] == 8
+    assert scene_direct["dof_count"] == 48
+    assert scene_direct["max_supported_dof_count"] == 48
+    assert scene_direct["block_count"] == 6
+    assert scene_direct["block_entry_count"] == 216
+    assert scene_direct["active_dof_count"] == 48
+    assert scene_direct["regularization"] == 0.25
+    assert scene_direct["factorized"] is True
+    assert scene_direct["minimum_factor_pivot"] == 3.5
+    assert scene_direct["max_result_abs_error"] == 9e-12
+    assert scene_direct["residual_norm"] == 3e-14
+    assert scene_direct["max_residual_abs"] == 8e-15
+    assert scene_direct["step_norm"] == 0.65
+    assert scene_direct["timing_ns"]["dense_matrix"] == 4.0
+    assert scene_direct["timing_ns"]["factor_solve"] == 5.0
+    assert scene_direct["timing_ns"]["final_residual"] == 6.0
+    equality = row["equality_reduced_diagonal_solve"]
+    assert equality["body_count"] == 128
+    assert equality["full_dof_count"] == 768
+    assert equality["reduction_entry_count"] == 768
+    assert equality["reduced_dof_count"] == 384
+    assert equality["active_reduced_dof_count"] == 384
+    assert equality["max_result_abs_error"] == 2e-12
+    assert equality["residual_norm"] == 2e-14
+    assert equality["timing_ns"]["reduction"] == 4.0
+    assert equality["timing_ns"]["expansion"] == 6.0
+    scene_equality = row["scene_runtime_equality_reduced_diagonal_solve"]
+    assert scene_equality["row_count"] == 320
+    assert scene_equality["nominal_row_count"] == 1024
+    assert scene_equality["scene_body_count"] == 1
+    assert scene_equality["scene_node_count"] == 320
+    assert scene_equality["scene_triangle_count"] == 96
+    assert scene_equality["body_count"] == 320
+    assert scene_equality["full_dof_count"] == 1920
+    assert scene_equality["reduction_entry_count"] == 1920
+    assert scene_equality["reduced_dof_count"] == 960
+    assert scene_equality["active_reduced_dof_count"] == 960
+    assert scene_equality["max_result_abs_error"] == 3e-12
+    assert scene_equality["residual_norm"] == 4e-14
+    assert scene_equality["timing_ns"]["reduction"] == 4.0
+    assert scene_equality["timing_ns"]["expansion"] == 6.0
 
 
 def test_newton_assembly_solve_packet_rejects_accuracy_failure() -> None:
@@ -156,6 +1403,30 @@ def test_newton_assembly_solve_packet_rejects_residual_failure() -> None:
         assert "residual norm" in str(exc)
     else:
         raise AssertionError("expected residual failure")
+
+
+def test_newton_assembly_solve_packet_rejects_scene_direct_sparse_dofs() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    for row in data["benchmarks"]:
+        if row["name"] == "BM_NewtonSceneRuntimeDirectSparseSolveCpu/1024":
+            row["dofs"] = 42
+        if row["name"] == "BM_NewtonSceneRuntimeDirectSparseSolveCuda/1024":
+            row["dofs"] = 42
+            row["gpu_dofs"] = 42
+
+    try:
+        module.make_packet(
+            data,
+            row_count=1024,
+            tolerance=1e-10,
+            residual_tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.NewtonAssemblySolvePacketError as exc:
+        assert "six dofs per selected node" in str(exc)
+    else:
+        raise AssertionError("expected scene direct sparse shape failure")
 
 
 def test_newton_assembly_solve_packet_records_speedup_gate_miss() -> None:

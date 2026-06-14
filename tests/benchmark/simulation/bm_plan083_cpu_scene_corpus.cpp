@@ -83,11 +83,17 @@ const Eigen::Vector3d kUmbrellaHubHalfExtents(0.05, 0.05, 0.04);
 const Eigen::Vector3d kUmbrellaRibHalfExtents(0.18, 0.025, 0.025);
 const Eigen::Vector3d kLyingFlatGroundHalfExtents(0.28, 0.18, 0.012);
 const Eigen::Vector3d kLyingFlatRodHalfExtents(0.14, 0.015, 0.015);
+const Eigen::Vector3d kLyingFlatStaticCcdWitnessHalfExtents(
+    0.010, 0.020, 0.020);
+const Eigen::Vector3d kLyingFlatMovingCcdWitnessHalfExtents(
+    0.010, 0.020, 0.020);
 constexpr double kLyingFlatRingRadius = 0.028;
 constexpr std::size_t kLyingFlatGridColumns = 6;
 constexpr std::size_t kLyingFlatGridRows = 4;
 constexpr double kLyingFlatGridSpacing = 0.055;
 const Eigen::Vector3d kCandyShellHalfExtents(0.24, 0.16, 0.025);
+const Eigen::Vector3d kCandyStaticCcdWitnessHalfExtents(0.010, 0.040, 0.040);
+const Eigen::Vector3d kCandyMovingCcdWitnessHalfExtents(0.010, 0.040, 0.040);
 constexpr std::size_t kCandyGridColumns = 5;
 constexpr std::size_t kCandyGridRows = 5;
 constexpr double kCandyGridSpacing = 0.055;
@@ -190,12 +196,137 @@ std::vector<sx::DeformableSurfaceTriangle> makeGridSurfaceTriangles(
   return triangles;
 }
 
+sx::DeformableBodyOptions makePlan083SingleNodeBodyOptions(
+    const Eigen::Vector3d& position, const Eigen::Vector3d& velocity)
+{
+  sx::DeformableBodyOptions options;
+  options.positions = {position};
+  options.velocities = {velocity};
+  options.masses = {1.0};
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083SurfaceCrossingBodyOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d(0.0, 0.0, -20.0)};
+  options.masses = {1.0, 1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083InterBodyMovingPointOptions()
+{
+  auto options = makePlan083SurfaceCrossingBodyOptions();
+  options.positions[0].z() = 3.0;
+  options.positions[1].z() = 3.0;
+  options.positions[2].z() = 3.0;
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083StationaryTriangleObstacleOptions()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(-1.0, -1.0, 0.0),
+         Eigen::Vector3d(1.0, -1.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+  options.masses = {1.0, 1.0, 1.0};
+  options.fixedNodes = {0, 1, 2};
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  return options;
+}
+
+sx::DeformableBodyOptions transformPlan083InterBodyWitnessOptions(
+    sx::DeformableBodyOptions options,
+    const Eigen::Vector3d& offset,
+    const double scale)
+{
+  for (auto& position : options.positions) {
+    position = offset + scale * position;
+  }
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083LyingFlatInterBodyMovingPointOptions(
+    const Eigen::Vector3d& offset)
+{
+  auto options = transformPlan083InterBodyWitnessOptions(
+      makePlan083InterBodyMovingPointOptions(), offset, 0.04);
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.velocities[3] = Eigen::Vector3d(0.0, 0.0, -20.0);
+  options.masses.assign(options.positions.size(), 0.02);
+  return options;
+}
+
+sx::DeformableBodyOptions makePlan083LyingFlatInterBodyObstacleOptions(
+    const Eigen::Vector3d& offset)
+{
+  auto options = transformPlan083InterBodyWitnessOptions(
+      makePlan083StationaryTriangleObstacleOptions(), offset, 0.04);
+  options.masses.assign(options.positions.size(), 0.02);
+  return options;
+}
+
+sx::RigidBody addPlan083StaticSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents)
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = position;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  return body;
+}
+
+sx::RigidBody addPlan083MovingSurfaceCcdBox(
+    sx::World& world,
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector3d& linearVelocity)
+{
+  sx::RigidBodyOptions options;
+  options.isStatic = false;
+  options.position = position;
+  auto body = world.addRigidBody(name, options);
+  body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
+  body.setDeformableSurfaceCcdObstacle(true);
+  body.setLinearVelocity(linearVelocity);
+  return body;
+}
+
 struct BodySnapshot
 {
   sx::RigidBody body;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+};
+
+struct DeformableBodySnapshot
+{
+  sx::DeformableBody body;
+  std::vector<Eigen::Vector3d> positions;
+  std::vector<Eigen::Vector3d> velocities;
 };
 
 void snapshotBody(
@@ -206,6 +337,21 @@ void snapshotBody(
        body.getTransform(),
        body.getLinearVelocity(),
        body.getAngularVelocity()});
+}
+
+void snapshotDeformableBody(
+    std::vector<DeformableBodySnapshot>& snapshots,
+    const sx::DeformableBody& body)
+{
+  DeformableBodySnapshot snapshot;
+  snapshot.body = body;
+  snapshot.positions.reserve(body.getNodeCount());
+  snapshot.velocities.reserve(body.getNodeCount());
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    snapshot.positions.push_back(body.getPosition(node));
+    snapshot.velocities.push_back(body.getVelocity(node));
+  }
+  snapshots.push_back(std::move(snapshot));
 }
 
 struct HangingBridgeFixture
@@ -525,6 +671,10 @@ struct LyingFlatFixture
   {
     world.setTimeStep(0.004);
     world.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+    const double halfWidth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridColumns - 1u);
+    const double halfDepth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridRows - 1u);
 
     addObstacle(
         "plan083_lying_flat_ground",
@@ -542,12 +692,18 @@ struct LyingFlatFixture
         "plan083_lying_flat_right_ring",
         Eigen::Vector3d(0.09, -0.045, 0.042),
         sx::CollisionShape::makeSphere(kLyingFlatRingRadius));
+    addObstacle(
+        "plan083_lying_flat_static_ccd_witness",
+        Eigen::Vector3d(-0.040, -halfDepth, 0.078),
+        sx::CollisionShape::makeBox(kLyingFlatStaticCcdWitnessHalfExtents),
+        false);
+    movingCcdWitness = addMovingObstacle(
+        "plan083_lying_flat_moving_ccd_witness",
+        Eigen::Vector3d(0.040, -halfDepth, 0.078),
+        sx::CollisionShape::makeBox(kLyingFlatMovingCcdWitnessHalfExtents),
+        Eigen::Vector3d(-20.0, 0.0, 0.0));
 
     sx::DeformableBodyOptions clothOptions;
-    const double halfWidth = 0.5 * kLyingFlatGridSpacing
-                             * static_cast<double>(kLyingFlatGridColumns - 1u);
-    const double halfDepth = 0.5 * kLyingFlatGridSpacing
-                             * static_cast<double>(kLyingFlatGridRows - 1u);
     for (std::size_t row = 0; row < kLyingFlatGridRows; ++row) {
       for (std::size_t col = 0; col < kLyingFlatGridColumns; ++col) {
         const double x
@@ -557,8 +713,14 @@ struct LyingFlatFixture
         const double stagger = (col + row) % 2u == 0u ? 0.0 : 0.003;
         const double lateral
             = col < kLyingFlatGridColumns / 2u ? 0.025 : -0.025;
+        const bool drivesStaticCcdWitness = row == 0u && col == 0u;
+        const bool drivesMovingCcdWitness = row == 0u && col == 5u;
+        const Eigen::Vector3d velocity
+            = drivesStaticCcdWitness   ? Eigen::Vector3d(40.0, 0.0, 0.0)
+              : drivesMovingCcdWitness ? Eigen::Vector3d(-10.0, 0.0, 0.0)
+                                       : Eigen::Vector3d(lateral, 0.0, -0.02);
         clothOptions.positions.emplace_back(x, y, 0.078 + stagger);
-        clothOptions.velocities.emplace_back(lateral, 0.0, -0.02);
+        clothOptions.velocities.push_back(velocity);
         clothOptions.masses.push_back(0.02);
       }
     }
@@ -575,13 +737,24 @@ struct LyingFlatFixture
     cloth.emplace(world.addDeformableBody(
         "plan083_lying_flat_deformable_cloth", clothOptions));
 
+    const Eigen::Vector3d interBodyOffset(0.0, halfDepth + 0.20, 0.10);
+    interBodyMoving.emplace(world.addDeformableBody(
+        "plan083_lying_flat_inter_body_moving_witness",
+        makePlan083LyingFlatInterBodyMovingPointOptions(interBodyOffset)));
+    interBodyObstacle.emplace(world.addDeformableBody(
+        "plan083_lying_flat_inter_body_obstacle_witness",
+        makePlan083LyingFlatInterBodyObstacleOptions(interBodyOffset)));
+    snapshotDeformableBody(deformableSnapshots, *interBodyMoving);
+    snapshotDeformableBody(deformableSnapshots, *interBodyObstacle);
+
     world.enterSimulationMode();
   }
 
   sx::RigidBody addObstacle(
       const std::string& name,
       const Eigen::Vector3d& position,
-      const sx::CollisionShape& shape)
+      const sx::CollisionShape& shape,
+      const bool barrierOnly = true)
   {
     sx::RigidBodyOptions options;
     options.isStatic = true;
@@ -589,14 +762,44 @@ struct LyingFlatFixture
     sx::RigidBody body = world.addRigidBody(name, options);
     body.setCollisionShape(shape);
     body.setDeformableSurfaceCcdObstacle(true);
-    body.setDeformableObstacleBarrierOnly(true);
+    body.setDeformableObstacleBarrierOnly(barrierOnly);
     obstacles.push_back(body);
+    return body;
+  }
+
+  sx::RigidBody addMovingObstacle(
+      const std::string& name,
+      const Eigen::Vector3d& position,
+      const sx::CollisionShape& shape,
+      const Eigen::Vector3d& linearVelocity)
+  {
+    sx::RigidBodyOptions options;
+    options.mass = 0.05;
+    options.position = position;
+    options.linearVelocity = linearVelocity;
+    sx::RigidBody body = world.addRigidBody(name, options);
+    body.setCollisionShape(shape);
+    body.setDeformableSurfaceCcdObstacle(true);
+    body.setDeformableObstacleBarrierOnly(false);
+    obstacles.push_back(body);
+    snapshotBody(obstacleSnapshots, body);
     return body;
   }
 
   void reset()
   {
     world.setTime(0.0);
+    for (auto& snapshot : obstacleSnapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+    for (auto& snapshot : deformableSnapshots) {
+      for (std::size_t node = 0; node < snapshot.positions.size(); ++node) {
+        snapshot.body.setPosition(node, snapshot.positions[node]);
+        snapshot.body.setVelocity(node, snapshot.velocities[node]);
+      }
+    }
     for (std::size_t node = 0; node < initialPositions.size(); ++node) {
       cloth->setPosition(node, initialPositions[node]);
       cloth->setVelocity(node, initialVelocities[node]);
@@ -636,9 +839,26 @@ struct LyingFlatFixture
     return maxY - minY;
   }
 
+  std::size_t totalSurfaceTriangleCount() const
+  {
+    std::size_t count = cloth->getSurfaceTriangleCount();
+    if (interBodyMoving.has_value()) {
+      count += interBodyMoving->getSurfaceTriangleCount();
+    }
+    if (interBodyObstacle.has_value()) {
+      count += interBodyObstacle->getSurfaceTriangleCount();
+    }
+    return count;
+  }
+
   sx::World world;
   std::vector<sx::RigidBody> obstacles;
+  std::vector<BodySnapshot> obstacleSnapshots;
+  std::vector<DeformableBodySnapshot> deformableSnapshots;
+  std::optional<sx::RigidBody> movingCcdWitness;
   std::optional<sx::DeformableBody> cloth;
+  std::optional<sx::DeformableBody> interBodyMoving;
+  std::optional<sx::DeformableBody> interBodyObstacle;
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
 };
@@ -690,16 +910,53 @@ struct CandyFixture
     cloth.emplace(world.addDeformableBody(
         "plan083_candy_deformable_cloth", clothOptions));
 
+    staticCcdWitness.emplace(addPlan083StaticSurfaceCcdBox(
+        world,
+        "plan083_candy_static_ccd_witness",
+        Eigen::Vector3d(0.0, 0.36, 0.075),
+        kCandyStaticCcdWitnessHalfExtents));
+
+    staticCcdPointInitialPosition = Eigen::Vector3d(-0.030, 0.36, 0.075);
+    staticCcdPointInitialVelocity = Eigen::Vector3d(20.0, 0.0, 0.0);
+    staticCcdPoint.emplace(world.addDeformableBody(
+        "plan083_candy_static_ccd_point",
+        makePlan083SingleNodeBodyOptions(
+            staticCcdPointInitialPosition, staticCcdPointInitialVelocity)));
+
+    movingCcdWitness.emplace(addPlan083MovingSurfaceCcdBox(
+        world,
+        "plan083_candy_moving_ccd_witness",
+        Eigen::Vector3d(0.040, 0.48, 0.075),
+        kCandyMovingCcdWitnessHalfExtents,
+        Eigen::Vector3d(-10.0, 0.0, 0.0)));
+    snapshotBody(obstacleSnapshots, *movingCcdWitness);
+
+    movingCcdPointInitialPosition = Eigen::Vector3d(-0.040, 0.48, 0.075);
+    movingCcdPointInitialVelocity = Eigen::Vector3d(30.0, 0.0, 0.0);
+    movingCcdPoint.emplace(world.addDeformableBody(
+        "plan083_candy_moving_ccd_point",
+        makePlan083SingleNodeBodyOptions(
+            movingCcdPointInitialPosition, movingCcdPointInitialVelocity)));
+
     world.enterSimulationMode();
   }
 
   void reset()
   {
     world.setTime(0.0);
+    for (auto& snapshot : obstacleSnapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
     for (std::size_t node = 0; node < initialPositions.size(); ++node) {
       cloth->setPosition(node, initialPositions[node]);
       cloth->setVelocity(node, initialVelocities[node]);
     }
+    staticCcdPoint->setPosition(0, staticCcdPointInitialPosition);
+    staticCcdPoint->setVelocity(0, staticCcdPointInitialVelocity);
+    movingCcdPoint->setPosition(0, movingCcdPointInitialPosition);
+    movingCcdPoint->setVelocity(0, movingCcdPointInitialVelocity);
   }
 
   double minClothHeight() const
@@ -725,7 +982,16 @@ struct CandyFixture
 
   sx::World world;
   std::optional<sx::RigidBody> shell;
+  std::optional<sx::RigidBody> staticCcdWitness;
+  std::optional<sx::RigidBody> movingCcdWitness;
+  std::vector<BodySnapshot> obstacleSnapshots;
   std::optional<sx::DeformableBody> cloth;
+  std::optional<sx::DeformableBody> staticCcdPoint;
+  std::optional<sx::DeformableBody> movingCcdPoint;
+  Eigen::Vector3d staticCcdPointInitialPosition = Eigen::Vector3d::Zero();
+  Eigen::Vector3d staticCcdPointInitialVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d movingCcdPointInitialPosition = Eigen::Vector3d::Zero();
+  Eigen::Vector3d movingCcdPointInitialVelocity = Eigen::Vector3d::Zero();
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
 };
@@ -1335,34 +1601,52 @@ struct AbdChainNetFixture
 
 } // namespace
 
+void recordDeformableRuntimeContactCounters(
+    benchmark::State& state,
+    const sx::DeformableSolverDiagnostics& diagnostics);
+
 //==============================================================================
 static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
     benchmark::State& state)
 {
-  HangingBridgeFixture fixture;
+  HangingBridgeFixture bridgeFixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
-    fixture.reset();
+    bridgeFixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
     state.ResumeTiming();
 
-    fixture.world.step(executor, pipeline);
+    bridgeFixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 2u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
-    benchmark::DoNotOptimize(fixture.traveler->getTranslation().data());
+    benchmark::DoNotOptimize(bridgeFixture.traveler->getTranslation().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1372,7 +1656,7 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["dynamic_body_count"]
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["fixed_joint_count"]
-      = static_cast<double>(fixture.boards.size());
+      = static_cast<double>(bridgeFixture.boards.size());
   state.counters["active_articulation_constraints"]
       = static_cast<double>(lastStats.activeArticulationConstraints);
   state.counters["solver_iterations"]
@@ -1380,8 +1664,21 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["failed_steps"] = static_cast<double>(failedSteps);
   state.counters["final_equality_residual_norm"]
       = lastStats.finalEqualityResidualNorm;
-  state.counters["traveler_height_m"] = fixture.traveler->getTranslation().z();
-  state.counters["max_board_sag_m"] = fixture.maxBoardSag();
+  state.counters["traveler_height_m"]
+      = bridgeFixture.traveler->getTranslation().z();
+  state.counters["max_board_sag_m"] = bridgeFixture.maxBoardSag();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_hanging_bridge_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
@@ -1391,13 +1688,16 @@ static void BM_Plan083CpuScene_pulley_system_reduced_world_step(
     benchmark::State& state)
 {
   PulleyFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -1405,17 +1705,28 @@ static void BM_Plan083CpuScene_pulley_system_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 8u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.wheel->getTransform().data());
     benchmark::DoNotOptimize(fixture.leftLoad->getTranslation().data());
     benchmark::DoNotOptimize(fixture.rightLoad->getTranslation().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1439,6 +1750,18 @@ static void BM_Plan083CpuScene_pulley_system_reduced_world_step(
   state.counters["load_height_difference_m"] = fixture.loadHeightDifference();
   state.counters["load_separation_m"] = fixture.loadSeparation();
   state.counters["wheel_spin_rad_s"] = fixture.wheel->getAngularVelocity().y();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_pulley_system_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
@@ -1448,13 +1771,16 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
     benchmark::State& state)
 {
   UmbrellaFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -1462,17 +1788,28 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 8u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.hub->getTransform().data());
     benchmark::DoNotOptimize(fixture.leftRib->getTranslation().data());
     benchmark::DoNotOptimize(fixture.rightRib->getTranslation().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1493,8 +1830,654 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
   state.counters["canopy_span_m"] = fixture.canopySpan();
   state.counters["hinge_angular_velocity_rad_s"]
       = fixture.hub->getAngularVelocity().y();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_umbrella_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+void recordDeformableRuntimeContactCounters(
+    benchmark::State& state, const sx::DeformableSolverDiagnostics& diagnostics)
+{
+  state.counters["line_search_trials"]
+      = static_cast<double>(diagnostics.lineSearchTrials);
+  state.counters["surface_contact_candidate_builds"]
+      = static_cast<double>(diagnostics.surfaceContactCandidateBuilds);
+  state.counters["surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(diagnostics.surfaceContactCandidatePairCapacity);
+  state.counters["surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(diagnostics.surfaceContactCandidateRejectedPairs);
+  state.counters["surface_contact_point_triangle_candidates"]
+      = static_cast<double>(diagnostics.surfaceContactPointTriangleCandidates);
+  state.counters["surface_contact_edge_edge_candidates"]
+      = static_cast<double>(diagnostics.surfaceContactEdgeEdgeCandidates);
+  state.counters["surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(diagnostics.surfaceContactCcdPointTriangleChecks);
+  state.counters["surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.surfaceContactCcdEdgeEdgeChecks);
+  state.counters["surface_contact_ccd_hits"]
+      = static_cast<double>(diagnostics.surfaceContactCcdHits);
+  state.counters["surface_contact_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.surfaceContactCcdLimitedSteps);
+  state.counters["surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.surfaceContactCcdZeroStepCount);
+  state.counters["inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCandidateBuilds);
+  state.counters["inter_body_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCandidatePairCapacity);
+  state.counters["inter_body_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCandidateRejectedPairs);
+  state.counters["inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactPointTriangleCandidates);
+  state.counters["inter_body_surface_contact_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactEdgeEdgeCandidates);
+  state.counters["inter_body_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdPointTriangleChecks);
+  state.counters["inter_body_surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdEdgeEdgeChecks);
+  state.counters["inter_body_surface_contact_ccd_hits"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCcdHits);
+  state.counters["inter_body_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCcdLimitedSteps);
+  state.counters["inter_body_surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdZeroStepCount);
+  state.counters["static_rigid_surface_ccd_snapshot_builds"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdSnapshotBuilds);
+  state.counters["static_rigid_surface_ccd_box_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdBoxCount);
+  state.counters["static_rigid_surface_ccd_sphere_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdSphereCount);
+  state.counters["static_rigid_surface_ccd_triangle_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdTriangleCount);
+  state.counters["static_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdEdgeCount);
+  state.counters["static_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["static_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["static_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdCandidateRejectedPairs);
+  state.counters["static_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["static_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["static_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdPointTriangleChecks);
+  state.counters["static_rigid_surface_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["static_rigid_surface_ccd_hits"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdHits);
+  state.counters["static_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdLimitedSteps);
+  state.counters["static_rigid_surface_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdZeroStepCount);
+  state.counters["moving_rigid_surface_ccd_snapshot_builds"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdSnapshotBuilds);
+  state.counters["moving_rigid_surface_ccd_box_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdBoxCount);
+  state.counters["moving_rigid_surface_ccd_sample_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdSampleCount);
+  state.counters["moving_rigid_surface_ccd_inflated_box_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdInflatedBoxCount);
+  state.counters["moving_rigid_surface_ccd_triangle_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdTriangleCount);
+  state.counters["moving_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdEdgeCount);
+  state.counters["moving_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["moving_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdCandidatePairCapacity);
+  state.counters["moving_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdCandidateRejectedPairs);
+  state.counters["moving_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["moving_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["moving_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["moving_rigid_surface_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["moving_rigid_surface_ccd_hits"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdHits);
+  state.counters["moving_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdLimitedSteps);
+  state.counters["moving_rigid_surface_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdZeroStepCount);
+}
+
+template <std::size_t Count, typename Member>
+std::size_t sumDiagnosticsMember(
+    const std::array<sx::DeformableSolverDiagnostics, Count>& diagnostics,
+    Member member)
+{
+  std::size_t total = 0;
+  for (const auto& diagnostic : diagnostics) {
+    total += diagnostic.*member;
+  }
+  return total;
+}
+
+template <std::size_t Count>
+void recordSummedDeformableRuntimeContactCounters(
+    benchmark::State& state,
+    const std::array<sx::DeformableSolverDiagnostics, Count>& diagnostics)
+{
+  state.counters["line_search_trials"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics, &sx::DeformableSolverDiagnostics::lineSearchTrials));
+  state.counters["surface_contact_candidate_builds"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactCandidateBuilds));
+  state.counters["surface_contact_candidate_pair_capacity"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactCandidatePairCapacity));
+  state.counters["surface_contact_candidate_rejected_pairs"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactCandidateRejectedPairs));
+  state.counters["surface_contact_point_triangle_candidates"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactPointTriangleCandidates));
+  state.counters["surface_contact_edge_edge_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactEdgeEdgeCandidates));
+  state.counters["surface_contact_ccd_point_triangle_checks"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::surfaceContactCcdPointTriangleChecks));
+  state.counters["surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactCcdEdgeEdgeChecks));
+  state.counters["surface_contact_ccd_hits"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactCcdHits));
+  state.counters["surface_contact_ccd_limited_steps"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactCcdLimitedSteps));
+  state.counters["surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::surfaceContactCcdZeroStepCount));
+  state.counters["inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateBuilds));
+  state.counters["inter_body_surface_contact_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidatePairCapacity));
+  state.counters["inter_body_surface_contact_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateRejectedPairs));
+  state.counters["inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactPointTriangleCandidates));
+  state.counters["inter_body_surface_contact_edge_edge_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactEdgeEdgeCandidates));
+  state.counters["inter_body_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdPointTriangleChecks));
+  state.counters["inter_body_surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdEdgeEdgeChecks));
+  state.counters["inter_body_surface_contact_ccd_hits"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::interBodySurfaceContactCcdHits));
+  state.counters["inter_body_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdLimitedSteps));
+  state.counters["inter_body_surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdZeroStepCount));
+  state.counters["static_rigid_surface_ccd_snapshot_builds"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdSnapshotBuilds));
+  state.counters["static_rigid_surface_ccd_box_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdBoxCount));
+  state.counters["static_rigid_surface_ccd_sphere_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdSphereCount));
+  state.counters["static_rigid_surface_ccd_triangle_count"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdTriangleCount));
+  state.counters["static_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdEdgeCount));
+  state.counters["static_rigid_surface_ccd_candidate_builds"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdCandidateBuilds));
+  state.counters["static_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidatePairCapacity));
+  state.counters["static_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidateRejectedPairs));
+  state.counters["static_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdPointTriangleCandidates));
+  state.counters["static_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdEdgeEdgeCandidates));
+  state.counters["static_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdPointTriangleChecks));
+  state.counters["static_rigid_surface_ccd_edge_edge_checks"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdEdgeEdgeChecks));
+  state.counters["static_rigid_surface_ccd_hits"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdHits));
+  state.counters["static_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdLimitedSteps));
+  state.counters["static_rigid_surface_ccd_zero_step_count"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::staticRigidSurfaceCcdZeroStepCount));
+  state.counters["moving_rigid_surface_ccd_snapshot_builds"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdSnapshotBuilds));
+  state.counters["moving_rigid_surface_ccd_box_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdBoxCount));
+  state.counters["moving_rigid_surface_ccd_sample_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdSampleCount));
+  state.counters["moving_rigid_surface_ccd_inflated_box_count"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdInflatedBoxCount));
+  state.counters["moving_rigid_surface_ccd_triangle_count"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdTriangleCount));
+  state.counters["moving_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdEdgeCount));
+  state.counters["moving_rigid_surface_ccd_candidate_builds"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdCandidateBuilds));
+  state.counters["moving_rigid_surface_ccd_candidate_pair_capacity"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidatePairCapacity));
+  state.counters["moving_rigid_surface_ccd_candidate_rejected_pairs"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidateRejectedPairs));
+  state.counters["moving_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdPointTriangleCandidates));
+  state.counters["moving_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdEdgeEdgeCandidates));
+  state.counters["moving_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdPointTriangleChecks));
+  state.counters["moving_rigid_surface_ccd_edge_edge_checks"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdEdgeEdgeChecks));
+  state.counters["moving_rigid_surface_ccd_hits"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdHits));
+  state.counters["moving_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(sumDiagnosticsMember(
+          diagnostics,
+          &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdLimitedSteps));
+  state.counters["moving_rigid_surface_ccd_zero_step_count"] = static_cast<
+      double>(sumDiagnosticsMember(
+      diagnostics,
+      &sx::DeformableSolverDiagnostics::movingRigidSurfaceCcdZeroStepCount));
+}
+
+struct ExternalSurfaceCcdDiagnostics
+{
+  sx::DeformableSolverDiagnostics interBody;
+  sx::DeformableSolverDiagnostics staticRigid;
+  sx::DeformableSolverDiagnostics movingRigid;
+  sx::DeformableSolverDiagnostics mixed;
+  double interBodyLimitedPointZ = 0.0;
+  double staticRigidLimitedPointX = 0.0;
+  double movingRigidLimitedPointX = 0.0;
+  double mixedInterBodyLimitedPointZ = 0.0;
+  double mixedStaticRigidLimitedPointX = 0.0;
+  double mixedMovingRigidLimitedPointX = 0.0;
+};
+
+ExternalSurfaceCcdDiagnostics runExternalSurfaceCcdDiagnostics()
+{
+  ExternalSurfaceCcdDiagnostics diagnostics;
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    auto moving = world.addDeformableBody(
+        "moving", makePlan083InterBodyMovingPointOptions());
+    world.addDeformableBody(
+        "obstacle", makePlan083StationaryTriangleObstacleOptions());
+    world.step();
+    diagnostics.interBody = world.getLastDeformableSolverDiagnostics();
+    diagnostics.interBodyLimitedPointZ = moving.getPosition(3).z();
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addPlan083StaticSurfaceCcdBox(
+        world,
+        "static_box",
+        Eigen::Vector3d::Zero(),
+        Eigen::Vector3d(0.05, 1.0, 1.0));
+    auto body = world.addDeformableBody(
+        "fast_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    world.step();
+    diagnostics.staticRigid = world.getLastDeformableSolverDiagnostics();
+    diagnostics.staticRigidLimitedPointX = body.getPosition(0).x();
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    addPlan083MovingSurfaceCcdBox(
+        world,
+        "moving_box",
+        Eigen::Vector3d(1.0, 0.0, 0.0),
+        Eigen::Vector3d(0.2, 1.0, 1.0),
+        Eigen::Vector3d(-1.0, 0.0, 0.0));
+    auto body = world.addDeformableBody(
+        "approaching_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-0.5, 0.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
+    world.step();
+    diagnostics.movingRigid = world.getLastDeformableSolverDiagnostics();
+    diagnostics.movingRigidLimitedPointX = body.getPosition(0).x();
+  }
+
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    auto interBodyMoving = world.addDeformableBody(
+        "mixed_inter_body_moving", makePlan083InterBodyMovingPointOptions());
+    world.addDeformableBody(
+        "mixed_inter_body_obstacle",
+        makePlan083StationaryTriangleObstacleOptions());
+    addPlan083StaticSurfaceCcdBox(
+        world,
+        "mixed_static_box",
+        Eigen::Vector3d(0.0, 4.0, 0.0),
+        Eigen::Vector3d(0.05, 1.0, 1.0));
+    auto staticPoint = world.addDeformableBody(
+        "mixed_static_fast_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 4.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    addPlan083MovingSurfaceCcdBox(
+        world,
+        "mixed_moving_box",
+        Eigen::Vector3d(1.0, 8.0, 0.0),
+        Eigen::Vector3d(0.2, 1.0, 1.0),
+        Eigen::Vector3d(-1.0, 0.0, 0.0));
+    auto movingPoint = world.addDeformableBody(
+        "mixed_moving_fast_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-0.5, 8.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
+    world.step();
+    diagnostics.mixed = world.getLastDeformableSolverDiagnostics();
+    diagnostics.mixedInterBodyLimitedPointZ
+        = interBodyMoving.getPosition(3).z();
+    diagnostics.mixedStaticRigidLimitedPointX = staticPoint.getPosition(0).x();
+    diagnostics.mixedMovingRigidLimitedPointX = movingPoint.getPosition(0).x();
+  }
+
+  return diagnostics;
+}
+
+bool hasRequiredExternalSurfaceCcdEvidence(
+    const ExternalSurfaceCcdDiagnostics& diagnostics)
+{
+  const auto& interBody = diagnostics.interBody;
+  const auto& staticRigid = diagnostics.staticRigid;
+  const auto& movingRigid = diagnostics.movingRigid;
+  const auto& mixed = diagnostics.mixed;
+
+  return interBody.interBodySurfaceContactCandidateBuilds > 0u
+         && interBody.interBodySurfaceContactPointTriangleCandidates > 0u
+         && interBody.interBodySurfaceContactCcdPointTriangleChecks > 0u
+         && interBody.interBodySurfaceContactCcdHits > 0u
+         && interBody.interBodySurfaceContactCcdLimitedSteps > 0u
+         && diagnostics.interBodyLimitedPointZ > 0.0
+         && diagnostics.interBodyLimitedPointZ < 1.0
+         && staticRigid.staticRigidSurfaceCcdSnapshotBuilds > 0u
+         && staticRigid.staticRigidSurfaceCcdBoxCount == 1u
+         && staticRigid.staticRigidSurfaceCcdTriangleCount == 12u
+         && staticRigid.staticRigidSurfaceCcdEdgeCount == 12u
+         && staticRigid.staticRigidSurfaceCcdCandidateBuilds > 0u
+         && staticRigid.staticRigidSurfaceCcdPointTriangleCandidates > 0u
+         && staticRigid.staticRigidSurfaceCcdPointTriangleChecks > 0u
+         && staticRigid.staticRigidSurfaceCcdHits > 0u
+         && staticRigid.staticRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.staticRigidLimitedPointX > -1.0
+         && diagnostics.staticRigidLimitedPointX < -0.05
+         && movingRigid.movingRigidSurfaceCcdSnapshotBuilds > 0u
+         && movingRigid.movingRigidSurfaceCcdBoxCount == 1u
+         && movingRigid.movingRigidSurfaceCcdSampleCount >= 2u
+         && movingRigid.movingRigidSurfaceCcdTriangleCount > 0u
+         && movingRigid.movingRigidSurfaceCcdEdgeCount > 0u
+         && movingRigid.movingRigidSurfaceCcdCandidateBuilds > 0u
+         && movingRigid.movingRigidSurfaceCcdPointTriangleCandidates > 0u
+         && movingRigid.movingRigidSurfaceCcdPointTriangleChecks > 0u
+         && movingRigid.movingRigidSurfaceCcdHits > 0u
+         && movingRigid.movingRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.movingRigidLimitedPointX > -0.5
+         && diagnostics.movingRigidLimitedPointX < 0.7
+         && mixed.interBodySurfaceContactCandidateBuilds > 0u
+         && mixed.interBodySurfaceContactPointTriangleCandidates > 0u
+         && mixed.interBodySurfaceContactCcdPointTriangleChecks > 0u
+         && mixed.interBodySurfaceContactCcdHits > 0u
+         && mixed.interBodySurfaceContactCcdLimitedSteps > 0u
+         && diagnostics.mixedInterBodyLimitedPointZ > 0.0
+         && diagnostics.mixedInterBodyLimitedPointZ < 1.0
+         && mixed.staticRigidSurfaceCcdSnapshotBuilds > 0u
+         && mixed.staticRigidSurfaceCcdBoxCount == 1u
+         && mixed.staticRigidSurfaceCcdCandidateBuilds > 0u
+         && mixed.staticRigidSurfaceCcdPointTriangleCandidates > 0u
+         && mixed.staticRigidSurfaceCcdPointTriangleChecks > 0u
+         && mixed.staticRigidSurfaceCcdHits > 0u
+         && mixed.staticRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.mixedStaticRigidLimitedPointX > -1.0
+         && diagnostics.mixedStaticRigidLimitedPointX < -0.05
+         && mixed.movingRigidSurfaceCcdSnapshotBuilds > 0u
+         && mixed.movingRigidSurfaceCcdBoxCount == 1u
+         && mixed.movingRigidSurfaceCcdSampleCount >= 2u
+         && mixed.movingRigidSurfaceCcdCandidateBuilds > 0u
+         && mixed.movingRigidSurfaceCcdPointTriangleCandidates > 0u
+         && mixed.movingRigidSurfaceCcdPointTriangleChecks > 0u
+         && mixed.movingRigidSurfaceCcdHits > 0u
+         && mixed.movingRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.mixedMovingRigidLimitedPointX > -0.5
+         && diagnostics.mixedMovingRigidLimitedPointX < 0.7;
+}
+
+//==============================================================================
+static void BM_Plan083CpuScene_external_surface_ccd_diagnostics(
+    benchmark::State& state)
+{
+  std::size_t failedSteps = 0;
+  ExternalSurfaceCcdDiagnostics lastDiagnostics;
+  for (auto _ : state) {
+    lastDiagnostics = runExternalSurfaceCcdDiagnostics();
+    if (!hasRequiredExternalSurfaceCcdEvidence(lastDiagnostics)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(lastDiagnostics.interBodyLimitedPointZ);
+    benchmark::DoNotOptimize(lastDiagnostics.staticRigidLimitedPointX);
+    benchmark::DoNotOptimize(lastDiagnostics.movingRigidLimitedPointX);
+    benchmark::ClobberMemory();
+  }
+
+  const std::array<sx::DeformableSolverDiagnostics, 4> allDiagnostics{
+      lastDiagnostics.interBody,
+      lastDiagnostics.staticRigid,
+      lastDiagnostics.movingRigid,
+      lastDiagnostics.mixed};
+
+  state.counters["row_unb_alg_barriers"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["external_surface_ccd_scene_count"] = 4.0;
+  state.counters["mixed_external_surface_ccd_scene_count"] = 1.0;
+  state.counters["mixed_external_surface_ccd_family_count"] = 3.0;
+  state.counters["rigid_obstacle_count"] = 4.0;
+  state.counters["static_rigid_obstacle_count"] = 2.0;
+  state.counters["moving_rigid_obstacle_count"] = 2.0;
+  state.counters["deformable_body_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          allDiagnostics, &sx::DeformableSolverDiagnostics::bodyCount));
+  state.counters["deformable_node_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          allDiagnostics, &sx::DeformableSolverDiagnostics::nodeCount));
+  state.counters["deformable_edge_count"]
+      = static_cast<double>(sumDiagnosticsMember(
+          allDiagnostics, &sx::DeformableSolverDiagnostics::edgeCount));
+  state.counters["surface_triangle_count"] = 4.0;
+  recordSummedDeformableRuntimeContactCounters(state, allDiagnostics);
+  state.counters["mixed_inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCandidateBuilds);
+  state.counters["mixed_inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactPointTriangleCandidates);
+  state.counters["mixed_inter_body_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdPointTriangleChecks);
+  state.counters["mixed_inter_body_surface_contact_ccd_hits"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdHits);
+  state.counters["mixed_inter_body_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdLimitedSteps);
+  state.counters["mixed_static_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["mixed_static_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["mixed_static_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdPointTriangleChecks);
+  state.counters["mixed_static_rigid_surface_ccd_hits"]
+      = static_cast<double>(lastDiagnostics.mixed.staticRigidSurfaceCcdHits);
+  state.counters["mixed_static_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdLimitedSteps);
+  state.counters["mixed_moving_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["mixed_moving_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["mixed_moving_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["mixed_moving_rigid_surface_ccd_hits"]
+      = static_cast<double>(lastDiagnostics.mixed.movingRigidSurfaceCcdHits);
+  state.counters["mixed_moving_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdLimitedSteps);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+}
+BENCHMARK(BM_Plan083CpuScene_external_surface_ccd_diagnostics)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================
@@ -1513,7 +2496,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
 
     fixture.world.step(executor);
     lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount == 0u
         || !std::isfinite(fixture.minClothHeight())) {
       ++failedSteps;
     }
@@ -1536,7 +2519,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
   state.counters["deformable_edge_count"]
       = static_cast<double>(lastDiagnostics.edgeCount);
   state.counters["surface_triangle_count"]
-      = static_cast<double>(fixture.cloth->getSurfaceTriangleCount());
+      = static_cast<double>(fixture.totalSurfaceTriangleCount());
   state.counters["solver_iterations"]
       = static_cast<double>(lastDiagnostics.solverIterations);
   state.counters["active_contact_count"]
@@ -1544,6 +2527,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
   state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
   state.counters["min_active_contact_distance_m"]
       = lastDiagnostics.minActiveContactDistance;
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = fixture.minClothHeight();
   state.counters["cloth_span_x_m"] = fixture.clothSpanX();
   state.counters["cloth_span_y_m"] = fixture.clothSpanY();
@@ -1567,7 +2551,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
     fixture.world.step(executor);
     lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount != 27u
         || !std::isfinite(fixture.minClothHeight())) {
       ++failedSteps;
     }
@@ -1581,7 +2565,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
   state.counters["row_unb_fig_22"] = 1.0;
   state.counters["paper_scale"] = 0.0;
-  state.counters["rigid_obstacle_count"] = 1.0;
+  state.counters["rigid_obstacle_count"] = 3.0;
   state.counters["deformable_body_count"]
       = static_cast<double>(lastDiagnostics.bodyCount);
   state.counters["deformable_node_count"]
@@ -1597,6 +2581,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
   state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
   state.counters["min_active_contact_distance_m"]
       = lastDiagnostics.minActiveContactDistance;
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = fixture.minClothHeight();
   state.counters["cloth_span_x_m"] = fixture.clothSpanX();
   state.counters["failed_steps"] = static_cast<double>(failedSteps);
@@ -1778,13 +2763,16 @@ static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
     benchmark::State& state)
 {
   TerrainVehicleFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -1792,16 +2780,27 @@ static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 8u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.chassis->getTranslation().data());
     benchmark::DoNotOptimize(fixture.wheels.front().getTransform().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1827,6 +2826,18 @@ static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
   state.counters["chassis_height_m"] = fixture.chassis->getTranslation().z();
   state.counters["min_wheel_ground_clearance_m"]
       = fixture.minWheelGroundClearance();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_terrain_vehicle_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
@@ -1836,13 +2847,16 @@ static void BM_Plan083CpuScene_precession_reduced_world_step(
     benchmark::State& state)
 {
   PrecessionFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -1850,15 +2864,26 @@ static void BM_Plan083CpuScene_precession_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeConstraints >= 1u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.wheel->getTransform().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1880,6 +2905,18 @@ static void BM_Plan083CpuScene_precession_reduced_world_step(
   state.counters["wheel_ground_clearance_m"] = fixture.wheelGroundClearance();
   state.counters["spin_rate_rad_s"]
       = fixture.wheel->getAngularVelocity().norm();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_precession_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
@@ -1889,13 +2926,16 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
     benchmark::State& state)
 {
   RagdollFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -1903,17 +2943,28 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 10u
                                && lastStats.activeConstraints >= 1u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.torso->getTransform().data());
     benchmark::DoNotOptimize(fixture.parts.front().getTransform().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1940,6 +2991,18 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
   state.counters["torso_height_m"] = fixture.torso->getTranslation().z();
   state.counters["min_leg_ground_clearance_m"]
       = fixture.minLegGroundClearance();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_ragdoll_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
@@ -2551,7 +3614,7 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
     mixedDiagnostics
         = evaluateReducedAffineFemMixedDiagnostics(deformableFixture);
     coupledSolve = solveReducedAffineFemCoupledContact(deformableFixture);
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount != 31u
         || !std::isfinite(deformableFixture.minClothHeight())
         || !mixedDiagnostics.finite || mixedDiagnostics.candidateCount == 0u
         || mixedDiagnostics.activeBarrierCount == 0u || !coupledSolve.valid
@@ -2662,6 +3725,7 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
       = static_cast<double>(deformableFixture.cloth->getSurfaceTriangleCount());
   state.counters["deformable_solver_iterations"]
       = static_cast<double>(lastDiagnostics.solverIterations);
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = deformableFixture.minClothHeight();
   state.counters["affine_fem_candidate_diagnostics_measured"] = 1.0;
   state.counters["affine_fem_mixed_candidate_count"]

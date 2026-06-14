@@ -226,6 +226,59 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_runtime_combined_hessian_cpu = _row(
+        "BM_Plan083SceneRuntimeCombinedBarrierHessianCpu/1024",
+        real_time=12.0,
+        cpu_time=12.0,
+        samples=4096,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_point_triangle_candidates=512,
+        source_edge_edge_candidates=512,
+        runtime_point_triangle_candidates=512,
+        runtime_point_edge_candidates=1536,
+        runtime_point_point_candidates=1536,
+        runtime_edge_edge_candidates=512,
+        point_triangle_active_barriers=512,
+        point_edge_active_barriers=768,
+        point_point_active_barriers=768,
+        edge_edge_active_barriers=256,
+        active_barriers=2304,
+        max_barrier_value=2.25,
+        max_result_abs_error=0.0,
+    )
+    scene_runtime_combined_hessian_gpu = _row(
+        "BM_Plan083SceneRuntimeCombinedBarrierHessianCuda/1024",
+        real_time=6.0,
+        cpu_time=6.0,
+        samples=4096,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_point_triangle_candidates=512,
+        source_edge_edge_candidates=512,
+        runtime_point_triangle_candidates=512,
+        runtime_point_edge_candidates=1536,
+        runtime_point_point_candidates=1536,
+        runtime_edge_edge_candidates=512,
+        point_triangle_active_barriers=512,
+        point_edge_active_barriers=768,
+        point_point_active_barriers=768,
+        edge_edge_active_barriers=256,
+        active_barriers=2304,
+        gpu_point_triangle_active_barriers=512,
+        gpu_point_edge_active_barriers=768,
+        gpu_point_point_active_barriers=768,
+        gpu_edge_edge_active_barriers=256,
+        gpu_active_barriers=2304,
+        max_barrier_value=2.25,
+        max_result_abs_error=1e-12,
+        host_setup_ns=4.0,
+        host_to_device_ns=8.0,
+        kernel_ns=12.0,
+        device_to_host_ns=16.0,
+    )
     point_triangle_hessian_psd_cpu = _row(
         "BM_Plan083PointTriangleBarrierHessianPsdCpu/1024",
         samples=1024,
@@ -470,6 +523,8 @@ def _benchmark_data(**overrides):
             scene_runtime_point_point_hessian_gpu,
             scene_runtime_edge_edge_hessian_cpu,
             scene_runtime_edge_edge_hessian_gpu,
+            scene_runtime_combined_hessian_cpu,
+            scene_runtime_combined_hessian_gpu,
             point_triangle_hessian_psd_cpu,
             point_triangle_hessian_psd_gpu,
             point_point_hessian_cpu,
@@ -587,6 +642,25 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     assert (
         row["edge_edge_scene_runtime_barrier_hessian"]["max_result_abs_error"] == 1e-12
     )
+    combined = row["combined_scene_runtime_barrier_hessian"]
+    assert combined["candidate_count"] == 4096
+    assert combined["source_point_triangle_candidate_count"] == 512
+    assert combined["source_edge_edge_candidate_count"] == 512
+    assert combined["point_triangle_candidate_count"] == 512
+    assert combined["point_edge_candidate_count"] == 1536
+    assert combined["point_point_candidate_count"] == 1536
+    assert combined["edge_edge_candidate_count"] == 512
+    assert combined["active_barrier_count"] == 2304
+    assert combined["point_triangle_active_barrier_count"] == 512
+    assert combined["point_edge_active_barrier_count"] == 768
+    assert combined["point_point_active_barrier_count"] == 768
+    assert combined["edge_edge_active_barrier_count"] == 256
+    assert combined["scene_body_count"] == 1
+    assert combined["scene_node_count"] == 2560
+    assert combined["scene_triangle_count"] == 768
+    assert combined["max_result_abs_error"] == 1e-12
+    assert combined["speedup"] == 2.0
+    assert combined["timing_ns"]["kernel"] == 12.0
     assert (
         row["point_triangle_barrier_hessian_psd_projection"]["active_barrier_count"]
         == 930

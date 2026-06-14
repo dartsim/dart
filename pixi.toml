@@ -1544,6 +1544,9 @@ bm-plan083-cpu-abd-wrecking-ball-packet = { cmd = "python scripts/write_plan083_
 bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-external-surface-ccd-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene external_surface_ccd", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [
   "config",
 ] }
