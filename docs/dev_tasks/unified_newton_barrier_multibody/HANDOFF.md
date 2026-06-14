@@ -1,5 +1,21 @@
 # Unified Newton-Barrier Handoff
 
+## GPU Contact-Candidate Slowness Root-Cause (2026-06-14)
+
+At maintainer direction, this session pivoted from accumulating reduced witness
+packets to root-causing why the GPU contact-candidate parity packets report
+sub-1x speedups. Findings are in
+`docs/plans/083-unified-newton-barrier-multibody/gpu-slowness-root-cause.md`.
+Summary: two regimes — small mask/buffer rows are per-call-overhead-bound (and
+already reach GPU parity at the largest size), while the sweep/scene rows are
+kernel-bound and stay 9–14x slower because the device sort is issued as ~133
+tiny per-stage bitonic kernel launches, prefix sums run on a single GPU thread
+(`<<<1,1>>>`), all geometry math is FP64 on a 1:64-FP64 Ada laptop GPU, and the
+host wrapper allocates ~31 MB of all-pairs-capacity buffers per call. The gate
+failure is structural but fixable (CUB scan/sort, FP32/mixed path, persistent
+buffers, fused higher-occupancy kernels, warmup). No production CUDA was changed
+in this slice; it is analysis only.
+
 ## `World::step` Inter-Body Candidate Witness Follow-up (2026-06-14)
 
 Work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`

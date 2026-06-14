@@ -2,6 +2,17 @@
 
 ## Current Reality (2026-06-14)
 
+GPU slowness root-cause (2026-06-14): at maintainer direction the session
+pivoted from witness packets to root-causing the sub-1x GPU speedups. See
+`docs/plans/083-unified-newton-barrier-multibody/gpu-slowness-root-cause.md`.
+Sweep/scene rows are kernel-bound (device sort issued as ~133 per-stage bitonic
+launches, `<<<1,1>>>` serial prefix sums, FP64 on a 1:64-FP64 Ada laptop GPU,
+~31 MB all-pairs allocation per call); small mask/buffer rows are
+per-call-overhead-bound and already reach GPU parity at the largest size. The
+gate failure is structural but fixable (CUB scan/sort, FP32/mixed path,
+persistent buffers, fused higher-occupancy kernels, harness warmup). Analysis
+only — no production CUDA changed.
+
 Latest `World::step` inter-body candidate witness follow-up (2026-06-14): work
 continues locally on `simx/plan083-worldstep-gpu-candidate-bridge` (local-only,
 no PR), stacked on the milestone checkpoint PR #3000 branch
