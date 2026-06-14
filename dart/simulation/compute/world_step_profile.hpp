@@ -137,4 +137,61 @@ struct DART_SIMULATION_API WorldStepProfile
   void reset() noexcept;
 };
 
+/// One finalize-time solver-resolution decision: which method family the World
+/// requested for a domain, which it actually resolved, and why. When
+/// `requested == resolved` the stage ran as requested; when they differ the
+/// World substituted a method, and the substitution is recorded here instead of
+/// happening silently.
+struct DART_SIMULATION_API ResolvedConfigurationNote
+{
+  /// Domain the decision applies to, e.g. "rigid-body", "rigid-contact",
+  /// "multibody".
+  std::string domain;
+
+  /// Requested method-family name.
+  std::string requested;
+
+  /// Resolved method-family name actually used by the step.
+  std::string resolved;
+
+  /// Reason the resolution differs from the request, or "as requested".
+  std::string reason;
+
+  /// True when the resolved family differs from the requested family.
+  [[nodiscard]] bool isSubstitution() const noexcept
+  {
+    return requested != resolved;
+  }
+};
+
+/// The per-domain solver families the World resolved at
+/// `enterSimulationMode`, exposed alongside the step profile (see
+/// `World::getResolvedConfiguration`). Every resolution is recorded with its
+/// reason so a scene can no longer silently substitute a method.
+///
+/// PLAN-091 WP-091.11 slice 1: this records the resolved families (requested ==
+/// resolved today); later slices classify the known silent substitutions
+/// (for example AVBD rigid contact running sequential impulse) as recorded
+/// decisions or strict-mode errors.
+struct DART_SIMULATION_API ResolvedSolverConfiguration
+{
+  std::vector<ResolvedConfigurationNote> notes;
+
+  [[nodiscard]] bool isEmpty() const noexcept
+  {
+    return notes.empty();
+  }
+  void reset() noexcept
+  {
+    notes.clear();
+  }
+
+  /// True if any domain resolved to a different family than requested.
+  [[nodiscard]] bool hasSubstitution() const noexcept;
+
+  /// Compact, human- and agent-readable table, one
+  /// `domain: requested -> resolved (reason)` row per note.
+  [[nodiscard]] std::string toSummaryText() const;
+};
+
 } // namespace dart::simulation::compute

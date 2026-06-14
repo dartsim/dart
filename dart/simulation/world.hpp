@@ -853,6 +853,13 @@ public:
   [[nodiscard]] const compute::WorldStepProfile& getLastStepProfile()
       const noexcept;
 
+  /// The per-domain solver families this World resolved at
+  /// ``enterSimulationMode`` (requested -> resolved, with reasons), exposed
+  /// alongside the step profile. Empty until the World enters simulation mode;
+  /// it is re-recorded on every (re-)bake. PLAN-091 WP-091.11.
+  [[nodiscard]] const compute::ResolvedSolverConfiguration&
+  getResolvedConfiguration() const noexcept;
+
   //--------------------------------------------------------------------------
   // Multibody solver configuration
   //--------------------------------------------------------------------------
@@ -995,6 +1002,7 @@ private:
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
+  void recordResolvedConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
   void prepareCollisionQueryCache(
@@ -1049,6 +1057,7 @@ private:
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};
 #endif
+  compute::ResolvedSolverConfiguration m_resolvedConfiguration{};
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   std::uint64_t m_frameTopologyRevision{0};
   enum class MultibodyIntegrationMethod

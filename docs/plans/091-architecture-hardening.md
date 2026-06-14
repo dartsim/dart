@@ -398,7 +398,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `test_variational_integration` all pass (`pixi run lint` clean; full
   `test-unit` deferred to CI).
 
-#### WP-091.11 Minimal capabilities and validated finalize
+#### WP-091.11 Minimal capabilities and validated finalize [claimed]
 
 - Objective: each solver family declares a minimal capability set (domain,
   supported joints/actuators/shapes, differentiability), the built-in
@@ -443,6 +443,21 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
     of by hand). Each slice is one commit with its own focused tests; the packet
     is done when slice 4 lands and a previously-silent-substitution scene errors
     (strict) or records the substitution in a packet.
+- Evidence (slice 1 of 4 landed): `compute::ResolvedSolverConfiguration` and
+  `compute::ResolvedConfigurationNote` value types (plain strings — no ECS,
+  solver, or backend leak; `check-api-boundaries` green) added to
+  `world_step_profile.hpp`; `World::getResolvedConfiguration()` exposes them
+  alongside `getLastStepProfile()`. `World::recordResolvedConfiguration()` is
+  called from the bake (`prepareStepPipelineCacheForCurrentConfiguration`) and
+  records the resolved rigid-body, rigid-contact, and multibody families
+  (requested == resolved today, reason "as requested"; `hasSubstitution()`
+  false). Additive only — the WP-091.2 golden trajectories are **unchanged**
+  (`test_world_default_step_golden` 3/3). New
+  `tests/unit/simulation/world/test_world_resolved_configuration.cpp` (3 cases:
+  empty before finalize, default families recorded, the report reflects a
+  `WorldOptions`-requested contact method) passes. Gates: `pixi run lint`,
+  `pixi run check-api-boundaries` green. Slices 2–4 (explicit substitution
+  decisions / capability-derived schedule / packet serialization) remain.
 
 #### WP-091.12 Single selection idiom
 

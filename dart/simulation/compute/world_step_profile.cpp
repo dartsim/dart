@@ -194,4 +194,27 @@ void WorldStepProfile::reset() noexcept
   stages.clear();
 }
 
+//==============================================================================
+bool ResolvedSolverConfiguration::hasSubstitution() const noexcept
+{
+  return std::ranges::any_of(notes, [](const ResolvedConfigurationNote& note) {
+    return note.isSubstitution();
+  });
+}
+
+//==============================================================================
+std::string ResolvedSolverConfiguration::toSummaryText() const
+{
+  if (notes.empty()) {
+    return "resolved solver configuration: (none recorded)\n";
+  }
+  std::ostringstream out;
+  out << "resolved solver configuration:\n";
+  for (const ResolvedConfigurationNote& note : notes) {
+    out << "  " << note.domain << ": " << note.requested << " -> "
+        << note.resolved << " (" << note.reason << ")\n";
+  }
+  return out.str();
+}
+
 } // namespace dart::simulation::compute

@@ -2841,6 +2841,53 @@ void World::prepareStepPipelineCacheForCurrentConfiguration()
       cache.hasAdvanceableRigidBodies,
       cache.hasMultibodyStructure,
       cache.hasDeformableBodies);
+  recordResolvedConfiguration();
+}
+
+//==============================================================================
+void World::recordResolvedConfiguration()
+{
+  // PLAN-091 WP-091.11 slice 1: snapshot the resolved per-domain method
+  // families. Today requested == resolved; later slices record the known
+  // silent substitutions (for example AVBD rigid contact running sequential
+  // impulse) as decisions or strict-mode errors.
+  m_resolvedConfiguration.reset();
+
+  const char* rigidSolver = "unknown";
+  switch (m_rigidBodySolver) {
+    case RigidBodySolver::SequentialImpulse:
+      rigidSolver = "sequential-impulse";
+      break;
+    case RigidBodySolver::Ipc:
+      rigidSolver = "ipc";
+      break;
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"rigid-body", rigidSolver, rigidSolver, "as requested"});
+
+  const char* contactMethod = "unknown";
+  switch (m_contactSolverMethod) {
+    case ContactSolverMethod::SequentialImpulse:
+      contactMethod = "sequential-impulse";
+      break;
+    case ContactSolverMethod::BoxedLcp:
+      contactMethod = "boxed-lcp";
+      break;
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"rigid-contact", contactMethod, contactMethod, "as requested"});
+
+  const char* multibody = "unknown";
+  switch (m_multibodyIntegrationMethod) {
+    case MultibodyIntegrationMethod::SemiImplicit:
+      multibody = "semi-implicit";
+      break;
+    case MultibodyIntegrationMethod::Variational:
+      multibody = "variational";
+      break;
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"multibody", multibody, multibody, "as requested"});
 }
 
 //==============================================================================
@@ -5146,6 +5193,13 @@ bool World::isStepProfilingEnabled() const noexcept
 #else
   return false;
 #endif
+}
+
+//==============================================================================
+const compute::ResolvedSolverConfiguration& World::getResolvedConfiguration()
+    const noexcept
+{
+  return m_resolvedConfiguration;
 }
 
 //==============================================================================
