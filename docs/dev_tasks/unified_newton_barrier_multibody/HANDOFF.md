@@ -59,9 +59,9 @@ Current validation passed:
 
 Work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`, stacked
 on the checkpoint branch `simx/plan083-worldstep-contact-filter-stats`. The
-checkpoint branch has now been pushed and opened as the **milestone checkpoint
-PR #3000** against `main` (with explicit maintainer approval); it is an honest
-work-in-progress checkpoint, not a completion claim. This follow-up branch
+checkpoint branch has now been **merged into `main`** as the **milestone
+checkpoint PR #3000** (2026-06-14, with explicit maintainer approval); it was an
+honest work-in-progress checkpoint, not a completion claim. This follow-up branch
 remains local-only and has no PR; the maintainer elected to continue evidence
 packets here.
 

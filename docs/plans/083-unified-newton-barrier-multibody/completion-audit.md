@@ -42,8 +42,8 @@ checks, and rejects CCD hits exceeding total checks. Fresh CUDA evidence records
 counters (33 runtime candidate builds, 240,058,368 total runtime candidate pairs,
 239,908,992 rejected runtime pairs; the filtered GPU row still covers 7,274,496
 possible pairs, keeps 2,048 candidates, and rejects 7,272,448 pairs). The earlier
-slice opened the milestone checkpoint PR #3000 for
-`simx/plan083-worldstep-contact-filter-stats` against `main`. This improves the
+slice's milestone checkpoint PR #3000 (`simx/plan083-worldstep-contact-filter-stats`)
+has since merged into `main` (2026-06-14). This improves the
 reduced packet bridge between private GPU candidate filtering and `World::step`
 runtime self-surface CCD evidence, but it is still not production runtime scene
 filtering inside `World::step`, GPU `World::step` contact-candidate

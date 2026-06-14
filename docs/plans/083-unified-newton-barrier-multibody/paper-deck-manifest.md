@@ -166,7 +166,8 @@ continuous-collision (CCD) counters from the same generated DART `World::step`:
 47,488 CCD point-triangle checks, 101,888 CCD edge-edge checks, 39,168 CCD hits,
 1 limited step, and 16,384 zero-step counts, with exact CPU/GPU packet parity and
 a writer that requires nonzero CCD checks and rejects CCD hits exceeding total
-checks. The earlier checkpoint slice was opened as milestone PR #3000. This is
+checks. The earlier checkpoint slice's milestone PR #3000 has since merged into
+`main`. This is
 still reduced packet evidence only; production runtime scene filtering inside
 `World::step`, GPU `World::step` contact candidate construction, speedup-gate
 completion, and paper-scale behavior remain future `abd-future-gpu` evidence.

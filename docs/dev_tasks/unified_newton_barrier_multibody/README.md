@@ -30,9 +30,9 @@ scripts/write_plan083_gpu_contact_candidate_packet.py`,
 
 Latest `World::step` self-surface CCD witness follow-up (2026-06-14): the
 checkpoint branch `simx/plan083-worldstep-contact-filter-stats` has been pushed
-and opened as the milestone checkpoint **PR #3000** against `main` (with explicit
-maintainer approval); it is an honest work-in-progress checkpoint, not a
-completion claim. Work continues locally on
+and **merged into `main`** as the milestone checkpoint **PR #3000** (2026-06-14,
+with explicit maintainer approval); it was an honest work-in-progress checkpoint,
+not a completion claim. Work continues locally on
 `simx/plan083-worldstep-gpu-candidate-bridge` (local-only, no PR). This slice
 extends the private GPU contact-candidate packet's reduced scene-owned filtered
 candidate-buffer `world_step_surface_contact` witness with the matching

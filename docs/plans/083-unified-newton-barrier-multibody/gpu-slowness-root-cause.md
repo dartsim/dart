@@ -37,9 +37,11 @@ more reduced evidence packets toward the actual blockers.
 **Regime A — overhead-bound** (mask/buffer rows): reach parity or win at 65536.
 The GPU compute is fine; small problems are dominated by fixed per-call cost.
 
-**Regime B — kernel-bound** (sweep/scene/filtered rows): stay 9–14x slower even
-at the largest size, with `kernel_ns` dominating and growing. The kernels
-themselves are the bottleneck.
+**Regime B — kernel-heavy** (sweep/scene/filtered rows): stay 9–14x slower even
+at the largest size. `kernel_ns` is much larger here than in Regime A and grows
+with size, but — as the measured breakdown below shows — per-call allocation
+overhead still dominates total time even for these rows. So "kernel-bound" is
+relative: the kernels are worth fixing, but they are not the largest single cost.
 
 ## Measured kernel-phase breakdown (CUDA events, point-triangle /65536)
 
@@ -47,12 +49,12 @@ Temporary CUDA-event instrumentation of `launchSweptPointTriangleSweepKernel`
 (env-gated, since reverted) measured, for the worst scene-runtime row
 (points=2560, triangles=768):
 
-| Phase                 | Time   | Share |
-| --------------------- | ------ | ----: |
-| sort (bitonic)        | 0.380 ms | ~36% |
-| count + serial prefix | 0.355 ms | ~34% |
-| scatter               | 0.331 ms | ~31% |
-| **kernel total**      | **~1.07 ms** | |
+| Phase                 | Time         | Share |
+| --------------------- | ------------ | ----: |
+| sort (bitonic)        | 0.380 ms     |  ~36% |
+| count + serial prefix | 0.355 ms     |  ~34% |
+| scatter               | 0.331 ms     |  ~31% |
+| **kernel total**      | **~1.07 ms** |       |
 
 The three kernel phases are **roughly equal** — there is no single dominant
 kernel to optimize. More importantly, the benchmark's total `real_time` for this
@@ -63,7 +65,7 @@ calls the function once per iteration with no buffer reuse).
 
 ### Decisive consequence: the gate is size-bound, not kernel-bound
 
-The CPU does the same row in ~0.32 ms. Even a *perfect* GPU kernel rewrite
+The CPU does the same row in ~0.32 ms. Even a _perfect_ GPU kernel rewrite
 (FP32 + CUB sort/scan, removing all kernel cost) would still leave
 ~1.6 ms of setup/transfer + ~2.4 ms of alloc/free per call ≈ a floor far above
 the CPU's 0.32 ms **at these reduced problem sizes**. Therefore FP32 / CUB
@@ -121,7 +123,7 @@ fixable in principle.
 
 The measured breakdown above changes the priority: the gate is **size/overhead-
 bound**, so the first levers must reduce per-call overhead and raise problem
-size, *then* optimize kernels.
+size, _then_ optimize kernels.
 
 1. **Add a paper-scale benchmark configuration.** The reduced sizes (≈2.5k
    points) cannot amortize GPU launch/transfer overhead; without larger problems

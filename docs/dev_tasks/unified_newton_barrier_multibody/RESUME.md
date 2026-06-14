@@ -53,9 +53,9 @@ Current validation passed:
 
 Latest `World::step` self-surface CCD witness follow-up (2026-06-14): the
 checkpoint branch `simx/plan083-worldstep-contact-filter-stats` has been pushed
-and opened as the milestone checkpoint **PR #3000** against `main` (with explicit
-maintainer approval). It is an honest work-in-progress checkpoint, not a
-completion claim, and carries the full local follow-up stack up to the
+and **merged into `main`** as the milestone checkpoint **PR #3000** (2026-06-14,
+with explicit maintainer approval). It was an honest work-in-progress checkpoint,
+not a completion claim, and carries the full local follow-up stack up to the
 contact-filter-stats slice. Work continues locally on the stacked branch
 `simx/plan083-worldstep-gpu-candidate-bridge` (local-only, no PR); the maintainer
 elected to continue evidence packets here rather than carve a focused PR.
