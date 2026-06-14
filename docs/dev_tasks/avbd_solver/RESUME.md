@@ -6,12 +6,14 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current verified branch state: `avbd/source-row-extraction-precheck` is clean at
-local merge commit `5c43ed6f843`, ahead of
-`origin/avbd/source-row-extraction-precheck` by four commits. PR #2991 still
-reports `DIRTY` on GitHub because the local merge and review-fix commits have
-not been pushed. Pushes, review-thread resolution, PR comments, and review
-re-triggers still require explicit maintainer approval.
+Current verified branch state: `avbd/source-row-extraction-precheck` has
+unpushed commits through `47c22bae3b6` before this handoff refresh. Before
+editing this handoff, the worktree was clean and ahead of
+`origin/avbd/source-row-extraction-precheck` by six commits. PR #2991 still
+points at remote head `f21059197f4` and reports `DIRTY` on GitHub because the
+local review fixes and `origin/main` merge have not been pushed. Pushes,
+review-thread resolution, PR comments, and review re-triggers still require
+explicit maintainer approval.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -20,14 +22,18 @@ breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
 Latest local slice: the default sequential-impulse rigid contact assembly now
-skips prescribed/static endpoint arm and tangent effective-mass work while
-preserving dynamic endpoint impulse math. This extends the static-ground-side
-cleanup for the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row.
-This does not refresh the tracked friction-sweep packet, close the frictionless
-source-row CPU gap, or claim GPU parity.
+shares each endpoint's `ContactMaterial` lookup between friction and
+restitution and skips `sqrt` for exact zero combined friction products. This is
+a narrow fixed-cost cleanup for the
+`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. It does not
+refresh the tracked friction-sweep packet, close the frictionless source-row
+CPU gap, or claim GPU parity.
 
-Review follow-up addressed locally: PR review `4492237805` noted that the
-Dynamic Friction panel still plotted `Friction 5 speed` when
+Review follow-up addressed locally: a read-only GitHub thread refresh still
+shows two unresolved Codex bot threads on PR #2991. The older
+numeric-equivalent friction-env thread is covered locally by the focused packet
+writer regression. The newer review `4492237805` thread noted that the Dynamic
+Friction panel still plotted `Friction 5 speed` when
 `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` changed the maximum friction.
 The panel label now derives from `max_friction`, the value is recorded in
 `SceneSetup.info`, and the focused integration test builds the panel under the
@@ -42,7 +48,41 @@ this branch's `--env`/`--metadata` capture overrides and `main`'s
 visual-verification resolved-solver-identity / scene-metrics manifest support.
 No push has been performed.
 
-Validation for the latest local slice:
+Validation for the latest material-lookup slice:
+
+- `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=0 PYTHONPATH=build/default/cpp/Release/python:python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run python - <<'PY' ...`
+  profiled the Python `avbd_demo2d_dynamic_friction` source-shaped scene for
+  eight steps. The last-step profile reported wall time 0.063 ms with
+  `rigid_body_contact` at 0.050 ms / 80.0% wall, so the frictionless row
+  remains contact-stage dominated.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-current-tip-20260614.json --benchmark_out_format=json'`
+  passed before the material-lookup edit. It recorded a 7.924 us median CPU
+  step under load average `14.91, 22.91, 24.88` with CPU scaling enabled.
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests in 85.20 s.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-material-lookup-20260614.json --benchmark_out_format=json'`
+  passed after the edit. It recorded a 7.891 us median CPU step under load
+  average `22.03, 25.22, 25.49` with CPU scaling enabled. This is path smoke
+  only because same-source native timing, visual captures, and packet
+  regeneration were not rerun.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The run
+  overlapped other local DART/CUDA work; slow stages included
+  `test_rigid_ipc_paper_experiments` at 625.34 s, `test_world` at 312.14 s,
+  the simulation-label `test_lcp_jacobi_batch_cuda` at 464.43 s, and the final
+  CUDA smoke `test_lcp_jacobi_batch_cuda` at 381.38 s. The documentation stage
+  retained the existing four `dartpy._world_render_bridge` autodoc warnings but
+  passed. Final CUDA benchmark smokes passed under CPU-scaling warnings and
+  load averages around 5.50-11.65, so treat those timings as smoke evidence
+  only.
+
+Validation for the prior static-endpoint slice:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
   passed.

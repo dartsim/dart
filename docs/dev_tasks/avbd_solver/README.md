@@ -10,22 +10,45 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up (2026-06-14): local branch
-  `avbd/source-row-extraction-precheck` is clean at merge commit
-  `5c43ed6f843`, ahead of `origin/avbd/source-row-extraction-precheck` by four
-  commits. GitHub PR #2991 still shows `DIRTY` because this local merge and the
-  review-fix commit have not been pushed; pushes, review-thread resolution, and
-  review retriggers still require explicit maintainer approval.
+  `avbd/source-row-extraction-precheck` has unpushed commits through
+  `47c22bae3b6` before this handoff refresh. Before editing this handoff, the
+  worktree was clean and ahead of
+  `origin/avbd/source-row-extraction-precheck` by six commits. GitHub PR #2991
+  still points at remote head `f21059197f4` and reports `DIRTY` because the
+  local review fixes and `origin/main` merge have not been pushed. Pushes,
+  review-thread resolution, PR comments, and review retriggers still require
+  explicit maintainer approval.
+- Latest local follow-up (2026-06-14): the current PR #2991 Codex review
+  surface has two unresolved bot threads. The older
+  numeric-equivalent friction-env packet thread is covered locally by
+  `test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env`.
+  The newer Dynamic Friction panel-label thread from review `4492237805` is
+  fixed locally by deriving the plotted high-friction speed label from
+  `max_friction`, with integration coverage for the
+  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. No GitHub reply,
+  thread resolution, push, or review retrigger has been performed.
 - Latest local follow-up (2026-06-14): the default sequential-impulse rigid
+  contact assembly now shares each endpoint's `ContactMaterial` lookup between
+  friction and restitution and skips `sqrt` for exact zero combined friction
+  products. A source-shaped frictionless Dynamic Friction profile still showed
+  `rigid_body_contact` dominating the step at 0.050 ms / 80.0% of a 0.063 ms
+  wall step, and `/0` benchmark smokes recorded 7.924 us before this lookup
+  cleanup and 7.891 us after it under high host load and CPU-scaling warnings.
+  This is path smoke only; it does not refresh the tracked friction-sweep
+  packet, close the frictionless source-row CPU gap, resolve the GitHub review
+  threads, or claim GPU parity. Validation passed the focused
+  `test_world` contact/allocator filter, `pixi run lint`, `pixi run build`,
+  `pixi run test-unit`, and `pixi run -e cuda test-all` on the visible NVIDIA
+  RTX 5000 Ada host. The CUDA run passed all seven categories and retained the
+  existing four `dartpy._world_render_bridge` autodoc warnings during docs.
+- Prior local follow-up (2026-06-14): the default sequential-impulse rigid
   contact assembly now skips prescribed/static endpoint arm and tangent
   effective-mass work while preserving dynamic endpoint impulse math. This
   extends the static-ground-side cleanup for the
   `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
   behavior and baked allocator tests passed, and a `/0` benchmark smoke
   recorded a 7.04 us median CPU step under load average `1.84, 2.00, 1.34`
-  with CPU scaling enabled. The same local follow-up addresses PR review
-  `4492237805` by deriving the Dynamic Friction panel's high-friction speed
-  label from `max_friction`, with integration coverage for the
-  `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION` override. Full validation
+  with CPU scaling enabled. Full validation
   passed `pixi run lint`, `pixi run build`, `pixi run test-unit`, focused
   Python regression, `git diff --check`, and `pixi run -e cuda test-all` on
   the visible NVIDIA RTX 5000 Ada host. This is local path and review-fix
