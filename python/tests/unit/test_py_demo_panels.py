@@ -2737,30 +2737,28 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
         in builder.events
     )
-    for profile_row in solver_profile_rows:
-        assert f"text:{profile_row['solver']}" in builder.events
-        assert f"text:{profile_row['native_surfaces']}" in builder.events
-        assert (
-            f"text:{profile_row['contract_ok_count']}/"
-            f"{profile_row['problem_count']}"
-            in builder.events
-        )
-        assert (
-            f"text:{profile_row['native_contract_ok_count']}/"
-            f"{profile_row['native_case_count']}"
-            in builder.events
-        )
-        assert (
-            f"text:{profile_row['delegated_contract_ok_count']}/"
-            f"{profile_row['delegated_case_count']}"
-            in builder.events
-        )
-        assert f"text:{profile_row['total_elapsed_us']:.1f}" in builder.events
-        assert f"text:{profile_row['max_solution_error']:.2e}" in builder.events
-        assert f"text:{profile_row['max_residual']:.2e}" in builder.events
-        assert f"text:{profile_row['max_complementarity']:.2e}" in builder.events
-        assert f"text:{profile_row['slowest_case']}" in builder.events
-        assert f"text:{profile_row['slowest_elapsed_us']:.1f}" in builder.events
+    assert _table_rows(builder.events, "lcp_solver_profile") == [
+        [
+            profile_row["solver"],
+            profile_row["native_surfaces"],
+            f"{profile_row['contract_ok_count']}/{profile_row['problem_count']}",
+            (
+                f"{profile_row['native_contract_ok_count']}/"
+                f"{profile_row['native_case_count']}"
+            ),
+            (
+                f"{profile_row['delegated_contract_ok_count']}/"
+                f"{profile_row['delegated_case_count']}"
+            ),
+            f"{profile_row['total_elapsed_us']:.1f}",
+            f"{profile_row['max_solution_error']:.2e}",
+            f"{profile_row['max_residual']:.2e}",
+            f"{profile_row['max_complementarity']:.2e}",
+            profile_row["slowest_case"],
+            f"{profile_row['slowest_elapsed_us']:.1f}",
+        ]
+        for profile_row in solver_profile_rows
+    ]
     assert (
         "table:lcp_advanced_solver_parameters:Solver,Surface,Parameters,Defaults,"
         "Benchmark"
