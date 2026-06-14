@@ -148,3 +148,33 @@ size, _then_ optimize kernels.
 These attack the plan's actual blocker (a competitive GPU `World::step`
 candidate path) rather than adding further reduced witness packets, which do not
 move the speedup gate.
+
+## Implemented structural fix and validated results (2026-06-14)
+
+Recommendations 1–2 were implemented for the swept point-triangle and edge-edge
+sweeps in `contact_candidate_filter_cuda.{cu,cpp}`:
+
+- **Paper-scale benchmark config:** added `->Arg(1048576)` (≈10.2k points / 3.1k
+  triangles) to the scene-runtime sweep rows.
+- **Right-sized output buffers:** split each sweep launch into a count phase and
+  a scatter phase. The host now reads the candidate count after the count phase
+  and allocates the accepted output buffers to that count instead of the
+  all-pairs capacity (`pointCount × triangleCount` / `edgeCount²`). This removes
+  the dominant per-call ~31 MB allocation/free and lets the benchmark run
+  paper-scale sizes without all-pairs out-of-memory. The change is **bit-exact**:
+  all 20 `test_contact_candidate_filter_cuda` tests pass, including the
+  exact-index + `1e-14` distance parity checks.
+
+Measured GPU/CPU total-time ratio at paper scale (`/1048576`), warmed up:
+
+| Row                  | Before (all-pairs alloc) |        After (right-sized) |
+| -------------------- | -----------------------: | -------------------------: |
+| point-triangle sweep |     ~14x slower (g/c≈14) |             g/c ≈ **2.7x** |
+| edge-edge sweep      |               ~9x slower | g/c ≈ **0.69x (GPU wins)** |
+
+The edge-edge sweep now beats the CPU at paper scale, and GPU setup dropped from
+~5.3 ms to ~0.05–0.18 ms per call. The remaining point-triangle gap is the FP64
+count kernel (one thread per point looping over all triangles); recommendations
+3–5 (CUB scan/sort, FP32/mixed precision, higher occupancy) target that residual
+and are the next step. This confirms the gate is reachable: the size+overhead
+fix alone already flips one of the two sweep families to a GPU win.

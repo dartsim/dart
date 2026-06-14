@@ -2176,6 +2176,7 @@ static void BM_Plan083SceneRuntimePointTriangleSweepCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083SceneRuntimePointTriangleSweepCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2240,6 +2241,7 @@ static void BM_Plan083SceneRuntimePointTriangleSweepCuda(
 BENCHMARK(BM_Plan083SceneRuntimePointTriangleSweepCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2269,6 +2271,7 @@ static void BM_Plan083SceneRuntimeEdgeEdgeSweepCpu(benchmark::State& state)
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeSweepCpu)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
@@ -2330,6 +2333,7 @@ static void BM_Plan083SceneRuntimeEdgeEdgeSweepCuda(benchmark::State& state)
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeSweepCuda)
     ->Arg(4096)
     ->Arg(65536)
+    ->Arg(1048576)
     ->UseRealTime();
 
 //==============================================================================
