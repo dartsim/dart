@@ -683,7 +683,7 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
 
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
 {
-  return std::find(ids.begin(), ids.end(), id) != ids.end();
+  return std::ranges::contains(ids, id);
 }
 
 } // namespace

@@ -1769,10 +1769,8 @@ void collectMultibodyLinkContactsInto(
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
     const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
     const auto& links = structure.links;
-    const bool aInBody
-        = std::find(links.begin(), links.end(), entityA) != links.end();
-    const bool bInBody
-        = std::find(links.begin(), links.end(), entityB) != links.end();
+    const bool aInBody = std::ranges::contains(links, entityA);
+    const bool bInBody = std::ranges::contains(links, entityB);
     const double friction
         = std::sqrt(frictionOf(entityA) * frictionOf(entityB));
     const double restitution

@@ -314,7 +314,7 @@ Eigen::Isometry3d computeFrameWorldTransform(
 bool containsEntity(
     const std::vector<entt::entity>& entities, entt::entity entity)
 {
-  return std::find(entities.begin(), entities.end(), entity) != entities.end();
+  return std::ranges::contains(entities, entity);
 }
 
 //==============================================================================
