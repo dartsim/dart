@@ -6,15 +6,45 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current verified branch state: after explicit maintainer approval, PR #2991
-branch `avbd/source-row-extraction-precheck` was pushed to origin at
-`1265b12054c` after verifying latest `origin/main` was already merged. The
-previous three CI-fix commits and the AVBD contact-config guard follow-up are
-now on the PR branch, hosted CI restarted, and the local branch is aligned with
-origin. The latest CI follow-up fixes the remaining Linux Release
-AddressSanitizer `EXAMPLE_dart_demos_list` runtime-library failure.
-Review-thread resolution, PR comments, review re-triggers, and any further push
-still require explicit maintainer approval.
+Current follow-up branch / PR state: `avbd/soft-body-inertia-orientation-cache`
+is a follow-up branch built on the now-merged PR #2991, which landed on `main`
+as squash commit `f6fecbc5bd5`. The branch is based on the original pre-squash
+PR head `6f41e9529bf` (that commit is not itself in `main`'s linear history).
+With explicit maintainer approval the branch was merged with the latest
+`origin/main` (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), pushed
+to origin, and opened as follow-up PR #3004 into `main`. It carries the 2D/3D
+Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
+the refreshed Spring/Spring Ratio packets (whose writers record the
+`ignored_collision_pairs` invariant), the
+`World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`
+contact-skip regression test, and handoff-doc refreshes. Review-thread
+resolution, bot replies, review re-triggers, and CI mutations on this PR still
+require explicit maintainer approval.
+
+Previous checkpoint PR state: PR #2991 (branch
+`avbd/source-row-extraction-precheck` into `main`) is MERGED at merge commit
+`f6fecbc5bd5` (merged 2026-06-14), carrying the source-row coverage and
+contact-precheck work, the three CI-fix commits, the AVBD contact-config guard
+follow-up, and the handoff-doc refreshes; its CI rollup passed with no failed
+checks.
+
+Follow-up items identified in PR review:
+
+- Addressed: two coverage tests now exercise the previously untested branches of
+  `shouldSkipRigidBodyContactQuery` that codecov flagged on PR #3004 (3 missing
+  lines). `World.RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored`
+  covers the all-dynamic-pairs-ignored skip return and the both-prescribed audit
+  skip; `World.RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet`
+  covers the >64-candidate audit-limit fallback. The skip-return branch is still
+  behaviorally indistinguishable from the ordinary ignored-pair filter at the
+  World API, so the test asserts the dynamic body falls freely while exercising
+  that line.
+- Deferred: hoist `makeCollisionPairKey` into a shared detail header so the
+  contact-stage audit and `World::setCollisionPairIgnored` cannot drift out of
+  sync (currently duplicated verbatim in `world_step_stage.cpp` and `world.cpp`).
+- Deferred: upgrade the regenerated Spring/Spring Ratio packets from legacy
+  `schema_version` 1 (currently `LEGACY_IDENTITY_EXEMPT`) to version 2 with a
+  `resolved_solver_identity` so the packet-identity check covers them.
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Keep
@@ -22,7 +52,131 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the rigid contact stage now skips the per-contact
+Latest local slice (PR #3004 update): merged the latest `origin/main` into the
+PR branch to clear the CONFLICTING state. The only conflict was
+`world_step_stage.cpp`, where #3000's contact-filter diagnostics changed the
+candidate prefilter; the resolution keeps the branch's ignored-pair audit
+(`isRigidContactCandidate` + the prescribed/ignored-pair candidate scan) and
+adopts main's `geometry.hasShapes()` API. Also addressed the codecov report on
+PR #3004 (3 missing lines in `world_step_stage.cpp`) by adding two coverage
+tests: `World.RigidBodyContactStageSkipsQueryWhenAllDynamicPairsIgnored` (covers
+the all-dynamic-pairs-ignored skip return and the both-prescribed audit skip)
+and `World.RigidBodyContactStageRunsQueryForLargeIgnoredPairCandidateSet`
+(covers the >64-candidate audit-limit fallback). No production logic changed
+beyond the merge resolution and the `hasShapes()` API alignment; no parity is
+claimed. Validation: the merged tree built clean (`pixi run build`), the three
+focused contact-skip tests plus `World.CollisionQueryCanIgnoreSpecificPairs`
+passed, and `pixi run lint` passed. The full
+`pixi run test-all && pixi run -e cuda test-all` sweep (run with `--keep-going`
+at `DART_PARALLEL_JOBS=8` because the host was saturated by other sessions'
+builds) passed Linting, Build, Python, and Documentation in both the default and
+CUDA environments, and CUDA tests passed 8/8. Two tests failed in both
+environments, and both are pre-existing main allocator-correctness gates that
+are byte-identical to `origin/main`, fail deterministically, and are unrelated
+to this PR (this PR's `world_step_stage.cpp` change is confined to the
+sequential-impulse `RigidBodyContactStage` audit and never allocates for
+no-ignored-pair worlds):
+
+- `DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers`: #2996
+  changed the Dantzig `solve()` to an `Eigen::Ref` path that no longer routes
+  work buffers through the scratch's custom allocator, so `allocationCount`
+  stays 0. LCP subsystem; not touched by this PR.
+- `World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`: the rigid-IPC
+  "two-box stack" baked step records one extra base-allocator allocation
+  (4 vs 3) after baking, from #3000/#2996 Newton-barrier/profiling changes.
+  Rigid-IPC/Newton-barrier path; not touched by this PR.
+
+Both reproduce only in the local `DART_BUILD_PROFILE=ON` build (which enables the
+allocator debugger #2996 reworked); PR #3004's hosted CI is green, so they do
+not block #3004. They are recommended for a separate LCP/IPC allocator bug-fix
+(main + release-6.17), not this AVBD PR.
+
+Latest local slice: a new `test_world` regression,
+`World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`,
+locks in the rigid contact stage's ignored-pair no-contact fast path (the path
+the Spring/Spring Ratio source rows rely on). It builds a world with one
+ignored, overlapping rigid-body pair (mirroring a spring-connected source pair)
+plus a non-ignored body dropped onto static ground, steps the default pipeline,
+then asserts the dropped body is still caught on the ground top (the collision
+query was not skipped) while the ignored pair stays overlapping and the ignored
+count stays at one. A temporary mutation that skipped the query whenever any
+ignored pair existed made the dropped body free-fall to z = -1.18 m and failed
+the assertions, confirming the test guards the `shouldSkipRigidBodyContactQuery`
+audit branch; the mutation was reverted before final validation. This slice adds
+no production-code change, refreshes no tracked packet, opens no follow-up PR,
+resolves no GitHub review threads, and claims no CPU/GPU/paper-number parity.
+Validation:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryCanIgnoreSpecificPairs:World.CollisionQuerySkipsLiveRigidBodyJointPairs:World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.MultibodyLinkRestsOnStaticGround' --gtest_brief=1`
+  passed, 5 tests.
+- Mutation check: temporarily adding `if (hasIgnoredCollisionPairs) return true;`
+  to `shouldSkipRigidBodyContactQuery` rebuilt `test_world` and failed the new
+  test with `lander z = -1.18`; the mutation was reverted and `git diff` on
+  `dart/simulation/compute/world_step_stage.cpp` is empty.
+- `pixi run lint` passed.
+- `pixi run test-unit` passed, 161 tests.
+
+Previous local slice: the 2D/3D Spring and Spring Ratio tracked packets now
+reflect the spring-connected ignored-pair configuration. The packet writers
+require `ignored_collision_pairs` benchmark counters, and the refreshed packets
+record one ignored pair for Spring and seven adjacent ignored pairs for Spring
+Ratio. Refreshed same-host packet evidence records DART at 3.44 us versus
+0.856 us for 2D Spring, 35.12 us versus 7.83 us for 2D Spring Ratio, 3.99 us
+versus 1.62 us for 3D Spring, and 30.53 us versus 8.55 us for 3D Spring Ratio.
+Those ratios keep all four Spring/Spring Ratio CPU-win gates open. This local
+branch does not add GPU packets, push a follow-up PR, resolve GitHub review
+threads, or claim GPU/paper-number parity.
+
+Previous local slice: the 3D Spring and Spring Ratio source rows now explicitly
+ignore collision pairs that are already connected by the measured spring
+constraints. The C++ `BM_AvbdDemo3dSpringStep` and
+`BM_AvbdDemo3dSpringRatioStep` benchmark constructors mirror those ignored
+pairs and expose `ignored_collision_pairs` counters. Focused Python coverage
+asserts the 3D Spring row has one ignored pair and the 3D Spring Ratio row has
+seven adjacent ignored pairs, and also verifies a non-adjacent 3D Spring Ratio
+pair remains collidable. The benchmark smoke is configuration/path evidence
+only under high local load; it does not refresh a tracked packet, close the 3D
+Spring/Spring Ratio CPU gates, push a follow-up PR, resolve GitHub review
+threads, or claim GPU/paper-number parity.
+
+Previous local slice: the 2D Spring and Spring Ratio source rows now explicitly
+ignore collision pairs that are already connected by the measured spring
+constraints. The C++ `BM_AvbdDemo2dSpringStep` and
+`BM_AvbdDemo2dSpringRatioStep` benchmark constructors mirror those ignored
+pairs and expose `ignored_collision_pairs` counters. The rigid body contact
+stage keeps the old fast path for worlds without ignored pairs, audits small
+rigid-body candidate sets when ignored pairs exist, and skips collision query
+work only when every dynamic-involving candidate pair is explicitly ignored.
+This is deliberately bounded to small worlds; larger candidate sets fall back
+to the ordinary collision query path. Focused Python coverage asserts the
+Spring row has one ignored pair and Spring Ratio has seven adjacent ignored
+pairs, and also verifies a non-adjacent Spring Ratio pair remains collidable.
+This local branch does not refresh a tracked packet, close a CPU-win gate, push
+a follow-up PR, resolve GitHub review threads, or claim GPU/paper-number
+parity.
+
+Previous local slice: `addAvbdRigidBodyInertiaTermLowerTriangle()` now reuses
+the already normalized current orientation and normalizes the inertial target
+once before computing the rigid body orientation error, avoiding repeated
+normalization in the hot block-descent body assembly path. The public robust
+orientation-error helpers still normalize their inputs. Focused regression
+coverage compares the lower-triangle inertia helper against the full symmetric
+helper for scaled current and target quaternions. Validation passed the target
+rebuild, the new focused test, the full `test_avbd_rigid_block` suite (100
+tests), `pixi run lint`, `pixi run build`, and `pixi run test-unit` (161
+tests). Same-session benchmark smoke rebuilt PR head `6f41e9529bf` and this
+local branch under similar load: PR head recorded
+`BM_AvbdDemo2dSoftBodyStep` at 1.810 ms median CPU, while the local inertia
+cleanup recorded 1.792 ms median CPU. Treat that as narrow smoke only because
+CPU scaling was enabled and tracked source/native packets were not regenerated.
+A broader normalized-orientation reuse probe for assembly world-point/angular
+row helpers was also built and tested, but it measured 1.821 ms median CPU
+versus the 1.792 ms current-branch baseline, so the probe was reverted and no
+code from it is kept.
+
+Latest pushed PR slice: the rigid contact stage now skips the per-contact
 `rigidAvbdContactStageConfig()` scan unless the registry has
 `RigidAvbdContactConfig` storage. Default sequential-impulse worlds such as the
 frictionless Dynamic Friction source row already queried contacts without AVBD
@@ -103,6 +257,90 @@ tests. Focused regression coverage now passes
 the full `python/tests/unit/test_run_cpp_example.py` file passes, and
 `pixi run lint` passes. This CI-smoke fix and regression were pushed as part of
 PR head `0bf4ca6b8ae`.
+
+Validation for the latest 2D/3D Spring/Spring Ratio packet-refresh slice:
+
+- `pixi run pytest python/tests/unit/test_write_avbd_demo2d_spring_packets.py python/tests/unit/test_write_avbd_demo3d_spring_packets.py -q`
+  passed, 11 tests.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `PYTHONPATH=build/default/cpp/Release/python:python DARTPY_RUNTIME_DIR=build/default/cpp/Release/python/dartpy LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run python scripts/capture_py_demo.py --scene <spring-scene> --frames 24 --width 640 --height 360 --output-dir /tmp/avbd-spring-packet-refresh-20260614/captures/<spring-scene>`
+  passed for `avbd_demo2d_spring`, `avbd_demo2d_spring_ratio`,
+  `avbd_demo3d_spring`, and `avbd_demo3d_spring_ratio`; all captures reported
+  `Final contacts: 0`.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo(2d|3d)Spring(Ratio)?Step$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-spring-packet-refresh-20260614/dart-spring-benchmarks.json --benchmark_out_format=json'`
+  passed under load average `2.30, 5.23, 9.54` with CPU scaling enabled. Median
+  CPU times were 3.440 us for 2D Spring, 35.121 us for 2D Spring Ratio,
+  3.991 us for 3D Spring, and 30.526 us for 3D Spring Ratio, with
+  `ignored_collision_pairs=1`, `7`, `1`, and `7` respectively.
+- `pixi run python scripts/run_avbd_demo2d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo2d --scene spring --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo2d-spring.json`
+  passed against source revision `74699a11f858`.
+- `pixi run python scripts/run_avbd_demo2d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo2d --scene spring_ratio --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo2d-spring-ratio.json`
+  passed against source revision `74699a11f858`.
+- `pixi run python scripts/run_avbd_demo3d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo3d --scene spring --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo3d-spring.json`
+  passed against source revision `7701bd427d55`.
+- `pixi run python scripts/run_avbd_demo3d_reference_timing.py --source-dir /tmp/avbd-spring-packet-refresh-20260614/avbd-demo3d --scene spring_ratio --output /tmp/avbd-spring-packet-refresh-20260614/ref-demo3d-spring-ratio.json`
+  passed against source revision `7701bd427d55`.
+- The four packet writers passed and refreshed
+  `avbd-demo2d-spring-packet.json`, `avbd-demo2d-spring-ratio-packet.json`,
+  `avbd-demo3d-spring-packet.json`, and
+  `avbd-demo3d-spring-ratio-packet.json`. Packet ratios are 4.02x slower,
+  4.48x slower, 2.47x slower, and 3.57x slower than the corresponding native
+  source rows, so the CPU-win gates remain open.
+
+Validation for the latest 3D Spring/Spring Ratio ignored-pair slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run env PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo3d_spring_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo3d_spring_ratio_scene_matches_source_row -q`
+  passed, 2 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo3d(SpringStep|SpringRatioStep)$" --benchmark_min_time=0.3s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-local-3d-spring-contact-filter-20260614.json --benchmark_out_format=json'`
+  passed. Under load average `22.04, 11.41, 8.44` with CPU scaling enabled,
+  it recorded median CPU step times of 9.880 us for
+  `BM_AvbdDemo3dSpringStep` with `ignored_collision_pairs=1` and 78.036 us
+  for `BM_AvbdDemo3dSpringRatioStep` with `ignored_collision_pairs=7`. This is
+  source-row configuration/path smoke only because same-source native timing,
+  visual captures, and packet regeneration were not rerun.
+- `git diff --check` passed.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The final report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The simulation
+  label passed 73/73 tests in 963.42 s, including
+  `test_rigid_ipc_paper_experiments` at 578.36 s and
+  `test_lcp_jacobi_batch_cuda` at 207.77 s. The CUDA-specific label passed 8/8
+  tests in 210.65 s, with `test_lcp_jacobi_batch_cuda` at 207.54 s. The docs
+  build passed with the existing four `dartpy._world_render_bridge` autodoc
+  import warnings, and CUDA benchmark smokes passed under CPU-scaling warnings
+  and load averages around 8-10, so treat those timings as smoke evidence only.
+
+Validation for the latest Spring/Spring Ratio ignored-pair slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.SimulationCollisionQueryCanIgnoreSpecificPairs:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `pixi run env PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_spring_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_spring_ratio_scene_matches_source_row -q`
+  passed, 2 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2d(SpringStep|SpringRatioStep)$" --benchmark_min_time=0.3s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-local-spring-contact-filter-final-20260614.json --benchmark_out_format=json'`
+  passed. Under load average `2.90, 5.92, 8.45` with CPU scaling enabled, it
+  recorded median CPU step times of 3.313 us for
+  `BM_AvbdDemo2dSpringStep` with `ignored_collision_pairs=1` and 34.588 us
+  for `BM_AvbdDemo2dSpringRatioStep` with `ignored_collision_pairs=7`. This is
+  source-row path smoke only because same-source native timing, visual
+  captures, and packet regeneration were not rerun.
+- `git diff --check` passed.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The final CUDA
+  simulation label passed 8/8 tests; its slowest test was
+  `test_lcp_jacobi_batch_cuda` at 208.20 s. Final CUDA benchmark smokes passed
+  under CPU-scaling warnings and load averages around 15.70-16.38, so treat
+  those timings as smoke evidence only.
 
 Validation for the latest AVBD config-guard slice:
 

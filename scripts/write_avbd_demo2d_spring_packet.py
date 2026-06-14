@@ -164,6 +164,7 @@ SPRING_SPEC = SpringPacketSpec(
         "rigid_body_joints": 0.0,
         "distance_springs": 1.0,
         "collision_shapes": 2.0,
+        "ignored_collision_pairs": 1.0,
         "source_scene_index": 9.0,
     },
     reference_counts={
@@ -199,6 +200,7 @@ SPRING_RATIO_SPEC = SpringPacketSpec(
         "rigid_body_joints": 0.0,
         "distance_springs": 7.0,
         "collision_shapes": 8.0,
+        "ignored_collision_pairs": 7.0,
         "source_scene_index": 10.0,
     },
     reference_counts={

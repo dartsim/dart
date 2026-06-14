@@ -226,6 +226,39 @@ TEST(AvbdRigidBlock, InertiaTermSolvesBackToInertialTarget)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, LowerTriangleInertiaTermMatchesFullForScaledOrientations)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 0.5);
+  state.orientation = rotationZ(0.4);
+  state.orientation.coeffs() *= 3.0;
+
+  vbd::AvbdRigidBodyState target;
+  target.position = Vec3(-0.5, 0.25, 1.5);
+  target.orientation = rotationZ(-0.35);
+  target.orientation.coeffs() *= 2.0;
+
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  inertia.diagonal() = Vec3(4.0, 5.0, 6.0);
+
+  vbd::AvbdRigidBodyBlock fullBlock;
+  vbd::addAvbdRigidBodyInertiaTerm(
+      fullBlock, /*mass=*/2.0, inertia, /*timeStep=*/0.5, state, target);
+
+  vbd::AvbdRigidBodyBlock lowerBlock;
+  vbd::addAvbdRigidBodyInertiaTermLowerTriangle(
+      lowerBlock, /*mass=*/2.0, inertia, /*timeStep=*/0.5, state, target);
+
+  EXPECT_NEAR((fullBlock.force - lowerBlock.force).norm(), 0.0, 1e-12);
+  for (int row = 0; row < fullBlock.hessian.rows(); ++row) {
+    for (int col = 0; col <= row; ++col) {
+      EXPECT_NEAR(
+          lowerBlock.hessian(row, col), fullBlock.hessian(row, col), 1e-12);
+    }
+  }
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointAttachmentStampsForceTorqueAndPsdHessian)
 {
   vbd::AvbdRigidBodyState state;
