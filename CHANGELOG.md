@@ -3841,6 +3841,21 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Improved Filament rendering fidelity and made debug visuals a first-class
+    `dart::gui` feature: per-shape PBR (`VisualAspect` metallic/roughness/
+    reflectance, threaded through `MaterialDescriptor` to primitive shapes);
+    full texture mip chains with trilinear/anisotropic sampling; a
+    `DART_GUI_HIGH_FIDELITY` opt-in that restores the heavy screen-space passes
+    on the headless path for GPU capture; an `ApplicationOptions::debugProvider`
+    callback that feeds per-frame debug lines/triangles/labels into the built-in
+    overlay (so hosts no longer re-implement overlay wiring per example); new
+    `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers usable from the
+    provider; and built-in panel toggles plus numeric tuning sliders for the
+    debug overlays. dartpy now exposes the `DebugScene` descriptor bundle, and
+    `pixi run py-demos -- --scene gui_fidelity_debug_visuals` provides a focused
+    manual PBR/debug-provider verification scene. See
+    `docs/design/renderer_fidelity_and_debug_visuals.md`.
+    ([#2984](https://github.com/dartsim/dart/pull/2984))
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,

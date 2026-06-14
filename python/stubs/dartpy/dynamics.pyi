@@ -3059,9 +3059,27 @@ class VisualAspect:
 
     def getShadowed(*args, **kwargs) -> Any: ...
 
+    def setMetallic(*args, **kwargs) -> Any: ...
+
+    def getMetallic(*args, **kwargs) -> Any: ...
+
+    def setRoughness(*args, **kwargs) -> Any: ...
+
+    def getRoughness(*args, **kwargs) -> Any: ...
+
+    def setReflectance(*args, **kwargs) -> Any: ...
+
+    def getReflectance(*args, **kwargs) -> Any: ...
+
     get_hidden = getHidden
 
+    get_metallic = getMetallic
+
     get_rgba = getRGBA
+
+    get_reflectance = getReflectance
+
+    get_roughness = getRoughness
 
     get_shadowed = getShadowed
 
@@ -3069,7 +3087,13 @@ class VisualAspect:
 
     set_hidden = setHidden
 
+    set_metallic = setMetallic
+
     set_rgba = setRGBA
+
+    set_reflectance = setReflectance
+
+    set_roughness = setRoughness
 
     set_shadowed = setShadowed
 

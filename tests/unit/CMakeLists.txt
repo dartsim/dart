@@ -388,6 +388,11 @@ dart_build_tests(
     math/lie_group/test_batch.cpp
 )
 
+if(TARGET dart-gui-core)
+  dart_add_test("unit" UNIT_gui_DebugVisuals gui/test_gui_debug_visuals.cpp)
+  target_link_libraries(UNIT_gui_DebugVisuals dart-gui-core)
+endif()
+
 if(TARGET dart-gui AND TARGET dart-imgui-lib)
   # DART-patched ImGui guard tests only work with the fetched ImGui target.
   dart_add_test(

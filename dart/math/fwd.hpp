@@ -320,16 +320,6 @@ using Translation3f = Translation3<float>;
 using Translation3d = Translation3<double>;
 
 //------------------------------------------------------------------------------
-// Eigen solvers
-//------------------------------------------------------------------------------
-
-template <typename MatrixType>
-using JacobiSVD = ::Eigen::JacobiSVD<MatrixType>;
-
-template <typename MatrixType>
-using FullPivLU = ::Eigen::FullPivLU<MatrixType>;
-
-//------------------------------------------------------------------------------
 // Lie Groups
 //------------------------------------------------------------------------------
 

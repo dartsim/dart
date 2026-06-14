@@ -32,6 +32,7 @@
 
 #include "renderable_sync.hpp"
 
+#include <dart/gui/detail/renderable_factory.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <filament/Engine.h>
@@ -59,12 +60,11 @@ using ::filament::math::mat4f;
 
 mat4f toFilamentTransform(const Eigen::Isometry3d& transform)
 {
-  const Eigen::Matrix4d matrix = transform.matrix();
+  const Eigen::Matrix4f matrix = transform.matrix().cast<float>();
   mat4f out;
+  // filament mat4f and Eigen are both column-major; copy column by column.
   for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      out[col][row] = static_cast<float>(matrix(row, col));
-    }
+    Eigen::Map<Eigen::Vector4f>(out[col].v) = matrix.col(col);
   }
   return out;
 }
@@ -200,6 +200,17 @@ void updateSceneRenderableFromDescriptor(
           descriptor, renderSettings, camera, viewportWidth, viewportHeight));
   applyRenderableShadowSettings(
       engine, sceneRenderable.renderable, descriptor.material);
+  // Per-shape PBR overrides (metallic/roughness/reflectance) are applied to the
+  // material instance at creation, so a retained renderable must re-apply them
+  // here to track providers that edit those values in place without forcing a
+  // rebuild. This mirrors the live base-color update above and the creation
+  // path in createRenderable(), and is gated identically: only lit primitives
+  // carry overridable PBR parameters, while unlit (line/point/voxel) and asset
+  // mesh renderables manage their own materials.
+  if (shapeUsesLitMaterialOverride(descriptor.geometry.kind)) {
+    applyDescriptorMaterialOverride(
+        sceneRenderable.renderable, descriptor.material);
+  }
 }
 
 bool updateSceneRenderablesFromDescriptors(

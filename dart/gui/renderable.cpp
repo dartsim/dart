@@ -94,6 +94,20 @@ std::size_t computeRenderResourceVersion(
   std::size_t seed = shapeVersion;
   hashCombine(seed, static_cast<std::size_t>(geometry.kind));
   hashCombine(seed, std::hash<double>{}(material.rgba.w()));
+  // PBR overrides are applied at renderable creation, so changing them must
+  // bump the resource version to force a rebuild that re-applies the new
+  // values. The empty-optional sentinel is a probabilistic distinguisher, not
+  // a guaranteed-disjoint one: some double's hash could equal it, in which
+  // case the worst outcome is a missed rebuild on a runtime edit.
+  const auto hashOptional = [&seed](const std::optional<double>& value) {
+    hashCombine(
+        seed,
+        value.has_value() ? std::hash<double>{}(*value)
+                          : static_cast<std::size_t>(0x9e3779b97f4a7c15ULL));
+  };
+  hashOptional(material.metallic);
+  hashOptional(material.roughness);
+  hashOptional(material.reflectance);
   if (geometry.kind == ShapeKind::Mesh) {
     hashCombine(seed, geometry.meshUsesMaterialColors ? 1u : 0u);
     hashCombine(seed, static_cast<std::size_t>(geometry.meshAlphaMode));
@@ -180,6 +194,17 @@ RenderableDescriptor assembleRenderableDescriptor(
   descriptor.material.visible = !visualAspect.isHidden();
   descriptor.material.castsShadows = visualAspect.getShadowed();
   descriptor.material.receivesShadows = visualAspect.getShadowed();
+  // Negative aspect PBR values mean "renderer default"; only forward explicit,
+  // non-negative overrides into the descriptor.
+  if (visualAspect.getMetallic() >= 0.0) {
+    descriptor.material.metallic = visualAspect.getMetallic();
+  }
+  if (visualAspect.getRoughness() >= 0.0) {
+    descriptor.material.roughness = visualAspect.getRoughness();
+  }
+  if (visualAspect.getReflectance() >= 0.0) {
+    descriptor.material.reflectance = visualAspect.getReflectance();
+  }
   descriptor.worldTransform = shapeFrame.getWorldTransform();
   descriptor.shapeFrameVersion = shapeFrame.getVersion();
   descriptor.shapeNodeVersion = descriptor.shapeNode != nullptr

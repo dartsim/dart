@@ -48,9 +48,6 @@ struct DART_API FixedFrameProperties
 
   FixedFrameProperties(
       const Eigen::Isometry3d& relativeTf = Eigen::Isometry3d::Identity());
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace detail

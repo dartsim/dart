@@ -1264,6 +1264,10 @@ class SceneSetup:
     rendering. When omitted, the runner also checks whether ``world`` provides a
     ``renderable_provider`` method.
 
+    ``debug_provider`` returns renderer-neutral debug overlay geometry for the
+    current frame. The provider returns ``dart.gui.DebugScene`` and is wired into
+    the built-in viewer overlay instead of adding ad-hoc renderables.
+
     ``info`` carries scene-specific metadata for tests and panels. Scenes may
     expose ``info["capture_metrics"]`` as a zero-argument callable returning a
     JSON-like mapping for ``py-demo-capture`` manifests, or
@@ -1276,6 +1280,7 @@ class SceneSetup:
     force_drag: Callable[[dict[str, Any]], None] | None = None
     panels: list[ScenePanel] = field(default_factory=list)
     renderable_provider: Callable[[], list[Any]] | None = None
+    debug_provider: Callable[[], Any] | None = None
     info: dict[str, Any] = field(default_factory=dict)
 
 
@@ -2645,7 +2650,7 @@ def _make_world_factory(
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
     Returns a tuple consumed by the viewer binding:
-      ``(pre_step, force_drag, panels, renderable_provider)``.
+      ``(pre_step, force_drag, panels, renderable_provider, debug_provider)``.
     """
 
     def factory() -> Any:
@@ -2681,6 +2686,7 @@ def _make_world_factory(
             setup.force_drag,
             panels if panels else None,
             renderable_provider,
+            setup.debug_provider,
         )
 
     return factory

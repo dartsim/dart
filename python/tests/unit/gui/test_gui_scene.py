@@ -100,6 +100,34 @@ def test_gui_extract_renderables_from_world():
     material_descriptor = dart.gui.MeshMaterialDescriptor()
     assert hasattr(material_descriptor, "base_color_texture_path")
     assert hasattr(material_descriptor, "metallic_roughness_texture_path")
+    material = dart.gui.MaterialDescriptor()
+    assert material.metallic is None
+    assert material.roughness is None
+    assert material.reflectance is None
+    material.metallic = 0.7
+    material.roughness = 0.25
+    material.reflectance = 0.45
+    assert material.metallic == pytest.approx(0.7)
+    assert material.roughness == pytest.approx(0.25)
+    assert material.reflectance == pytest.approx(0.45)
+    material.metallic = None
+    assert material.metallic is None
+    line = dart.gui.DebugLineDescriptor()
+    line.thickness = 3.0
+    assert line.thickness == pytest.approx(3.0)
+    triangle = dart.gui.DebugTriangleDescriptor()
+    triangle.b = np.array([1.0, 0.0, 0.0])
+    assert np.allclose(triangle.b, [1.0, 0.0, 0.0])
+    label = dart.gui.DebugLabelDescriptor()
+    label.text = "debug label"
+    assert label.text == "debug label"
+    debug_scene = dart.gui.DebugScene()
+    debug_scene.lines = [line]
+    debug_scene.triangles = [triangle]
+    debug_scene.labels = [label]
+    assert len(debug_scene.lines) == 1
+    assert len(debug_scene.triangles) == 1
+    assert len(debug_scene.labels) == 1
     active_state = dart.gui.ActiveRenderableState()
     assert hasattr(active_state, "shape_version")
     assert hasattr(active_state, "render_resource_version")
@@ -480,7 +508,11 @@ def test_gui_extract_renderables_from_simple_frame():
         dart.gui.world_render_frame(), "interactive_target", transform
     )
     frame.set_shape(dart.BoxShape(np.array([0.4, 0.5, 0.6])))
-    frame.get_visual_aspect(True).set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
+    visual = frame.get_visual_aspect(True)
+    visual.set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
+    visual.set_metallic(0.65)
+    visual.set_roughness(0.2)
+    visual.set_reflectance(-1.0)
     scene.add_simple_frame(frame)
 
     renderables = scene.renderable_provider()
@@ -494,6 +526,9 @@ def test_gui_extract_renderables_from_simple_frame():
     assert descriptor.shape_node_version > 0
     assert descriptor.geometry.kind == dart.gui.ShapeKind.Box
     assert np.allclose(descriptor.geometry.size, [0.4, 0.5, 0.6])
+    assert descriptor.material.metallic == pytest.approx(0.65)
+    assert descriptor.material.roughness == pytest.approx(0.2)
+    assert descriptor.material.reflectance is None
     assert np.allclose(descriptor.world_transform.translation(), [1.0, -2.0, 0.5])
 
     assert not dart.gui.translate_simple_frame_renderable(
@@ -656,6 +691,49 @@ def test_gui_support_polygon_debug_options():
     lines = dart.gui.make_support_polygon_debug_lines(skeleton, options, "supportless")
 
     assert len(lines) == 0
+
+
+@requires_gui_bindings
+def test_gui_joint_axis_and_velocity_debug_lines():
+    skeleton = dart.Skeleton("debug_helpers")
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair()
+    joint.set_axis(np.array([0.0, 0.0, 1.0]))
+
+    options = dart.gui.DebugDrawOptions()
+    options.draw_joint_axes = True
+    options.joint_axis_length = 0.4
+    assert options.draw_joint_axes is True
+    assert np.isclose(options.joint_axis_length, 0.4)
+
+    axis_lines = dart.gui.make_joint_axis_debug_lines(body, options, "debug")
+    assert len(axis_lines) == 1
+    assert axis_lines[0].label == "debug.joint_axis"
+    assert np.isclose(
+        np.linalg.norm(axis_lines[0].to_point - axis_lines[0].from_point), 0.8
+    )
+
+    options.draw_joint_axes = False
+    assert dart.gui.make_joint_axis_debug_lines(body, options) == []
+
+    joint.set_velocities(np.array([2.0]))
+    options.draw_angular_velocities = True
+    options.angular_velocity_scale = 0.25
+    options.velocity_min_length = 0.02
+    options.velocity_max_length = 1.0
+    angular_lines = dart.gui.make_velocity_debug_lines(body, options, "debug")
+    assert len(angular_lines) > 0
+    assert angular_lines[0].label == "debug.vel_angular"
+
+    free_joint, free_body = skeleton.create_free_joint_and_body_node_pair()
+    velocities = np.zeros(6)
+    velocities[3] = 2.0
+    free_joint.set_velocities(velocities)
+    options.draw_angular_velocities = False
+    options.draw_linear_velocities = True
+    options.linear_velocity_scale = 0.5
+    linear_lines = dart.gui.make_velocity_debug_lines(free_body, options, "debug")
+    assert len(linear_lines) > 0
+    assert linear_lines[0].label == "debug.vel_linear"
 
 
 @requires_gui_bindings
