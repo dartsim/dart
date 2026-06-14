@@ -61,9 +61,6 @@ struct DART_API EndEffectorProperties
 
   EndEffectorProperties(
       const Eigen::Isometry3d& defaultTf = Eigen::Isometry3d::Identity());
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -74,9 +71,6 @@ struct SupportStateData
   bool mActive;
 
   inline SupportStateData(bool active = false) : mActive(active) {}
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -92,9 +86,6 @@ struct SupportPropertiesData
     : mGeometry(geometry)
   {
   }
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 void DART_API SupportUpdate(Support* support);

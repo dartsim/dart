@@ -26,7 +26,7 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++23
 physics engine for robotics, animation, and machine learning. It exposes
 transparent kinematics, dynamics, collision, constraint-solving, model-loading,
 and Python-binding foundations so researchers can build on DART rather than
@@ -71,7 +71,7 @@ This onboarding guide is organized into several focused documents:
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
 - **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
 - **[api-boundaries.md](api-boundaries.md)** - Public vs internal API policy, Python exposure, and symbol visibility
-- **[api-boundary-inventory.md](api-boundary-inventory.md)** - Generated public-header and dartpy boundary inventory
+- On-demand public-header and dartpy boundary inventory report via `pixi run report-api-boundary-inventory` (generated to an untracked build path, not committed)
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
@@ -126,7 +126,7 @@ DART addresses the need for:
 
 | Category                | Technology         | Purpose                   |
 | ----------------------- | ------------------ | ------------------------- |
-| **Core Language**       | C++20              | Main implementation       |
+| **Core Language**       | C++23              | Main implementation       |
 | **Build System**        | CMake 4.2.3+       | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x     | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+       | Math operations           |

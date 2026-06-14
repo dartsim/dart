@@ -130,6 +130,7 @@ using dart::gui::detail::FrameViewport;
 using dart::gui::detail::getCurrentImGuiIo;
 using dart::gui::detail::getNativeWindow;
 using dart::gui::detail::GuiScaleState;
+using dart::gui::detail::highFidelityHeadlessRequested;
 using dart::gui::detail::ImGuiOverlay;
 using dart::gui::detail::initialCameraForScene;
 using dart::gui::detail::InitialSceneState;
@@ -222,6 +223,7 @@ void applySceneOptions(
   }
   appOptions.gizmos = src.gizmos;
   appOptions.debugLabels = src.debugLabels;
+  appOptions.debugProvider = src.debugProvider;
   appOptions.ikHandles = src.ikHandles;
   appOptions.bodyNodeDragHandles = src.bodyNodeDragHandles;
   appOptions.keyboardActions = src.keyboardActions;
@@ -1016,6 +1018,7 @@ int runGuiBackendApplicationImpl(
       }
       appOptions.gizmos = applicationOptions.gizmos;
       appOptions.debugLabels = applicationOptions.debugLabels;
+      appOptions.debugProvider = applicationOptions.debugProvider;
       appOptions.ikHandles = applicationOptions.ikHandles;
       appOptions.bodyNodeDragHandles = applicationOptions.bodyNodeDragHandles;
       appOptions.keyboardActions = applicationOptions.keyboardActions;
@@ -1073,9 +1076,15 @@ int runGuiBackendApplicationImpl(
   auto* engine = renderContext.engine;
   auto* scene = renderContext.scene;
   auto* colorGrading = createDebugColorGrading(*engine);
+  // The heavy screen-space passes are normally skipped when headless (CI
+  // renders on llvmpipe). On a real GPU, DART_GUI_HIGH_FIDELITY restores them
+  // so headless sensor/synthetic-data capture matches the windowed image. Treat
+  // such runs as non-lightweight even though they are headless.
+  const bool useLightweightPasses
+      = runOptions.headless && !highFidelityHeadlessRequested();
   for (auto* view : renderContext.views) {
     if (view != nullptr) {
-      configureMainView(*view, colorGrading, runOptions.headless);
+      configureMainView(*view, colorGrading, useLightweightPasses);
     }
   }
   auto* indirectLight = createNeutralIndirectLight(*engine);
@@ -1091,7 +1100,7 @@ int runGuiBackendApplicationImpl(
   bool showPerfHud = appOptions.showPerfHud;
   SceneLights lights = createSceneLights(
       *engine,
-      runOptions.headless,
+      useLightweightPasses,
       orbitLight,
       appOptions.orbitLightPeriodSeconds);
   attachSceneEnvironment(*scene, indirectLight, skybox, lights);

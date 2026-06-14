@@ -1,5 +1,7 @@
 # DART Python Bindings (dartpy)
 
+> dartpy requires **Python 3.14+** (the default `python3` in Ubuntu 26.04 LTS).
+
 ## Start here next time
 
 - Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
@@ -16,7 +18,7 @@
 
 - Header-only library with a CMake-first workflow
 - Eigen ↔ NumPy integration via `nanobind/eigen/*` (used throughout `python/dartpy/`)
-- Modern C++17+ support (DART is built as C++20)
+- Modern C++ support (DART is built as C++23)
 - Designed for high-performance bindings
 
 ### Why scikit-build-core?
@@ -118,6 +120,40 @@ skel.set_positions(np.array([0.1, 0.2, 0.3]))
 positions = skel.get_positions()  # Returns ndarray
 ```
 
+### Standalone LCP Bindings
+
+The DART 7 standalone LCP research surface is exposed through the flat `dartpy`
+namespace, matching the rest of the promoted Python API:
+`dart.LcpProblem`, `dart.LcpOptions`, `dart.LcpResult`,
+`dart.LcpSolverStatus`, and the concrete solver classes such as
+`dart.DantzigSolver`, `dart.PgsSolver`, and
+`dart.BoxedSemiSmoothNewtonSolver`. The implementation lives under the math
+binding module, but new user code should prefer the flat names instead of the
+deprecated `dart.math` module path.
+
+`LcpSolver.solve(problem, initial_guess=None, options=None)` returns
+`(result, solution)` so Python examples and tests can compare all solver
+outputs on the same problem without relying on in-place mutation. This is a
+standalone comparison API; DART 7 `World` contact behavior remains configured by
+public method values such as `ContactSolverMethod.BOXED_LCP`.
+`LcpProblem.is_valid()` and `get_validation_message()` expose the same
+pre-solve invariant checks as C++, which lets demos report malformed LCP packets
+before comparing solver results.
+`LcpSolver.supports_standard_lcp()`, `supports_boxed_lcp()`,
+`supports_friction_index()`, and
+`supports_problem(problem, standard_tolerance=None)` report native solver-family
+coverage, which lets py-demos separate direct apples-to-apples rows from
+boxed/findex paths that are solved through fallback delegation. The optional
+standard tolerance mirrors C++ `LcpProblem::getType(tol)` for near-canonical
+standard forms; solver-specific native limits are included, so
+`DirectSolver.supports_problem()` reports false for standard packets above its
+tiny direct-enumeration size, `BaraffSolver.supports_problem()` reports false
+for non-symmetric or indefinite standard packets, and
+`MprgpSolver.supports_problem()` reports false for non-symmetric or
+non-positive-definite standard packets even though `solve()` can still
+delegate. Invalid dimensions, non-finite problem data, invalid bound
+directions, or invalid `findex` references report no native support.
+
 ### Binding Conventions
 
 - Prefer shared numeric conversion helpers for Python inputs (sequences and NumPy) so bindings behave consistently across modules.
@@ -210,7 +246,7 @@ conda install dartpy -c conda-forge
 
 Wheels are built using **pixi** environments defined in `pixi.toml`:
 
-- Features: `py312-wheel`, `py313-wheel`
+- Feature: `py314-wheel`
 - Platform-specific build tasks
 - Filament-backed GUI enabled on all official wheel platforms through
   `DART_BUILD_GUI=ON`
@@ -219,20 +255,16 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 
 ```bash
 # Build
-pixi run -e py312-wheel wheel-build
-pixi run -e py313-wheel wheel-build
+pixi run -e py314-wheel wheel-build
 
 # Repair (Linux only - run auditwheel)
-pixi run -e py312-wheel wheel-repair
-pixi run -e py313-wheel wheel-repair
+pixi run -e py314-wheel wheel-repair
 
 # Verify and test
-pixi run -e py312-wheel wheel-verify wheel-test
-pixi run -e py313-wheel wheel-verify wheel-test
+pixi run -e py314-wheel wheel-verify wheel-test
 
 # Publish
-pixi run -e py312-wheel wheel-upload
-pixi run -e py313-wheel wheel-upload
+pixi run -e py314-wheel wheel-upload
 ```
 
 Run Linux wheel import tests after `wheel-repair`, not against the raw
@@ -338,6 +370,6 @@ robot.setForces(forces)
 
 - **Package configuration**: `pyproject.toml`
 - **Build system**: `python/dartpy/CMakeLists.txt`
-- **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
+- **pixi configuration**: `pixi.toml` (feature: `py314-wheel`)
 - **Examples**: `python/examples/README.md` (index) and `python/examples/`
 - **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`

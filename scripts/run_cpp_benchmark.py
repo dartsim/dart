@@ -231,7 +231,7 @@ def _read_cpu_max_frequency(cpu: int) -> int:
     for name in ("cpuinfo_max_freq", "scaling_max_freq"):
         try:
             return int((base / name).read_text(encoding="utf-8").strip())
-        except (OSError, ValueError):
+        except OSError, ValueError:
             continue
     return 0
 

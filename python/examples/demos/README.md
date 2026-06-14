@@ -11,6 +11,7 @@ pixi run py-demos                                # default: open rigid_body
 pixi run py-demos -- --scene rigid_solver_compare # compare SI vs IPC visually
 pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
 pixi run py-demos -- --scene articulated         # select any scene by id
+pixi run py-demos -- --scene gui_fidelity_debug_visuals
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```
@@ -1187,6 +1188,78 @@ pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 \
 The lower-level viewer still accepts `--screenshot` and `--out` directly when
 you need raw PPM output. Inspect the generated PNG or MP4 before calling a
 visual change done.
+
+## LCP Physics
+
+The **`lcp_physics`** scene is the Python demo baseline for DART 7 contact LCP
+work. It runs two matched `World` instances side by side: the default
+sequential-impulse contact path and the boxed-LCP contact path. Both worlds run
+the same representative packets:
+
+| Packet                | Shows                                      | Metric surfaced in the panel               |
+| --------------------- | ------------------------------------------ | ------------------------------------------ |
+| Sliding friction      | Tangential Coulomb response on a flat slab | Sliding speed and contacts                 |
+| Static-friction ramp  | Hold/slip behavior near the friction limit | Ramp-parallel slide                        |
+| Billiard collision    | Symmetric contact impulse transfer         | Momentum and kinetic-energy error          |
+| High-mass-ratio stack | Contact stability under large mass ratios  | Stack lateral drift and per-step wall time |
+| Thin card pile        | Thin high-aspect-ratio stacked contacts    | Card spread and height loss                |
+
+This scene compares the DART 7 public contact methods. The panel also surfaces
+the 24-solver standalone LCP manifest, solver support matrix, and benchmark
+packet map used for apples-to-apples solver work. It runs the flat `dartpy`
+standalone LCP binding on a shared standard smoke problem for every solver, so
+the panel can show status, iteration count, and solution error without going
+through a contact `World`. The representative problem table lists every solver
+on each packet and separates native support from delegated fallback solves, with
+the fastest native solve highlighted for quick triage. The detailed table also
+surfaces residual and complementarity so accuracy comparisons do not rely only
+on solution error. A per-solver profile rolls those rows back up by solver so
+native surfaces, delegated coverage, pass counts, worst error, worst residual,
+and total demo-measured solve time are visible in one apples-to-apples matrix.
+Its standard-LCP packet set includes well-conditioned, ill-conditioned,
+near-singular, and moderate scale cases so conditioning and size changes are
+visible without changing the solver roster. Its friction-index rows include both
+a simple normal-scaled contact and a coupled two-contact active-bound packet.
+The benchmark packet map includes per-packet benchmark filters, including the
+active friction-index microbenchmark and the native `world_card_pile` packet for
+high-aspect-ratio card-pile contact scaling.
+Authoritative performance runs remain owned by
+`tests/common/lcpsolver`, `tests/unit/math/lcp`, and `tests/benchmark/lcpsolver`.
+The panel also points to the checked performance-profile CSVs under
+`docs/background/lcp/figures` and summarizes the current leader/laggard
+families per Standard, Boxed, and FrictionIndex profile row family. Refresh
+those artifacts with:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run \
+    --cache build/lcp_profile_full.json \
+    --output docs/background/lcp/figures \
+    --benchmark-timeout 900
+```
+
+For a quick profile-pipeline smoke that allows partial native solver coverage
+without rewriting checked artifacts, write to a scratch output directory:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run \
+    --allow-partial \
+    --benchmark-filter BM_LcpCompare/Standard/Dantzig/12 \
+    --benchmark-min-time 0.01 \
+    --cache build/lcp_profile_smoke.json \
+    --output build/lcp_profile_smoke \
+    --benchmark-timeout 120
+```
+
+Run the benchmark smoke with:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
+```
+
+The `lcp_physics` scene metadata exposes the derived
+`representative_benchmark_command` for the full representative packet filter;
+keep the long generated filter list in the scene metadata instead of copying it
+into this README.
 
 ## AVBD Rigid Constraints (sx)
 

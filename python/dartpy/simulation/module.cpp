@@ -182,21 +182,10 @@ Eigen::Matrix4d toMatrix4(const nb::handle& value)
       throw nb::type_error("Expected a 4x4 matrix");
     }
 
-    auto stride = [&](size_t axis) -> int64_t {
-      if (array.stride_ptr()) {
-        return array.stride(axis);
-      }
-      int64_t strideValue = 1;
-      for (size_t i = array.ndim(); i-- > axis + 1;) {
-        strideValue *= array.shape(i);
-      }
-      return strideValue;
-    };
-
     Eigen::Matrix4d matrix;
     const double* base = array.data();
-    const int64_t s0 = stride(0);
-    const int64_t s1 = stride(1);
+    const int64_t s0 = ::dart::python_nb::numpyStride(array, 0);
+    const int64_t s1 = ::dart::python_nb::numpyStride(array, 1);
     for (Eigen::Index r = 0; r < 4; ++r) {
       for (Eigen::Index c = 0; c < 4; ++c) {
         matrix(r, c) = base[r * s0 + c * s1];
@@ -225,7 +214,7 @@ Eigen::VectorXd toVectorX(const nb::handle& value)
     }
 
     const auto length = static_cast<Eigen::Index>(array.shape(0));
-    const int64_t stride = array.stride_ptr() ? array.stride(0) : 1;
+    const int64_t stride = ::dart::python_nb::numpyStride(array, 0);
     const double* base = array.data();
 
     Eigen::VectorXd vector(length);
@@ -1982,6 +1971,189 @@ void defSimulationModule(nb::module_& m)
       .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
+      .def_ro(
+          "surface_contact_candidate_builds",
+          &sim::DeformableSolverDiagnostics::surfaceContactCandidateBuilds)
+      .def_ro(
+          "surface_contact_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidatePairCapacity)
+      .def_ro(
+          "surface_contact_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidateRejectedPairs)
+      .def_ro(
+          "surface_contact_point_triangle_candidates",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactPointTriangleCandidates)
+      .def_ro(
+          "surface_contact_edge_edge_candidates",
+          &sim::DeformableSolverDiagnostics::surfaceContactEdgeEdgeCandidates)
+      .def_ro(
+          "surface_contact_ccd_point_triangle_checks",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCcdPointTriangleChecks)
+      .def_ro(
+          "surface_contact_ccd_edge_edge_checks",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdEdgeEdgeChecks)
+      .def_ro(
+          "surface_contact_ccd_hits",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdHits)
+      .def_ro(
+          "surface_contact_ccd_limited_steps",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdLimitedSteps)
+      .def_ro(
+          "surface_contact_ccd_zero_step_count",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdZeroStepCount)
+      .def_ro(
+          "inter_body_surface_contact_candidate_builds",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateBuilds)
+      .def_ro(
+          "inter_body_surface_contact_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidatePairCapacity)
+      .def_ro(
+          "inter_body_surface_contact_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCandidateRejectedPairs)
+      .def_ro(
+          "inter_body_surface_contact_point_triangle_candidates",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactPointTriangleCandidates)
+      .def_ro(
+          "inter_body_surface_contact_edge_edge_candidates",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactEdgeEdgeCandidates)
+      .def_ro(
+          "inter_body_surface_contact_ccd_point_triangle_checks",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdPointTriangleChecks)
+      .def_ro(
+          "inter_body_surface_contact_ccd_edge_edge_checks",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdEdgeEdgeChecks)
+      .def_ro(
+          "inter_body_surface_contact_ccd_hits",
+          &sim::DeformableSolverDiagnostics::interBodySurfaceContactCcdHits)
+      .def_ro(
+          "inter_body_surface_contact_ccd_limited_steps",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdLimitedSteps)
+      .def_ro(
+          "inter_body_surface_contact_ccd_zero_step_count",
+          &sim::DeformableSolverDiagnostics::
+              interBodySurfaceContactCcdZeroStepCount)
+      .def_ro(
+          "static_rigid_surface_ccd_snapshot_builds",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdSnapshotBuilds)
+      .def_ro(
+          "static_rigid_surface_ccd_box_count",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdBoxCount)
+      .def_ro(
+          "static_rigid_surface_ccd_sphere_count",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdSphereCount)
+      .def_ro(
+          "static_rigid_surface_ccd_triangle_count",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdTriangleCount)
+      .def_ro(
+          "static_rigid_surface_ccd_edge_count",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdEdgeCount)
+      .def_ro(
+          "static_rigid_surface_ccd_candidate_builds",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidateBuilds)
+      .def_ro(
+          "static_rigid_surface_ccd_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidatePairCapacity)
+      .def_ro(
+          "static_rigid_surface_ccd_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdCandidateRejectedPairs)
+      .def_ro(
+          "static_rigid_surface_ccd_point_triangle_candidates",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdPointTriangleCandidates)
+      .def_ro(
+          "static_rigid_surface_ccd_edge_edge_candidates",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdEdgeEdgeCandidates)
+      .def_ro(
+          "static_rigid_surface_ccd_point_triangle_checks",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdPointTriangleChecks)
+      .def_ro(
+          "static_rigid_surface_ccd_edge_edge_checks",
+          &sim::DeformableSolverDiagnostics::
+              staticRigidSurfaceCcdEdgeEdgeChecks)
+      .def_ro(
+          "static_rigid_surface_ccd_hits",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdHits)
+      .def_ro(
+          "static_rigid_surface_ccd_limited_steps",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdLimitedSteps)
+      .def_ro(
+          "static_rigid_surface_ccd_zero_step_count",
+          &sim::DeformableSolverDiagnostics::staticRigidSurfaceCcdZeroStepCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_snapshot_builds",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdSnapshotBuilds)
+      .def_ro(
+          "moving_rigid_surface_ccd_box_count",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdBoxCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_sample_count",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdSampleCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_inflated_box_count",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdInflatedBoxCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_triangle_count",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdTriangleCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_edge_count",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdEdgeCount)
+      .def_ro(
+          "moving_rigid_surface_ccd_candidate_builds",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidateBuilds)
+      .def_ro(
+          "moving_rigid_surface_ccd_candidate_pair_capacity",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidatePairCapacity)
+      .def_ro(
+          "moving_rigid_surface_ccd_candidate_rejected_pairs",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdCandidateRejectedPairs)
+      .def_ro(
+          "moving_rigid_surface_ccd_point_triangle_candidates",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdPointTriangleCandidates)
+      .def_ro(
+          "moving_rigid_surface_ccd_edge_edge_candidates",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdEdgeEdgeCandidates)
+      .def_ro(
+          "moving_rigid_surface_ccd_point_triangle_checks",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdPointTriangleChecks)
+      .def_ro(
+          "moving_rigid_surface_ccd_edge_edge_checks",
+          &sim::DeformableSolverDiagnostics::
+              movingRigidSurfaceCcdEdgeEdgeChecks)
+      .def_ro(
+          "moving_rigid_surface_ccd_hits",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdHits)
+      .def_ro(
+          "moving_rigid_surface_ccd_limited_steps",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdLimitedSteps)
+      .def_ro(
+          "moving_rigid_surface_ccd_zero_step_count",
+          &sim::DeformableSolverDiagnostics::movingRigidSurfaceCcdZeroStepCount)
       .def_ro(
           "friction_dissipation",
           &sim::DeformableSolverDiagnostics::frictionDissipation)

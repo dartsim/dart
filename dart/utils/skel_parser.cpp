@@ -69,7 +69,6 @@
 #include "dart/utils/xml_helpers.hpp"
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
 #include <algorithm>
 #include <optional>
@@ -102,7 +101,6 @@ struct SkelBodyNode
   Eigen::Isometry3d initTransform;
   std::vector<dynamics::Marker::BasicProperties> markers;
   std::string type;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct SkelJoint
@@ -1250,7 +1248,7 @@ dynamics::ShapePtr readShape(
     Eigen::Vector3d scale = getValueVector3d(meshEle, "scale");
 
     const common::Uri meshUri = common::Uri::createFromRelativeUri(
-        baseUri, std::string_view{filename});
+        baseUri, std::string_view(filename.data(), filename.size()));
 
     auto loader = std::make_unique<utils::MeshLoaderd>();
     auto triMeshUnique = loader->load(meshUri.toString(), retriever);
@@ -1885,8 +1883,7 @@ JointPropPtr readRevoluteJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
-    ipos << init_pos;
+    Eigen::VectorXd ipos = Eigen::VectorXd::Constant(1, init_pos);
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
   }
@@ -1895,8 +1892,7 @@ JointPropPtr readRevoluteJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
-    ivel << init_vel;
+    Eigen::VectorXd ivel = Eigen::VectorXd::Constant(1, init_vel);
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
   }
@@ -1940,8 +1936,7 @@ JointPropPtr readPrismaticJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
-    ipos << init_pos;
+    Eigen::VectorXd ipos = Eigen::VectorXd::Constant(1, init_pos);
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
   }
@@ -1950,8 +1945,7 @@ JointPropPtr readPrismaticJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
-    ivel << init_vel;
+    Eigen::VectorXd ivel = Eigen::VectorXd::Constant(1, init_vel);
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
   }
@@ -2000,8 +1994,7 @@ JointPropPtr readScrewJoint(
   // init_pos
   if (hasElement(_jointElement, "init_pos")) {
     double init_pos = getValueDouble(_jointElement, "init_pos");
-    Eigen::VectorXd ipos = Eigen::VectorXd(1);
-    ipos << init_pos;
+    Eigen::VectorXd ipos = Eigen::VectorXd::Constant(1, init_pos);
     _joint.position = ipos;
     properties.mInitialPositions[0] = ipos[0];
   }
@@ -2010,8 +2003,7 @@ JointPropPtr readScrewJoint(
   // init_vel
   if (hasElement(_jointElement, "init_vel")) {
     double init_vel = getValueDouble(_jointElement, "init_vel");
-    Eigen::VectorXd ivel = Eigen::VectorXd(1);
-    ivel << init_vel;
+    Eigen::VectorXd ivel = Eigen::VectorXd::Constant(1, init_vel);
     _joint.velocity = ivel;
     properties.mInitialVelocities[0] = ivel[0];
   }

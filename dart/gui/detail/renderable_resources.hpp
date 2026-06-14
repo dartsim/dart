@@ -137,6 +137,13 @@ void applyRenderableShadowSettings(
     const Renderable& renderable,
     const dart::gui::MaterialDescriptor& material);
 
+/// Applies a descriptor's optional PBR overrides (metallic/roughness/
+/// reflectance) to every lit material instance of a renderable. Unset values
+/// are left at the creator's per-shape default. Call only for shapes that use a
+/// lit material (not unlit line/point/voxel renderables or asset meshes).
+void applyDescriptorMaterialOverride(
+    Renderable& renderable, const dart::gui::MaterialDescriptor& material);
+
 ::filament::Material& selectLitMaterial(
     const MaterialSet& materials,
     bool usesTextures,

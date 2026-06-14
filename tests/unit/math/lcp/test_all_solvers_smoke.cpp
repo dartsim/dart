@@ -33,11 +33,15 @@
 #include "tests/common/lcpsolver/lcp_problem_factory.hpp"
 #include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 
+#include <dart/math/lcp/other/staggering_solver.hpp>
+
 #include <gtest/gtest.h>
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -47,25 +51,11 @@ using namespace dart::test;
 
 namespace {
 
-LcpProblemSupport supportFor(const ProblemCategory category)
-{
-  using enum ProblemCategory;
-
-  switch (category) {
-    case Standard:
-      return LcpProblemSupport::Standard;
-    case Boxed:
-      return LcpProblemSupport::Boxed;
-    case BoxedFriction:
-      return LcpProblemSupport::FrictionIndex;
-  }
-  return LcpProblemSupport::Standard;
-}
-
 bool canSolve(
     const LcpSolverManifestEntry& solver, const FactoryProblem& problem)
 {
-  return supportsProblem(solver, supportFor(problem.category));
+  const auto instance = solver.create();
+  return instance != nullptr && instance->supportsProblem(problem.problem);
 }
 
 bool producedIterate(const LcpResult& result)
@@ -160,8 +150,8 @@ class AllSolversSmokeTest : public ::testing::Test
 TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
 {
   EXPECT_EQ(kLcpSolverManifest.size(), 24u);
-  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Standard), 24u);
-  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Boxed), 16u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Standard), 23u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Boxed), 15u);
   EXPECT_EQ(countSolversSupporting(LcpProblemSupport::FrictionIndex), 16u);
 
   for (const auto& solverCase : kLcpSolverManifest) {
@@ -169,7 +159,159 @@ TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
     ASSERT_NE(solver, nullptr) << solverCase.name;
     EXPECT_EQ(solver->getName(), std::string(solverCase.name))
         << solverCase.name;
+    EXPECT_EQ(solver->supportsStandardLcp(), solverCase.supportsStandard)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsBoxedLcp(), solverCase.supportsBoxed)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsFrictionIndex(), solverCase.supportsFrictionIndex)
+        << solverCase.name;
   }
+}
+
+TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
+{
+  const auto standard = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+  const auto friction = LcpProblemFactory::singleContactFriction();
+  const auto largeStandard = LcpProblemFactory::standard4dSpd();
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    const bool isDirect = std::string_view(solverCase.name) == "Direct";
+    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
+
+    EXPECT_EQ(
+        solver->supportsProblem(standard.problem), solverCase.supportsStandard)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(boxed.problem), solverCase.supportsBoxed)
+        << solverCase.name;
+    EXPECT_EQ(
+        solver->supportsProblem(friction.problem),
+        solverCase.supportsFrictionIndex)
+        << solverCase.name;
+    EXPECT_EQ(
+        solver->supportsProblem(largeStandard.problem),
+        !isDirect && !isStaggering)
+        << solverCase.name
+        << " should report only actual native per-problem support";
+  }
+}
+
+TEST_F(
+    AllSolversSmokeTest,
+    SolverCapabilityPredicatesUseDefaultToleranceForNearStandardForm)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d b(1.0, 2.0);
+  Eigen::Vector2d lo(1e-9, -1e-9);
+  Eigen::Vector2d hi
+      = Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity());
+  const LcpProblem problem(A, b, lo, hi);
+
+  EXPECT_EQ(problem.getType(), LcpProblemType::Boxed);
+  EXPECT_EQ(problem.getType(1e-8), LcpProblemType::Standard);
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(problem), solverCase.supportsStandard)
+        << solverCase.name
+        << " should use its native route with the default tolerance";
+    EXPECT_EQ(solver->supportsProblem(problem, 0.0), solverCase.supportsBoxed)
+        << solverCase.name
+        << " should still allow exact classification when requested";
+    EXPECT_EQ(
+        solver->supportsProblem(problem, 1e-8), solverCase.supportsStandard)
+        << solverCase.name;
+  }
+}
+
+TEST_F(AllSolversSmokeTest, StaggeringReportsOnlyFrictionBlockProblemsAsNative)
+{
+  StaggeringSolver solver;
+  const auto standard = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+  const auto friction = LcpProblemFactory::singleContactFriction();
+
+  EXPECT_FALSE(solver.supportsStandardLcp());
+  EXPECT_FALSE(solver.supportsBoxedLcp());
+  EXPECT_TRUE(solver.supportsFrictionIndex());
+  EXPECT_FALSE(solver.supportsProblem(standard.problem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_TRUE(solver.supportsProblem(friction.problem));
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result
+      = solver.solve(standard.problem, x, solver.getDefaultOptions());
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST_F(AllSolversSmokeTest, MprgpReportsOnlyNativeSpdStandardProblems)
+{
+  MprgpSolver solver;
+  const auto spd = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+
+  Eigen::Matrix2d nonsymmetric;
+  nonsymmetric << 2.0, 1.0, 0.0, 2.0;
+  const Eigen::Vector2d nonsymmetricX(0.25, 0.5);
+  const LcpProblem nonsymmetricProblem(
+      nonsymmetric, nonsymmetric * nonsymmetricX);
+
+  Eigen::Matrix2d indefinite;
+  indefinite << 1.0, 0.0, 0.0, -1.0;
+  const Eigen::Vector2d indefiniteX(0.25, 0.5);
+  const LcpProblem indefiniteProblem(indefinite, indefinite * indefiniteX);
+
+  EXPECT_TRUE(solver.supportsProblem(spd.problem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_FALSE(solver.supportsProblem(indefiniteProblem));
+
+  auto params = solver.getParameters();
+  params.checkPositiveDefinite = false;
+  solver.setParameters(params);
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_TRUE(solver.supportsProblem(indefiniteProblem));
+
+  params.symmetryTolerance = -1.0;
+  solver.setParameters(params);
+  EXPECT_FALSE(solver.supportsProblem(spd.problem));
+}
+
+TEST_F(AllSolversSmokeTest, BaraffReportsOnlyNativePsdStandardProblems)
+{
+  BaraffSolver solver;
+  const auto spd = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+
+  Eigen::Matrix2d psd;
+  psd << 1.0, 0.0, 0.0, 0.0;
+  const LcpProblem psdProblem(psd, Eigen::Vector2d(1.0, 0.0));
+
+  Eigen::Matrix2d nonsymmetric;
+  nonsymmetric << 2.0, 1.0, 0.0, 2.0;
+  const LcpProblem nonsymmetricProblem(nonsymmetric, Eigen::Vector2d(1.0, 2.0));
+
+  Eigen::Matrix2d indefinite;
+  indefinite << 1.0, 0.0, 0.0, -1.0;
+  const LcpProblem indefiniteProblem(indefinite, Eigen::Vector2d(1.0, -1.0));
+
+  EXPECT_TRUE(solver.supportsProblem(spd.problem));
+  EXPECT_TRUE(solver.supportsProblem(psdProblem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_FALSE(solver.supportsProblem(indefiniteProblem));
+
+  Eigen::VectorXd x;
+  const auto result
+      = solver.solve(indefiniteProblem, x, solver.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::Success)
+      << "Baraff should delegate non-PSD standard packets to Dantzig";
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_TRUE(x.allFinite());
 }
 
 TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
@@ -240,20 +382,60 @@ TEST_F(AllSolversSmokeTest, Standard2dDoesNotCrash)
   }
 }
 
-TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
+TEST_F(AllSolversSmokeTest, NearSingularStandardProblemProducesExpectedIterates)
 {
-  auto problem = LcpProblemFactory::boxed2dActiveUpper();
+  const auto problem = LcpProblemFactory::nearSingular4d();
+  ASSERT_TRUE(problem.expectedSolution.has_value());
+  EXPECT_EQ(problem.difficulty, ProblemDifficulty::NearSingular);
+  EXPECT_EQ(problem.problem.getType(), LcpProblemType::Standard);
 
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
-    if (!solverCase.supportsBoxed) {
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    const bool isDirect = std::string_view(solverCase.name) == "Direct";
+    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
+    EXPECT_EQ(
+        solver->supportsProblem(problem.problem), !isDirect && !isStaggering)
+        << solverCase.name
+        << " should report native support only for actual direct solves";
+
+    Eigen::VectorXd x;
+    LcpOptions options = LcpOptions::highAccuracy();
+    options.validateSolution = false;
+    auto result = solver->solve(problem.problem, x, options);
+
+    EXPECT_TRUE(
+        result.status == LcpSolverStatus::Success
+        || result.status == LcpSolverStatus::MaxIterations)
+        << solverCase.name
+        << " failed on near-singular standard problem: " << result.message;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
+    ASSERT_EQ(x.size(), problem.expectedSolution->size()) << solverCase.name;
+    EXPECT_LE((x - *problem.expectedSolution).lpNorm<Eigen::Infinity>(), 2e-4)
+        << solverCase.name << " should stay comparable on " << problem.name;
+  }
+}
+
+TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
+{
+  auto problem = LcpProblemFactory::boxed2dActiveUpper();
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_TRUE(problem.problem.isBoxedLcp());
+  EXPECT_FALSE(problem.problem.hasFrictionIndex());
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    if (!solver->supportsProblem(problem.problem)) {
       Eigen::VectorXd x;
       auto result
           = solver->solve(problem.problem, x, solver->getDefaultOptions());
       EXPECT_TRUE(
           result.status == LcpSolverStatus::Success
           || result.status == LcpSolverStatus::MaxIterations)
-          << solverCase.name << " should handle boxed: " << result.message;
+          << solverCase.name
+          << " should delegate boxed problems: " << result.message;
       continue;
     }
 
@@ -273,23 +455,65 @@ TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
 {
   auto problem = LcpProblemFactory::singleContactFriction();
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_FALSE(problem.problem.isBoxedLcp());
+  EXPECT_TRUE(problem.problem.hasFrictionIndex());
 
   for (const auto& solverCase : kLcpSolverManifest) {
-    if (!solverCase.supportsFrictionIndex) {
-      continue;
-    }
-
     const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
     Eigen::VectorXd x;
     LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
     auto result = solver->solve(problem.problem, x, options);
+
+    if (!solver->supportsProblem(problem.problem)) {
+      EXPECT_TRUE(result.succeeded())
+          << solverCase.name
+          << " should delegate friction-index problems through Dantzig: "
+          << result.message;
+      expectWithinEffectiveBounds(
+          std::string(solverCase.name), problem.problem, x);
+      continue;
+    }
 
     // Smoke test: just verify no crash and finite output
     // Some iterative solvers may not converge on friction problems
     EXPECT_EQ(x.size(), problem.problem.b.size()) << solverCase.name;
     EXPECT_TRUE(x.allFinite())
         << solverCase.name << " produced non-finite values";
+  }
+}
+
+TEST_F(AllSolversSmokeTest, ActiveFrictionProblemStaysComparable)
+{
+  auto problem = LcpProblemFactory::activeFrictionIndexContact();
+  ASSERT_TRUE(problem.expectedSolution.has_value());
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_FALSE(problem.problem.isBoxedLcp());
+  EXPECT_TRUE(problem.problem.hasFrictionIndex());
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    Eigen::VectorXd x;
+    LcpOptions options = solver->getDefaultOptions();
+    options.maxIterations = 2000;
+    options.absoluteTolerance = 1e-8;
+    options.relativeTolerance = 1e-8;
+    options.complementarityTolerance = 1e-8;
+    options.validateSolution = false;
+    auto result = solver->solve(problem.problem, x, options);
+
+    EXPECT_TRUE(producedIterate(result))
+        << solverCase.name << " failed on " << problem.name << ": "
+        << result.message;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
+    ASSERT_EQ(x.size(), problem.expectedSolution->size()) << solverCase.name;
+    expectWithinEffectiveBounds(
+        std::string(solverCase.name), problem.problem, x);
+    EXPECT_LE((x - *problem.expectedSolution).lpNorm<Eigen::Infinity>(), 2e-4)
+        << solverCase.name << " should stay comparable on " << problem.name;
   }
 }
 
@@ -337,6 +561,8 @@ TEST(AdvancedBoxedSolvers, MetadataAndParametersCanBeCustomized)
   newtonParams.sufficientDecrease = 2e-4;
   newtonParams.minStep = 1e-10;
   newtonParams.jacobianRegularization = 1e-8;
+  newtonParams.maxPgsWarmStartIterations = 5;
+  newtonParams.pgsWarmStartRelaxation = 0.9;
   boxedNewton.setParameters(newtonParams);
   EXPECT_EQ(boxedNewton.getName(), "BoxedSemiSmoothNewton");
   EXPECT_EQ(boxedNewton.getCategory(), "Newton");
@@ -352,6 +578,12 @@ TEST(AdvancedBoxedSolvers, MetadataAndParametersCanBeCustomized)
   EXPECT_DOUBLE_EQ(
       boxedNewton.getParameters().jacobianRegularization,
       newtonParams.jacobianRegularization);
+  EXPECT_EQ(
+      boxedNewton.getParameters().maxPgsWarmStartIterations,
+      newtonParams.maxPgsWarmStartIterations);
+  EXPECT_DOUBLE_EQ(
+      boxedNewton.getParameters().pgsWarmStartRelaxation,
+      newtonParams.pgsWarmStartRelaxation);
 }
 
 TEST(AdvancedBoxedSolvers, MixedBoundsWorkflowHonorsWarmStartsAndCustomOptions)
@@ -401,6 +633,7 @@ TEST(AdvancedBoxedSolvers, MixedBoundsWorkflowHonorsWarmStartsAndCustomOptions)
   newtonParams.sufficientDecrease = 1e-4;
   newtonParams.minStep = 1e-10;
   newtonParams.jacobianRegularization = 1e-8;
+  newtonParams.maxPgsWarmStartIterations = 5;
   LcpOptions newtonOptions = boxedNewton.getDefaultOptions();
   newtonOptions.maxIterations = 80;
   newtonOptions.absoluteTolerance = 1e-8;
@@ -439,23 +672,81 @@ TEST(AdvancedBoxedSolvers, InvalidMixedBoundsAreRejectedBeforeIteration)
   EXPECT_FALSE(result.message.empty());
 }
 
-TEST(AdvancedBoxedSolvers, BoxedNewtonReportsConfiguredLineSearchFailure)
+TEST(AdvancedBoxedSolvers, InvalidParametersAreRejectedBeforeIteration)
 {
-  const auto problem = LcpProblemFactory::standard2dSpd();
-  BoxedSemiSmoothNewtonSolver solver;
-  BoxedSemiSmoothNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
+  const auto problem = LcpProblemFactory::boxed3dMixedBounds();
+  auto expectInvalid = [](const LcpResult& result, std::string_view token) {
+    EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+    EXPECT_NE(result.message.find(token), std::string::npos) << result.message;
+  };
 
-  LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 4;
-  options.validateSolution = false;
-  options.customOptions = &params;
+  auto solveAdmm = [&](AdmmSolver::Parameters params) {
+    AdmmSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  AdmmSolver::Parameters admmParams;
+  admmParams.rhoInit = 0.0;
+  expectInvalid(solveAdmm(admmParams), "rho_init");
+  admmParams = {};
+  admmParams.muProx = -1.0;
+  expectInvalid(solveAdmm(admmParams), "mu_prox");
+  admmParams = {};
+  admmParams.adaptiveRhoTolerance = 1.0;
+  expectInvalid(solveAdmm(admmParams), "adaptive_rho_tolerance");
 
-  Eigen::VectorXd x(2);
-  x << 0.0, 0.0;
-  const auto result = solver.solve(problem.problem, x, options);
+  auto solveSap = [&](SapSolver::Parameters params) {
+    SapSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  SapSolver::Parameters sapParams;
+  sapParams.regularization = 0.0;
+  expectInvalid(solveSap(sapParams), "regularization");
+  sapParams = {};
+  sapParams.armijosParameter = 0.0;
+  expectInvalid(solveSap(sapParams), "armijos_parameter");
+  sapParams = {};
+  sapParams.backtrackingFactor = 1.0;
+  expectInvalid(solveSap(sapParams), "backtracking_factor");
+  sapParams = {};
+  sapParams.maxLineSearchIterations = 0;
+  expectInvalid(solveSap(sapParams), "max_line_search_iterations");
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
-  EXPECT_EQ(result.message, "Line search failed");
-  EXPECT_TRUE(x.allFinite());
+  auto solveBoxedNewton = [&](BoxedSemiSmoothNewtonSolver::Parameters params) {
+    BoxedSemiSmoothNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  BoxedSemiSmoothNewtonSolver::Parameters newtonParams;
+  newtonParams.maxLineSearchSteps = 0;
+  expectInvalid(solveBoxedNewton(newtonParams), "max_line_search_steps");
+  newtonParams = {};
+  newtonParams.stepReduction = 1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "step_reduction");
+  newtonParams = {};
+  newtonParams.sufficientDecrease = 1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "sufficient_decrease");
+  newtonParams = {};
+  newtonParams.minStep = 0.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "min_step");
+  newtonParams = {};
+  newtonParams.jacobianRegularization = -1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "jacobian_regularization");
+  newtonParams = {};
+  newtonParams.maxPgsWarmStartIterations = -1;
+  expectInvalid(
+      solveBoxedNewton(newtonParams), "max_pgs_warm_start_iterations");
+  newtonParams = {};
+  newtonParams.pgsWarmStartRelaxation = 0.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "pgs_warm_start_relaxation");
 }

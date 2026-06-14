@@ -96,6 +96,7 @@ from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
 from .scenes.diff_pre_contact_surrogate import SCENE as DIFF_PRE_CONTACT_SURROGATE
 from .scenes.diff_throw_to_target import SCENE as DIFF_THROW_TO_TARGET
 from .scenes.floating_base import SCENE as FLOATING_BASE
+from .scenes.gui_fidelity_debug_visuals import SCENE as GUI_FIDELITY_DEBUG_VISUALS
 from .scenes.ipc_deformable_capsule_rod import SCENE as IPC_DEFORMABLE_CAPSULE_ROD
 from .scenes.ipc_deformable_cg_contact import SCENE as IPC_DEFORMABLE_CG_CONTACT
 from .scenes.ipc_deformable_cg_solver import SCENE as IPC_DEFORMABLE_CG_SOLVER
@@ -117,6 +118,7 @@ from .scenes.ipc_deformable_rod_friction import SCENE as IPC_DEFORMABLE_ROD_FRIC
 from .scenes.ipc_deformable_scripted_dirichlet import SCENE as IPC_DEFORMABLE_SCRIPTED
 from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
+from .scenes.lcp_physics import SCENE as LCP_PHYSICS
 from .scenes.loop_closure import SCENE as LOOP_CLOSURE
 from .scenes.plan083_unified_newton_barrier import PLAN083_SCENES
 from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
@@ -253,6 +255,11 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_LOOP_CLOSURE,
         ARTICULATED,
         FLOATING_BASE,
+        # DART 7 contact LCP comparison packets. This keeps the PLAN-020
+        # baseline example visible in the Python demo catalog while the solver
+        # manifest and benchmark coverage remain in C++.
+        LCP_PHYSICS,
+        GUI_FIDELITY_DEBUG_VISUALS,
         # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
         # contact, bounded revolute/prismatic motors, and public breakable-joint
         # lifecycles on free rigid bodies and articulated link/world endpoints.

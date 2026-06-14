@@ -148,6 +148,43 @@ LcpResult SubspaceMinimizationSolver::solve(
     return result;
   }
 
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (!options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   PgsSolver pgs;
   LcpOptions pgsOptions = pgs.getDefaultOptions();
   pgsOptions.maxIterations = params->pgsIterations;

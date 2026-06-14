@@ -41,7 +41,6 @@
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
 #include <ranges>
 #include <span>
@@ -492,22 +491,15 @@ inline double wrapToPi(double angle)
 
 template <typename MatrixType, int Options, typename ReturnType>
 void extractNullSpace(
-    const Eigen::JacobiSVD<MatrixType, Options>& _SVD, ReturnType& _NS)
+    Eigen::JacobiSVD<MatrixType, Options>& _SVD, ReturnType& _NS)
 {
-  int rank = 0;
-  // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
-  if (_SVD.nonzeroSingularValues() > 0) {
-    double thresh = std::max(
-        _SVD.singularValues().coeff(0) * 1e-10,
-        std::numeric_limits<double>::min());
-    int i = _SVD.nonzeroSingularValues() - 1;
-    while (i >= 0 && _SVD.singularValues().coeff(i) < thresh) {
-      --i;
-    }
-    rank = i + 1;
-  }
+  // setThreshold(1e-10) makes SVDBase::rank() use the same relative threshold
+  // as the previous hand-rolled count: max(singularValues[0] * 1e-10, min).
+  _SVD.setThreshold(1e-10);
+  const Eigen::Index rank = _SVD.rank();
 
-  int cols = _SVD.matrixV().cols(), rows = _SVD.matrixV().rows();
+  const Eigen::Index cols = _SVD.matrixV().cols();
+  const Eigen::Index rows = _SVD.matrixV().rows();
   _NS = _SVD.matrixV().block(0, rank, rows, cols - rank);
 }
 
@@ -566,9 +558,7 @@ template <
     typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
-    std::vector<
-        Eigen::Matrix<Index, 3, 1>,
-        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+    std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
     std::span<const Eigen::Matrix<S, 3, 1>> vertices, bool optimize = true);
 
@@ -587,9 +577,7 @@ template <
     typename VertexAllocator = std::allocator<Eigen::Matrix<S, 3, 1>>>
 std::tuple<
     std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>,
-    std::vector<
-        Eigen::Matrix<Index, 3, 1>,
-        Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>>
+    std::vector<Eigen::Matrix<Index, 3, 1>>>
 computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator>& vertices,
     bool optimize = true);
@@ -652,8 +640,6 @@ DART_API Eigen::Vector2d computeClosestPointOnSupportPolygon(
 class BoundingBox
 {
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   BoundingBox();
   BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
 

@@ -69,6 +69,9 @@ docs/readthedocs/_generated/
 docs/readthedocs/_generated_stubs/
 docs/python_api/_build/
 
+# Generated on demand, not committed (pixi run report-api-boundary-inventory)
+docs/onboarding/api-boundary-inventory.md
+
 # Data files
 data/screencap/*
 *.ppm

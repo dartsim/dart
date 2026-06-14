@@ -215,6 +215,7 @@ struct World::CollisionQueryCache
     Key key;
     const CollisionShape* shape;
     Eigen::Isometry3d pose;
+    Eigen::Isometry3d inversePose;
   };
 
   using KeyVector = std::vector<Key, CacheAllocator<Key>>;
@@ -1268,6 +1269,105 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.projectedNewtonIterativeMaxError;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
+  diagnostics.surfaceContactCandidateBuilds
+      = stats.surfaceContactCandidateBuilds;
+  diagnostics.surfaceContactCandidatePairCapacity
+      = stats.surfaceContactCandidatePairCapacity;
+  diagnostics.surfaceContactCandidateRejectedPairs
+      = stats.surfaceContactCandidateRejectedPairs;
+  diagnostics.surfaceContactPointTriangleCandidates
+      = stats.surfaceContactPointTriangleCandidates;
+  diagnostics.surfaceContactEdgeEdgeCandidates
+      = stats.surfaceContactEdgeEdgeCandidates;
+  diagnostics.surfaceContactCcdPointTriangleChecks
+      = stats.surfaceContactCcdPointTriangleChecks;
+  diagnostics.surfaceContactCcdEdgeEdgeChecks
+      = stats.surfaceContactCcdEdgeEdgeChecks;
+  diagnostics.surfaceContactCcdHits = stats.surfaceContactCcdHits;
+  diagnostics.surfaceContactCcdLimitedSteps
+      = stats.surfaceContactCcdLimitedSteps;
+  diagnostics.surfaceContactCcdZeroStepCount
+      = stats.surfaceContactCcdZeroStepCount;
+  diagnostics.interBodySurfaceContactCandidateBuilds
+      = stats.interBodySurfaceContactCandidateBuilds;
+  diagnostics.interBodySurfaceContactCandidatePairCapacity
+      = stats.interBodySurfaceContactCandidatePairCapacity;
+  diagnostics.interBodySurfaceContactCandidateRejectedPairs
+      = stats.interBodySurfaceContactCandidateRejectedPairs;
+  diagnostics.interBodySurfaceContactPointTriangleCandidates
+      = stats.interBodySurfaceContactPointTriangleCandidates;
+  diagnostics.interBodySurfaceContactEdgeEdgeCandidates
+      = stats.interBodySurfaceContactEdgeEdgeCandidates;
+  diagnostics.interBodySurfaceContactCcdPointTriangleChecks
+      = stats.interBodySurfaceContactCcdPointTriangleChecks;
+  diagnostics.interBodySurfaceContactCcdEdgeEdgeChecks
+      = stats.interBodySurfaceContactCcdEdgeEdgeChecks;
+  diagnostics.interBodySurfaceContactCcdHits
+      = stats.interBodySurfaceContactCcdHits;
+  diagnostics.interBodySurfaceContactCcdLimitedSteps
+      = stats.interBodySurfaceContactCcdLimitedSteps;
+  diagnostics.interBodySurfaceContactCcdZeroStepCount
+      = stats.interBodySurfaceContactCcdZeroStepCount;
+  diagnostics.staticRigidSurfaceCcdSnapshotBuilds
+      = stats.staticRigidSurfaceCcdSnapshotBuilds;
+  diagnostics.staticRigidSurfaceCcdBoxCount
+      = stats.staticRigidSurfaceCcdBoxCount;
+  diagnostics.staticRigidSurfaceCcdSphereCount
+      = stats.staticRigidSurfaceCcdSphereCount;
+  diagnostics.staticRigidSurfaceCcdTriangleCount
+      = stats.staticRigidSurfaceCcdTriangleCount;
+  diagnostics.staticRigidSurfaceCcdEdgeCount
+      = stats.staticRigidSurfaceCcdEdgeCount;
+  diagnostics.staticRigidSurfaceCcdCandidateBuilds
+      = stats.staticRigidSurfaceCcdCandidateBuilds;
+  diagnostics.staticRigidSurfaceCcdCandidatePairCapacity
+      = stats.staticRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.staticRigidSurfaceCcdCandidateRejectedPairs
+      = stats.staticRigidSurfaceCcdCandidateRejectedPairs;
+  diagnostics.staticRigidSurfaceCcdPointTriangleCandidates
+      = stats.staticRigidSurfaceCcdPointTriangleCandidates;
+  diagnostics.staticRigidSurfaceCcdEdgeEdgeCandidates
+      = stats.staticRigidSurfaceCcdEdgeEdgeCandidates;
+  diagnostics.staticRigidSurfaceCcdPointTriangleChecks
+      = stats.staticRigidSurfaceCcdPointTriangleChecks;
+  diagnostics.staticRigidSurfaceCcdEdgeEdgeChecks
+      = stats.staticRigidSurfaceCcdEdgeEdgeChecks;
+  diagnostics.staticRigidSurfaceCcdHits = stats.staticRigidSurfaceCcdHits;
+  diagnostics.staticRigidSurfaceCcdLimitedSteps
+      = stats.staticRigidSurfaceCcdLimitedSteps;
+  diagnostics.staticRigidSurfaceCcdZeroStepCount
+      = stats.staticRigidSurfaceCcdZeroStepCount;
+  diagnostics.movingRigidSurfaceCcdSnapshotBuilds
+      = stats.movingRigidSurfaceCcdSnapshotBuilds;
+  diagnostics.movingRigidSurfaceCcdBoxCount
+      = stats.movingRigidSurfaceCcdBoxCount;
+  diagnostics.movingRigidSurfaceCcdSampleCount
+      = stats.movingRigidSurfaceCcdSampleCount;
+  diagnostics.movingRigidSurfaceCcdInflatedBoxCount
+      = stats.movingRigidSurfaceCcdInflatedBoxCount;
+  diagnostics.movingRigidSurfaceCcdTriangleCount
+      = stats.movingRigidSurfaceCcdTriangleCount;
+  diagnostics.movingRigidSurfaceCcdEdgeCount
+      = stats.movingRigidSurfaceCcdEdgeCount;
+  diagnostics.movingRigidSurfaceCcdCandidateBuilds
+      = stats.movingRigidSurfaceCcdCandidateBuilds;
+  diagnostics.movingRigidSurfaceCcdCandidatePairCapacity
+      = stats.movingRigidSurfaceCcdCandidatePairCapacity;
+  diagnostics.movingRigidSurfaceCcdCandidateRejectedPairs
+      = stats.movingRigidSurfaceCcdCandidateRejectedPairs;
+  diagnostics.movingRigidSurfaceCcdPointTriangleCandidates
+      = stats.movingRigidSurfaceCcdPointTriangleCandidates;
+  diagnostics.movingRigidSurfaceCcdEdgeEdgeCandidates
+      = stats.movingRigidSurfaceCcdEdgeEdgeCandidates;
+  diagnostics.movingRigidSurfaceCcdPointTriangleChecks
+      = stats.movingRigidSurfaceCcdPointTriangleChecks;
+  diagnostics.movingRigidSurfaceCcdEdgeEdgeChecks
+      = stats.movingRigidSurfaceCcdEdgeEdgeChecks;
+  diagnostics.movingRigidSurfaceCcdHits = stats.movingRigidSurfaceCcdHits;
+  diagnostics.movingRigidSurfaceCcdLimitedSteps
+      = stats.movingRigidSurfaceCcdLimitedSteps;
+  diagnostics.movingRigidSurfaceCcdZeroStepCount
+      = stats.movingRigidSurfaceCcdZeroStepCount;
   diagnostics.frictionDissipation = stats.frictionDissipation;
   diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
   diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;
@@ -3360,6 +3460,10 @@ void World::clear()
   // Recreate the opaque storage at the rebuild boundary so registry/component
   // capacities and other allocator-backed build artifacts release their live
   // allocations instead of surviving as stale storage in an empty World.
+  m_collisionQueryCache.reset();
+  m_stepPipelineCache.reset();
+  m_replay.reset();
+  m_storage.reset();
   m_storage = makeWorldStorage(m_memoryManager);
   markFrameTopologyChanged();
   m_simulationMode = false;
@@ -3381,6 +3485,7 @@ void World::clear()
 #if DART_BUILD_PROFILE
   m_stepProfilingEnabled = false;
   m_lastStepProfile.reset();
+  m_stepProfileScratch.reset();
 #endif
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
@@ -3390,13 +3495,7 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
-  m_collisionQueryCache.reset();
   m_stepPipelineCache = makeStepPipelineCache(m_memoryManager);
-  if (m_replay) {
-    m_replay->recordingEnabled = false;
-    m_replay->frames.clear();
-    m_replay->cursor.reset();
-  }
 }
 
 //==============================================================================
@@ -5700,7 +5799,8 @@ void World::stepPipelineOnce(
 
 #if DART_BUILD_PROFILE
   if (m_stepProfilingEnabled) {
-    pipeline.executeProfiled(*this, executor, m_lastStepProfile);
+    pipeline.executeProfiled(*this, executor, m_stepProfileScratch);
+    std::swap(m_lastStepProfile, m_stepProfileScratch);
   } else {
     pipeline.execute(*this, executor);
   }
@@ -6551,7 +6651,25 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 
 //==============================================================================
 std::span<const Contact> World::queryContacts(
-    const CollisionQueryOptions& options)
+    const CollisionQueryOptions& options, bool includeShapeContactDetails)
+{
+  return updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/true);
+}
+
+//==============================================================================
+void World::prepareCollisionQueryCache(
+    const CollisionQueryOptions& options, bool includeShapeContactDetails)
+{
+  (void)updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/false);
+}
+
+//==============================================================================
+std::span<const Contact> World::updateCollisionQueryCache(
+    const CollisionQueryOptions& options,
+    bool includeShapeContactDetails,
+    bool collectContacts)
 {
   if (!m_collisionQueryCache) {
     m_collisionQueryCache = makeCollisionQueryCache(m_memoryManager);
@@ -6636,12 +6754,15 @@ std::span<const Contact> World::queryContacts(
       if (!supportsNativeShape(shape)) {
         continue;
       }
+      const Eigen::Isometry3d worldPose = pose * shape.localTransform;
       specs.push_back(
           CollisionQueryCache::ShapeEntrySpec{
               CollisionQueryCache::Key{
                   entity, i, geometry.revision, multibody, isLink},
               &shape,
-              pose * shape.localTransform});
+              worldPose,
+              includeShapeContactDetails ? worldPose.inverse()
+                                         : Eigen::Isometry3d::Identity()});
     }
   };
 
@@ -6759,6 +6880,9 @@ std::span<const Contact> World::queryContacts(
   cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
   auto& contacts = cache.contacts;
   contacts.clear();
+  if (!collectContacts) {
+    return contacts;
+  }
   for (const auto& pair : cache.candidatePairs.pairs) {
     if (pair.first >= cache.entryByObjectId.size()
         || pair.second >= cache.entryByObjectId.size()) {
@@ -6784,19 +6908,21 @@ std::span<const Contact> World::queryContacts(
       // The native narrow phase reports the normal pointing from the second
       // object toward the first; the public Contact convention points from
       // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
-      contacts.push_back(
-          Contact{
-              CollisionBody(
-                  detail::fromRegistryEntity(cache.entries[i].entity), this),
-              CollisionBody(
-                  detail::fromRegistryEntity(cache.entries[j].entity), this),
-              point.position,
-              -point.normal,
-              point.depth,
-              specs[i].key.shapeIndex,
-              specs[j].key.shapeIndex,
-              specs[i].pose.inverse() * point.position,
-              specs[j].pose.inverse() * point.position});
+      Contact contact{
+          CollisionBody(
+              detail::fromRegistryEntity(cache.entries[i].entity), this),
+          CollisionBody(
+              detail::fromRegistryEntity(cache.entries[j].entity), this),
+          point.position,
+          -point.normal,
+          point.depth,
+          specs[i].key.shapeIndex,
+          specs[j].key.shapeIndex};
+      if (includeShapeContactDetails) {
+        contact.localPointA = specs[i].inversePose * point.position;
+        contact.localPointB = specs[j].inversePose * point.position;
+      }
+      contacts.push_back(std::move(contact));
     });
   }
 

@@ -8,6 +8,8 @@
  * Benchmarks for the math::LcpSolver implementations (Dantzig, PGS).
  */
 
+#include "tests/common/lcpsolver/lcp_problem_factory.hpp"
+
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/pivoting/lemke_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
@@ -156,6 +158,13 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
       std::move(lo),
       std::move(hi),
       std::move(findex));
+}
+
+LcpProblem makeActiveFrictionIndexContactProblem()
+{
+  auto factoryProblem
+      = dart::test::LcpProblemFactory::activeFrictionIndexContact();
+  return std::move(factoryProblem.problem);
 }
 
 static void BM_DantzigSolver_Standard(benchmark::State& state)
@@ -333,6 +342,45 @@ static void BM_PgsSolver_FrictionIndex(benchmark::State& state)
   }
 }
 
+static void BM_DantzigSolver_ActiveFrictionIndexContact(benchmark::State& state)
+{
+  auto problem = makeActiveFrictionIndexContactProblem();
+
+  dart::math::DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
+static void BM_PgsSolver_ActiveFrictionIndexContact(benchmark::State& state)
+{
+  auto problem = makeActiveFrictionIndexContactProblem();
+
+  dart::math::PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 100;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  for (auto _ : state) {
+    x.setZero();
+    auto result = solver.solve(problem, x, options);
+    benchmark::DoNotOptimize(result.status);
+    benchmark::DoNotOptimize(x.data());
+  }
+}
+
 } // namespace
 
 BENCHMARK(BM_DantzigSolver_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
@@ -379,3 +427,5 @@ BENCHMARK(BM_PgsSolver_FrictionIndex)
     ->Args({4, 100})
     ->Args({16, 100})
     ->Args({64, 100});
+BENCHMARK(BM_DantzigSolver_ActiveFrictionIndexContact);
+BENCHMARK(BM_PgsSolver_ActiveFrictionIndexContact);

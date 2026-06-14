@@ -82,14 +82,18 @@ def _write_benchmark_json(
     distance_springs: float,
     collision_shapes: float,
     source_scene_index: float,
+    ignored_collision_pairs: float | None = None,
     cpu_time: float = 120.0,
 ) -> Path:
+    if ignored_collision_pairs is None:
+        ignored_collision_pairs = distance_springs
     benchmark = {
         "benchmarks": [
             {
                 "collision_shapes": collision_shapes,
                 "cpu_time": cpu_time,
                 "distance_springs": distance_springs,
+                "ignored_collision_pairs": ignored_collision_pairs,
                 "iterations": 10,
                 "name": name,
                 "real_time": 125.0,
@@ -232,6 +236,7 @@ def test_avbd_demo2d_spring_packet_records_evidence(tmp_path: Path) -> None:
     assert packet["dart_benchmark"]["invariants"] == {
         "collision_shapes": 2,
         "distance_springs": 1,
+        "ignored_collision_pairs": 1,
         "rigid_bodies": 2,
         "rigid_body_joints": 0,
         "source_scene_index": 9,
@@ -312,6 +317,7 @@ def test_avbd_demo2d_spring_ratio_packet_records_evidence(tmp_path: Path) -> Non
     assert packet["dart_benchmark"]["invariants"] == {
         "collision_shapes": 8,
         "distance_springs": 7,
+        "ignored_collision_pairs": 7,
         "rigid_bodies": 8,
         "rigid_body_joints": 0,
         "source_scene_index": 10,

@@ -49,11 +49,19 @@ Eigen::Vector4d VisualAspectProperties::getDefaultRGBA()
 
 //==============================================================================
 VisualAspectProperties::VisualAspectProperties(
-    const Eigen::Vector4d& color, const bool hidden, const bool shadowed)
+    const Eigen::Vector4d& color,
+    const bool hidden,
+    const bool shadowed,
+    const double metallic,
+    const double roughness,
+    const double reflectance)
   : mRGBA(color),
     mUseDefaultColor(color.isApprox(getDefaultRGBA())),
     mHidden(hidden),
-    mShadowed(shadowed)
+    mShadowed(shadowed),
+    mMetallic(metallic),
+    mRoughness(roughness),
+    mReflectance(reflectance)
 {
   // Do nothing
 }

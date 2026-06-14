@@ -3967,7 +3967,7 @@ zero-dynamic-allocation claim.
   `cmake --build build/default/cpp/Release --target UNIT_common_frame_allocator UNIT_common_pool_allocator --parallel "$JOBS"`,
   `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(UNIT_common_frame_allocator|UNIT_common_pool_allocator)$'`,
   `pixi run python -m pytest python/tests/unit/test_run_cpp_benchmark.py tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`,
-  `pixi run check-api-boundary-inventory`, and `git diff --check`.
+  `pixi run check-api-boundaries`, and `git diff --check`.
   Focused EnTT comparative attempts
   `.benchmark_results/allocator_entt_auto_affinity_cycle4_check.json` and
   `.benchmark_results/allocator_entt_dynamic_cycles_auto_check.json` are
@@ -3996,7 +3996,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `cmake --build build/default/cpp/Release --target test_unified_constraint --parallel "$JOBS"`
   passed, as did
   `build/default/cpp/Release/bin/test_unified_constraint --gtest_color=no --gtest_filter='UnifiedConstraint.InPlaceAssemblerReusesSameShapeLinkStorage:UnifiedConstraint.InPlaceAssemblerReusesSameShapeMixedStorage:UnifiedConstraint.PublicLinkScratchFeedsBorrowedUnifiedAssembly:UnifiedConstraint.ReusedScratchAvoidsHeapAllocationForSameShapeIslands:UnifiedConstraint.ReusedSolutionAvoidsHeapAllocationForSameShapeIslands'`.
-  `pixi run lint`, `pixi run check-api-boundary-inventory`, and
+  `pixi run lint`, `pixi run check-api-boundaries`, and
   `git diff --check` passed after the same changes.
 - On `feature/allocator-correctness-gates` after adding the multi-triangle
   frictional deformable self-contact patch guard and topology-scaled
@@ -4006,7 +4006,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedKinematicIpcStepsDoNotAllocateGlobalHeap:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedArticulatedContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap'`
   and
   `build/default/cpp/Release/bin/test_deformable_body --gtest_color=no --gtest_filter='DeformableBody.GroundFrictionDeceleratesSlidingNode:DeformableBody.GroundFrictionInactiveWithoutGroundContact:DeformableBody.GroundFrictionFollowsTiltedSlopeNormal:DeformableBody.FrictionDiagnosticsReportSlidingDissipation:DeformableBody.SelfContactFrictionDeceleratesSlidingSurface:DeformableBody.EdgeEdgeSelfContactFrictionDeceleratesSlidingEdge:DeformableBody.FemCubeSettlesOnGroundBarrierWithoutPenetrating'`.
-  `pixi run lint`, `pixi run check-api-boundary-inventory`, and
+  `pixi run lint`, `pixi run check-api-boundaries`, and
   `git diff --check` passed after the same changes.
 - On `feature/allocator-correctness-gates` after moving default deformable
   projected-Newton friction buffers into `DeformableContactSolverScratch` and
@@ -4027,7 +4027,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `build/default/cpp/Release/bin/test_world --gtest_color=no --gtest_filter='World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap:World.CrossMultibodyDifferentDofLinksUseUnifiedFallback:World.CrossMultibodyStackedContactsUseUnifiedFallback:World.CrossMultibodyCoupledRowsUseUnifiedFallback'`
   and
   `build/default/cpp/Release/bin/test_unified_constraint --gtest_color=no --gtest_filter='UnifiedConstraint.ReusedScratchAvoidsHeapAllocationForSameShapeIslands:UnifiedConstraint.ReusedSolutionAvoidsHeapAllocationForSameShapeIslands:UnifiedConstraint.FallbackStopsHeadOnRigidContact:UnifiedConstraint.FallbackFrictionOpposesSlidingWithoutReversing:UnifiedConstraint.FallbackResolvesCoplanarBoxOnPlane'`.
-  `pixi run lint`, `pixi run check-api-boundary-inventory`, and
+  `pixi run lint`, `pixi run check-api-boundaries`, and
   `git diff --check` passed after the same changes.
 - On `feature/allocator-correctness-gates` after restoring the EnTT no-growth
   row to `FrameStlAllocator`, switching the EnTT build/growth row to a
@@ -4087,7 +4087,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `build/default/cpp/Release/bin/UNIT_common_pool_allocator`,
   `pixi run python scripts/check_allocator_comparative_benchmarks.py --input .benchmark_results/allocator_comparative_foonathan_entt_stride32_final_merged_check.json --include-entt-registry --baseline foonathan --verbose`,
   `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`,
-  `pixi run check-api-boundary-inventory`, and `git diff --check` passed.
+  `pixi run check-api-boundaries`, and `git diff --check` passed.
 - On `feature/allocator-correctness-gates` after the strict foonathan-only
   default matrix was green, a full EnTT plus standard-baseline run,
   `pixi run bm-allocator-comparative-check --include-entt-registry --baseline foonathan --baseline std --verbose --cpu-affinity auto --output .benchmark_results/allocator_comparative_entt_std_full_probe.json`,
@@ -4117,7 +4117,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   passed, and
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(UNIT_common_pool_allocator|UNIT_common_memory_manager|UNIT_common_frame_allocator)$'`
   passed. `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`
-  passed, `pixi run check-api-boundary-inventory` passed, and
+  passed, `pixi run check-api-boundaries` passed, and
   `git diff --check` passed. `pixi run lint` passed; after lint, the same
   targeted rebuild, focused CTest run, Python checker tests, API boundary
   inventory check, strict merged foonathan checker, and `git diff --check`
@@ -4142,7 +4142,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `pixi run cmake --build build/default/cpp/Release --target bm_allocators_comparative UNIT_common_frame_allocator --parallel "$JOBS"`,
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_common_frame_allocator$'`,
   `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`,
-  `pixi run check-api-boundary-inventory`, and `git diff --check` passed.
+  `pixi run check-api-boundaries`, and `git diff --check` passed.
   Focused high-load probes showed the batched reserve-only `BM_StlVector` rows
   beating foonathan and `std::pmr` baselines; the latest foonathan-only default
   probe,
@@ -4164,7 +4164,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   passed and
   `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`
   passed. After `pixi run lint`, the same benchmark target rebuild and pytest
-  suite passed again; `pixi run check-api-boundary-inventory` and
+  suite passed again; `pixi run check-api-boundaries` and
   `git diff --check` also passed. A short high-load diagnostic probe,
   `pixi run bm allocators-comparative --build-type Release -- --benchmark_filter='BM_(RawHeap|RawMalloc|RawNew|AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool)_(DART|Foonathan|StdPmr)' --benchmark_min_time=0.05s --benchmark_repetitions=3 --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/allocator_comparative_raw_adapter_probe.json --benchmark_out_format=json`,
   showed every new DART row faster than the matching foonathan row and faster
@@ -4180,7 +4180,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `pixi run cmake --build build/default/cpp/Release --target bm_allocators_comparative --parallel "$JOBS"`
   passed before and after `pixi run lint`. The post-lint
   `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`
-  run passed, `pixi run check-api-boundary-inventory` passed, and
+  run passed, `pixi run check-api-boundaries` passed, and
   `git diff --check` passed. Short high-load diagnostic probes,
   `pixi run bm allocators-comparative --build-type Release -- --benchmark_filter='BM_(StaticStack|Temporary|Iteration)_(DART|Foonathan|StdPmr)' --benchmark_min_time=0.05s --benchmark_repetitions=3 --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/allocator_comparative_scratch_family_probe.json --benchmark_out_format=json`
   and
@@ -4219,7 +4219,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   completion gate to require every required foonathan/memory allocator baseline:
   `pixi run python -m pytest tests/test_allocator_comparative_check.py python/tests/unit/test_check_allocator_comparative_benchmarks.py`
   passed, `pixi run lint` passed, `git diff --check` passed, and
-  `pixi run check-api-boundary-inventory` passed. A short high-load probe,
+  `pixi run check-api-boundaries` passed. A short high-load probe,
   `pixi run bm-allocator-comparative-check --include-entt-registry --baseline foonathan --baseline std --verbose --benchmark-min-time 0.2s --repetitions 3 --output .benchmark_results/allocator_comparative_hmm_scope_probe.json`,
   failed with one stable foonathan timing miss (`BM_EnttRegistry/256`, ratio
   `1.087`) plus multiple noisy rows rejected by the CV guard. Rechecking that
@@ -4236,7 +4236,7 @@ build/default/cpp/Release --target test_world --parallel 2` passed. Focused
   `build/default/cpp/Release/bin/test_deformable_body --gtest_color=no --gtest_filter='DeformableBody.SurfaceContactCcdReportsCustomStageStats:DeformableBody.InterBodySurfaceContactCcdLimitsMovingPoint:DeformableBody.StaticRigidSurfaceCcdLimitsPointOnlySideCrossing:DeformableBody.KinematicSurfaceCcdSphereKeepsCurrentPoseSnapshot:DeformableBody.KinematicSurfaceCcdObstacleSweepsRealizedIpcMotion'`
   passed, and
   `build/default/cpp/Release/bin/test_vbd_world_solver --gtest_color=no --gtest_filter='VbdWorldSolver.VbdStaticRigidSurfaceCcdLimitsFastCrossing'`
-  passed. `git diff --check` and `pixi run check-api-boundary-inventory` also
+  passed. `git diff --check` and `pixi run check-api-boundaries` also
   passed.
 - On `feature/allocator-correctness-gates` after moving default
   projected-Newton RHS/Hessian assembly/PSD batch/solution storage into

@@ -38,8 +38,6 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_compile_features(${target_name} PUBLIC cxx_std_20)
-
 target_link_libraries(${target_name} PUBLIC dart-simulation Eigen3::Eigen)
 
 # Allow linking into shared targets (e.g. the GUI app) later.

@@ -50,7 +50,6 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
 #include <limits>
 #include <span>
@@ -1742,38 +1741,9 @@ inline Eigen::Vector3d avbdRigidWorldContactCanonicalLocalPoint(
 }
 
 //==============================================================================
-using AvbdRigidWorldEndpointPairKey
-    = std::pair<AvbdContactEndpointId, AvbdContactEndpointId>;
-
-struct AvbdRigidWorldEndpointPairKeyHash
-{
-  std::size_t operator()(
-      const AvbdRigidWorldEndpointPairKey& key) const noexcept
-  {
-    std::size_t seed = 0u;
-    const auto combine = [&seed](std::uint64_t value) {
-      seed ^= std::hash<std::uint64_t>{}(value) + 0x9e3779b97f4a7c15ull
-              + (seed << 6u) + (seed >> 2u);
-    };
-    combine(key.first.object);
-    combine(key.first.feature);
-    combine(key.second.object);
-    combine(key.second.feature);
-    return seed;
-  }
-};
-
-using AvbdRigidWorldRowCounterMap = std::unordered_map<
-    AvbdRigidWorldEndpointPairKey,
-    std::uint32_t,
-    AvbdRigidWorldEndpointPairKeyHash>;
-
-//==============================================================================
-template <typename RowOrderVector, typename RowCounterVector>
+template <typename RowOrderVector>
 inline void assignAvbdRigidWorldContactRows(
-    AvbdRigidWorldContactSnapshot& snapshot,
-    RowOrderVector& rows,
-    RowCounterVector& rowCounters)
+    AvbdRigidWorldContactSnapshot& snapshot, RowOrderVector& rows)
 {
   rows.clear();
   rows.reserve(snapshot.contacts.size());
@@ -1808,25 +1778,18 @@ inline void assignAvbdRigidWorldContactRows(
         return lhs.contact < rhs.contact;
       });
 
-  rowCounters.clear();
-  rowCounters.reserve(rows.size());
+  AvbdRigidWorldRowCounterKey rowKey;
+  bool hasRowKey = false;
+  std::uint32_t nextRow = 0u;
   for (const AvbdRigidWorldContactRowOrder& row : rows) {
-    const auto found = std::lower_bound(
-        rowCounters.begin(),
-        rowCounters.end(),
-        row.rowKey,
-        [](const AvbdRigidWorldRowCounter& counter,
-           const AvbdRigidWorldRowCounterKey& value) {
-          return counter.key < value;
-        });
-    AvbdRigidWorldRowCounter& counter
-        = found != rowCounters.end() && found->key == row.rowKey
-              ? *found
-              : *rowCounters.insert(
-                    found, AvbdRigidWorldRowCounter{row.rowKey, 0u});
-    snapshot.contacts[row.contact].row = counter.nextRow;
-    if (counter.nextRow < std::numeric_limits<std::uint32_t>::max()) {
-      ++counter.nextRow;
+    if (!hasRowKey || rowKey != row.rowKey) {
+      rowKey = row.rowKey;
+      hasRowKey = true;
+      nextRow = 0u;
+    }
+    snapshot.contacts[row.contact].row = nextRow;
+    if (nextRow < std::numeric_limits<std::uint32_t>::max()) {
+      ++nextRow;
     }
   }
 }
@@ -1836,8 +1799,7 @@ inline void assignAvbdRigidWorldContactRows(
     AvbdRigidWorldContactSnapshot& snapshot)
 {
   AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
-  assignAvbdRigidWorldContactRows(
-      snapshot, scratch.contactRowOrder, scratch.rowCounters);
+  assignAvbdRigidWorldContactRows(snapshot, scratch.contactRowOrder);
 }
 
 } // namespace detail
@@ -1898,7 +1860,6 @@ inline void buildAvbdRigidWorldContactSnapshot(
       /*jointCapacity=*/0u,
       /*motorCapacity=*/0u,
       /*distanceSpringCapacity=*/0u);
-  resetAvbdRigidWorldRowCounters(scratch, contacts.size());
 
   for (std::size_t contactIndex = 0; contactIndex < contacts.size();
        ++contactIndex) {
@@ -1956,13 +1917,9 @@ inline void buildAvbdRigidWorldContactSnapshot(
         * detail::avbdRigidWorldContactFriction(registry, entityB));
     manifoldPoint.startStiffness = options.startStiffness;
     manifoldPoint.maxStiffness = options.maxStiffness;
-    const auto rowKey = canonicalizeAvbdContactEndpoints(
-        manifoldPoint.endpointA, manifoldPoint.endpointB);
-    manifoldPoint.row = claimNextAvbdRigidWorldRow(scratch.rowCounters, rowKey);
     snapshot.contacts.push_back(manifoldPoint);
   }
-  detail::assignAvbdRigidWorldContactRows(
-      snapshot, scratch.contactRowOrder, scratch.rowCounters);
+  detail::assignAvbdRigidWorldContactRows(snapshot, scratch.contactRowOrder);
 }
 
 //==============================================================================
@@ -3113,6 +3070,17 @@ inline bool hasAvbdRigidWorldPointJointConfigs(
 }
 
 //==============================================================================
+inline bool mayHaveAvbdRigidWorldPointJointConfigs(
+    const ::dart::simulation::detail::WorldRegistry& registry)
+{
+  const auto* jointStorage = registry.storage<comps::Joint>();
+  const auto* configStorage
+      = registry.storage<AvbdRigidWorldPointJointConfig>();
+  return jointStorage != nullptr && configStorage != nullptr
+         && jointStorage->size() != 0u && configStorage->size() != 0u;
+}
+
+//==============================================================================
 template <typename InputVector>
 inline void extractAvbdRigidWorldDistanceSpringInputsInto(
     const ::dart::simulation::detail::WorldRegistry& registry,
@@ -3187,6 +3155,15 @@ inline bool hasAvbdRigidWorldDistanceSpringConfigs(
 {
   const auto view = registry.view<AvbdRigidWorldDistanceSpringConfig>();
   return view.begin() != view.end();
+}
+
+//==============================================================================
+inline bool mayHaveAvbdRigidWorldDistanceSpringConfigs(
+    const ::dart::simulation::detail::WorldRegistry& registry)
+{
+  const auto* configStorage
+      = registry.storage<AvbdRigidWorldDistanceSpringConfig>();
+  return configStorage != nullptr && configStorage->size() != 0u;
 }
 
 //==============================================================================

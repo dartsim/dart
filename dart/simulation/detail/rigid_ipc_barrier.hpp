@@ -642,7 +642,7 @@ struct RigidIpcProjectedNewtonSolveResult
 
 struct RigidIpcProjectedNewtonSolveScratchWorkspace;
 
-struct RigidIpcProjectedNewtonSolveScratch
+struct DART_SIMULATION_API RigidIpcProjectedNewtonSolveScratch
 {
   using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
 

@@ -306,7 +306,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dGroundWorld()
   return world;
 }
 
-std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld()
+std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld(
+    const double maxFriction = 5.0)
 {
   constexpr int kBoxCount = 11;
 
@@ -336,7 +337,7 @@ std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld()
         Eigen::Vector3d(-30.0 + 2.0 * static_cast<double>(i), 0.75, 0.0),
         false,
         Eigen::Vector3d(10.0, 0.0, 0.0),
-        5.0 - static_cast<double>(i) / 10.0 * 5.0));
+        maxFriction - static_cast<double>(i) / 10.0 * maxFriction));
   }
 
   benchmark::DoNotOptimize(boxes.data());
@@ -853,6 +854,7 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSpringWorld()
       100.0,
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Zero());
+  world->setCollisionPairIgnored(anchor, block);
   return world;
 }
 
@@ -889,6 +891,9 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSpringRatioWorld()
         stiffness,
         Eigen::Vector3d(0.5, 0.0, 0.0),
         Eigen::Vector3d(-0.5, 0.0, 0.0));
+    world->setCollisionPairIgnored(
+        links[static_cast<std::size_t>(i)],
+        links[static_cast<std::size_t>(i + 1)]);
   }
 
   benchmark::DoNotOptimize(links.data());
@@ -1407,6 +1412,7 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringWorld()
       100.0,
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Zero());
+  world->setCollisionPairIgnored(anchor, block);
   return world;
 }
 
@@ -1452,6 +1458,9 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringRatioWorld()
         stiffness,
         Eigen::Vector3d(0.5, 0.0, 0.0),
         Eigen::Vector3d(-0.5, 0.0, 0.0));
+    world->setCollisionPairIgnored(
+        links[static_cast<std::size_t>(i)],
+        links[static_cast<std::size_t>(i + 1)]);
   }
 
   benchmark::DoNotOptimize(links.data());
@@ -2550,6 +2559,33 @@ void resetArticulatedHighRatioChain(std::vector<sx::Joint>& joints)
   }
 }
 
+struct ArticulatedHighRatioReplayEnvelope
+{
+  double maxAbsPosition = 0.0;
+  bool allFinite = true;
+};
+
+ArticulatedHighRatioReplayEnvelope measureArticulatedHighRatioReplayEnvelope(
+    ArticulatedHighRatioChainFixture& fixture)
+{
+  fixture.world->restoreReplayFrame(0);
+  ArticulatedHighRatioReplayEnvelope envelope;
+  for (std::size_t step = 0; step < kPaperScaleHighRatioReplaySteps; ++step) {
+    fixture.world->step();
+    for (const auto& joint : fixture.joints) {
+      if (!joint.getPosition().allFinite()
+          || !joint.getVelocity().allFinite()) {
+        envelope.allFinite = false;
+        continue;
+      }
+      envelope.maxAbsPosition
+          = std::max(envelope.maxAbsPosition, std::abs(joint.getPosition()[0]));
+    }
+  }
+  fixture.world->restoreReplayFrame(0);
+  return envelope;
+}
+
 std::vector<sx::Joint> makeRigidFixedJoints(
     sx::World& world, std::size_t jointCount)
 {
@@ -2828,6 +2864,34 @@ static void BM_AvbdDemo2dDynamicFrictionStep(benchmark::State& state)
 BENCHMARK(BM_AvbdDemo2dDynamicFrictionStep);
 
 //==============================================================================
+static void BM_AvbdDemo2dFrictionCoefficientSweep(benchmark::State& state)
+{
+  constexpr double kFrictionScale = 10.0;
+  const double maxFriction
+      = static_cast<double>(state.range(0)) / kFrictionScale;
+  auto world = makeAvbdDemo2dDynamicFrictionWorld(maxFriction);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["rigid_bodies"] = 12.0;
+  state.counters["rigid_body_joints"] = 0.0;
+  state.counters["collision_shapes"] = 12.0;
+  state.counters["source_scene_index"] = 2.0;
+  state.counters["max_friction"] = maxFriction;
+  state.counters["min_friction"] = 0.0;
+  state.counters["friction_samples"] = 11.0;
+}
+BENCHMARK(BM_AvbdDemo2dFrictionCoefficientSweep)
+    ->Arg(0)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50);
+
+//==============================================================================
 static void BM_AvbdDemo2dStaticFrictionStep(benchmark::State& state)
 {
   auto world = makeAvbdDemo2dStaticFrictionWorld();
@@ -3038,6 +3102,7 @@ static void BM_AvbdDemo2dSpringStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 1.0;
   state.counters["collision_shapes"] = 2.0;
+  state.counters["ignored_collision_pairs"] = 1.0;
   state.counters["source_scene_index"] = 9.0;
 }
 BENCHMARK(BM_AvbdDemo2dSpringStep);
@@ -3056,6 +3121,7 @@ static void BM_AvbdDemo2dSpringRatioStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 7.0;
   state.counters["collision_shapes"] = 8.0;
+  state.counters["ignored_collision_pairs"] = 7.0;
   state.counters["source_scene_index"] = 10.0;
 }
 BENCHMARK(BM_AvbdDemo2dSpringRatioStep);
@@ -3215,6 +3281,7 @@ static void BM_AvbdDemo3dSpringStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 1.0;
   state.counters["collision_shapes"] = 3.0;
+  state.counters["ignored_collision_pairs"] = 1.0;
   state.counters["source_scene_index"] = 7.0;
 }
 BENCHMARK(BM_AvbdDemo3dSpringStep);
@@ -3233,6 +3300,7 @@ static void BM_AvbdDemo3dSpringRatioStep(benchmark::State& state)
   state.counters["rigid_body_joints"] = 0.0;
   state.counters["distance_springs"] = 7.0;
   state.counters["collision_shapes"] = 9.0;
+  state.counters["ignored_collision_pairs"] = 7.0;
   state.counters["source_scene_index"] = 8.0;
 }
 BENCHMARK(BM_AvbdDemo3dSpringRatioStep);
@@ -3573,7 +3641,53 @@ static void BM_AvbdPaperScaleHighRatioChainStep(benchmark::State& state)
   state.counters["replay_seconds"] = kPaperScaleHighRatioReplaySeconds;
   state.counters["replay_steps"]
       = static_cast<double>(kPaperScaleHighRatioReplaySteps);
+  const auto envelope = measureArticulatedHighRatioReplayEnvelope(fixture);
+  state.counters["finite_replay"] = envelope.allFinite ? 1.0 : 0.0;
+  state.counters["max_abs_position"] = envelope.maxAbsPosition;
 }
 BENCHMARK(BM_AvbdPaperScaleHighRatioChainStep);
+
+//==============================================================================
+static void BM_AvbdPaperScaleHighRatioChainIterationSweep(
+    benchmark::State& state)
+{
+  const auto maxIterations = static_cast<std::size_t>(state.range(0));
+  auto fixture = makeArticulatedHighRatioChainWorld(
+      kPaperScaleHighRatioChainLinks,
+      kPaperScaleHighRatioTipMass,
+      maxIterations,
+      kPaperScaleHighRatioTolerance);
+  fixture.world->enterSimulationMode();
+  fixture.world->setReplayRecordingEnabled(true);
+  std::size_t stepsSinceReset = 0;
+
+  for (auto _ : state) {
+    if (stepsSinceReset >= kPaperScaleHighRatioReplaySteps) {
+      state.PauseTiming();
+      fixture.world->restoreReplayFrame(0);
+      stepsSinceReset = 0;
+      state.ResumeTiming();
+    }
+    fixture.world->step();
+    ++stepsSinceReset;
+    benchmark::ClobberMemory();
+  }
+  state.counters["links"] = static_cast<double>(kPaperScaleHighRatioChainLinks);
+  state.counters["mass_ratio"]
+      = kPaperScaleHighRatioTipMass / kArticulatedHighRatioLightMass;
+  state.counters["max_iterations"] = static_cast<double>(maxIterations);
+  state.counters["tolerance"] = kPaperScaleHighRatioTolerance;
+  state.counters["replay_seconds"] = kPaperScaleHighRatioReplaySeconds;
+  state.counters["replay_steps"]
+      = static_cast<double>(kPaperScaleHighRatioReplaySteps);
+  const auto envelope = measureArticulatedHighRatioReplayEnvelope(fixture);
+  state.counters["finite_replay"] = envelope.allFinite ? 1.0 : 0.0;
+  state.counters["max_abs_position"] = envelope.maxAbsPosition;
+}
+BENCHMARK(BM_AvbdPaperScaleHighRatioChainIterationSweep)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100)
+    ->Arg(200);
 
 BENCHMARK_MAIN();

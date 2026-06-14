@@ -44,11 +44,15 @@ public:
   ~DirectSolver() override = default;
 
   using LcpSolver::solve;
+  using LcpSolver::supportsProblem;
 
   LcpResult solve(
       const LcpProblem& problem,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
+
+  bool supportsProblem(
+      const LcpProblem& problem, double standardTolerance) const override;
 
   std::string getName() const override;
   std::string getCategory() const override;

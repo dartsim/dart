@@ -859,6 +859,9 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_kinematic_normal_push",
             "rigid_link_center_of_mass",
         },
+        "Renderer & Debug": {
+            "gui_fidelity_debug_visuals",
+        },
         "AVBD Rigid Constraints (sx)": {
             "avbd_empty_baseline",
             "avbd_demo2d_ground",
@@ -974,6 +977,32 @@ def test_world_scenes_use_solver_focused_categories() -> None:
 
     assert not any(scene.category == "Experimental" for scene in scenes)
     assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_gui_fidelity_debug_visuals_scene_exposes_pbr_and_debug_provider() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    import dartpy as dart
+
+    if not hasattr(dart.gui, "DebugScene"):
+        pytest.skip("dartpy.gui.DebugScene unavailable")
+
+    from examples.demos.scenes.gui_fidelity_debug_visuals import build
+
+    setup = build()
+
+    renderables = setup.world.renderable_provider()
+    by_name = {renderable.shape_frame_name: renderable for renderable in renderables}
+    assert by_name["brushed_metal_box"].material.metallic == pytest.approx(0.95)
+    assert by_name["brushed_metal_box"].material.roughness == pytest.approx(0.24)
+    assert by_name["glossy_debug_bar"].material.reflectance == pytest.approx(0.88)
+
+    assert setup.debug_provider is not None
+    debug_scene = setup.debug_provider()
+    labels = {line.label for line in debug_scene.lines}
+    assert "hinge.joint_axis" in labels
+    assert "hinge.vel_angular" in labels
+    assert "free.vel_linear" in labels
 
 
 def test_world_rigid_visual_verification_scenes_are_ordered() -> None:
@@ -8174,6 +8203,70 @@ def test_avbd_demo2d_dynamic_friction_scene_matches_source_row() -> None:
     assert len(sx_world.collide()) >= 11
 
 
+def test_avbd_demo2d_dynamic_friction_scene_max_friction_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_demo2d_dynamic_friction import build
+
+    monkeypatch.setenv(
+        "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION",
+        "2.5",
+    )
+    setup = build()
+    boxes = setup.info["boxes"]
+    source = setup.info["source_demo_reference"]
+
+    class _PanelBuilder:
+        def __init__(self) -> None:
+            self.plots: list[str] = []
+
+        def text(self, value: str) -> None:
+            pass
+
+        def plot_lines(self, label: str, values: list[float]) -> None:
+            self.plots.append(label)
+
+        def separator(self) -> None:
+            pass
+
+        def checkbox(self, label: str, value: bool) -> tuple[bool, bool]:
+            return False, value
+
+        def slider(
+            self, label: str, value: float, minimum: float, maximum: float
+        ) -> tuple[bool, float]:
+            return False, value
+
+        def item_tooltip(self, text: str) -> None:
+            pass
+
+        def same_line(self) -> None:
+            pass
+
+        def button(self, label: str) -> bool:
+            return False
+
+    panel_builder = _PanelBuilder()
+    setup.panels[0].build(panel_builder, object())
+
+    assert setup.info["max_dynamic_box_friction"] == pytest.approx(2.5)
+    assert setup.info["high_friction_speed_label"] == "Friction 2.5 speed"
+    assert source["source_shapes"]["boxes"]["friction_range"] == (2.5, 0.0)
+    assert source["parameters"]["max_dynamic_box_friction"] == pytest.approx(2.5)
+    assert [box.friction for box in boxes] == pytest.approx(
+        [2.5 - float(index) / 10.0 * 2.5 for index in range(11)]
+    )
+    assert np.asarray(boxes[0].linear_velocity, dtype=float).tolist() == pytest.approx(
+        [10.0, 0.0, 0.0]
+    )
+    assert "Friction 2.5 speed" in panel_builder.plots
+    assert "Friction 5 speed" not in panel_builder.plots
+
+
 def test_avbd_demo2d_static_friction_scene_matches_source_row() -> None:
     import numpy as np
 
@@ -9254,6 +9347,7 @@ def test_avbd_demo2d_spring_scene_matches_source_row() -> None:
     anchor = setup.info["anchor"]
     block = setup.info["block"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_length = setup.info["spring_length"]
     source = setup.info["source_demo_reference"]
 
@@ -9300,6 +9394,9 @@ def test_avbd_demo2d_spring_scene_matches_source_row() -> None:
     assert [len(body.collision_shapes) for body in (anchor, block)] == [1, 1]
     assert [body.friction for body in (anchor, block)] == pytest.approx([0.5, 0.5])
     assert len(springs) == 1
+    assert len(ignored_collision_pairs) == 1
+    assert sx_world.num_ignored_collision_pairs == 1
+    assert sx_world.is_collision_pair_ignored(anchor, block)
     assert springs[0]["rest_length"] == pytest.approx(4.0)
     assert springs[0]["stiffness"] == pytest.approx(100.0)
 
@@ -9331,6 +9428,7 @@ def test_avbd_demo2d_spring_ratio_scene_matches_source_row() -> None:
     sx_world = setup.info["sx_world"]
     links = setup.info["links"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_lengths = setup.info["spring_lengths"]
     source = setup.info["source_demo_reference"]
 
@@ -9374,6 +9472,13 @@ def test_avbd_demo2d_spring_ratio_scene_matches_source_row() -> None:
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 8
     assert len(springs) == 7
+    assert len(ignored_collision_pairs) == 7
+    assert sx_world.num_ignored_collision_pairs == 7
+    assert all(
+        sx_world.is_collision_pair_ignored(links[index], links[index + 1])
+        for index in range(7)
+    )
+    assert not sx_world.is_collision_pair_ignored(links[0], links[2])
     assert [link.is_static for link in links] == [
         True,
         False,
@@ -9428,6 +9533,7 @@ def test_avbd_demo3d_spring_scene_matches_source_row() -> None:
     anchor = setup.info["anchor"]
     block = setup.info["block"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_length = setup.info["spring_length"]
     source = setup.info["source_demo_reference"]
 
@@ -9487,6 +9593,9 @@ def test_avbd_demo3d_spring_scene_matches_source_row() -> None:
         [0.5, 0.5, 0.5]
     )
     assert len(springs) == 1
+    assert len(ignored_collision_pairs) == 1
+    assert sx_world.num_ignored_collision_pairs == 1
+    assert sx_world.is_collision_pair_ignored(anchor, block)
     assert springs[0]["rest_length"] == pytest.approx(4.0)
     assert springs[0]["stiffness"] == pytest.approx(100.0)
 
@@ -9519,6 +9628,7 @@ def test_avbd_demo3d_spring_ratio_scene_matches_source_row() -> None:
     ground = setup.info["ground"]
     links = setup.info["links"]
     springs = setup.info["springs"]
+    ignored_collision_pairs = setup.info["ignored_collision_pairs"]
     spring_lengths = setup.info["spring_lengths"]
     source = setup.info["source_demo_reference"]
 
@@ -9570,6 +9680,13 @@ def test_avbd_demo3d_spring_ratio_scene_matches_source_row() -> None:
     assert ground.is_static
     assert len(links) == 8
     assert len(springs) == 7
+    assert len(ignored_collision_pairs) == 7
+    assert sx_world.num_ignored_collision_pairs == 7
+    assert all(
+        sx_world.is_collision_pair_ignored(links[index], links[index + 1])
+        for index in range(7)
+    )
+    assert not sx_world.is_collision_pair_ignored(links[0], links[2])
     assert [link.is_static for link in links] == [
         True,
         False,

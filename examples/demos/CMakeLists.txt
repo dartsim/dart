@@ -40,7 +40,7 @@ target_compile_definitions(
   demos_scenes
   PUBLIC DART_DEMOS_HAS_SIMULATION_EXPERIMENTAL
 )
-target_compile_features(demos_scenes PUBLIC cxx_std_20)
+target_compile_features(demos_scenes PUBLIC cxx_std_23)
 set_target_properties(demos_scenes PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
   dart_format_add(${demos_scene_sources})
@@ -54,10 +54,33 @@ if(TARGET dart-demos)
 
   if(BUILD_TESTING AND DART_BUILD_TESTS)
     add_test(NAME EXAMPLE_dart_demos_list COMMAND dart-demos --list)
+    # dart-demos links Filament, whose prebuilt runtime dlopen's SDL3 at process
+    # startup. Under AddressSanitizer that load fails ("Failed loading SDL3
+    # library") and aborts before `--list` can print, so disable this runtime
+    # smoke test in ASan builds. It still runs in Release/Debug, and dart-demos
+    # is still built under ASan (the failure is purely at runtime startup).
     set_tests_properties(
       EXAMPLE_dart_demos_list
-      PROPERTIES LABELS "examples;gui;catalog"
+      PROPERTIES LABELS "examples;gui;catalog" DISABLED ${DART_ENABLE_ASAN}
     )
+    if(NOT APPLE)
+      if(WIN32)
+        set(_dart_demos_path_var "PATH")
+      else()
+        set(_dart_demos_path_var "LD_LIBRARY_PATH")
+      endif()
+      set(
+        _dart_demos_list_env_mods
+        "${_dart_demos_path_var}=path_list_prepend:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+        "${_dart_demos_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>"
+      )
+      set_tests_properties(
+        EXAMPLE_dart_demos_list
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_demos_list_env_mods}"
+      )
+      unset(_dart_demos_list_env_mods)
+      unset(_dart_demos_path_var)
+    endif()
     foreach(test_target IN ITEMS tests tests_and_run)
       if(TARGET ${test_target})
         add_dependencies(${test_target} dart-demos)

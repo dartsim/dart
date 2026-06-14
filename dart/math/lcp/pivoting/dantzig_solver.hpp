@@ -67,6 +67,7 @@ public:
         hiEff(DoubleAllocator{allocator}),
         lcp(allocator)
     {
+      usesProvidedAllocator = true;
     }
 
     std::vector<double, DoubleAllocator> Adata;
@@ -80,6 +81,13 @@ public:
     std::vector<double, DoubleAllocator> loEff;
     std::vector<double, DoubleAllocator> hiEff;
     DantzigLcpScratch<double> lcp;
+
+    /// True when this scratch was constructed with a caller-provided allocator.
+    /// In that case `DantzigSolver::solve` skips the default-allocating
+    /// interior fast path so every work-buffer allocation routes through the
+    /// provided allocator (allocator correctness for real-time / deterministic
+    /// callers).
+    bool usesProvidedAllocator = false;
 
     void clear() noexcept;
   };
@@ -122,6 +130,16 @@ public:
 
   std::string getName() const override;
   std::string getCategory() const override;
+
+  bool supportsBoxedLcp() const override
+  {
+    return true;
+  }
+
+  bool supportsFrictionIndex() const override
+  {
+    return true;
+  }
 };
 
 } // namespace dart::math

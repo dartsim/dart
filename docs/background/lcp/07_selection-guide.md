@@ -77,11 +77,9 @@ dart::math::LcpProblem problem(A, b, lo, hi, findex);
 dart::math::DantzigSolver solver;
 solver.solve(problem, x, solver.getDefaultOptions());
 
-// Lemke for standard LCP (lo=0, hi=inf, findex=-1)
-dart::math::LcpProblem standard(M, -q, Eigen::VectorXd::Zero(q.size()),
-                                Eigen::VectorXd::Constant(q.size(),
-                                                          std::numeric_limits<double>::infinity()),
-                                Eigen::VectorXi::Constant(q.size(), -1));
+// Lemke for standard LCP: lo=0, hi=inf, findex=-1 is canonicalized for you.
+dart::math::LcpProblem standard(M, -q);
+// standard.isStandardLcp() returns true.
 dart::math::LemkeSolver lemke;
 lemke.solve(standard, z, lemke.getDefaultOptions());
 ```
@@ -161,14 +159,8 @@ dart::math::LcpProblem problem(A, b, lo, hi, findex);
 dart::math::DantzigSolver solver;
 solver.solve(problem, x, solver.getDefaultOptions());
 
-// Or Lemke
-dart::math::LcpProblem standardProblem(
-    M,
-    q,
-    Eigen::VectorXd::Zero(q.size()),
-    Eigen::VectorXd::Constant(
-        q.size(), std::numeric_limits<double>::infinity()),
-    Eigen::VectorXi::Constant(q.size(), -1));
+// Or Lemke for a standard non-negative LCP.
+dart::math::LcpProblem standardProblem(M, q);
 dart::math::LemkeSolver lemke;
 lemke.solve(standardProblem, z, lemke.getDefaultOptions());
 validate(M, z, q);  // Always validate
@@ -275,7 +267,12 @@ Available solvers:
 
 The backticked names in this block are checked against
 `tests/common/lcpsolver/lcp_solver_manifest.hpp` by
-`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest`.
+`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest` and by
+`scripts/check_lcp_solver_roster.py`, which also checks the dartpy bindings,
+stubs, and `lcp_physics` demo metadata.
+The C++ and dartpy `LcpSolver::supports*` predicates expose the same native
+standard/boxed/findex capability split at runtime; fallback delegation is still
+allowed when calling `solve()`.
 
 <!-- dart-lcp-solver-manifest: begin -->
 

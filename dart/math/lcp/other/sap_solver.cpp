@@ -94,6 +94,38 @@ void addBarrierHessianDiagonal(
   }
 }
 
+bool validateParameters(
+    const SapSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.regularization) || params.regularization <= 0.0) {
+    if (message) {
+      *message = "SAP regularization must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.armijosParameter) || params.armijosParameter <= 0.0
+      || params.armijosParameter >= 1.0) {
+    if (message) {
+      *message = "SAP armijos_parameter must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.backtrackingFactor)
+      || params.backtrackingFactor <= 0.0 || params.backtrackingFactor >= 1.0) {
+    if (message) {
+      *message = "SAP backtracking_factor must be in (0, 1)";
+    }
+    return false;
+  }
+  if (params.maxLineSearchIterations <= 0) {
+    if (message) {
+      *message = "SAP max_line_search_iterations must be positive";
+    }
+    return false;
+  }
+  return true;
+}
+
 } // namespace
 
 SapSolver::SapSolver()
@@ -150,6 +182,12 @@ LcpResult SapSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,
@@ -158,6 +196,43 @@ LcpResult SapSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (!options.warmStart) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    if (problem.isStandardLcp(absTolerance)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolerance);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   const double reg = params->regularization;
   const double armijo = params->armijosParameter;
@@ -186,7 +261,9 @@ LcpResult SapSolver::solve(
   Eigen::VectorXd grad(n);
   Eigen::VectorXd diagAdd(n);
   Eigen::VectorXd dx(n);
+  Eigen::VectorXd ax(n);
   Eigen::VectorXd xNew(n);
+  Eigen::VectorXd axNew(n);
 
   int iterationsUsed = 0;
   bool converged = false;
@@ -202,13 +279,15 @@ LcpResult SapSolver::solve(
       }
     }
 
+    ax.noalias() = A * x;
+
     // Cost: L(x) = 0.5*x'*A*x - b'*x + barrier(x)
-    const double quadCost = 0.5 * x.dot(A * x) - b.dot(x);
+    const double quadCost = 0.5 * x.dot(ax) - b.dot(x);
     const double barrierCost = computeBarrierCost(x, loEff, hiEff, reg);
     const double cost = quadCost + barrierCost;
 
     // Gradient: grad = A*x - b + barrier_grad
-    grad = A * x - b;
+    grad = ax - b;
     computeBarrierGradient(x, loEff, hiEff, reg, grad);
 
     const double gradNorm = grad.lpNorm<Eigen::Infinity>();
@@ -247,7 +326,8 @@ LcpResult SapSolver::solve(
         }
       }
 
-      const double newQuadCost = 0.5 * xNew.dot(A * xNew) - b.dot(xNew);
+      axNew.noalias() = A * xNew;
+      const double newQuadCost = 0.5 * xNew.dot(axNew) - b.dot(xNew);
       const double newBarrierCost = computeBarrierCost(xNew, loEff, hiEff, reg);
       const double newCost = newQuadCost + newBarrierCost;
 
@@ -300,10 +380,7 @@ LcpResult SapSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(

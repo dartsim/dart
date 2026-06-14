@@ -62,7 +62,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <Eigen/StdVector>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -82,6 +81,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #include <cctype>
@@ -154,7 +154,6 @@ struct SDFBodyNode
   BodyPropPtr properties;
   Eigen::Isometry3d initTransform;
   std::string type;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
@@ -688,7 +687,7 @@ dynamics::SkeletonPtr readSkeleton(
       } else {
         DART_WARN(
             "Unsupported root joint type [{}]. Using FLOATING by default.",
-            static_cast<int>(options.defaultRootJointType));
+            std::to_underlying(options.defaultRootJointType));
         rootJoint.properties = dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", body->second.initTransform));
         rootJoint.type = "free";

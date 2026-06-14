@@ -7,8 +7,26 @@
 - Breaking Changes
   - Increased required C++ standard from C++17 to C++20. ([#2068](https://github.com/dartsim/dart/pull/2068))
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  - Increased the required C++ standard from C++20 to C++23, and consolidated the
+    standard declaration onto the library targets so it propagates transitively
+    (removing redundant `target_compile_features` calls). Adopted the C++23
+    facilities that compile on every CI toolchain (`std::expected` as the storage
+    for `dart::common::Result`, `std::to_underlying`, and `std::unreachable` via a
+    new `DART_UNREACHABLE` macro), and added `dart/common/feature_support.hpp` to
+    gate features that are not yet uniformly available across the supported
+    toolchains (deducing-this and `std::ranges::contains` need GCC 14/15; `std::print`,
+    `std::flat_map`/`std::flat_set`, `std::move_only_function`, `std::generator`,
+    `std::mdspan`). See `docs/design/cpp23_modernization.md`.
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
+  - Increased the minimum required Python version for dartpy from 3.12 to 3.14
+    (the default `python3` in Ubuntu 26.04 LTS). The development environment and
+    the published wheel matrix now target Python 3.14 only; 3.12 and 3.13 wheels
+    are no longer built. `[tool.mypy]` now type-checks against Python 3.14.
+  - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
+    do not require `clang-scan-deps` while DART has no C++ module sources.
+  - Fixed the DART GUI smoke runner to use an absolute build-library path so
+    CTest working directories do not load stale installed DART libraries.
   - Removed the `dart/common/filesystem.hpp` compatibility header; include `<filesystem>` and use `std::filesystem`/`std::error_code` directly.
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
   - Renamed component meta headers to `All.hpp` and added the `dart/all.hpp` umbrella header; deprecated `<component>.hpp`/`all.hpp` headers now forward to `All.hpp`. ([#2047](https://github.com/dartsim/dart/pull/2047), [#2070](https://github.com/dartsim/dart/pull/2070), [#2084](https://github.com/dartsim/dart/pull/2084), [#2166](https://github.com/dartsim/dart/pull/2166))
@@ -608,6 +626,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `BM_AvbdPaperScaleHighRatioChainStep`, and a tracked
     `avbd-paper-scale-high-ratio-chain-packet.json` visual/benchmark packet for
     a 50-link/50,000:1 CPU smoke that keeps the same-hardware and GPU gates open,
+    plus a dashboard-selected `BM_AvbdPaperScaleHighRatioChainIterationSweep`
+    row over 25, 50, 100, and 200 max-iteration budgets for the same
+    paper-scale high-ratio chain fixture with a tracked
+    `avbd-paper-scale-high-ratio-iteration-sweep-packet.json`
+    benchmark/stability packet and
+    `avbd-paper-scale-high-ratio-iteration-sweep-plot.svg` rendered plot,
     plus tracked `avbd-rigid-revolute-motor-packet.json` and
     `avbd-rigid-prismatic-motor-packet.json` visual/benchmark packets for the
     public free-rigid revolute and prismatic motor rows,
@@ -752,7 +776,39 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for contact/joint/spring row ordinals instead of per-step tree maps, and
     append paths seed the body-index cache when they fall back to an existing
     snapshot entity scan. The rigid row driver skips per-body row-index scratch
-    setup for row families absent from a solve.
+    setup for row families absent from a solve. Rigid AVBD contact manifolds
+    with no active Coulomb friction capacity now clear their friction row
+    inventory and return after normal-row construction, avoiding tangent-row
+    warm-start lookup and construction work for frictionless manifolds while
+    preserving normal rows. The default sequential-impulse rigid contact stage
+    also skips tangent-basis setup, tangent effective-mass calculation, and
+    friction solve calls for contacts with zero combined Coulomb friction while
+    preserving normal contact projection, and uses a normal-only inner solve
+    loop when every assembled contact is frictionless. The ordinary rigid
+    contact path now also requests only basic contact query details when no
+    private AVBD contact config component is present, while
+    public `World::collide()` and AVBD contact snapshots still request full
+    shape-index/local-point data; the sequential normal solve caches
+    velocity/transform component pointers and unit normal impulse deltas across
+    its inner iterations and skips inverse world-inertia factorization for
+    centered frictionless normal contacts whose angular contact Jacobian is
+    exactly zero. The normal impulse loop also reuses precomputed contact
+    angular Jacobian terms when evaluating approach velocity and effective
+    mass, skips zero-angular normal velocity/effective-mass work, avoids
+    no-op angular velocity updates for centered normal rows, and returns early
+    when a normal impulse iteration produces no velocity change. Positional
+    contact correction also skips no-op writes to prescribed/static bodies, and
+    contact assembly skips prescribed/static endpoint arm and tangent-mass
+    work while preserving dynamic endpoint impulse math. Contact assembly now
+    also shares each endpoint's contact-material lookup between friction and
+    restitution setup, skips the square-root call for exact zero combined
+    friction products, and avoids no-op tangent-friction velocity writes for
+    zero deltas and static/prescribed endpoints.
+    During simulation bake, the rigid contact stage now
+    reserves ordinary and AVBD contact scratch from the collision-shape capacity
+    estimate and prewarms collision-query cache storage without generating
+    prepare-time contacts; `execute()` remains the only path that assembles
+    contact rows for the actual solve.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about
@@ -1206,6 +1262,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     deformable surface-CCD
     crossings and two non-square production-scale deformable frictional
     self-contact grids now have the same baked no-growth guard coverage.
+  - Added deformable `World::step` diagnostics for runtime surface-contact
+    candidate pair capacity and rejected pair counts across self-surface,
+    inter-body deformable, static rigid surface CCD, and moving rigid surface
+    CCD candidate paths, with matching dartpy/stub exposure and PLAN-083 CPU
+    scene packet validation.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
@@ -1995,6 +2056,384 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     cone semantics of a fixed interval and removes false negatives for DART 7
     friction-index rows whose tangent bounds collapse when the normal impulse is
     zero.
+  - Refined Dantzig friction-index LCP solves by re-solving fixed tangent bounds
+    when the final normal-scaled friction bounds shift during coupled contact
+    pivots, preventing stale single-pass contact solutions. The Python LCP demo
+    now includes a coupled two-contact active-bound packet in its representative
+    solver suite.
+  - Exposed `LcpProblem::isValid()` / `getValidationMessage()` and Python
+    `LcpProblem.is_valid()` / `get_validation_message()` so LCP demos and tests
+    can report shared problem-invariant diagnostics before solver dispatch.
+  - Exposed friction-index row and contact-count metadata on `LcpProblem` and
+    dartpy, and used it in the Python LCP representative solver suite so DART 7
+    LCP evidence surfaces report dimensions and contact structure from the
+    problem representation itself.
+  - Rejected negative `hi` coefficients on friction-index LCP rows in shared
+    problem validation and effective-bound construction, keeping the public
+    DART 7 problem interface aligned with the documented `hi = +mu`
+    convention instead of silently normalizing invalid coefficients.
+  - Exposed dartpy parameter objects and `parameters` properties for
+    `AdmmSolver`, `SapSolver`, and `BoxedSemiSmoothNewtonSolver`, allowing
+    Python demos to tune the advanced boxed/friction-index solver settings used
+    by the matching C++ benchmark sweeps.
+  - Expanded dartpy LCP solver parameter bindings to the remaining
+    parameterized projection, Newton, MPRGP, interior-point, and shock
+    propagation solvers so Python users can round-trip the same solver-specific
+    tuning structs exposed by C++.
+  - Added an advanced-solver parameter table to the Python LCP demo metadata
+    and panel, listing the exposed ADMM, SAP, and boxed semi-smooth Newton
+    knobs next to their matching benchmark sweep filters.
+  - Extended the Python LCP demo parameter table to the full dartpy-exposed
+    LCP tuning surface, covering projection, Newton, MPRGP, interior-point,
+    shock propagation, ADMM, SAP, and boxed semi-smooth Newton parameters next
+    to representative benchmark filters.
+  - Added solve-time validation for ADMM, SAP, and boxed semi-smooth Newton
+    LCP parameter structs so invalid Python or C++ tuning values are rejected
+    with `InvalidProblem` before numerical iteration begins.
+  - Extended solve-time validation to the remaining exposed LCP parameter
+    structs for PGS, APGD, TGS, the standard Newton-family solvers, and
+    interior point, replacing silent clamps and invalid numerical branches with
+    explicit `InvalidProblem` diagnostics for invalid Python or C++ tuning
+    values.
+  - Updated `StaggeringSolver::supportsProblem()` to report native support only
+    for friction-index packets with both normal and friction rows; standard and
+    boxed no-friction packets remain solvable through fallback delegation but
+    are no longer advertised as native Staggering comparisons.
+  - Aligned Staggering's form-level native capability methods and Python demo
+    metadata with its friction-index-only native route, while preserving
+    standard and boxed fallback solve behavior through `solve()`.
+  - Filtered LCP performance-profile generation and checked CSV headers through
+    the solver manifest's native support metadata, so standard and boxed
+    profiles no longer include delegated-only Staggering comparisons and
+    acronym solver labels stay aligned with the C++ manifest.
+  - Updated LCP performance-profile regeneration to parse the current
+    `BM_LcpCompare/<problem-family>/<solver>/<size>` benchmark schema, expose
+    focused benchmark-filter/min-time/timeout options for smoke runs, default
+    benchmark execution to the profile row family, and fail loudly when full
+    profile JSON is missing native solver coverage. The `BM_LCP_COMPARE`
+    benchmark target now asserts the same native support counts as the solver
+    manifest, and the checked Standard, Boxed, and FrictionIndex profile CSVs
+    were regenerated from the current profile rows.
+  - Added concrete solver/problem support counters to current LCP benchmark
+    rows and made LCP performance-profile ingestion reject current-schema rows
+    whose solver does not natively support the concrete problem, while still
+    accepting historical cached benchmark JSON without those counters.
+  - Tightened current LCP performance-profile ingestion to cross-check
+    benchmark problem-family names against emitted `solver_supports_*` form
+    counters, rejecting current-schema rows whose solver does not advertise
+    native support for the profile category.
+  - Tightened current LCP performance-profile ingestion to cross-check
+    benchmark problem-family names against emitted `problem_type_*` counters,
+    rejecting current-schema rows whose concrete problem type disagrees with
+    the profile category.
+  - Added a checked LCP performance-profile evidence CSV that records each
+    parsed benchmark row's timing, contract metrics, concrete solver-support
+    counters, and problem-type counters, and surfaced that artifact in the
+    Python LCP demo performance-profile metadata.
+  - Surfaced the checked LCP performance-profile CSVs in the Python
+    `lcp_physics` demo metadata and panel, with current leader/laggard summaries
+    for Standard, Boxed, and FrictionIndex apples-to-apples solver profiles.
+  - Added the DART 7 LCP performance-profile evidence schema to the Python
+    `lcp_physics` panel so the roster identity, native-support, problem-form,
+    dimension, iteration, and feasibility counters are visible with the checked
+    CSV artifact.
+  - Summarized checked LCP performance-profile evidence rows in the Python
+    `lcp_physics` panel, including row counts, solver counts, LCP dimensions,
+    FrictionIndex contact counts, contract pass counts, and max feasibility
+    metrics per profile surface.
+  - Added a solver selection guide to the Python `lcp_physics` panel that
+    connects solver families to representative best-fit cases, strengths,
+    tradeoffs, and current profile-evidence cues.
+  - Added a representative LCP requirement coverage table to the Python
+    `lcp_physics` panel, tying billiards invariants, mass-ratio stacks, card
+    piles, scalability smoke, and friction coupling to their live packets,
+    benchmark packets, and tracked metrics.
+  - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
+    Jacobian solve before falling back to regularized least squares, and kept
+    friction-index moving-bound updates local to accepted line-search trials.
+  - Optimized `BlockedJacobiSolver` singleton fixed-bound blocks with a scalar
+    projected update, avoiding per-block local solver setup for singleton-heavy
+    standard and boxed profile rows while preserving the existing block solve
+    fallback for coupled friction-index blocks.
+  - Optimized `BlockedJacobiSolver` fixed-bound iterations by snapshotting
+    `A * x` once per Jacobi step and reusing it for block right-hand sides,
+    while keeping coupled friction-index blocks on their previous row-product
+    path.
+  - Optimized `BgsSolver` singleton fixed-bound blocks with the same scalar
+    projected update used by the Gauss-Seidel sweep, avoiding one-row local
+    solver setup while preserving the existing fallback for coupled
+    friction-index and larger blocks.
+  - Optimized `ShockPropagationSolver` fixed-bound blocks by trying a small
+    direct local linear solve when the unconstrained candidate is already
+    feasible, while preserving the existing Direct/Dantzig fallback for
+    active-bound, singular, larger, non-finite, and local friction-index blocks.
+  - Tuned `AdmmSolver`'s default initial penalty to `rhoInit = 4.0`, reducing
+    active-box iteration counts in current adaptive-rho profile rows while
+    preserving the same projection and adaptive residual-balancing algorithm.
+    ADMM now also reuses per-iteration RHS/projection workspace during the
+    split update to reduce allocation overhead in active-box profile rows.
+  - Tuned SAP benchmark-profile options so boxed comparison rows use the
+    solver's default compliance regularization while standard and
+    friction-index rows retain stricter regularization; boxed SAP profile rows
+    now converge in 3 iterations in the refreshed comparison packet.
+  - Added optional PGS warm-start parameters to
+    `BoxedSemiSmoothNewtonSolver` and enabled a short warm start for bounded and
+    friction-index comparison rows, reducing current boxed/findex Newton
+    profile rows while preserving standard-row behavior.
+  - Added a shared strict-interior standard-LCP fast path used by Lemke, Baraff,
+    Interior Point, Minimum Map Newton, Fischer-Burmeister Newton, and
+    Penalized Fischer-Burmeister Newton solvers; it accepts only validated
+    positive linear-solve candidates and leaves active-bound pivot,
+    path-following, and Newton warm-start behavior unchanged.
+  - Added an LLT-first variant of the validated strict-interior standard-LCP
+    fast path for dense Newton, boxed Newton, and Interior Point rows, while
+    keeping the default standard helper on the previous LU solve for
+    lower-overhead exact-path users; the refreshed Standard profile moves those
+    dense rows below the former above-`2x` band.
+  - Extended the validated strict-interior standard-LCP fast path to NNCG,
+    Subspace Minimization, Blocked Jacobi, and Shock Propagation so current
+    projection/block comparison rows skip iterative setup when the
+    unconstrained linear solve is already a valid positive solution, while
+    preserving warm-start and custom block/layer validation paths.
+  - Extended `NncgSolver`'s validated exact fast path to boxed LCPs without
+    friction-index coupling through the shared projected-active-set solve,
+    while preserving warm-started and coupled contact rows on the
+    PGS-preconditioned NNCG iteration.
+  - Extended `BlockedJacobiSolver` and `BgsSolver` validated exact fast paths
+    to boxed LCPs without friction-index coupling through the shared
+    projected-active-set solve, while preserving warm-started, custom
+    block-validated, and coupled contact rows on the block iteration paths.
+  - Extended `RedBlackGaussSeidelSolver` and `SymmetricPsorSolver` validated
+    exact fast paths to small boxed LCPs without friction-index coupling
+    through the shared projected-active-set solve, moving current boxed
+    comparison rows to zero solver iterations while preserving warm-started and
+    custom-option projection paths.
+  - Added a shared validated strict-interior friction-index exact solve and
+    wired it into Dantzig, Blocked Jacobi, BGS, NNCG, Subspace Minimization,
+    Shock Propagation, Staggering, small-packet ADMM, and small-packet
+    BoxedSemiSmoothNewton high-level solves. Contact-sized local block solves
+    also try the helper before Dantzig fallback, while active-bound,
+    warm-started, large size-sensitive, and validator-rejected rows stay on
+    their original iterative or Newton paths.
+  - Optimized the shared validated strict-interior friction-index exact helper
+    to try an LLT solve before falling back to the previous LU solve, reducing
+    current SPD FrictionIndex exact-path rows and removing the remaining
+    above-`2x` averages from the refreshed FrictionIndex profile.
+  - Extended Jacobi and Red-Black Gauss-Seidel default non-warm-started
+    friction-index solves to use the validated LLT-first exact helper through
+    the current 64-contact comparison packet, moving both rows to zero
+    iterations and below `1.3x` average in the refreshed FrictionIndex profile.
+  - Routed `BgsSolver` and `NncgSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper and raised BGS's standard
+    exact gate through the current 96-row comparison packet, moving the
+    refreshed Standard profile below `1.5x` average for every solver.
+  - Optimized the shared projected-active-set boxed-LCP exact helper to try
+    LLT-based dense solves before falling back to LU, removing the remaining
+    above-`2x` Boxed averages from the refreshed profile while preserving the
+    previous validated active-set acceptance contract.
+  - Raised `BgsSolver`'s strict-interior exact gate through the current
+    64-contact FrictionIndex comparison packet, moving the refreshed
+    FrictionIndex BGS average to `1.24x`.
+  - Raised `AdmmSolver`'s strict-interior friction-index exact gate through the
+    current medium comparison packet, moving the refreshed FrictionIndex ADMM
+    average from `1.70x` to `1.41x` while leaving the large row on the
+    operator-splitting path.
+  - Routed `DantzigSolver` and `SymmetricPsorSolver` standard strict-interior
+    exact shortcuts through the validated LLT-first helper and raised Symmetric
+    PSOR's standard exact gate through the current 96-row comparison packet,
+    moving the refreshed Standard Dantzig and Symmetric PSOR rows to `1.02x`
+    and `1.26x` average respectively.
+  - Routed `SubspaceMinimizationSolver` standard strict-interior exact shortcuts
+    through the validated LLT-first helper, moving its refreshed Standard
+    average from `1.64x` to `1.19x`.
+  - Routed `LemkeSolver` and `BaraffSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper, moving their refreshed
+    Standard averages to `1.25x` and `1.15x` respectively.
+  - Routed `BlockedJacobiSolver` standard strict-interior exact shortcuts
+    through the validated LLT-first helper, moving its refreshed Standard
+    average from `1.62x` to `1.18x`.
+  - Routed `RedBlackGaussSeidelSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper, moving its refreshed
+    Standard average from `1.63x` to `1.39x`.
+  - Routed `ApgdSolver` and `SapSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper, moving their refreshed
+    Standard averages to `1.40x` and `1.46x` respectively and leaving no
+    Standard profile row above `1.6x`.
+  - Raised `JacobiSolver`'s standard strict-interior exact gate through the
+    96-row comparison packet and routed that path through the validated
+    LLT-first helper, moving its refreshed Standard average from `1.59x` to
+    `1.22x`.
+  - Raised `ApgdSolver`'s exact shortcut gate through the 192-row friction-index
+    comparison packet, moving its refreshed FrictionIndex average from `1.61x`
+    to `1.38x`.
+  - Optimized `ShockPropagationSolver` to avoid friction-index block data
+    construction before the validated exact shortcut when custom options are
+    present but both `blockSizes` and `layers` are empty, while preserving
+    eager block validation for non-empty custom partitions.
+  - Moved `ShockPropagationSolver`'s validated exact shortcut ahead of full
+    problem validation for non-empty standard, boxed, and friction-index forms,
+    while preserving zero-row validation and eager non-empty custom friction
+    block validation before shortcut acceptance.
+  - Optimized `ShockPropagationSolver` exact-path solves to delay
+    non-warm-start initial-guess zeroing until after exact fast-path attempts
+    and block validation, avoiding a zero-vector write on accepted exact
+    candidates and moving the refreshed boxed profile below an above-2x average.
+  - Raised `ShockPropagationSolver`'s validated strict-interior
+    friction-index exact shortcut to cover the current 64-contact comparison
+    packet, avoiding layered block setup for that accepted exact row and moving
+    the refreshed FrictionIndex ShockPropagation average below `2x`.
+  - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
+    already reaches the natural residual tolerance, avoiding an extra Newton
+    loop on warm-started or larger friction-index rows that converge directly
+    after the accepted step.
+  - Extended `BoxedSemiSmoothNewtonSolver`'s validated strict-interior
+    friction-index exact shortcut to medium 48-variable packets and added an
+    optional exact-solve dimension gate so strict-interior comparison rows can
+    raise the gate to 192 variables without changing the conservative default
+    for active or validator-rejected contact rows.
+  - Extended `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
+    `SubspaceMinimizationSolver` validated exact fast paths to boxed LCPs
+    without friction-index coupling through the shared projected-active-set
+    solve; `SapSolver` now also uses the strict-interior standard fast path for
+    non-warm-started high-level solves.
+  - Extended `ApgdSolver`'s validated exact fast path to boxed active-set and
+    medium friction-index rows without custom APGD options, trimming the
+    refreshed FrictionIndex APGD profile below an above-2x average while
+    preserving restart-policy sweep rows on the iterative APGD path.
+  - Extended `SymmetricPsorSolver`'s validated exact fast path to medium
+    friction-index rows without custom options, trimming current small and
+    medium FrictionIndex profile rows while leaving boxed rows on the faster
+    iterative symmetric projection path.
+  - Extended the validated strict-interior standard-LCP fast path to APGD,
+    Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel standard comparison
+    rows, with profile-shaped size guards so larger packets stay on their
+    cheaper iterative paths when dense linear solves are not profitable.
+  - Moved `ShockPropagationSolver`'s strict-interior standard-LCP fast path
+    ahead of block/layer matrix construction after lightweight custom
+    block/layer validation, preferring an LLT exact solve before falling back to
+    the shared linear-solve helper.
+  - Extended `ShockPropagationSolver`'s validated exact fast path to boxed LCPs
+    without friction-index coupling using the shared projected-active-set solve,
+    while preserving warm-started iteration, friction-index blocks, and invalid
+    custom block/layer rejection.
+  - Extended `DantzigSolver`'s validated exact fast path to boxed LCPs without
+    friction-index coupling through the shared projected-active-set solve,
+    preserving warm-started and low-level scratch calls on the ODE-derived
+    pivoting path.
+  - Added a validated projected-active-set boxed-LCP exact solve and wired it
+    into default non-warm-started `AdmmSolver` calls without friction-index
+    coupling, preserving ADMM's iterative path for warm starts, custom options,
+    and coupled contact rows.
+  - Extended the validated strict-interior standard-LCP fast path to BGS for
+    small and medium standard comparison rows, while preserving explicit custom
+    block validation and leaving larger rows on the existing Gauss-Seidel block
+    sweep when that path is faster than a dense linear solve.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `BoxedSemiSmoothNewtonSolver` standard rows after parameter validation,
+    leaving warm-started boxed and friction-index Newton solves on the existing
+    residual-reducing PGS warm-start and semi-smooth line-search path.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `DantzigSolver` through the `LcpProblem` solver interface, preserving the
+    ODE-derived boxed and friction-index pivoting path and the low-level
+    matrix/scratch entry point.
+  - Extended the validated strict-interior standard-LCP fast path to default
+    `MprgpSolver` calls after the solver's symmetry and positive-definite
+    checks, reusing the existing LLT factorization and preserving custom-option
+    stress paths.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `AdmmSolver` when callers are not warm-starting or supplying per-solve
+    custom options, preferring an LLT exact solve for SPD rows before falling
+    back to the shared linear-solve helper and leaving boxed/friction-index
+    ADMM iteration behavior unchanged.
+  - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
+    per-problem native limits, starting with `DirectSolver` reporting only its
+    tiny standard-LCP enumeration window as native while larger standard
+    packets remain solvable through fallback delegation.
+  - Updated `MprgpSolver::supportsProblem()` to report native support only for
+    standard packets matching its configured symmetric positive-definite native
+    path; boxed, friction-indexed, non-symmetric, and non-positive-definite
+    packets remain solvable through fallback delegation.
+  - Updated `BaraffSolver::supportsProblem()` to report native support only for
+    standard packets matching its symmetric positive-semidefinite native path;
+    boxed, friction-indexed, non-symmetric, and indefinite packets now delegate
+    to Dantzig through the unified `solve()` path.
+  - Filtered singular-degenerate standard-LCP benchmark registrations through
+    each solver's concrete `supportsProblem(problem)` predicate so MPRGP's
+    Dantzig fallback is no longer listed as a native MPRGP comparison row while
+    Baraff's symmetric positive-semidefinite native rows remain.
+  - Filtered singular-degenerate friction-index and standard/boxed batch
+    benchmark registrations through exact generated batch support, so serial
+    and parallel rows are only published when every generated batch problem is
+    accepted by the solver's concrete native route.
+  - Filtered contact-normal standard-LCP sweep registrations through each
+    generated normal-only contact packet's concrete solver support predicate,
+    preserving Baraff and MPRGP native rows while keeping Direct limited to its
+    native small-enumeration cases without a separate size special case.
+  - Added manifest-driven active friction-index contact benchmark rows to the
+    main LCP comparison benchmark and retargeted the Python LCP demo's
+    representative benchmark metadata from the older two-solver microbenchmark
+    rows to that runnable `lcp_compare` filter.
+  - Filtered active-set transition LCP benchmark registrations through each
+    generated packet's concrete solver support predicate, replacing the
+    standard-packet Direct special case with the same native-route gate used by
+    other representative rows.
+  - Filtered pivoting scale sweep benchmark registration and runtime guards
+    through each exact generated packet's concrete solver support predicate,
+    removing the last unused manifest-family helper from `lcp_compare`.
+  - Routed the generated all-solvers LCP smoke-test skip helper through each
+    solver's concrete `supportsProblem(problem)` predicate instead of a
+    manifest-family support mapping, keeping smoke coverage aligned with
+    solver-specific native-route limits.
+  - Removed redundant manifest-family prechecks from concrete benchmark-routing
+    helpers for active-set transition, mildly ill-conditioned, near-singular,
+    and singular-degenerate LCP packets now that those helpers receive exact
+    generated problems and use concrete solver support directly.
+  - Removed redundant manifest-family prechecks from contact benchmark
+    registration paths that already gate rows through concrete active
+    friction-index, world-contact, stack-contact, articulated-contact,
+    contact-comparison, normal-standard, and batch contact support probes.
+  - Filtered the manifest-generated `BM_LcpCompare` and
+    serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
+    generated problem support, so solver rows and problem sizes stay tied to
+    each solver's native `supportsProblem(problem)` route instead of only the
+    manifest-level problem family.
+  - Filtered grouped serial/parallel `BM_LcpGroupedBatch` registrations through
+    concrete generated grouped-batch support, keeping the Jacobi and PGS rows
+    tied to exact generated problem batches instead of manifest-level family
+    checks.
+  - Removed the remaining manifest-family prechecks from the main
+    `lcp_compare` benchmark registration paths that already had concrete
+    generated problem filters, leaving `supportsProblem(problem)` as the
+    authoritative native-route gate.
+  - Filtered larger/stress/extreme/production active-set transition benchmark
+    registrations through concrete generated problem support, including exact
+    support checks for the production batch problem lists.
+  - Filtered mildly ill-conditioned and near-singular benchmark registrations
+    through concrete generated problem support, including exact support checks
+    for their serial/parallel batch problem lists.
+  - Filtered separated world-contact, world stack-contact, and contact-solver
+    comparison benchmark registrations through concrete contact packets, keeping
+    representative DART 7 contact rows aligned with solver native support while
+    avoiding registration-time construction of the largest dense box/articulated
+    contact fixtures.
+  - Exposed a representative LCP benchmark-suite command in the Python LCP demo
+    metadata by deriving one runnable filter from the demo's benchmark packet
+    table while preserving the quick smoke benchmark command.
+  - Extended the Python LCP demo's representative benchmark packet table to
+    include active-set scale/production rows and larger/stress/extreme
+    singular-degenerate rows, so the generated representative command reaches
+    the current scalability and hard-degeneracy benchmark surfaces.
+  - Added the LCP solver-specific tuning sweeps to the Python demo's
+    representative benchmark metadata, covering relaxation, line-search,
+    pivoting scale, block partition, restart, iteration-budget, layer, SPD,
+    path-following, ADMM rho, and SAP regularization comparisons.
+  - Updated the Python LCP demo solver profile to report native case coverage
+    from the concrete representative problem suite, so partial native support
+    such as Direct's small standard-LCP window is visible in the apples-to-apples
+    comparison panel.
+  - Updated LCP background documentation to use DART 7 snake_case
+    `dart/math/lcp` header paths and extended the LCP solver roster lint check
+    to reject stale documented LCP header/source paths.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly
@@ -2370,6 +2809,18 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     snapshots up to 8 contacts. Direct rows are limited to 1-, 2-, and 3-row
     subproblems to avoid benchmarking its Dantzig fallback as direct
     enumeration.
+  - Tightened DART 7 LCP contact benchmark registration so dense box-contact,
+    articulated unified-contact, and mixed contact-batch rows check concrete
+    solver support before publishing rows. The largest dense/articulated rows
+    use small representative contact probes at registration time so benchmark
+    listing does not eagerly construct the 256-contact fixtures, while the
+    lighter mixed world-contact batch rows check their concrete generated batch
+    packets directly.
+  - Aligned DART 7 generated LCP correctness coverage with solver-native
+    support predicates: generated cases now skip by each solver's concrete
+    `supportsProblem(problem)` result instead of only the manifest-level
+    problem family, so Direct, Baraff, MPRGP, and future narrow native paths
+    stay consistent with benchmark/demo native-route reporting.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
@@ -2708,6 +3159,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added point-point curved CCD to rigid IPC conservative line search so
     vertex-vertex barrier rows can limit unsafe steps and report point-point
     diagnostics.
+  - Tightened the private PLAN-083 CUDA CCD/line-search packet so sampled
+    rigid-curved point-triangle and edge-edge rows are generated from rigid IPC
+    pose interpolation and validated against continuous curved rigid IPC ACCD
+    reference-prefix counters before the packet can be recorded.
   - Hardened the opt-in experimental rigid IPC world-step stage so malformed
     runtime mesh topology, non-finite mesh vertices, and invalid box extents
     are skipped before internal barrier assembly or CCD.
@@ -2980,6 +3435,40 @@ Capsule Rod (IPC)` py-demos scene.
     The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
     `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
     toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Extended public deformable solver diagnostics with built-in `World::step`
+    self-surface and external inter-body/static-rigid/moving-rigid surface
+    contact candidate and CCD activity counters (PLAN-083 reduced CPU
+    observability). `DeformableSolverDiagnostics` and dartpy
+    `last_deformable_solver_diagnostics` now report surface-contact candidate
+    builds, point-triangle and edge-edge candidate counts, CCD check counts, CCD
+    hits, limited steps, zero-step counts, and rigid obstacle snapshot counts so
+    benchmark packets and debugger surfaces can observe the default deformable
+    line-search path without exposing internal solver state or device/backend
+    APIs. The PLAN-083 reduced CPU scene packet rows now serialize and validate
+    those external surface CCD counters alongside the existing self-surface
+    counters, and the dedicated `unb-alg-barriers` CPU packet row exercises
+    nonzero inter-body/static-rigid/moving-rigid surface CCD counter evidence,
+    including a mixed reduced `World::step` witness that activates all three
+    external families in one step. The reduced lying-flat benchmark packet now
+    also carries nonzero inter-body, static-rigid, and moving-rigid surface CCD
+    witnesses. The reduced hanging-bridge benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced pulley benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced umbrella benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced terrain vehicle benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses. The reduced ragdoll benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses. The reduced precession benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses, and the reduced Candy benchmark packet now carries
+    nonzero static-rigid and moving-rigid surface CCD witnesses. The reduced
+    ABD/FEM benchmark packet now also requires nonzero inter-body,
+    static-rigid, and moving-rigid external surface CCD sidecar witnesses while
+    keeping paper-scale mixed-scene, full runtime affine/FEM, and GPU parity
+    claims deferred.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
@@ -3956,6 +4445,28 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Added opt-in solver-internal CPU worker threads for the Red-Black
     Gauss-Seidel and Blocked Jacobi LCP solvers, with focused correctness tests
     and benchmark counters for threaded color/block updates.
+  - Added DART 7 LCP benchmark identity counters so `BM_LcpCompare` rows
+    machine-record the solver identity schema version and manifest index, and
+    the checked performance-profile evidence CSV and roster lint reject
+    name/identity mismatches.
+  - Added one-hot LCP solver-family identity counters to `BM_LcpCompare`
+    evidence, the checked performance-profile CSV, roster lint, and Python
+    `lcp_physics` evidence-schema panel so pivoting, projection, Newton, and
+    other solver families can be grouped without parsing display names.
+  - Regenerated the LCP performance-profile artifacts from live
+    `BM_LcpCompare` results and refreshed the Python `lcp_physics` profile
+    summary so the demo reflects the current Standard, Boxed, and
+    FrictionIndex hot rows.
+  - Extended the checked LCP performance-profile evidence CSV with solver
+    iteration and bound-violation metrics, and tightened the roster lint gate
+    to reject stale or invalid row-level metric evidence.
+  - Added emitted problem-size counters to checked LCP performance-profile
+    evidence and made profile ingestion plus roster lint reject benchmark-name
+    and machine-recorded size mismatches.
+  - Surfaced each representative standalone LCP demo problem's challenge in
+    the Python `lcp_physics` panel, so all-solver comparisons identify the
+    conditioning, active-set, degeneracy, friction-coupling, and scalability
+    cases they exercise.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))
@@ -3978,6 +4489,21 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Improved Filament rendering fidelity and made debug visuals a first-class
+    `dart::gui` feature: per-shape PBR (`VisualAspect` metallic/roughness/
+    reflectance, threaded through `MaterialDescriptor` to primitive shapes);
+    full texture mip chains with trilinear/anisotropic sampling; a
+    `DART_GUI_HIGH_FIDELITY` opt-in that restores the heavy screen-space passes
+    on the headless path for GPU capture; an `ApplicationOptions::debugProvider`
+    callback that feeds per-frame debug lines/triangles/labels into the built-in
+    overlay (so hosts no longer re-implement overlay wiring per example); new
+    `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers usable from the
+    provider; and built-in panel toggles plus numeric tuning sliders for the
+    debug overlays. dartpy now exposes the `DebugScene` descriptor bundle, and
+    `pixi run py-demos -- --scene gui_fidelity_debug_visuals` provides a focused
+    manual PBR/debug-provider verification scene. See
+    `docs/design/renderer_fidelity_and_debug_visuals.md`.
+    ([#2984](https://github.com/dartsim/dart/pull/2984))
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,

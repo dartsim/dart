@@ -162,14 +162,6 @@ if(_dart_system_includes)
 endif()
 target_link_libraries(dart PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen assimp)
 
-# assimp version detection for conditional compilation
-if(ASSIMP_VERSION_MAJOR)
-  target_compile_definitions(
-    dart
-    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR}
-  )
-endif()
-
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 get_property(
   _dart_extra_compile_options
@@ -216,7 +208,7 @@ endif()
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
 # C++ standard settings
-target_compile_features(dart PUBLIC cxx_std_20)
+target_compile_features(dart PUBLIC cxx_std_23)
 
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" dart_host_processor)
 set(dart_host_architecture "unknown")

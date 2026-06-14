@@ -84,8 +84,8 @@ dynamics::ShapePtr readMeshShape(
   const Eigen::Vector3d scale = hasElement(meshElement, "scale")
                                     ? getValueVector3d(meshElement, "scale")
                                     : Eigen::Vector3d::Ones();
-  const common::Uri meshUri
-      = common::Uri::createFromRelativeUri(baseUri, std::string_view{uri});
+  const common::Uri meshUri = common::Uri::createFromRelativeUri(
+      baseUri, std::string_view(uri.data(), uri.size()));
   const std::string meshUriString = meshUri.toString();
 
   DART_SUPPRESS_DEPRECATED_BEGIN

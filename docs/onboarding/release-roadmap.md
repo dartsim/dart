@@ -2,7 +2,7 @@
 
 DART is moving toward an easier-start research experience with a clean DART 7
 API. Python-first APIs are a major part of that direction, layered on a
-refreshed C++20 core. Compatibility for the established DART 6 API lives on the
+refreshed C++23 core. Compatibility for the established DART 6 API lives on the
 `release-6.17` maintenance line instead of blocking the main-branch DART 7
 design.
 

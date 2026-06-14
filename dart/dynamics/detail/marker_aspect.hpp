@@ -58,9 +58,6 @@ struct DART_API MarkerProperties
   MarkerProperties(
       const Eigen::Vector4d& color = Color::White(1.0),
       ConstraintType type = NO);
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace detail

@@ -28,15 +28,19 @@ its own line so status updates remain git-history friendly.
   version 2, enforced for new packet files by `pixi run check-avbd-packets` in
   both the `lint` and `check-lint` aggregates, and the six mirrored
   contact-scene claim sites are relabeled; writer-script migration to emit the
-  new field is a recorded follow-up (see the packet Evidence bullet). Execute
-  the remaining four WS0 evidence-integrity packets in plan document order:
-  WP-091.2 golden trajectories (next available; behavior-lock guardrail that
-  hard-gates the refactor-heavy packets), WP-091.3 architecture-claim lint
-  (acceptance-criteria clarified — adds test citations to the marked rows
-  before linting them), WP-091.4 legacy freeze (blocked: PLAN-042 Decision 5
-  has no recorded maintainer direction yet), WP-091.5 plan-ID renumber
-  (PLAN-080 and PLAN-082 collisions confirmed real; the packet hazard owns the
-  exact `git grep` scope across docs and code). Then
+  new field is a recorded follow-up (see the packet Evidence bullet).
+  WP-091.2 (golden trajectories) is `[done]` (PR #2994, merged 2026-06-14) —
+  `test_world_default_step_golden` locks the default `World::step` over a
+  three-scene matrix with a two-oracle design (analytical closed-form/physical
+  invariants plus the committed-snapshot behavior lock), so the refactor-heavy
+  WS1+ packets now have behavior-lock evidence to diff against. Execute the
+  remaining WS0 evidence-integrity packets in plan document order: WP-091.3
+  architecture-claim lint (next available; acceptance-criteria clarified —
+  adds test citations to the marked rows before linting them), WP-091.4 legacy
+  freeze (blocked: PLAN-042 Decision 5 has no recorded maintainer direction
+  yet), WP-091.5 plan-ID renumber (PLAN-080 and PLAN-082 collisions confirmed
+  real; the packet hazard owns the exact `git grep` scope across docs and
+  code). Then
   open WS1 with WP-091.10 (virtual finalize/prepare on the stage contract).
   Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
@@ -162,9 +166,10 @@ its own line so status updates remain git-history friendly.
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
   contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
-  history; `pixi run -e cuda test-all` is the local full CUDA gate on Linux CUDA
-  hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
-  future compute-bound contact/constraint work must extend the checked
+  history, plus a bounded LCP solver/contact comparison slice for the contact
+  foundation; `pixi run -e cuda test-all` is the local full CUDA gate on Linux
+  CUDA hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path;
+  and future compute-bound contact/constraint work must extend the checked
   benchmark gate.
   Taskflow remains behind the simulation executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
@@ -339,24 +344,68 @@ its own line so status updates remain git-history friendly.
   metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
   compact runtime sweep-buffer endpoint-distance packets, reduced
   scene-owned runtime candidate-buffer packets, and reduced scene-owned
-  runtime sweep broad-phase packets,
-  endpoint-linear
-  point-triangle and
-  edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
+  runtime sweep broad-phase packets, plus reduced combined scene runtime
+  sweep-filter and candidate-filter rows extracted from the same DART `World`
+  surface,
+  endpoint-linear point-triangle/edge-edge CCD/line-search parity plus sampled
+  rigid-curved point-triangle/edge-edge CCD/line-search parity plus reduced
+  scene-owned runtime point-triangle/edge-edge CCD rows plus a reduced combined
+  scene runtime CCD line-search row, scalar
+  barrier/friction local-kernel parity
   plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
   tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge
   primitive barrier-Hessian parity, point-triangle/point-point/point-edge
   primitive barrier-Hessian PSD-projection parity, reduced scene-owned
   point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
-  rows, reduced diagonal assembly/solve plus
-  pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge scene
+  rows plus a reduced combined all-family scene runtime barrier-Hessian row,
+  reduced diagonal assembly/solve plus
+  pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
+  sparse off-diagonal surface-edge assembly row plus a reduced scene-owned
+  sparse graph construction/assembly row plus a reduced scene-owned nonlinear
+  distance-equality assembly row plus a reduced scene-owned nonlinear
+  distance-equality solve row plus a reduced scene-owned capped nonlinear
+  distance-equality convergence row plus sparse block residual matvec plus a
+  reduced scene-owned sparse residual row plus fixed-iteration sparse Jacobi
+  solve plus a reduced scene-owned sparse Jacobi row plus capped sparse CG solve
+  plus a reduced scene-owned sparse CG row plus bounded reduced direct sparse
+  factor solve plus reduced scene-owned bounded direct sparse factor solve plus
+  sparse equality-reduced diagonal solve parity plus a reduced scene-owned
+  equality-reduced diagonal solve row plus a reduced scene-owned sparse graph
+  unique-edge dedup row plus a reduced scene-owned diagonal assembly/solve row,
+  reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
-  and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
-  contact rows, runtime scene filtering, rigid curved trajectories,
-  equality-reduced/global sparse assembly and factorization, GPU `World::step`,
-  paper-scale assets, full runtime affine/FEM coupling, and accepted reference
-  timings as future evidence. The
+  an ABD/FEM coupled micro-solve packet with external surface CCD sidecar
+  witnesses, built-in deformable `World::step` self-surface candidate/CCD
+  diagnostics in the reduced lying-flat, Candy, and ABD/FEM CPU scene packets,
+  and public built-in inter-body/static-rigid/
+  moving-rigid surface CCD diagnostics, then serializes those external counters
+  into the reduced deformable CPU scene packet rows and adds a dedicated reduced
+  external surface CCD CPU diagnostic packet with nonzero inter-body/static-rigid/
+  moving-rigid counters, including one mixed reduced `World::step` witness that
+  activates all three external families, plus reduced lying-flat
+  inter-body/static-rigid/moving-rigid surface CCD witness rows, one reduced
+  hanging-bridge inter-body/static-rigid/moving-rigid external CCD sidecar row,
+  one reduced pulley inter-body/static-rigid/moving-rigid external CCD sidecar
+  row,
+  one reduced umbrella inter-body/static-rigid/moving-rigid external CCD sidecar
+  row, one reduced terrain vehicle inter-body/static-rigid/moving-rigid
+  external CCD sidecar row, one reduced ragdoll inter-body/static-rigid/
+  moving-rigid external CCD sidecar row, one reduced precession
+  inter-body/static-rigid/moving-rigid external CCD sidecar row, one reduced
+  Candy static-rigid/moving-rigid surface CCD witness row, and one reduced
+  ABD/FEM external sidecar witness row. Other
+  broader figure/demo scene rows still have zero external candidate/check/hit
+  counts.
+  It still keeps
+  production runtime scene filtering, production analytic curved CCD,
+  production scene-level line search inside
+  `World::step`, full runtime
+  sparse Hessian graph construction and assembly beyond the reduced dedup row,
+  unbounded production direct/global sparse factorization, production nonlinear equality convergence
+  policy/solving, GPU `World::step`, paper-scale assets, full runtime
+  affine/FEM coupling, production runtime scene filtering inside `World::step`,
+  and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
   direction before deletion.
@@ -653,8 +702,15 @@ its own line so status updates remain git-history friendly.
   and visual/CPU benchmark smoke through configured `World::step()` solve-budget
   fields with
   [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-  visual/benchmark evidence, while keeping the same-hardware comparison and GPU
-  gates open. Solver-identity relabel (PLAN-091 WP-091.1): no
+  visual/benchmark evidence, while
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` adds dashboard-selected
+  25/50/100/200 max-iteration sweep coverage for that same paper-scale fixture
+  with finite replay counters, tracked benchmark/stability evidence in
+  [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+  and a rendered
+  [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
+  The same-hardware comparison and GPU gates remain open. Solver-identity
+  relabel (PLAN-091 WP-091.1): no
   `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene emplaces the internal
   AVBD rigid-contact opt-in config (`comps::RigidAvbdContactConfig`), because
   AVBD contact is not facade-selectable, so every rigid contact in the
@@ -713,10 +769,11 @@ its own line so status updates remain git-history friendly.
   `avbd-demo2d` Spring and Spring Ratio source rows over public free-rigid
   distance springs, plus `BM_AvbdDemo2dSpringStep` and
   `BM_AvbdDemo2dSpringRatioStep`. Their tracked
-  visual/DART-benchmark/native-timing packets record DART about 5.09x slower
-  than the native Spring runner and about 4.25x slower than the native Spring
-  Ratio runner on this host, so CPU performance resolution and GPU parity
-  remain open. The next `avbd-demo2d` source row is now visible through
+  visual/DART-benchmark/native-timing packets now record the spring-connected
+  ignored-pair counts and DART about 4.02x slower than the native Spring runner
+  and about 4.48x slower than the native Spring Ratio runner on this host, so
+  CPU performance resolution and GPU parity remain open. The next
+  `avbd-demo2d` source row is now visible through
   `avbd_demo2d_fracture`, which matches the `avbd-demo2d` Fracture source
   revision, scene index, 11 chain links, two dynamic supports, 15 falling
   blocks, 10 breakable fixed joints, and 29 collision shapes, plus
@@ -973,10 +1030,11 @@ its own line so status updates remain git-history friendly.
   Ratio source rows over public free-rigid distance springs, plus
   `BM_AvbdDemo3dSpringStep` and
   `BM_AvbdDemo3dSpringRatioStep`. Their tracked
-  visual/DART-benchmark/native-timing packets record DART about 1.96x slower
-  than the native Spring runner and about 3.70x slower than the native Spring
-  Ratio runner on this host, so CPU performance resolution and GPU parity
-  remain open. Other missing corpus items include Spring and Spring Ratio GPU
+  visual/DART-benchmark/native-timing packets now record the spring-connected
+  ignored-pair counts and DART about 2.47x slower than the native Spring runner
+  and about 3.57x slower than the native Spring Ratio runner on this host, so
+  CPU performance resolution and GPU parity remain open. Other missing corpus
+  items include Spring and Spring Ratio GPU
   gates, the 2D Motor, Hanging Rope, 2D Cards, 2D Rod, 2D Joint Grid,
   2D Rope, 2D Heavy Rope, 2D Net, 3D Rope, and 3D Heavy Rope CPU gaps, remaining
   CPU reference wins, broad 2D stack variants, and GPU packets remain missing.
@@ -1002,8 +1060,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-anchored public one-DOF motor break/reset
   re-engagement, movable-movable same-multibody revolute/prismatic motor
   break/reset with explicit off-origin anchors covered in C++/dartpy,
-  direct/private and current-pose movable-pair revolute plus non-cardinal
-  current-pose revolute/prismatic motor-axis coverage, public
+  direct/private movable-pair fixed/revolute/prismatic reset plus
+  direct/private and current-pose spherical linear-row reset, current-pose
+  movable-pair fixed/revolute/prismatic reset, and non-cardinal motor-axis
+  coverage, public
   same-multibody/world-anchored articulated revolute/prismatic
   floating-endpoint plus selected off-origin-anchor facade non-cardinal
   motor-axis coverage,
@@ -1047,8 +1107,11 @@ its own line so status updates remain git-history friendly.
   articulated-chain smoke py-demo plus dashboard row, a focused 50-link/50,000:1
   finite/reset stability smoke and matching
   `BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
-  through configured `World::step()` solve-budget fields, world-anchor
-  coverage, and a
+  through configured `World::step()` solve-budget fields, the new
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` dashboard-selected
+  25/50/100/200 max-iteration sweep row plus benchmark/stability packet and
+  rendered SVG plot,
+  world-anchor coverage, and a
   per-multibody link-index cache in the
   articulated point-joint extractor so same-multibody/world-link AVBD private
   rows no longer rescan structure membership for every point-joint config.
@@ -1074,16 +1137,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link one-DOF and public movable-pair finite-limit plus
   broken-state save/load/reset coverage with non-cardinal axis-basis checks,
   private generated current-pose movable-pair fixed, one-DOF, and spherical
-  broken-state save/load/reset coverage,
-  private spherical movable-pair linear-row reset coverage, private fixed-row reset,
-  narrow breakable benchmark rows, world-fixed reset,
-  same-multibody/world-anchored one-DOF motor break/skip and
-  reset/re-engagement, including the focused dartpy same-multibody/world-link
-  revolute/prismatic explicit-anchor stepping regressions with post-reset
-  endpoint/axis-shape assertions including non-cardinal same-multibody pair and
-  world-link reset cases,
-  spherical linear-row break/skip and reset including the focused dartpy
-  spherical stepping regression,
+  broken-state save/load/reset coverage, with narrow breakable benchmark rows,
+  world-fixed reset, non-cardinal dartpy same-multibody/world-link one-DOF
+  reset endpoint/axis-shape checks, and dartpy fixed/spherical reset
+  endpoint-shape checks now treated as covered current evidence,
   matched-metadata empty-scene baseline smoke, the 2D Fracture/3D Breakable
   source-demo fixed-joint break/reset coverage, the first non-empty
   `avbd-demo2d` Ground, Motor, Hanging Rope, Fracture, Dynamic Friction, Static
@@ -1112,15 +1169,11 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link endpoint-shape assertions, and
   same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
   save/load/reset persistence including explicit-anchor fixed and selected
-  non-cardinal one-DOF motor rows with restored effort-limit state plus
+  non-cardinal one-DOF motor rows with restored effort-limit state, with the
   dartpy same-multibody/world-link fixed/spherical and one-DOF binary
-  round-trips and direct break/skip/reset non-cardinal basis checks, plus
-  dartpy fixed point-joint break/skip/reset
-  stepping for same-multibody and world-link explicit all-axis anchor rows
-  with endpoint-shape assertions, dartpy same-multibody/world-link spherical
-  linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
-  one-DOF motor break/skip/reset endpoint/axis-shape assertions and
-  re-engagement,
+  round-trips, direct break/skip/reset non-cardinal basis checks, fixed and
+  spherical reset endpoint-shape assertions, and explicit-anchor one-DOF motor
+  reset endpoint/axis-shape assertions now treated as current evidence,
   broaden rigid-contact feature persistence beyond the current
   box/sphere/cylinder/capsule/plane/mesh known/unknown shape-frame feature
   identity tests, endpoint-A/B explicit-shape local-point evidence, actual
@@ -1417,7 +1470,10 @@ check-dart7-final-world-promotion`.
   [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
   when extending the renderer; the latter is the seam to implement for
   offline/high-fidelity sensor rendering (egocentric views, lens distortion,
-  depth/segmentation outputs).
+  depth/segmentation outputs). For material/lighting/texture fidelity and for
+  promoting debug visuals into the GUI component (per-shape PBR, IBL reflections,
+  texture mipmaps, an app `debugProvider`, richer debug primitives), see
+  [`../design/renderer_fidelity_and_debug_visuals.md`](../design/renderer_fidelity_and_debug_visuals.md).
 - Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
   CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
   `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type

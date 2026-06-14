@@ -98,7 +98,7 @@ not in this design doc.
 
 Each implementation step keeps the DART 7 simulation gates green:
 `pixi run build-simulation-tests`, `pixi run test-simulation-quick`,
-`pixi run check-api-boundaries`, `pixi run check-api-boundary-inventory`,
+`pixi run check-api-boundaries`,
 `pixi run check-dart7-promotion-surface`, and `pixi run lint`.
 
 ## Risk and review notes

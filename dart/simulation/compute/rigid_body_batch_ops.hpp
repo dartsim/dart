@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simulation/export.hpp>
+
 #include <span>
 
 #include <cstddef>
@@ -81,25 +83,25 @@ RigidBodyModelBatchView modelBatchView(const ModelBatch& model)
       std::span<const double>{model.inertia.data(), model.inertia.size()}};
 }
 
-void integrateRigidBodyStateBatchLinear(
+DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
     MutableRigidBodyStateBatchView state,
     std::span<const double> force,
     std::span<const double> inverseMass,
     double timeStep);
 
-void integrateRigidBodyStateBatchLinear(
+DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
     MutableRigidBodyStateBatchView state,
     RigidBodyModelBatchView model,
     std::span<const double> force,
     double timeStep);
 
-void integrateRigidBodyStateBatch(
+DART_SIMULATION_API void integrateRigidBodyStateBatch(
     MutableRigidBodyStateBatchView state,
     RigidBodyModelBatchView model,
     std::span<const double> force,
     double timeStep);
 
-void integrateRigidBodyStateBatch(
+DART_SIMULATION_API void integrateRigidBodyStateBatch(
     MutableRigidBodyStateBatchView state,
     RigidBodyModelBatchView model,
     std::span<const double> force,

@@ -109,10 +109,11 @@ struct CollisionQueryOptions
 /// A read-only snapshot of the deformable solver's per-step diagnostics, folded
 /// across all deformable bodies on the most recent ``World::step``. This is a
 /// curated, stable subset of the internal ``compute::DeformableSolverStats``
-/// (mesh sizes, projected-Newton convergence, self-contact activity, and the
-/// contact closest-approach diagnostic), surfaced for observability from tools
-/// and bindings without exposing the full internal counter set. All counters
-/// are zero before the first step that runs a deformable solve.
+/// (mesh sizes, projected-Newton convergence, self-contact activity, surface
+/// contact candidate/CCD counters, and the contact closest-approach
+/// diagnostic), surfaced for observability from tools and bindings without
+/// exposing the full internal counter set. All counters are zero before the
+/// first step that runs a deformable solve.
 struct DeformableSolverDiagnostics
 {
   /// Number of deformable bodies stepped.
@@ -152,6 +153,68 @@ struct DeformableSolverDiagnostics
   double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  /// Runtime self-surface contact candidate and CCD activity produced inside
+  /// the default deformable ``World::step`` line search. Candidate counts are
+  /// cumulative over line-search trials for the most recent step. Pair capacity
+  /// counts the point-triangle plus edge-edge pairs eligible before the
+  /// swept-AABB filter; rejected pairs are capacity minus emitted candidates.
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactCandidatePairCapacity = 0;
+  std::size_t surfaceContactCandidateRejectedPairs = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
+  /// Runtime inter-body deformable surface-contact candidate and CCD activity
+  /// produced inside the default deformable ``World::step`` line search.
+  std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactCandidatePairCapacity = 0;
+  std::size_t interBodySurfaceContactCandidateRejectedPairs = 0;
+  std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
+  std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
+  std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
+  std::size_t interBodySurfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t interBodySurfaceContactCcdHits = 0;
+  std::size_t interBodySurfaceContactCcdLimitedSteps = 0;
+  std::size_t interBodySurfaceContactCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-static-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t staticRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t staticRigidSurfaceCcdBoxCount = 0;
+  std::size_t staticRigidSurfaceCcdSphereCount = 0;
+  std::size_t staticRigidSurfaceCcdTriangleCount = 0;
+  std::size_t staticRigidSurfaceCcdEdgeCount = 0;
+  std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t staticRigidSurfaceCcdCandidateRejectedPairs = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t staticRigidSurfaceCcdHits = 0;
+  std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-moving-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t movingRigidSurfaceCcdCandidateRejectedPairs = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
   /// Coulomb friction energy dissipated at the converged iterate.
   double frictionDissipation = 0.0;
   /// Contact closest-approach diagnostic at the converged iterate: the smallest
@@ -1026,13 +1089,17 @@ private:
 
   void ensureDesignMode() const;
   [[nodiscard]] std::span<const Contact> queryContacts(
-      const CollisionQueryOptions& options);
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
+  void prepareCollisionQueryCache(
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails = true);
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
   void recordReplayFrame();
@@ -1050,6 +1117,10 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
+  [[nodiscard]] std::span<const Contact> updateCollisionQueryCache(
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails,
+      bool collectContacts);
   double getRigidIpcAdaptiveBarrierStiffnessLowerBound() const noexcept;
   void setRigidIpcAdaptiveBarrierStiffnessLowerBound(double value) noexcept;
   void resetRigidIpcAdaptiveBarrierStiffnessLowerBound() noexcept;
@@ -1078,6 +1149,7 @@ private:
 #if DART_BUILD_PROFILE
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};
+  compute::WorldStepProfile m_stepProfileScratch{};
 #endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   std::uint64_t m_frameTopologyRevision{0};
