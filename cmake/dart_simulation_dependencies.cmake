@@ -113,10 +113,10 @@ endif()
 if(NOT TARGET Eigen3::Eigen)
   message(FATAL_ERROR "Eigen3 is required for simulation")
 endif()
-if(DEFINED Eigen3_VERSION AND Eigen3_VERSION VERSION_LESS 3.4)
+if(DEFINED Eigen3_VERSION AND Eigen3_VERSION VERSION_LESS 5.0)
   message(
     FATAL_ERROR
-    "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}"
+    "Eigen version>=5.0 is required, but found ${Eigen3_VERSION}"
   )
 endif()
 # Keep Eigen3 in the tracked-deps summary so the status line still prints it.

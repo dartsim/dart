@@ -276,6 +276,10 @@ lint-plan083-completion-audit = { cmd = [
   "scripts/check_plan083_completion_audit.py",
 ] }
 lint-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+lint-architecture-page = { cmd = [
+  "python",
+  "scripts/check_architecture_page_lint.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -306,6 +310,7 @@ lint = { depends-on = [
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
   "lint-avbd-packets",
+  "lint-architecture-page",
   "sync-ai-commands",
 ] }
 
@@ -375,6 +380,10 @@ check-plan083-completion-audit = { cmd = [
   "scripts/check_plan083_completion_audit.py",
 ] }
 check-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+check-architecture-page = { cmd = [
+  "python",
+  "scripts/check_architecture_page_lint.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -414,6 +423,7 @@ check-lint = { depends-on = [
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
   "check-avbd-packets",
+  "check-architecture-page",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }

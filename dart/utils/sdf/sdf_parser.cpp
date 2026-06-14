@@ -62,7 +62,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <Eigen/StdVector>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -154,7 +153,6 @@ struct SDFBodyNode
   BodyPropPtr properties;
   Eigen::Isometry3d initTransform;
   std::string type;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;

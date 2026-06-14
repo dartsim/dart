@@ -401,6 +401,27 @@ void SceneFrameUpdater::update(
       mSelectionController.forceDragDebugLines(),
       mSelectionDebugOverlay);
   mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
+
+  // Application-supplied debug geometry (lines/triangles into the overlay,
+  // labels stashed for the UI pass). Called once per frame here so headless
+  // runs without a UI still render provider lines/triangles.
+  if (mDartScene.debugProvider) {
+    dart::gui::DebugScene providerScene = mDartScene.debugProvider();
+    refreshProviderDebugOverlay(
+        mEngine,
+        mScene,
+        mMaterials.debugColor,
+        providerScene.lines,
+        providerScene.triangles,
+        mSceneState.debugOverlays);
+    mSceneState.debugOverlays.providerLabels = std::move(providerScene.labels);
+  } else {
+    // Clear provider geometry and labels whenever no provider is active. A
+    // labels-only provider leaves providerOverlay empty while providerLabels
+    // stays populated, so clearing only the overlay would leak stale labels
+    // into updateFrameUi after the provider stops emitting.
+    clearProviderDebugOverlay(mEngine, mScene, mSceneState.debugOverlays);
+  }
 }
 
 void SceneFrameUpdater::releaseScriptedForceDragIfActive(
