@@ -46,6 +46,9 @@
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <dart/common/free_list_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
@@ -179,6 +182,41 @@ TEST(NewtonBarrierPrimitives, EqualityChangeOfVariableDetectsRankAndResidual)
       Eigen::MatrixXd::Zero(3, 2),
       1e-12);
   EXPECT_NEAR(change.residualNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, EqualityChangeOfVariableUsesProvidedAllocator)
+{
+  dart::common::MemoryAllocatorDebugger<dart::common::FreeListAllocator>
+      allocator;
+  ASSERT_TRUE(allocator.isEmpty());
+
+  {
+    Eigen::SparseMatrix<double> jacobian(3, 4);
+    jacobian.insert(0, 0) = 2.0;
+    jacobian.insert(0, 2) = 0.25;
+    jacobian.insert(1, 1) = 3.0;
+    jacobian.insert(1, 3) = -0.5;
+    jacobian.insert(2, 0) = 4.0;
+    jacobian.insert(2, 1) = -3.0;
+    jacobian.insert(2, 2) = 0.5;
+    jacobian.insert(2, 3) = 0.5;
+    jacobian.makeCompressed();
+
+    Eigen::Vector3d residual;
+    residual << -4.0, 6.0, -14.0;
+
+    const auto change
+        = nb::makeEqualityChangeOfVariable(jacobian, residual, allocator);
+    ASSERT_TRUE(change.valid);
+    EXPECT_EQ(change.independentRows.size(), 2u);
+    EXPECT_EQ(change.constrainedColumns.size(), 2u);
+    EXPECT_EQ(change.freeColumns.size(), 2u);
+    EXPECT_GT(allocator.getAllocationCount(), 0u);
+    EXPECT_GT(allocator.getPeakAllocatedSize(), 0u);
+  }
+
+  EXPECT_TRUE(allocator.isEmpty());
 }
 
 //==============================================================================

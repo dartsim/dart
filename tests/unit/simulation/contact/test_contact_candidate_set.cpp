@@ -32,16 +32,56 @@
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/memory_manager.hpp>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <span>
+#include <string_view>
 #include <utility>
 #include <vector>
 
+namespace common = dart::common;
 namespace sx = dart::simulation;
 namespace dc = dart::simulation::detail::deformable_contact;
 
 namespace {
+
+class CountingMemoryAllocator final : public common::MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(std::size_t bytes) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes);
+  }
+
+  void* allocate(std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t bytes) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t bytes, std::size_t alignment) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignment);
+  }
+
+  std::size_t allocations = 0u;
+};
 
 //==============================================================================
 dc::SurfaceEdge edge(std::size_t a, std::size_t b)
@@ -54,7 +94,7 @@ dc::SurfaceEdge edge(std::size_t a, std::size_t b)
 
 //==============================================================================
 std::size_t findEdge(
-    const std::vector<dc::SurfaceEdge>& edges, std::size_t a, std::size_t b)
+    std::span<const dc::SurfaceEdge> edges, std::size_t a, std::size_t b)
 {
   const auto target = edge(a, b);
   const auto it = std::find(edges.begin(), edges.end(), target);
@@ -820,6 +860,184 @@ TEST(IpcContactCandidateSet, ReusableBuildersMatchReturnWrappers)
       reusable,
       dc::buildMotionAwareContactCandidatesSweep(
           start, end, triangles, options));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReusableBuildersCanBorrowMemoryAllocator)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+      {-1.0, 0.0, 0.7},
+      {1.0, 0.0, 0.7},
+      {0.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {-0.5, -0.5, 0.7},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  end[4].z() = -0.7;
+  end[5].z() = -0.7;
+  end[8] = Eigen::Vector3d(-0.5, -0.5, -0.7);
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {4, 5, 8},
+      {6, 7, 8},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.1;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBefore = freeList.getAllocationCount();
+
+  {
+    dc::ContactCandidateSet candidates(memoryManager.getFreeAllocator());
+    dc::detail::ContactCandidateSweepScratch scratch(
+        memoryManager.getFreeAllocator());
+
+    dc::buildMotionAwareContactCandidatesSweep(
+        start, end, triangles, options, candidates, scratch);
+
+    expectCandidateSetsEqualIncludingStats(
+        candidates,
+        dc::buildMotionAwareContactCandidatesSweep(
+            start, end, triangles, options));
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBefore)
+        << "allocator-aware contact candidates and sweep scratch should "
+           "reserve from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBefore);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, NoScratchSweepBuildersBorrowCandidateAllocator)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.25, 0.25, 0.0},
+      {1.25, 0.25, 0.0},
+      {0.25, 1.25, 0.0},
+      {0.5, 0.5, 0.5},
+  };
+  auto end = start;
+  end[6] = Eigen::Vector3d(0.5, 0.5, -0.5);
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 1.0;
+  options.excludeIncidentPointTriangles = false;
+  options.excludeAdjacentEdges = false;
+
+  CountingMemoryAllocator allocator;
+  dc::ContactCandidateSet candidates(allocator);
+  candidates.surfaceEdges.reserve(6u);
+  candidates.pointTriangleCandidates.reserve(64u);
+  candidates.edgeEdgeCandidates.reserve(64u);
+
+  const std::size_t allocationsBeforeStatic = allocator.allocations;
+  dc::buildContactCandidatesSweep(start, triangles, options, candidates);
+  EXPECT_GT(allocator.allocations, allocationsBeforeStatic)
+      << "static no-scratch sweep builder should borrow candidate allocator "
+         "for local sweep scratch";
+  expectCandidateSetsEqualIncludingStats(
+      candidates, dc::buildContactCandidatesSweep(start, triangles, options));
+
+  const std::size_t allocationsBeforeMotionAware = allocator.allocations;
+  dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options, candidates);
+  EXPECT_GT(allocator.allocations, allocationsBeforeMotionAware)
+      << "motion-aware no-scratch sweep builder should borrow candidate "
+         "allocator for local sweep scratch";
+  expectCandidateSetsEqualIncludingStats(
+      candidates,
+      dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, ReturnBuildersCanUseProvidedAllocator)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.25, 0.25, 0.0},
+      {1.25, 0.25, 0.0},
+      {0.25, 1.25, 0.0},
+      {0.5, 0.5, 0.5},
+  };
+  auto end = start;
+  end[6] = Eigen::Vector3d(0.5, 0.5, -0.5);
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 1.0;
+  options.excludeIncidentPointTriangles = false;
+  options.excludeAdjacentEdges = false;
+
+  CountingMemoryAllocator allocator;
+  const dc::ContactCandidateSet::SurfaceEdgeAllocator edgeAllocator{allocator};
+  const dc::ContactCandidateSet::PointTriangleAllocator pointAllocator{
+      allocator};
+  const dc::ContactCandidateSet::EdgeEdgeAllocator edgeEdgeAllocator{allocator};
+
+  const auto expectAllocatorBacked =
+      [&](const dc::ContactCandidateSet& candidates) {
+        EXPECT_EQ(candidates.surfaceEdges.get_allocator(), edgeAllocator);
+        EXPECT_EQ(
+            candidates.pointTriangleCandidates.get_allocator(), pointAllocator);
+        EXPECT_EQ(
+            candidates.edgeEdgeCandidates.get_allocator(), edgeEdgeAllocator);
+      };
+
+  const std::size_t allocationsBefore = allocator.allocations;
+
+  const auto staticBrute = dc::buildContactCandidatesBruteForce(
+      start, triangles, options, allocator);
+  expectAllocatorBacked(staticBrute);
+  expectCandidateSetsEqualIncludingStats(
+      staticBrute,
+      dc::buildContactCandidatesBruteForce(start, triangles, options));
+
+  const auto staticSweep
+      = dc::buildContactCandidatesSweep(start, triangles, options, allocator);
+  expectAllocatorBacked(staticSweep);
+  expectCandidateSetsEqualIncludingStats(
+      staticSweep, dc::buildContactCandidatesSweep(start, triangles, options));
+
+  const auto motionBrute = dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options, allocator);
+  expectAllocatorBacked(motionBrute);
+  expectCandidateSetsEqualIncludingStats(
+      motionBrute,
+      dc::buildMotionAwareContactCandidatesBruteForce(
+          start, end, triangles, options));
+
+  const auto motionSweep = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options, allocator);
+  expectAllocatorBacked(motionSweep);
+  expectCandidateSetsEqualIncludingStats(
+      motionSweep,
+      dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options));
+
+  EXPECT_GT(allocator.allocations, allocationsBefore)
+      << "allocator-aware return builders should reserve candidate and sweep "
+         "scratch storage through the provided allocator";
 }
 
 //==============================================================================

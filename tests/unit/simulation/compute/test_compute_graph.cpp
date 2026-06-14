@@ -42,20 +42,267 @@
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <gtest/gtest.h>
 
 #include <atomic>
 #include <chrono>
 #include <limits>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 namespace compute = dart::simulation::compute;
 namespace sx = dart::simulation;
+
+namespace common = dart::common;
+
+namespace {
+
+std::atomic<bool> g_heapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_heapAllocationCount{0};
+std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+void recordHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+
+[[nodiscard]] void* allocateRaw(std::size_t bytes) noexcept
+{
+  return std::malloc(bytes == 0 ? 1 : bytes);
+}
+
+[[nodiscard]] void* allocateAlignedRaw(
+    std::size_t bytes, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    return allocateRaw(bytes);
+  }
+
+#if defined(_WIN32)
+  return _aligned_malloc(bytes == 0 ? 1 : bytes, alignment);
+#else
+  const auto requested = bytes == 0 ? 1 : bytes;
+  if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (alignment < alignof(void*)) {
+    alignment = alignof(void*);
+  }
+  void* pointer = nullptr;
+  return posix_memalign(&pointer, alignment, requested) == 0 ? pointer
+                                                             : nullptr;
+#endif
+}
+
+void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    std::free(pointer);
+    return;
+  }
+
+#if defined(_WIN32)
+  _aligned_free(pointer);
+#else
+  std::free(pointer);
+#endif
+}
+
+} // namespace
+
+void* operator new(std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new(std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void* operator new[](
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+namespace {
+
+class ScopedHeapAllocationCounter final
+{
+public:
+  ScopedHeapAllocationCounter()
+  {
+#ifdef DART_CODECOV
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+#else
+    g_heapAllocationCount.store(0, std::memory_order_relaxed);
+    g_heapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+#endif
+  }
+
+  ~ScopedHeapAllocationCounter()
+  {
+    stop();
+  }
+
+  ScopedHeapAllocationCounter(const ScopedHeapAllocationCounter&) = delete;
+  ScopedHeapAllocationCounter& operator=(const ScopedHeapAllocationCounter&)
+      = delete;
+
+  void stop() noexcept
+  {
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+#ifdef DART_CODECOV
+    return 0;
+#else
+    return g_heapAllocationCount.load(std::memory_order_relaxed);
+#endif
+  }
+
+  [[nodiscard]] std::size_t allocationBytes() const noexcept
+  {
+#ifdef DART_CODECOV
+    return 0;
+#else
+    return g_heapAllocationBytes.load(std::memory_order_relaxed);
+#endif
+  }
+};
+
+} // namespace
 
 //==============================================================================
 TEST(SimulationComputeNode, ExecutesCallable)
@@ -125,6 +372,38 @@ TEST(SimulationComputeStageMetadata, SupportsMultipleDomainsAndAccelerators)
 }
 
 //==============================================================================
+TEST(SimulationComputeStageMetadata, ResourceStorageUsesProvidedAllocator)
+{
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeMetadata = freeList.getAllocationCount();
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    compute::ComputeStageMetadata metadata{
+        compute::ComputeStageDomain::Kinematics,
+        compute::toMask(compute::ComputeStageAcceleration::TaskParallel),
+        memoryManager.getFreeAllocator()};
+    metadata.resources.push_back(
+        {"comps::FrameCache#123456789", compute::ComputeAccessMode::Write});
+    metadata.resources.push_back(
+        compute::ComputeResourceAccess{
+            "comps::FrameCache#987654321",
+            compute::ComputeAccessMode::Read,
+            memoryManager.getFreeAllocator()});
+    heapCounter.stop();
+
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "allocator-aware compute metadata should not allocate resource "
+           "storage from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeMetadata);
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeMetadata);
+}
+
+//==============================================================================
 TEST(SimulationComputeGraph, EmptyGraphIsValid)
 {
   compute::ComputeGraph graph;
@@ -134,6 +413,68 @@ TEST(SimulationComputeGraph, EmptyGraphIsValid)
   EXPECT_EQ(graph.getEdgeCount(), 0u);
   EXPECT_TRUE(graph.getParallelLevels().empty());
   EXPECT_TRUE(graph.validate());
+}
+
+//==============================================================================
+TEST(SimulationComputeGraph, AllocatorAwareGraphUsesProvidedAllocator)
+{
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeGraph = freeList.getAllocationCount();
+
+  {
+    compute::ComputeGraph graph(memoryManager.getFreeAllocator());
+    auto& start = graph.addNode("allocator_start", []() {});
+    auto& end = graph.addNode("allocator_end", []() {});
+    const auto allocationsAfterNodes = freeList.getAllocationCount();
+
+    graph.addDependency(start, end);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterNodes)
+        << "allocator-aware ComputeGraph should allocate edge storage from "
+           "the provided allocator";
+
+    const auto allocationsAfterEdges = freeList.getAllocationCount();
+    const auto order = graph.getTopologicalOrderView();
+    ASSERT_EQ(order.size(), 2u);
+    EXPECT_EQ(order[0], &start);
+    EXPECT_EQ(order[1], &end);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsAfterEdges)
+        << "allocator-aware ComputeGraph should allocate topological-order "
+           "cache storage from the provided allocator";
+
+    EXPECT_EQ(graph.getNode("allocator_start"), &start);
+    EXPECT_EQ(graph.getNode("allocator_end"), &end);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeGraph)
+        << "allocator-aware ComputeGraph should allocate owned node, name "
+           "lookup, edge, and topological-order storage from the provided "
+           "allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
+}
+
+//==============================================================================
+TEST(SimulationComputeGraph, AllocatorAwareTraversalAvoidsGlobalHeap)
+{
+  common::MemoryManager memoryManager;
+  compute::ComputeGraph graph(memoryManager.getFreeAllocator());
+  auto& start = graph.addNode("heap_start", []() {});
+  auto& middle = graph.addNode("heap_middle", []() {});
+  auto& end = graph.addNode("heap_end", []() {});
+
+  ScopedHeapAllocationCounter heapCounter;
+  graph.addDependency(start, middle);
+  graph.addDependency(middle, end);
+  const auto order = graph.getTopologicalOrderView();
+  ASSERT_EQ(order.size(), 3u);
+  EXPECT_TRUE(graph.validate());
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during allocator-aware graph traversal: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
 //==============================================================================
@@ -241,7 +582,7 @@ TEST(SimulationComputeGraph, CachedTopologicalOrderInvalidatesAfterMutations)
   auto& a = graph.addNode("a", []() {});
   auto& b = graph.addNode("b", []() {});
 
-  const auto& initialOrder = graph.getTopologicalOrderView();
+  const auto initialOrder = graph.getTopologicalOrderView();
   ASSERT_EQ(initialOrder.size(), 2u);
   EXPECT_EQ(initialOrder[0], &a);
   EXPECT_EQ(initialOrder[1], &b);
@@ -250,7 +591,7 @@ TEST(SimulationComputeGraph, CachedTopologicalOrderInvalidatesAfterMutations)
   EXPECT_EQ(graph.getTopologicalOrderView().data(), cachedStorage);
 
   graph.addDependency(b, a);
-  const auto& reordered = graph.getTopologicalOrderView();
+  const auto reordered = graph.getTopologicalOrderView();
   ASSERT_EQ(reordered.size(), 2u);
   EXPECT_EQ(reordered[0], &b);
   EXPECT_EQ(reordered[1], &a);

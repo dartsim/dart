@@ -55,9 +55,9 @@ void DantzigSolver::Scratch::clear() noexcept
   loData.clear();
   hiData.clear();
   findexData.clear();
-  w.resize(0);
-  loEff.resize(0);
-  hiEff.resize(0);
+  w.clear();
+  loEff.clear();
+  hiEff.clear();
   lcp.clear();
 }
 
@@ -179,6 +179,47 @@ LcpResult DantzigSolver::solve(
   if (x.size() != n) {
     x = Eigen::VectorXd::Zero(n);
   }
+
+  Eigen::Ref<Eigen::VectorXd> xRef(x);
+  return solve(A, b, lo, hi, findex, xRef, scratch, options);
+}
+
+//==============================================================================
+LcpResult DantzigSolver::solve(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const Eigen::VectorXd>& lo,
+    const Eigen::Ref<const Eigen::VectorXd>& hi,
+    const Eigen::Ref<const Eigen::VectorXi>& findex,
+    Eigen::Ref<Eigen::VectorXd> x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
+  LcpResult result;
+
+  std::string problemMessage;
+  if (!detail::validateProblemView(A, b, lo, hi, findex, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  const Eigen::Index n = b.size();
+  if (x.size() != n) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Solution vector dimensions inconsistent";
+    return result;
+  }
+
+  if (n == 0) {
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   const int nSkip = padding(static_cast<int>(n));
 
   const auto vectorSize = static_cast<std::size_t>(n);
@@ -218,10 +259,7 @@ LcpResult DantzigSolver::solve(
       scratch.lcp,
       options.earlyTermination);
 
-  bool solveSucceeded = success;
-  if (x.size() != n) {
-    x.resize(n);
-  }
+  const bool solveSucceeded = success;
   for (int i = 0; i < n; ++i) {
     x[i] = scratch.xdata[static_cast<std::size_t>(i)];
   }
@@ -261,30 +299,38 @@ LcpResult DantzigSolver::solve(
         std::max(absTol, relTol * scale), std::max(compTol, relTol * scale)};
   };
 
+  // Residual/effective-bound scratch reused across the initial solve and any
+  // friction-index refinement iterations; the allocator-backed buffers are
+  // resized once here and mapped so no heap growth occurs on warmed solves.
+  scratch.w.resize(vectorSize);
+  scratch.loEff.resize(vectorSize);
+  scratch.hiEff.resize(vectorSize);
+  Eigen::Map<Eigen::VectorXd> wEval(scratch.w.data(), n);
+  Eigen::Map<Eigen::VectorXd> loEff(scratch.loEff.data(), n);
+  Eigen::Map<Eigen::VectorXd> hiEff(scratch.hiEff.data(), n);
+
   auto updateResiduals = [&](std::string* message = nullptr) -> bool {
-    scratch.w.resize(n);
     for (int row = 0; row < n; ++row) {
       double value = -b[row];
       for (int col = 0; col < n; ++col) {
         value += A(row, col) * x[col];
       }
-      scratch.w[row] = value;
+      wEval[row] = value;
     }
 
     std::string boundsMessage;
-    const bool boundsOk = detail::computeEffectiveBounds(
-        lo, hi, findex, x, scratch.loEff, scratch.hiEff, &boundsMessage);
-    if (!boundsOk) {
+    if (!detail::computeEffectiveBoundsInto(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
       if (message) {
         *message = boundsMessage;
       }
       return false;
     }
 
-    result.residual = detail::naturalResidualInfinityNorm(
-        x, scratch.w, scratch.loEff, scratch.hiEff);
-    result.complementarity = detail::complementarityInfinityNorm(
-        x, scratch.w, scratch.loEff, scratch.hiEff, absTol);
+    result.residual
+        = detail::naturalResidualInfinityNormView(x, wEval, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNormView(
+        x, wEval, loEff, hiEff, absTol);
     return true;
   };
 
@@ -393,13 +439,8 @@ LcpResult DantzigSolver::solve(
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
     std::string validationMessage;
-    const bool feasible = detail::validateSolution(
-        x,
-        scratch.w,
-        scratch.loEff,
-        scratch.hiEff,
-        validationTol,
-        &validationMessage);
+    const bool feasible = detail::validateSolutionView(
+        x, wEval, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
     if (!feasible) {
       result.status = LcpSolverStatus::NumericalError;

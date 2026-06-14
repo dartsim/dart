@@ -55,12 +55,14 @@
 
 #pragma once
 
+#include "dart/common/stl_allocator.hpp"
 #include "dart/export.hpp"
 #include "dart/math/lcp/pivoting/dantzig/common.hpp"
 
 #include <Eigen/Core>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -77,17 +79,109 @@ namespace dart::math {
 template <typename Scalar>
 struct DantzigLcpScratch
 {
-  std::vector<Scalar> L;
-  std::vector<Scalar> d;
-  std::vector<Scalar> w;
-  std::vector<Scalar> deltaW;
-  std::vector<Scalar> deltaX;
-  std::vector<Scalar> dell;
-  std::vector<Scalar> ell;
-  std::vector<int> p;
-  std::vector<int> C;
-  std::vector<Scalar*> rowPointers;
-  std::unique_ptr<bool[]> state;
+  using ScalarAllocator = dart::common::StlAllocator<Scalar>;
+  using IntAllocator = dart::common::StlAllocator<int>;
+  using PointerAllocator = dart::common::StlAllocator<Scalar*>;
+  using StateAllocator = dart::common::StlAllocator<bool>;
+
+  DantzigLcpScratch() = default;
+
+  explicit DantzigLcpScratch(dart::common::MemoryAllocator& allocator)
+    : L(ScalarAllocator{allocator}),
+      d(ScalarAllocator{allocator}),
+      w(ScalarAllocator{allocator}),
+      deltaW(ScalarAllocator{allocator}),
+      deltaX(ScalarAllocator{allocator}),
+      dell(ScalarAllocator{allocator}),
+      ell(ScalarAllocator{allocator}),
+      p(IntAllocator{allocator}),
+      C(IntAllocator{allocator}),
+      rowPointers(PointerAllocator{allocator}),
+      stateAllocator(allocator)
+  {
+  }
+
+  DantzigLcpScratch(const DantzigLcpScratch&) = delete;
+  DantzigLcpScratch& operator=(const DantzigLcpScratch&) = delete;
+
+  DantzigLcpScratch(DantzigLcpScratch&& other)
+    : L(std::move(other.L)),
+      d(std::move(other.d)),
+      w(std::move(other.w)),
+      deltaW(std::move(other.deltaW)),
+      deltaX(std::move(other.deltaX)),
+      dell(std::move(other.dell)),
+      ell(std::move(other.ell)),
+      p(std::move(other.p)),
+      C(std::move(other.C)),
+      rowPointers(std::move(other.rowPointers)),
+      stateAllocator(std::move(other.stateAllocator)),
+      state(std::exchange(other.state, nullptr)),
+      stateCapacity(std::exchange(other.stateCapacity, 0u))
+  {
+  }
+
+  DantzigLcpScratch& operator=(DantzigLcpScratch&& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    releaseState();
+    L = std::move(other.L);
+    d = std::move(other.d);
+    w = std::move(other.w);
+    deltaW = std::move(other.deltaW);
+    deltaX = std::move(other.deltaX);
+    dell = std::move(other.dell);
+    ell = std::move(other.ell);
+    p = std::move(other.p);
+    C = std::move(other.C);
+    rowPointers = std::move(other.rowPointers);
+    stateAllocator = std::move(other.stateAllocator);
+    state = std::exchange(other.state, nullptr);
+    stateCapacity = std::exchange(other.stateCapacity, 0u);
+    return *this;
+  }
+
+  ~DantzigLcpScratch()
+  {
+    releaseState();
+  }
+
+  void reserveState(std::size_t capacity)
+  {
+    if (capacity <= stateCapacity) {
+      return;
+    }
+
+    bool* newState = std::allocator_traits<StateAllocator>::allocate(
+        stateAllocator, capacity);
+    try {
+      std::uninitialized_value_construct_n(newState, capacity);
+    } catch (...) {
+      std::allocator_traits<StateAllocator>::deallocate(
+          stateAllocator, newState, capacity);
+      throw;
+    }
+
+    releaseState();
+    state = newState;
+    stateCapacity = capacity;
+  }
+
+  std::vector<Scalar, ScalarAllocator> L;
+  std::vector<Scalar, ScalarAllocator> d;
+  std::vector<Scalar, ScalarAllocator> w;
+  std::vector<Scalar, ScalarAllocator> deltaW;
+  std::vector<Scalar, ScalarAllocator> deltaX;
+  std::vector<Scalar, ScalarAllocator> dell;
+  std::vector<Scalar, ScalarAllocator> ell;
+  std::vector<int, IntAllocator> p;
+  std::vector<int, IntAllocator> C;
+  std::vector<Scalar*, PointerAllocator> rowPointers;
+  StateAllocator stateAllocator;
+  bool* state = nullptr;
   std::size_t stateCapacity = 0;
 
   void clear() noexcept
@@ -102,7 +196,20 @@ struct DantzigLcpScratch
     p.clear();
     C.clear();
     rowPointers.clear();
-    state.reset();
+    releaseState();
+  }
+
+private:
+  void releaseState() noexcept
+  {
+    if (state == nullptr) {
+      return;
+    }
+
+    std::destroy_n(state, stateCapacity);
+    std::allocator_traits<StateAllocator>::deallocate(
+        stateAllocator, state, stateCapacity);
+    state = nullptr;
     stateCapacity = 0;
   }
 };

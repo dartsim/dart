@@ -34,8 +34,12 @@
 
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <cstdint>
@@ -95,18 +99,100 @@ enum class ComputeAccessMode : std::uint8_t
 ///
 /// Resource identifiers are stable strings in this first iteration, for example
 /// component or stage names such as "Transform" or "FrameCache".
+using ComputeResourceString = std::basic_string<
+    char,
+    std::char_traits<char>,
+    dart::common::StlAllocator<char>>;
+
 struct DART_SIMULATION_API ComputeResourceAccess
 {
-  std::string resource;
+  ComputeResourceAccess() = default;
+
+  ComputeResourceAccess(
+      std::string_view resourceName,
+      ComputeAccessMode accessMode,
+      dart::common::MemoryAllocator& allocator
+      = dart::common::MemoryAllocator::GetDefault())
+    : resource(resourceName, dart::common::StlAllocator<char>{allocator}),
+      mode(accessMode)
+  {
+    // Empty.
+  }
+
+  ComputeResourceAccess(const char* resourceName, ComputeAccessMode accessMode)
+    : ComputeResourceAccess(std::string_view{resourceName}, accessMode)
+  {
+    // Empty.
+  }
+
+  ComputeResourceAccess(
+      ComputeResourceString&& resourceName, ComputeAccessMode accessMode)
+    : resource(std::move(resourceName)), mode(accessMode)
+  {
+    // Empty.
+  }
+
+  ComputeResourceString resource;
   ComputeAccessMode mode = ComputeAccessMode::Read;
 };
+
+using ComputeResourceAccessAllocator
+    = dart::common::StlAllocator<ComputeResourceAccess>;
+using ComputeResourceAccessVector
+    = std::vector<ComputeResourceAccess, ComputeResourceAccessAllocator>;
 
 /// Stage metadata used by debugging, profiling, and graph-shaping heuristics.
 struct DART_SIMULATION_API ComputeStageMetadata
 {
+  ComputeStageMetadata()
+    : resources(
+          ComputeResourceAccessAllocator{
+              dart::common::MemoryAllocator::GetDefault()})
+  {
+    // Empty.
+  }
+
+  explicit ComputeStageMetadata(dart::common::MemoryAllocator& allocator)
+    : resources(ComputeResourceAccessAllocator{allocator})
+  {
+    // Empty.
+  }
+
+  ComputeStageMetadata(
+      ComputeStageDomain stageDomain,
+      dart::common::MemoryAllocator& allocator
+      = dart::common::MemoryAllocator::GetDefault())
+    : domain(stageDomain), resources(ComputeResourceAccessAllocator{allocator})
+  {
+    // Empty.
+  }
+
+  ComputeStageMetadata(
+      ComputeStageDomain stageDomain,
+      ComputeStageAccelerationMask accelerationMask,
+      dart::common::MemoryAllocator& allocator
+      = dart::common::MemoryAllocator::GetDefault())
+    : domain(stageDomain),
+      acceleration(accelerationMask),
+      resources(ComputeResourceAccessAllocator{allocator})
+  {
+    // Empty.
+  }
+
+  ComputeStageMetadata(
+      ComputeStageDomain stageDomain,
+      ComputeStageAccelerationMask accelerationMask,
+      ComputeResourceAccessVector resourceAccesses)
+    : domain(stageDomain),
+      acceleration(accelerationMask),
+      resources(std::move(resourceAccesses))
+  {
+    // Empty.
+  }
+
   ComputeStageDomain domain = ComputeStageDomain::Generic;
   ComputeStageAccelerationMask acceleration = 0u;
-  std::vector<ComputeResourceAccess> resources{};
+  ComputeResourceAccessVector resources;
 };
 
 /// Returns true when two accesses to the same resource form a data hazard if

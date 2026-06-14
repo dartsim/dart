@@ -37,6 +37,7 @@
 
 #include <Eigen/Core>
 
+#include <span>
 #include <vector>
 
 #include <cstddef>
@@ -79,9 +80,9 @@ inline VbdStepResult vbdStepMassSpring(
     std::vector<Eigen::Vector3d>& positions,
     std::vector<Eigen::Vector3d>& velocities,
     std::vector<Eigen::Vector3d>& previousVelocities,
-    const std::vector<double>& masses,
+    std::span<const double> masses,
     const std::vector<std::uint8_t>& fixed,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     const Eigen::Vector3d& gravity,
     double timeStep,
