@@ -32,6 +32,7 @@
 
 #include "renderable_sync.hpp"
 
+#include <dart/gui/detail/renderable_factory.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <filament/Engine.h>
@@ -199,6 +200,17 @@ void updateSceneRenderableFromDescriptor(
           descriptor, renderSettings, camera, viewportWidth, viewportHeight));
   applyRenderableShadowSettings(
       engine, sceneRenderable.renderable, descriptor.material);
+  // Per-shape PBR overrides (metallic/roughness/reflectance) are applied to the
+  // material instance at creation, so a retained renderable must re-apply them
+  // here to track providers that edit those values in place without forcing a
+  // rebuild. This mirrors the live base-color update above and the creation
+  // path in createRenderable(), and is gated identically: only lit primitives
+  // carry overridable PBR parameters, while unlit (line/point/voxel) and asset
+  // mesh renderables manage their own materials.
+  if (shapeUsesLitMaterialOverride(descriptor.geometry.kind)) {
+    applyDescriptorMaterialOverride(
+        sceneRenderable.renderable, descriptor.material);
+  }
 }
 
 bool updateSceneRenderablesFromDescriptors(

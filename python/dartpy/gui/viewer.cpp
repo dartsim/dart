@@ -113,6 +113,7 @@ void defGuiViewer(nb::module_& m)
             // Hold optional Python callbacks alive past the factory call.
             auto force_drag_holder = std::make_shared<nb::callable>();
             auto renderable_provider_holder = std::make_shared<nb::callable>();
+            auto debug_provider_holder = std::make_shared<nb::callable>();
             try {
               nb::object result = factory();
               // Accept either:
@@ -122,6 +123,9 @@ void defGuiViewer(nb::module_& m)
               //   factory() -> (pre_step_callable, force_drag_callable, panels)
               //   factory() -> (pre_step_callable, force_drag_callable, panels,
               //                 renderable_provider_callable)
+              //   factory() -> (pre_step_callable, force_drag_callable, panels,
+              //                 renderable_provider_callable,
+              //                 debug_provider_callable)
               if (nb::isinstance<nb::tuple>(result)) {
                 nb::tuple t = nb::cast<nb::tuple>(result);
                 if (t.size() >= 1 && !t[0].is_none()) {
@@ -138,6 +142,9 @@ void defGuiViewer(nb::module_& m)
                 }
                 if (t.size() >= 4 && !t[3].is_none()) {
                   *renderable_provider_holder = nb::cast<nb::callable>(t[3]);
+                }
+                if (t.size() >= 5 && !t[4].is_none()) {
+                  *debug_provider_holder = nb::cast<nb::callable>(t[4]);
                 }
               } else if (!result.is_none()) {
                 *pre_step_holder = nb::cast<nb::callable>(std::move(result));
@@ -191,6 +198,19 @@ void defGuiViewer(nb::module_& m)
                       stderr,
                       "py-demos renderable_provider error: %s\n",
                       e.what());
+                  throw;
+                }
+              };
+            }
+            if (debug_provider_holder && *debug_provider_holder) {
+              options.debugProvider = [debug_provider_holder]() {
+                nb::gil_scoped_acquire gil;
+                try {
+                  nb::object result = (*debug_provider_holder)();
+                  return nb::cast<dart::gui::DebugScene>(result);
+                } catch (const std::exception& e) {
+                  fprintf(
+                      stderr, "py-demos debug_provider error: %s\n", e.what());
                   throw;
                 }
               };
