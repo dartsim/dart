@@ -1373,21 +1373,27 @@ bool needsContactInverseInertia(
 }
 
 //==============================================================================
-double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
+double restitutionOf(const comps::ContactMaterial* material)
 {
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
+  if (material != nullptr) {
     return material->restitution;
   }
   return 0.0;
 }
 
 //==============================================================================
-double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
+double frictionOf(const comps::ContactMaterial* material)
 {
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
+  if (material != nullptr) {
     return material->friction;
   }
   return 1.0;
+}
+
+//==============================================================================
+double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
+{
+  return frictionOf(registry.try_get<comps::ContactMaterial>(entity));
 }
 
 //==============================================================================
@@ -9830,8 +9836,12 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     }
     constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
     constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
-    constraint.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
+    const auto* materialA = registry.try_get<comps::ContactMaterial>(entityA);
+    const auto* materialB = registry.try_get<comps::ContactMaterial>(entityB);
+    const double frictionProduct
+        = frictionOf(materialA) * frictionOf(materialB);
+    constraint.friction
+        = frictionProduct == 0.0 ? 0.0 : std::sqrt(frictionProduct);
 
     constraint.normalArmCrossA = staticA
                                      ? Eigen::Vector3d::Zero()
@@ -9887,8 +9897,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     // Restitution target from the pre-solve approach velocity (the impact
     // speed). Combine the two materials by taking the larger bounce.
-    const double restitution = std::max(
-        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
+    const double restitution
+        = std::max(restitutionOf(materialA), restitutionOf(materialB));
     auto& velocityA = registry.get<comps::Velocity>(entityA);
     auto& velocityB = registry.get<comps::Velocity>(entityB);
     constraint.velocityA = &velocityA;
