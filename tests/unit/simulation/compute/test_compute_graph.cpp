@@ -900,6 +900,53 @@ TEST(SimulationParallelExecutor, InlineThresholdRunsSubThresholdGraphsInline)
   EXPECT_EQ(parallelOut, expected);
 }
 
+//==============================================================================
+TEST(SimulationParallelExecutor, WarmedSameShapeGraphSkipsTaskflowRebuild)
+{
+  // The ParallelExecutor caches the Taskflow built for the most recent
+  // same-shape graph, so a warmed same-shape execution skips rebuilding the
+  // per-node tasks and dependency edges. Taskflow's master-thread run() still
+  // allocates a constant per-run scheduling object (a floor we cannot remove
+  // without a worker-thread corun), but that floor does not grow with the
+  // graph: warmed allocation is therefore independent of node count, which is
+  // the observable proof that the O(nodes) rebuild is cached away.
+  auto warmedAllocationCount = [](int fanOutNodes) -> std::size_t {
+    compute::ComputeGraph graph;
+    std::atomic<int> runs{0};
+    auto& start = graph.addNode("start", [&]() { runs.fetch_add(1); });
+    auto& end = graph.addNode("end", [&]() { runs.fetch_add(1); });
+    for (int i = 0; i < fanOutNodes; ++i) {
+      auto& mid = graph.addNode(
+          "mid" + std::to_string(i), [&]() { runs.fetch_add(1); });
+      graph.addDependency(start, mid);
+      graph.addDependency(mid, end);
+    }
+
+    compute::ParallelExecutor executor(2);
+    EXPECT_GT(graph.getNodeCount(), executor.getInlineThreshold());
+
+    // Warm: build + cache the Taskflow, then confirm the cached run.
+    executor.execute(graph);
+    executor.execute(graph);
+    const int warmedRuns = runs.load();
+
+    ScopedHeapAllocationCounter heapCounter;
+    executor.execute(graph);
+    heapCounter.stop();
+
+    EXPECT_EQ(runs.load(), warmedRuns + graph.getNodeCount());
+    return heapCounter.allocationCount();
+  };
+
+  const std::size_t smallWarmed = warmedAllocationCount(2);
+  const std::size_t largeWarmed = warmedAllocationCount(16);
+  EXPECT_EQ(smallWarmed, largeWarmed)
+      << "warmed parallel allocation grew with node count (small graph: "
+      << smallWarmed << ", large graph: " << largeWarmed
+      << "); the cached Taskflow should make warmed allocation node-count "
+         "independent";
+}
+
 namespace {
 
 //==============================================================================
