@@ -653,8 +653,13 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   *deformable* AVBD config (a name collision) and are correctly untouched.
   Behavior-preserving: `test_serialization` 54/54 (round-trip), golden 3/3
   (trajectories unchanged), `test_avbd_rigid_block` 105/105,
-  `test_boxed_lcp_contact` 122/122; `pixi run lint` and
-  `pixi run check-api-boundaries` green. Net +279/−138 across 11 files.
+  `test_boxed_lcp_contact` 122/122 (plus `test_joint` 5/5 and `test_world
+  --gtest_filter='*Avbd*:*Joint*'` 87/87, which exercise the JointLayout
+  cache-equality path); `pixi run lint` and `pixi run check-api-boundaries`
+  green. Net +279/−138 across 11 files. Residual: the v20 round-trip is fully
+  tested, but the legacy v17–v19 inline-stiffness read path is validated by
+  byte-order reasoning against the old PFR record (no committed pre-v20 binary
+  fixture in the suite) — a follow-up could add one.
 
 #### WP-091.15 Family-scoped source layout
 
