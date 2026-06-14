@@ -76,6 +76,16 @@ public:
   std::string getName() const override;
   std::string getCategory() const override;
 
+  bool supportsBoxedLcp() const override
+  {
+    return true;
+  }
+
+  bool supportsFrictionIndex() const override
+  {
+    return true;
+  }
+
 private:
   Parameters mParameters;
 };

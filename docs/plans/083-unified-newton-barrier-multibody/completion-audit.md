@@ -16,43 +16,99 @@ moves entirely into durable plan sidecars.
 
 ## Evidence Snapshot
 
+Latest branch-local delta (2026-06-14): runtime deformable `World::step`
+diagnostics now expose candidate pair capacity and rejected pair counts for
+self-surface, inter-body deformable, static rigid surface CCD, and moving rigid
+surface CCD candidate paths. The counters are serialized by the PLAN-083 CPU
+scene packet writer and validated for capacity/rejection consistency. This
+improves CPU runtime evidence for contact-filter pressure, but it is still not
+GPU `World::step` contact-candidate construction, a production GPU runtime
+filtering path, a speedup gate, or paper-scale scene behavior.
+
 | Artifact                 | Row count | Status counts                          |
 | ------------------------ | --------- | -------------------------------------- |
 | `paper-deck-manifest.md` | 48        | `in-progress`: 48                      |
-| `cpu-scene-corpus.json`  | 26        | `in-progress`: 25, `not-applicable`: 1 |
+| `cpu-scene-corpus.json`  | 27        | `in-progress`: 26, `not-applicable`: 1 |
 | `gpu-parity-packet.json` | 6         | `in-progress`: 5, `measured`: 1        |
 
 ## Phase 8 Checklist
 
-| Requirement                                                   | Audit result | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paper-deck-manifest.md` has zero unclassified rows           | Pass         | Every manifest row has an explicit status. The current manifest rows are all `in-progress`; none are unclassified or complete.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Every non-planned row links to concrete evidence or rationale | Partial      | In-progress rows name branch-local artifacts, tests, packets, or limitations. Runtime wiring now covers point/hinge constraints, BDF-2, deformable surface obstacles, reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy, precession, reduced timing-breakdown packets, reduced Table 2 setup/statistics packets, the sparse equality change-of-variable rigid IPC path, reduced ABD house-of-cards and wrecking-ball runtime-step packets, reduced ABD chain-net runtime-step packets, reduced ABD gears/Bullet/complex-geometry runtime-step packets, and a reduced ABD/FEM coupled micro-solve packet, but not paper-scale behavior or performance parity.                                                                                    |
-| CPU packets exist for performance rows                        | Partial      | `cpu-scene-corpus.json` records commands and artifact paths for every row, but many entries remain reduced packets or placeholders rather than paper-scale reproductions, accepted Bullet/reference comparisons, or GPU parity evidence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` has a measured PSD projection packet plus in-progress point-triangle/edge-edge contact-stencil, endpoint-linear point-triangle and edge-edge CCD/line-search, scalar barrier/friction local-kernel plus point-triangle primitive barrier-gradient, all four primitive-family tangent-stencil parity packets, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian parity, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-projection parity, reduced scene-owned point-triangle/point-edge/point-point/edge-edge barrier-Hessian runtime rows, reduced diagonal assembly/solve plus pair-slot off-diagonal sparse-block assembly, and reduced scene state-batch parity packets, but no full scene-level GPU `World::step` speed claim exists. |
-| Public headers and dartpy remain backend-neutral              | Pass         | Phase 8 validation keeps API-boundary gates in the local evidence set; no public CUDA/backend/solver-registry API is added by this audit.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Durable docs own landed architecture                          | Partial      | Durable plan sidecars own the manifest, CPU corpus, GPU packet, and this audit. The temporary dev-task folder remains active because acceptance is unmet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Temporary dev-task folder retired                             | Blocked      | Retirement requires maintainer direction because material in-progress work remains.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Requirement                                                   | Audit result | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paper-deck-manifest.md` has zero unclassified rows           | Pass         | Every manifest row has an explicit status. The current manifest rows are all `in-progress`; none are unclassified or complete.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Every non-planned row links to concrete evidence or rationale | Partial      | In-progress rows name branch-local artifacts, tests, packets, or limitations. Runtime wiring now covers point/hinge constraints, BDF-2, deformable surface obstacles, reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy, precession, reduced timing-breakdown packets, reduced Table 2 setup/statistics packets, the sparse equality change-of-variable rigid IPC path, reduced ABD house-of-cards and wrecking-ball runtime-step packets, reduced ABD chain-net runtime-step packets, reduced ABD gears/Bullet/complex-geometry runtime-step packets, a reduced ABD/FEM coupled micro-solve packet with external surface CCD sidecar witnesses, built-in deformable `World::step` self-surface candidate/CCD counters in the reduced lying-flat, Candy, and ABD/FEM CPU scene packets, public built-in external surface CCD diagnostics for inter-body deformable, static rigid, and moving rigid obstacles, reduced CPU packet serialization for those external counters, a dedicated reduced external surface CCD CPU packet with nonzero inter-body/static-rigid/moving-rigid counter evidence plus one mixed reduced `World::step` witness, reduced lying-flat CPU packet inter-body/static-rigid/moving-rigid surface CCD witnesses, reduced hanging-bridge, pulley, terrain vehicle, ragdoll, and umbrella CPU packets with inter-body/static-rigid/moving-rigid external CCD sidecar witnesses, a reduced Candy CPU packet static-rigid/moving-rigid surface CCD witness pair, and a reduced ABD/FEM CPU packet inter-body/static-rigid/moving-rigid external CCD sidecar witness set, but not paper-scale behavior or performance parity.                                                                                                                                                                                                                                                        |
+| CPU packets exist for performance rows                        | Partial      | `cpu-scene-corpus.json` records commands and artifact paths for every row, and the reduced deformable `World::step` rows now carry self-surface candidate/CCD counters plus serialized external inter-body/static-rigid/moving-rigid surface CCD counters. The dedicated `unb-alg-barriers` external surface CCD diagnostic packet now exercises nonzero external counters in isolated witnesses and in one mixed reduced `World::step` scene that activates all three external families; the reduced `unb-fig-01` lying-flat benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid surface CCD witnesses, the reduced `unb-fig-02` hanging-bridge benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses, the reduced `unb-fig-03` pulley benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses, the reduced `unb-fig-04` umbrella benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses, the reduced `unb-fig-10` terrain vehicle benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses, the reduced `unb-fig-11` ragdoll benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses, the reduced `unb-fig-22` Candy benchmark row now carries nonzero static-rigid and moving-rigid surface CCD witnesses, and the reduced `abd-fem-coupling` benchmark row now carries nonzero inter-body, static-rigid, and moving-rigid external CCD sidecar witnesses. Other broader figure/demo scene rows still have zero external candidate/check/hit counts, so production paper-scene external contact remains unproven. Many entries still remain reduced packets or placeholders rather than paper-scale reproductions, accepted Bullet/reference comparisons, or GPU parity evidence. |
+| GPU packets exist for GPU claims                              | Blocked      | `gpu-parity-packet.json` has a measured PSD projection packet plus in-progress point-triangle/edge-edge contact-stencil, endpoint-linear point-triangle and edge-edge CCD/line-search, scalar barrier/friction local-kernel plus point-triangle primitive barrier-gradient, all four primitive-family tangent-stencil parity packets, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian parity, point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-projection parity, reduced scene-owned point-triangle/point-edge/point-point/edge-edge barrier-Hessian runtime rows plus a reduced combined all-family scene runtime barrier-Hessian row, reduced combined scene runtime candidate-filter evidence plus a reduced scene-owned filtered candidate-buffer row, reduced diagonal assembly/solve plus reduced scene-owned diagonal assembly/solve plus pair-slot off-diagonal sparse-block assembly plus reduced scene-owned sparse off-diagonal surface-edge assembly plus reduced scene-owned sparse graph construction/assembly and unique-edge dedup rows plus reduced scene-owned nonlinear distance-equality assembly, one-step solve, and capped convergence rows plus sparse block residual matvec plus reduced scene-owned sparse residual matvec plus fixed-iteration sparse Jacobi solve plus reduced scene-owned sparse Jacobi solve plus capped sparse CG solve plus reduced scene-owned sparse CG solve plus bounded reduced direct sparse factor solve plus reduced scene-owned bounded direct sparse factor solve plus sparse equality-reduced diagonal solve plus reduced scene-owned equality-reduced diagonal solve, and reduced scene state-batch parity packets, but no full scene-level GPU `World::step` speed claim exists.                                                                                                                                                                               |
+| Public headers and dartpy remain backend-neutral              | Pass         | Phase 8 validation keeps API-boundary gates in the local evidence set; no public CUDA/backend/solver-registry API is added by this audit.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Durable docs own landed architecture                          | Partial      | Durable plan sidecars own the manifest, CPU corpus, GPU packet, and this audit. The temporary dev-task folder remains active because acceptance is unmet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Temporary dev-task folder retired                             | Blocked      | Retirement requires maintainer direction because material in-progress work remains.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## Remaining Blockers
 
 - Runtime mixed-domain stepping and sparse equality-constraint solving are only
   partially promoted: rigid IPC now covers point/fixed and hinge constraints,
-  opt-in BDF-2, deformable surface obstacles, and reduced lying-flat,
+  opt-in BDF-2, deformable surface obstacles, reduced lying-flat/Candy
+  self-surface contact candidate and CCD diagnostics, reduced hanging-bridge,
+  pulley, umbrella, terrain vehicle, ragdoll, and precession
+  inter-body/static-rigid/moving-rigid external CCD sidecar witness sets, a
+  reduced Candy static-rigid/moving-rigid surface CCD witness pair, a reduced
+  ABD/FEM external surface CCD sidecar witness set, public built-in external
+  surface CCD diagnostics, a dedicated reduced external surface CCD diagnostic
+  CPU packet with one mixed reduced `World::step` witness,
   hanging-bridge, pulley, umbrella, terrain vehicle, ragdoll, nunchaku,
   nunchaku scaling, windmill, Candy, precession, reduced timing-breakdown,
   reduced Table 2 setup/statistics packets, the sparse equality
   change-of-variable rigid IPC path, reduced ABD house-of-cards and
   wrecking-ball runtime-step packets, reduced ABD chain-net runtime-step
   packets, reduced ABD gears/Bullet/complex-geometry comparison runtime-step
-  packets, and a reduced ABD/FEM coupled micro-solve packet, but paper-scale mixed
-  scenes plus analytical pulley/sliding reproductions remain unproven.
+  packets, and a reduced ABD/FEM coupled micro-solve packet, but paper-scale
+  mixed scenes plus analytical pulley/sliding reproductions remain unproven.
 - CPU benchmark/profile packets do not yet reproduce every paper/deck
   performance row against DART incumbents, audited references, and paper/deck
   numbers. Reduced ABD gears/Bullet/complex-geometry packets and a reduced
-  ABD/FEM coupled micro-solve packet now exist, but accepted Bullet/reference
-  baselines, full runtime affine/FEM coupling, and paper-scale assets remain
-  unproven.
+  ABD/FEM coupled micro-solve packet now exist, and the deformable reduced
+  scene packets now carry built-in self-surface candidate/CCD counters and
+  serialized external inter-body/static-rigid/moving-rigid surface CCD counters.
+  A dedicated external surface CCD diagnostic packet now has nonzero
+  inter-body/static-rigid/moving-rigid counter evidence in aggregate
+  (66/136/152 hits on the latest median row) and in one mixed reduced
+  `World::step` scene (33/68/76 hits). The reduced lying-flat figure row now
+  carries one inter-body surface CCD witness (33 hits and one limited step),
+  one static-rigid surface CCD witness (34 hits and one limited step), and one
+  moving-rigid surface CCD witness (1 hit and one limited step). The reduced
+  hanging-bridge figure row now carries one inter-body surface CCD sidecar
+  witness (33 hits and one limited step), one static-rigid surface CCD sidecar
+  witness (34 hits and one limited step), and one moving-rigid surface CCD
+  sidecar witness (1 hit and one limited step). The reduced pulley figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced umbrella figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced terrain vehicle figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced ragdoll figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced precession figure row
+  now carries one inter-body surface CCD sidecar witness (33 hits and one
+  limited step), one static-rigid surface CCD sidecar witness (34 hits and one
+  limited step), and one moving-rigid surface CCD sidecar witness (1 hit and
+  one limited step). The reduced Candy figure row
+  now carries one static-rigid surface CCD witness (72 hits and one limited
+  step) and one moving-rigid surface CCD witness (184 hits and one limited
+  step). The reduced ABD/FEM sidecar now carries one inter-body
+  surface CCD witness (33 hits and one limited step), one static-rigid surface
+  CCD witness (34 hits and one limited step), and one moving-rigid surface CCD
+  witness (1 hit and one limited step), but other broader figure/demo scene rows
+  still have zero external candidate/check/hit counts; accepted
+  Bullet/reference baselines, full runtime affine/FEM coupling, and paper-scale
+  assets remain unproven.
 - Private GPU packets do not yet prove same-scene CPU/GPU speedups for contact
   candidates, full CCD/line search, full local barrier/friction kernels, full
   sparse assembly/linear solve, or full scene-level workloads. The PSD
@@ -64,15 +120,22 @@ moves entirely into durable plan sidecars.
   swept-AABB point-triangle/edge-edge candidate-list packets, device-sorted
   sweep-and-prune broad-phase packets, and compact runtime sweep-buffer
   endpoint-distance packets that consume CPU sweep candidate keys plus reduced
-  scene-owned runtime candidate buffers and scene-owned runtime sweep
-  broad-phase rows extracted from one DART `World` deformable surface, but full
-  runtime scene filtering, GPU `World::step` contact candidate construction,
-  and speedup remain unproven.
-  The
-  endpoint-linear point-triangle and edge-edge CCD/line-search packet is
-  in-progress because parity exists for reduced endpoint-linear fixtures but
-  rigid curved trajectories, runtime candidate sets, and scene-level
-  line-search feasibility remain unproven. The barrier/friction local-kernel
+  scene-owned runtime candidate buffers, scene-owned runtime sweep broad-phase
+  rows, a reduced combined scene runtime sweep-filter row, a reduced
+  combined scene runtime candidate-filter row, and a reduced scene-owned
+  filtered candidate-buffer row extracted from one DART `World` deformable
+  surface, but production runtime scene filtering inside
+  `World::step`, GPU `World::step` contact candidate construction, and speedup
+  remain unproven.
+  The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
+  point-triangle/edge-edge CCD/line-search packet is in-progress because
+  parity exists for reduced endpoint-linear, 8-sample trajectory, continuous
+  curved rigid IPC ACCD reference-prefix counters, and reduced scene-owned
+  runtime candidate fixtures plus a reduced combined scene runtime CCD
+  line-search row, but production analytic curved CCD, production scene-level
+  line-search feasibility inside `World::step`, and runtime speedup remain
+  unproven. The barrier/friction
+  local-kernel
   packet is
   in-progress because parity exists for clamped-log barrier derivatives,
   smoothed friction norm/work, point-triangle primitive barrier gradients,
@@ -80,14 +143,32 @@ moves entirely into durable plan sidecars.
   point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian rows, and
   point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD
   projection, plus reduced scene-owned point-triangle/point-edge/point-point/
-  edge-edge barrier-Hessian runtime rows extracted from one DART `World` deformable
-  surface, but broader sparse Hessian assembly, additional runtime rows, full
-  GPU `World::step`, and the top-level/runtime speedup gate remain unproven.
+  edge-edge barrier-Hessian runtime rows plus a reduced combined all-family
+  scene runtime barrier-Hessian row extracted from one DART `World` deformable
+  surface, but broader sparse Hessian assembly, full GPU `World::step`, and the
+  top-level/runtime speedup gate remain unproven.
   The reduced assembly/solve
   packet is in-progress because parity exists for diagonal per-body row
-  assembly, independent regularized Newton steps, and preallocated 6x6
-  off-diagonal pair slots only, but equality reduction, global sparse
-  factorization, runtime scene rows, and speedup remain unproven. The reduced
+  assembly, a reduced scene-owned diagonal assembly/solve row extracted from
+  one DART `World` deformable surface, independent regularized Newton steps,
+  preallocated 6x6 off-diagonal pair slots, reduced scene-owned sparse
+  off-diagonal surface-edge assembly rows, reduced scene-owned sparse graph
+  construction/assembly rows, a reduced scene-owned sparse graph unique-edge
+  dedup row, one symmetric sparse residual matvec, a reduced
+  scene-owned sparse residual matvec, reduced scene-owned nonlinear
+  distance-equality assembly rows, one reduced scene-owned nonlinear
+  distance-equality Jacobi-style correction step, a reduced scene-owned capped
+  distance-equality convergence row with endpoint residual reporting,
+  fixed-iteration sparse Jacobi solves, a reduced scene-owned sparse Jacobi
+  solve, capped sparse CG solves, a reduced scene-owned sparse CG solve, bounded
+  direct sparse factor solves, a reduced scene-owned bounded direct sparse
+  factor solve, sparse equality-reduced diagonal solves, and a reduced
+  scene-owned equality-reduced diagonal solve only, but full
+  runtime sparse Hessian graph construction and assembly beyond the reduced
+  dedup row, unbounded production direct/global sparse factorization,
+  production nonlinear equality convergence policy/solving, GPU `World::step`
+  assembly/solve integration, and speedup remain unproven.
+  The reduced
   scene parity/speed packet is in-progress because
   parity and speedup exist only for DART scene state extraction plus private
   rigid-body state-batch CUDA rollout; GPU `World::step`, contact candidate

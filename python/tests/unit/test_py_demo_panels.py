@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import dartpy as dart
 import numpy as np
 import pytest
@@ -60,6 +62,7 @@ from examples.demos.scenes import (
     ipc_deformable_scripted_dirichlet,
     ipc_deformable_seg_strand,
     ipc_deformable_trampoline,
+    lcp_physics,
     plan083_unified_newton_barrier,
     planned,
     replay_scrubber,
@@ -116,6 +119,8 @@ from examples.demos.scenes import (
     vbd_tilted_strand,
 )
 
+_DEMOS_README = Path(__file__).resolve().parents[2] / "examples/demos/README.md"
+
 
 def _require_simulation_symbols(*names: str):
     try:
@@ -127,6 +132,23 @@ def _require_simulation_symbols(*names: str):
         formatted = ", ".join(f"dartpy.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
+
+
+def _read_demo_readme_bash_command_after(marker: str) -> str:
+    text = _DEMOS_README.read_text(encoding="utf-8")
+    marker_index = text.index(marker)
+    fence_start = text.index("```bash", marker_index) + len("```bash")
+    fence_end = text.index("```", fence_start)
+    lines = [line.strip() for line in text[fence_start:fence_end].splitlines()]
+
+    parts: list[str] = []
+    for line in lines:
+        if not line:
+            continue
+        if line.endswith("\\"):
+            line = line[:-1].rstrip()
+        parts.append(line)
+    return " ".join(parts)
 
 
 def test_make_world_factory_returns_panels_tuple() -> None:
@@ -626,6 +648,7 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "diff_throw_to_target",
         "diff_cartpole_trajopt",
         "diff_drone_liftoff",
+        "lcp_physics",
         "diff_pre_contact_surrogate",
     }
     replay_attached: set[str] = set()
@@ -1091,6 +1114,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (articulated, "Articulated"),
         (floating_base, "Floating Base"),
         (contact, "Rigid Link Contact"),
+        (lcp_physics, "LCP Physics"),
         (rigid_body, "Rigid Bodies"),
         (rigid_body_modes, "Rigid Body Modes"),
         (rigid_free_flight, "Rigid Free Flight"),
@@ -1182,6 +1206,1606 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def _write_lcp_profile_evidence(
+    evidence_path, columns: tuple[str, ...] | None = None, **overrides: str
+) -> None:
+    row = {
+        "category": "Standard",
+        "solver": "Dantzig",
+        "problem_size": "12",
+        "lcp_dimension": "12",
+        "contact_count": "",
+        "solver_identity_schema_version": "1",
+        "solver_manifest_index": "1",
+        "solver_family_pivoting": "1",
+        "solver_family_projection": "0",
+        "solver_family_newton": "0",
+        "solver_family_other": "0",
+        "time_ns": "1",
+        "contract_ok": "1",
+        "iterations": "0",
+        "residual": "0",
+        "complementarity": "0",
+        "bound_violation": "0",
+        "solver_supports_standard": "1",
+        "solver_supports_boxed": "1",
+        "solver_supports_friction_index": "1",
+        "solver_supports_problem": "1",
+        "problem_type_standard": "1",
+        "problem_type_boxed": "0",
+        "problem_type_friction_index": "0",
+        "problem_type_invalid": "0",
+    }
+    row.update(overrides)
+    output_columns = (
+        columns or lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+    )
+    evidence_path.write_text(
+        ",".join(output_columns)
+        + "\n"
+        + ",".join(row[column] for column in output_columns)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+@pytest.mark.parametrize(
+    (
+        "solver",
+        "solver_manifest_index",
+        "solver_supports_boxed",
+        "solver_supports_friction_index",
+        "solver_supports_problem",
+        "expected_error",
+    ),
+    [
+        (
+            "Lemke",
+            "2",
+            "0",
+            "0",
+            "0",
+            "non-native LCP performance profile evidence row: Boxed/Lemke",
+        ),
+        (
+            "Dantzig",
+            "1",
+            "1",
+            "1",
+            "0",
+            "unsupported LCP performance profile evidence row: Boxed/Dantzig",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    solver: str,
+    solver_manifest_index: str,
+    solver_supports_boxed: str,
+    solver_supports_friction_index: str,
+    solver_supports_problem: str,
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(
+        evidence_path,
+        category="Boxed",
+        solver=solver,
+        solver_manifest_index=solver_manifest_index,
+        solver_supports_boxed=solver_supports_boxed,
+        solver_supports_friction_index=solver_supports_friction_index,
+        solver_supports_problem=solver_supports_problem,
+        problem_type_standard="0",
+        problem_type_boxed="1",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("category", "problem_type_counters", "expected_error"),
+    [
+        (
+            "Unknown",
+            "0,1,0,0",
+            "unknown LCP performance profile evidence category: 'Unknown'",
+        ),
+        (
+            "Boxed",
+            "1,0,0,0",
+            "mismatched LCP performance profile evidence row: "
+            "Boxed/Dantzig has problem_type_standard=1",
+        ),
+        (
+            "Boxed",
+            "0,1,0,1",
+            "mismatched LCP performance profile evidence row: "
+            "Boxed/Dantzig has problem_type_invalid=1",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    category: str,
+    problem_type_counters: str,
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    (
+        problem_type_standard,
+        problem_type_boxed,
+        problem_type_friction_index,
+        problem_type_invalid,
+    ) = problem_type_counters.split(",")
+    _write_lcp_profile_evidence(
+        evidence_path,
+        category=category,
+        problem_type_standard=problem_type_standard,
+        problem_type_boxed=problem_type_boxed,
+        problem_type_friction_index=problem_type_friction_index,
+        problem_type_invalid=problem_type_invalid,
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"solver_identity_schema_version": "2"},
+            "Standard/Dantzig has solver_identity_schema_version=2; expected 1",
+        ),
+        (
+            {"solver_identity_schema_version": "1.25"},
+            "Standard/Dantzig has solver_identity_schema_version=None; expected 1",
+        ),
+        (
+            {"solver_manifest_index": "2"},
+            "Standard/Dantzig has solver_manifest_index=2; expected 1",
+        ),
+        (
+            {"solver_manifest_index": "1.25"},
+            "Standard/Dantzig has solver_manifest_index=None; expected 1",
+        ),
+        (
+            {"solver_family_pivoting": "0"},
+            "Standard/Dantzig has solver_family_pivoting=0; "
+            "expected 1 for Pivoting",
+        ),
+        (
+            {"solver_family_projection": "1"},
+            "Standard/Dantzig has solver_family_projection=1; "
+            "expected 0 for Pivoting",
+        ),
+        (
+            {"solver": "MissingSolver"},
+            "unknown LCP performance profile evidence solver: 'MissingSolver'",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"solver_supports_standard": "0"},
+            "Standard/Dantzig has solver_supports_standard=0; expected 1",
+        ),
+        (
+            {"solver_supports_boxed": "0"},
+            "Standard/Dantzig has solver_supports_boxed=0; expected 1",
+        ),
+        (
+            {"solver_supports_friction_index": "0"},
+            "Standard/Dantzig has solver_supports_friction_index=0; "
+            "expected 1",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_stale_support_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"problem_size": "0"},
+            "Standard/Dantzig has problem_size='0'",
+        ),
+        (
+            {"problem_size": "12.5"},
+            "Standard/Dantzig has problem_size='12.5'",
+        ),
+        (
+            {"lcp_dimension": "11"},
+            "Standard/Dantzig has lcp_dimension=11; expected 12",
+        ),
+        (
+            {"contact_count": "-1"},
+            "Standard/Dantzig has contact_count='-1'",
+        ),
+        (
+            {
+                "category": "FrictionIndex",
+                "problem_size": "4",
+                "lcp_dimension": "12",
+                "contact_count": "3",
+                "problem_type_standard": "0",
+                "problem_type_friction_index": "1",
+            },
+            "FrictionIndex/Dantzig has contact_count=3; expected 4",
+        ),
+        (
+            {"time_ns": "0"},
+            "Standard/Dantzig has time_ns='0'",
+        ),
+        (
+            {"contract_ok": "0"},
+            "Standard/Dantzig has contract_ok='0'",
+        ),
+        (
+            {"iterations": "-1"},
+            "Standard/Dantzig has iterations='-1'",
+        ),
+        (
+            {"iterations": "1.25"},
+            "Standard/Dantzig has iterations='1.25'",
+        ),
+        (
+            {"residual": "nan"},
+            "Standard/Dantzig has residual='nan'",
+        ),
+        (
+            {"complementarity": "-1"},
+            "Standard/Dantzig has complementarity='-1'",
+        ),
+        (
+            {"bound_violation": "inf"},
+            "Standard/Dantzig has bound_violation='inf'",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_invalid_numeric_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_missing_evidence_columns(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(
+        evidence_path,
+        columns=tuple(
+            column
+            for column in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+            if column != "time_ns"
+        ),
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="missing required columns: \\['time_ns'\\]",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_duplicate_evidence_columns(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(
+        evidence_path,
+        columns=(
+            *lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS,
+            "time_ns",
+        ),
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="contains duplicate columns: \\['time_ns'\\]",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_duplicate_evidence_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path)
+    lines = evidence_path.read_text(encoding="utf-8").splitlines()
+    evidence_path.write_text(
+        "\n".join((*lines, lines[1])) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="duplicate LCP performance profile evidence row: Standard/Dantzig/12",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_empty_evidence_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    evidence_path.write_text(
+        ",".join(lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS)
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="LCP performance profile evidence has no rows",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_missing_evidence_surfaces(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="missing surfaces: \\['Boxed', 'FrictionIndex'\\]",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_evidence_schema_rows_cover_required_columns() -> None:
+    documented_fields: list[str] = []
+    for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
+        fields = [field.strip() for field in row["fields"].split(",")]
+        assert all(fields)
+        assert row["meaning"]
+        documented_fields.extend(fields)
+
+    assert documented_fields == list(
+        lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+    )
+    assert len(documented_fields) == len(set(documented_fields))
+
+
+def test_lcp_physics_profile_evidence_schema_is_exposed_in_info() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+
+    assert setup.info["performance_profile_evidence_schema_rows"] == [
+        dict(row) for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    ]
+
+
+def test_lcp_physics_readme_commands_match_scene_metadata() -> None:
+    assert (
+        _read_demo_readme_bash_command_after("those artifacts with:")
+        == lcp_physics._PERFORMANCE_PROFILE_REFRESH_COMMAND
+    )
+    assert (
+        _read_demo_readme_bash_command_after("quick profile-pipeline smoke")
+        == lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND
+    )
+    assert (
+        _read_demo_readme_bash_command_after("benchmark smoke with:")
+        == lcp_physics._BENCHMARK_COMMAND
+    )
+
+
+def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+    info = setup.info
+    summary = info["solver_manifest_summary"]
+    solver_rows = info["solver_rows"]
+    solver_by_name = {row["name"]: row for row in solver_rows}
+    expected_solver_names = {
+        solver.get_name()
+        for solver in (
+            dart.DantzigSolver(),
+            dart.LemkeSolver(),
+            dart.BaraffSolver(),
+            dart.DirectSolver(),
+            dart.PgsSolver(),
+            dart.SymmetricPsorSolver(),
+            dart.JacobiSolver(),
+            dart.RedBlackGaussSeidelSolver(),
+            dart.BlockedJacobiSolver(),
+            dart.BgsSolver(),
+            dart.NncgSolver(),
+            dart.SubspaceMinimizationSolver(),
+            dart.ApgdSolver(),
+            dart.TgsSolver(),
+            dart.MinimumMapNewtonSolver(),
+            dart.FischerBurmeisterNewtonSolver(),
+            dart.PenalizedFischerBurmeisterNewtonSolver(),
+            dart.InteriorPointSolver(),
+            dart.MprgpSolver(),
+            dart.ShockPropagationSolver(),
+            dart.StaggeringSolver(),
+            dart.AdmmSolver(),
+            dart.SapSolver(),
+            dart.BoxedSemiSmoothNewtonSolver(),
+        )
+    }
+
+    assert summary == {
+        "solver_count": 24,
+        "standard_count": 23,
+        "boxed_count": 15,
+        "findex_count": 16,
+    }
+    assert len(solver_rows) == summary["solver_count"]
+    assert len(solver_by_name) == len(solver_rows)
+    assert set(solver_by_name) == expected_solver_names
+    assert solver_by_name["Dantzig"]["boxed"] is True
+    assert solver_by_name["BoxedSemiSmoothNewton"]["findex"] is True
+    assert solver_by_name["MPRGP"]["boxed"] is False
+    assert info["standalone_lcp_solvers_exposed_in_dartpy"] is True
+    assert len(info["standalone_solver_rows"]) == summary["solver_count"]
+    smoke_by_name = {row["name"]: row for row in info["standalone_solver_rows"]}
+    assert len(smoke_by_name) == len(info["standalone_solver_rows"])
+    assert set(smoke_by_name) == expected_solver_names
+    for name, manifest_row in solver_by_name.items():
+        smoke_row = smoke_by_name[name]
+        assert smoke_row["native_standard"] is manifest_row["standard"]
+        assert smoke_row["native_boxed"] is manifest_row["boxed"]
+        assert smoke_row["native_findex"] is manifest_row["findex"]
+        assert smoke_row["solve_route"] == (
+            "native" if manifest_row["standard"] else "delegated"
+        )
+    assert max(row["solution_error"] for row in info["standalone_solver_rows"]) < 1e-4
+    assert max(row["residual"] for row in info["standalone_solver_rows"]) < 1e-3
+    assert (
+        max(row["complementarity"] for row in info["standalone_solver_rows"])
+        < 1e-3
+    )
+    assert {row["status"] for row in info["standalone_solver_rows"]} <= {
+        "Success",
+        "MaxIterations",
+    }
+    expected_problem_counts = {
+        "standard_spd": 24,
+        "ill_conditioned_standard": 24,
+        "near_singular_standard": 24,
+        "boxed_active_bounds": 24,
+        "mass_ratio_boxed": 24,
+        "singular_degenerate_boxed": 24,
+        "friction_index_contact": 24,
+        "active_friction_index_contact": 24,
+        "moderate_scale_standard": 24,
+    }
+    expected_native_problem_counts = {
+        "standard_spd": 23,
+        "ill_conditioned_standard": 23,
+        "near_singular_standard": 22,
+        "boxed_active_bounds": 15,
+        "mass_ratio_boxed": 15,
+        "singular_degenerate_boxed": 15,
+        "friction_index_contact": 16,
+        "active_friction_index_contact": 16,
+        "moderate_scale_standard": 22,
+    }
+    expected_problem_types = {
+        "standard_spd": "Standard",
+        "ill_conditioned_standard": "Standard",
+        "near_singular_standard": "Standard",
+        "boxed_active_bounds": "Boxed",
+        "mass_ratio_boxed": "Boxed",
+        "singular_degenerate_boxed": "Boxed",
+        "friction_index_contact": "FrictionIndex",
+        "active_friction_index_contact": "FrictionIndex",
+        "moderate_scale_standard": "Standard",
+    }
+    expected_problem_dimensions = {
+        "standard_spd": 3,
+        "ill_conditioned_standard": 3,
+        "near_singular_standard": 4,
+        "boxed_active_bounds": 3,
+        "mass_ratio_boxed": 8,
+        "singular_degenerate_boxed": 4,
+        "friction_index_contact": 3,
+        "active_friction_index_contact": 6,
+        "moderate_scale_standard": 12,
+    }
+    expected_findex_row_counts = {
+        "standard_spd": 0,
+        "ill_conditioned_standard": 0,
+        "near_singular_standard": 0,
+        "boxed_active_bounds": 0,
+        "mass_ratio_boxed": 0,
+        "singular_degenerate_boxed": 0,
+        "friction_index_contact": 2,
+        "active_friction_index_contact": 4,
+        "moderate_scale_standard": 0,
+    }
+    expected_findex_contact_counts = {
+        "standard_spd": 0,
+        "ill_conditioned_standard": 0,
+        "near_singular_standard": 0,
+        "boxed_active_bounds": 0,
+        "mass_ratio_boxed": 0,
+        "singular_degenerate_boxed": 0,
+        "friction_index_contact": 1,
+        "active_friction_index_contact": 2,
+        "moderate_scale_standard": 0,
+    }
+    expected_case_tolerances = {
+        "mass_ratio_boxed": 5e-4,
+    }
+    problem_rows = info["standalone_problem_rows"]
+    problem_summary_rows = info["standalone_problem_summary_rows"]
+    solver_profile_rows = info["standalone_solver_profile_rows"]
+    parameter_rows = info["advanced_solver_parameter_rows"]
+    problem_summary_by_case = {row["case"]: row for row in problem_summary_rows}
+    solver_profile_by_name = {row["solver"]: row for row in solver_profile_rows}
+    parameter_by_solver = {row["solver"]: row for row in parameter_rows}
+    assert len(problem_rows) == sum(expected_problem_counts.values())
+    assert set(problem_summary_by_case) == set(expected_problem_counts)
+    assert len(solver_profile_rows) == summary["solver_count"]
+    assert set(solver_profile_by_name) == expected_solver_names
+    assert set(parameter_by_solver) <= expected_solver_names
+    assert set(parameter_by_solver) == {
+        "Admm",
+        "Apgd",
+        "BGS",
+        "BlockedJacobi",
+        "BoxedSemiSmoothNewton",
+        "FischerBurmeisterNewton",
+        "InteriorPoint",
+        "Jacobi",
+        "MinimumMapNewton",
+        "MPRGP",
+        "NNCG",
+        "PenalizedFischerBurmeisterNewton",
+        "Pgs",
+        "RedBlackGaussSeidel",
+        "Sap",
+        "ShockPropagation",
+        "SubspaceMinimization",
+        "SymmetricPsor",
+        "Tgs",
+    }
+    assert "epsilon_for_division" in parameter_by_solver["Pgs"]["parameters"]
+    assert "adaptive_restart" in parameter_by_solver["Apgd"]["parameters"]
+    assert "lambda_" in parameter_by_solver["PenalizedFischerBurmeisterNewton"][
+        "parameters"
+    ]
+    assert "sigma" in parameter_by_solver["InteriorPoint"]["parameters"]
+    assert "check_positive_definite" in parameter_by_solver["MPRGP"]["parameters"]
+    assert "rho_init" in parameter_by_solver["Admm"]["parameters"]
+    assert "regularization" in parameter_by_solver["Sap"]["parameters"]
+    assert "max_line_search_steps" in parameter_by_solver["BoxedSemiSmoothNewton"][
+        "parameters"
+    ]
+    assert "max_pgs_warm_start_iterations" in parameter_by_solver[
+        "BoxedSemiSmoothNewton"
+    ]["parameters"]
+    assert "max_friction_index_exact_solve_dimension" in parameter_by_solver[
+        "BoxedSemiSmoothNewton"
+    ]["parameters"]
+    for parameter_row in parameter_rows:
+        parameter_names = parameter_row["parameters"].split(", ")
+        default_names = [
+            default_value.split("=", 1)[0]
+            for default_value in parameter_row["defaults"].split(", ")
+        ]
+        assert default_names == parameter_names
+    assert parameter_by_solver["Pgs"]["defaults"] == (
+        "epsilon_for_division=1e-09, randomize_constraint_order=false"
+    )
+    assert parameter_by_solver["Apgd"]["defaults"] == (
+        "epsilon_for_division=1e-09, adaptive_restart=true, "
+        "restart_check_interval=5"
+    )
+    assert parameter_by_solver["ShockPropagation"]["defaults"] == (
+        "block_sizes=[], layers=[]"
+    )
+    assert (
+        "max_friction_index_exact_solve_dimension=48"
+        in parameter_by_solver["BoxedSemiSmoothNewton"]["defaults"]
+    )
+    assert parameter_by_solver["Admm"]["defaults"] == (
+        "rho_init=4, mu_prox=1e-09, adaptive_rho_tolerance=5, adaptive_rho=true"
+    )
+    assert parameter_by_solver["Sap"]["defaults"] == (
+        "regularization=1e-04, armijos_parameter=1e-04, "
+        "backtracking_factor=0.5, max_line_search_iterations=20"
+    )
+    assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
+    assert parameter_by_solver["Jacobi"]["benchmark_filter"] == (
+        "BM_LcpJacobiSolverThreading"
+    )
+    assert parameter_by_solver["RedBlackGaussSeidel"]["benchmark_filter"] == (
+        "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+        "BM_LcpRedBlackGaussSeidelSolverThreadingBanded"
+    )
+    assert parameter_by_solver["BlockedJacobi"]["benchmark_filter"] == (
+        "BM_LcpBlockPartitionSweep|BM_LcpBlockedJacobiSolverThreadingBanded"
+    )
+    assert parameter_by_solver["Apgd"]["benchmark_filter"] == (
+        "BM_LcpApgdRestartSweep"
+    )
+    assert parameter_by_solver["InteriorPoint"]["benchmark_filter"] == (
+        "BM_LcpInteriorPointPathSweep"
+    )
+    assert parameter_by_solver["MPRGP"]["benchmark_filter"] == (
+        "BM_LcpMprgpSpdCheckSweep"
+    )
+    assert parameter_by_solver["Admm"]["benchmark_filter"] == "BM_LcpAdmmRhoSweep"
+    assert parameter_by_solver["Sap"]["benchmark_filter"] == (
+        "BM_LcpSapRegularizationSweep"
+    )
+    assert parameter_by_solver["BoxedSemiSmoothNewton"]["benchmark_filter"] == (
+        "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep"
+    )
+    assert {row["surface"] for row in problem_summary_rows} == {
+        "standard",
+        "boxed",
+        "findex",
+    }
+    assert all(row["contract_ok"] for row in problem_rows)
+    assert {row["status"] for row in problem_rows} <= {"Success", "MaxIterations"}
+    assert {
+        row["solve_route"] for row in problem_rows if row["native_supported"]
+    } == {"native"}
+    assert {
+        row["solve_route"] for row in problem_rows if not row["native_supported"]
+    } == {"delegated"}
+    for case_name, expected_count in expected_problem_counts.items():
+        summary_row = problem_summary_by_case[case_name]
+        assert summary_row["solver_count"] == expected_count
+        assert summary_row["problem_type"] == expected_problem_types[case_name]
+        assert summary_row["lcp_dimension"] == expected_problem_dimensions[case_name]
+        assert (
+            summary_row["findex_row_count"]
+            == expected_findex_row_counts[case_name]
+        )
+        assert (
+            summary_row["findex_contact_count"]
+            == expected_findex_contact_counts[case_name]
+        )
+        assert {
+            row["problem_type"] for row in problem_rows if row["case"] == case_name
+        } == {expected_problem_types[case_name]}
+        assert {
+            row["lcp_dimension"] for row in problem_rows if row["case"] == case_name
+        } == {expected_problem_dimensions[case_name]}
+        assert {
+            row["findex_row_count"]
+            for row in problem_rows
+            if row["case"] == case_name
+        } == {expected_findex_row_counts[case_name]}
+        assert {
+            row["findex_contact_count"]
+            for row in problem_rows
+            if row["case"] == case_name
+        } == {expected_findex_contact_counts[case_name]}
+        assert summary_row["native_solver_count"] == expected_native_problem_counts[
+            case_name
+        ]
+        assert (
+            summary_row["delegated_solver_count"]
+            == expected_count - expected_native_problem_counts[case_name]
+        )
+        assert summary_row["contract_ok_count"] == expected_count
+        assert summary_row["native_contract_ok_count"] == expected_native_problem_counts[
+            case_name
+        ]
+        assert summary_row["delegated_contract_ok_count"] == (
+            expected_count - expected_native_problem_counts[case_name]
+        )
+        assert summary_row["max_solution_error"] <= expected_case_tolerances.get(
+            case_name, 2e-4
+        )
+        assert summary_row["max_residual"] <= 1e-3
+        assert summary_row["max_complementarity"] <= 1e-3
+        assert summary_row["fastest_solver"] in solver_by_name
+        assert summary_row["fastest_elapsed_us"] >= 0.0
+        assert summary_row["fastest_native_solver"] in solver_by_name
+        assert summary_row["fastest_native_elapsed_us"] >= 0.0
+        assert summary_row["slowest_solver"] in solver_by_name
+        assert summary_row["slowest_elapsed_us"] >= summary_row["fastest_elapsed_us"]
+        case_rows = [row for row in problem_rows if row["case"] == case_name]
+        native_case_rows = [row for row in case_rows if row["native_supported"]]
+        fastest_row = min(case_rows, key=lambda row: row["elapsed_us"])
+        fastest_native_row = min(native_case_rows, key=lambda row: row["elapsed_us"])
+        slowest_row = max(case_rows, key=lambda row: row["elapsed_us"])
+        assert summary_row["fastest_solver"] == fastest_row["solver"]
+        assert summary_row["fastest_elapsed_us"] == pytest.approx(
+            fastest_row["elapsed_us"]
+        )
+        assert summary_row["fastest_native_solver"] == fastest_native_row["solver"]
+        assert summary_row["fastest_native_elapsed_us"] == pytest.approx(
+            fastest_native_row["elapsed_us"]
+        )
+        assert summary_row["slowest_solver"] == slowest_row["solver"]
+        assert summary_row["slowest_elapsed_us"] == pytest.approx(
+            slowest_row["elapsed_us"]
+        )
+    for solver_name, profile_row in solver_profile_by_name.items():
+        manifest_row = solver_by_name[solver_name]
+        solver_problem_rows = [
+            row for row in problem_rows if row["solver"] == solver_name
+        ]
+        native_solver_problem_rows = [
+            row for row in solver_problem_rows if row["native_supported"]
+        ]
+        delegated_solver_problem_rows = [
+            row for row in solver_problem_rows if not row["native_supported"]
+        ]
+        expected_native_case_count = (
+            4 * int(manifest_row["standard"])
+            + 3 * int(manifest_row["boxed"])
+            + 2 * int(manifest_row["findex"])
+        )
+        if solver_name == "Direct":
+            expected_native_case_count = 2
+        assert profile_row["problem_count"] == len(expected_problem_counts)
+        assert profile_row["native_case_count"] == expected_native_case_count
+        assert (
+            profile_row["delegated_case_count"]
+            == len(expected_problem_counts) - expected_native_case_count
+        )
+        assert profile_row["contract_ok_count"] == len(expected_problem_counts)
+        assert profile_row["native_contract_ok_count"] == expected_native_case_count
+        assert (
+            profile_row["delegated_contract_ok_count"]
+            == len(expected_problem_counts) - expected_native_case_count
+        )
+        assert profile_row["max_solution_error"] <= max(
+            expected_case_tolerances.values(), default=2e-4
+        )
+        assert profile_row["max_residual"] <= 1e-3
+        assert profile_row["max_complementarity"] <= 1e-3
+        assert profile_row["total_elapsed_us"] >= 0.0
+        assert profile_row["slowest_case"] in expected_problem_counts
+        assert profile_row["problem_count"] == len(solver_problem_rows)
+        assert profile_row["native_case_count"] == len(native_solver_problem_rows)
+        assert profile_row["delegated_case_count"] == len(
+            delegated_solver_problem_rows
+        )
+        assert profile_row["contract_ok_count"] == sum(
+            1 for row in solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["native_contract_ok_count"] == sum(
+            1 for row in native_solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["delegated_contract_ok_count"] == sum(
+            1 for row in delegated_solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["max_solution_error"] == pytest.approx(
+            max(row["solution_error"] for row in solver_problem_rows)
+        )
+        assert profile_row["max_residual"] == pytest.approx(
+            max(row["residual"] for row in solver_problem_rows)
+        )
+        assert profile_row["max_complementarity"] == pytest.approx(
+            max(row["complementarity"] for row in solver_problem_rows)
+        )
+        assert profile_row["total_elapsed_us"] == pytest.approx(
+            sum(row["elapsed_us"] for row in solver_problem_rows)
+        )
+        slowest_row = max(solver_problem_rows, key=lambda row: row["elapsed_us"])
+        assert profile_row["slowest_case"] == slowest_row["case"]
+        assert profile_row["slowest_elapsed_us"] == pytest.approx(
+            slowest_row["elapsed_us"]
+        )
+    assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (
+        "standard 4/4, boxed 3/3, findex 2/2"
+    )
+    assert solver_profile_by_name["MPRGP"]["native_surfaces"] == "standard 4/4"
+    assert solver_profile_by_name["Direct"]["native_surfaces"] == "standard 2/4"
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "near_singular_standard" and not row["native_supported"]
+    } == {"Direct", "Staggering"}
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "moderate_scale_standard" and not row["native_supported"]
+    } == {"Direct", "Staggering"}
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "boxed_active_bounds" and not row["native_supported"]
+    } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["boxed"]}
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "friction_index_contact" and not row["native_supported"]
+    } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["findex"]}
+    assert info["benchmark_smoke_filter"] == "BM_LCP_COMPARE_SMOKE"
+    assert "BM_LCP_COMPARE_SMOKE" in info["benchmark_command"]
+    benchmark_by_packet = {
+        row["packet"]: row for row in info["benchmark_packet_rows"]
+    }
+    assert {row["packet"] for row in info["live_packet_rows"]} == {
+        "Sliding friction",
+        "Static-friction ramp",
+        "Billiard collision",
+        "High-mass-ratio stack",
+        "Thin card pile",
+    }
+    assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
+        "active_set_transition",
+        "active_set_scale",
+        "active_friction_index_contact",
+        "contact_solver_comparison_sweep",
+        "contact_normal_standard_sweep",
+        "singular_degenerate",
+        "singular_degenerate_scale",
+        "near_singular",
+        "mild_ill_conditioned",
+        "world_stack",
+        "world_billiards",
+        "world_card_pile",
+        "batch_scale",
+        "cuda_batch_scale",
+        "cuda_contact_batch",
+        "solver_parameter_sweeps",
+    }
+    assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
+    requirement_by_name = {
+        row["requirement"]: row for row in info["representative_requirement_rows"]
+    }
+    assert set(requirement_by_name) == {
+        "Billiard symmetry, energy, momentum",
+        "High mass-ratio stack",
+        "Thin card pile",
+        "Scalability smoke",
+        "Friction coupling and active tangential bounds",
+    }
+    assert requirement_by_name["Billiard symmetry, energy, momentum"][
+        "benchmark_packet"
+    ] == "world_billiards"
+    assert (
+        "world_stack"
+        in requirement_by_name["High mass-ratio stack"]["benchmark_packet"]
+    )
+    assert requirement_by_name["Thin card pile"]["live_packet"] == (
+        "Thin card pile"
+    )
+    assert "lcp_dimension" in requirement_by_name["Scalability smoke"][
+        "metrics"
+    ]
+    assert "contact count" in requirement_by_name[
+        "Friction coupling and active tangential bounds"
+    ]["metrics"]
+    representative_tokens: list[str] = []
+    for row in info["benchmark_packet_rows"]:
+        for token in row["benchmark_filter"].split("|"):
+            if token not in representative_tokens:
+                representative_tokens.append(token)
+    assert info["representative_benchmark_filter"].split("|") == (
+        representative_tokens
+    )
+    assert info["representative_benchmark_command"] == (
+        "pixi run bm lcp_compare -- --benchmark_filter="
+        f"'{info['representative_benchmark_filter']}'"
+    )
+    assert info["performance_profile_refresh_command"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--cache build/lcp_profile_full.json "
+        "--output docs/background/lcp/figures "
+        "--benchmark-timeout 900"
+    )
+    assert info["performance_profile_smoke_command"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--allow-partial "
+        "--benchmark-filter BM_LcpCompare/Standard/Dantzig/12 "
+        "--benchmark-min-time 0.01 "
+        "--cache build/lcp_profile_smoke.json "
+        "--output build/lcp_profile_smoke "
+        "--benchmark-timeout 120"
+    )
+    assert "--allow-partial" in info["performance_profile_smoke_command"]
+    assert (
+        "--output build/lcp_profile_smoke"
+        in info["performance_profile_smoke_command"]
+    )
+    assert (
+        "docs/background/lcp/figures"
+        not in info["performance_profile_smoke_command"]
+    )
+    profile_by_surface = {
+        row["surface"]: row for row in info["performance_profile_rows"]
+    }
+    assert set(profile_by_surface) == {"Standard", "Boxed", "FrictionIndex"}
+    evidence_schema_by_fields = {
+        row["fields"]: row
+        for row in info["performance_profile_evidence_schema_rows"]
+    }
+    assert set(evidence_schema_by_fields) == {
+        row["fields"] for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    }
+    evidence_summary_by_surface = {
+        row["surface"]: row
+        for row in info["performance_profile_evidence_summary_rows"]
+    }
+    assert set(evidence_summary_by_surface) == {
+        "Standard",
+        "Boxed",
+        "FrictionIndex",
+    }
+    assert evidence_summary_by_surface["Standard"]["rows"] == "90"
+    assert evidence_summary_by_surface["Standard"]["solvers"] == "23"
+    assert evidence_summary_by_surface["Standard"]["dimensions"] == (
+        "2, 3, 12, 24, 48, 96"
+    )
+    assert evidence_summary_by_surface["Standard"]["contract_ok"] == "90/90"
+    assert evidence_summary_by_surface["Boxed"]["rows"] == "45"
+    assert evidence_summary_by_surface["Boxed"]["solvers"] == "15"
+    assert evidence_summary_by_surface["Boxed"]["dimensions"] == "12, 24, 48"
+    assert evidence_summary_by_surface["Boxed"]["contract_ok"] == "45/45"
+    assert evidence_summary_by_surface["FrictionIndex"]["rows"] == "48"
+    assert evidence_summary_by_surface["FrictionIndex"]["solvers"] == "16"
+    assert evidence_summary_by_surface["FrictionIndex"]["dimensions"] == (
+        "12, 48, 192"
+    )
+    assert evidence_summary_by_surface["FrictionIndex"]["contacts"] == "4, 16, 64"
+    assert evidence_summary_by_surface["FrictionIndex"]["contract_ok"] == "48/48"
+    solver_guidance_by_family = {
+        row["family"]: row for row in info["solver_guidance_rows"]
+    }
+    assert set(solver_guidance_by_family) == {
+        "Pivoting and direct",
+        "Projection iterations",
+        "Block/contact structure",
+        "Newton, interior, and QP",
+        "Accelerated and splitting",
+    }
+    assert "Dantzig" in solver_guidance_by_family["Pivoting and direct"]["solvers"]
+    assert (
+        "real-time approximate solves"
+        in solver_guidance_by_family["Projection iterations"]["best_fit"]
+    )
+    assert (
+        "contact piles"
+        in solver_guidance_by_family["Block/contact structure"]["best_fit"]
+    )
+    assert (
+        "high-accuracy standard rows"
+        in solver_guidance_by_family["Newton, interior, and QP"]["best_fit"]
+    )
+    assert "rho" in solver_guidance_by_family["Accelerated and splitting"][
+        "tradeoff"
+    ]
+    assert profile_by_surface["Standard"]["artifact"].endswith(
+        "performance_profile_standard.csv"
+    )
+    assert profile_by_surface["Standard"]["evidence_artifact"].endswith(
+        "performance_profile_evidence.csv"
+    )
+    assert profile_by_surface["Boxed"]["artifact"].endswith(
+        "performance_profile_boxed.csv"
+    )
+    assert profile_by_surface["Boxed"]["evidence_artifact"].endswith(
+        "performance_profile_evidence.csv"
+    )
+    assert profile_by_surface["FrictionIndex"]["artifact"].endswith(
+        "performance_profile_frictionindex.csv"
+    )
+    assert profile_by_surface["FrictionIndex"]["evidence_artifact"].endswith(
+        "performance_profile_evidence.csv"
+    )
+    assert profile_by_surface["Standard"]["problem_sizes"] == (
+        "2, 3, 12, 24, 48, 96"
+    )
+    assert "Dantzig" in profile_by_surface["Standard"]["current_leaders"]
+    assert "BGS" in profile_by_surface["Standard"]["current_leaders"]
+    assert "NNCG" not in profile_by_surface["Standard"]["current_leaders"]
+    assert "SubspaceMinimization" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "strict-interior" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "Newton" in profile_by_surface["Standard"]["current_leaders"]
+    assert "InteriorPoint" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "Admm" in profile_by_surface["Standard"]["current_leaders"]
+    assert "Admm" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "No Standard solver average is above 1.6x" in profile_by_surface[
+        "Standard"
+    ]["current_laggards"]
+    assert "SubspaceMinimization" not in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "InteriorPoint" not in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "Dantzig" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "RedBlackGaussSeidel" in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "Tgs" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "BGS" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "MinimumMapNewton" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "MPRGP" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Apgd" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "Lemke" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "Baraff" in profile_by_surface["Standard"]["current_laggards"]
+    assert "SymmetricPsor" not in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "NNCG" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Jacobi" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "ShockPropagation" not in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "ShockPropagation" in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "FischerBurmeisterNewton" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "Pgs/Tgs/Jacobi" in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
+    assert "Admm" not in profile_by_surface["Boxed"]["current_leaders"]
+    assert "BlockedJacobi" not in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
+    assert "BGS" not in profile_by_surface["Boxed"]["current_leaders"]
+    assert "BoxedSemiSmoothNewton" not in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
+    assert "Dantzig" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "NNCG" not in profile_by_surface["Boxed"]["current_leaders"]
+    assert "Sap" not in profile_by_surface["Boxed"]["current_leaders"]
+    assert "ShockPropagation" not in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
+    assert "Jacobi" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "SymmetricPsor" in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
+    assert "Sap is the only Boxed solver average above 1.6x" in (
+        profile_by_surface["Boxed"]["current_laggards"]
+    )
+    assert "Admm" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "BlockedJacobi" in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
+    assert "BGS" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Apgd" not in profile_by_surface["Boxed"]["current_laggards"]
+    assert "RedBlackGaussSeidel" not in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
+    assert "Dantzig" not in profile_by_surface["Boxed"]["current_laggards"]
+    assert "NNCG" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Sap" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "ShockPropagation" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "SymmetricPsor" not in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
+    assert (
+        "SubspaceMinimization"
+        not in profile_by_surface["Boxed"]["current_leaders"]
+    )
+    assert "Tgs/Pgs" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "Admm" not in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Apgd" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "SymmetricPsor" not in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "SymmetricPsor" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "RedBlackGaussSeidel" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "Jacobi" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "BGS" not in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Dantzig" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "NNCG" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Staggering" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "BoxedSemiSmoothNewton" not in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "Sap and ShockPropagation" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "Apgd" not in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "Admm" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "NNCG" not in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "Dantzig" not in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "Staggering" not in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "Sap" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
+        "BM_LcpWorldBilliardsStep_BoxedLcp"
+    )
+    assert benchmark_by_packet["world_stack"]["benchmark_filter"] == (
+        "BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp"
+    )
+    assert benchmark_by_packet["world_card_pile"]["surface"] == "boxed contact"
+    assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
+        "BM_LcpWorldCardPileStep_BoxedLcp"
+    )
+    assert benchmark_by_packet["world_contact_step"]["benchmark_filter"] == (
+        "BM_LcpWorldSeparatedStep_BoxedLcp|BM_LcpWorldBoxStep_BoxedLcp"
+    )
+    assert benchmark_by_packet["active_set_transition"]["benchmark_filter"] == (
+        "BM_LcpActiveSetTransition|"
+        "BM_LcpNewtonWarmStart|"
+        "BM_LcpNewtonWarmStartBatchSerial|"
+        "BM_LcpNewtonWarmStartBatchParallel"
+    )
+    assert benchmark_by_packet["active_set_scale"]["benchmark_filter"] == (
+        "BM_LcpLargerActiveSetTransition|"
+        "BM_LcpStressActiveSetTransition|"
+        "BM_LcpExtremeActiveSetTransition|"
+        "BM_LcpProductionActiveSetTransition|"
+        "BM_LcpProductionActiveSetTransitionBatchSerial|"
+        "BM_LcpProductionActiveSetTransitionBatchParallel"
+    )
+    assert benchmark_by_packet["active_friction_index_contact"]["surface"] == (
+        "findex contact"
+    )
+    assert benchmark_by_packet["active_friction_index_contact"][
+        "benchmark_filter"
+    ] == "BM_LcpActiveFrictionIndexContact"
+    assert benchmark_by_packet["contact_solver_comparison_sweep"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpContactSolverComparisonSweep|"
+        "BM_LcpStaggeringContactPipelineSweep"
+    )
+    assert benchmark_by_packet["contact_normal_standard_sweep"][
+        "benchmark_filter"
+    ] == "BM_LcpContactNormalStandardSweep"
+    assert benchmark_by_packet["validation_friction_index"]["benchmark_filter"] == (
+        "BM_LcpValidation_Serial_FrictionIndex|"
+        "BM_LcpValidation_Threaded_FrictionIndex"
+    )
+    assert benchmark_by_packet["near_singular"]["benchmark_filter"] == (
+        "BM_LcpNearSingular|"
+        "BM_LcpNearSingularBatchSerial|"
+        "BM_LcpNearSingularBatchParallel"
+    )
+    assert benchmark_by_packet["singular_degenerate_scale"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpLargerSingularDegenerate|"
+        "BM_LcpStressSingularDegenerate|"
+        "BM_LcpExtremeSingularDegenerate|"
+        "BM_LcpSingularDegenerateFrictionIndexBatchSerial|"
+        "BM_LcpSingularDegenerateFrictionIndexBatchParallel|"
+        "BM_LcpSingularDegenerateStandardBoxedBatchSerial|"
+        "BM_LcpSingularDegenerateStandardBoxedBatchParallel"
+    )
+    assert benchmark_by_packet["mild_ill_conditioned"]["benchmark_filter"] == (
+        "BM_LcpMildIllConditioned|"
+        "BM_LcpMildIllConditionedBatchSerial|"
+        "BM_LcpMildIllConditionedBatchParallel"
+    )
+    assert benchmark_by_packet["cuda_batch_scale"]["benchmark_filter"] == (
+        "BM_LcpCudaJacobiBatch|"
+        "BM_LcpCudaPgsBatch|"
+        "BM_LcpCudaJacobiGroupedBatch|"
+        "BM_LcpCudaPgsGroupedBatch"
+    )
+    assert benchmark_by_packet["cuda_contact_batch"]["benchmark_filter"] == (
+        "BM_LcpCudaJacobiWorldContactBatch|"
+        "BM_LcpCudaPgsWorldContactBatch|"
+        "BM_LcpCudaJacobiWorldContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldContactGroupedBatch|"
+        "BM_LcpCudaJacobiWorldBoxContactBatch|"
+        "BM_LcpCudaPgsWorldBoxContactBatch|"
+        "BM_LcpCudaJacobiWorldBoxContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldBoxContactGroupedBatch|"
+        "BM_LcpCudaJacobiWorldStackContactBatch|"
+        "BM_LcpCudaPgsWorldStackContactBatch|"
+        "BM_LcpCudaJacobiWorldStackContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldStackContactGroupedBatch|"
+        "BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch|"
+        "BM_LcpCudaPgsArticulatedUnifiedContactGroupedBatch|"
+        "BM_LcpCudaJacobiMixedContactGroupedBatch|"
+        "BM_LcpCudaPgsMixedContactGroupedBatch"
+    )
+    assert benchmark_by_packet["solver_parameter_sweeps"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpPgsRelaxationSweep|"
+        "BM_LcpSymmetricPsorRelaxationSweep|"
+        "BM_LcpJacobiSolverThreading|"
+        "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+        "BM_LcpRedBlackGaussSeidelSolverThreadingBanded|"
+        "BM_LcpBlockedJacobiSolverThreadingBanded|"
+        "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep|"
+        "BM_LcpPivotingScaleSweep|"
+        "BM_LcpBlockPartitionSweep|"
+        "BM_LcpApgdRestartSweep|"
+        "BM_LcpTgsIterationBudgetSweep|"
+        "BM_LcpNncgPgsIterationsSweep|"
+        "BM_LcpSubspaceMinimizationPgsIterationsSweep|"
+        "BM_LcpShockPropagationLayerSweep|"
+        "BM_LcpNewtonWarmStart|"
+        "BM_LcpMprgpSpdCheckSweep|"
+        "BM_LcpInteriorPointPathSweep|"
+        "BM_LcpAdmmRhoSweep|"
+        "BM_LcpSapRegularizationSweep"
+    )
+    builder = _FakePanelBuilder()
+    setup.panels[0].build(builder, object())
+    assert (
+        "text:solver manifest: 24 solvers, 23 standard, 15 boxed, "
+        "16 friction-index"
+    ) in builder.events
+    assert (
+        "table:lcp_live_packet_cards:Packet,Metric,Benchmark analog"
+        in builder.events
+    )
+    for live_packet_row in info["live_packet_rows"]:
+        assert f"text:{live_packet_row['packet']}" in builder.events
+        assert f"text:{live_packet_row['metric']}" in builder.events
+        assert f"text:{live_packet_row['benchmark']}" in builder.events
+    assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
+    assert "text:std + boxed + findex" in builder.events
+    assert "text:std only; boxed/findex delegate" in builder.events
+    assert "text:findex only; std/boxed delegate" in builder.events
+    assert (
+        "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
+        in builder.events
+    )
+    for benchmark_row in info["benchmark_packet_rows"]:
+        assert f"text:{benchmark_row['packet']}" in builder.events
+        assert f"text:{benchmark_row['surface']}" in builder.events
+        assert f"text:{benchmark_row['benchmark_filter']}" in builder.events
+        assert f"text:{benchmark_row['coverage']}" in builder.events
+    assert (
+        "table:lcp_representative_requirement_coverage:Requirement,Live packet,"
+        "Benchmark packet,Metrics,Evidence"
+        in builder.events
+    )
+    for requirement_row in info["representative_requirement_rows"]:
+        assert f"text:{requirement_row['requirement']}" in builder.events
+        assert f"text:{requirement_row['live_packet']}" in builder.events
+        assert f"text:{requirement_row['benchmark_packet']}" in builder.events
+        assert f"text:{requirement_row['metrics']}" in builder.events
+        assert f"text:{requirement_row['evidence']}" in builder.events
+    assert (
+        "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
+        "Current leaders,Current laggards,Takeaway"
+        in builder.events
+    )
+    for profile_row in info["performance_profile_rows"]:
+        assert f"text:{profile_row['surface']}" in builder.events
+        assert f"text:{profile_row['artifact']}" in builder.events
+        assert f"text:{profile_row['evidence_artifact']}" in builder.events
+        assert f"text:{profile_row['problem_sizes']}" in builder.events
+        assert f"text:{profile_row['current_leaders']}" in builder.events
+        assert f"text:{profile_row['current_laggards']}" in builder.events
+        assert f"text:{profile_row['takeaway']}" in builder.events
+    assert (
+        f"text:profile smoke: {lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND}"
+        in builder.events
+    )
+    assert (
+        "table:lcp_performance_profile_evidence_schema:Field(s),Meaning"
+        in builder.events
+    )
+    for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
+        assert any(schema_row["fields"] in event for event in builder.events)
+        assert any(schema_row["meaning"] in event for event in builder.events)
+    assert (
+        "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
+        "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
+        in builder.events
+    )
+    for evidence_summary_row in info["performance_profile_evidence_summary_rows"]:
+        assert f"text:{evidence_summary_row['surface']}" in builder.events
+        assert f"text:{evidence_summary_row['rows']}" in builder.events
+        assert f"text:{evidence_summary_row['solvers']}" in builder.events
+        assert f"text:{evidence_summary_row['dimensions']}" in builder.events
+        assert f"text:{evidence_summary_row['contacts']}" in builder.events
+        assert f"text:{evidence_summary_row['contract_ok']}" in builder.events
+        assert f"text:{evidence_summary_row['max_iterations']}" in builder.events
+        assert f"text:{evidence_summary_row['max_residual']}" in builder.events
+        assert (
+            f"text:{evidence_summary_row['max_complementarity']}"
+            in builder.events
+        )
+        assert (
+            f"text:{evidence_summary_row['max_bound_violation']}"
+            in builder.events
+        )
+    assert any("text:90/90" == event for event in builder.events)
+    assert any("text:48/48" == event for event in builder.events)
+    assert (
+        "table:lcp_standalone_solver_smoke:Solver,Family,Native coverage,Route,"
+        "Status,Error,Residual,Complementarity"
+        in builder.events
+    )
+    for smoke_row in info["standalone_solver_rows"]:
+        assert f"text:{smoke_row['family']}" in builder.events
+        assert (
+            f"text:{lcp_physics._smoke_coverage_label(smoke_row)}"
+            in builder.events
+        )
+    assert "text:delegated" in builder.events
+    assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
+    assert (
+        f"text:{smoke_by_name['Dantzig']['complementarity']:.2e}"
+        in builder.events
+    )
+    assert (
+        "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
+        "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
+        "Fastest native,Slowest"
+        in builder.events
+    )
+    for summary_row in problem_summary_rows:
+        assert f"text:{summary_row['label']}" in builder.events
+        assert f"text:{summary_row['problem_type']}" in builder.events
+        assert f"text:{summary_row['lcp_dimension']}" in builder.events
+        assert f"text:{summary_row['findex_contact_count']}" in builder.events
+        assert f"text:{summary_row['challenge']}" in builder.events
+        assert (
+            f"text:{summary_row['native_contract_ok_count']}/"
+            f"{summary_row['native_solver_count']}"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['delegated_contract_ok_count']}/"
+            f"{summary_row['delegated_solver_count']}"
+            in builder.events
+        )
+        assert f"text:{summary_row['max_solution_error']:.2e}" in builder.events
+        assert f"text:{summary_row['max_complementarity']:.2e}" in builder.events
+        assert f"text:{summary_row['max_residual']:.2e}" in builder.events
+        assert (
+            f"text:{summary_row['fastest_solver']} "
+            f"({summary_row['fastest_elapsed_us']:.1f} us)"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['fastest_native_solver']} "
+            f"({summary_row['fastest_native_elapsed_us']:.1f} us)"
+            in builder.events
+        )
+        assert (
+            f"text:{summary_row['slowest_solver']} "
+            f"({summary_row['slowest_elapsed_us']:.1f} us)"
+            in builder.events
+        )
+    for challenge in (
+        "large mass-ratio conditioning with active bounds",
+        "rank-deficient complementarity with opposing active bounds",
+        "two-contact active tangential bounds with coupled normals",
+        "scalability smoke with banded coupling",
+    ):
+        assert any(challenge in event for event in builder.events)
+    assert (
+        "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
+        "Contract,Iterations,Error,Residual,Complementarity,us"
+        in builder.events
+    )
+    for problem_row in problem_rows:
+        assert f"text:{problem_row['label']}" in builder.events
+        assert f"text:{problem_row['solver']}" in builder.events
+        assert f"text:{problem_row['solve_route']}" in builder.events
+        assert f"text:{problem_row['status']}" in builder.events
+        assert (
+            f"text:{'OK' if problem_row['contract_ok'] else 'Fail'}"
+            in builder.events
+        )
+        assert f"text:{problem_row['iterations']}" in builder.events
+        assert f"text:{problem_row['solution_error']:.2e}" in builder.events
+        assert f"text:{problem_row['residual']:.2e}" in builder.events
+        assert f"text:{problem_row['complementarity']:.2e}" in builder.events
+        assert f"text:{problem_row['elapsed_us']:.1f}" in builder.events
+    assert (
+        "table:lcp_solver_selection_guide:Family,Solvers,Best fit,Strength,"
+        "Tradeoff,Evidence cue"
+        in builder.events
+    )
+    for guidance_row in info["solver_guidance_rows"]:
+        assert f"text:{guidance_row['family']}" in builder.events
+        assert f"text:{guidance_row['solvers']}" in builder.events
+        assert f"text:{guidance_row['best_fit']}" in builder.events
+        assert f"text:{guidance_row['strength']}" in builder.events
+        assert f"text:{guidance_row['tradeoff']}" in builder.events
+        assert f"text:{guidance_row['evidence']}" in builder.events
+    assert (
+        "table:lcp_solver_profile:Solver,Native cases,OK,Native OK,Delegated OK,"
+        "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
+        in builder.events
+    )
+    for profile_row in solver_profile_rows:
+        assert f"text:{profile_row['solver']}" in builder.events
+        assert f"text:{profile_row['native_surfaces']}" in builder.events
+        assert (
+            f"text:{profile_row['contract_ok_count']}/"
+            f"{profile_row['problem_count']}"
+            in builder.events
+        )
+        assert (
+            f"text:{profile_row['native_contract_ok_count']}/"
+            f"{profile_row['native_case_count']}"
+            in builder.events
+        )
+        assert (
+            f"text:{profile_row['delegated_contract_ok_count']}/"
+            f"{profile_row['delegated_case_count']}"
+            in builder.events
+        )
+        assert f"text:{profile_row['total_elapsed_us']:.1f}" in builder.events
+        assert f"text:{profile_row['max_solution_error']:.2e}" in builder.events
+        assert f"text:{profile_row['max_residual']:.2e}" in builder.events
+        assert f"text:{profile_row['max_complementarity']:.2e}" in builder.events
+        assert f"text:{profile_row['slowest_case']}" in builder.events
+        assert f"text:{profile_row['slowest_elapsed_us']:.1f}" in builder.events
+    assert (
+        "table:lcp_advanced_solver_parameters:Solver,Surface,Parameters,Defaults,"
+        "Benchmark"
+        in builder.events
+    )
+    for parameter_row in parameter_rows:
+        assert f"text:{parameter_row['solver']}" in builder.events
+        assert f"text:{parameter_row['surface']}" in builder.events
+        assert f"text:{parameter_row['parameters']}" in builder.events
+        assert f"text:{parameter_row['defaults']}" in builder.events
+        assert f"text:{parameter_row['benchmark_filter']}" in builder.events
+    for plot_prefix in (
+        "plot:Sequential billiard momentum error:",
+        "plot:Boxed LCP billiard momentum error:",
+        "plot:Sequential billiard energy error:",
+        "plot:Boxed LCP billiard energy error:",
+        "plot:Sequential billiard symmetry error:",
+        "plot:Boxed LCP billiard symmetry error:",
+    ):
+        assert any(event.startswith(plot_prefix) for event in builder.events)
+
+
+def test_lcp_physics_updates_live_metrics_headlessly() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+    assert setup.pre_step is not None
+
+    snapshot = setup.info["live_metrics_snapshot"]
+    assert callable(snapshot)
+    before = snapshot()
+    assert set(before) == {"Sequential impulse", "Boxed LCP"}
+    assert all(row["step_samples"] == 0 for row in before.values())
+    assert all(row["contact_samples"] == 0 for row in before.values())
+
+    step_count = 5
+    for _ in range(step_count):
+        setup.pre_step()
+
+    nonnegative_metrics = {
+        "step_ms",
+        "contacts",
+        "sliding_speed",
+        "billiard_momentum_error",
+        "billiard_energy_error",
+        "billiard_symmetry_error",
+        "stack_lateral_drift",
+        "card_spread",
+        "card_height_loss",
+    }
+    finite_metrics = nonnegative_metrics | {"ramp_slide"}
+    after = snapshot()
+    assert set(after) == {"Sequential impulse", "Boxed LCP"}
+    for row in after.values():
+        assert row["step_samples"] == step_count
+        assert row["contact_samples"] == step_count
+        for metric in finite_metrics:
+            assert np.isfinite(row[metric]), metric
+        for metric in nonnegative_metrics:
+            assert row[metric] >= 0.0, metric
+        assert row["sliding_speed"] > 0.0
 
 
 def test_rigid_comparison_panels_label_the_compared_axis() -> None:
@@ -3085,7 +4709,10 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
 
         assert "text:status: planned PLAN-083 CPU corpus scene" in builder.events
         assert any(event.startswith("text:rows: ") for event in builder.events)
-        assert any(event.startswith("text:smoke: pixi run py-demos") for event in builder.events)
+        assert any(
+            event.startswith("text:smoke: pixi run py-demos")
+            for event in builder.events
+        )
         assert any(
             event.startswith("text:visual: pixi run py-demo-capture")
             for event in builder.events
@@ -3151,7 +4778,9 @@ def test_plan083_nunchaku_exposes_runtime_status_panel() -> None:
     assert "text:solver: rigid IPC World.step" in builder.events
     assert "text:revolute joints: 1" in builder.events
     assert "text:benchmark: pixi run bm-plan083-cpu-nunchaku-packet" in builder.events
-    assert any(event.startswith("text:swinging tip radius: ") for event in builder.events)
+    assert any(
+        event.startswith("text:swinging tip radius: ") for event in builder.events
+    )
 
 
 def test_plan083_windmill_exposes_runtime_status_panel() -> None:
@@ -3246,10 +4875,7 @@ def test_plan083_lying_flat_exposes_runtime_status_panel() -> None:
     assert "text:deformable bodies: 1" in builder.events
     assert "text:nodes: 24" in builder.events
     assert "text:surface triangles: 30" in builder.events
-    assert (
-        "text:benchmark: pixi run bm-plan083-cpu-lying-flat-packet"
-        in builder.events
-    )
+    assert "text:benchmark: pixi run bm-plan083-cpu-lying-flat-packet" in builder.events
     assert any(event.startswith("text:mean cloth height: ") for event in builder.events)
 
 

@@ -44,6 +44,8 @@
 namespace dart::math {
 namespace {
 
+constexpr int kMaxStrictInteriorFastPathSize = 96;
+
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
   if (A.size() == 0) {
@@ -151,6 +153,44 @@ LcpResult SymmetricPsorSolver::solve(
       || params->epsilonForDivision <= 0.0) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Division epsilon must be positive";
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart
+      && n <= kMaxStrictInteriorFastPathSize) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolOpt);
+    result.validated = options.validateSolution;
     return result;
   }
 

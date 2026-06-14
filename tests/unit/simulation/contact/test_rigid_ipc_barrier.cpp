@@ -32,6 +32,10 @@
 #include <dart/simulation/detail/deformable_contact/barrier_kernel.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <dart/common/free_list_allocator.hpp>
+#include <dart/common/memory_allocator_debugger.hpp>
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -1496,7 +1500,7 @@ TEST(RigidIpcBarrier, ProjectedNewtonStepSolvesBarrierSystem)
 
   Eigen::VectorXd expected(2);
   expected << -1.0, 1.0;
-  expectVectorNear(step.delta, expected, 1e-14);
+  expectVectorNear(step.delta.asEigen(), expected, 1e-14);
   EXPECT_NEAR(step.stats.rawStepNorm, expected.norm(), 1e-14);
   EXPECT_NEAR(step.stats.stepNorm, expected.norm(), 1e-14);
   EXPECT_NEAR(step.stats.gradientDotStep, -6.0, 1e-14);
@@ -1529,7 +1533,7 @@ TEST(RigidIpcBarrier, ProjectedNewtonStepHonorsLineSearchBound)
 
   Eigen::VectorXd expected(2);
   expected << 0.4, 0.0;
-  expectVectorNear(step.delta, expected, 1e-14);
+  expectVectorNear(step.delta.asEigen(), expected, 1e-14);
   EXPECT_NEAR(step.stats.rawStepNorm, 2.0, 1e-14);
   EXPECT_NEAR(step.stats.stepNorm, 0.4, 1e-14);
 }
@@ -1698,6 +1702,45 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveFollowsBodyDynamicsTerm)
   EXPECT_EQ(result.assembly.activeDynamicsTerms, 1u);
   EXPECT_NEAR(result.surfaces.front().pose.position.x(), 0.5, 1e-12);
   EXPECT_NEAR(result.stats.finalGradientNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+
+  common::MemoryAllocatorDebugger<common::FreeListAllocator> allocator;
+
+  {
+    expdetail::RigidIpcBarrierSurface surfaceA = makeTriangleSurface(0.0);
+    expdetail::RigidIpcBarrierSurface surfaceB = makeTriangleSurface(0.25);
+    const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{
+        surfaceA, surfaceB};
+
+    expdetail::RigidIpcProjectedNewtonSolveOptions options(allocator);
+    options.barrier.squaredActivationDistance = 1.0;
+    options.maxIterations = 0;
+    auto& articulation = options.articulationConstraints.emplace_back();
+    articulation.active = true;
+    articulation.bodyA = 0;
+    articulation.bodyB = 1;
+    articulation.localPointA = Eigen::Vector3d::Zero();
+    articulation.localPointB = Eigen::Vector3d::Zero();
+    expdetail::RigidIpcProjectedNewtonSolveResult result(allocator);
+    expdetail::RigidIpcProjectedNewtonSolveScratch scratch(allocator);
+
+    expdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+        surfaces, options, result, scratch);
+
+    EXPECT_GT(allocator.getAllocationCount(), 0u)
+        << "allocator-aware rigid IPC projected-Newton scratch should reserve "
+           "surface work vectors, repeated assembly scratch, step delta, and "
+           "result assembly vectors from the provided free allocator";
+    EXPECT_GE(allocator.getPeakAllocatedSize(), allocator.getAllocatedSize())
+        << "solve-internal scratch should stay owned by the provided allocator";
+  }
+
+  EXPECT_TRUE(allocator.isEmpty());
 }
 
 //==============================================================================

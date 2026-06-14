@@ -33,8 +33,10 @@
 #include "dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp"
 
 #include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <Eigen/Cholesky>
+#include <Eigen/LU>
 
 #include <algorithm>
 #include <ranges>
@@ -120,6 +122,125 @@ Eigen::VectorXd computeNaturalResidual(
   return x - projected;
 }
 
+bool validateParameters(
+    const BoxedSemiSmoothNewtonSolver::Parameters& params, std::string* message)
+{
+  if (params.maxLineSearchSteps <= 0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton max_line_search_steps must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepReduction) || params.stepReduction <= 0.0
+      || params.stepReduction >= 1.0) {
+    if (message) {
+      *message = "Boxed semi-smooth Newton step_reduction must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.sufficientDecrease)
+      || params.sufficientDecrease < 0.0 || params.sufficientDecrease >= 1.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton sufficient_decrease must be in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.minStep) || params.minStep <= 0.0) {
+    if (message) {
+      *message = "Boxed semi-smooth Newton min_step must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.jacobianRegularization)
+      || params.jacobianRegularization < 0.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton jacobian_regularization must be "
+            "non-negative";
+    }
+    return false;
+  }
+  if (params.maxPgsWarmStartIterations < 0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton max_pgs_warm_start_iterations must be "
+            "non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.pgsWarmStartRelaxation)
+      || params.pgsWarmStartRelaxation <= 0.0
+      || params.pgsWarmStartRelaxation > 2.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton pgs_warm_start_relaxation must be in "
+            "(0, 2]";
+    }
+    return false;
+  }
+  if (params.maxFrictionIndexExactSolveDimension < 0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton "
+            "max_friction_index_exact_solve_dimension must be non-negative";
+    }
+    return false;
+  }
+  return true;
+}
+
+double computeNaturalResidualForProblem(
+    const LcpProblem& problem, const Eigen::VectorXd& x)
+{
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  if (!detail::computeEffectiveBounds(
+          problem.lo,
+          problem.hi,
+          problem.findex,
+          x,
+          loEff,
+          hiEff,
+          &boundsMessage)) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  const Eigen::VectorXd w = problem.A * x - problem.b;
+  return detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
+}
+
+void runPgsWarmStart(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const BoxedSemiSmoothNewtonSolver::Parameters& params)
+{
+  if (params.maxPgsWarmStartIterations <= 0) {
+    return;
+  }
+
+  const double initialResidual = computeNaturalResidualForProblem(problem, x);
+  Eigen::VectorXd candidate = x;
+  LcpOptions pgsOptions = options;
+  pgsOptions.maxIterations = params.maxPgsWarmStartIterations;
+  pgsOptions.relaxation = params.pgsWarmStartRelaxation;
+  pgsOptions.warmStart = true;
+  pgsOptions.validateSolution = false;
+  pgsOptions.customOptions = nullptr;
+
+  PgsSolver pgs;
+  pgs.solve(problem, candidate, pgsOptions);
+
+  const double candidateResidual
+      = computeNaturalResidualForProblem(problem, candidate);
+  if (candidate.allFinite() && candidateResidual < initialResidual) {
+    x = candidate;
+  }
+}
+
 } // namespace
 
 BoxedSemiSmoothNewtonSolver::BoxedSemiSmoothNewtonSolver()
@@ -176,6 +297,12 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,
@@ -187,6 +314,45 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
   const double compTol = (options.complementarityTolerance > 0)
                              ? options.complementarityTolerance
                              : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (!options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTol);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (
+        problem.hasFrictionIndex()
+        && problem.size() <= params->maxFrictionIndexExactSolveDimension) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   Eigen::VectorXd loEff = lo;
   Eigen::VectorXd hiEff = hi;
@@ -203,10 +369,14 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     x.setZero();
   }
   x = projectVector(x, loEff, hiEff);
+  runPgsWarmStart(problem, x, options, *params);
 
   Eigen::VectorXd w(n);
   Eigen::VectorXd H(n);
   Eigen::VectorXd dx(n);
+  Eigen::VectorXd xTrial(n);
+  Eigen::VectorXd loTrial(n);
+  Eigen::VectorXd hiTrial(n);
   Eigen::MatrixXd J(n, n);
 
   int iterationsUsed = 0;
@@ -262,55 +432,81 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
 
     J.diagonal().array() += params->jacobianRegularization;
 
-    Eigen::LLT<Eigen::MatrixXd> llt(J.transpose() * J);
-    if (llt.info() != Eigen::Success) {
-      J.diagonal().array() += 1e-6;
-      llt.compute(J.transpose() * J);
-    }
-    dx = llt.solve(-J.transpose() * H);
+    dx = J.partialPivLu().solve(-H);
 
     if (!dx.allFinite()) {
-      result.status = LcpSolverStatus::NumericalError;
-      result.message = "Newton solve produced non-finite step";
-      result.iterations = iterationsUsed;
-      return result;
+      dx.setZero();
     }
 
-    double alpha = 1.0;
-    bool accepted = false;
+    double acceptedResidual = std::numeric_limits<double>::infinity();
+    auto acceptLineSearchStep = [&](const Eigen::VectorXd& step) {
+      double alpha = 1.0;
 
-    for (int ls = 0; ls < params->maxLineSearchSteps; ++ls) {
-      Eigen::VectorXd xNew = projectVector(x + alpha * dx, loEff, hiEff);
+      for (int ls = 0; ls < params->maxLineSearchSteps; ++ls) {
+        xTrial = x + alpha * step;
+        for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
+          xTrial[i] = project(xTrial[i], loEff[i], hiEff[i]);
+        }
 
-      for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
-        if (findex[i] >= 0) {
-          const double fricLimit = std::abs(hi[i] * xNew[findex[i]]);
-          loEff[i] = -fricLimit;
-          hiEff[i] = fricLimit;
-          xNew[i] = project(xNew[i], loEff[i], hiEff[i]);
+        loTrial = loEff;
+        hiTrial = hiEff;
+        for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
+          if (findex[i] >= 0) {
+            const double fricLimit = std::abs(hi[i] * xTrial[findex[i]]);
+            loTrial[i] = -fricLimit;
+            hiTrial[i] = fricLimit;
+            xTrial[i] = project(xTrial[i], loTrial[i], hiTrial[i]);
+          }
+        }
+
+        const Eigen::VectorXd wNew = A * xTrial - b;
+        const Eigen::VectorXd HNew
+            = computeNaturalResidual(xTrial, wNew, loTrial, hiTrial);
+        const double HnewNorm = HNew.lpNorm<Eigen::Infinity>();
+
+        if (HnewNorm < Hnorm * (1.0 - params->sufficientDecrease * alpha)
+            || HnewNorm < Hnorm) {
+          x = xTrial;
+          loEff = loTrial;
+          hiEff = hiTrial;
+          acceptedResidual = HnewNorm;
+          return true;
+        }
+
+        alpha *= params->stepReduction;
+        if (alpha < params->minStep) {
+          break;
         }
       }
 
-      const Eigen::VectorXd wNew = A * xNew - b;
-      const Eigen::VectorXd HNew
-          = computeNaturalResidual(xNew, wNew, loEff, hiEff);
-      const double HnewNorm = HNew.lpNorm<Eigen::Infinity>();
+      return false;
+    };
 
-      if (HnewNorm < Hnorm * (1.0 - params->sufficientDecrease * alpha)
-          || HnewNorm < Hnorm) {
-        x = xNew;
-        accepted = true;
-        break;
-      }
+    bool accepted = acceptLineSearchStep(dx);
 
-      alpha *= params->stepReduction;
-      if (alpha < params->minStep) {
-        break;
+    if (!accepted) {
+      Eigen::LLT<Eigen::MatrixXd> llt(J.transpose() * J);
+      if (llt.info() != Eigen::Success) {
+        J.diagonal().array() += 1e-6;
+        llt.compute(J.transpose() * J);
       }
+      dx = llt.solve(-J.transpose() * H);
+      if (!dx.allFinite()) {
+        result.status = LcpSolverStatus::NumericalError;
+        result.message = "Newton solve produced non-finite step";
+        result.iterations = iterationsUsed;
+        return result;
+      }
+      accepted = acceptLineSearchStep(dx);
     }
 
     if (!accepted) {
       lineSearchFailed = true;
+      break;
+    }
+
+    if (acceptedResidual <= absTol) {
+      converged = true;
       break;
     }
   }

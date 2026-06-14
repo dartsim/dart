@@ -43,11 +43,14 @@
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <limits>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -160,6 +163,28 @@ struct FrozenContact
   double friction = 0.0; // Combined Coulomb friction coefficient mu.
 };
 
+using FrozenContactAllocator = common::StlAllocator<FrozenContact>;
+using FrozenContactVector = std::vector<FrozenContact, FrozenContactAllocator>;
+using ContactEntityAllocator = common::StlAllocator<entt::entity>;
+using ContactEntityVector = std::vector<entt::entity, ContactEntityAllocator>;
+using ContactBodyColumnEntry = std::pair<const entt::entity, std::size_t>;
+using ContactBodyColumnAllocator = common::StlAllocator<ContactBodyColumnEntry>;
+using ContactBodyColumnMap = std::unordered_map<
+    entt::entity,
+    std::size_t,
+    std::hash<entt::entity>,
+    std::equal_to<entt::entity>,
+    ContactBodyColumnAllocator>;
+using DoubleAllocator = common::StlAllocator<double>;
+using DoubleVector = std::vector<double, DoubleAllocator>;
+using InverseWorldInertiaAllocator = common::StlAllocator<Eigen::Matrix3d>;
+using InverseWorldInertiaVector
+    = std::vector<Eigen::Matrix3d, InverseWorldInertiaAllocator>;
+using BoolAllocator = common::StlAllocator<bool>;
+using BoolVector = std::vector<bool, BoolAllocator>;
+using IndexAllocator = common::StlAllocator<Eigen::Index>;
+using IndexVector = std::vector<Eigen::Index, IndexAllocator>;
+
 //==============================================================================
 // Scene captured at the pre-step state: the frozen contacts, the dynamic-body
 // column layout (in stable order), and the bodies' inverse mass / inverse world
@@ -176,11 +201,26 @@ struct FrozenContact
 // within a single step.
 struct ContactScene
 {
-  std::vector<FrozenContact> contacts;
-  std::vector<entt::entity> dynamicBodies; // column k -> entity
-  std::unordered_map<entt::entity, std::size_t> bodyColumn;
-  std::vector<double> inverseMass;                  // per dynamic body
-  std::vector<Eigen::Matrix3d> inverseWorldInertia; // per dynamic body
+  ContactScene() : ContactScene(common::MemoryAllocator::GetDefault()) {}
+
+  explicit ContactScene(common::MemoryAllocator& allocator)
+    : contacts(FrozenContactAllocator{allocator}),
+      dynamicBodies(ContactEntityAllocator{allocator}),
+      bodyColumn(
+          0,
+          std::hash<entt::entity>{},
+          std::equal_to<entt::entity>{},
+          ContactBodyColumnAllocator{allocator}),
+      inverseMass(DoubleAllocator{allocator}),
+      inverseWorldInertia(InverseWorldInertiaAllocator{allocator})
+  {
+  }
+
+  FrozenContactVector contacts;
+  ContactEntityVector dynamicBodies; // column k -> entity
+  ContactBodyColumnMap bodyColumn;
+  DoubleVector inverseMass;                      // per dynamic body
+  InverseWorldInertiaVector inverseWorldInertia; // per dynamic body
 };
 
 //==============================================================================
@@ -197,6 +237,21 @@ struct JacobianBlock
   Eigen::Matrix<double, 6, 1> value; // [direction; arm x direction]
 };
 
+using JacobianBlockAllocator = common::StlAllocator<JacobianBlock>;
+using JacobianBlockVector = std::vector<JacobianBlock, JacobianBlockAllocator>;
+using JacobianRowAllocator = common::StlAllocator<JacobianBlockVector>;
+using JacobianRows = std::vector<JacobianBlockVector, JacobianRowAllocator>;
+using IndexRowAllocator = common::StlAllocator<IndexVector>;
+using IndexRows = std::vector<IndexVector, IndexRowAllocator>;
+using IndexMapEntry = std::pair<const Eigen::Index, Eigen::Index>;
+using IndexMapAllocator = common::StlAllocator<IndexMapEntry>;
+using IndexMap = std::unordered_map<
+    Eigen::Index,
+    Eigen::Index,
+    std::hash<Eigen::Index>,
+    std::equal_to<Eigen::Index>,
+    IndexMapAllocator>;
+
 //==============================================================================
 // Stacked quantities derived from the (possibly perturbed) registry state for a
 // frozen scene. The LCP has `rows = n + 2*n` rows: the first n are normal rows,
@@ -210,9 +265,34 @@ struct JacobianBlock
 // from J and Minv, so its cost is O(contacts) not O(bodies^2). b is rows.
 struct ContactTerms
 {
-  Eigen::VectorXd vFree;                     // free twist, stacked 6*nb
-  std::vector<std::vector<JacobianBlock>> J; // per row, nonzero body blocks
-  std::vector<std::vector<Eigen::Index>> rowsOfBody; // body -> rows touching it
+  ContactTerms() : ContactTerms(common::MemoryAllocator::GetDefault()) {}
+
+  explicit ContactTerms(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      J(JacobianRowAllocator{allocator}),
+      rowsOfBody(IndexRowAllocator{allocator})
+  {
+  }
+
+  void resizeRows(std::size_t rows, std::size_t bodies)
+  {
+    J.clear();
+    J.reserve(rows);
+    for (std::size_t i = 0; i < rows; ++i) {
+      J.emplace_back(JacobianBlockAllocator{*memoryAllocator});
+    }
+
+    rowsOfBody.clear();
+    rowsOfBody.reserve(bodies);
+    for (std::size_t i = 0; i < bodies; ++i) {
+      rowsOfBody.emplace_back(IndexAllocator{*memoryAllocator});
+    }
+  }
+
+  common::MemoryAllocator* memoryAllocator;
+  Eigen::VectorXd vFree; // free twist, stacked 6*nb
+  JacobianRows J;        // per row, nonzero body blocks
+  IndexRows rowsOfBody;  // body -> rows touching it
   Eigen::MatrixXd
       A; // Delassus operator J Minv Jᵀ (+ friction CFM), rows x rows
   Eigen::VectorXd b; // rhs -(J vFree) + bias, rows
@@ -239,7 +319,7 @@ inline Eigen::Matrix<double, 6, 1> applyBodyMinv(
 // row's body blocks against the corresponding body segments. This is the
 // block-sparse equivalent of J.row(r).dot(v).
 inline double rowDotTwist(
-    const std::vector<JacobianBlock>& row, const Eigen::VectorXd& twist)
+    const JacobianBlockVector& row, const Eigen::VectorXd& twist)
 {
   double value = 0.0;
   for (const auto& block : row) {
@@ -281,9 +361,11 @@ inline Eigen::VectorXd minvJtTimes(
 
 //==============================================================================
 ContactScene buildScene(
-    detail::WorldRegistry& registry, const std::vector<Contact>& contacts)
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    common::MemoryAllocator& allocator)
 {
-  ContactScene scene;
+  ContactScene scene(allocator);
 
   const auto registerBody = [&](entt::entity entity, bool isPrescribed) {
     if (isPrescribed) {
@@ -385,13 +467,14 @@ ContactTerms computeTerms(
     const detail::WorldRegistry& registry,
     const ContactScene& scene,
     const Eigen::Vector3d& gravity,
-    double timeStep)
+    double timeStep,
+    common::MemoryAllocator& allocator)
 {
   const Eigen::Index nb = static_cast<Eigen::Index>(scene.dynamicBodies.size());
   const Eigen::Index vdofs = 6 * nb; // full 6-DOF twist per body
   const Eigen::Index n = static_cast<Eigen::Index>(scene.contacts.size());
 
-  ContactTerms terms;
+  ContactTerms terms(allocator);
   terms.vFree = Eigen::VectorXd::Zero(vdofs);
 
   // Current (pre-integration) twist, stacked like vFree. The forward boxed-LCP
@@ -434,8 +517,8 @@ ContactTerms computeTerms(
   // blocks (its bodyB with +direction, its bodyA with -direction). rowsOfBody
   // is the inverse index used to assemble A only over coupled row pairs.
   const Eigen::Index rows = n + 2 * n;
-  terms.J.assign(static_cast<std::size_t>(rows), {});
-  terms.rowsOfBody.assign(static_cast<std::size_t>(nb), {});
+  terms.resizeRows(
+      static_cast<std::size_t>(rows), static_cast<std::size_t>(nb));
   const auto fillRow = [&](Eigen::Index row,
                            const FrozenContact& contact,
                            const Eigen::Vector3d& direction) {
@@ -612,12 +695,14 @@ Eigen::VectorXd constrainedNextState(
     const detail::WorldRegistry& registry,
     const ContactScene& scene,
     const Eigen::Vector3d& gravity,
-    double timeStep)
+    double timeStep,
+    common::MemoryAllocator& allocator)
 {
   const Eigen::Index nb = static_cast<Eigen::Index>(scene.dynamicBodies.size());
   const Eigen::Index dofs = 3 * nb;
   const Eigen::Index vdofs = 6 * nb;
-  const ContactTerms t = computeTerms(registry, scene, gravity, timeStep);
+  const ContactTerms t
+      = computeTerms(registry, scene, gravity, timeStep, allocator);
   const Eigen::VectorXd f = solveBoxedLcp(scene, t);
   const Eigen::VectorXd twistNext = t.vFree + minvJtTimes(t, scene, vdofs, f);
 
@@ -640,14 +725,32 @@ Eigen::VectorXd constrainedNextState(
 //==============================================================================
 StepDerivatives contactStepDerivatives(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     ContactGradientMode mode)
 {
+  return contactStepDerivatives(
+      registry,
+      contacts,
+      gravity,
+      timeStep,
+      mode,
+      common::MemoryAllocator::GetDefault());
+}
+
+//==============================================================================
+StepDerivatives contactStepDerivatives(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    ContactGradientMode mode,
+    common::MemoryAllocator& allocator)
+{
   StepDerivatives derivatives;
 
-  const ContactScene scene = buildScene(registry, contacts);
+  const ContactScene scene = buildScene(registry, contacts, allocator);
   const Eigen::Index nb = static_cast<Eigen::Index>(scene.dynamicBodies.size());
   if (nb == 0) {
     return derivatives;
@@ -672,7 +775,8 @@ StepDerivatives contactStepDerivatives(
 
   // Base-state terms and the solved base impulse (from the forward boxed-LCP
   // solve of the frozen Delassus system; equals the forward step's solution).
-  const ContactTerms base = computeTerms(registry, scene, gravity, timeStep);
+  const ContactTerms base
+      = computeTerms(registry, scene, gravity, timeStep, allocator);
 
   // Solve the base LCP on the frozen friction-augmented system with the same
   // pivoting Dantzig boxed solver the forward step uses, so the active-set
@@ -721,7 +825,8 @@ StepDerivatives contactStepDerivatives(
   //     (|f_t| >= mu f_n, sliding) whose owning normal row is clamping. These
   //     obey f_t = sign * mu * f_n, coupling to the normal through findex.
   //   * Everything else is separating/inactive and contributes zero gradient.
-  std::vector<bool> normalClamping(static_cast<std::size_t>(n), false);
+  BoolVector normalClamping(
+      static_cast<std::size_t>(n), false, BoolAllocator{allocator});
   for (Eigen::Index i = 0; i < n; ++i) {
     normalClamping[static_cast<std::size_t>(i)] = baseF[i] > kClampingTolerance;
   }
@@ -743,10 +848,11 @@ StepDerivatives contactStepDerivatives(
     }
   }
 
-  std::vector<Eigen::Index> clampingRows; // C
-  std::vector<Eigen::Index> upperRows;    // U (sliding friction)
-  std::vector<double> upperSign;          // sign of f_t for each U row
-  std::vector<Eigen::Index> upperNormal;  // owning normal row for each U row
+  IndexVector clampingRows(IndexAllocator{allocator}); // C
+  IndexVector upperRows(IndexAllocator{allocator});    // U (sliding friction)
+  DoubleVector upperSign(DoubleAllocator{allocator});  // sign of f_t per U row
+  IndexVector upperNormal(
+      IndexAllocator{allocator}); // owning normal row for each U row
   for (Eigen::Index i = 0; i < n; ++i) {
     if (normalClamping[static_cast<std::size_t>(i)]) {
       clampingRows.push_back(i);
@@ -779,7 +885,11 @@ StepDerivatives contactStepDerivatives(
 
   // Index of each clamping row within C (for the upper-bound mapping E, which
   // routes a sliding friction row's sensitivity through its normal row).
-  std::unordered_map<Eigen::Index, Eigen::Index> clampingIndexOf;
+  IndexMap clampingIndexOf(
+      0,
+      std::hash<Eigen::Index>{},
+      std::equal_to<Eigen::Index>{},
+      IndexMapAllocator{allocator});
   for (Eigen::Index r = 0; r < nc; ++r) {
     clampingIndexOf.emplace(clampingRows[static_cast<std::size_t>(r)], r);
   }
@@ -800,20 +910,19 @@ StepDerivatives contactStepDerivatives(
     E(u, it->second) = upperSign[static_cast<std::size_t>(u)] * mu;
   }
 
-  const auto restrict = [](const Eigen::MatrixXd& M,
-                           const std::vector<Eigen::Index>& r,
-                           const std::vector<Eigen::Index>& c) {
-    Eigen::MatrixXd out(
-        static_cast<Eigen::Index>(r.size()),
-        static_cast<Eigen::Index>(c.size()));
-    for (std::size_t i = 0; i < r.size(); ++i) {
-      for (std::size_t j = 0; j < c.size(); ++j) {
-        out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j))
-            = M(r[i], c[j]);
-      }
-    }
-    return out;
-  };
+  const auto restrict =
+      [](const Eigen::MatrixXd& M, const IndexVector& r, const IndexVector& c) {
+        Eigen::MatrixXd out(
+            static_cast<Eigen::Index>(r.size()),
+            static_cast<Eigen::Index>(c.size()));
+        for (std::size_t i = 0; i < r.size(); ++i) {
+          for (std::size_t j = 0; j < c.size(); ++j) {
+            out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j))
+                = M(r[i], c[j]);
+          }
+        }
+        return out;
+      };
 
   Eigen::MatrixXd AhatInv;
   if (nc > 0) {
@@ -896,7 +1005,8 @@ StepDerivatives contactStepDerivatives(
   // Helper: evaluate the smooth next-state map h(z) at the current registry
   // state with f frozen at f_base. Returns [q'; q̇'] of size stateSize.
   const auto evalSmoothNextState = [&]() {
-    const ContactTerms t = computeTerms(registry, scene, gravity, timeStep);
+    const ContactTerms t
+        = computeTerms(registry, scene, gravity, timeStep, allocator);
     // q̇' (linear part) = linearOf(vFree + Minv Jᵀ f_base)
     const Eigen::VectorXd qdotNext
         = linearOf(t.vFree + minvJtTimes(t, scene, vdofs, baseF));
@@ -945,10 +1055,10 @@ StepDerivatives contactStepDerivatives(
     if (nc > 0) {
       *target = original + h;
       const ContactTerms tPlus
-          = computeTerms(registry, scene, gravity, timeStep);
+          = computeTerms(registry, scene, gravity, timeStep, allocator);
       *target = original - h;
       const ContactTerms tMinus
-          = computeTerms(registry, scene, gravity, timeStep);
+          = computeTerms(registry, scene, gravity, timeStep, allocator);
       *target = original; // restore exactly
 
       const Eigen::MatrixXd dA = (tPlus.A - tMinus.A) / (2.0 * h);
@@ -983,11 +1093,12 @@ StepDerivatives contactStepDerivatives(
 
     *target = original + h;
     const Eigen::VectorXd plus = evalSmoothNextState();
-    const ContactTerms tPlus = computeTerms(registry, scene, gravity, timeStep);
+    const ContactTerms tPlus
+        = computeTerms(registry, scene, gravity, timeStep, allocator);
     *target = original - h;
     const Eigen::VectorXd minus = evalSmoothNextState();
     const ContactTerms tMinus
-        = computeTerms(registry, scene, gravity, timeStep);
+        = computeTerms(registry, scene, gravity, timeStep, allocator);
     *target = original; // restore exactly
 
     Eigen::VectorXd dxNext_smooth = (plus - minus) / (2.0 * h);
@@ -1108,23 +1219,24 @@ std::size_t parameterColumnCount(PhysicalParameter parameter)
 // dependence on that quantity. Restores `*target` exactly.
 Eigen::VectorXd centralDifferenceColumn(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    double* target)
+    double* target,
+    common::MemoryAllocator& allocator)
 {
   const double original = *target;
   const double h = 1e-6 * (1.0 + std::abs(original));
 
   *target = original + h;
-  const ContactScene scenePlus = buildScene(registry, contacts);
+  const ContactScene scenePlus = buildScene(registry, contacts, allocator);
   const Eigen::VectorXd plus
-      = constrainedNextState(registry, scenePlus, gravity, timeStep);
+      = constrainedNextState(registry, scenePlus, gravity, timeStep, allocator);
 
   *target = original - h;
-  const ContactScene sceneMinus = buildScene(registry, contacts);
-  const Eigen::VectorXd minus
-      = constrainedNextState(registry, sceneMinus, gravity, timeStep);
+  const ContactScene sceneMinus = buildScene(registry, contacts, allocator);
+  const Eigen::VectorXd minus = constrainedNextState(
+      registry, sceneMinus, gravity, timeStep, allocator);
 
   *target = original; // restore exactly
 
@@ -1134,17 +1246,37 @@ Eigen::VectorXd centralDifferenceColumn(
 //==============================================================================
 StepDerivatives contactStepDerivativesWithParameters(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const std::vector<ParameterRegistration>& parameters,
+    std::span<const ParameterRegistration> parameters,
     ContactGradientMode mode)
+{
+  return contactStepDerivativesWithParameters(
+      registry,
+      contacts,
+      gravity,
+      timeStep,
+      parameters,
+      mode,
+      common::MemoryAllocator::GetDefault());
+}
+
+//==============================================================================
+StepDerivatives contactStepDerivativesWithParameters(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    std::span<const ParameterRegistration> parameters,
+    ContactGradientMode mode,
+    common::MemoryAllocator& allocator)
 {
   // State/control Jacobians via the existing analytic assembly. The gradient
   // mode applies to the state/control blocks; the parameter Jacobian below is
   // the analytic FD-of-step column regardless of mode.
-  StepDerivatives derivatives
-      = contactStepDerivatives(registry, contacts, gravity, timeStep, mode);
+  StepDerivatives derivatives = contactStepDerivatives(
+      registry, contacts, gravity, timeStep, mode, allocator);
 
   if (parameters.empty() || derivatives.stateJacobian.size() == 0) {
     // No parameters requested, or no dynamic rigid body in scope: leave the
@@ -1185,7 +1317,12 @@ StepDerivatives contactStepDerivativesWithParameters(
       case PhysicalParameter::MASS: {
         if (auto* massProps = registry.try_get<comps::MassProperties>(entity)) {
           const Eigen::VectorXd column = centralDifferenceColumn(
-              registry, contacts, gravity, timeStep, &massProps->mass);
+              registry,
+              contacts,
+              gravity,
+              timeStep,
+              &massProps->mass,
+              allocator);
           if (column.size() == stateSize) {
             derivatives.parameterJacobian.col(col) = column;
           }
@@ -1201,7 +1338,8 @@ StepDerivatives contactStepDerivativesWithParameters(
                 contacts,
                 gravity,
                 timeStep,
-                &massProps->inertia(axis, axis));
+                &massProps->inertia(axis, axis),
+                allocator);
             if (column.size() == stateSize) {
               derivatives.parameterJacobian.col(col + axis) = column;
             }
@@ -1216,7 +1354,12 @@ StepDerivatives contactStepDerivativesWithParameters(
         // body is in a sliding (cone-edge) contact.
         if (auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
           const Eigen::VectorXd column = centralDifferenceColumn(
-              registry, contacts, gravity, timeStep, &material->friction);
+              registry,
+              contacts,
+              gravity,
+              timeStep,
+              &material->friction,
+              allocator);
           if (column.size() == stateSize) {
             derivatives.parameterJacobian.col(col) = column;
           }

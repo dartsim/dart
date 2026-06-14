@@ -32,7 +32,11 @@
 
 #pragma once
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <algorithm>
+#include <initializer_list>
+#include <span>
 #include <vector>
 
 #include <cstddef>
@@ -55,9 +59,18 @@ inline constexpr std::uint32_t kUncolored = 0xffffffffu;
 class VertexAdjacency
 {
 public:
-  explicit VertexAdjacency(std::size_t vertexCount) : m_neighbors(vertexCount)
+  using NeighborVector
+      = std::vector<std::uint32_t, ::dart::common::StlAllocator<std::uint32_t>>;
+  using NeighborVectorAllocator = ::dart::common::StlAllocator<NeighborVector>;
+  using NeighborRows = std::vector<NeighborVector, NeighborVectorAllocator>;
+
+  explicit VertexAdjacency(
+      std::size_t vertexCount,
+      ::dart::common::MemoryAllocator& allocator
+      = ::dart::common::MemoryAllocator::GetDefault())
+    : m_allocator(&allocator), m_neighbors(NeighborVectorAllocator{allocator})
   {
-    // Intentionally empty.
+    resizeNeighborRows(vertexCount);
   }
 
   [[nodiscard]] std::size_t vertexCount() const noexcept
@@ -83,13 +96,19 @@ public:
   /// Connect every pair of vertices in an element (the element forms a clique
   /// in the vertex graph). Used for triangles (3 vertices) and tetrahedra (4
   /// vertices).
-  void addElement(const std::vector<std::uint32_t>& vertices)
+  void addElement(std::span<const std::uint32_t> vertices)
   {
     for (std::size_t i = 0; i < vertices.size(); ++i) {
       for (std::size_t j = i + 1; j < vertices.size(); ++j) {
         addEdge(vertices[i], vertices[j]);
       }
     }
+  }
+
+  void addElement(std::initializer_list<std::uint32_t> vertices)
+  {
+    addElement(
+        std::span<const std::uint32_t>{vertices.begin(), vertices.size()});
   }
 
   void addTriangle(std::uint32_t a, std::uint32_t b, std::uint32_t c)
@@ -123,10 +142,14 @@ public:
     m_finalized = true;
   }
 
-  [[nodiscard]] const std::vector<std::uint32_t>& neighbors(
-      std::size_t vertex) const
+  [[nodiscard]] const NeighborVector& neighbors(std::size_t vertex) const
   {
     return m_neighbors[vertex];
+  }
+
+  [[nodiscard]] ::dart::common::MemoryAllocator& allocator() const noexcept
+  {
+    return *m_allocator;
   }
 
   /// Largest neighbor-list size across all vertices (the graph's maximum
@@ -142,22 +165,72 @@ public:
   }
 
 private:
-  std::vector<std::vector<std::uint32_t>> m_neighbors;
+  void resizeNeighborRows(std::size_t vertexCount)
+  {
+    if (vertexCount < m_neighbors.size()) {
+      m_neighbors.resize(vertexCount);
+      return;
+    }
+    m_neighbors.reserve(vertexCount);
+    while (m_neighbors.size() < vertexCount) {
+      m_neighbors.emplace_back(
+          ::dart::common::StlAllocator<std::uint32_t>{*m_allocator});
+    }
+  }
+
+  ::dart::common::MemoryAllocator* m_allocator;
+  NeighborRows m_neighbors;
   bool m_finalized = true;
 };
 
 /// A proper coloring of the vertex graph.
 struct VertexColoring
 {
+  using VertexVector
+      = std::vector<std::uint32_t, ::dart::common::StlAllocator<std::uint32_t>>;
+  using VertexGroup = VertexVector;
+  using VertexGroupAllocator = ::dart::common::StlAllocator<VertexGroup>;
+  using VertexGroups = std::vector<VertexGroup, VertexGroupAllocator>;
+
+  VertexColoring()
+    : VertexColoring(::dart::common::MemoryAllocator::GetDefault())
+  {
+    // Intentionally empty.
+  }
+
+  explicit VertexColoring(::dart::common::MemoryAllocator& allocator)
+    : colorOfVertex(::dart::common::StlAllocator<std::uint32_t>{allocator}),
+      groups(VertexGroupAllocator{allocator}),
+      m_allocator(&allocator)
+  {
+    // Intentionally empty.
+  }
+
   /// `colorOfVertex[v]` is the color index assigned to vertex `v`.
-  std::vector<std::uint32_t> colorOfVertex;
+  VertexVector colorOfVertex;
   /// `groups[c]` lists, in ascending index order, the vertices of color `c`.
-  std::vector<std::vector<std::uint32_t>> groups;
+  VertexGroups groups;
 
   [[nodiscard]] std::size_t colorCount() const noexcept
   {
     return groups.size();
   }
+
+  void ensureColorCount(std::size_t colorCount)
+  {
+    if (colorCount < groups.size()) {
+      groups.resize(colorCount);
+      return;
+    }
+    groups.reserve(colorCount);
+    while (groups.size() < colorCount) {
+      groups.emplace_back(
+          ::dart::common::StlAllocator<std::uint32_t>{*m_allocator});
+    }
+  }
+
+private:
+  ::dart::common::MemoryAllocator* m_allocator;
 };
 
 //==============================================================================
@@ -172,12 +245,14 @@ inline VertexColoring greedyColorVertices(VertexAdjacency& adjacency)
 {
   adjacency.finalize();
   const std::size_t vertexCount = adjacency.vertexCount();
+  auto& allocator = adjacency.allocator();
 
-  VertexColoring coloring;
+  VertexColoring coloring(allocator);
   coloring.colorOfVertex.assign(vertexCount, kUncolored);
 
   // Welsh-Powell vertex order: descending degree, ascending index on ties.
-  std::vector<std::uint32_t> order(vertexCount);
+  std::vector<std::uint32_t, ::dart::common::StlAllocator<std::uint32_t>> order(
+      vertexCount, ::dart::common::StlAllocator<std::uint32_t>{allocator});
   for (std::size_t v = 0; v < vertexCount; ++v) {
     order[v] = static_cast<std::uint32_t>(v);
   }
@@ -191,7 +266,8 @@ inline VertexColoring greedyColorVertices(VertexAdjacency& adjacency)
         return lhs < rhs;
       });
 
-  std::vector<std::uint8_t> usedColor;
+  std::vector<std::uint8_t, ::dart::common::StlAllocator<std::uint8_t>>
+      usedColor(::dart::common::StlAllocator<std::uint8_t>{allocator});
   for (const std::uint32_t vertex : order) {
     const auto& neighbors = adjacency.neighbors(vertex);
     usedColor.assign(neighbors.size() + 1, 0u);
@@ -208,7 +284,7 @@ inline VertexColoring greedyColorVertices(VertexAdjacency& adjacency)
     }
     coloring.colorOfVertex[vertex] = color;
     if (color >= coloring.groups.size()) {
-      coloring.groups.resize(color + 1);
+      coloring.ensureColorCount(color + 1);
     }
   }
 

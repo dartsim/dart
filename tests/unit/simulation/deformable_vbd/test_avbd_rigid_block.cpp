@@ -36,6 +36,8 @@
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
@@ -43,6 +45,7 @@
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -52,7 +55,42 @@ namespace vbd = dart::simulation::detail::deformable_vbd;
 namespace {
 
 using Vec3 = Eigen::Vector3d;
+namespace common = dart::common;
 namespace sx = dart::simulation;
+
+class CountingMemoryAllocator final : public common::MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(std::size_t bytes) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes);
+  }
+
+  void* allocate(std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t bytes) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t bytes, std::size_t alignment) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignment);
+  }
+
+  std::size_t allocations = 0u;
+};
 
 //==============================================================================
 Eigen::Quaterniond rotationX(double angle)
@@ -73,8 +111,8 @@ Eigen::Quaterniond rotationZ(double angle)
 }
 
 //==============================================================================
-std::size_t findEntityIndex(
-    const std::vector<entt::entity>& entities, entt::entity entity)
+template <typename EntityVector>
+std::size_t findEntityIndex(const EntityVector& entities, entt::entity entity)
 {
   const auto it = std::find(entities.begin(), entities.end(), entity);
   EXPECT_NE(it, entities.end());
@@ -1033,6 +1071,59 @@ TEST(AvbdRigidBlock, RigidRowDriverReducesDistanceSpringStretch)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, LargeDistanceSpringRowsUseProvidedScratchAllocator)
+{
+  constexpr std::size_t kRowCount
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> springs;
+  springs.reserve(kRowCount);
+  for (std::size_t row = 0u; row < kRowCount; ++row) {
+    vbd::AvbdRigidBodyPointPairDistanceSpringRow spring;
+    spring.bodyA = 0;
+    spring.bodyB = 1;
+    spring.endpointA = endpointA;
+    spring.endpointB = endpointB;
+    spring.rowIndex = static_cast<std::uint32_t>(row);
+    spring.row.restLength = 1.0;
+    spring.row.materialStiffness = 20.0;
+    spring.startStiffness = 8.0;
+    spring.maxStiffness = 20.0;
+    springs.push_back(spring);
+  }
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+  vbd::AvbdScalarRowInventory springInventory(allocator);
+  springInventory.reserve(kRowCount);
+  using DistanceSpringAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairDistanceSpringRow>;
+  std::vector<
+      vbd::AvbdRigidBodyPointPairDistanceSpringRow,
+      DistanceSpringAllocator>
+      springRows(DistanceSpringAllocator{allocator});
+  springRows.reserve(kRowCount);
+  vbd::AvbdRigidDistanceSpringRowScratch scratch(allocator);
+
+  const auto allocationsBefore = freeList.getAllocationCount();
+  vbd::buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBefore)
+      << "large rigid AVBD distance-spring staging should borrow the "
+         "provided scratch allocator";
+  EXPECT_EQ(springRows.size(), kRowCount);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
@@ -1973,6 +2064,73 @@ TEST(AvbdRigidBlock, RigidLinearMotorBuilderCreatesBoundedRows)
       1e-12);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.lower, -6.0);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.upper, 6.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, LargeRigidMotorRowsUseProvidedScratchAllocator)
+{
+  constexpr std::size_t kRowCount
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidLinearMotor> linearMotors;
+  linearMotors.reserve(kRowCount);
+  for (std::size_t row = 0u; row < kRowCount; ++row) {
+    linearMotors.push_back(
+        vbd::makeAvbdRigidLinearMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Vec3::Zero(),
+            Vec3::Zero(),
+            Vec3::UnitX(),
+            /*targetSpeed=*/0.25,
+            /*maxForce=*/6.0,
+            /*startStiffness=*/50.0,
+            /*maxStiffness=*/400.0,
+            static_cast<std::uint32_t>(row)));
+  }
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  motorInventory.reserve(kRowCount);
+  using PointPairAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairRow>;
+  using AngularPairAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyAngularPairRow>;
+  std::vector<vbd::AvbdRigidBodyPointPairRow, PointPairAllocator>
+      linearMotorRows(PointPairAllocator{allocator});
+  std::vector<vbd::AvbdRigidBodyAngularPairRow, AngularPairAllocator>
+      angularMotorRows(AngularPairAllocator{allocator});
+  linearMotorRows.reserve(kRowCount);
+  angularMotorRows.reserve(kRowCount);
+  vbd::AvbdRigidMotorRowScratch scratch(allocator);
+
+  const auto allocationsBefore = freeList.getAllocationCount();
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      std::span<const vbd::AvbdRigidAngularMotor>(),
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBefore)
+      << "large rigid AVBD motor-row staging should borrow the provided "
+         "scratch allocator";
+  EXPECT_EQ(linearMotorRows.size(), kRowCount);
+  EXPECT_TRUE(angularMotorRows.empty());
 }
 
 //==============================================================================
@@ -3750,6 +3908,40 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactRowsFallbackUsesSnapshotAllocator)
+{
+  CountingMemoryAllocator allocator;
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  snapshot.contacts.reserve(2u);
+
+  const vbd::AvbdContactEndpointId endpointA{
+      1u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      2u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  vbd::AvbdRigidContactManifoldPoint right;
+  right.endpointA = endpointA;
+  right.endpointB = endpointB;
+  right.point = Vec3(0.75, 0.0, 0.0);
+  right.row = 99u;
+  vbd::AvbdRigidContactManifoldPoint left = right;
+  left.point = Vec3(0.25, 0.0, 0.0);
+
+  snapshot.contacts.push_back(right);
+  snapshot.contacts.push_back(left);
+
+  const std::size_t allocationsBeforeRows = allocator.allocations;
+  vbd::detail::assignAvbdRigidWorldContactRows(snapshot);
+
+  EXPECT_GT(allocator.allocations, allocationsBeforeRows)
+      << "row-assignment fallback scratch should borrow the snapshot "
+         "allocator";
+  ASSERT_EQ(snapshot.contacts.size(), 2u);
+  EXPECT_EQ(snapshot.contacts[0].row, 1u);
+  EXPECT_EQ(snapshot.contacts[1].row, 0u);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreEndpointOrder)
 {
   sx::World world;
@@ -4104,6 +4296,57 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
   EXPECT_EQ(applyResult.bodies, 1u);
   EXPECT_NEAR(link.getTransform().translation().x(), 0.0, 0.25);
   EXPECT_LT(std::abs(link.getAngularVelocity().z()), 0.65);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactApplyReusesSnapshotDirtyStackAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  auto body = world.addRigidBody("body", bodyOptions);
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  snapshot.entities.push_back(
+      dart::simulation::detail::toRegistryEntity(body.getEntity()));
+  snapshot.states.push_back(
+      vbd::AvbdRigidBodyState{Vec3(0.25, 0.0, 0.0), rotationZ(0.1)});
+  snapshot.fixed.push_back(0u);
+
+  EXPECT_EQ(
+      snapshot.frameDirtyStack.get_allocator(),
+      common::StlAllocator<entt::entity>{allocator});
+
+  const auto allocationsBeforeApply = freeList.getAllocationCount();
+  const vbd::AvbdRigidWorldContactApplyResult firstApply
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          dart::simulation::detail::registryOf(world),
+          snapshot,
+          /*timeStep=*/1.0);
+
+  EXPECT_EQ(firstApply.bodies, 1u);
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeApply)
+      << "AVBD rigid-world contact writeback should allocate frame dirty "
+         "traversal scratch through the snapshot allocator";
+
+  const auto allocationsAfterFirstApply = freeList.getAllocationCount();
+  snapshot.states[0].position = Vec3(0.5, 0.0, 0.0);
+  const vbd::AvbdRigidWorldContactApplyResult secondApply
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          dart::simulation::detail::registryOf(world),
+          snapshot,
+          /*timeStep=*/1.0);
+
+  EXPECT_EQ(secondApply.bodies, 1u);
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsAfterFirstApply)
+      << "AVBD rigid-world contact writeback should reuse the snapshot-owned "
+         "dirty traversal stack for same-shape writes";
 }
 
 //==============================================================================
@@ -4707,6 +4950,107 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureMarksJointBroken)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldPointJointFractureUsesSolveScratchAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  linkOptions.orientation = rotationZ(0.6);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+
+  vbd::AvbdRigidWorldPointJointInput input;
+  input.joint = jointEntity;
+  input.bodyA = sx::detail::toRegistryEntity(base.getEntity());
+  input.bodyB = sx::detail::toRegistryEntity(link.getEntity());
+  input.anchorA = Vec3::Zero();
+  input.anchorB = Vec3::UnitX();
+  input.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  input.startStiffness = 100.0;
+  input.maxStiffness = 1000.0;
+  input.fractureThreshold = 1e-12;
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  vbd::AvbdRigidWorldContactBuildScratch buildScratch(allocator);
+  vbd::buildAvbdRigidWorldContactSnapshot(
+      registry, std::span<const sx::Contact>(), snapshot, buildScratch);
+  vbd::reserveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      /*bodyCapacity=*/2u,
+      /*contactCapacity=*/0u,
+      /*jointCapacity=*/1u,
+      /*motorCapacity=*/0u);
+  ASSERT_EQ(
+      vbd::appendAvbdRigidWorldPointJoints(
+          registry,
+          std::span<const vbd::AvbdRigidWorldPointJointInput>{&input, 1u},
+          snapshot,
+          buildScratch),
+      1u);
+  vbd::predictAvbdRigidWorldContactInertialTargets(
+      registry, snapshot, /*timeStep=*/1.0);
+
+  vbd::AvbdScalarRowInventory normalInventory(allocator);
+  vbd::AvbdScalarRowInventory frictionInventory(allocator);
+  vbd::AvbdScalarRowInventory jointLinearInventory(allocator);
+  vbd::AvbdScalarRowInventory jointAngularInventory(allocator);
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  vbd::AvbdScalarRowInventory distanceSpringInventory(allocator);
+  jointLinearInventory.reserve(3u);
+  jointAngularInventory.reserve(3u);
+
+  vbd::AvbdRigidWorldContactSolveScratch solveScratch(allocator);
+  vbd::reserveAvbdRigidWorldContactSolveScratch(
+      solveScratch,
+      /*contactCapacity=*/0u,
+      /*jointCapacity=*/1u,
+      /*motorCapacity=*/0u,
+      /*bodyCapacity=*/2u);
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 8;
+  solveOptions.descent.regularization = 1e-12;
+  solveOptions.row.beta = 1000.0;
+  solveOptions.row.maxStiffness = 1000.0;
+
+  const auto allocationsBeforeSolve = freeList.getAllocationCount();
+  const vbd::AvbdRigidWorldContactSolveResult result
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          distanceSpringInventory,
+          /*timeStep=*/1.0,
+          solveScratch,
+          solveOptions);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeSolve)
+      << "fracture-index result storage should borrow the provided solve "
+         "scratch allocator";
+  EXPECT_EQ(result.fracturedJoints, 1u);
+  ASSERT_EQ(result.fracturedJointIndices.size(), 1u);
+  EXPECT_EQ(result.fracturedJointIndices[0], 0u);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldPointJointInputPreservesAxisConfig)
 {
   sx::World world;
@@ -4850,6 +5194,73 @@ TEST(AvbdRigidBlock, RigidWorldRevoluteVelocityActuatorBuildsMotorRows)
 
   EXPECT_GT(link.getAngularVelocity().z(), 0.05);
   EXPECT_LT(link.getAngularVelocity().z(), 1.25);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactStepFallbackUsesInventoryAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "motorized_hinge", base, link, Vec3::UnitZ());
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -500.0),
+      Eigen::VectorXd::Constant(1, 500.0));
+
+  vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.descent.iterations = 8;
+  stepOptions.solve.descent.regularization = 1e-12;
+  stepOptions.solve.row.beta = 1000.0;
+  stepOptions.solve.row.maxStiffness = 1000.0;
+
+  CountingMemoryAllocator allocator;
+  vbd::AvbdScalarRowInventory normalInventory(allocator);
+  vbd::AvbdScalarRowInventory frictionInventory(allocator);
+  vbd::AvbdScalarRowInventory jointLinearInventory(allocator);
+  vbd::AvbdScalarRowInventory jointAngularInventory(allocator);
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  normalInventory.reserve(0u);
+  frictionInventory.reserve(0u);
+  jointLinearInventory.reserve(3u);
+  jointAngularInventory.reserve(2u);
+  motorInventory.reserve(1u);
+
+  const std::size_t allocationsBeforeStep = allocator.allocations;
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          dart::simulation::detail::registryOf(world),
+          std::span<const sx::Contact>(),
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          /*timeStep=*/0.25,
+          stepOptions);
+
+  EXPECT_GT(allocator.allocations, allocationsBeforeStep)
+      << "registry no-scratch AVBD step fallback should borrow the row "
+         "inventory allocator for local joint inputs, snapshot, and solve "
+         "scratch";
+  EXPECT_EQ(result.contacts, 0u);
+  EXPECT_EQ(result.joints, 1u);
+  EXPECT_EQ(result.motors, 1u);
+  EXPECT_EQ(result.solve.jointLinearRows, 3u);
+  EXPECT_EQ(result.solve.jointAngularRows, 2u);
+  EXPECT_EQ(result.solve.motorRows, 1u);
+  EXPECT_EQ(result.apply.bodies, 1u);
 }
 
 //==============================================================================

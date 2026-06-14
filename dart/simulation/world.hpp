@@ -54,6 +54,7 @@
 #include <iosfwd>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -108,10 +109,11 @@ struct CollisionQueryOptions
 /// A read-only snapshot of the deformable solver's per-step diagnostics, folded
 /// across all deformable bodies on the most recent ``World::step``. This is a
 /// curated, stable subset of the internal ``compute::DeformableSolverStats``
-/// (mesh sizes, projected-Newton convergence, self-contact activity, and the
-/// contact closest-approach diagnostic), surfaced for observability from tools
-/// and bindings without exposing the full internal counter set. All counters
-/// are zero before the first step that runs a deformable solve.
+/// (mesh sizes, projected-Newton convergence, self-contact activity, surface
+/// contact candidate/CCD counters, and the contact closest-approach
+/// diagnostic), surfaced for observability from tools and bindings without
+/// exposing the full internal counter set. All counters are zero before the
+/// first step that runs a deformable solve.
 struct DeformableSolverDiagnostics
 {
   /// Number of deformable bodies stepped.
@@ -151,6 +153,68 @@ struct DeformableSolverDiagnostics
   double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  /// Runtime self-surface contact candidate and CCD activity produced inside
+  /// the default deformable ``World::step`` line search. Candidate counts are
+  /// cumulative over line-search trials for the most recent step. Pair capacity
+  /// counts the point-triangle plus edge-edge pairs eligible before the
+  /// swept-AABB filter; rejected pairs are capacity minus emitted candidates.
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactCandidatePairCapacity = 0;
+  std::size_t surfaceContactCandidateRejectedPairs = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
+  /// Runtime inter-body deformable surface-contact candidate and CCD activity
+  /// produced inside the default deformable ``World::step`` line search.
+  std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactCandidatePairCapacity = 0;
+  std::size_t interBodySurfaceContactCandidateRejectedPairs = 0;
+  std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
+  std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
+  std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
+  std::size_t interBodySurfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t interBodySurfaceContactCcdHits = 0;
+  std::size_t interBodySurfaceContactCcdLimitedSteps = 0;
+  std::size_t interBodySurfaceContactCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-static-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t staticRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t staticRigidSurfaceCcdBoxCount = 0;
+  std::size_t staticRigidSurfaceCcdSphereCount = 0;
+  std::size_t staticRigidSurfaceCcdTriangleCount = 0;
+  std::size_t staticRigidSurfaceCcdEdgeCount = 0;
+  std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t staticRigidSurfaceCcdCandidateRejectedPairs = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t staticRigidSurfaceCcdHits = 0;
+  std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-moving-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdCandidatePairCapacity = 0;
+  std::size_t movingRigidSurfaceCcdCandidateRejectedPairs = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
   /// Coulomb friction energy dissipated at the converged iterate.
   double frictionDissipation = 0.0;
   /// Contact closest-approach diagnostic at the converged iterate: the smallest
@@ -951,9 +1015,45 @@ private:
   friend detail::WorldStorage& detail::storageOf(World& world);
   friend const detail::WorldStorage& detail::storageOf(const World& world);
 
+  struct WorldStorageDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* storage) const noexcept;
+  };
+
+  using WorldStoragePtr
+      = std::unique_ptr<detail::WorldStorage, WorldStorageDeleter>;
+
   Frame resolveParentFrame(const Frame& parent) const;
   struct CollisionQueryCache;
+  struct CollisionQueryCacheDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* cache) const noexcept;
+  };
+  using CollisionQueryCachePtr
+      = std::unique_ptr<CollisionQueryCache, CollisionQueryCacheDeleter>;
   struct StepPipelineCache;
+  struct StepPipelineCacheDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* cache) const noexcept;
+  };
+  using StepPipelineCachePtr
+      = std::unique_ptr<StepPipelineCache, StepPipelineCacheDeleter>;
+  static WorldStoragePtr makeWorldStorage(common::MemoryManager& memoryManager);
+  static CollisionQueryCachePtr makeCollisionQueryCache(
+      common::MemoryManager& memoryManager);
+  static StepPipelineCachePtr makeStepPipelineCache(
+      common::MemoryManager& memoryManager);
+  struct ReplayState;
+  struct ReplayStateDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(void* replayState) const noexcept;
+  };
+  using ReplayStatePtr = std::unique_ptr<ReplayState, ReplayStateDeleter>;
+  static ReplayStatePtr makeReplayState(common::MemoryManager& memoryManager);
   Entity createFrameEntity(
       std::string_view name,
       const Frame& parentFrame,
@@ -988,7 +1088,7 @@ private:
       std::optional<Eigen::Vector3d> childAnchor = std::nullopt);
 
   void ensureDesignMode() const;
-  [[nodiscard]] const std::vector<Contact>& queryContacts(
+  [[nodiscard]] std::span<const Contact> queryContacts(
       const CollisionQueryOptions& options,
       bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
@@ -1017,7 +1117,7 @@ private:
   /// differentiable support is compiled (`DART_BUILD_DIFF`); callers gate on
   /// `m_differentiable`.
   void captureStepDerivatives();
-  [[nodiscard]] const std::vector<Contact>& updateCollisionQueryCache(
+  [[nodiscard]] std::span<const Contact> updateCollisionQueryCache(
       const CollisionQueryOptions& options,
       bool includeShapeContactDetails,
       bool collectContacts);
@@ -1030,10 +1130,11 @@ private:
   /// parameters, and the cached step Jacobians). Held by pointer so the
   /// promoted public `world.hpp` names no EnTT symbols; the complete type lives
   /// in the internal `detail/world_storage.hpp`. Because this is a `unique_ptr`
-  /// to an incomplete type, `~World()` (and the move operations, were they
-  /// enabled) must be declared here and defined out-of-line in `world.cpp`.
+  /// to an incomplete type with a root-allocator deleter, `~World()` (and the
+  /// move operations, were they enabled) must be declared here and defined
+  /// out-of-line in `world.cpp`.
   /// Always non-null after construction.
-  std::unique_ptr<detail::WorldStorage> m_storage;
+  WorldStoragePtr m_storage;
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
@@ -1048,6 +1149,7 @@ private:
 #if DART_BUILD_PROFILE
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};
+  compute::WorldStepProfile m_stepProfileScratch{};
 #endif
   double m_rigidIpcAdaptiveBarrierStiffnessLowerBound{1.0};
   std::uint64_t m_frameTopologyRevision{0};
@@ -1070,11 +1172,9 @@ private:
   std::size_t m_deformableBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
-  mutable std::unique_ptr<CollisionQueryCache> m_collisionQueryCache;
-  std::unique_ptr<StepPipelineCache> m_stepPipelineCache;
-
-  struct ReplayState;
-  std::unique_ptr<ReplayState> m_replay;
+  mutable CollisionQueryCachePtr m_collisionQueryCache;
+  StepPipelineCachePtr m_stepPipelineCache;
+  ReplayStatePtr m_replay;
 };
 
 } // namespace dart::simulation

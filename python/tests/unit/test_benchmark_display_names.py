@@ -37,6 +37,30 @@ def test_humanize_new_solver_surfaces():
         == "Rigid world step (sequential impulse) · 2 boxes"
     )
     assert (
+        module.humanize_name("BM_LcpCompare/Standard/Dantzig/12")
+        == "LCP solver comparison · Standard surface · Dantzig solver · 12 rows"
+    )
+    assert (
+        module.humanize_name("BM_LcpWorldContact/FrictionIndex/Pgs/4")
+        == "LCP world contact · FrictionIndex surface · Pgs solver · 4 contacts"
+    )
+    assert (
+        module.humanize_name("BM_LcpWorldBoxContact/FrictionIndex/NNCG/4")
+        == "LCP world box contact · FrictionIndex surface · NNCG solver · 4 boxes"
+    )
+    assert (
+        module.humanize_name("BM_LcpWorldBilliardsStep_BoxedLcp/4/1")
+        == "LCP billiards world step · 4 pairs · 1 steps"
+    )
+    assert (
+        module.humanize_name("BM_LcpWorldStackStep_BoxedLcp/4/200")
+        == "LCP mass-ratio stack world step · 4 spheres · 200 steps"
+    )
+    assert (
+        module.humanize_name("BM_LcpWorldCardPileStep_BoxedLcp/7/200")
+        == "LCP card-pile world step · 7 cards · 200 steps"
+    )
+    assert (
         module.humanize_name("BM_VbdWorldStepVbd/16")
         == "Deformable world step (VBD) · 16×16 grid"
     )
@@ -253,6 +277,27 @@ def test_family_grouping():
     module = _load_module()
     assert module.family_of("BM_WorldStepParallel/128/32") == module.FAMILY_CORE
     assert module.family_of("BM_RigidWorldStep_Ipc/4") == module.FAMILY_RIGID
+    assert module.family_of("BM_LcpCompare/Standard/Dantzig/12") == module.FAMILY_LCP
+    assert (
+        module.family_of("BM_LcpWorldContact/FrictionIndex/Pgs/4")
+        == module.FAMILY_LCP
+    )
+    assert (
+        module.family_of("BM_LcpWorldBoxContact/FrictionIndex/NNCG/4")
+        == module.FAMILY_LCP
+    )
+    assert (
+        module.family_of("BM_LcpWorldBilliardsStep_BoxedLcp/4/1")
+        == module.FAMILY_LCP
+    )
+    assert (
+        module.family_of("BM_LcpWorldStackStep_BoxedLcp/4/200")
+        == module.FAMILY_LCP
+    )
+    assert (
+        module.family_of("BM_LcpWorldCardPileStep_BoxedLcp/4/200")
+        == module.FAMILY_LCP
+    )
     assert module.family_of("BM_VbdWorldStepDefault/8") == module.FAMILY_VBD
     assert module.family_of("BM_DeformableFemBarStep/2") == module.FAMILY_FEM
     assert module.family_of("BM_AvbdEmptyWorldStep") == module.FAMILY_AVBD

@@ -37,6 +37,8 @@
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Dense>
 #include <entt/fwd.hpp>
 
@@ -81,7 +83,16 @@ struct RigidBodyContactProblem
 {
   static constexpr int kRowsPerContact = 3;
 
-  std::vector<RigidBodyContactConstraint> constraints;
+  using ConstraintAllocator = common::StlAllocator<RigidBodyContactConstraint>;
+
+  RigidBodyContactProblem() = default;
+
+  explicit RigidBodyContactProblem(common::MemoryAllocator& allocator)
+    : constraints(ConstraintAllocator{allocator})
+  {
+  }
+
+  std::vector<RigidBodyContactConstraint, ConstraintAllocator> constraints;
   Eigen::MatrixXd delassus;
   Eigen::VectorXd rhs;
   Eigen::VectorXd lo;

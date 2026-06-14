@@ -30,8 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "tests/common/lcpsolver/lcp_problem_factory.hpp"
+
 #include <dart/math/lcp/lcp_validation.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+
+#include <dart/common/memory_allocator.hpp>
 
 #include <gtest/gtest.h>
 
@@ -146,6 +150,56 @@ public:
   {
     return g_heapAllocationBytes.load(std::memory_order_relaxed);
   }
+};
+
+class CountingMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
+  {
+    if (bytes == 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    return allocateRaw(bytes);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    if (bytes == 0 || alignment == 0 || (alignment & (alignment - 1)) != 0) {
+      return nullptr;
+    }
+
+    ++allocationCount;
+    ++alignedAllocationCount;
+    return allocateAlignedRaw(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t /*bytes*/) override
+  {
+    ++deallocationCount;
+    std::free(pointer);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    ++deallocationCount;
+    ++alignedDeallocationCount;
+    deallocateAlignedRaw(pointer, alignment);
+  }
+
+  std::size_t allocationCount = 0;
+  std::size_t alignedAllocationCount = 0;
+  std::size_t deallocationCount = 0;
+  std::size_t alignedDeallocationCount = 0;
 };
 
 } // namespace
@@ -372,6 +426,34 @@ TEST(DantzigSolver, SolvesBoxedLcpWithFrictionIndex)
 }
 
 //==============================================================================
+TEST(DantzigSolver, RefinesActiveFrictionIndexBounds)
+{
+  const auto factoryProblem
+      = dart::test::LcpProblemFactory::activeFrictionIndexContact();
+  ASSERT_TRUE(factoryProblem.expectedSolution.has_value());
+  const auto& problem = factoryProblem.problem;
+  const auto& target = *factoryProblem.expectedSolution;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.absoluteTolerance = 1e-8;
+  options.complementarityTolerance = 1e-8;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_FALSE(result.validated);
+  EXPECT_GT(result.iterations, 1);
+  EXPECT_LE(result.residual, 1e-8);
+  EXPECT_LE(result.complementarity, 1e-8);
+  EXPECT_NEAR((x - target).lpNorm<Eigen::Infinity>(), 0.0, 1e-8);
+  ExpectValidSolution(problem, x, 1e-8);
+}
+
+//==============================================================================
 TEST(DantzigSolver, ReusedScratchAvoidsHeapAllocationForSameShapeSolve)
 {
   Eigen::Matrix3d A;
@@ -414,6 +496,74 @@ TEST(DantzigSolver, ReusedScratchAvoidsHeapAllocationForSameShapeSolve)
   EXPECT_NEAR(x[0], target[0], 1e-6);
   EXPECT_NEAR(x[1], target[1], 1e-6);
   EXPECT_NEAR(x[2], target[2], 1e-6);
+  ExpectValidSolution(problem, x, 1e-6);
+}
+
+//==============================================================================
+TEST(DantzigSolver, ScratchUsesProvidedAllocatorForDantzigWorkBuffers)
+{
+  Eigen::Matrix3d A;
+  A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
+
+  const Eigen::Vector3d target(1.0, 0.2, -0.1);
+  const Eigen::Vector3d b = A * target;
+
+  Eigen::Vector3d lo = Eigen::Vector3d::Zero();
+  Eigen::Vector3d hi;
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
+  Eigen::Vector3i findex;
+  findex << -1, 0, 0;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  CountingMemoryAllocator allocator;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  {
+    DantzigSolver::Scratch scratch(allocator);
+
+    ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+    const DantzigSolver::Scratch::DoubleAllocator doubleAllocator{allocator};
+    EXPECT_EQ(scratch.w.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.loEff.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.hiEff.get_allocator(), doubleAllocator);
+    EXPECT_GT(allocator.allocationCount, 0u)
+        << "allocator-aware Dantzig scratch should allocate work buffers "
+           "through the provided allocator";
+    EXPECT_GT(allocator.alignedAllocationCount, 0u);
+
+    const auto allocationsAfterFirstSolve = allocator.allocationCount;
+    const auto alignedAllocationsAfterFirstSolve
+        = allocator.alignedAllocationCount;
+    x.setZero();
+    ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+
+    EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstSolve)
+        << "same-shape Dantzig solves should reuse provided-allocator scratch";
+    EXPECT_EQ(
+        allocator.alignedAllocationCount, alignedAllocationsAfterFirstSolve);
+
+    x.setZero();
+    std::size_t heapAllocations = 0;
+    std::size_t heapBytes = 0;
+    {
+      ScopedHeapAllocationCounter heapCounter;
+      ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+      heapAllocations = heapCounter.allocations();
+      heapBytes = heapCounter.bytes();
+    }
+
+    EXPECT_EQ(heapAllocations, 0u)
+        << "allocator-backed same-shape Dantzig scratch should avoid global "
+           "heap allocations after warmup; allocated "
+        << heapBytes << " bytes";
+  }
+
+  EXPECT_EQ(allocator.deallocationCount, allocator.allocationCount);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, allocator.alignedAllocationCount);
   ExpectValidSolution(problem, x, 1e-6);
 }
 

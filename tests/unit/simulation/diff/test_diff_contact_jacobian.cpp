@@ -47,6 +47,8 @@
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -54,6 +56,7 @@
 #include <array>
 #include <limits>
 #include <memory>
+#include <string_view>
 
 #include <cmath>
 
@@ -64,6 +67,46 @@ namespace {
 constexpr double kSphereRadius = 0.5;
 constexpr double kSphereMass = 2.0;
 constexpr double kTimeStep = 1e-3;
+
+class CountingMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return dart::common::MemoryAllocator::GetDefault().allocate(bytes);
+  }
+
+  [[nodiscard]] void* allocate(size_t bytes, size_t alignment) noexcept override
+  {
+    ++alignedAllocationCount;
+    return dart::common::MemoryAllocator::GetDefault().allocate(
+        bytes, alignment);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    dart::common::MemoryAllocator::GetDefault().deallocate(pointer, bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes, size_t alignment) override
+  {
+    ++alignedDeallocationCount;
+    dart::common::MemoryAllocator::GetDefault().deallocate(
+        pointer, bytes, alignment);
+  }
+
+  std::size_t allocationCount = 0;
+  std::size_t deallocationCount = 0;
+  std::size_t alignedAllocationCount = 0;
+  std::size_t alignedDeallocationCount = 0;
+};
 
 //==============================================================================
 // Translational rigid-body state: x = [position; linear velocity], control =
@@ -486,6 +529,40 @@ TEST(DiffContactJacobian, ClampingContactMatchesFiniteDifference)
   // 1).
   EXPECT_NEAR(analytic.stateJacobian(5, 5), 0.0, 1e-6); // ∂vz'/∂vz
   EXPECT_NEAR(analytic.stateJacobian(3, 3), 1.0, 1e-6); // ∂vx'/∂vx
+}
+
+//==============================================================================
+TEST(DiffContactJacobian, DetailOverloadUsesProvidedAllocator)
+{
+  BodyState config;
+  config.position = Eigen::Vector3d(0.0, 0.0, kSphereRadius - 5e-5);
+  config.velocity = Eigen::Vector3d(1.0, 0.0, -0.2);
+  config.force = Eigen::Vector3d::Zero();
+
+  auto world = buildFrictionScene();
+  applyState(*world, config);
+
+  const auto contacts = world->collide();
+  ASSERT_FALSE(contacts.empty()) << "expected an active sphere/ground contact";
+
+  CountingMemoryAllocator allocator;
+  const sx::StepDerivatives analytic = sx::detail::contactStepDerivatives(
+      dart::simulation::detail::registryOf(*world),
+      contacts,
+      world->getGravity(),
+      world->getTimeStep(),
+      sx::ContactGradientMode::Analytic,
+      allocator);
+
+  EXPECT_EQ(analytic.stateJacobian.rows(), 6);
+  EXPECT_EQ(analytic.stateJacobian.cols(), 6);
+  EXPECT_EQ(analytic.controlJacobian.rows(), 6);
+  EXPECT_EQ(analytic.controlJacobian.cols(), 3);
+
+  EXPECT_GT(allocator.allocationCount + allocator.alignedAllocationCount, 0u);
+  EXPECT_EQ(allocator.deallocationCount, allocator.allocationCount);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, allocator.alignedAllocationCount);
 }
 
 //==============================================================================
