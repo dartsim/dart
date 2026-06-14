@@ -51,8 +51,8 @@ msgid "Status"
 msgstr "상태"
 
 #: ../../dartpy/user_guide/installation.rst:27 5c4c6b721d844f6581b98eb46bf03fd8
-msgid "Linux x86_64 / CPython 3.12–3.14"
-msgstr "Linux x86_64 / CPython 3.12–3.14"
+msgid "Linux x86_64 / CPython 3.14"
+msgstr "Linux x86_64 / CPython 3.14"
 
 #: ../../dartpy/user_guide/installation.rst:28 2211e39506e84dd988b921353772a301
 msgid "✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)"

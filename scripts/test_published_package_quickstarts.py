@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--python-version",
-        default="3.12",
+        default="3.14",
         help="Python version to use for the temporary dartpy environment.",
     )
     parser.add_argument(

@@ -1,5 +1,7 @@
 # DART Python Bindings (dartpy)
 
+> dartpy requires **Python 3.14+** (the default `python3` in Ubuntu 26.04 LTS).
+
 ## Start here next time
 
 - Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
@@ -244,7 +246,7 @@ conda install dartpy -c conda-forge
 
 Wheels are built using **pixi** environments defined in `pixi.toml`:
 
-- Features: `py312-wheel`, `py313-wheel`
+- Feature: `py314-wheel`
 - Platform-specific build tasks
 - Filament-backed GUI enabled on all official wheel platforms through
   `DART_BUILD_GUI=ON`
@@ -253,20 +255,16 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 
 ```bash
 # Build
-pixi run -e py312-wheel wheel-build
-pixi run -e py313-wheel wheel-build
+pixi run -e py314-wheel wheel-build
 
 # Repair (Linux only - run auditwheel)
-pixi run -e py312-wheel wheel-repair
-pixi run -e py313-wheel wheel-repair
+pixi run -e py314-wheel wheel-repair
 
 # Verify and test
-pixi run -e py312-wheel wheel-verify wheel-test
-pixi run -e py313-wheel wheel-verify wheel-test
+pixi run -e py314-wheel wheel-verify wheel-test
 
 # Publish
-pixi run -e py312-wheel wheel-upload
-pixi run -e py313-wheel wheel-upload
+pixi run -e py314-wheel wheel-upload
 ```
 
 Run Linux wheel import tests after `wheel-repair`, not against the raw
@@ -372,6 +370,6 @@ robot.setForces(forces)
 
 - **Package configuration**: `pyproject.toml`
 - **Build system**: `python/dartpy/CMakeLists.txt`
-- **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
+- **pixi configuration**: `pixi.toml` (feature: `py314-wheel`)
 - **Examples**: `python/examples/README.md` (index) and `python/examples/`
 - **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`
