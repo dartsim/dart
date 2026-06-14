@@ -1,5 +1,70 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-14 Representative Detail Display Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `35f8787fe9c Guard LCP advanced parameter display`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   representative detail display guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `35f8787fe9c Guard LCP advanced parameter display`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by one hundred four commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/tests/unit/test_py_demo_panels.py` now verifies that every rendered
+  representative solver-detail row shows the row's computed values.
+- The rendered-table guard covers problem labels, solvers, solve routes,
+  statuses, contract results, iteration counts, error/residual/complementarity
+  metrics, and elapsed times.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_exposes_solver_manifest_and_benchmark_metadata
+```
+
+Result:
+
+- Focused LCP panel test passed with 1 test and 77 deselected.
+- `pixi run lint` passed, including `lint-lcp-solver-roster`,
+  `lint-avbd-packets`, and AI command sync.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun
+`pixi run lint`, `git diff --check`, and any broader gate warranted by the final
+diff before committing. Then continue the broader LCP interface/demo audit from
+the next concrete gap.
+
 ## Current Reality - 2026-06-13 Advanced Parameter Display Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
