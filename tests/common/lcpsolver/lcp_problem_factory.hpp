@@ -277,6 +277,38 @@ public:
         ProblemDifficulty::WellConditioned};
   }
 
+  static FactoryProblem activeFrictionIndexContact()
+  {
+    Eigen::MatrixXd A(6, 6);
+    A << 3.0, 0.12, 0.04, 0.08, 0.02, 0.0, 0.12, 2.4, 0.08,
+        0.01, 0.04, 0.0, 0.04, 0.08, 2.1, 0.0, 0.0, 0.03, 0.08,
+        0.01, 0.0, 2.8, 0.10, 0.05, 0.02, 0.04, 0.0, 0.10, 2.2,
+        0.07, 0.0, 0.0, 0.03, 0.05, 0.07, 2.0;
+
+    Eigen::VectorXd xStar(6);
+    xStar << 0.6, 0.30, -0.24, 0.35, -0.175, 0.05;
+
+    Eigen::VectorXd w(6);
+    w << 0.0, -0.04, 0.0, 0.0, 0.03, 0.0;
+    Eigen::VectorXd b = A * xStar - w;
+
+    Eigen::VectorXd lo(6);
+    lo << 0.0, -kInf, -kInf, 0.0, -kInf, -kInf;
+
+    Eigen::VectorXd hi(6);
+    hi << kInf, 0.5, 0.5, kInf, 0.5, 0.5;
+
+    Eigen::VectorXi findex(6);
+    findex << -1, 0, 0, -1, 3, 3;
+
+    return FactoryProblem{
+        "active_friction_index_contact",
+        dart::math::LcpProblem(A, b, lo, hi, findex),
+        xStar,
+        ProblemCategory::BoxedFriction,
+        ProblemDifficulty::WellConditioned};
+  }
+
   static FactoryProblem illConditioned8d(unsigned seed = 2001)
   {
     const int n = 8;
@@ -317,6 +349,28 @@ public:
         ProblemDifficulty::IllConditioned};
   }
 
+  static FactoryProblem nearSingular4d()
+  {
+    Eigen::Matrix4d A;
+    A << 0.0010, 0.0001, 0.0000, 0.0000, 0.0001, 1.0000, 0.0200,
+        0.0000, 0.0000, 0.0200, 2.0000, 0.0200, 0.0000, 0.0000, 0.0200,
+        4.0000;
+    Eigen::Vector4d xStar(0.25, 0.20, 0.30, 0.15);
+    Eigen::Vector4d b = A * xStar;
+
+    return FactoryProblem{
+        "near_singular_4d",
+        dart::math::LcpProblem(
+            A,
+            b,
+            Eigen::Vector4d::Zero(),
+            Eigen::Vector4d::Constant(kInf),
+            Eigen::Vector4i::Constant(-1)),
+        xStar,
+        ProblemCategory::Standard,
+        ProblemDifficulty::NearSingular};
+  }
+
   static FactoryProblem randomStandard(int n, unsigned seed)
   {
     Eigen::MatrixXd A = makeSpdMatrix(n, seed, 1.0);
@@ -353,12 +407,15 @@ public:
 
   static std::vector<FactoryProblem> getFrictionProblems()
   {
-    return {singleContactFriction(), twoContactsFriction()};
+    return {
+        singleContactFriction(),
+        twoContactsFriction(),
+        activeFrictionIndexContact()};
   }
 
   static std::vector<FactoryProblem> getStressProblems()
   {
-    return {illConditioned8d(), massRatio12d()};
+    return {illConditioned8d(), massRatio12d(), nearSingular4d()};
   }
 
   static std::vector<FactoryProblem> getWellConditionedProblems()

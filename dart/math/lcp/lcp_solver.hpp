@@ -67,6 +67,61 @@ public:
   /// @return Category name (e.g., "Pivoting", "Projection", "Newton")
   virtual std::string getCategory() const = 0;
 
+  /// Returns true when this solver natively supports standard LCPs.
+  ///
+  /// The native capability methods describe the algorithm family implemented by
+  /// this solver. Some solvers may still solve other problem forms by
+  /// delegating to a boxed-LCP fallback.
+  virtual bool supportsStandardLcp() const
+  {
+    return true;
+  }
+
+  /// Returns true when this solver natively supports boxed LCP bounds.
+  virtual bool supportsBoxedLcp() const
+  {
+    return false;
+  }
+
+  /// Returns true when this solver natively supports friction-index coupling.
+  virtual bool supportsFrictionIndex() const
+  {
+    return false;
+  }
+
+  /// Returns true when this solver natively supports the problem form.
+  ///
+  /// The no-tolerance overload uses the solver's default absolute tolerance so
+  /// capability checks match the tolerance-aware standard-form detection used
+  /// by the standard-only solver implementations.
+  virtual bool supportsProblem(const LcpProblem& problem) const
+  {
+    return supportsProblem(problem, mDefaultOptions.absoluteTolerance);
+  }
+
+  /// Returns true when this solver natively supports the problem form.
+  ///
+  /// \param[in] problem LCP problem to classify.
+  /// \param[in] standardTolerance Lower-bound tolerance for recognizing
+  /// near-canonical standard LCP storage, passed through to
+  /// LcpProblem::getType.
+  virtual bool supportsProblem(
+      const LcpProblem& problem, double standardTolerance) const
+  {
+    switch (problem.getType(standardTolerance)) {
+      case LcpProblemType::Standard:
+        return supportsStandardLcp();
+      case LcpProblemType::FrictionIndex:
+        return supportsFrictionIndex();
+      case LcpProblemType::Boxed:
+        return supportsBoxedLcp();
+      case LcpProblemType::Invalid:
+        return false;
+    }
+
+    return false;
+  }
+
   /// Get default options for this solver
   ///
   /// @return Default LcpOptions

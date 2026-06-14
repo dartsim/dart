@@ -166,9 +166,10 @@ its own line so status updates remain git-history friendly.
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
   contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
-  history; `pixi run -e cuda test-all` is the local full CUDA gate on Linux CUDA
-  hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
-  future compute-bound contact/constraint work must extend the checked
+  history, plus a bounded LCP solver/contact comparison slice for the contact
+  foundation; `pixi run -e cuda test-all` is the local full CUDA gate on Linux
+  CUDA hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path;
+  and future compute-bound contact/constraint work must extend the checked
   benchmark gate.
   Taskflow remains behind the simulation executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior

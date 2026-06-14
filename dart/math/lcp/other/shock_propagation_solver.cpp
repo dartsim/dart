@@ -36,6 +36,9 @@
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/pivoting/direct_solver.hpp"
 
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
+
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -49,6 +52,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
+constexpr int kMaxFrictionIndexExactFastPathSize = 192;
 
 struct BlockData
 {
@@ -79,6 +83,40 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveUnconstrainedFeasibleBlock(
+    const BlockData& block,
+    const Eigen::VectorXd& bEff,
+    const double absTol,
+    Eigen::VectorXd& xBlock)
+{
+  const auto m = std::ssize(block.indices);
+  if (m == 0 || m > kMaxDirectBlockSize || (block.findex.array() >= 0).any()
+      || !bEff.allFinite()) {
+    return false;
+  }
+
+  const Eigen::FullPivLU<Eigen::MatrixXd> lu(block.A);
+  if (!lu.isInvertible()) {
+    return false;
+  }
+
+  Eigen::VectorXd candidate = lu.solve(bEff);
+  if (!candidate.allFinite()) {
+    return false;
+  }
+
+  for (int i = 0; i < candidate.size(); ++i) {
+    if (candidate[i] < block.lo[i] - absTol
+        || candidate[i] > block.hi[i] + absTol) {
+      return false;
+    }
+    candidate[i] = std::clamp(candidate[i], block.lo[i], block.hi[i]);
+  }
+
+  xBlock = std::move(candidate);
+  return true;
 }
 
 bool buildBlockData(
@@ -305,6 +343,74 @@ bool buildLayerOrder(
   return true;
 }
 
+bool validateBlockLayerStructure(
+    const int problemSize,
+    const ShockPropagationSolver::Parameters& params,
+    std::string* message)
+{
+  int numBlocks = problemSize;
+  if (!params.blockSizes.empty()) {
+    int total = 0;
+    numBlocks = static_cast<int>(std::ssize(params.blockSizes));
+    for (const int size : params.blockSizes) {
+      if (size <= 0) {
+        if (message) {
+          *message = "Block sizes must be positive";
+        }
+        return false;
+      }
+      total += size;
+    }
+
+    if (total != problemSize) {
+      if (message) {
+        *message = "Block sizes must sum to problem dimension";
+      }
+      return false;
+    }
+  }
+
+  if (params.layers.empty()) {
+    return true;
+  }
+
+  std::vector<int> used(static_cast<std::size_t>(numBlocks), 0);
+  for (const auto& layer : params.layers) {
+    if (layer.empty()) {
+      if (message) {
+        *message = "Layer must include at least one block";
+      }
+      return false;
+    }
+
+    for (const int blockIndex : layer) {
+      if (blockIndex < 0 || blockIndex >= numBlocks) {
+        if (message) {
+          *message = "Layer block index out of range";
+        }
+        return false;
+      }
+      if (used[static_cast<std::size_t>(blockIndex)]++) {
+        if (message) {
+          *message = "Block index appears in multiple layers";
+        }
+        return false;
+      }
+    }
+  }
+
+  for (const int count : used) {
+    if (count == 0) {
+      if (message) {
+        *message = "Layers must cover all blocks";
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
 } // namespace
 
 //==============================================================================
@@ -337,13 +443,6 @@ LcpResult ShockPropagationSolver::solve(
 {
   LcpResult result;
 
-  std::string problemMessage;
-  if (!detail::validateProblem(problem, &problemMessage)) {
-    result.status = LcpSolverStatus::InvalidProblem;
-    result.message = problemMessage;
-    return result;
-  }
-
   const auto& A = problem.A;
   const auto& b = problem.b;
   const auto& lo = problem.lo;
@@ -352,6 +451,13 @@ LcpResult ShockPropagationSolver::solve(
 
   const auto n = std::ssize(b);
   if (n == 0) {
+    std::string problemMessage;
+    if (!detail::validateProblem(problem, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+
     x.resize(0);
     result.status = LcpSolverStatus::Success;
     result.iterations = 0;
@@ -361,9 +467,8 @@ LcpResult ShockPropagationSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite()) {
-    x = Eigen::VectorXd::Zero(n);
-  }
+  const bool resetInitialGuess
+      = x.size() != n || !options.warmStart || !x.allFinite();
 
   const int maxIterations = std::max(
       1,
@@ -383,12 +488,145 @@ LcpResult ShockPropagationSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
-
+  bool blockLayerStructureValidated = false;
+  std::string problemMessage;
   std::vector<BlockData> blocks;
-  if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+  bool blocksBuilt = false;
+
+  auto completeExactFastPath = [&](const Eigen::VectorXd& fastW) -> bool {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return true;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return true;
+  };
+
+  auto tryExactFastPath = [&]() -> bool {
+    Eigen::VectorXd fastW;
+    if (options.warmStart) {
+      return false;
+    }
+
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      const double strictInteriorTolerance = std::max(0.0, absTol);
+      bool strictInteriorFastPath = false;
+      Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+      if (exactFactorization.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = exactFactorization.solve(b);
+        if (candidate.allFinite()
+            && candidate.minCoeff() > strictInteriorTolerance) {
+          fastW = A * candidate - b;
+          if (detail::validateSolution(
+                  candidate, fastW, lo, hi, validationTolerance)) {
+            x = std::move(candidate);
+            strictInteriorFastPath = true;
+          }
+        }
+      }
+
+      if (!strictInteriorFastPath
+          && !detail::trySolveStrictInteriorStandardLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
+    } else if (problem.isBoxedLcp()) {
+      if (!detail::trySolveProjectedActiveSetBoxedLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
+    } else if (problem.hasFrictionIndex()) {
+      if (problem.size() > kMaxFrictionIndexExactFastPathSize) {
+        return false;
+      }
+      if (!detail::trySolveInteriorFrictionIndexLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    return completeExactFastPath(fastW);
+  };
+
+  const bool canTryExactFastPath
+      = n > 0 && !options.warmStart
+        && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
+            || problem.hasFrictionIndex());
+  if (canTryExactFastPath
+      && !validateBlockLayerStructure(
+          static_cast<int>(n), *params, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
     return result;
+  }
+  blockLayerStructureValidated = canTryExactFastPath;
+
+  if (canTryExactFastPath && problem.hasFrictionIndex()
+      && options.customOptions != nullptr
+      && (!params->blockSizes.empty() || !params->layers.empty())) {
+    if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+    blocksBuilt = true;
+  }
+
+  if (canTryExactFastPath && tryExactFastPath()) {
+    return result;
+  }
+
+  if (!detail::validateProblem(problem, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (!blockLayerStructureValidated && !options.warmStart
+      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
+          || problem.hasFrictionIndex())
+      && !validateBlockLayerStructure(
+          static_cast<int>(n), *params, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (!options.warmStart && problem.hasFrictionIndex()
+      && options.customOptions != nullptr && !blocksBuilt
+      && (!params->blockSizes.empty() || !params->layers.empty())) {
+    if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+    blocksBuilt = true;
+  }
+
+  if (!blocksBuilt
+      && !buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (resetInitialGuess) {
+    x = Eigen::VectorXd::Zero(n);
   }
 
   std::vector<std::vector<int>> layers;
@@ -471,7 +709,23 @@ LcpResult ShockPropagationSolver::solve(
         const Eigen::VectorXd AxSelf = block.A * xBlock;
         const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
+        if (solveUnconstrainedFeasibleBlock(block, bEff, absTol, xBlock)) {
+          for (int r = 0; r < m; ++r) {
+            x[block.indices[r]] = xBlock[r];
+          }
+          continue;
+        }
+
         LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+        const double validationTolerance = std::max(absTol, compTolOpt);
+        if (detail::trySolveInteriorFrictionIndexLcp(
+                subProblem, absTol, validationTolerance, xBlock)) {
+          for (int r = 0; r < m; ++r) {
+            x[block.indices[r]] = xBlock[r];
+          }
+          continue;
+        }
+
         const bool useDirect
             = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
         const LcpResult blockResult

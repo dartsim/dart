@@ -59,5 +59,23 @@ std::string toString(LcpSolverStatus status)
   }
 }
 
+//==============================================================================
+std::string toString(LcpProblemType type)
+{
+  switch (type) {
+    using enum LcpProblemType;
+    case Invalid:
+      return "Invalid";
+    case Standard:
+      return "Standard";
+    case Boxed:
+      return "Boxed";
+    case FrictionIndex:
+      return "FrictionIndex";
+    default:
+      return "Unknown";
+  }
+}
+
 } // namespace math
 } // namespace dart

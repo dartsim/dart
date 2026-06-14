@@ -77,9 +77,24 @@ double computeStepSize(
   return alpha;
 }
 
-double clampValue(double value, double lo, double hi)
+bool validateParameters(
+    const InteriorPointSolver::Parameters& params, std::string* message)
 {
-  return std::clamp(value, lo, hi);
+  if (!std::isfinite(params.sigma) || params.sigma <= 0.0
+      || params.sigma >= 1.0) {
+    if (message) {
+      *message = "Interior-point sigma must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepScale) || params.stepScale <= 0.0
+      || params.stepScale > 1.0) {
+    if (message) {
+      *message = "Interior-point step_scale must be in (0, 1]";
+    }
+    return false;
+  }
+  return true;
 }
 
 } // namespace
@@ -116,9 +131,6 @@ LcpResult InteriorPointSolver::solve(
 
   const auto& A = problem.A;
   const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
 
   std::string problemMessage;
   if (!detail::validateProblem(problem, &problemMessage)) {
@@ -147,11 +159,7 @@ LcpResult InteriorPointSolver::solve(
   const double compTolOpt = (options.complementarityTolerance > 0.0)
                                 ? options.complementarityTolerance
                                 : mDefaultOptions.complementarityTolerance;
-  const bool standardBounds
-      = (lo.array().abs().maxCoeff() <= absTol)
-        && (hi.array() == std::numeric_limits<double>::infinity()).all()
-        && (findex.array() < 0).all();
-  if (!standardBounds) {
+  if (!problem.isStandardLcp(absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }
@@ -167,8 +175,32 @@ LcpResult InteriorPointSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
-  const double sigma = clampValue(params->sigma, 1e-6, 0.999);
-  const double stepScale = clampValue(params->stepScale, 1e-3, 1.0);
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
+  const double sigma = params->sigma;
+  const double stepScale = params->stepScale;
+
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
+          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+    Eigen::VectorXd loEff = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hiEff
+        = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   const double initScale = std::max(1.0, vectorInfinityNorm(b));
   const double minVal = std::clamp(1e-6 * initScale, 1e-8, 1.0);
