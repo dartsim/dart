@@ -41,6 +41,22 @@
 // behavior-lock evidence that those structural changes preserved default
 // behavior.
 //
+// Two complementary oracles (see AnalyticalProfile and assertAnalyticalAnchors
+// below):
+//   - Correctness layer (analytical): each trajectory is validated against
+//     ground truth that is INDEPENDENT of the committed golden — the exact
+//     semi-implicit Euler closed form for the contact-free phase, and physical
+//     invariants (no tunneling, settles at the geometric rest height, comes to
+//     rest, no spurious lateral/spin) for the contact phase. This runs in both
+//     compare and regen modes, so the golden cannot silently enshrine an
+//     integrator bug or a physically wrong contact resolution.
+//   - Behavior lock (snapshot): the full per-step trajectory is compared to the
+//     committed golden to catch any change in the parts that have no closed
+//     form (the contact transient). This is what the WS1+ refactors diff
+//     against. Systematic energy/momentum-conservation and order-of-convergence
+//     validation across the scene corpus is owned by WP-091.24, not this
+//     packet.
+//
 // Scene matrix (default WorldOptions: SequentialImpulse contacts, gravity -Z):
 //   - free_fall        : one dynamic sphere, no ground -> locks pure
 //                        semi-implicit integration; contacts stay 0.
@@ -51,9 +67,9 @@
 //
 // Tolerance policy: the default CPU step is single-threaded double precision
 // and deterministic — on the toolchain that generated the committed goldens it
-// reproduces bitwise (verified run-to-run). The comparison tolerance therefore
-// is not about same-platform noise; it is the margin that separates a real
-// behavior change from legitimate floating-point reassociation (a
+// reproduces bitwise (verified run-to-run). The snapshot comparison tolerance
+// therefore is not about same-platform noise; it is the margin that separates a
+// real behavior change from legitimate floating-point reassociation (a
 // behavior-preserving refactor that reorders, say, a contact-assembly
 // summation) and cross-platform libm/FMA differences. States (position, linear
 // and angular velocity, time) are compared with an ABSOLUTE tolerance of
@@ -75,6 +91,7 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -105,14 +122,50 @@ struct StepRecord
   int contactCount = 0;
 };
 
+// Analytical (closed-form / physical-invariant) anchors for a scene. These are
+// the correctness layer that complements the behavior-lock snapshot: they
+// validate the trajectory against ground truth that is INDEPENDENT of the
+// committed golden, so the golden cannot silently enshrine an integrator bug or
+// a physically wrong contact resolution. They run in both compare and regen
+// modes (see runSceneGoldenTest), so a regenerated golden is physics-validated
+// before it is committed.
+//
+// "Analytical" here means the exact solution of the discrete SCHEME, not the
+// continuous ODE: semi-implicit (symplectic) Euler free-fall has the closed
+// form v_n = v0 - g*n*dt and z_n = z0 + v0*n*dt - g*dt^2*n(n+1)/2, which the
+// default step reproduces to machine precision (forward Euler would differ by
+// g*dt^2*n, easily detected). The sequential-impulse contact transient has no
+// closed form, so for contact scenes we assert physical invariants instead.
+struct AnalyticalProfile
+{
+  // Free-fall closed form (applied to the leading contact-free phase of every
+  // scene; the tracked body free-falls until first contact).
+  double z0 = 0.0;
+  double dt = 0.0;
+  double g = 9.81; // gravity magnitude along -Z
+  double freeFallTol = 1e-9;
+
+  // Contact invariants (enabled when hasGround). restCenter is the geometric
+  // rest height of the tracked body's center (ground top + half-size).
+  bool hasGround = false;
+  double restCenter = 0.0;
+  double maxPenetration = 0.05;  // center never sinks below restCenter - this
+  double restHeightTol = 2e-3;   // final center within this of restCenter
+  double settledSpeedTol = 1e-2; // final linear speed below this
+  double maxLateralSpeed = 0.05; // bound on sqrt(vx^2+vy^2) over trajectory
+  double maxAngularSpeed = 0.05; // bound on |angular velocity| over trajectory
+};
+
 // A scene = world options plus body setup performed in design mode, the name of
-// the dynamic body whose trajectory is recorded, and the number of steps.
+// the dynamic body whose trajectory is recorded, the number of steps, and the
+// analytical anchors that validate its physics.
 struct Scene
 {
   std::string id;
   int steps = 0;
   std::string trackedBody;
   void (*build)(sx::World& world) = nullptr;
+  AnalyticalProfile analytical;
 };
 
 void buildFreeFall(sx::World& world)
@@ -167,9 +220,34 @@ void buildBoxOnGround(sx::World& world)
 const std::vector<Scene>& sceneMatrix()
 {
   static const std::vector<Scene> kScenes = {
-      Scene{"free_fall", 30, "faller", &buildFreeFall},
-      Scene{"sphere_on_ground", 120, "sphere", &buildSphereOnGround},
-      Scene{"box_on_ground", 120, "box", &buildBoxOnGround},
+      Scene{
+          "free_fall",
+          30,
+          "faller",
+          &buildFreeFall,
+          AnalyticalProfile{.z0 = 5.0, .dt = 0.01, .g = 9.81}},
+      Scene{
+          "sphere_on_ground",
+          120,
+          "sphere",
+          &buildSphereOnGround,
+          AnalyticalProfile{
+              .z0 = 2.0,
+              .dt = 0.005,
+              .g = 9.81,
+              .hasGround = true,
+              .restCenter = 0.8}}, // ground top 0.5 + sphere radius 0.3
+      Scene{
+          "box_on_ground",
+          120,
+          "box",
+          &buildBoxOnGround,
+          AnalyticalProfile{
+              .z0 = 1.5,
+              .dt = 0.005,
+              .g = 9.81,
+              .hasGround = true,
+              .restCenter = 0.9}}, // ground top 0.5 + box half-height 0.4
   };
   return kScenes;
 }
@@ -201,6 +279,91 @@ std::vector<StepRecord> simulate(const Scene& scene)
     records.push_back(record);
   }
   return records;
+}
+
+// Index of the first step with an active contact, or records.size() if none.
+std::size_t firstContactIndex(const std::vector<StepRecord>& records)
+{
+  for (std::size_t i = 0; i < records.size(); ++i) {
+    if (records[i].contactCount > 0) {
+      return i;
+    }
+  }
+  return records.size();
+}
+
+// Validate the trajectory against analytical / physical ground truth that is
+// independent of the committed golden (the correctness layer).
+void assertAnalyticalAnchors(
+    const Scene& scene, const std::vector<StepRecord>& records)
+{
+  const AnalyticalProfile& p = scene.analytical;
+  const std::size_t firstContact = firstContactIndex(records);
+
+  // (1) Exact semi-implicit (symplectic) Euler closed form during the
+  //     contact-free phase: v_z(n) = -g*n*dt, z(n) = z0 - g*dt^2*n(n+1)/2,
+  //     with zero lateral velocity and zero spin. This validates the integrator
+  //     scheme against an independent oracle, so the golden cannot enshrine an
+  //     integrator bug (a forward-Euler regression would diverge by g*dt^2*n).
+  for (std::size_t i = 0; i < firstContact; ++i) {
+    const StepRecord& r = records[i];
+    const double n = static_cast<double>(r.frame);
+    const double expectedZ = p.z0 - p.g * p.dt * p.dt * n * (n + 1.0) / 2.0;
+    const double expectedVz = -p.g * n * p.dt;
+    EXPECT_NEAR(r.position.z(), expectedZ, p.freeFallTol)
+        << scene.id << " frame " << r.frame
+        << ": contact-free phase must match the exact semi-implicit Euler "
+           "position z0 - g*dt^2*n(n+1)/2.";
+    EXPECT_NEAR(r.linearVelocity.z(), expectedVz, p.freeFallTol)
+        << scene.id << " frame " << r.frame
+        << ": contact-free vertical velocity must match -g*n*dt.";
+    EXPECT_NEAR(r.linearVelocity.x(), 0.0, p.freeFallTol)
+        << scene.id << " frame " << r.frame
+        << ": no lateral x velocity in free fall.";
+    EXPECT_NEAR(r.linearVelocity.y(), 0.0, p.freeFallTol)
+        << scene.id << " frame " << r.frame
+        << ": no lateral y velocity in free fall.";
+    EXPECT_NEAR(r.angularVelocity.norm(), 0.0, p.freeFallTol)
+        << scene.id << " frame " << r.frame << ": no spin in free fall.";
+  }
+
+  if (!p.hasGround) {
+    return;
+  }
+
+  // (2) Physical invariants for the contact phase. The sequential-impulse
+  //     transient has no closed form, so assert truths the solver must satisfy
+  //     regardless of implementation.
+  double maxLateral = 0.0;
+  double maxAngular = 0.0;
+  double minZ = records.front().position.z();
+  for (const StepRecord& r : records) {
+    maxLateral = std::max(
+        maxLateral, std::hypot(r.linearVelocity.x(), r.linearVelocity.y()));
+    maxAngular = std::max(maxAngular, r.angularVelocity.norm());
+    minZ = std::min(minZ, r.position.z());
+  }
+
+  // The body must actually reach contact (otherwise the scene is mis-built and
+  // the snapshot would lock a contact-free trajectory).
+  EXPECT_LT(firstContact, records.size())
+      << scene.id << ": expected a contact onset but none occurred.";
+  // No tunneling: the center never sinks far below its geometric rest height.
+  EXPECT_GE(minZ, p.restCenter - p.maxPenetration)
+      << scene.id << ": body tunneled below the ground rest height (min z "
+      << minZ << ").";
+  // Settles at the geometric rest height (ground top + half-size).
+  EXPECT_NEAR(records.back().position.z(), p.restCenter, p.restHeightTol)
+      << scene.id << ": body did not settle at the analytical rest height "
+      << p.restCenter << ".";
+  // Comes to rest rather than gaining energy from the contact solve.
+  EXPECT_LT(records.back().linearVelocity.norm(), p.settledSpeedTol)
+      << scene.id << ": body did not settle (residual speed too high).";
+  // A symmetric vertical drop must not fly sideways or spin up.
+  EXPECT_LT(maxLateral, p.maxLateralSpeed)
+      << scene.id << ": spurious lateral velocity from a vertical drop.";
+  EXPECT_LT(maxAngular, p.maxAngularSpeed)
+      << scene.id << ": spurious angular velocity from a symmetric drop.";
 }
 
 std::filesystem::path goldenPath(const std::string& sceneId)
@@ -287,6 +450,11 @@ void runSceneGoldenTest(const Scene& scene)
 {
   const std::vector<StepRecord> actual = simulate(scene);
   ASSERT_EQ(actual.size(), static_cast<std::size_t>(scene.steps));
+
+  // Correctness layer: validate against analytical / physical ground truth
+  // first, in BOTH modes, so a regenerated golden cannot bake in a physically
+  // wrong trajectory.
+  assertAnalyticalAnchors(scene, actual);
 
   const std::filesystem::path path = goldenPath(scene.id);
 
