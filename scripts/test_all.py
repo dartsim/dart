@@ -467,24 +467,41 @@ def run_build_tests(skip_debug: bool = False) -> bool:
 
 
 def run_unit_tests() -> bool:
-    """Run unit tests"""
+    """Run the non-simulation C++ tests.
+
+    Uses the load-aware ``test-core`` tier runner (``ctest_tier.py -LE
+    simulation``) instead of a plain serial ``ctest``. The authoritative gate
+    must use the same parallel, ``--test-load``-governed scheduling as the rest
+    of the pipeline so the suite's running times stay balanced across cores
+    (see ``docs/design/local_verification_pipeline.md``). CI stays sequential:
+    ``ctest_tier.py`` defers to ``CTEST_PARALLEL_LEVEL`` and runs one job under
+    ``GITHUB_ACTIONS``/``CI``.
+    """
     print_header("UNIT TESTS")
 
     success = True
 
-    # Build and run C++ tests
-    result, _ = run_command(pixi_command("test", PIXI_DEFAULT_DARTPY), "C++ unit tests")
+    # Build and run the non-simulation C++ tests (parallel + load-aware).
+    result, _ = run_command(pixi_command("test-core"), "C++ unit tests")
     success = success and result
 
     return success
 
 
 def run_simulation_tests() -> bool:
-    """Run simulation tests (ctest filtered to simulation labels)."""
+    """Run every simulation C++ test, including the long poles.
+
+    Uses the load-aware ``test-simulation-full`` tier runner
+    (``ctest_tier.py -L simulation``) so the simulation long poles (chiefly
+    ``test_rigid_ipc_paper_experiments``) overlap the rest of the suite instead
+    of running one-at-a-time after it. Explicit CMake ``COST`` hints on the long
+    poles let the parallel scheduler front-load them even on a cold build with
+    no prior ``CTestCostData.txt``.
+    """
     print_header("SIMULATION TESTS")
 
     result, _ = run_command(
-        pixi_command("test-simulation", PIXI_DEFAULT_DARTPY),
+        pixi_command("test-simulation-full"),
         "simulation C++ tests",
     )
     return result
