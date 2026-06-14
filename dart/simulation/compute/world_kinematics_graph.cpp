@@ -43,6 +43,7 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <charconv>
 
 #include <cstdint>
 
@@ -143,10 +144,23 @@ Eigen::Isometry3d getLocalTransform(
 }
 
 //==============================================================================
-std::string frameCacheResource(entt::entity entity)
+ComputeResourceString makeFrameCacheResource(
+    entt::entity entity, dart::common::MemoryAllocator& allocator)
 {
-  return "comps::FrameCache#"
-         + std::to_string(static_cast<std::uint32_t>(entity));
+  ComputeResourceString resource{dart::common::StlAllocator<char>{allocator}};
+  resource.reserve(32);
+  resource.append("comps::FrameCache#");
+
+  char buffer[16];
+  const auto id = static_cast<std::uint32_t>(entity);
+  const auto [end, error]
+      = std::to_chars(std::begin(buffer), std::end(buffer), id);
+  DART_SIMULATION_THROW_T_IF(
+      error != std::errc{},
+      InvalidOperationException,
+      "Failed to format FrameCache resource id");
+  resource.append(buffer, end);
+  return resource;
 }
 
 //==============================================================================
@@ -164,7 +178,18 @@ bool hasDirtyFrameCaches(const detail::WorldRegistry& registry)
 } // namespace
 
 //==============================================================================
-WorldKinematicsGraph::WorldKinematicsGraph(World& world) : m_world(world)
+WorldKinematicsGraph::WorldKinematicsGraph(World& world)
+  : WorldKinematicsGraph(world, dart::common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+WorldKinematicsGraph::WorldKinematicsGraph(
+    World& world, dart::common::MemoryAllocator& allocator)
+  : m_world(world),
+    m_allocator(&allocator),
+    m_graph(allocator),
+    m_entityNodes(EntityNodeAllocator{allocator})
 {
   rebuild();
 }
@@ -186,14 +211,18 @@ void WorldKinematicsGraph::rebuild()
     ComputeStageMetadata metadata{
         ComputeStageDomain::Kinematics,
         ComputeStageAcceleration::TaskParallel
-            | ComputeStageAcceleration::DataLocality};
+            | ComputeStageAcceleration::DataLocality,
+        *m_allocator};
+    metadata.resources.reserve(2);
     metadata.resources.push_back(
-        {frameCacheResource(entity), ComputeAccessMode::Write});
+        {makeFrameCacheResource(entity, *m_allocator),
+         ComputeAccessMode::Write});
     const auto buildParentFrame
         = registry->get<comps::FrameState>(entity).parentFrame;
     if (buildParentFrame != entt::null) {
       metadata.resources.push_back(
-          {frameCacheResource(buildParentFrame), ComputeAccessMode::Read});
+          {makeFrameCacheResource(buildParentFrame, *m_allocator),
+           ComputeAccessMode::Read});
     }
 
     auto& node = m_graph.addNode(

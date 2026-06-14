@@ -35,6 +35,8 @@
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <vector>
 
 namespace dart::math {
@@ -47,16 +49,36 @@ public:
   /// Reusable work storage for repeated same-shape Dantzig solves.
   struct DART_API Scratch
   {
-    std::vector<double> Adata;
-    std::vector<double> xdata;
-    std::vector<double> wdata;
-    std::vector<double> bdata;
-    std::vector<double> loData;
-    std::vector<double> hiData;
-    std::vector<int> findexData;
-    Eigen::VectorXd w;
-    Eigen::VectorXd loEff;
-    Eigen::VectorXd hiEff;
+    using DoubleAllocator = dart::common::StlAllocator<double>;
+    using IntAllocator = dart::common::StlAllocator<int>;
+
+    Scratch() = default;
+
+    explicit Scratch(dart::common::MemoryAllocator& allocator)
+      : Adata(DoubleAllocator{allocator}),
+        xdata(DoubleAllocator{allocator}),
+        wdata(DoubleAllocator{allocator}),
+        bdata(DoubleAllocator{allocator}),
+        loData(DoubleAllocator{allocator}),
+        hiData(DoubleAllocator{allocator}),
+        findexData(IntAllocator{allocator}),
+        w(DoubleAllocator{allocator}),
+        loEff(DoubleAllocator{allocator}),
+        hiEff(DoubleAllocator{allocator}),
+        lcp(allocator)
+    {
+    }
+
+    std::vector<double, DoubleAllocator> Adata;
+    std::vector<double, DoubleAllocator> xdata;
+    std::vector<double, DoubleAllocator> wdata;
+    std::vector<double, DoubleAllocator> bdata;
+    std::vector<double, DoubleAllocator> loData;
+    std::vector<double, DoubleAllocator> hiData;
+    std::vector<int, IntAllocator> findexData;
+    std::vector<double, DoubleAllocator> w;
+    std::vector<double, DoubleAllocator> loEff;
+    std::vector<double, DoubleAllocator> hiEff;
     DantzigLcpScratch<double> lcp;
 
     void clear() noexcept;
@@ -85,6 +107,16 @@ public:
       const Eigen::VectorXd& hi,
       const Eigen::VectorXi& findex,
       Eigen::VectorXd& x,
+      Scratch& scratch,
+      const LcpOptions& options);
+
+  LcpResult solve(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& lo,
+      const Eigen::Ref<const Eigen::VectorXd>& hi,
+      const Eigen::Ref<const Eigen::VectorXi>& findex,
+      Eigen::Ref<Eigen::VectorXd> x,
       Scratch& scratch,
       const LcpOptions& options);
 

@@ -18,6 +18,8 @@
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
@@ -28,6 +30,30 @@
 namespace {
 
 namespace sx = dart::simulation;
+
+TEST(MultibodyLinkContact, ProblemRowsUseProvidedAllocator)
+{
+  namespace common = dart::common;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeProblem = freeList.getAllocationCount();
+
+  {
+    sx::compute::MultibodyLinkContactProblem problem(
+        memoryManager.getFreeAllocator());
+    const common::StlAllocator<sx::compute::MultibodyLinkContactRow>
+        expectedAllocator{memoryManager.getFreeAllocator()};
+    EXPECT_EQ(problem.rows.get_allocator(), expectedAllocator);
+
+    problem.rows.reserve(4);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeProblem)
+        << "allocator-aware multibody contact rows should reserve from the "
+           "provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeProblem);
+}
 
 //==============================================================================
 // The diagonal Delassus denominator the assembler must store for one row:

@@ -12,16 +12,23 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 #include <dart/simulation/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <functional>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -35,6 +42,14 @@ struct MultibodyStructure;
 } // namespace dart::simulation::comps
 
 namespace dart::simulation::compute {
+
+struct MultibodyVariationalTreeScratchAccess;
+
+struct VariationalProjectionRowBounds
+{
+  double lower = -std::numeric_limits<double>::infinity();
+  double upper = std::numeric_limits<double>::infinity();
+};
 
 /// Persistent two-step discrete-mechanics history for one multibody, indexed by
 /// link construction order (parent-before-child).
@@ -53,6 +68,12 @@ struct MultibodyVariationalState
 {
   DART_SIMULATION_STATE_COMPONENT(MultibodyVariationalState);
 
+  using DeltaTransformVector = std::
+      vector<Eigen::Isometry3d, dart::common::StlAllocator<Eigen::Isometry3d>>;
+  using MomentumVector = std::vector<
+      Eigen::Matrix<double, 6, 1>,
+      dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>>;
+
   /// Whether `previousDeltaTransform`/`previousMomentum` have been seeded from
   /// a consistent prior step. The first integration bootstraps them from the
   /// current generalized velocity.
@@ -60,10 +81,10 @@ struct MultibodyVariationalState
 
   /// Per-link relative configuration displacement dT from the previous step
   /// (the SE(3) transform whose log gives the previous average velocity).
-  std::vector<Eigen::Isometry3d> previousDeltaTransform;
+  DeltaTransformVector previousDeltaTransform;
 
   /// Per-link discrete spatial momentum from the previous step (link frame).
-  std::vector<Eigen::Matrix<double, 6, 1>> previousMomentum;
+  MomentumVector previousMomentum;
 };
 
 /// Diagnostics from one RIQN (recursive impulse-based quasi-Newton) solve.
@@ -141,22 +162,22 @@ struct VariationalContactContext
 {
   /// Per-link world transform at the trial configuration (link construction
   /// order, parent-before-child).
-  const std::vector<Eigen::Isometry3d>& linkWorldTransforms;
+  std::span<const Eigen::Isometry3d> linkWorldTransforms;
   /// Per-link body-frame spatial Jacobian (`6 x dofCount`, `[angular; linear]`)
   /// at the trial configuration.
-  const std::vector<Eigen::MatrixXd>& linkBodyJacobians;
+  std::span<const Eigen::MatrixXd> linkBodyJacobians;
   /// Movable generalized-coordinate count (the `Q_c` the hook returns has this
   /// length).
   std::size_t dofCount;
   /// Per-link world transform at the *previous* configuration `q^k` (the start
   /// of the step), same link order. Lagged contact laws (friction) use it for
   /// the contact-point position (normal magnitude) at the step start.
-  const std::vector<Eigen::Isometry3d>& previousLinkWorldTransforms;
+  std::span<const Eigen::Isometry3d> previousLinkWorldTransforms;
   /// Per-link body-frame spatial Jacobian at `q^k`. With `previousVelocity` it
   /// gives the lagged contact-point sliding velocity that fixes the friction
   /// direction over the step (so friction stays constant across RIQN iterates,
   /// hence smooth for the root-find -- the roadmap's "lagged friction").
-  const std::vector<Eigen::MatrixXd>& previousLinkBodyJacobians;
+  std::span<const Eigen::MatrixXd> previousLinkBodyJacobians;
   /// Generalized velocity at `q^k` (lagged).
   const Eigen::VectorXd& previousVelocity;
   /// The integration time step (s).
@@ -184,6 +205,16 @@ using VariationalContactHook
     const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& worldForce);
 
+/// Overwrite `generalizedForce` with `J(p)^T * F` using caller-owned output
+/// storage. Repeated same-shape calls can retain the output vector capacity
+/// instead of allocating a return-by-value payload on every call.
+DART_SIMULATION_API void variationalContactPointForceInto(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce,
+    Eigen::VectorXd& generalizedForce);
+
 /// **EXPERIMENTAL (PLAN-084 Phase C).** A body-fixed contact point: the point
 /// at body-frame position `localPoint` on link `linkIndex`, evaluated against
 /// the contact geometry at the trial configuration.
@@ -205,6 +236,19 @@ struct VariationalContactPoint
 /// roadmap's `k <= 1e4 mg` envelope).
 struct VariationalGroundContact
 {
+  using PointAllocator = dart::common::StlAllocator<VariationalContactPoint>;
+  using PointVector = std::vector<VariationalContactPoint, PointAllocator>;
+
+  VariationalGroundContact()
+    : VariationalGroundContact(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalGroundContact(dart::common::MemoryAllocator& allocator)
+    : points(PointAllocator{allocator})
+  {
+  }
+
   Eigen::Vector3d planeNormal
       = Eigen::Vector3d::UnitZ(); ///< unit normal, out of the ground
   Eigen::Vector3d planePoint
@@ -218,7 +262,7 @@ struct VariationalGroundContact
                                    ///< >= 0); dissipates the contact transient
                                    ///< (needed for clean AL settling). Honored
                                    ///< by VariationalGroundContactSolver.
-  std::vector<VariationalContactPoint> points; ///< body-fixed contact points
+  PointVector points;              ///< body-fixed contact points
 };
 
 /// **EXPERIMENTAL (PLAN-084 Phase C, rung C2).** Build an in-loop
@@ -249,12 +293,22 @@ makeVariationalGroundContactHook(VariationalGroundContact contact);
 class DART_SIMULATION_API VariationalGroundContactSolver
 {
 public:
+  using DualAllocator = dart::common::StlAllocator<double>;
+  using DualVector = std::vector<double, DualAllocator>;
+
   explicit VariationalGroundContactSolver(VariationalGroundContact contact);
+  VariationalGroundContactSolver(
+      VariationalGroundContact contact,
+      dart::common::MemoryAllocator& allocator);
 
   /// In-loop contact hook reading the current duals (constant across the step's
   /// RIQN iterates, so the AL force is smooth for the root-find). The returned
   /// hook reads this solver's live duals, so build it once and reuse it.
   [[nodiscard]] VariationalContactHook hook() const;
+
+  void setAllocator(dart::common::MemoryAllocator& allocator);
+  [[nodiscard]] const dart::common::MemoryAllocator& getAllocator()
+      const noexcept;
 
   /// Evaluate the current contact force into caller-owned storage. The output
   /// is resized to the context DOF count and overwritten.
@@ -265,10 +319,10 @@ public:
   /// Advance the duals after a converged step, from the per-link world
   /// transforms at the converged configuration (same link order as the
   /// context).
-  void updateDuals(const std::vector<Eigen::Isometry3d>& linkWorldTransforms);
+  void updateDuals(std::span<const Eigen::Isometry3d> linkWorldTransforms);
 
   /// The current per-contact-point duals (the accumulated AL contact forces).
-  [[nodiscard]] const std::vector<double>& duals() const
+  [[nodiscard]] const DualVector& duals() const
   {
     return mDuals;
   }
@@ -282,20 +336,242 @@ public:
   void resetContact(const VariationalGroundContact& contact);
 
 private:
+  dart::common::MemoryAllocator* m_allocator = nullptr;
   VariationalGroundContact mContact;
-  std::vector<double> mDuals; ///< per contact point, >= 0
+  DualVector mDuals; ///< per contact point, >= 0
 };
 
 /// Reusable storage for variational contact-force evaluation.
 struct VariationalContactEvaluationScratch
 {
-  std::vector<Eigen::Isometry3d> previousWorldTransforms;
-  std::vector<Eigen::Isometry3d> trialRelativeTransforms;
-  std::vector<Eigen::Isometry3d> trialWorldTransforms;
-  std::vector<Eigen::MatrixXd> previousJacobians;
-  std::vector<Eigen::MatrixXd> trialJacobians;
+  using TransformAllocator = dart::common::StlAllocator<Eigen::Isometry3d>;
+  using TransformVector = std::vector<Eigen::Isometry3d, TransformAllocator>;
+  using JacobianAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using JacobianVector = std::vector<Eigen::MatrixXd, JacobianAllocator>;
+
+  VariationalContactEvaluationScratch()
+    : VariationalContactEvaluationScratch(
+          dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalContactEvaluationScratch(
+      dart::common::MemoryAllocator& allocator)
+    : previousWorldTransforms(TransformAllocator{allocator}),
+      trialRelativeTransforms(TransformAllocator{allocator}),
+      trialWorldTransforms(TransformAllocator{allocator}),
+      previousJacobians(JacobianAllocator{allocator}),
+      trialJacobians(JacobianAllocator{allocator})
+  {
+  }
+
+  TransformVector previousWorldTransforms;
+  TransformVector trialRelativeTransforms;
+  TransformVector trialWorldTransforms;
+  JacobianVector previousJacobians;
+  JacobianVector trialJacobians;
   Eigen::VectorXd contactForce;
   Eigen::VectorXd forcing;
+};
+
+/// Reusable storage for variational articulated linear solves.
+struct VariationalLinearSolveScratch
+{
+  using Matrix6 = Eigen::Matrix<double, 6, 6>;
+  using Vector6 = Eigen::Matrix<double, 6, 1>;
+  using Matrix6Allocator = dart::common::StlAllocator<Matrix6>;
+  using Matrix6Vector = std::vector<Matrix6, Matrix6Allocator>;
+  using Vector6Allocator = dart::common::StlAllocator<Vector6>;
+  using Vector6Vector = std::vector<Vector6, Vector6Allocator>;
+  using MatrixAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using MatrixVector = std::vector<Eigen::MatrixXd, MatrixAllocator>;
+  using VectorAllocator = dart::common::StlAllocator<Eigen::VectorXd>;
+  using VectorVector = std::vector<Eigen::VectorXd, VectorAllocator>;
+
+  VariationalLinearSolveScratch()
+    : VariationalLinearSolveScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalLinearSolveScratch(
+      dart::common::MemoryAllocator& allocator)
+    : articulated(Matrix6Allocator{allocator}),
+      bias(Vector6Allocator{allocator}),
+      motionToChild(Matrix6Allocator{allocator}),
+      spatial(Vector6Allocator{allocator}),
+      forceProjector(MatrixAllocator{allocator}),
+      motionProjector(MatrixAllocator{allocator}),
+      jointMatrix(MatrixAllocator{allocator}),
+      jointMatrixInverse(MatrixAllocator{allocator}),
+      jointRhs(VectorAllocator{allocator})
+  {
+  }
+
+  Matrix6Vector articulated;
+  Vector6Vector bias;
+  Matrix6Vector motionToChild;
+  Vector6Vector spatial;
+  MatrixVector forceProjector;
+  MatrixVector motionProjector;
+  MatrixVector jointMatrix;
+  MatrixVector jointMatrixInverse;
+  VectorVector jointRhs;
+  Eigen::VectorXd jointWork;
+  Eigen::VectorXd jointSolveWork;
+  Eigen::VectorXd rhs;
+  Eigen::VectorXd result;
+};
+
+/// Reusable storage for one variational multibody step.
+struct VariationalStepScratch
+{
+  using SpatialVelocityAllocator
+      = dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>;
+  using SpatialVelocityVector
+      = std::vector<Eigen::Matrix<double, 6, 1>, SpatialVelocityAllocator>;
+
+  VariationalStepScratch()
+    : VariationalStepScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalStepScratch(dart::common::MemoryAllocator& allocator)
+    : currentSpatialVelocities(SpatialVelocityAllocator{allocator})
+  {
+  }
+
+  SpatialVelocityVector currentSpatialVelocities;
+  Eigen::VectorXd position;
+  Eigen::VectorXd velocity;
+  Eigen::VectorXd appliedForce;
+  Eigen::VectorXd nextPosition;
+  Eigen::VectorXd residual;
+  Eigen::VectorXd zeroAcceleration;
+  Eigen::VectorXd previousJointVelocity;
+};
+
+/// Reusable storage for variational multibody tree construction.
+class DART_SIMULATION_API MultibodyVariationalTreeScratch final
+{
+public:
+  MultibodyVariationalTreeScratch();
+  explicit MultibodyVariationalTreeScratch(
+      dart::common::MemoryAllocator& allocator);
+  ~MultibodyVariationalTreeScratch();
+
+  MultibodyVariationalTreeScratch(const MultibodyVariationalTreeScratch&)
+      = delete;
+  MultibodyVariationalTreeScratch& operator=(
+      const MultibodyVariationalTreeScratch&) = delete;
+  MultibodyVariationalTreeScratch(MultibodyVariationalTreeScratch&&) noexcept;
+  MultibodyVariationalTreeScratch& operator=(
+      MultibodyVariationalTreeScratch&&) noexcept;
+
+  void setAllocator(dart::common::MemoryAllocator& allocator);
+  [[nodiscard]] const dart::common::MemoryAllocator& getAllocator()
+      const noexcept;
+  [[nodiscard]] std::size_t linkCount() const noexcept;
+  [[nodiscard]] std::size_t dofCount() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    dart::common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  dart::common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend struct MultibodyVariationalTreeScratchAccess;
+};
+
+/// Reusable storage for variational loop-closure projection.
+struct VariationalConstraintProjectionScratch
+{
+  using JacobianAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using JacobianVector = std::vector<Eigen::MatrixXd, JacobianAllocator>;
+  using ProjectionBoundsAllocator
+      = dart::common::StlAllocator<VariationalProjectionRowBounds>;
+  using ProjectionBoundsVector
+      = std::vector<VariationalProjectionRowBounds, ProjectionBoundsAllocator>;
+  using RowIndexAllocator = dart::common::StlAllocator<Eigen::Index>;
+  using RowIndexVector = std::vector<Eigen::Index, RowIndexAllocator>;
+
+  VariationalConstraintProjectionScratch()
+    : VariationalConstraintProjectionScratch(
+          dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalConstraintProjectionScratch(
+      dart::common::MemoryAllocator& allocator)
+    : jacobians(JacobianAllocator{allocator}),
+      projectionBounds(ProjectionBoundsAllocator{allocator}),
+      hardRows(RowIndexAllocator{allocator}),
+      boundedRows(RowIndexAllocator{allocator})
+  {
+  }
+
+  JacobianVector jacobians;
+  Eigen::MatrixXd pointJacobianA;
+  Eigen::MatrixXd pointJacobianB;
+  Eigen::MatrixXd angularJacobianA;
+  Eigen::MatrixXd angularJacobianB;
+  Eigen::MatrixXd pointJacobianWork;
+  Eigen::VectorXd residual;
+  Eigen::MatrixXd jacobian;
+  Eigen::MatrixXd inverseMassJt;
+  Eigen::MatrixXd constraintMass;
+  Eigen::LDLT<Eigen::MatrixXd> constraintFactorization;
+  Eigen::VectorXd lambdaRhs;
+  Eigen::VectorXd lambda;
+  Eigen::VectorXd correction;
+  ProjectionBoundsVector projectionBounds;
+  RowIndexVector hardRows;
+  RowIndexVector boundedRows;
+  Eigen::MatrixXd hardConstraintMass;
+  Eigen::LDLT<Eigen::MatrixXd> hardConstraintFactorization;
+  Eigen::VectorXd hardConstraintRhs;
+  Eigen::VectorXd hardConstraintLambda;
+  Eigen::VectorXd projectionLambda;
+};
+
+/// Reusable storage for manifold Anderson acceleration in the variational
+/// multibody stage.
+struct VariationalAndersonScratch
+{
+  using VectorAllocator = dart::common::StlAllocator<Eigen::VectorXd>;
+  using VectorVector = std::vector<Eigen::VectorXd, VectorAllocator>;
+
+  VariationalAndersonScratch()
+    : VariationalAndersonScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalAndersonScratch(dart::common::MemoryAllocator& allocator)
+    : stepDeltas(VectorAllocator{allocator}),
+      iterateDeltas(VectorAllocator{allocator})
+  {
+  }
+
+  VectorVector stepDeltas;
+  VectorVector iterateDeltas;
+  std::size_t historyCount = 0;
+  Eigen::VectorXd previousStep;
+  Eigen::VectorXd previousPosition;
+  Eigen::VectorXd jointDelta;
+  Eigen::VectorXd trialPosition;
+  Eigen::VectorXd andersonPosition;
+  Eigen::VectorXd andersonIncrement;
+  Eigen::MatrixXd stepMatrix;
+  Eigen::MatrixXd mixMatrix;
+  Eigen::MatrixXd ftf;
+  Eigen::MatrixXd regularized;
+  Eigen::VectorXd normalRhs;
+  Eigen::VectorXd gamma;
 };
 
 /// Cache-only scratch reused by the variational multibody stage.
@@ -307,11 +583,26 @@ struct MultibodyVariationalScratch
 {
   DART_SIMULATION_CACHE_COMPONENT(MultibodyVariationalScratch);
 
-  std::vector<VariationalLoopConstraint> constraints;
+  using PostContactTransformAllocator
+      = dart::common::StlAllocator<Eigen::Isometry3d>;
+  using PostContactTransformVector
+      = std::vector<Eigen::Isometry3d, PostContactTransformAllocator>;
+  using ConstraintAllocator
+      = dart::common::StlAllocator<VariationalLoopConstraint>;
+  using ConstraintVector
+      = std::vector<VariationalLoopConstraint, ConstraintAllocator>;
+
+  ConstraintVector constraints;
   VariationalGroundContact groundContact;
   std::optional<VariationalGroundContactSolver> groundContactSolver;
+  MultibodyVariationalTreeScratch tree;
   VariationalContactEvaluationScratch contactEvaluation;
-  std::vector<Eigen::Isometry3d> postContactTransforms;
+  VariationalStepScratch step;
+  VariationalLinearSolveScratch linearSolve;
+  MultibodyInverseDynamicsScratch inverseDynamics;
+  VariationalConstraintProjectionScratch projection;
+  VariationalAndersonScratch anderson;
+  PostContactTransformVector postContactTransforms;
 };
 
 /// **EXPERIMENTAL (PLAN-084 Phase C -- link-vs-link).** A sphere-sphere contact
@@ -433,6 +724,17 @@ DART_SIMULATION_API VariationalSolveReport integrateMultibodyVariational(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
+/// Scratch-aware overload for repeated diagnostics on the same multibody shape.
+/// The caller retains tree and step scratch capacity across calls; the
+/// no-scratch overload above remains source-compatible and uses local default
+/// scratch objects.
+[[nodiscard]] DART_SIMULATION_API double computeMultibodyMechanicalEnergy(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalStepScratch& stepScratch);
+
 /// O(n) product `M(q)^{-1} * impulse` for one multibody at its current
 /// configuration, via the articulated-body algorithm (zero velocity/gravity).
 /// This is the linear-time inverse-mass apply that powers the variational
@@ -444,6 +746,17 @@ computeMultibodyInverseMassProduct(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& impulse);
+
+/// Scratch-aware inverse-mass product for repeated calls on the same
+/// multibody shape. The caller retains tree, linear-solve, and output vector
+/// capacity across calls; the no-scratch overload remains source-compatible.
+DART_SIMULATION_API void computeMultibodyInverseMassProductInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& impulse,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalLinearSolveScratch& linearSolveScratch,
+    Eigen::VectorXd& result);
 
 /// Holonomic loop-closure residual `g(q)` and its Jacobian `J = dg/dq`
 /// evaluated at the multibody's current configuration, for the given closures.
@@ -462,6 +775,18 @@ computeVariationalConstraintLinearization(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const std::vector<VariationalLoopConstraint>& constraints);
+
+/// Scratch-aware loop-closure linearization for repeated diagnostics on the
+/// same multibody shape. The caller retains tree, projection-scratch, and
+/// result payload capacity across calls; the no-scratch overload remains
+/// source-compatible.
+DART_SIMULATION_API void computeVariationalConstraintLinearizationInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalConstraintProjectionScratch& projectionScratch,
+    VariationalConstraintLinearization& result);
 
 /// Classification of one public loop closure (`comps::LoopClosure`) for the
 /// variational loop-closure solver. Point closures whose endpoints are links of
@@ -498,7 +823,10 @@ bindVariationalLoopClosure(
 /// Reserve variational-stage registry storage and per-multibody scratch for the
 /// current baked multibody/contact shape.
 DART_SIMULATION_API void reserveMultibodyVariationalRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount);
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    dart::common::MemoryAllocator& allocator
+    = dart::common::MemoryAllocator::GetDefault());
 
 /// Variational-integrator multibody stage (a peer of
 /// `MultibodyForwardDynamicsStage`, selected by the `variational integrator`

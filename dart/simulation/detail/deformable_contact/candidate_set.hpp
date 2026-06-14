@@ -35,6 +35,8 @@
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/detail/deformable_contact/primitive_distance.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <algorithm>
@@ -120,9 +122,27 @@ struct ContactCandidateStats
 
 struct ContactCandidateSet
 {
-  std::vector<SurfaceEdge> surfaceEdges;
-  std::vector<PointTriangleCandidate> pointTriangleCandidates;
-  std::vector<EdgeEdgeCandidate> edgeEdgeCandidates;
+  using SurfaceEdgeAllocator = ::dart::common::StlAllocator<SurfaceEdge>;
+  using PointTriangleAllocator
+      = ::dart::common::StlAllocator<PointTriangleCandidate>;
+  using EdgeEdgeAllocator = ::dart::common::StlAllocator<EdgeEdgeCandidate>;
+  using SurfaceEdgeVector = std::vector<SurfaceEdge, SurfaceEdgeAllocator>;
+  using PointTriangleVector
+      = std::vector<PointTriangleCandidate, PointTriangleAllocator>;
+  using EdgeEdgeVector = std::vector<EdgeEdgeCandidate, EdgeEdgeAllocator>;
+
+  ContactCandidateSet() = default;
+
+  explicit ContactCandidateSet(::dart::common::MemoryAllocator& allocator)
+    : surfaceEdges(SurfaceEdgeAllocator{allocator}),
+      pointTriangleCandidates(PointTriangleAllocator{allocator}),
+      edgeEdgeCandidates(EdgeEdgeAllocator{allocator})
+  {
+  }
+
+  SurfaceEdgeVector surfaceEdges;
+  PointTriangleVector pointTriangleCandidates;
+  EdgeEdgeVector edgeEdgeCandidates;
   ContactCandidateStats stats;
 };
 
@@ -157,12 +177,37 @@ struct SweepItem
 
 struct ContactCandidateSweepScratch
 {
-  std::vector<SweepItem> pointItems;
-  std::vector<SweepItem> triangleItems;
-  std::vector<SweepItem> edgeItems;
+  using SweepItemAllocator = ::dart::common::StlAllocator<SweepItem>;
+  using SweepLinkAllocator = ::dart::common::StlAllocator<std::size_t>;
+  using SweepItemVector = std::vector<SweepItem, SweepItemAllocator>;
+  using SweepLinkVector = std::vector<std::size_t, SweepLinkAllocator>;
+
+  ContactCandidateSweepScratch() = default;
+
+  explicit ContactCandidateSweepScratch(
+      ::dart::common::MemoryAllocator& allocator)
+    : pointItems(SweepItemAllocator{allocator}),
+      triangleItems(SweepItemAllocator{allocator}),
+      edgeItems(SweepItemAllocator{allocator}),
+      sweepLinks(SweepLinkAllocator{allocator})
+  {
+  }
+
+  explicit ContactCandidateSweepScratch(
+      const ContactCandidateSet::SurfaceEdgeAllocator& allocator)
+    : pointItems(SweepItemAllocator{allocator}),
+      triangleItems(SweepItemAllocator{allocator}),
+      edgeItems(SweepItemAllocator{allocator}),
+      sweepLinks(SweepLinkAllocator{allocator})
+  {
+  }
+
+  SweepItemVector pointItems;
+  SweepItemVector triangleItems;
+  SweepItemVector edgeItems;
   // Reusable next-index live list for the cross-set sweep-and-prune traversal
   // (sized to the right-hand-side item count per call).
-  std::vector<std::size_t> sweepLinks;
+  SweepLinkVector sweepLinks;
 };
 
 //==============================================================================
@@ -311,12 +356,12 @@ inline void sortSweepItems(std::span<SweepItem> items)
 // rescanned for every lhs. The visited (lhs, rhs) sequence is identical to a
 // naive nested scan -- only the skipped non-overlapping work differs.
 // `linkScratch` is reusable next-index storage; it is resized to the rhs count.
-template <typename Visitor>
+template <typename Visitor, typename LinkScratch>
 void visitSweepPairs(
     std::span<SweepItem> lhsItems,
     std::span<SweepItem> rhsItems,
     Visitor&& visitor,
-    std::vector<std::size_t>& linkScratch)
+    LinkScratch& linkScratch)
 {
   sortSweepItems(lhsItems);
   sortSweepItems(rhsItems);
@@ -408,7 +453,9 @@ inline bool edgesAreAdjacent(const SurfaceEdge& a, const SurfaceEdge& b)
 }
 
 //==============================================================================
-inline void sortAndDedupe(std::vector<PointTriangleCandidate>& candidates)
+template <typename Allocator>
+inline void sortAndDedupe(
+    std::vector<PointTriangleCandidate, Allocator>& candidates)
 {
   std::sort(candidates.begin(), candidates.end());
   candidates.erase(
@@ -423,7 +470,8 @@ inline void sortAndDedupe(std::vector<PointTriangleCandidate>& candidates)
 }
 
 //==============================================================================
-inline void sortAndDedupe(std::vector<EdgeEdgeCandidate>& candidates)
+template <typename Allocator>
+inline void sortAndDedupe(std::vector<EdgeEdgeCandidate, Allocator>& candidates)
 {
   std::sort(candidates.begin(), candidates.end());
   candidates.erase(
@@ -623,9 +671,9 @@ inline void finishCandidateSet(ContactCandidateSet& candidates)
 } // namespace detail
 
 //==============================================================================
+template <typename EdgeVector>
 inline void buildUniqueSurfaceEdges(
-    std::span<const DeformableSurfaceTriangle> triangles,
-    std::vector<SurfaceEdge>& edges)
+    std::span<const DeformableSurfaceTriangle> triangles, EdgeVector& edges)
 {
   edges.clear();
   edges.reserve(3 * triangles.size());
@@ -687,6 +735,18 @@ inline ContactCandidateSet buildContactCandidatesBruteForce(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildContactCandidatesBruteForce(positions, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildContactCandidatesBruteForce(positions, triangles, options, candidates);
   return candidates;
 }
@@ -767,7 +827,8 @@ inline void buildContactCandidatesSweep(
     const ContactCandidateOptions& options,
     ContactCandidateSet& candidates)
 {
-  detail::ContactCandidateSweepScratch scratch;
+  detail::ContactCandidateSweepScratch scratch(
+      candidates.surfaceEdges.get_allocator());
   buildContactCandidatesSweep(
       positions, triangles, options, candidates, scratch);
 }
@@ -779,6 +840,18 @@ inline ContactCandidateSet buildContactCandidatesSweep(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildContactCandidatesSweep(positions, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildContactCandidatesSweep(positions, triangles, options, candidates);
   return candidates;
 }
@@ -877,6 +950,20 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesBruteForce(
+      positionsStart, positionsEnd, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildMotionAwareContactCandidatesBruteForce(
       positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;
@@ -983,7 +1070,8 @@ inline void buildMotionAwareContactCandidatesSweep(
     const ContactCandidateOptions& options,
     ContactCandidateSet& candidates)
 {
-  detail::ContactCandidateSweepScratch scratch;
+  detail::ContactCandidateSweepScratch scratch(
+      candidates.surfaceEdges.get_allocator());
   buildMotionAwareContactCandidatesSweep(
       positionsStart, positionsEnd, triangles, options, candidates, scratch);
 }
@@ -996,6 +1084,20 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesSweep(
+      positionsStart, positionsEnd, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildMotionAwareContactCandidatesSweep(
       positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;

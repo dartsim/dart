@@ -493,7 +493,7 @@ void assembleUnifiedConstraintProblemInto(
   // Compact each multibody's active link rows and lay out one contiguous block
   // per multibody after the rigid block.
   Eigen::Index nextBase = rigidRows;
-  problem.multibodyBlocks.resize(multibodyContacts.size());
+  problem.resizeMultibodyBlocks(multibodyContacts.size());
   for (std::size_t k = 0; k < multibodyContacts.size(); ++k) {
     const auto& contact = multibodyContacts[k];
     const auto& linkProblem = problemOf(contact);

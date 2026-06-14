@@ -183,8 +183,41 @@ void DART_SIMULATION_API readIsometry3d(std::istream& in, Eigen::Isometry3d& T);
 void DART_SIMULATION_API
 writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec);
 
+template <typename Derived>
+  requires(
+      std::is_same_v<typename Derived::Scalar, double>
+      && Derived::ColsAtCompileTime == 1
+      && Derived::RowsAtCompileTime == Eigen::Dynamic)
+void writeVectorXd(std::ostream& out, const Eigen::MatrixBase<Derived>& vec)
+{
+  std::size_t size = static_cast<std::size_t>(vec.size());
+  writePOD(out, size);
+  if (size > 0) {
+    detail::writeBytes(
+        out,
+        std::as_bytes(std::span<const double>(vec.derived().data(), size)));
+  }
+}
+
 // Read Eigen::VectorXd from binary stream
 void DART_SIMULATION_API readVectorXd(std::istream& in, Eigen::VectorXd& vec);
+
+template <typename Derived>
+  requires(
+      std::is_same_v<typename Derived::Scalar, double>
+      && Derived::ColsAtCompileTime == 1
+      && Derived::RowsAtCompileTime == Eigen::Dynamic)
+void readVectorXd(std::istream& in, Eigen::PlainObjectBase<Derived>& vec)
+{
+  std::size_t size;
+  readPOD(in, size);
+  vec.derived().resize(static_cast<Eigen::Index>(size));
+  if (size > 0) {
+    detail::readBytes(
+        in,
+        std::as_writable_bytes(std::span<double>(vec.derived().data(), size)));
+  }
+}
 
 // Write Eigen::MatrixXd to binary stream (rows/cols prefixed)
 void DART_SIMULATION_API

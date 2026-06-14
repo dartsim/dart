@@ -56,14 +56,14 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
   // Lock the mutex
   std::lock_guard<std::mutex> lock(mMutex);
 
-  if (!mMapPointerToSize.empty()) {
+  if (!mMapPointerToAllocation.empty()) {
     [[maybe_unused]] size_t totalSize = 0;
-    for (const auto& entry : mMapPointerToSize) {
-      totalSize += entry.second;
+    for (const auto& entry : mMapPointerToAllocation) {
+      totalSize += entry.second.bytes;
       DART_DEBUG(
           "Found potential memory leak at {} ({} bytes).",
           fmt::ptr(entry.first),
-          entry.second);
+          entry.second.bytes);
       // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
       // destructor is resolved.
     }
@@ -74,6 +74,19 @@ MemoryAllocatorDebugger<T>::~MemoryAllocatorDebugger()
         totalSize);
     // TODO(JS): Change to DART_FATAL once the issue of calling spdlog in
     // destructor is resolved.
+
+    for (const auto& entry : mMapPointerToAllocation) {
+      const auto& record = entry.second;
+      if (record.alignment == 0) {
+        mInternalAllocator.deallocate(entry.first, record.bytes);
+      } else {
+        mInternalAllocator.deallocate(
+            entry.first, record.bytes, record.alignment);
+      }
+    }
+
+    mMapPointerToAllocation.clear();
+    mSize = 0;
   }
 }
 
@@ -103,7 +116,7 @@ void* MemoryAllocatorDebugger<T>::allocate(size_t bytes) noexcept
     std::lock_guard<std::mutex> lock(mMutex);
     mSize += bytes;
     mPeak = std::max(mPeak, mSize);
-    mMapPointerToSize[newPtr] = bytes;
+    mMapPointerToAllocation[newPtr] = AllocationRecord{bytes, 0};
   }
 
   return newPtr;
@@ -120,7 +133,7 @@ void* MemoryAllocatorDebugger<T>::allocate(
     std::lock_guard<std::mutex> lock(mMutex);
     mSize += bytes;
     mPeak = std::max(mPeak, mSize);
-    mMapPointerToSize[newPtr] = bytes;
+    mMapPointerToAllocation[newPtr] = AllocationRecord{bytes, alignment};
   }
 
   return newPtr;
@@ -132,15 +145,15 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
-  auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end()) {
+  auto it = mMapPointerToAllocation.find(pointer);
+  if (it == mMapPointerToAllocation.end()) {
     DART_DEBUG(
         "Cannot deallocate memory {} not allocated by this allocator.",
         pointer);
     return;
   }
 
-  auto allocatedSize = it->second;
+  const auto allocatedSize = it->second.bytes;
   if (bytes != allocatedSize) {
     DART_DEBUG(
         "Cannot deallocate memory at {} of {} bytes that is different from the "
@@ -151,8 +164,17 @@ void MemoryAllocatorDebugger<T>::deallocate(void* pointer, size_t bytes)
     return;
   }
 
+  if (it->second.alignment != 0) {
+    DART_DEBUG(
+        "Cannot deallocate aligned memory at {} without the matching alignment "
+        "{}.",
+        pointer,
+        it->second.alignment);
+    return;
+  }
+
   mInternalAllocator.deallocate(pointer, bytes);
-  mMapPointerToSize.erase(it);
+  mMapPointerToAllocation.erase(it);
   mSize -= bytes;
 }
 
@@ -163,15 +185,15 @@ void MemoryAllocatorDebugger<T>::deallocate(
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
-  auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end()) {
+  auto it = mMapPointerToAllocation.find(pointer);
+  if (it == mMapPointerToAllocation.end()) {
     DART_DEBUG(
         "Cannot deallocate memory {} not allocated by this allocator.",
         pointer);
     return;
   }
 
-  auto allocatedSize = it->second;
+  const auto allocatedSize = it->second.bytes;
   if (bytes != allocatedSize) {
     DART_DEBUG(
         "Cannot deallocate memory at {} of {} bytes that is different from the "
@@ -182,8 +204,19 @@ void MemoryAllocatorDebugger<T>::deallocate(
     return;
   }
 
+  const auto allocatedAlignment = it->second.alignment;
+  if (alignment != allocatedAlignment) {
+    DART_DEBUG(
+        "Cannot deallocate memory at {} with alignment {} that is different "
+        "from the allocated alignment {}, which is a critical bug.",
+        pointer,
+        alignment,
+        allocatedAlignment);
+    return;
+  }
+
   mInternalAllocator.deallocate(pointer, bytes, alignment);
-  mMapPointerToSize.erase(it);
+  mMapPointerToAllocation.erase(it);
   mSize -= bytes;
 }
 
@@ -192,7 +225,7 @@ template <typename T>
 bool MemoryAllocatorDebugger<T>::isEmpty() const
 {
   std::lock_guard<std::mutex> lock(mMutex);
-  return mMapPointerToSize.empty();
+  return mMapPointerToAllocation.empty();
 }
 
 //==============================================================================
@@ -216,7 +249,7 @@ template <typename T>
 size_t MemoryAllocatorDebugger<T>::getAllocationCount() const
 {
   std::lock_guard<std::mutex> lock(mMutex);
-  return mMapPointerToSize.size();
+  return mMapPointerToAllocation.size();
 }
 
 //==============================================================================
@@ -225,12 +258,12 @@ bool MemoryAllocatorDebugger<T>::hasAllocated(void* pointer, size_t size) const
 {
   std::lock_guard<std::mutex> lock(mMutex);
 
-  const auto it = mMapPointerToSize.find(pointer);
-  if (it == mMapPointerToSize.end()) {
+  const auto it = mMapPointerToAllocation.find(pointer);
+  if (it == mMapPointerToAllocation.end()) {
     return false;
   }
 
-  const auto& allocatedSize = it->second;
+  const auto allocatedSize = it->second.bytes;
   if (size != allocatedSize) {
     return false;
   }

@@ -12,6 +12,8 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 
 #include <vector>
@@ -42,6 +44,11 @@ struct VariationalContact
 {
   DART_SIMULATION_PROPERTY_COMPONENT(VariationalContact);
 
+  using LinkIndexVector
+      = std::vector<std::size_t, dart::common::StlAllocator<std::size_t>>;
+  using PointVector = std::
+      vector<Eigen::Vector3d, dart::common::StlAllocator<Eigen::Vector3d>>;
+
   Eigen::Vector3d planeNormal = Eigen::Vector3d::UnitZ(); ///< out of the ground
   Eigen::Vector3d planePoint = Eigen::Vector3d::Zero();   ///< a point on plane
   double stiffness = 0.0;                 ///< penalty k (N/m), >= 0
@@ -57,9 +64,9 @@ struct VariationalContact
   std::size_t dualUpdateCadence = 0;
 
   /// Contact-point link indices (into the multibody structure's link order).
-  std::vector<std::size_t> pointLinkIndices;
+  LinkIndexVector pointLinkIndices;
   /// Contact-point body-frame positions, parallel to `pointLinkIndices`.
-  std::vector<Eigen::Vector3d> pointLocalPositions;
+  PointVector pointLocalPositions;
 };
 
 } // namespace dart::simulation::comps

@@ -37,12 +37,19 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <array>
 #include <memory>
 #include <string_view>
 #include <vector>
 
 #include <cstddef>
+
+namespace dart::common {
+class MemoryAllocator;
+class MemoryManager;
+} // namespace dart::common
 
 namespace dart::simulation::compute {
 
@@ -250,7 +257,8 @@ public:
 class DART_SIMULATION_API WorldStepPipeline
 {
 public:
-  WorldStepPipeline() = default;
+  WorldStepPipeline();
+  explicit WorldStepPipeline(common::MemoryAllocator& allocator);
   ~WorldStepPipeline() = default;
 
   WorldStepPipeline(const WorldStepPipeline&) = delete;
@@ -271,10 +279,13 @@ public:
   void execute(World& world, ComputeExecutor& executor);
   [[nodiscard]] WorldStepProfile executeProfiled(
       World& world, ComputeExecutor& executor);
+  void executeProfiled(
+      World& world, ComputeExecutor& executor, WorldStepProfile& profile);
 
 private:
   std::array<WorldStepStage*, kInlineStageCount> m_stages{};
-  std::vector<WorldStepStage*> m_overflowStages;
+  std::vector<WorldStepStage*, common::StlAllocator<WorldStepStage*>>
+      m_overflowStages;
   std::size_t m_stageCount = 0;
 };
 
@@ -283,6 +294,7 @@ class DART_SIMULATION_API KinematicsStage final : public WorldStepStage
 {
 public:
   KinematicsStage();
+  explicit KinematicsStage(common::MemoryManager* memoryManager);
   ~KinematicsStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -291,8 +303,15 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 
 private:
+  struct CachedGraphDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(WorldKinematicsGraph* graph) const noexcept;
+  };
+
   World* m_cachedWorld = nullptr;
-  std::unique_ptr<WorldKinematicsGraph> m_cachedGraph;
+  common::MemoryManager* m_memoryManager = nullptr;
+  std::unique_ptr<WorldKinematicsGraph, CachedGraphDeleter> m_cachedGraph;
 };
 
 /// Per-entity unconstrained rigid-body integration stage for the experimental
@@ -302,6 +321,9 @@ class DART_SIMULATION_API RigidBodyIntegrationStage final
 {
 public:
   explicit RigidBodyIntegrationStage(std::size_t batchSize = 64);
+  explicit RigidBodyIntegrationStage(common::MemoryManager* memoryManager);
+  RigidBodyIntegrationStage(
+      std::size_t batchSize, common::MemoryManager* memoryManager);
   ~RigidBodyIntegrationStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -312,9 +334,19 @@ public:
 
 private:
   struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
+
+  static Scratch* createScratch(common::MemoryManager* memoryManager);
 
   std::size_t m_batchSize;
-  std::unique_ptr<Scratch> m_scratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 /// Unconstrained rigid-body integration stage driven by the batched
@@ -333,6 +365,8 @@ class DART_SIMULATION_API BatchedRigidBodyIntegrationStage final
 {
 public:
   BatchedRigidBodyIntegrationStage();
+  explicit BatchedRigidBodyIntegrationStage(
+      common::MemoryManager* memoryManager);
   ~BatchedRigidBodyIntegrationStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -341,7 +375,18 @@ public:
 
 private:
   struct Scratch;
-  std::unique_ptr<Scratch> m_scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
+
+  static Scratch* createScratch(common::MemoryManager* memoryManager);
+
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 /// Updates free rigid-body velocities from the assembled transient force buffer
@@ -352,6 +397,7 @@ class DART_SIMULATION_API RigidBodyVelocityStage final : public WorldStepStage
 {
 public:
   RigidBodyVelocityStage();
+  explicit RigidBodyVelocityStage(common::MemoryManager* memoryManager);
   ~RigidBodyVelocityStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -361,7 +407,18 @@ public:
 
 private:
   struct Scratch;
-  std::unique_ptr<Scratch> m_scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
+
+  static Scratch* createScratch(common::MemoryManager* memoryManager);
+
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 /// Advances free rigid-body poses from their current velocities and refreshes
@@ -392,6 +449,8 @@ class DART_SIMULATION_API RigidBodyContactStage final : public WorldStepStage
 {
 public:
   explicit RigidBodyContactStage(std::size_t iterations = 8);
+  RigidBodyContactStage(
+      std::size_t iterations, common::MemoryManager* memoryManager);
   ~RigidBodyContactStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -404,10 +463,29 @@ public:
 private:
   struct AvbdScratch;
   struct ContactScratch;
+  struct AvbdScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(AvbdScratch* scratch) const noexcept;
+  };
+  struct ContactScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(ContactScratch* scratch) const noexcept;
+  };
+
+  using AvbdScratchPtr = std::unique_ptr<AvbdScratch, AvbdScratchDeleter>;
+  using ContactScratchPtr
+      = std::unique_ptr<ContactScratch, ContactScratchDeleter>;
+
+  static AvbdScratch* createAvbdScratch(common::MemoryManager* memoryManager);
+  static ContactScratch* createContactScratch(
+      common::MemoryManager* memoryManager);
 
   std::size_t m_iterations;
-  std::unique_ptr<AvbdScratch> m_avbdScratch;
-  std::unique_ptr<ContactScratch> m_contactScratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  AvbdScratchPtr m_avbdScratch;
+  ContactScratchPtr m_contactScratch;
 };
 
 /// Terminal state of the most recent opt-in rigid IPC solver execution.
@@ -523,7 +601,12 @@ class DART_SIMULATION_API RigidIpcContactStage final : public WorldStepStage
 {
 public:
   explicit RigidIpcContactStage(std::size_t maxIterations = 8);
+  RigidIpcContactStage(
+      std::size_t maxIterations, common::MemoryManager* memoryManager);
   explicit RigidIpcContactStage(RigidIpcContactStageOptions options);
+  RigidIpcContactStage(
+      RigidIpcContactStageOptions options,
+      common::MemoryManager* memoryManager);
   ~RigidIpcContactStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -541,10 +624,18 @@ public:
 
 private:
   struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
 
   RigidIpcContactStageOptions m_options;
   RigidIpcSolverStats m_lastStats;
-  std::unique_ptr<Scratch> m_scratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 /// Default deformable-body dynamics stage.
@@ -556,6 +647,7 @@ class DART_SIMULATION_API DeformableDynamicsStage final : public WorldStepStage
 {
 public:
   DeformableDynamicsStage();
+  explicit DeformableDynamicsStage(common::MemoryManager* memoryManager);
   ~DeformableDynamicsStage() override;
 
   [[nodiscard]] std::string_view getName() const noexcept override;
@@ -568,9 +660,15 @@ public:
 
 private:
   struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
 
   DeformableSolverStats m_lastStats;
-  std::unique_ptr<Scratch> m_scratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  std::unique_ptr<Scratch, ScratchDeleter> m_scratch;
 };
 
 } // namespace dart::simulation::compute

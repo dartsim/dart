@@ -21,6 +21,8 @@
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <entt/entt.hpp>
 #include <gtest/gtest.h>
 
@@ -147,6 +149,109 @@ public:
     return g_heapAllocationBytes.load(std::memory_order_relaxed);
   }
 };
+
+//==============================================================================
+TEST(UnifiedConstraint, ProblemContainersUseProvidedAllocator)
+{
+  namespace common = dart::common;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeProblem = freeList.getAllocationCount();
+
+  {
+    sx::compute::RigidBodyContactProblem rigidProblem(
+        memoryManager.getFreeAllocator());
+    sx::compute::UnifiedConstraintProblem problem(
+        memoryManager.getFreeAllocator());
+
+    const common::StlAllocator<sx::compute::RigidBodyContactConstraint>
+        rigidConstraintAllocator{memoryManager.getFreeAllocator()};
+    const common::StlAllocator<sx::compute::UnifiedRowOwner> rowOwnerAllocator{
+        memoryManager.getFreeAllocator()};
+    const common::StlAllocator<sx::compute::UnifiedMultibodyBlock>
+        blockAllocator{memoryManager.getFreeAllocator()};
+    const common::StlAllocator<sx::compute::MultibodyLinkContactRow>
+        linkRowAllocator{memoryManager.getFreeAllocator()};
+
+    EXPECT_EQ(
+        rigidProblem.constraints.get_allocator(), rigidConstraintAllocator);
+    EXPECT_EQ(problem.rowOwners.get_allocator(), rowOwnerAllocator);
+    EXPECT_EQ(
+        problem.rigidConstraints.get_allocator(), rigidConstraintAllocator);
+    EXPECT_EQ(problem.multibodyBlocks.get_allocator(), blockAllocator);
+
+    rigidProblem.constraints.reserve(1);
+    problem.rowOwners.reserve(3);
+    problem.rigidConstraints.reserve(1);
+    problem.multibodyBlocks.reserve(1);
+    problem.resizeMultibodyBlocks(1);
+    ASSERT_EQ(problem.multibodyBlocks.size(), 1u);
+    EXPECT_EQ(
+        problem.multibodyBlocks[0].rows.get_allocator(), linkRowAllocator);
+    problem.multibodyBlocks[0].rows.reserve(2);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeProblem)
+        << "allocator-aware unified problem containers should reserve from "
+           "the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeProblem);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, SolveScratchVectorsUseProvidedAllocator)
+{
+  namespace common = dart::common;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeScratch = freeList.getAllocationCount();
+
+  {
+    sx::compute::UnifiedConstraintSolveScratch scratch(
+        memoryManager.getFreeAllocator());
+
+    const common::StlAllocator<Eigen::Index> indexAllocator{
+        memoryManager.getFreeAllocator()};
+    const common::StlAllocator<char> charAllocator{
+        memoryManager.getFreeAllocator()};
+    const common::StlAllocator<double> doubleAllocator{
+        memoryManager.getFreeAllocator()};
+    const common::StlAllocator<std::size_t> sizeAllocator{
+        memoryManager.getFreeAllocator()};
+
+    EXPECT_EQ(scratch.islandRows.get_allocator(), indexAllocator);
+    EXPECT_EQ(scratch.islandOffsets.get_allocator(), indexAllocator);
+    EXPECT_EQ(scratch.visitedRows.get_allocator(), charAllocator);
+    EXPECT_EQ(scratch.rowStack.get_allocator(), indexAllocator);
+    EXPECT_EQ(scratch.localIndex.get_allocator(), indexAllocator);
+    EXPECT_EQ(scratch.normalRows.get_allocator(), indexAllocator);
+    EXPECT_EQ(scratch.rigidTangent1.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.rigidTangent2.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.linkTangentOffsets.get_allocator(), sizeAllocator);
+    EXPECT_EQ(scratch.linkTangent1.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.linkTangent2.get_allocator(), doubleAllocator);
+
+    scratch.islandRows.reserve(6);
+    scratch.islandOffsets.reserve(3);
+    scratch.visitedRows.reserve(6);
+    scratch.rowStack.reserve(6);
+    scratch.localIndex.reserve(6);
+    scratch.normalRows.reserve(2);
+    scratch.rigidTangent1.reserve(2);
+    scratch.rigidTangent2.reserve(2);
+    scratch.linkTangentOffsets.reserve(2);
+    scratch.linkTangent1.reserve(2);
+    scratch.linkTangent2.reserve(2);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeScratch)
+        << "allocator-aware unified solve scratch vectors should reserve from "
+           "the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeScratch);
+}
 
 //==============================================================================
 // Three rigid bodies in a vertical stack on a static ground, mirroring the

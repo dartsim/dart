@@ -12,6 +12,8 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <vector>
 
 #include <cstddef>
@@ -36,10 +38,12 @@ struct VariationalContactDualState
 {
   DART_SIMULATION_STATE_COMPONENT(VariationalContactDualState);
 
+  using DualVector = std::vector<double, dart::common::StlAllocator<double>>;
+
   /// Per-contact-point duals, parallel to
   /// `VariationalContact::pointLinkIndices` (and
   /// `VariationalContact::pointLocalPositions`).
-  std::vector<double> duals;
+  DualVector duals;
 
   /// Steps since the last dual ascent. The variational-integration stage
   /// advances the duals and resets this to 0 once it reaches

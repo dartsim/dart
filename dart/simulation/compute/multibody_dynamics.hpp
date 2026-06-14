@@ -38,6 +38,8 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entity/entity.hpp> // entt::entity and entt::null for the
@@ -48,6 +50,11 @@
 #include <span>
 #include <string_view>
 #include <vector>
+
+namespace dart::common {
+class MemoryAllocator;
+class MemoryManager;
+} // namespace dart::common
 
 namespace dart::simulation::comps {
 struct MultibodyStructure;
@@ -69,6 +76,57 @@ struct MultibodyDynamicsTerms
   Eigen::VectorXd gravityForces;  ///< g(q), size dof
 };
 
+/// Reusable storage for generalized-coordinate dynamics-term evaluation.
+///
+/// The return-by-value wrapper below remains convenient for one-shot callers.
+/// Repeated diagnostics or stage-loop callers should retain this scratch and
+/// pass caller-owned result storage to `computeMultibodyDynamicsTermsInto()` so
+/// dynamics-tree, RNEA, and output capacity can be reused across same-shape
+/// calls without exposing private dynamics-tree types.
+class DART_SIMULATION_API MultibodyDynamicsTermsScratch final
+{
+public:
+  MultibodyDynamicsTermsScratch();
+  explicit MultibodyDynamicsTermsScratch(common::MemoryAllocator& allocator);
+  ~MultibodyDynamicsTermsScratch();
+
+  MultibodyDynamicsTermsScratch(const MultibodyDynamicsTermsScratch&) = delete;
+  MultibodyDynamicsTermsScratch& operator=(const MultibodyDynamicsTermsScratch&)
+      = delete;
+  MultibodyDynamicsTermsScratch(MultibodyDynamicsTermsScratch&&) noexcept;
+  MultibodyDynamicsTermsScratch& operator=(
+      MultibodyDynamicsTermsScratch&&) noexcept;
+
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
+      MultibodyDynamicsTermsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
+      MultibodyDynamicsTermsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      MultibodyDynamicsTerms& result);
+};
+
+struct InverseDynamicsDerivatives;
+
 /// Compute the joint-space mass matrix and bias (Coriolis/centrifugal and
 /// gravity) generalized forces for a single multibody.
 ///
@@ -83,6 +141,23 @@ computeMultibodyDynamicsTerms(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
+
+/// Reserve dynamics-terms scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute joint-space dynamics terms into reusable caller-owned storage.
+///
+/// `result` is resized and overwritten. For a multibody with no movable
+/// degrees of freedom, the matrix and vectors are empty.
+DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyDynamicsTerms& result);
 
 /// Compute the generalized joint forces required to produce a desired
 /// generalized acceleration at the multibody's current configuration and
@@ -99,6 +174,84 @@ computeMultibodyInverseDynamics(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
+
+/// Reusable storage for inverse-dynamics evaluation.
+///
+/// The return-by-value wrapper above remains convenient for one-shot callers.
+/// Repeated or stage-loop callers should keep this scratch and pass it to
+/// `computeMultibodyInverseDynamicsInto()` so dynamics-tree, RNEA, and output
+/// storage can be retained across same-shape steps without exposing private
+/// dynamics-tree types.
+class DART_SIMULATION_API MultibodyInverseDynamicsScratch final
+{
+public:
+  MultibodyInverseDynamicsScratch();
+  explicit MultibodyInverseDynamicsScratch(common::MemoryAllocator& allocator);
+  ~MultibodyInverseDynamicsScratch();
+
+  MultibodyInverseDynamicsScratch(const MultibodyInverseDynamicsScratch&)
+      = delete;
+  MultibodyInverseDynamicsScratch& operator=(
+      const MultibodyInverseDynamicsScratch&) = delete;
+  MultibodyInverseDynamicsScratch(MultibodyInverseDynamicsScratch&&) noexcept;
+  MultibodyInverseDynamicsScratch& operator=(
+      MultibodyInverseDynamicsScratch&&) noexcept;
+
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      const Eigen::VectorXd& desiredAcceleration,
+      Eigen::VectorXd& result);
+
+  friend DART_SIMULATION_API void
+  computeMultibodyInverseDynamicsDerivativesInto(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      const Eigen::VectorXd& generalizedAcceleration,
+      InverseDynamicsDerivatives& result);
+};
+
+/// Reserve inverse-dynamics scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute inverse dynamics into reusable caller-owned storage.
+///
+/// `result` is resized and overwritten with the generalized force vector. For a
+/// multibody with no movable degrees of freedom, `result` is empty.
+DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration,
+    Eigen::VectorXd& result);
 
 /// Analytic inverse-dynamics partial derivatives, ∂τ/∂q and ∂τ/∂q̇, evaluated
 /// at the multibody's current `(q, q̇)` and the supplied generalized
@@ -127,6 +280,18 @@ computeMultibodyInverseDynamicsDerivatives(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration);
 
+/// Compute analytic inverse-dynamics partial derivatives into reusable scratch.
+///
+/// `result` is overwritten. When the analytic path does not apply, `valid` is
+/// false and the matrices are empty, matching the return-by-value wrapper.
+DART_SIMULATION_API void computeMultibodyInverseDynamicsDerivativesInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration,
+    InverseDynamicsDerivatives& result);
+
 /// Compute the body-frame spatial Jacobian of one link of a multibody.
 ///
 /// The returned 6 x DOF matrix maps the multibody's generalized velocity to the
@@ -140,6 +305,75 @@ computeMultibodyInverseDynamicsDerivatives(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
+
+/// Reusable storage for link-Jacobian evaluation.
+///
+/// The return-by-value wrappers remain convenient for one-shot diagnostics.
+/// Repeated callers should retain this scratch and pass output storage to the
+/// `Into` overloads so dynamics-tree and per-link body-Jacobian capacity can be
+/// reused across same-shape calls.
+class DART_SIMULATION_API MultibodyLinkJacobianScratch final
+{
+public:
+  MultibodyLinkJacobianScratch();
+  explicit MultibodyLinkJacobianScratch(common::MemoryAllocator& allocator);
+  ~MultibodyLinkJacobianScratch();
+
+  MultibodyLinkJacobianScratch(const MultibodyLinkJacobianScratch&) = delete;
+  MultibodyLinkJacobianScratch& operator=(const MultibodyLinkJacobianScratch&)
+      = delete;
+  MultibodyLinkJacobianScratch(MultibodyLinkJacobianScratch&&) noexcept;
+  MultibodyLinkJacobianScratch& operator=(
+      MultibodyLinkJacobianScratch&&) noexcept;
+
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      entt::entity linkEntity,
+      Eigen::MatrixXd& result);
+
+  friend DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      entt::entity linkEntity,
+      Eigen::MatrixXd& result);
+};
+
+/// Reserve link-Jacobian scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute a body-frame link Jacobian into reusable caller-owned storage.
+DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result);
 
 /// Compute the world-frame geometric Jacobian of one link of a multibody.
 ///
@@ -155,6 +389,14 @@ computeMultibodyLinkWorldJacobian(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
+
+/// Compute a world-frame link Jacobian into reusable caller-owned storage.
+DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result);
 
 /// One contact acting on a single link of a multibody, oriented so the normal
 /// points from the obstacle into the link. The obstacle is either immovable
@@ -234,7 +476,16 @@ struct MultibodyLinkContactRow
 /// inverse mass, the operator the contact impulses act through.
 struct MultibodyLinkContactProblem
 {
-  std::vector<MultibodyLinkContactRow> rows;
+  using RowAllocator = common::StlAllocator<MultibodyLinkContactRow>;
+
+  MultibodyLinkContactProblem() = default;
+
+  explicit MultibodyLinkContactProblem(common::MemoryAllocator& allocator)
+    : rows(RowAllocator{allocator})
+  {
+  }
+
+  std::vector<MultibodyLinkContactRow, RowAllocator> rows;
   Eigen::MatrixXd inverseMass; ///< joint-space M^-1 (size DOF x DOF)
 };
 
@@ -400,6 +651,8 @@ class DART_SIMULATION_API UnifiedConstraintStage final : public WorldStepStage
 {
 public:
   explicit UnifiedConstraintStage(std::size_t frictionIterations = 8);
+  UnifiedConstraintStage(
+      std::size_t frictionIterations, common::MemoryManager* memoryManager);
   ~UnifiedConstraintStage() override;
 
   UnifiedConstraintStage(const UnifiedConstraintStage&) = delete;
@@ -416,12 +669,20 @@ public:
 
 private:
   struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
 
   bool assembleProblemIntoScratch(
-      World& world, const std::vector<Contact>& contacts);
+      World& world, std::span<const Contact> contacts);
 
   std::size_t m_frictionIterations;
-  std::unique_ptr<Scratch> m_scratch;
+  common::MemoryManager* m_memoryManager = nullptr;
+  ScratchPtr m_scratch;
 };
 
 } // namespace dart::simulation::compute

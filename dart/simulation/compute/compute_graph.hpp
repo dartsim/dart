@@ -35,8 +35,12 @@
 #include <dart/simulation/compute/compute_node.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -73,7 +77,8 @@ struct DART_SIMULATION_API ComputeResourceHazard
 class DART_SIMULATION_API ComputeGraph
 {
 public:
-  ComputeGraph() = default;
+  ComputeGraph();
+  explicit ComputeGraph(dart::common::MemoryAllocator& allocator);
   ~ComputeGraph() = default;
 
   ComputeGraph(const ComputeGraph&) = delete;
@@ -90,14 +95,13 @@ public:
   [[nodiscard]] ComputeNode* getNode(std::string_view name) const;
   [[nodiscard]] std::vector<ComputeNode*> getNodes() const;
   [[nodiscard]] std::vector<ComputeNode*> getTopologicalOrder() const;
-  [[nodiscard]] const std::vector<ComputeNode*>& getTopologicalOrderView()
-      const;
+  [[nodiscard]] std::span<ComputeNode* const> getTopologicalOrderView() const;
   [[nodiscard]] std::vector<std::vector<ComputeNode*>> getParallelLevels()
       const;
 
-  [[nodiscard]] const std::vector<ComputeEdge>& getEdges() const noexcept
+  [[nodiscard]] std::span<const ComputeEdge> getEdges() const noexcept
   {
-    return m_edges;
+    return std::span<const ComputeEdge>{m_edges.data(), m_edges.size()};
   }
 
   [[nodiscard]] std::vector<ComputeNode*> getDependencies(
@@ -132,18 +136,41 @@ public:
   void clear();
 
 private:
+  struct ComputeNodeDeleter
+  {
+    dart::common::MemoryAllocator* allocator = nullptr;
+    void operator()(ComputeNode* node) const noexcept;
+  };
+
+  using ComputeNodePtr = std::unique_ptr<ComputeNode, ComputeNodeDeleter>;
+  using ComputeNodePtrAllocator = dart::common::StlAllocator<ComputeNodePtr>;
+  using EdgeAllocator = dart::common::StlAllocator<ComputeEdge>;
+  using TopologicalOrderAllocator = dart::common::StlAllocator<ComputeNode*>;
+  using EdgeVector = std::vector<ComputeEdge, EdgeAllocator>;
+  using TopologicalOrderVector
+      = std::vector<ComputeNode*, TopologicalOrderAllocator>;
+  using NodeNameLookupAllocator
+      = dart::common::StlAllocator<std::pair<const std::string, ComputeNode*>>;
+
   void invalidateTraversalCache() noexcept;
 
   [[nodiscard]] bool ownsNode(const ComputeNode& node) const;
   [[nodiscard]] bool wouldCreateCycle(
       const ComputeNode& from, const ComputeNode& to) const;
-  [[nodiscard]] std::vector<ComputeNode*> buildTopologicalOrder(
+  [[nodiscard]] TopologicalOrderVector buildTopologicalOrder(
       bool throwOnCycle) const;
 
-  std::vector<std::unique_ptr<ComputeNode>> m_nodes;
-  std::vector<ComputeEdge> m_edges;
-  std::unordered_map<std::string, ComputeNode*> m_nodesByName;
-  mutable std::vector<ComputeNode*> m_topologicalOrderCache;
+  dart::common::MemoryAllocator* m_allocator = nullptr;
+  std::vector<ComputeNodePtr, ComputeNodePtrAllocator> m_nodes;
+  EdgeVector m_edges;
+  std::unordered_map<
+      std::string,
+      ComputeNode*,
+      std::hash<std::string>,
+      std::equal_to<std::string>,
+      NodeNameLookupAllocator>
+      m_nodesByName;
+  mutable TopologicalOrderVector m_topologicalOrderCache;
   mutable bool m_topologicalOrderCacheValid = false;
 };
 
