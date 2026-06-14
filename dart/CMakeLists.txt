@@ -216,7 +216,7 @@ endif()
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
 # C++ standard settings
-target_compile_features(dart PUBLIC cxx_std_20)
+target_compile_features(dart PUBLIC cxx_std_23)
 
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" dart_host_processor)
 set(dart_host_architecture "unknown")

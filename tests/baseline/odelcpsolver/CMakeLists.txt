@@ -13,7 +13,7 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
 )
-target_compile_features(${target_name} PUBLIC cxx_std_20)
+target_compile_features(${target_name} PUBLIC cxx_std_23)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

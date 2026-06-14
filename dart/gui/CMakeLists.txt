@@ -41,7 +41,7 @@ if(DART_BUILD_GUI)
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
       $<INSTALL_INTERFACE:include>
   )
-  target_compile_features(${core_target_name} PUBLIC cxx_std_20)
+  target_compile_features(${core_target_name} PUBLIC cxx_std_23)
   target_compile_definitions(${core_target_name} PRIVATE DART_BUILDING_DART_GUI)
   target_link_libraries(${core_target_name} PUBLIC dart)
 
@@ -100,7 +100,7 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_compile_features(${target_name} PUBLIC cxx_std_20)
+target_compile_features(${target_name} PUBLIC cxx_std_23)
 
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})

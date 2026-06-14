@@ -17,7 +17,7 @@ function(dart_build_gui_example target_name)
 
   add_executable(${target_name} ${ARGN})
   target_link_libraries(${target_name} PRIVATE dart-gui)
-  target_compile_features(${target_name} PRIVATE cxx_std_20)
+  target_compile_features(${target_name} PRIVATE cxx_std_23)
 
   if(DART_IN_SOURCE_BUILD)
     set_target_properties(

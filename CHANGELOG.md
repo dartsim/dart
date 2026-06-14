@@ -7,6 +7,15 @@
 - Breaking Changes
   - Increased required C++ standard from C++17 to C++20. ([#2068](https://github.com/dartsim/dart/pull/2068))
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  - Increased the required C++ standard from C++20 to C++23, and consolidated the
+    standard declaration onto the library targets so it propagates transitively
+    (removing redundant `target_compile_features` calls). Adopted C++23 facilities
+    (`std::expected`, `std::to_underlying`, `std::unreachable`, deducing-this,
+    multidimensional `operator[]`, `std::optional` monadic ops, `fmt`/`std::print`)
+    and added `dart/common/feature_support.hpp` to gate standard-library features
+    that are not yet uniformly available across the supported toolchains
+    (`std::print`, `std::flat_map`/`std::flat_set`, `std::move_only_function`,
+    `std::generator`, `std::mdspan`). See `docs/design/cpp23_modernization.md`.
   - Increased the minimum required CMake version to 4.2.3 for source builds,
     Pixi environments, and installed-package smoke projects.
   - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
