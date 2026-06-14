@@ -290,7 +290,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   exist). The quarantine lane this packet's freeze check must enforce is
   undefined until that decision exists, so do not start the check before then.
 
-#### WP-091.5 Renumber colliding plan IDs
+#### WP-091.5 Renumber colliding plan IDs [claimed]
 
 - Objective: `PLAN-080` and `PLAN-082` each identify exactly one initiative.
 - Scope: assign fresh IDs to the Performance Dashboard and Linear-Time
@@ -332,6 +332,33 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `082-variational-integrator-solver{,/}` all exist on disk). Coordinate with
   WP-091.3 if both are in flight (both rewrite the `architecture.md` PLAN-082
   citation).
+- Evidence: the four colliding dashboard blocks now hold four unique IDs —
+  Rigid-Body Dynamics Solver keeps `PLAN-080`, Rigid Implicit-Barrier Contact
+  keeps `PLAN-082`, the Linear-Time Variational Integrator is renumbered to
+  `PLAN-084` (chosen adjacent to the solver block; verified free), and the
+  Performance Dashboard to `PLAN-092` (`PLAN-090` was already taken by the
+  Filament Renderer Performance entry — caught and avoided). `git mv` renamed
+  `082-variational-integrator-solver.md` and its sidecar directory to `084-`;
+  every cross-reference was disambiguated per occurrence (variational →
+  `PLAN-084`: 32 refs in 9 `variational_*`/`multibody.hpp` code+test files plus
+  the variational plan/design/dev-task/papers docs; Performance Dashboard →
+  `PLAN-092`: the dashboard block heading, `benchmark_pr_comparison.yml`, and
+  `benchmark_pr_compare.py`), while every reference to the kept initiatives
+  (rigid-body solver, rigid IPC) was left untouched — confirmed by a full
+  `git grep` audit showing all remaining `PLAN-082` refs are rigid-IPC or
+  cross-plan/exemplar context and all `PLAN-084` refs are variational. The
+  classification was produced by a fan-out over the 45 referencing
+  doc/script/CI files (line-numbered decisions applied surgically), and the
+  two solver-table/path edits coordinate cleanly with WP-091.3 (different
+  lines). The plan-ID uniqueness check landed in
+  `scripts/check_docs_policy.py` (`check_plan_id_uniqueness`, run by
+  `pixi run check-docs-policy`) with `tests/test_check_docs_policy.py` (4
+  pytest cases proving it rejects a duplicate-ID dashboard). Gates:
+  `pixi run lint` (markdown links + format), `pixi run check-docs-policy`
+  (uniqueness + owner-link resolution), and the meta-test all green. (The
+  `architecture.md` solver-table edit is the single variational PLAN-082 →
+  PLAN-084 citation on a 🧪-experimental row; it does not overlap WP-091.3's
+  ✅-row citations, which land separately in PR #2999.)
 
 ### WS1 — Internal solver contract and selection
 

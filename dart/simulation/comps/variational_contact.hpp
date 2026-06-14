@@ -26,7 +26,7 @@ namespace dart::simulation::comps {
 /// body-fixed contact points (by link index, parallel arrays) with
 /// compliant-penalty, lagged-Coulomb-friction, and Kelvin-Voigt-damping
 /// parameters. When present on a multibody, the variational-integration stage
-/// builds the in-loop compliant-contact hook (PLAN-082 Phase C rungs C1/C2)
+/// builds the in-loop compliant-contact hook (PLAN-084 Phase C rungs C1/C2)
 /// from it and folds it into the forced-DEL root-find each step; absent (the
 /// default), the integrator is contact-free.
 ///

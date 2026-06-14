@@ -742,7 +742,7 @@ TEST(VariationalIntegration, MaintainsDistanceLoopClosure)
   EXPECT_GT(motion, 1e-3);       // the constrained system actually moved
 }
 
-// PLAN-082 headline acceptance gate. On a passive 10-link revolute chain (whose
+// PLAN-084 headline acceptance gate. On a passive 10-link revolute chain (whose
 // inertia is strongly configuration-dependent), the variational integrator's
 // total mechanical energy stays in a bounded band with *no secular drift*: the
 // least-squares slope of energy-vs-time is ~0. Semi-implicit Euler on the very
@@ -874,7 +874,7 @@ TEST(VariationalIntegration, ConstraintJacobianMatchesFiniteDifference)
       << fd;
 }
 
-// PLAN-082 convergence gate: RIQN converges in a small, bounded number of
+// PLAN-084 convergence gate: RIQN converges in a small, bounded number of
 // iterations on a representative multi-link scene (mean <= 8 per the plan), and
 // every step reaches the tolerance (no silent non-convergence).
 TEST(VariationalIntegration, RiqnMeanIterationsWithinBudget)
@@ -1002,7 +1002,7 @@ TEST(VariationalIntegration, PaperScaleHighRatioChainStaysFiniteAndResets)
   }
 }
 
-// PLAN-082 convergence gate: non-convergence is a documented hard error, not a
+// PLAN-084 convergence gate: non-convergence is a documented hard error, not a
 // silent best-effort step. Forcing an impossible tolerance in a single
 // iteration must throw rather than write back a non-converged configuration.
 TEST(VariationalIntegration, NonConvergenceRaisesDocumentedError)
@@ -1041,7 +1041,7 @@ TEST(VariationalIntegration, NonConvergenceRaisesDocumentedError)
       sx::InvalidOperationException);
 }
 
-// PLAN-082 momentum gate: a force-free floating body (no gravity) conserves
+// PLAN-084 momentum gate: a force-free floating body (no gravity) conserves
 // both linear momentum (its COM advances at constant velocity) and angular
 // momentum, a Noether symmetry the variational integrator preserves by
 // construction. The body is a symmetric top (I_xx == I_yy) spinning about its
@@ -2660,7 +2660,7 @@ TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
   EXPECT_GT(motion, 1e-3);      // the arm still swings under gravity
 }
 
-// PLAN-082 serialization gate: binary save/load round-trips the trajectory and
+// PLAN-084 serialization gate: binary save/load round-trips the trajectory and
 // does NOT re-bootstrap the two-step discrete-mechanics history. A reference
 // pendulum runs 50 steps (establishing a non-trivial history), is saved, then
 // run 50 more; a fresh world loaded from the save and run 50 steps must reach
@@ -2723,7 +2723,7 @@ TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
   EXPECT_EQ(loadedFinal, referenceFinal); // bit-identical, no re-bootstrap
 }
 
-// PLAN-082 A2 long-chain convergence gate: a 64-link revolute chain converges
+// PLAN-084 A2 long-chain convergence gate: a 64-link revolute chain converges
 // within the default iteration budget at every step. The fixed dt*M^{-1}
 // quasi-Newton rate makes such a chain peak near ~456 iterations (measured) --
 // far past any reasonable budget, raising the non-convergence error -- because
@@ -13813,7 +13813,7 @@ TEST(ExternalForce, VariationalForceIsClearedAfterStep)
 }
 
 //==============================================================================
-// EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2): in-loop compliant
+// EXPERIMENTAL SPIKE (PLAN-084 contact-roadmap gate 2): in-loop compliant
 // contact on a single-contact articulated scene.
 //
 // Confirms the central Phase C premise: a SMOOTH bounded (compliant/penalty)
@@ -14054,7 +14054,7 @@ TEST(VariationalContactSpike, EmptyHookReproducesNoContactTrajectoryExactly)
 }
 
 // ===========================================================================
-// PLAN-082 Phase C rung C2 -- compliant ground contact via a real, configurable
+// PLAN-084 Phase C rung C2 -- compliant ground contact via a real, configurable
 // query. makeVariationalGroundContactHook promotes the gate-2 spike's
 // hard-coded z = 0 plane into an analytic half-space + body-fixed contact
 // points (the real distance/gradient query for the link-point-vs-ground case),
@@ -14263,7 +14263,7 @@ TEST(VariationalGroundContact, RejectsDegenerateConfig)
       (void)sxc::makeVariationalGroundContactHook(negativeDamping));
 }
 
-// PLAN-082 Phase C rung C1 -- lagged regularized-Coulomb friction. A block
+// PLAN-084 Phase C rung C1 -- lagged regularized-Coulomb friction. A block
 // sliding on the ground decelerates to rest with friction (kinetic friction
 // ~ mu*mg opposing motion) but slides freely without it, exercising the
 // q^k-anchored tangential-sliding term and the mu*|Fn| saturation.
@@ -14361,7 +14361,7 @@ TEST(VariationalGroundContact, LaggedFrictionDeceleratesSlidingBlock)
   EXPECT_LT(frictional.xDisplacement, 0.5 * frictionless.xDisplacement);
 }
 
-// PLAN-082 Phase C rung C3 -- augmented-Lagrangian contact. The per-contact
+// PLAN-084 Phase C rung C3 -- augmented-Lagrangian contact. The per-contact
 // dual accumulates the steady contact load, so the resting penetration is
 // centered at ~0 (the dual carries the weight) instead of the pure-penalty
 // -mg/k offset. The symplectic VI is undamped, so the AL block oscillates about
@@ -14454,7 +14454,7 @@ TEST(
   EXPECT_LT(al.meanDual, 2.0 * mass * g);
 }
 
-// PLAN-082 Phase C: compliant ground contact reaches the integrator through the
+// PLAN-084 Phase C: compliant ground contact reaches the integrator through the
 // World surface. A slider on the variational-integrator family, configured via
 // Multibody::setGroundContact + addGroundContactPoint and stepped with
 // world.step() (not the compute API), drops onto the plane and rests at the
@@ -14508,7 +14508,7 @@ TEST(VariationalGroundContact, WorldSurfaceCompliantContactRestsOnGround)
   EXPECT_NEAR(finalZ, -analytic, 1.5 * analytic); // ~mg/k penetration.
 }
 
-// PLAN-082 Phase C: the World-surface ground-contact config persists across
+// PLAN-084 Phase C: the World-surface ground-contact config persists across
 // binary save/load. comps::VariationalContact is a serialized Property
 // component -- including its link-index parallel array via the generic
 // POD-vector serialization path -- so a saved contact scene reloads with its
@@ -14590,7 +14590,7 @@ TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
   EXPECT_GT(finalZ, -0.05); // held near the plane, not free-fallen through.
 }
 
-// PLAN-082 Phase C rung C3 through the World surface: a nonzero dual-update
+// PLAN-084 Phase C rung C3 through the World surface: a nonzero dual-update
 // cadence on Multibody::setGroundContact enables the augmented-Lagrangian rung
 // on the world.step() path (duals persisted in VariationalContactDualState,
 // advanced every `cadence` steps by the stage). The AL run centers the contact
@@ -14648,7 +14648,7 @@ TEST(VariationalGroundContact, WorldSurfaceAugmentedLagrangianCentersContact)
   EXPECT_LT(std::abs(alMeanZ), 0.3 * penaltyPenetration);
 }
 
-// PLAN-082 Phase C: the C3 augmented-Lagrangian dual state round-trips through
+// PLAN-084 Phase C: the C3 augmented-Lagrangian dual state round-trips through
 // binary save/load so an AL contact scene resumes bit-identically. The duals
 // (and the cadence counter) are warm-started across steps; persisting them in
 // VariationalContactDualState means a mid-rollout save/load continues the exact
@@ -14712,7 +14712,7 @@ TEST(VariationalGroundContact, AugmentedLagrangianDualStateRoundTrips)
   EXPECT_EQ(loadedFinal, referenceFinal);
 }
 
-// PLAN-082 Phase C: the C2 default ground-contact hook (dualUpdateCadence == 0)
+// PLAN-084 Phase C: the C2 default ground-contact hook (dualUpdateCadence == 0)
 // applies Kelvin-Voigt normal damping, not just the penalty --
 // setGroundContact's dampingCoefficient takes effect on the auto World::step()
 // path, not only the AL solver. A slider dropped onto a damped plane absorbs
@@ -14773,7 +14773,7 @@ TEST(VariationalGroundContact, DampingSettlesContactOnDefaultPath)
   EXPECT_LT(dampedRebound, 0.25 * undampedRebound);
 }
 
-// PLAN-082 Phase C: addGroundContactPoint rejects a Link from a different
+// PLAN-084 Phase C: addGroundContactPoint rejects a Link from a different
 // World. Separate registries can reuse raw entity ids, so without the
 // getWorld() guard a foreign link could alias a numerically-equal link and
 // register contact on the wrong body.
@@ -14798,7 +14798,7 @@ TEST(VariationalGroundContact, RejectsContactPointFromForeignWorld)
   EXPECT_NO_THROW(robot.addGroundContactPoint(base, Eigen::Vector3d::Zero()));
 }
 
-// PLAN-082 Phase C link-vs-link contact (first slice): sphere-sphere
+// PLAN-084 Phase C link-vs-link contact (first slice): sphere-sphere
 // self-contact. A link sliding toward a fixed sphere on the base is stopped by
 // compliant sphere-sphere contact -- the moving sphere does not pass through
 // the fixed one. Exercises makeVariationalLinkSphereContactHook (the simplest

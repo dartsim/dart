@@ -3315,7 +3315,7 @@ void MultibodyVariationalIntegrationStage::execute(
       compliantScratch->clear();
     }
     // Build the opt-in contact hook from the multibody's contact config
-    // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
+    // (PLAN-084 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
     // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
     // duals persist in VariationalContactDualState and advance on an outer-loop
     // cadence after the step. Absent => contact-free.

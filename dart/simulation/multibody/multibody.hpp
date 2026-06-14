@@ -381,7 +381,7 @@ public:
   ///         or is not part of this multibody.
   [[nodiscard]] Eigen::MatrixXd getWorldJacobian(const Link& link) const;
 
-  /// **EXPERIMENTAL (PLAN-082 Phase C).** Configure compliant ground contact
+  /// **EXPERIMENTAL (PLAN-084 Phase C).** Configure compliant ground contact
   /// for the variational integrator: an analytic half-space `{x : n.(x-p0) >=
   /// 0}` with penalty stiffness `k`, optional Coulomb friction `mu`, and
   /// Kelvin-Voigt normal damping `c`. Add contact points with
@@ -405,7 +405,7 @@ public:
       double dampingCoefficient = 0.0,
       std::size_t dualUpdateCadence = 0);
 
-  /// **EXPERIMENTAL (PLAN-082 Phase C).** Add a body-fixed contact point at
+  /// **EXPERIMENTAL (PLAN-084 Phase C).** Add a body-fixed contact point at
   /// `localPoint` (body frame) on `link`, evaluated against the plane set by
   /// `setGroundContact()`. Throws if `setGroundContact()` has not been called
   /// or `link` is not part of this multibody.

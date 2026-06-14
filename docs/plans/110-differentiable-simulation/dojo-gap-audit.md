@@ -37,7 +37,7 @@ dependency or source to vendor.
 | Dojo capability                         | DART state today                                      | Initial plan stance                                                                          |
 | --------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Maximal-coordinate rigid bodies         | Experimental multibodies are articulated/minimal      | GAP; requires a distinct model/state path or a constrained maximal-coordinate layer          |
-| Variational integration                 | PLAN-082 tracks a variational-integrator solver       | Coordinate with PLAN-082 instead of duplicating its integration rationale                    |
+| Variational integration                 | PLAN-084 tracks a variational-integrator solver       | Coordinate with PLAN-084 instead of duplicating its integration rationale                    |
 | Nonlinear hard-contact NCP/SOC friction | Current diff path is boxed LCP with linearized cone   | GAP; separate contact model, solver residuals, and diagnostic surface                        |
 | Primal-dual interior-point solver       | Existing LCP path uses a pivoting Dantzig-style solve | GAP; new internal solver, convergence criteria, central-path controls, warm-starting         |
 | Implicit gradients through contact      | Nimble-style LCP active-set gradient implemented      | GAP; needs KKT/IFT derivation and finite-difference validation                               |
@@ -73,7 +73,7 @@ Relative to existing work:
 - the Dojo-style path would be a second rigid path with a different forward solve
   and gradient derivation, so it needs a separate spike and finite-difference
   gate;
-- PLAN-082 supplies relevant variational-integration rationale, but Dojo adds the
+- PLAN-084 supplies relevant variational-integration rationale, but Dojo adds the
   hard-contact NCP/IPM and implicit-gradient requirements;
 - deformable IPC/VBD paths remain separate domains and would couple to this rigid
   solver only through the pairwise coupler architecture.

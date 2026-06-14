@@ -188,7 +188,7 @@ same shape is usable across domains and `World::add*` stays uniform.
 | Rigid      | Contact normal/friction: sequential-impulse / boxed-LCP                             | 🧪 experimental | `WorldOptions::contactSolverMethod`                                         |
 | Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable`, `WorldOptions::contactGradientMode`, setter |
 | Multibody  | Semi-implicit joint-space forward dynamics (default)                                | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
-| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-084, proposed) | 🧪 experimental | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
 | Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                                     |
 | Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                                          |
 

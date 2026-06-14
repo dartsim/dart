@@ -284,7 +284,7 @@ compliant constrained dynamics." _MIG_, 2016.
 - **Where used:** named as a candidate integration family in
   [cpp design](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md);
   surveyed as a compliant-constraint contact model in
-  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+  [`PLAN-084 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/084-variational-integrator-solver/contact-roadmap.md).
 - **Notes:** Compliant position-based dynamics; under evaluation as an optional
   integration/constraint family behind the DART-owned capability matrix. Its
   compliant-constraint formulation (`α̃ = α/Δt²`) is the closest match to the
@@ -681,7 +681,7 @@ Robotics. arXiv:1609.02898.
 ```
 
 - **Type:** paper · **Topic:** dynamics/integration · **Status:** planned · **Priority:** high · **Verdict:** adopt
-- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver.md)
+- **Where used:** [`PLAN-084`](https://github.com/dartsim/dart/blob/main/docs/plans/084-variational-integrator-solver.md)
   and its design owner
   [`simulation_variational_integrator.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_variational_integrator.md).
 - **Notes:** DART's own research lineage; the target method for the experimental
@@ -691,7 +691,7 @@ Robotics. arXiv:1609.02898.
   recursive impulse-based quasi-Newton update (RIQN) that reuses an
   articulated-body-inertia forward-dynamics pass. Symplectic and
   near-energy-conserving for smooth conservative forcing; the paper does not
-  address contact, friction, or closed loops (PLAN-082 roadmaps those). The
+  address contact, friction, or closed loops (PLAN-084 roadmaps those). The
   DART 7 simulation world has no ABA yet, so the O(n) update is net-new work; classic
   DART implemented the original (reference repo `jslee02/wafr2016`).
 
@@ -715,7 +715,7 @@ Graphics_ (SIGGRAPH 2024). arXiv:2403.06321.
 
 - **Type:** paper · **Topic:** contact/integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** contact-extension survey in
-  [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md).
+  [`PLAN-084 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/084-variational-integrator-solver/contact-roadmap.md).
 - **Notes:** Vertex-level block coordinate descent on the incremental-potential
   timestep with graph coloring; adopts the IPC lagged friction model.
   Surveyed (not adopted) as inspiration for adding contact/friction to the
@@ -760,7 +760,7 @@ Related public resources:
 - **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
   and its
   [AVBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md);
-  also informs the PLAN-082 contact-extension survey.
+  also informs the PLAN-084 contact-extension survey.
 - **Notes:** Adopted as the hard-constraint extension of DART's VBD-family
   solver work: augmented-Lagrangian dual rows, bounded equality/inequality
   forces, hard contact/friction, finite-stiffness ramping for high stiffness
@@ -1156,7 +1156,7 @@ on Robotics_, 25(6), 2009.
 
 - **Type:** paper · **Topic:** integration/dynamics · **Status:** referenced · **Priority:** high · **Verdict:** baseline
 - **Where used:** the explicit predecessor `lee-vi-2016` benchmarks against
-  ("SVI"); informs the PLAN-082 constraint roadmap (Phase B2).
+  ("SVI"); informs the PLAN-084 constraint roadmap (Phase B2).
 - **Notes:** The scalable variational integrator in generalized coordinates
   that `lee-vi-2016` improves from O(n²) evaluation / O(n³) Jacobian to O(n). Its
   recursive tree formulation with caching and its constrained discrete
@@ -1174,7 +1174,7 @@ Betsch–Leyendecker discrete null-space method, _Comput. Methods Appl. Mech.
 Engrg._, 2006.)
 
 - **Type:** paper · **Topic:** integration/contact · **Status:** referenced · **Priority:** high · **Verdict:** evaluate
-- **Where used:** [`PLAN-082 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/082-variational-integrator-solver/contact-roadmap.md)
+- **Where used:** [`PLAN-084 contact-roadmap`](https://github.com/dartsim/dart/blob/main/docs/plans/084-variational-integrator-solver/contact-roadmap.md)
   (equality-constraint / closed-loop route, Phase B2).
 - **Notes:** Constrained variational integrators with holonomic constraints. The
   discrete null-space method picks `P(q)` spanning `ker Dg(q)` and left-multiplies
