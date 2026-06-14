@@ -508,14 +508,14 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `sequential_impulse`, `boxed-lcp` → `boxed_lcp`, an `avbd` opt-in marker →
   `avbd`) and validates the result against the existing schema contract. The
   four writers (`write_avbd_{breakable_joint_scale, breakable_motor_scale,
-  friction_coefficient_sweep, paper_scale_high_ratio_iteration_sweep}_packet`)
+friction_coefficient_sweep, paper_scale_high_ratio_iteration_sweep}_packet`)
   now construct their identity through the builder; the output is byte-identical
   to the committed packets (verified field-by-field against all four committed
   JSONs), so no packet is regenerated. `tests/test_avbd_packet_schema.py` (13
   cases) locks the builder against the committed identities and the report →
   enum mapping. Gates: `pixi run check-avbd-packets` (52 packets), `pixi run
-  python -m pytest tests/test_check_avbd_packets.py
-  tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
+python -m pytest tests/test_check_avbd_packets.py
+tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   per-benchmark emission (a benchmark `SetLabel` carrying
   `World::getResolvedConfiguration()` consumed in place of the per-scene family
   argument) is adopted the next time each packet is regenerated, per this
@@ -542,7 +542,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `pixi run test-py`, `pixi run check-api-boundaries`.
 - Dependencies: WP-091.11.
 
-#### WP-091.13 Canonical contact assembly
+#### WP-091.13 Canonical contact assembly [claimed]
 
 - Objective: sequential-impulse, boxed-LCP, and the gradient path consume the
   one canonical contact-problem assembly, and the populated snapshot is
@@ -563,6 +563,42 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.2.
+- Evidence (slice A of 2 landed): **Slice A — single-source the contact-assembly
+  helpers and constants.** The six rigid-rigid contact helpers (`inverseMassOf`,
+  `normalizeOrIdentity`, `inverseWorldInertiaOf`, `restitutionOf`, `frictionOf`,
+  `hasPrescribedRigidBodyContactResponse`) and the two shared contact constants
+  (`kRigidContactRestitutionThreshold` = 1e-3, `kRigidContactFrictionCfm` = 1e-5)
+  were duplicated verbatim across the three rigid-contact translation units.
+  They now live once in the new header
+  `dart/simulation/detail/rigid_contact_assembly.hpp`;
+  `compute/rigid_body_constraint.cpp`, `detail/boxed_lcp_contact.cpp`, and
+  `detail/contact_jacobians.cpp` include it and use the shared definitions
+  (`rigid_body_constraint` qualifies them `detail::` and drops its
+  `inverseMass`/`inverseWorldInertia` spellings for the shared `…Of` names; its
+  local `normalizeOrIdentity` was behaviorally identical). Behavior-preserving by
+  construction (identical bodies, identical constant values). Verified:
+  default-config `test_world_default_step_golden` 3/3, `test_world_contact_parity`
+  5/5, `test_boxed_lcp_contact` 122/122 unchanged (these exercise the shared
+  helpers at runtime through `rigid_body_constraint`/`boxed_lcp_contact`);
+  `contact_jacobians.cpp` compiles clean under `DART_BUILD_DIFF=ON` against the
+  shared header; `pixi run lint` green. Note: the `DART_BUILD_DIFF=ON` *test
+  binaries* (`test_diff_contact_jacobian` et al.) could not be linked because the
+  merged `main` carries a pre-existing diff-only build break unrelated to this
+  packet — `world.cpp:5221` passes the `StlAllocator`-typed
+  `world_storage.hpp` `differentiableParameters` to
+  `contactStepDerivativesWithParameters`, whose signature
+  (`contact_jacobians.hpp:193`) takes a default-allocator
+  `std::vector<ParameterRegistration>&`; the allocator type was introduced by
+  main commit `64e61f1f04b` (#2863) and neither file is touched by this branch.
+  **Slice B (remaining):** converge the four contact-problem *assemblers* (the
+  canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
+  differentiable-capture rebuild, and the sequential-impulse scratch in
+  `world_step_stage.cpp`) onto one producer, single-source the remaining inline
+  constants (the SI `restitutionThreshold` and positional-correction constants
+  in `world_step_stage.cpp`), and hand the populated snapshot to the
+  differentiable capture instead of rebuilding it — the higher-risk
+  physics-convergence work this slice deliberately leaves for a focused
+  follow-up (which also needs the diff build unbroken).
 
 #### WP-091.14 Family-neutral joint model
 

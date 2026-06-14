@@ -38,6 +38,7 @@
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/rigid_contact_assembly.hpp"
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
@@ -66,7 +67,7 @@ constexpr double kClampingTolerance = 1e-9;
 // Constraint-force-mixing applied to the friction-row diagonal, mirroring
 // solveBoxedLcpContacts so the differentiated Delassus matches the forward
 // boxed-LCP step exactly.
-constexpr double kConstraintForceMixing = 1e-5;
+constexpr double kConstraintForceMixing = kRigidContactFrictionCfm;
 
 // PreContactSurrogate (PLAN-110 WS5): the fraction of the approach-direction
 // velocity sensitivity the surrogate arrests for a body that is approaching but
@@ -78,66 +79,6 @@ constexpr double kPreContactSurrogateWeight = 1.0;
 // meaningfully approaching"; the surrogate then falls back to the gravity
 // direction so a body released from rest still gets a toward-contact gradient.
 constexpr double kPreContactApproachSpeedTolerance = 1e-9;
-
-//==============================================================================
-double inverseMassOf(const comps::MassProperties& mass)
-{
-  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-}
-
-//==============================================================================
-Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
-{
-  const double norm = orientation.norm();
-  if (!(norm > 0.0) || !std::isfinite(norm)) {
-    return Eigen::Quaterniond::Identity();
-  }
-  return Eigen::Quaterniond(orientation.coeffs() / norm);
-}
-
-//==============================================================================
-Eigen::Matrix3d inverseWorldInertiaOf(
-    const comps::MassProperties& mass, const comps::Transform& transform)
-{
-  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
-    return Eigen::Matrix3d::Zero();
-  }
-  const Eigen::Matrix3d rotation
-      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-  const Eigen::Matrix3d worldInertia
-      = rotation * mass.inertia * rotation.transpose();
-  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    return Eigen::Matrix3d::Zero();
-  }
-  return solver.solve(Eigen::Matrix3d::Identity());
-}
-
-//==============================================================================
-double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->restitution;
-  }
-  return 0.0;
-}
-
-//==============================================================================
-double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->friction;
-  }
-  return 1.0;
-}
-
-//==============================================================================
-bool hasPrescribedRigidBodyContactResponse(
-    const detail::WorldRegistry& registry, entt::entity entity)
-{
-  return registry.all_of<comps::StaticBodyTag>(entity)
-         || registry.all_of<comps::KinematicBodyTag>(entity);
-}
 
 //==============================================================================
 // A frozen frictionless normal contact: the geometry (which bodies, the world
@@ -526,7 +467,7 @@ ContactTerms computeTerms(
         = -rowDotTwist(terms.J[static_cast<std::size_t>(row)], terms.vFree);
   }
 
-  constexpr double restitutionThreshold = 1e-3;
+  constexpr double restitutionThreshold = kRigidContactRestitutionThreshold;
   for (Eigen::Index i = 0; i < n; ++i) {
     const auto& contact = scene.contacts[static_cast<std::size_t>(i)];
     if (!(contact.restitution > 0.0)) {
