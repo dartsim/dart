@@ -243,10 +243,19 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
 - Objective: `PLAN-080` and `PLAN-082` each identify exactly one initiative.
 - Scope: assign fresh IDs to the Performance Dashboard and Linear-Time
   Variational Integrator entries; `git mv` the affected plan files/sidecars;
-  update every cross-reference (the design docs, dev-task folders,
-  `docs/readthedocs/papers.md`, `docs/readthedocs/architecture.md` (its
-  multibody solver table cites PLAN-082), and `solver-family-intake.md` all
-  cite these IDs); add a plan-ID uniqueness check to the docs-policy script.
+  update every cross-reference, in docs **and** in code/tests/scripts/CI — the
+  design docs, dev-task folders, `docs/readthedocs/papers.md`,
+  `docs/readthedocs/architecture.md` (its multibody solver table cites
+  PLAN-082), and `solver-family-intake.md` all cite these IDs, and so do
+  non-docs surfaces (for example `dart/simulation/compute/world_step_stage.cpp`
+  and other `dart/simulation/**` headers, `tests/unit/simulation/**` and
+  `tests/benchmark/simulation/**`, `python/examples/demos/**`,
+  `scripts/run_performance_dashboard_benchmarks.py` and other `scripts/**`, and
+  `.github/workflows/benchmark_pr_comparison.yml`); add a plan-ID uniqueness
+  check to the docs-policy script. Disambiguate per reference: only the two
+  renumbered initiatives change ID; references to the kept initiatives
+  (Rigid-Body Dynamics Solver under PLAN-080, Rigid Implicit-Barrier Contact
+  under PLAN-082) must not be rewritten.
 - Non-goals: changing any plan's content or status.
 - Acceptance evidence: one dashboard block per ID (today `dashboard.md` has
   two PLAN-080 blocks — Rigid-Body Dynamics Solver and Performance Dashboard —
@@ -258,11 +267,16 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   fixture.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`.
 - Dependencies: none. Hazards: the collision is real and confirmed (verified
-  2026-06-13) — `PLAN-080` resolves to ~52 references across ~21 files and
-  `PLAN-082` to ~97 references across ~32 files (≈53 distinct files total), so
-  grep-by-ID hits the wrong block while duplicates exist; fix the duplicates
-  in one packet and renumber the file plus its sidecar folder in tandem
-  (`080-*`, `082-rigid-implicit-barrier-contact{,/}`,
+  2026-06-13 by `git grep -l` over tracked files) — `git grep -l PLAN-080`
+  matches 29 files and `git grep -l PLAN-082` matches 54 files, for **71
+  unique tracked files** referencing one or both IDs (42 under `docs/` and 29
+  outside it: `dart/simulation/**`, `tests/**`, `python/examples/demos/**`,
+  `scripts/**`, and one `.github/workflows/**`). Re-run those two `git grep`
+  commands at execution time for the live list rather than trusting these
+  counts. The hazard is that grep-by-ID hits both the kept and the renumbered
+  initiative while duplicates exist, so disambiguate every hit; fix the
+  duplicates in one packet and renumber the file plus its sidecar folder in
+  tandem (`080-*`, `082-rigid-implicit-barrier-contact{,/}`,
   `082-variational-integrator-solver{,/}` all exist on disk). Coordinate with
   WP-091.3 if both are in flight (both rewrite the `architecture.md` PLAN-082
   citation).
