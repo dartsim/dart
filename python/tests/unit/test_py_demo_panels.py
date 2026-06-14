@@ -2206,14 +2206,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Tradeoff,Evidence cue"
         in builder.events
     )
-    for guidance_text in (
-        "Pivoting and direct",
-        "Projection iterations",
-        "Block/contact structure",
-        "Newton, interior, and QP",
-        "Accelerated and splitting",
-    ):
-        assert any(guidance_text in event for event in builder.events)
+    for guidance_row in info["solver_guidance_rows"]:
+        assert f"text:{guidance_row['family']}" in builder.events
+        assert f"text:{guidance_row['solvers']}" in builder.events
+        assert f"text:{guidance_row['best_fit']}" in builder.events
+        assert f"text:{guidance_row['strength']}" in builder.events
+        assert f"text:{guidance_row['tradeoff']}" in builder.events
+        assert f"text:{guidance_row['evidence']}" in builder.events
     assert (
         "table:lcp_solver_profile:Solver,Native cases,OK,Native OK,Delegated OK,"
         "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
