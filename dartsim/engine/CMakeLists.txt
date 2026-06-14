@@ -16,8 +16,6 @@
 # any rendering backend (it stays backend-hidden). See
 # docs/design/dartsim_gui_simulator.md.
 
-cmake_minimum_required(VERSION 3.22.1)
-
 set(target_name dartsim_engine)
 
 add_library(

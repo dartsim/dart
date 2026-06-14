@@ -11,8 +11,6 @@
 # This file only includes test subdirectories. Each subdirectory defines its own tests.
 # Uses the DART simulation CMake helpers.
 
-cmake_minimum_required(VERSION 3.22.1)
-
 # Include DART utility functions
 include(dart_defs)
 

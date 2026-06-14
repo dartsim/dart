@@ -36,7 +36,7 @@ int main() {
 
 
 CMAKE_LISTS = r"""
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 4.2.3)
 project(dart_readme_cpp_quickstart LANGUAGES CXX)
 
 find_package(DART 7.0.0 REQUIRED COMPONENTS simulation CONFIG)
