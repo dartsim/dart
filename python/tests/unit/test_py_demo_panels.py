@@ -2531,9 +2531,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert f"text:{live_packet_row['metric']}" in builder.events
         assert f"text:{live_packet_row['benchmark']}" in builder.events
     assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
-    assert "text:std + boxed + findex" in builder.events
-    assert "text:std only; boxed/findex delegate" in builder.events
-    assert "text:findex only; std/boxed delegate" in builder.events
+    for solver_row in solver_rows:
+        assert f"text:{solver_row['name']}" in builder.events
+        assert f"text:{solver_row['family']}" in builder.events
+        assert f"text:{lcp_physics._coverage_label(solver_row)}" in builder.events
     assert (
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events
