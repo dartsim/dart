@@ -8147,6 +8147,11 @@ void RunLargerActiveSetTransitionBenchmark(
     state.SkipWithError("LCP solver factory returned null");
     return;
   }
+  if (!solver->supportsProblem(problem)) {
+    state.SkipWithError(
+        "Active-set scale case exceeds concrete solver support");
+    return;
+  }
 
   RunBenchmarkWithSolver(
       state,
@@ -8219,6 +8224,14 @@ void RunProductionActiveSetTransitionBatchSerialBenchmark(
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
     state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+  if (!std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+        return solver->supportsProblem(problem);
+      })) {
+    state.SkipWithError(
+        "Production active-set transition batch case exceeds concrete solver "
+        "support");
     return;
   }
 

@@ -1,5 +1,80 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-14 Current Continuation - Active-Set Scale Runtime Guards
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `feature/lcp-solver-interface-demos` at
+   `80b3e60e3c5 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+   as the local checkpoint PR candidate. It has no associated PR yet and must
+   not be pushed or published without explicit maintainer/user approval.
+3. Treat this branch as a stacked local follow-up on
+   `followup/lcp-solver-demo-panel-guards`. The checkpoint branch remains
+   viable as a milestone PR candidate when approved; keep this follow-up for
+   subsequent PR(s) unless the maintainer explicitly decides to fold it into
+   the checkpoint PR.
+4. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+5. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `followup/lcp-solver-demo-panel-guards`.
+- Current local tip before this edit:
+  `086fe916fd4 Guard LCP base benchmarks concretely`.
+- Stacked base branch: `feature/lcp-solver-interface-demos` at `80b3e60e3c5`.
+- Current known `origin/main` is `9de4ac6af873`; the prior continuation fetched
+  and merged `origin/main` with `Already up to date.`
+- No associated PR exists for the checkpoint or follow-up branch.
+
+Active-set scale benchmark status:
+
+- `RunLargerActiveSetTransitionBenchmark()` now rechecks the exact generated
+  active-set scale problem with the selected solver's concrete
+  `supportsProblem(problem)` predicate before timing the row.
+- `RunProductionActiveSetTransitionBatchSerialBenchmark()` now rechecks every
+  generated production active-set batch problem with the selected solver's
+  concrete support predicate before timing the serial batch row.
+- The registration paths already filter these rows through concrete support;
+  the new runtime guards make stale or manual registrations fail explicitly
+  instead of timing unsupported cases.
+- The generic `ParallelBatchFixture` still needs a separate follow-up audit
+  because it is shared by multiple benchmark families.
+- This checkpoint does not intentionally change solver implementations, public
+  APIs, Python demos, bindings, stubs, generated profile/evidence CSVs, or
+  runtime solve behavior outside the benchmark guards.
+
+Verification completed for this checkpoint:
+
+- `pixi run bm lcp_compare -- --benchmark_list_tests=true --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition/(Standard32|Boxed32|CoupledFrictionIndex8|CoupledFrictionIndex24)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpProductionActiveSetTransitionBatchSerial/(Standard32|Boxed32|CoupledFrictionIndex8|CoupledFrictionIndex24)/(Dantzig|Pgs|BoxedSemiSmoothNewton)'`
+  passed. It listed representative active-set scale rows plus serial
+  production batch rows.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpLargerActiveSetTransition/CoupledFrictionIndex8/Pgs$|BM_LcpProductionActiveSetTransition/CoupledFrictionIndex24/BoxedSemiSmoothNewton$|BM_LcpProductionActiveSetTransitionBatchSerial/Standard32/Dantzig/4$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
+  passed. The scalar rows ran with `contract_ok=1` and
+  `solver_supports_problem=1`; the serial batch row ran with `contract_ok=1`.
+- `pixi run lint`, `git diff --check`, and `pixi run build` passed after the
+  benchmark guard edits.
+- `pixi run -e cuda test-all` passed all seven groups: linting, build, unit
+  tests, simulation tests, Python tests, documentation, and CUDA tests. The
+  documentation phase still emitted the known `dartpy._world_render_bridge`
+  autodoc warnings, but the docs build passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If files change again, rerun `pixi run lint`, `git diff --check`, and any
+   broader gate warranted by the final diff before committing.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   The generic parallel batch fixture support check is a known candidate.
+4. Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Base Benchmark Runtime Guards
 
 This is the latest hand-off state. Sections below are historical checkpoints
