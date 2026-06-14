@@ -2533,7 +2533,7 @@ def build() -> SceneSetup:
             )
             builder.text(f"benchmark smoke: {_BENCHMARK_COMMAND}")
             if builder.begin_table(
-                "lcp_solver_manifest", ["Solver", "Family", "Coverage"]
+                "lcp_solver_manifest", ["Solver", "Family", "Native forms"]
             ):
                 for row in _SOLVER_SUPPORT_ROWS:
                     builder.table_next_row()
@@ -2624,7 +2624,7 @@ def build() -> SceneSetup:
                 [
                     "Solver",
                     "Family",
-                    "Native coverage",
+                    "Native forms",
                     "Route",
                     "Status",
                     "Error",
@@ -2657,8 +2657,8 @@ def build() -> SceneSetup:
                     "Rows",
                     "FI contacts",
                     "Challenge",
-                    "Native",
-                    "Delegated",
+                    "Native OK",
+                    "Delegated OK",
                     "Max error",
                     "Max comp",
                     "Max residual",
@@ -2768,7 +2768,7 @@ def build() -> SceneSetup:
                 "lcp_solver_profile",
                 [
                     "Solver",
-                    "Native cases",
+                    "Concrete native cases",
                     "OK",
                     "Native OK",
                     "Delegated OK",

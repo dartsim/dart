@@ -2542,7 +2542,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         ]
         for live_packet_row in info["live_packet_rows"]
     ]
-    assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
+    assert "table:lcp_solver_manifest:Solver,Family,Native forms" in builder.events
     assert _table_rows(builder.events, "lcp_solver_manifest") == [
         [
             solver_row["name"],
@@ -2637,7 +2637,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
-        "table:lcp_standalone_solver_smoke:Solver,Family,Native coverage,Route,"
+        "table:lcp_standalone_solver_smoke:Solver,Family,Native forms,Route,"
         "Status,Error,Residual,Complementarity"
         in builder.events
     )
@@ -2656,8 +2656,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     ]
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
-        "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
-        "Fastest native,Slowest"
+        "Challenge,Native OK,Delegated OK,Max error,Max comp,Max residual,"
+        "Fastest,Fastest native,Slowest"
         in builder.events
     )
     assert _table_rows(builder.events, "lcp_representative_solver_suite") == [
@@ -2730,8 +2730,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         for guidance_row in info["solver_guidance_rows"]
     ]
     assert (
-        "table:lcp_solver_profile:Solver,Native cases,OK,Native OK,Delegated OK,"
-        "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
+        "table:lcp_solver_profile:Solver,Concrete native cases,OK,Native OK,"
+        "Delegated OK,Total us,Worst error,Worst residual,Worst comp,Slowest case,"
+        "Slowest us"
         in builder.events
     )
     assert _table_rows(builder.events, "lcp_solver_profile") == [
