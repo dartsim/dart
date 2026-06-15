@@ -535,9 +535,17 @@ jobs:
           - name: GCC
             cc: gcc
             cxx: g++
+            extra_cxxflags: ""
           - name: Clang
             cc: clang
             cxx: clang++
+            # Clang 18 reports __cpp_concepts=201907L, but libstdc++ 14 gates
+            # std::expected (and other C++20/23 library features) behind
+            # __cpp_concepts>=202002L, so std::expected is hidden and the build
+            # fails (dart/common/result.hpp). Advertise the final C++20 concepts
+            # value so libstdc++ exposes <expected>. This keeps the build on
+            # libstdc++ -- ABI-matching the conda deps -- unlike -stdlib=libc++.
+            extra_cxxflags: "-D__cpp_concepts=202002L -Wno-builtin-macro-redefined"
     env:
       DART_PARALLEL_JOBS: 2
       LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
@@ -563,6 +571,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
+          CXXFLAGS: ${{ matrix.compiler.extra_cxxflags }}
         run: |
           DART_VERBOSE=ON \
           pixi run test-dart-gui-smoke
