@@ -6,27 +6,44 @@ The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
 stop-only snapshot lower in this file.
 
-Current follow-up branch / PR state: `avbd/soft-body-inertia-orientation-cache`
-is a follow-up branch built on the now-merged PR #2991, which landed on `main`
-as squash commit `f6fecbc5bd5`. The branch is based on the original pre-squash
-PR head `6f41e9529bf` (that commit is not itself in `main`'s linear history).
-With explicit maintainer approval the branch was merged with the latest
-`origin/main` (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), pushed
-to origin, and opened as follow-up PR #3004 into `main`. It carries the 2D/3D
-Spring/Spring Ratio contact-filtering slices, the inertia-orientation cleanup,
-the refreshed Spring/Spring Ratio packets (whose writers record the
-`ignored_collision_pairs` invariant), the
-`World.RigidBodyContactStageHonorsIgnoredPairWithoutSkippingActiveContacts`
-contact-skip regression test, and handoff-doc refreshes. Review-thread
-resolution, bot replies, review re-triggers, and CI mutations on this PR still
-require explicit maintainer approval.
+Current branch / PR state: PR #3004 (branch
+`avbd/soft-body-inertia-orientation-cache` into `main`) is MERGED at merge commit
+`356384967f8` (merged 2026-06-14), landing the 2D/3D Spring/Spring Ratio
+contact-filtering slices, the inertia-orientation cleanup, the refreshed
+Spring/Spring Ratio packets, and the contact-skip regression tests. The Dantzig
+allocator regression diagnosed during that work (`DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers`)
+was fixed separately on `main` by #3011, confirming it was a pre-existing LCP
+issue, not an AVBD one. The remaining `World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`
+profile-build allocator gate is likewise a pre-existing rigid-IPC issue outside
+AVBD scope.
 
-Previous checkpoint PR state: PR #2991 (branch
-`avbd/source-row-extraction-precheck` into `main`) is MERGED at merge commit
-`f6fecbc5bd5` (merged 2026-06-14), carrying the source-row coverage and
-contact-precheck work, the three CI-fix commits, the AVBD contact-config guard
-follow-up, and the handoff-doc refreshes; its CI rollup passed with no failed
-checks.
+The active local follow-up is unpublished branch
+`avbd/box-contact-feature-id-coverage`, based on merged `main` at
+`356384967f8`, carrying a single `test_avbd_rigid_block` regression. Do not push,
+open a PR, resolve review threads, comment, retrigger reviews, or mutate CI
+without explicit maintainer approval.
+
+Earlier checkpoint: PR #2991 (branch `avbd/source-row-extraction-precheck` into
+`main`) is MERGED at `f6fecbc5bd5` (2026-06-14), carrying the source-row
+coverage and contact-precheck work, the CI-fix commits, the AVBD contact-config
+guard follow-up, and handoff-doc refreshes.
+
+Latest local slice: new branch `avbd/box-contact-feature-id-coverage` adds
+`AvbdRigidBlock.RigidWorldContactSnapshotUsesBoxEdgeAndVertexFeatureIds` to
+`tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`. It feeds three
+contacts onto a unit-cube box endpoint whose body-local points are strictly
+outside on one, two, and three axes and asserts the production
+`buildAvbdRigidWorldContactSnapshot` path resolves them to Face, Edge, and
+Vertex feature kinds with distinct, correctly packed feature ids. This closes a
+box-vs-cylinder/mesh/capsule asymmetry: the box Edge/Vertex branch of
+`avbdRigidWorldContactEndpointId` was previously only covered at the pure-kernel
+level, never end-to-end through the snapshot wiring. Mutation check: forcing the
+box branch to emit `AvbdContactFeatureKind::Face` failed the new Edge (L4151)
+and Vertex (L4154) assertions while the box-Face and mesh Edge/Vertex tests
+stayed green; reverted. No production code change. Validation: `test_avbd_rigid_block`
+rebuilt, the new test passed, the full suite passed 107/107, and `pixi run lint`
+passed. This slice does not refresh a tracked packet, close a CPU/GPU gate, or
+claim parity.
 
 Follow-up items identified in PR review:
 
