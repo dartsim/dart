@@ -52,7 +52,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
