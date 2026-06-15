@@ -152,6 +152,18 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (0u == n)
     return;
 
+  // Cache raw constraint pointers once so the assembly loops below index a flat
+  // array instead of calling ConstrainedGroup::getConstraint() (which returns a
+  // ConstraintBasePtr by value, i.e. an atomic refcount bump) on every access.
+  // The off-diagonal fill below touches getConstraint(k) O(n^2) times. The
+  // group owns these constraints for the whole solve, so the pointers stay
+  // valid. A reused thread_local scratch buffer keeps the solver's class layout
+  // (and therefore its ABI) unchanged while still avoiding per-call allocation.
+  static thread_local std::vector<ConstraintBase*> constraintPtrs;
+  constraintPtrs.resize(numConstraints);
+  for (std::size_t i = 0; i < numConstraints; ++i)
+    constraintPtrs[i] = group.getConstraint(i).get();
+
   const int nSkip = dPAD(n);
 #if DART_BUILD_MODE_RELEASE
   mA.resize(n, nSkip);
@@ -170,7 +182,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mOffset.resize(numConstraints);
   mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i) {
-    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
+    const ConstraintBase* constraint = constraintPtrs[i - 1];
     DART_ASSERT(constraint->getDimension() > 0);
     mOffset[i] = mOffset[i - 1] + constraint->getDimension();
   }
@@ -181,7 +193,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      ConstraintBase* constraint = constraintPtrs[i];
 
       constInfo.x = mX.data() + mOffset[i];
       constInfo.lo = mLo.data() + mOffset[i];
@@ -218,8 +230,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
             constraint->getVelocityChange(mA.data() + index, true);
             for (std::size_t k = i + 1; k < numConstraints; ++k) {
               index = nSkip * (mOffset[i] + j) + mOffset[k];
-              group.getConstraint(k)->getVelocityChange(
-                  mA.data() + index, false);
+              constraintPtrs[k]->getVelocityChange(mA.data() + index, false);
             }
           }
         }
@@ -350,7 +361,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      const ConstraintBasePtr& constraint = group.getConstraint(i);
+      ConstraintBase* constraint = constraintPtrs[i];
       constraint->applyImpulse(mX.data() + mOffset[i]);
       constraint->excite();
     }
