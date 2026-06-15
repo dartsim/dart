@@ -81,6 +81,14 @@ Window::~Window()
   delete mRI;
 }
 
+const char* Window::getDisplayString() const
+{
+  // RGBA, double-buffered, with a depth buffer and relaxable (~) multisampling.
+  // No accumulation buffer is requested here -- see Window::getDisplayString()
+  // in the header for why requesting one breaks modern Mesa/Xwayland.
+  return "rgba double depth>=16 samples~4";
+}
+
 void Window::initWindow(int _w, int _h, const char* _name)
 {
   mWindows.push_back(this);
@@ -88,8 +96,7 @@ void Window::initWindow(int _w, int _h, const char* _name)
   mWinWidth = _w;
   mWinHeight = _h;
 
-  glutInitDisplayMode(
-      GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
+  glutInitDisplayString(getDisplayString());
   glutInitWindowPosition(150, 100);
   glutInitWindowSize(_w, _h);
   mWinIDs.push_back(glutCreateWindow(_name));
