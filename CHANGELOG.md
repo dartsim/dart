@@ -20,6 +20,15 @@
     benchmarks, dartpy bindings, and an ImGui-based GUI example:
     [#2985](https://github.com/dartsim/dart/pull/2985)
 
+* GUI
+
+  * Fix every GLUT example failing to open a window on modern Mesa/Xwayland:
+    the shared GLUT window no longer requests a legacy, now-unavailable
+    accumulation buffer, selecting the framebuffer with a relaxable
+    `glutInitDisplayString` instead, while `MotionBlurSimWindow` opts back into
+    an accumulation buffer on its own:
+    [#3017](https://github.com/dartsim/dart/pull/3017)
+
 * Simulation
 
   * Add automatic body deactivation ("sleeping") for resting solver islands,
