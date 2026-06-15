@@ -9,7 +9,22 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest follow-up (2026-06-14): with explicit maintainer approval, branch
+- Latest follow-up (2026-06-14): PR #3004 is now MERGED to `main` at
+  `356384967f8`, landing the Spring/Spring Ratio contact-filtering slices, the
+  inertia-orientation cleanup, refreshed packets, and the contact-skip
+  regressions. The Dantzig allocator regression diagnosed during that work got
+  its own fix on `main` (#3011), confirming it was a pre-existing LCP issue
+  rather than an AVBD one. New unpublished branch
+  `avbd/box-contact-feature-id-coverage` (off merged `main`) adds a single
+  `test_avbd_rigid_block` regression,
+  `RigidWorldContactSnapshotUsesBoxEdgeAndVertexFeatureIds`, that guards the box
+  Face/Edge/Vertex branch of the production contact-snapshot feature-ID path at
+  parity with the existing cylinder/mesh/capsule guards. Mutation-verified
+  (forcing the box branch to emit Face fails the new Edge/Vertex assertions while
+  box-Face and mesh tests stay green). No production code change; full
+  `test_avbd_rigid_block` suite passes 107/107; `pixi run lint` passes. The AVBD
+  CPU-win, GPU, and paper-number gates remain open and no parity is claimed.
+- Earlier follow-up (2026-06-14): with explicit maintainer approval, branch
   `avbd/soft-body-inertia-orientation-cache` merged the latest `origin/main`
   (absorbing #2984 renderer/debug-visuals and #2997 Eigen 5), was pushed to
   origin, and was opened as follow-up PR #3004 into `main`, bundling the 2D/3D
