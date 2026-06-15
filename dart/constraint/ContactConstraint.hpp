@@ -270,6 +270,13 @@ private:
   ///
   bool mIsFrictionOn;
 
+  /// ODE-style tangent basis for the contact normal, cached at construction
+  /// (only when friction is on) so applyImpulse() reuses it instead of calling
+  /// getTangentBasisMatrixODE() a second time. It is a deterministic function
+  /// of mContact.normal, which is fixed for the duration of this step, so the
+  /// cached value is identical to recomputing it.
+  TangentBasisMatrix mTangentBasis;
+
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;
 

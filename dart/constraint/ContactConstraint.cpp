@@ -190,7 +190,8 @@ ContactConstraint::ContactConstraint(
     collision::Contact& ct = mContact;
 
     // TODO(JS): Assumed that the number of tangent basis is 2.
-    const TangentBasisMatrix D = getTangentBasisMatrixODE(ct.normal);
+    mTangentBasis = getTangentBasisMatrixODE(ct.normal);
+    const TangentBasisMatrix& D = mTangentBasis;
 
     DART_ASSERT(std::abs(ct.normal.dot(D.col(0))) < DART_EPSILON);
     DART_ASSERT(std::abs(ct.normal.dot(D.col(1))) < DART_EPSILON);
@@ -656,8 +657,9 @@ void ContactConstraint::applyImpulse(double* lambda)
     if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
-    // Add contact impulse (force) toward the tangential w.r.t. world frame
-    const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
+    // Add contact impulse (force) toward the tangential w.r.t. world frame.
+    // Reuse the tangent basis computed at construction (see mTangentBasis).
+    const TangentBasisMatrix& D = mTangentBasis;
     mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
