@@ -2,7 +2,12 @@
 
 ## DART 6
 
-### [DART 6.19.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
+### [DART 6.19.0 (2026-06-14)](https://github.com/dartsim/dart/milestone/97?closed=1)
+
+DART 6.19.0 is a minor release on the DART 6 LTS line. It adds automatic body
+deactivation ("sleeping"), contact-aware inverse dynamics, and a cylindrical
+dynamic joint constraint, together with a constraint-solver hot-path
+optimization and build/example fixes for modern toolchains.
 
 * Build
 
@@ -16,7 +21,12 @@
   * Add `CylindricalJointConstraint` for runtime slide-and-rotate attachments
     that leave translation along an axis and rotation about that axis free,
     with headless and GUI examples covering DART 6.x dynamic joint constraints:
-    [#2918](https://github.com/dartsim/dart/issues/2918)
+    [#2923](https://github.com/dartsim/dart/pull/2923)
+
+  * Optimize the DART 6 constraint-solver hot path (box-stacking benchmarks
+    ~1.28x faster) with bit-exact results, adding a lightweight profiling-scope
+    helper used to measure it:
+    [#3023](https://github.com/dartsim/dart/pull/3023)
 
 * Dynamics
 
@@ -24,8 +34,9 @@
     compute joint torques together with friction-cone-consistent contact
     forces for tracked motions with contacts, so floating-base inverse
     dynamics no longer requires an external QP solver, with unit tests,
-    benchmarks, dartpy bindings, and an ImGui-based GUI example:
-    [#2985](https://github.com/dartsim/dart/pull/2985)
+    benchmarks, dartpy bindings for `ContactInverseDynamics` (the
+    `math::solveNonNegativeLeastSquares` solver is C++-only), and an ImGui-based
+    GUI example: [#2985](https://github.com/dartsim/dart/pull/2985)
 
 * Examples and Tutorials
 
@@ -46,9 +57,11 @@
 * Simulation
 
   * Add automatic body deactivation ("sleeping") for resting solver islands,
-    enabled by default with an opt-out option, including wake-on-contact/force
-    handling and island-index diagnostics:
-    [#2920](https://github.com/dartsim/dart/pull/2920)
+    including wake-on-contact/force handling and island-index diagnostics. It is
+    enabled by default, so resting bodies now freeze automatically; the
+    detection is a deterministic no-op while bodies are active, and it can be
+    turned off via `World::setDeactivationOptions` to retain the previous
+    always-active behavior: [#2920](https://github.com/dartsim/dart/pull/2920)
 
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 
