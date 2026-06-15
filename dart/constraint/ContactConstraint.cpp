@@ -584,11 +584,18 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
+  // noalias(): the destination (velMap over the caller's buffer) does not alias
+  // the operands, so Eigen evaluates the matrix-vector product directly into
+  // it. mSpatialNormalA has dynamic column count, so without this the product
+  // is materialized into a heap-allocated temporary on every call -- and this
+  // is the LCP solver's hottest per-pivot routine.
   if (mIsReactiveA && mSkeletonA->isImpulseApplied())
-    velMap += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
+    velMap.noalias()
+        += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
 
   if (mIsReactiveB && mSkeletonB->isImpulseApplied())
-    velMap += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
+    velMap.noalias()
+        += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
 
   // Add small values to the diagnal to keep it away from singular, similar to
   // cfm variable in ODE
@@ -703,8 +710,12 @@ void ContactConstraint::getRelVelocity(double* relVel)
 
   Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
-  relVelMap -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
-  relVelMap -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
+  // noalias(): evaluate the dynamic-sized product directly into the caller's
+  // buffer instead of a heap-allocated temporary (see getVelocityChange).
+  relVelMap.noalias()
+      -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
+  relVelMap.noalias()
+      -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
 }
 
 //==============================================================================
