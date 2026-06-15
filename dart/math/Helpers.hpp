@@ -189,15 +189,17 @@ inline bool isNan(double _v)
 #endif
 }
 
-/// \brief Returns whether _m is a NaN (Not-A-Number) matrix
-inline bool isNan(const Eigen::MatrixXd& _m)
+/// \brief Returns whether any entry of _m is a NaN (Not-A-Number) value.
+///
+/// Templated on the Eigen expression type so that fixed-size matrices (e.g.
+/// Eigen::Matrix6d) bind directly instead of being converted to a dynamic
+/// Eigen::MatrixXd, which would heap-allocate a temporary on every call. This
+/// matters because the articulated-body dynamics and constraint solver call
+/// isNan/isInf on small fixed-size matrices in their inner loops.
+template <typename Derived>
+inline bool isNan(const Eigen::MatrixBase<Derived>& _m)
 {
-  for (int i = 0; i < _m.rows(); ++i)
-    for (int j = 0; j < _m.cols(); ++j)
-      if (isNan(_m(i, j)))
-        return true;
-
-  return false;
+  return _m.hasNaN();
 }
 
 /// \brief Returns whether _v is an infinity value (either positive infinity or
@@ -211,16 +213,13 @@ inline bool isInf(double _v)
 #endif
 }
 
-/// \brief Returns whether _m is an infinity matrix (either positive infinity or
-/// negative infinity).
-inline bool isInf(const Eigen::MatrixXd& _m)
+/// \brief Returns whether any entry of _m is an infinity value (positive or
+/// negative). Templated for the same fixed-size, allocation-free reason as the
+/// isNan() matrix overload above.
+template <typename Derived>
+inline bool isInf(const Eigen::MatrixBase<Derived>& _m)
 {
-  for (int i = 0; i < _m.rows(); ++i)
-    for (int j = 0; j < _m.cols(); ++j)
-      if (isInf(_m(i, j)))
-        return true;
-
-  return false;
+  return _m.array().isInf().any();
 }
 
 /// \brief Returns whether _m is symmetric or not
