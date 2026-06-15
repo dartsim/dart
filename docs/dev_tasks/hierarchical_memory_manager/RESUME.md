@@ -1,5 +1,38 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-14, Rigid-IPC Bake Warm Through the Real Solve)
+
+Work continues on `pr/hmm-phase45-followup-allocation-slice` (pushed; tracking
+`origin`), synced onto `main` after checkpoint PR #2996 squash-merged. Three
+slices land on top of the nested-profile checkpoint:
+
+- Parallel-executor Taskflow reuse: `ParallelExecutor` caches the Taskflow built
+  for the most recent same-shape graph and re-runs it, so warmed same-shape
+  parallel executions skip the per-node task/edge rebuild. This does NOT reach
+  zero allocations -- `tf::Executor::run()` (master thread) keeps a constant
+  per-run scheduling allocation, and `corun()` (which avoids it) needs a worker
+  thread -- so the gate `WarmedSameShapeGraphSkipsTaskflowRebuild` asserts the
+  achievable invariant: warmed parallel allocation is node-count independent.
+- Rigid-IPC bake warm through the real solve: `RigidIpcContactStage::prepare`
+  previously warmed via an assemble-only prewarm with fixed barrier options,
+  diverging from `execute`'s adaptive-kappa full solve and leaving the first
+  warmed step to allocate buffers the prewarm never sized. The option build is
+  now a shared `buildRigidIpcSolveOptions` helper and prepare warms through the
+  identical full solve (result discarded, no body moves). This closes the
+  `World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator` gate (previously a
+  toolchain-sensitive failure) and removes the whole "prepare under-warms
+  relative to execute" class.
+- Removed the now-unused `prewarmRigidIpcProjectedNewtonAssemblyScratch`.
+
+Validation: build + lint clean; `test_world` 369/369 (the rigid-IPC no-growth
+gate now passes), `test_rigid_ipc_barrier` 55/55,
+`test_newton_barrier_primitives` 38/38, `test_world_step_profiling` 11/11,
+`test_compute_graph` 49/49.
+
+Next slice: continue from a fresh measured no-growth/no-heap gap (a failing gate
+or a newly proven DART-owned stage scratch gap); do not broaden public
+return-by-value APIs unless built-in World code consumes the storage.
+
 ## Hard Stop Handoff (2026-06-14, Nested Profile Storage Reuse)
 
 Checkpoint PR #2996 (`Reuse profiled World step snapshots`) is open against
