@@ -3478,7 +3478,6 @@ UnifiedConstraintStage::UnifiedConstraintStage(std::size_t frictionIterations)
 UnifiedConstraintStage::UnifiedConstraintStage(
     std::size_t frictionIterations, common::MemoryManager* memoryManager)
   : m_frictionIterations(std::max<std::size_t>(1, frictionIterations)),
-    m_memoryManager(memoryManager),
     m_scratch(
         memoryManager != nullptr
             ? constructStageOwnedScratch<Scratch>(

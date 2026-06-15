@@ -681,7 +681,6 @@ private:
       World& world, std::span<const Contact> contacts);
 
   std::size_t m_frictionIterations;
-  common::MemoryManager* m_memoryManager = nullptr;
   ScratchPtr m_scratch;
 };
 
