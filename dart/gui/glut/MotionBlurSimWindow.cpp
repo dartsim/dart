@@ -38,6 +38,14 @@ MotionBlurSimWindow::~MotionBlurSimWindow()
 }
 
 //==============================================================================
+const char* MotionBlurSimWindow::getDisplayString() const
+{
+  // Same as the base window, plus a relaxable accumulation buffer for the
+  // motion-blur frame compositing.
+  return "rgba double depth>=16 samples~4 acca~16";
+}
+
+//==============================================================================
 void MotionBlurSimWindow::setMotionBlurQuality(int _val)
 {
   int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
