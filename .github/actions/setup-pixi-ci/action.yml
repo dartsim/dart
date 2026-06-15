@@ -45,7 +45,7 @@ runs:
   using: composite
   steps:
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.4
+      uses: prefix-dev/setup-pixi@v0.9.6
       with:
         pixi-version: ${{ inputs.pixi-version }}
         cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
@@ -92,6 +92,6 @@ runs:
     - name: Setup sccache
       if: ${{ inputs.enable-sccache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
       continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
-      uses: mozilla-actions/sccache-action@v0.0.9
+      uses: mozilla-actions/sccache-action@v0.0.10
       with:
         disable_annotations: ${{ inputs.sccache-disable-annotations }}
