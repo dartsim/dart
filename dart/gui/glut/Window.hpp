@@ -81,6 +81,19 @@ protected:
 
   virtual bool screenshot();
 
+  /// Returns the freeglut display string passed to glutInitDisplayString() to
+  /// choose the framebuffer configuration. The base window requests an RGBA,
+  /// double-buffered visual with a depth buffer and relaxable multisampling
+  /// (the '~' qualifier degrades gracefully when MSAA is unavailable).
+  ///
+  /// It deliberately does NOT request an accumulation buffer: modern
+  /// Mesa/NVIDIA/Xwayland drivers expose no accum-capable GLXFBConfig, so
+  /// requesting one makes glutCreateWindow() abort with "FBConfig with
+  /// necessary capabilities not found" and every GLUT window fails to open.
+  /// Subclasses that genuinely need an accumulation buffer (e.g.
+  /// MotionBlurSimWindow) override this to opt back in.
+  virtual const char* getDisplayString() const;
+
   int mWinWidth;
   int mWinHeight;
   int mMouseX;

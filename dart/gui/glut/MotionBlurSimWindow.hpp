@@ -77,6 +77,12 @@ public:
   void displayTimer(int _val) override;
 
 protected:
+  // Motion blur composites successive frames in an accumulation buffer, so opt
+  // back into one. The '~' qualifier keeps it relaxable, so the window still
+  // opens (without true accum) on drivers that expose no accum-capable
+  // FBConfig instead of aborting.
+  const char* getDisplayString() const override;
+
   // Determines the frequency of the motion blur
   // Default is 1, which means motion blur effect has the highest quality
   // When set to m, motion blur record data every m frames
