@@ -34,8 +34,8 @@
 
 // DART 6 profiling front-end, backported from DART 7 (dart/common/profile.hpp).
 //
-// DART_PROFILE_* macros compile to nothing unless DART_BUILD_PROFILE is on. When
-// enabled, two backends can be active independently:
+// DART_PROFILE_* macros compile to nothing unless DART_BUILD_PROFILE is on.
+// When enabled, two backends can be active independently:
 //   * a built-in text backend (DART_PROFILE_ENABLE_TEXT, default 1) that needs
 //     no GUI and no special kernel permissions -- ideal for headless,
 //     evidence-based performance work, and
@@ -100,7 +100,7 @@
 
   #define DART_PROFILE_CONCAT_IMPL(a, b) a##b
   #define DART_PROFILE_CONCAT(a, b) DART_PROFILE_CONCAT_IMPL(a, b)
-  #define DART_PROFILE_SCOPE_NAME(prefix)                                       \
+  #define DART_PROFILE_SCOPE_NAME(prefix)                                      \
     DART_PROFILE_CONCAT(prefix, DART_PROFILE_UNIQUE_ID)
 
   #if DART_PROFILE_HAS_TRACY
@@ -110,24 +110,24 @@
   #endif
 
   #if DART_PROFILE_ENABLE_TEXT
-    #define DART_PROFILE_TEXT_FRAME                                             \
+    #define DART_PROFILE_TEXT_FRAME                                            \
       ::dart::common::profile::Profiler::instance().markFrame()
     #define DART_PROFILE_TEXT_SCOPED(name_literal)                             \
-      ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(            \
+      ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(           \
           _dart_profile_scope_)(name_literal, __FILE__, __LINE__)
-    #define DART_PROFILE_TEXT_SCOPED_F()                                        \
-      ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(            \
+    #define DART_PROFILE_TEXT_SCOPED_F()                                       \
+      ::dart::common::profile::ProfileScope DART_PROFILE_SCOPE_NAME(           \
           _dart_profile_scope_func_)(__func__, __FILE__, __LINE__)
-    #define DART_PROFILE_TEXT_DUMP()                                            \
+    #define DART_PROFILE_TEXT_DUMP()                                           \
       ::dart::common::profile::Profiler::instance().printSummary()
-    #define DART_PROFILE_TEXT_SUMMARY()                                         \
+    #define DART_PROFILE_TEXT_SUMMARY()                                        \
       ::dart::common::profile::Profiler::instance().toSummaryText()
   #else
     #define DART_PROFILE_TEXT_FRAME
     #define DART_PROFILE_TEXT_SCOPED(name_literal)
     #define DART_PROFILE_TEXT_SCOPED_F()
     #define DART_PROFILE_TEXT_DUMP()
-    #define DART_PROFILE_TEXT_SUMMARY()                                         \
+    #define DART_PROFILE_TEXT_SUMMARY()                                        \
       ::std::string {}
   #endif
 
@@ -142,27 +142,27 @@ public:
       const char* name, const char* file, int line, const char* function)
     #if DART_PROFILE_HAS_TRACY && DART_PROFILE_ENABLE_TEXT
     : m_tracy(
-          static_cast<std::uint32_t>(line),
-          file,
-          std::strlen(file),
-          function,
-          std::strlen(function),
-          name,
-          std::strlen(name),
-          TRACY_CALLSTACK,
-          true),
+        static_cast<std::uint32_t>(line),
+        file,
+        std::strlen(file),
+        function,
+        std::strlen(function),
+        name,
+        std::strlen(name),
+        TRACY_CALLSTACK,
+        true),
       m_text(name, file, line)
     #elif DART_PROFILE_HAS_TRACY
     : m_tracy(
-          static_cast<std::uint32_t>(line),
-          file,
-          std::strlen(file),
-          function,
-          std::strlen(function),
-          name,
-          std::strlen(name),
-          TRACY_CALLSTACK,
-          true)
+        static_cast<std::uint32_t>(line),
+        file,
+        std::strlen(file),
+        function,
+        std::strlen(function),
+        name,
+        std::strlen(name),
+        TRACY_CALLSTACK,
+        true)
     #elif DART_PROFILE_ENABLE_TEXT
     : m_text(name, file, line)
     #endif
@@ -188,20 +188,20 @@ private:
 
   #endif
 
-  #define DART_PROFILE_FRAME                                                    \
-    do {                                                                        \
-      DART_PROFILE_TRACY_FRAME;                                                 \
-      DART_PROFILE_TEXT_FRAME;                                                  \
+  #define DART_PROFILE_FRAME                                                   \
+    do {                                                                       \
+      DART_PROFILE_TRACY_FRAME;                                                \
+      DART_PROFILE_TEXT_FRAME;                                                 \
     } while (false)
 
   #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
 
-    #define DART_PROFILE_SCOPED                                                 \
-      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(   \
+    #define DART_PROFILE_SCOPED                                                \
+      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(  \
           _dart_profile_scope_)(__func__, __FILE__, __LINE__, __func__)
 
     #define DART_PROFILE_SCOPED_N(name_literal)                                \
-      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(   \
+      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(  \
           _dart_profile_scope_)(name_literal, __FILE__, __LINE__, __func__)
 
   #else
@@ -217,7 +217,7 @@ private:
   #define DART_PROFILE_SCOPED
   #define DART_PROFILE_SCOPED_N(name_literal)
   #define DART_PROFILE_TEXT_DUMP()
-  #define DART_PROFILE_TEXT_SUMMARY()                                           \
+  #define DART_PROFILE_TEXT_SUMMARY()                                          \
     ::std::string {}
 
 #endif

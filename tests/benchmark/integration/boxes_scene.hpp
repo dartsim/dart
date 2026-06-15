@@ -43,8 +43,9 @@
 
 #include <dart/math/math.hpp>
 
-#include <cstddef>
 #include <string>
+
+#include <cstddef>
 
 namespace dart::test {
 
@@ -125,9 +126,7 @@ namespace dart::test {
 /// Builds one articulated chain: a free-floating root box link followed by
 /// `links - 1` revolute-jointed box links extending along +z. Deterministic.
 [[nodiscard]] inline dynamics::SkeletonPtr createChain(
-    std::size_t index,
-    const Eigen::Vector3d& basePosition,
-    std::size_t links)
+    std::size_t index, const Eigen::Vector3d& basePosition, std::size_t links)
 {
   auto skel = dynamics::Skeleton::create("chain" + std::to_string(index));
   const Eigen::Vector3d linkSize(0.3, 0.3, 0.5);
@@ -143,8 +142,8 @@ namespace dart::test {
       tf.translation() = basePosition;
       pair.first->setTransformFromParentBodyNode(tf);
     } else {
-      auto pair = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
-          parent);
+      auto pair
+          = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(parent);
       auto* joint = pair.first;
       body = pair.second;
       // Alternate the hinge axis so the chain folds in a non-planar way.
@@ -169,11 +168,11 @@ namespace dart::test {
   return skel;
 }
 
-/// Builds a `dim x dim` grid of articulated chains (each `links` box links long)
-/// dropped above a welded ground plane. This exercises contact constraints on
-/// articulated bodies: the cost of resolving a contact scales with how far the
-/// solver must propagate impulses along each chain, which is exactly the
-/// rigid-body case plus articulation depth.
+/// Builds a `dim x dim` grid of articulated chains (each `links` box links
+/// long) dropped above a welded ground plane. This exercises contact
+/// constraints on articulated bodies: the cost of resolving a contact scales
+/// with how far the solver must propagate impulses along each chain, which is
+/// exactly the rigid-body case plus articulation depth.
 [[nodiscard]] inline simulation::WorldPtr createChainsWorld(
     std::size_t dim, std::size_t links)
 {
@@ -193,8 +192,7 @@ namespace dart::test {
       const double y
           = (static_cast<double>(j) - static_cast<double>(dim) / 2.0) * 0.5;
       const double z = 3.0 + 0.25 * static_cast<double>((i + j) % 4);
-      world->addSkeleton(
-          createChain(index++, Eigen::Vector3d(x, y, z), links));
+      world->addSkeleton(createChain(index++, Eigen::Vector3d(x, y, z), links));
     }
   }
 

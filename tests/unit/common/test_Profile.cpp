@@ -46,10 +46,10 @@
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
 
-  #define DART_TEST_PROFILE_IF_ELSE(profile_statement, marker_value)            \
-    if (true)                                                                   \
-      profile_statement;                                                        \
-    else                                                                        \
+  #define DART_TEST_PROFILE_IF_ELSE(profile_statement, marker_value)           \
+    if (true)                                                                  \
+      profile_statement;                                                       \
+    else                                                                       \
       marker = marker_value
 
 TEST(ProfileMacro, ScopedMacrosAreSingleStatements)

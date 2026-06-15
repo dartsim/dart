@@ -49,9 +49,10 @@
 #include <dart/common/Profile.hpp>
 
 #include <chrono>
+#include <string>
+
 #include <cstdio>
 #include <cstdlib>
-#include <string>
 
 using namespace dart;
 
@@ -111,7 +112,8 @@ int main(int argc, char** argv)
   // ab_boxes.sh harness) unchanged. SCENE=chains runs the articulated-contact
   // scenario; LINKS controls the chain length (default 4).
   const char* sceneEnv = std::getenv("SCENE");
-  const bool chains = (sceneEnv != nullptr && std::string(sceneEnv) == "chains");
+  const bool chains
+      = (sceneEnv != nullptr && std::string(sceneEnv) == "chains");
 
   simulation::WorldPtr world;
   if (chains) {
@@ -121,7 +123,8 @@ int main(int argc, char** argv)
                               : 4u;
     world = test::createChainsWorld(dim, links);
     std::printf(
-        "# boxes_headless scene=chains dim=%zu links=%zu chains=%zu steps=%zu\n",
+        "# boxes_headless scene=chains dim=%zu links=%zu chains=%zu "
+        "steps=%zu\n",
         dim,
         links,
         dim * dim,
