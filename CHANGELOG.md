@@ -4,6 +4,13 @@
 
 ### [DART 6.19.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
 
+* Build
+
+  * Include `<cassert>` before the FCL headers in the FCL compatibility shim so
+    DART builds against Eigen 5 and current GCC/Clang toolchains, which no
+    longer pull `<cassert>` in transitively (FCL's shape headers call `assert`
+    without including it): [#3021](https://github.com/dartsim/dart/pull/3021)
+
 * Constraint
 
   * Add `CylindricalJointConstraint` for runtime slide-and-rotate attachments
@@ -19,6 +26,13 @@
     dynamics no longer requires an external QP solver, with unit tests,
     benchmarks, dartpy bindings, and an ImGui-based GUI example:
     [#2985](https://github.com/dartsim/dart/pull/2985)
+
+* Examples and Tutorials
+
+  * Enlarge the floor and add an FPS / physics real-time-factor HUD to the
+    `glut_add_delete_skels` example, so spawned cubes keep room on the ground
+    and the effect of adding skeletons on real-time performance is visible:
+    [#3019](https://github.com/dartsim/dart/pull/3019)
 
 * GUI
 
