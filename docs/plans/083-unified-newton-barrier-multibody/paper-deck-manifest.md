@@ -149,6 +149,42 @@ pressure evidence only; the GPU `World::step` contact-candidate construction,
 production GPU runtime filtering, speedup gate, and paper-scale behavior remain
 future `abd-future-gpu` evidence.
 
+The 2026-06-14 GPU contact-candidate bridge slice extends the private
+contact-candidate packet's reduced scene-owned filtered candidate-buffer row
+with a matching `World::step` self-surface filter-pressure witness from the
+same generated DART `World` surface. The row records 33 runtime candidate
+builds, 7,274,496 candidate pairs per build, 240,058,368 total runtime pairs,
+239,908,992 rejected runtime pairs, and exact CPU/GPU packet parity within
+`5.551115123125783e-17`. This is still reduced packet evidence only; production
+runtime scene filtering inside `World::step`, GPU `World::step` contact
+candidate construction, speedup-gate completion, and paper-scale behavior
+remain future `abd-future-gpu` evidence.
+
+The 2026-06-14 self-surface CCD witness slice extends that same
+`world_step_surface_contact` witness with the matching self-surface
+continuous-collision (CCD) counters from the same generated DART `World::step`:
+47,488 CCD point-triangle checks, 101,888 CCD edge-edge checks, 39,168 CCD hits,
+1 limited step, and 16,384 zero-step counts, with exact CPU/GPU packet parity and
+a writer that requires nonzero CCD checks and rejects CCD hits exceeding total
+checks. The earlier checkpoint slice's milestone PR #3000 has since merged into
+`main`. This is
+still reduced packet evidence only; production runtime scene filtering inside
+`World::step`, GPU `World::step` contact candidate construction, speedup-gate
+completion, and paper-scale behavior remain future `abd-future-gpu` evidence.
+
+The 2026-06-14 inter-body candidate witness slice adds an `inter_body`
+sub-witness to that same `world_step_surface_contact` witness: inter-body
+deformable surface-contact candidate counters from a dedicated minimal two-body
+`World::step` (a moving-point body crossing a stationary triangle obstacle). The
+row records 33 inter-body candidate builds, 528 inter-body pair capacity, 495
+rejected inter-body pairs, 33 point-triangle candidates, and 0 edge-edge
+candidates, with exact CPU/GPU packet parity and a writer that requires nonzero
+build/rejection pressure and enforces `capacity == emitted + rejected`. This is
+still reduced packet evidence only; production runtime scene filtering inside
+`World::step`, GPU `World::step` contact candidate construction, inter-body CCD
+parity, speedup-gate completion, and paper-scale behavior remain future
+`abd-future-gpu` evidence.
+
 ## Py-Demos Category Targets
 
 | Category target               | Rows                                                                                                                                                                                                         |

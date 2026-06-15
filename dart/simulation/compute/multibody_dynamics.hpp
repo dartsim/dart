@@ -662,7 +662,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getFrictionIterations() const noexcept;

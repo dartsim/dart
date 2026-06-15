@@ -59,8 +59,8 @@
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/boxed_lcp_contact.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
@@ -22359,4 +22359,185 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   world.restoreReplayFrame(0);
 
   EXPECT_TRUE(joint.isBroken());
+}
+
+// PLAN-091 WP-091.24 (foundational slice): the public solver-agnostic step
+// metrics report the physical invariants of a passive scene, and reading them
+// is a side-effect-free query.
+//
+// A single free-floating rigid body under zero gravity, with no contacts and no
+// applied force, is a torque- and force-free system: its linear momentum,
+// angular momentum, and kinetic energy are all conserved exactly across the
+// default step. With an isotropic inertia the default semi-implicit rigid-body
+// integrator reproduces that conservation to floating-point round-off (the
+// world-frame inertia is rotation-invariant, so the constant world angular
+// velocity yields constant angular momentum and rotational energy), giving a
+// tight conservation gate read entirely through World::computeStepMetrics().
+TEST(World, ComputeStepMetricsConservesFreeBodyInvariants)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.5;
+  // Isotropic inertia: world-frame inertia stays R (cI) R^T = cI under any
+  // rotation, so a constant world angular velocity conserves angular momentum
+  // and rotational kinetic energy under the semi-implicit integrator.
+  options.inertia = 0.4 * Eigen::Matrix3d::Identity();
+  options.position = Eigen::Vector3d(0.1, -0.2, 0.3);
+  options.linearVelocity = Eigen::Vector3d(0.7, -0.3, 0.5);
+  options.angularVelocity = Eigen::Vector3d(0.2, 0.9, -0.4);
+  world.addRigidBody("free_body", options);
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+
+  // Sanity: a moving body with finite inertia has non-trivial invariants.
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+  ASSERT_GT(initial.linearMomentum.norm(), 1e-6);
+  ASSERT_GT(initial.angularMomentum.norm(), 1e-6);
+  // No gravity, so potential energy is exactly zero and total == kinetic.
+  EXPECT_DOUBLE_EQ(initial.potentialEnergy, 0.0);
+  EXPECT_DOUBLE_EQ(
+      initial.totalEnergy, initial.kineticEnergy + initial.potentialEnergy);
+
+  // computeStepMetrics() is a pure query: calling it does not change the World,
+  // so a second call on the unstepped world returns identical numbers.
+  const sx::compute::StepMetrics repeated = world.computeStepMetrics();
+  EXPECT_DOUBLE_EQ(repeated.kineticEnergy, initial.kineticEnergy);
+  EXPECT_TRUE(repeated.linearMomentum.isApprox(initial.linearMomentum, 0.0));
+  EXPECT_TRUE(repeated.angularMomentum.isApprox(initial.angularMomentum, 0.0));
+
+  const int steps = 500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Linear momentum: conserved (no force).
+  EXPECT_LT(
+      (after.linearMomentum - initial.linearMomentum).norm(),
+      1e-9 * initial.linearMomentum.norm());
+  // Angular momentum about the world origin: conserved.
+  EXPECT_LT(
+      (after.angularMomentum - initial.angularMomentum).norm(),
+      1e-9 * initial.angularMomentum.norm());
+  // Kinetic energy: conserved (gravity-free, contact-free, isotropic inertia).
+  EXPECT_LT(
+      std::abs(after.kineticEnergy - initial.kineticEnergy),
+      1e-9 * initial.kineticEnergy);
+  EXPECT_DOUBLE_EQ(after.potentialEnergy, 0.0);
+}
+
+TEST(World, ComputeStepMetricsConservesLinearMomentumThroughCollision)
+{
+  namespace sx = dart::simulation;
+
+  // Two free rigid bodies on a 1-D head-on course, no gravity and no
+  // static/kinematic bodies: the only forces are the internal contact impulses
+  // between them, so total linear momentum is conserved (Newton's third law),
+  // while the default restitution-0 inelastic contact dissipates kinetic
+  // energy. computeStepMetrics() must report both, validating the public
+  // metrics across a contact-bearing multi-body scene (PLAN-091 WP-091.24
+  // validation layer).
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions a;
+  a.mass = 1.0;
+  a.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  a.position = Eigen::Vector3d(-1.2, 0.0, 0.0);
+  a.linearVelocity = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("a", a);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions b;
+  b.mass = 2.0;
+  b.inertia = 0.1 * Eigen::Matrix3d::Identity();
+  b.position = Eigen::Vector3d(1.2, 0.0, 0.0);
+  b.linearVelocity = Eigen::Vector3d(-0.5, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", b);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+
+  const sx::compute::StepMetrics initial = world.computeStepMetrics();
+  // Total linear momentum = m_a v_a + m_b v_b = 1*1.5 + 2*(-0.5) = +0.5 along
+  // x.
+  EXPECT_NEAR(initial.linearMomentum.x(), 0.5, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.y(), 0.0, 1e-12);
+  EXPECT_NEAR(initial.linearMomentum.z(), 0.0, 1e-12);
+  ASSERT_GT(initial.kineticEnergy, 1e-6);
+
+  // Long enough for the 1.4 m gap (closing at 2 m/s, ~0.7 s) to close and the
+  // contact to resolve.
+  const int steps = 1500;
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+
+  // Total linear momentum is conserved through the contact (no external force).
+  EXPECT_LT((after.linearMomentum - initial.linearMomentum).norm(), 1e-8);
+  // The inelastic collision dissipated most of the kinetic energy, proving a
+  // real contact was exercised (a perfectly-inelastic head-on collision retains
+  // only the common-velocity kinetic energy P^2 / (2 (m_a + m_b))).
+  EXPECT_LT(after.kineticEnergy, 0.5 * initial.kineticEnergy);
+  // A passive contact can only remove kinetic energy, never add it.
+  EXPECT_LE(after.kineticEnergy, initial.kineticEnergy + 1e-9);
+}
+
+TEST(World, ComputeStepMetricsPotentialEnergyConvergesWithTimeStep)
+{
+  namespace sx = dart::simulation;
+
+  // Order-of-convergence seed (PLAN-091 WP-091.24 validation layer): a single
+  // free rigid body falling under constant gravity has the exact closed form
+  // y(T) = y0 - 1/2 g T^2. computeStepMetrics().potentialEnergy = m g_mag y
+  // encodes that height, so the discretization error in the reported potential
+  // energy shrinks as the time step shrinks. Halving dt must reduce the error
+  // (the integrator is consistent), confirmed here without assuming the scheme.
+  const double gMag = 9.81;
+  const double mass = 2.0;
+  const double y0 = 5.0;
+  const double totalTime = 0.5;
+
+  const auto peError = [&](double dt) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, -gMag, 0.0));
+    world.setTimeStep(dt);
+    sx::RigidBodyOptions options;
+    options.mass = mass;
+    options.position = Eigen::Vector3d(0.0, y0, 0.0);
+    world.addRigidBody("faller", options);
+    world.enterSimulationMode();
+    const int steps = static_cast<int>(std::lround(totalTime / dt));
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+    }
+    const double yExact = y0 - 0.5 * gMag * totalTime * totalTime;
+    const double peExact = mass * gMag * yExact; // -m g.x with g = (0,-g,0).
+    return std::abs(world.computeStepMetrics().potentialEnergy - peExact);
+  };
+
+  const double coarse = peError(1.0e-3); //  500 steps to T.
+  const double fine = peError(5.0e-4);   // 1000 steps to T.
+
+  // There must be a measurable (and bounded) discretization error to converge.
+  ASSERT_GT(coarse, 1.0e-9) << "no measurable discretization error to converge";
+  EXPECT_LT(coarse, 1.0);
+  // Consistency: halving dt reduces the error. A first-order scheme gives a
+  // ratio near 0.5, a second-order one near 0.25; the [0.05, 0.7] band asserts
+  // genuine convergence (error shrinks > 30%) without assuming the exact order,
+  // and is wide enough not to flake on round-off.
+  const double ratio = fine / coarse;
+  EXPECT_GT(ratio, 0.05) << "convergence ratio " << ratio;
+  EXPECT_LT(ratio, 0.7) << "convergence ratio " << ratio;
 }

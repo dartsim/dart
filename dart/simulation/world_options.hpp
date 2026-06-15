@@ -149,6 +149,13 @@ struct WorldOptions
   /// every value. See `ContactGradientMode` for the per-mode semantics.
   ContactGradientMode contactGradientMode = ContactGradientMode::Analytic;
 
+  /// When true, `enterSimulationMode` rejects (throws) a configuration whose
+  /// resolved solver families substitute a method the World did not request
+  /// (see `World::getResolvedConfiguration`). Default false records the
+  /// substitution in the resolved-configuration report instead of erroring.
+  /// PLAN-091 WP-091.11.
+  bool strictSolverResolution = false;
+
   /// Optional base allocator for the World's memory hierarchy. If null, the
   /// default DART memory allocator is used. The pointed-to allocator must
   /// outlive the World because the World-owned MemoryManager borrows it.

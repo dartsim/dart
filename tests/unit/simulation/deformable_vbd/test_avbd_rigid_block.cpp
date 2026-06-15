@@ -27,9 +27,9 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/multibody/link.hpp>
@@ -4096,6 +4096,94 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesMeshEdgeAndVertexFeatureIds)
 }
 
 //==============================================================================
+// Box contacts resolve to Face/Edge/Vertex feature kinds through the production
+// snapshot path, at parity with the existing cylinder/mesh/capsule feature-ID
+// guards. The mesh/cylinder tests cover Edge/Vertex for their primitives, but
+// every box snapshot test only ever resolves to Face; this guards the box
+// Edge/Vertex branches of `avbdRigidWorldContactEndpointId` so a contact
+// migrating between a face, edge, and corner gets a distinct feature id (and
+// therefore resets its warm-start row instead of aliasing onto a stale one).
+TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesBoxEdgeAndVertexFeatureIds)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  auto boxBody = world.addRigidBody("box");
+  boxBody.setCollisionShape(sx::CollisionShape::makeBox(Vec3(1.0, 1.0, 1.0)));
+
+  sx::RigidBodyOptions probeOptions;
+  probeOptions.position = Vec3(3.0, 0.0, 0.0);
+  auto probe = world.addRigidBody("probe", probeOptions);
+  probe.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const sx::CollisionBody boxCollisionBody(boxBody.getEntity(), &world);
+  const sx::CollisionBody probeBody(probe.getEntity(), &world);
+
+  // Body-local points strictly outside the unit cube (half extents (1, 1, 1))
+  // on one, two, and three axes resolve to Face, Edge, and Vertex respectively.
+  const Vec3 onFacePoint(1.1, 0.1, 0.0);
+  const Vec3 onEdgePoint(1.1, 1.1, 0.0);
+  const Vec3 onVertexPoint(1.1, 1.1, 1.1);
+
+  sx::Contact onFace{
+      boxCollisionBody, probeBody, onFacePoint, Vec3::UnitX(), 0.1};
+  onFace.shapeIndexA = 0;
+  onFace.localPointA = onFacePoint;
+  sx::Contact onEdge{
+      boxCollisionBody, probeBody, onEdgePoint, Vec3::UnitX(), 0.1};
+  onEdge.shapeIndexA = 0;
+  onEdge.localPointA = onEdgePoint;
+  sx::Contact onVertex{
+      boxCollisionBody, probeBody, onVertexPoint, Vec3::UnitX(), 0.1};
+  onVertex.shapeIndexA = 0;
+  onVertex.localPointA = onVertexPoint;
+  const std::vector<sx::Contact> contacts{onFace, onEdge, onVertex};
+
+  const vbd::AvbdRigidWorldContactSnapshot snapshot
+      = vbd::buildAvbdRigidWorldContactSnapshot(
+          dart::simulation::detail::registryOf(world), contacts);
+
+  ASSERT_EQ(snapshot.contacts.size(), 3u);
+
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[0].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Face);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[1].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Edge);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureKind(snapshot.contacts[2].endpointA.feature),
+      vbd::AvbdContactFeatureKind::Vertex);
+
+  // The three box features must be pairwise distinct.
+  EXPECT_NE(
+      snapshot.contacts[0].endpointA.feature,
+      snapshot.contacts[1].endpointA.feature);
+  EXPECT_NE(
+      snapshot.contacts[0].endpointA.feature,
+      snapshot.contacts[2].endpointA.feature);
+  EXPECT_NE(
+      snapshot.contacts[1].endpointA.feature,
+      snapshot.contacts[2].endpointA.feature);
+
+  // Local index matches the production box feature packing for the single-shape
+  // body (shape block 0).
+  const Vec3 halfExtents(1.0, 1.0, 1.0);
+  EXPECT_EQ(
+      vbd::avbdContactFeatureLocalIndex(snapshot.contacts[0].endpointA.feature),
+      vbd::packAvbdBoxContactFeatureId(
+          0, vbd::avbdBoxContactFeatureCode(onFacePoint, halfExtents)));
+  EXPECT_EQ(
+      vbd::avbdContactFeatureLocalIndex(snapshot.contacts[1].endpointA.feature),
+      vbd::packAvbdBoxContactFeatureId(
+          0, vbd::avbdBoxContactFeatureCode(onEdgePoint, halfExtents)));
+  EXPECT_EQ(
+      vbd::avbdContactFeatureLocalIndex(snapshot.contacts[2].endpointA.feature),
+      vbd::packAvbdBoxContactFeatureId(
+          0, vbd::avbdBoxContactFeatureCode(onVertexPoint, halfExtents)));
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCylinderFeatureIds)
 {
   sx::World world;
@@ -5727,7 +5815,6 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
-  joint.hasAvbdStiffnessState = false;
 
   ASSERT_TRUE(
       vbd::configureAvbdRigidWorldFixedJointFromCurrentPose(

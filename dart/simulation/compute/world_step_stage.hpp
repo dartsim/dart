@@ -241,6 +241,12 @@ public:
   [[nodiscard]] virtual std::string_view getName() const noexcept = 0;
   [[nodiscard]] virtual ComputeStageMetadata getMetadata() const noexcept;
   virtual void execute(World& world, ComputeExecutor& executor) = 0;
+
+  /// Optional pre-step preparation hook. The default is a no-op; a stage that
+  /// caches per-step state overrides this. The built-in schedule calls
+  /// `prepare()` on every scheduled stage, so a stateless stage needs no entry
+  /// in any parallel "needs preparation" table.
+  virtual void prepare(World& world);
 };
 
 /// Non-owning, ordered collection of stages for one DART 7 World step.
@@ -293,7 +299,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
 private:
@@ -396,7 +402,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
 private:
@@ -449,7 +455,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getIterations() const noexcept;
@@ -605,7 +611,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] std::size_t getMaxIterations() const noexcept;
@@ -647,7 +653,7 @@ public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   /// Pre-reserve per-body deformable solver scratch before baked steps.
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
   [[nodiscard]] const DeformableSolverStats& getLastStats() const noexcept;

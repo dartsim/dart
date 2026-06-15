@@ -44,7 +44,7 @@ namespace dart::simulation::comps {
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Transform
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(Transform);
+  DART_SIMULATION_PROPERTY_COMPONENT(Transform, "comps.Transform");
 
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
@@ -55,7 +55,7 @@ struct Transform
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Velocity
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(Velocity);
+  DART_SIMULATION_PROPERTY_COMPONENT(Velocity, "comps.Velocity");
 
   Eigen::Vector3d linear = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular = Eigen::Vector3d::Zero();
@@ -66,7 +66,7 @@ struct Velocity
 /// **Internal Implementation Detail** - Not exposed in public API
 struct MassProperties
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(MassProperties);
+  DART_SIMULATION_PROPERTY_COMPONENT(MassProperties, "comps.MassProperties");
 
   double mass = 1.0;
   /// Rotational inertia about the center of mass.
@@ -80,7 +80,7 @@ struct MassProperties
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Force
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(Force);
+  DART_SIMULATION_PROPERTY_COMPONENT(Force, "comps.Force");
 
   Eigen::Vector3d force = Eigen::Vector3d::Zero();
   Eigen::Vector3d torque = Eigen::Vector3d::Zero();

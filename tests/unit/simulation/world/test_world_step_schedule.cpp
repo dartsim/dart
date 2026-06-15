@@ -310,39 +310,11 @@ TEST(BuiltInWorldStepSchedule, CustomFinalStageKeepsDynamicsScheduleShared)
   expectInlineCapacity(options);
 }
 
-TEST(BuiltInWorldStepSchedule, PreparationContractCoversStatefulStages)
-{
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::RigidBodyVelocity));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::RigidBodyContact));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::RigidIpcContact));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::MultibodyVariationalIntegration));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::DeformableDynamics));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::UnifiedConstraint));
-  EXPECT_TRUE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(Slot::Kinematics));
-
-  EXPECT_FALSE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::RigidBodyPosition));
-  EXPECT_FALSE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          Slot::MultibodyForwardDynamics));
-  EXPECT_FALSE(
-      sxdetail::builtInWorldStepScheduleNeedsPreparation(
-          static_cast<Slot>(99)));
-}
+// The former `builtInWorldStepScheduleNeedsPreparation` table was removed in
+// PLAN-091 WP-091.10: which stages prepare is now expressed by overriding the
+// virtual `compute::WorldStepStage::prepare()`, so there is no separate table
+// to test. Stage preparation behavior is covered by the World step suites and
+// the default-step golden trajectories.
 
 TEST(BuiltInWorldStepSchedule, AddRejectsOverflowPastInlineCapacity)
 {

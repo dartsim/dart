@@ -217,6 +217,31 @@ def _resolve_markdown_link(link: str, base_dir: Path) -> Path | None:
     return (base_dir / target_path).resolve()
 
 
+def check_plan_id_uniqueness(entries: list[dict[str, str]]) -> list[str]:
+    """PLAN-091 WP-091.5: each PLAN-ID identifies exactly one dashboard block.
+
+    A colliding ID (two initiatives sharing one ``PLAN-NNN``) makes grep-by-ID
+    ambiguous and breaks the packet-execution harness, so reject it.
+    """
+    counts: dict[str, int] = {}
+    order: list[str] = []
+    for entry in entries:
+        plan_id = entry["id"]
+        if plan_id not in counts:
+            order.append(plan_id)
+        counts[plan_id] = counts.get(plan_id, 0) + 1
+    failures: list[str] = []
+    for plan_id in order:
+        if counts[plan_id] > 1:
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} identifies {counts[plan_id]} dashboard blocks; each "
+                "PLAN-ID must identify exactly one initiative (renumber the "
+                "colliding entries onto fresh IDs)"
+            )
+    return failures
+
+
 def check_plan_lifecycle(repo_root: Path) -> list[str]:
     """Ensure living plans stay current instead of becoming archival state."""
     failures: list[str] = []
@@ -230,6 +255,7 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
     }
     dashboard_text = dashboard.read_text(encoding="utf-8", errors="replace")
     entries = _dashboard_entries(dashboard_text)
+    failures.extend(check_plan_id_uniqueness(entries))
 
     referenced_plan_files: set[str] = set()
     for entry in entries:

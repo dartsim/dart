@@ -36,6 +36,7 @@
 #include "dart/simulation/comps/frame_types.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/rigid_contact_assembly.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
@@ -49,70 +50,6 @@
 
 namespace dart::simulation::compute {
 namespace {
-
-//==============================================================================
-Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
-{
-  const auto norm = orientation.norm();
-  if (norm <= 0.0 || !std::isfinite(norm)) {
-    return Eigen::Quaterniond::Identity();
-  }
-
-  auto normalized = orientation;
-  normalized.coeffs() /= norm;
-  return normalized;
-}
-
-//==============================================================================
-double inverseMass(const comps::MassProperties& mass)
-{
-  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-}
-
-//==============================================================================
-Eigen::Matrix3d inverseWorldInertia(
-    const comps::MassProperties& mass, const comps::Transform& transform)
-{
-  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
-    return Eigen::Matrix3d::Zero();
-  }
-
-  const Eigen::Matrix3d rotation
-      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-  const Eigen::Matrix3d worldInertia
-      = rotation * mass.inertia * rotation.transpose();
-  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    return Eigen::Matrix3d::Zero();
-  }
-  return solver.solve(Eigen::Matrix3d::Identity());
-}
-
-//==============================================================================
-double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->restitution;
-  }
-  return 0.0;
-}
-
-//==============================================================================
-double frictionOf(const detail::WorldRegistry& registry, entt::entity entity)
-{
-  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
-    return material->friction;
-  }
-  return 1.0;
-}
-
-//==============================================================================
-bool hasPrescribedRigidBodyContactResponse(
-    const detail::WorldRegistry& registry, entt::entity entity)
-{
-  return registry.all_of<comps::StaticBodyTag>(entity)
-         || registry.all_of<comps::KinematicBodyTag>(entity);
-}
 
 //==============================================================================
 struct ContactEnd
@@ -220,9 +157,9 @@ void assembleRigidBodyContactProblemInto(
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
     const bool prescribedA
-        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityA);
     const bool prescribedB
-        = hasPrescribedRigidBodyContactResponse(registry, entityB);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityB);
 
     RigidBodyContactConstraint constraint;
     constraint.bodyA = entityA;
@@ -233,14 +170,14 @@ void assembleRigidBodyContactProblemInto(
     constraint.armB = contact.point - transformB.position;
     constraint.staticA = prescribedA;
     constraint.staticB = prescribedB;
-    constraint.invMassA = prescribedA ? 0.0 : inverseMass(massA);
-    constraint.invMassB = prescribedB ? 0.0 : inverseMass(massB);
-    constraint.invInertiaA = prescribedA
-                                 ? Eigen::Matrix3d::Zero()
-                                 : inverseWorldInertia(massA, transformA);
-    constraint.invInertiaB = prescribedB
-                                 ? Eigen::Matrix3d::Zero()
-                                 : inverseWorldInertia(massB, transformB);
+    constraint.invMassA = prescribedA ? 0.0 : detail::inverseMassOf(massA);
+    constraint.invMassB = prescribedB ? 0.0 : detail::inverseMassOf(massB);
+    constraint.invInertiaA
+        = prescribedA ? Eigen::Matrix3d::Zero()
+                      : detail::inverseWorldInertiaOf(massA, transformA);
+    constraint.invInertiaB
+        = prescribedB ? Eigen::Matrix3d::Zero()
+                      : detail::inverseWorldInertiaOf(massB, transformB);
 
     const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
     const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
@@ -258,7 +195,8 @@ void assembleRigidBodyContactProblemInto(
     // Restitution target from the pre-solve approach velocity. Combine the two
     // materials by taking the larger bounce.
     const double restitution = std::max(
-        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
+        detail::restitutionOf(registry, entityA),
+        detail::restitutionOf(registry, entityB));
     const auto& velocityA = registry.get<comps::Velocity>(entityA);
     const auto& velocityB = registry.get<comps::Velocity>(entityB);
     const double initialApproach
@@ -267,7 +205,8 @@ void assembleRigidBodyContactProblemInto(
            - computeRigidBodyContactPointVelocity(
                velocityA, constraint.armA, constraint.staticA))
               .dot(constraint.normal);
-    constexpr double restitutionThreshold = 1e-3;
+    constexpr double restitutionThreshold
+        = detail::kRigidContactRestitutionThreshold;
     constraint.restitutionVelocity
         = (restitution > 0.0 && initialApproach < -restitutionThreshold)
               ? -restitution * initialApproach
@@ -289,7 +228,8 @@ void assembleRigidBodyContactProblemInto(
     constraint.tangentMass1 = tangentMass(constraint.tangent1);
     constraint.tangentMass2 = tangentMass(constraint.tangent2);
     constraint.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
+        detail::frictionOf(registry, entityA)
+        * detail::frictionOf(registry, entityB));
 
     problem.constraints.push_back(constraint);
   }

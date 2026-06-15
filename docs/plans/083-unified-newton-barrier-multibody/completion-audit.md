@@ -16,14 +16,38 @@ moves entirely into durable plan sidecars.
 
 ## Evidence Snapshot
 
-Latest branch-local delta (2026-06-14): runtime deformable `World::step`
-diagnostics now expose candidate pair capacity and rejected pair counts for
-self-surface, inter-body deformable, static rigid surface CCD, and moving rigid
-surface CCD candidate paths. The counters are serialized by the PLAN-083 CPU
-scene packet writer and validated for capacity/rejection consistency. This
-improves CPU runtime evidence for contact-filter pressure, but it is still not
-GPU `World::step` contact-candidate construction, a production GPU runtime
-filtering path, a speedup gate, or paper-scale scene behavior.
+Latest branch-local delta (2026-06-14): the private GPU contact-candidate
+packet's `World::step` witness now also carries an `inter_body` sub-witness with
+inter-body deformable surface-contact candidate counters from a dedicated minimal
+two-body `World::step` (a moving-point body crossing a stationary triangle
+obstacle). The writer CPU/GPU-parity-checks the inter-body candidate builds, pair
+capacity, rejected pairs, point-triangle, and edge-edge candidates, requires a
+nonzero build and rejection pressure, and enforces `capacity == emitted +
+rejected`. Fresh CUDA evidence records 33 inter-body candidate builds, 528
+inter-body pair capacity, 495 rejected inter-body pairs, 33 point-triangle
+candidates, and 0 edge-edge candidates. This is still a reduced inter-body
+deformable `World::step` candidate filter-pressure witness only, not production
+runtime scene filtering, GPU `World::step` candidate construction, inter-body CCD
+parity, a speedup gate, or paper-scale behavior.
+
+Prior branch-local delta (2026-06-14): the private GPU contact-candidate
+packet's reduced scene-owned filtered candidate-buffer row's `World::step`
+self-surface witness now also carries the matching self-surface
+continuous-collision (CCD) counters from the same generated DART `World::step`.
+The packet writer CPU/GPU-parity-checks the runtime CCD point-triangle checks,
+edge-edge checks, hits, limited steps, and zero-step counts, requires nonzero CCD
+checks, and rejects CCD hits exceeding total checks. Fresh CUDA evidence records
+47,488 CCD point-triangle checks, 101,888 CCD edge-edge checks, 39,168 CCD hits,
+1 limited step, and 16,384 zero-step counts, alongside the prior filter-pressure
+counters (33 runtime candidate builds, 240,058,368 total runtime candidate pairs,
+239,908,992 rejected runtime pairs; the filtered GPU row still covers 7,274,496
+possible pairs, keeps 2,048 candidates, and rejects 7,272,448 pairs). The earlier
+slice's milestone checkpoint PR #3000 (`simx/plan083-worldstep-contact-filter-stats`)
+has since merged into `main` (2026-06-14). This improves the
+reduced packet bridge between private GPU candidate filtering and `World::step`
+runtime self-surface CCD evidence, but it is still not production runtime scene
+filtering inside `World::step`, GPU `World::step` contact-candidate
+construction, a speedup gate, or paper-scale scene behavior.
 
 | Artifact                 | Row count | Status counts                          |
 | ------------------------ | --------- | -------------------------------------- |
@@ -123,10 +147,10 @@ filtering path, a speedup gate, or paper-scale scene behavior.
   scene-owned runtime candidate buffers, scene-owned runtime sweep broad-phase
   rows, a reduced combined scene runtime sweep-filter row, a reduced
   combined scene runtime candidate-filter row, and a reduced scene-owned
-  filtered candidate-buffer row extracted from one DART `World` deformable
-  surface, but production runtime scene filtering inside
-  `World::step`, GPU `World::step` contact candidate construction, and speedup
-  remain unproven.
+  filtered candidate-buffer row with a matching `World::step` self-surface
+  filter-pressure witness extracted from one DART `World` deformable surface,
+  but production runtime scene filtering inside `World::step`, GPU
+  `World::step` contact candidate construction, and speedup remain unproven.
   The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
   point-triangle/edge-edge CCD/line-search packet is in-progress because
   parity exists for reduced endpoint-linear, 8-sample trajectory, continuous

@@ -1550,7 +1550,11 @@ cudaError_t sortSweepItemsOnDevice(
 }
 
 //==============================================================================
-cudaError_t launchSweptPointTriangleSweepKernel(
+// Count phase: build + sort sweep items, count per-point accepted pairs, and
+// exclusive-prefix them into pairOffsets. After this the host can read
+// compactedCount and allocate the accepted output buffers to the exact number
+// of candidates instead of the all-pairs capacity, then call the scatter phase.
+cudaError_t launchSweptPointTriangleSweepCountKernel(
     const double* startPositions,
     const double* endPositions,
     const std::uint32_t* pointIndices,
@@ -1561,9 +1565,6 @@ cudaError_t launchSweptPointTriangleSweepKernel(
     std::uint32_t* pairCounts,
     std::uint32_t* pairOffsets,
     std::uint32_t* compactedCount,
-    std::uint32_t* acceptedPointIndices,
-    std::uint32_t* acceptedTriangleIndices,
-    double* acceptedEndpointSquaredDistances,
     std::size_t pointCount,
     std::size_t triangleCount,
     std::size_t paddedPointCount,
@@ -1626,11 +1627,31 @@ cudaError_t launchSweptPointTriangleSweepKernel(
 
   prefixSweepPairCountsKernel<<<1u, 1u>>>(
       pairCounts, pairOffsets, compactedCount, pointCount);
-  error = cudaGetLastError();
-  if (error != cudaSuccess) {
-    return error;
+  return cudaGetLastError();
+}
+
+// Scatter phase: write the accepted candidate pairs into the right-sized output
+// buffers using the offsets from the count phase. pointItems/triangleItems must
+// already be the sorted items produced by the count phase.
+cudaError_t launchSweptPointTriangleSweepScatterKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* triangleIndices,
+    const ContactCandidateSweepAabbItem* pointItems,
+    const ContactCandidateSweepAabbItem* triangleItems,
+    const std::uint32_t* pairOffsets,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    double* acceptedEndpointSquaredDistances,
+    std::size_t pointCount,
+    std::size_t triangleCount)
+{
+  if (pointCount == 0 || triangleCount == 0) {
+    return cudaSuccess;
   }
 
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pointCount, blockSize);
   scatterSweptPointTriangleSweepPairsKernel<<<gridSize, blockSize>>>(
       startPositions,
       endPositions,
@@ -1648,7 +1669,7 @@ cudaError_t launchSweptPointTriangleSweepKernel(
 }
 
 //==============================================================================
-cudaError_t launchSweptEdgeEdgeSweepKernel(
+cudaError_t launchSweptEdgeEdgeSweepCountKernel(
     const double* startPositions,
     const double* endPositions,
     const std::uint32_t* edgeIndices,
@@ -1657,9 +1678,6 @@ cudaError_t launchSweptEdgeEdgeSweepKernel(
     std::uint32_t* pairCounts,
     std::uint32_t* pairOffsets,
     std::uint32_t* compactedCount,
-    std::uint32_t* acceptedEdgeAIndices,
-    std::uint32_t* acceptedEdgeBIndices,
-    double* acceptedEndpointSquaredDistances,
     std::size_t edgeCount,
     std::size_t paddedEdgeCount)
 {
@@ -1697,11 +1715,26 @@ cudaError_t launchSweptEdgeEdgeSweepKernel(
 
   prefixSweepPairCountsKernel<<<1u, 1u>>>(
       pairCounts, pairOffsets, compactedCount, edgeCount);
-  error = cudaGetLastError();
-  if (error != cudaSuccess) {
-    return error;
+  return cudaGetLastError();
+}
+
+cudaError_t launchSweptEdgeEdgeSweepScatterKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    const ContactCandidateSweepAabbItem* edgeItems,
+    const std::uint32_t* pairOffsets,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedEndpointSquaredDistances,
+    std::size_t edgeCount)
+{
+  if (edgeCount == 0) {
+    return cudaSuccess;
   }
 
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(edgeCount, blockSize);
   scatterSweptEdgeEdgeSweepPairsKernel<<<gridSize, blockSize>>>(
       startPositions,
       endPositions,
