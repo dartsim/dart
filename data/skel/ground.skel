@@ -8,7 +8,7 @@
           <transformation>0 0 0 0 0 0</transformation>
           <geometry>
             <box>
-              <size>2.5 0.05 2.5</size>
+              <size>4 0.05 4</size>
             </box>
           </geometry>
           <color>0.95 0.95 0.95</color>
@@ -17,7 +17,7 @@
           <transformation>0 0 0 0 0 0</transformation>
           <geometry>
             <box>
-              <size>2.5 0.05 2.5</size>
+              <size>4 0.05 4</size>
             </box>
           </geometry>
         </collision_shape>

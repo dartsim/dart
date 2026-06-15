@@ -37,6 +37,8 @@
 
 #include <dart/dart.hpp>
 
+#include <chrono>
+
 /// \brief
 class MyWindow : public dart::gui::glut::SimWindow
 {
@@ -50,6 +52,10 @@ public:
   /// \brief
   void drawWorld() const override;
 
+  /// Renders the world and overlays a small HUD (render FPS, physics real-time
+  /// factor, and the current cube count).
+  void draw() override;
+
   /// \brief
   void keyboard(unsigned char _key, int _x, int _y) override;
 
@@ -58,6 +64,15 @@ public:
       const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
       const Eigen::Vector3d& _size = Eigen::Vector3d(0.1, 0.1, 0.1),
       double _mass = 0.1);
+
+private:
+  // Wall-clock and simulated-time samples from the previous draw(), used to
+  // derive the smoothed FPS and real-time-factor readouts.
+  std::chrono::steady_clock::time_point mLastDrawWall;
+  double mLastSimTime = 0.0;
+  double mFpsEma = -1.0;
+  double mRtfEma = -1.0;
+  bool mHudInitialized = false;
 };
 
 #endif // EXAMPLES_ADDDELETESKELS_MYWINDOW_HPP_

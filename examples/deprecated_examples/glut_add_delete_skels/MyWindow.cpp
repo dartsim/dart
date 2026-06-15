@@ -32,9 +32,66 @@
 
 #include "MyWindow.hpp"
 
+#include <chrono>
+
+#include <cstdio>
+
 MyWindow::MyWindow() : SimWindow() {}
 
 MyWindow::~MyWindow() {}
+
+void MyWindow::draw()
+{
+  // Render the world plus the base class's 2D simulation-frame counter.
+  SimWindow::draw();
+
+  // --- Update the HUD timing readouts -------------------------------------
+  const auto now = std::chrono::steady_clock::now();
+  const double simTime = mWorld->getTime();
+  if (mHudInitialized) {
+    const double wallDt
+        = std::chrono::duration<double>(now - mLastDrawWall).count();
+    if (wallDt > 1e-6) {
+      // Exponential moving averages keep both readouts steady frame-to-frame.
+      const double fps = 1.0 / wallDt;
+      mFpsEma = (mFpsEma < 0.0) ? fps : 0.9 * mFpsEma + 0.1 * fps;
+      if (mSimulating) {
+        // Real-time factor: simulated seconds advanced per wall-clock second.
+        // < 1 means the physics cannot keep up with real time.
+        const double rtf = (simTime - mLastSimTime) / wallDt;
+        mRtfEma = (mRtfEma < 0.0) ? rtf : 0.9 * mRtfEma + 0.1 * rtf;
+      }
+    }
+  }
+  mLastDrawWall = now;
+  mLastSimTime = simTime;
+  mHudInitialized = true;
+
+  // Dynamic cubes = every skeleton except the static ground.
+  const std::size_t numSkeletons = mWorld->getNumSkeletons();
+  const std::size_t numCubes = (numSkeletons > 0) ? numSkeletons - 1 : 0;
+
+  // --- Draw the HUD in the top-left corner --------------------------------
+  // SimWindow::draw() re-enables lighting, so disable it for flat text.
+  glDisable(GL_LIGHTING);
+  glColor3f(0.0f, 0.0f, 0.0f);
+
+  char line[96];
+  std::snprintf(line, sizeof(line), "FPS: %.1f", mFpsEma < 0.0 ? 0.0 : mFpsEma);
+  dart::gui::glut::drawStringOnScreen(0.02f, 0.95f, line);
+
+  if (mSimulating)
+    std::snprintf(
+        line, sizeof(line), "Physics RTF: %.2fx", mRtfEma < 0.0 ? 0.0 : mRtfEma);
+  else
+    std::snprintf(line, sizeof(line), "Physics RTF: paused");
+  dart::gui::glut::drawStringOnScreen(0.02f, 0.91f, line);
+
+  std::snprintf(line, sizeof(line), "Cubes: %zu", numCubes);
+  dart::gui::glut::drawStringOnScreen(0.02f, 0.87f, line);
+
+  glEnable(GL_LIGHTING);
+}
 
 void MyWindow::drawWorld() const
 {
