@@ -50,6 +50,13 @@
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 // clang-format on
 
+// FCL's shape headers (e.g. geometry/shape/convex-inl.h) call assert() without
+// including <cassert> themselves, relying on it being pulled in transitively.
+// Newer toolchains and Eigen versions (e.g. Eigen 5) no longer provide that
+// transitive include, so make the declaration available before the FCL headers
+// are parsed. See conda-forge/dartsim-feedstock#171.
+#include <cassert>
+
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/config.h>
 #include <fcl/geometry/bvh/BVH_model.h>
