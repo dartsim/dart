@@ -10,7 +10,7 @@ enough to commit to API stability and user-facing support.
 deprecation cycle, CI gates that keep it green, user-facing docs, and a
 maintainer who owns regressions. The VI is opt-in behind the method-name facade
 (`WorldOptions::multibodyOptions` at construction or
-`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+`World::setMultibodyOptions({.integrationFamily = MultibodyIntegrationFamily::Variational})`),
 so graduation does not change defaults — it changes the _promise_ we make about
 the family.
 
@@ -65,8 +65,9 @@ rigor). `[x]` = met today, `[ ]` = open.
       two-step history without re-bootstrapping.
 - [x] **API frozen with a deprecation policy (surface declared; committed at the
       graduation flip).** The stable public surface is: the
-      `"variational integrator"` `integrationFamily` name; the `MultibodyOptions`
-      value-object fields; the loop-closure API (`add_loop_closure` /
+      `MultibodyIntegrationFamily::Variational` `integrationFamily` selector; the
+      `MultibodyOptions` value-object fields; the loop-closure API
+      (`add_loop_closure` /
       `LoopClosureSpec`); the ground/link-contact API
       (`Multibody::setGroundContact` / `addGroundContactPoint`, dartpy
       `set_ground_contact` / `add_ground_contact_point`); and the non-convergence

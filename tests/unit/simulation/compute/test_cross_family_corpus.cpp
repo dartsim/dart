@@ -457,7 +457,13 @@ CorpusRow runCaseFamily(const SceneCase& c, const std::string& family)
 
   if (c.axis == FamilyAxis::MultibodyIntegration) {
     // The integration family is selected on the World, before bodies exist.
-    world.setMultibodyOptions({.integrationFamily = family});
+    // The corpus identifies families by their documented label; map that label
+    // to the typed selector here.
+    world.setMultibodyOptions(
+        {.integrationFamily
+         = (family == "variational integrator")
+               ? sx::MultibodyIntegrationFamily::Variational
+               : sx::MultibodyIntegrationFamily::SemiImplicit});
   }
 
   c.build(world);

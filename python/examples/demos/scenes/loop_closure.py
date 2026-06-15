@@ -2,7 +2,7 @@
 
 A planar 4-link revolute arm (joints about +Z, links along +X) swings under
 gravity on the World with the **variational integrator** selected
-(``MultibodyOptions(integration_family="variational integrator")``). A holonomic
+(``MultibodyOptions(integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL)``). A holonomic
 ``DISTANCE`` loop closure ties the end of the last link to a fixed world anchor
 (a point carried on the root/base link, which never moves) at the exact
 tip-to-anchor separation of the rest pose. With the closure's dynamics policy set
@@ -61,7 +61,7 @@ def build() -> SceneSetup:
     # Select the variational integrator before entering simulation mode; the VI
     # is the integrator that Newton-projects onto the loop-closure manifold.
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     world.gravity = (0.0, 0.0, -9.81)
     world.time_step = 0.005

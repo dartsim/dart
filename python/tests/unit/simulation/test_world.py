@@ -34,7 +34,7 @@ def _translation_transform(x: float, y: float, z: float):
 def _floating_link_world(sx, name: str):
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody(name)
     base = arm.add_link("base")
@@ -51,7 +51,7 @@ def _floating_link_world(sx, name: str):
 def _floating_link_pair_world(sx, name: str):
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody(name)
     base = arm.add_link("base")
@@ -582,7 +582,7 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
 
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
 
     arm = world.add_multibody("clear_arm")
@@ -632,7 +632,7 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
     world.gravity = (0.0, 0.0, 0.0)
     world.time_step = 0.005
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     rebuilt_arm = world.add_multibody("rebuilt_clear_arm")
     rebuilt_base = rebuilt_arm.add_link("base")
@@ -960,7 +960,7 @@ def test_simulation_world_articulated_joint_list_keeps_world_alive():
     def build_joints_from_temporary_world():
         world = sx.World()
         world.multibody_options = sx.MultibodyOptions(
-            integration_family="variational integrator"
+            integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
         )
         arm = world.add_multibody("arm")
         base = arm.add_link("base")
@@ -992,7 +992,7 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
 
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody("arm")
     base = arm.add_link("base")
@@ -1168,7 +1168,7 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
     )
     foreign_world = sx.World()
     foreign_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     foreign_arm = foreign_world.add_multibody("foreign_arm")
     foreign_base = foreign_arm.add_link("foreign_base")
@@ -1223,7 +1223,7 @@ def test_simulation_world_articulated_point_joints_generate_unique_names():
 
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody("generated_joint_arm")
     base = arm.add_link("base")
@@ -1271,7 +1271,7 @@ def test_simulation_world_articulated_generated_names_resume_after_binary_roundt
 
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody("serialized_generated_joint_arm")
     base = arm.add_link("base")
@@ -1317,7 +1317,7 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
 
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody("serialized_articulated_stiffness_arm")
     base = arm.add_link("base")
@@ -1455,7 +1455,7 @@ def test_simulation_world_clear_resets_articulated_generated_names():
 
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     arm = world.add_multibody("clear_generated_joint_arm")
     base = arm.add_link("base")
@@ -2823,7 +2823,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
     restored_pair_world = sx.World()
     restored_pair_world.load_binary(pair_path)
     restored_pair_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_pair_arm = restored_pair_world.get_multibody(
         "python_serialized_pair_slider"
@@ -2963,7 +2963,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
     restored_hinge_world = sx.World()
     restored_hinge_world.load_binary(hinge_path)
     restored_hinge_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_hinge_arm = restored_hinge_world.get_multibody(
         "python_serialized_world_hinge"
@@ -3106,7 +3106,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
     restored_pair_hinge_world = sx.World()
     restored_pair_hinge_world.load_binary(pair_hinge_path)
     restored_pair_hinge_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_pair_hinge_arm = restored_pair_hinge_world.get_multibody(
         "python_serialized_pair_hinge_broken"
@@ -3288,7 +3288,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
     restored_world_slider_world = sx.World()
     restored_world_slider_world.load_binary(world_slider_path)
     restored_world_slider_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_world_slider_arm = restored_world_slider_world.get_multibody(
         "python_serialized_world_slider_broken"
@@ -3454,7 +3454,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     restored_fixed_world = sx.World()
     restored_fixed_world.load_binary(fixed_path)
     restored_fixed_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_fixed_arm = restored_fixed_world.get_multibody(
         "python_serialized_pair_fixed"
@@ -3574,7 +3574,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     restored_socket_world = sx.World()
     restored_socket_world.load_binary(socket_path)
     restored_socket_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_socket_arm = restored_socket_world.get_multibody(
         "python_serialized_world_socket"
@@ -3684,7 +3684,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     restored_fixed_world = sx.World()
     restored_fixed_world.load_binary(fixed_path)
     restored_fixed_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_fixed_arm = restored_fixed_world.get_multibody(
         "python_serialized_world_fixed"
@@ -3796,7 +3796,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     restored_socket_world = sx.World()
     restored_socket_world.load_binary(socket_path)
     restored_socket_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     restored_socket_arm = restored_socket_world.get_multibody(
         "python_serialized_pair_socket"
@@ -3911,7 +3911,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_fixed_world = sx.World()
     restored_fixed_world.load_binary(fixed_path)
     restored_fixed_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_fixed_world.is_simulation_mode
     restored_fixed_arm = restored_fixed_world.get_multibody(
@@ -4016,7 +4016,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_slider_world = sx.World()
     restored_slider_world.load_binary(slider_path)
     restored_slider_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_slider_world.is_simulation_mode
     restored_slider_arm = restored_slider_world.get_multibody(
@@ -4129,7 +4129,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_hinge_world = sx.World()
     restored_hinge_world.load_binary(hinge_path)
     restored_hinge_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_hinge_world.is_simulation_mode
     restored_hinge_arm = restored_hinge_world.get_multibody(
@@ -4252,7 +4252,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_world_slider_world = sx.World()
     restored_world_slider_world.load_binary(world_slider_path)
     restored_world_slider_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_world_slider_world.is_simulation_mode
     restored_world_slider_arm = restored_world_slider_world.get_multibody(
@@ -4375,7 +4375,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_world_hinge_world = sx.World()
     restored_world_hinge_world.load_binary(world_hinge_path)
     restored_world_hinge_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_world_hinge_world.is_simulation_mode
     restored_world_hinge_arm = restored_world_hinge_world.get_multibody(
@@ -4481,7 +4481,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     restored_socket_world = sx.World()
     restored_socket_world.load_binary(socket_path)
     restored_socket_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_socket_world.is_simulation_mode
     restored_socket_arm = restored_socket_world.get_multibody(
@@ -4573,7 +4573,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
     restored_fixed_world = sx.World()
     restored_fixed_world.load_binary(fixed_path)
     restored_fixed_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_fixed_world.is_simulation_mode
     restored_fixed_arm = restored_fixed_world.get_multibody(
@@ -4659,7 +4659,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
     restored_socket_world = sx.World()
     restored_socket_world.load_binary(socket_path)
     restored_socket_world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     assert not restored_socket_world.is_simulation_mode
     restored_socket_arm = restored_socket_world.get_multibody(
@@ -6003,13 +6003,13 @@ def test_simulation_multibody_options_selector():
     configured = sx.World(
         rigid_body_solver=sx.RigidBodySolver.IPC,
         multibody_options=sx.MultibodyOptions(
-            integration_family="variational integrator",
+            integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
             variational_max_iterations=200,
             variational_tolerance=1.0e-9,
         ),
     )
     assert configured.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert configured.multibody_options.integration_family == "variational integrator"
+    assert configured.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert configured.multibody_options.variational_max_iterations == 200
     assert configured.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
 
@@ -6031,32 +6031,32 @@ def test_simulation_multibody_options_selector():
         sx.World(multibody_options=sx.MultibodyOptions(integration_family="nonsense"))
 
     world = sx.World()
-    # Multibody solver config is a value object; selection is by documented
-    # method-family name only.
-    assert world.multibody_options.integration_family == "semi-implicit"
+    # Multibody solver config is a value object; selection is by the typed
+    # method-family enum (MultibodyIntegrationFamily).
+    assert world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.SEMI_IMPLICIT
     assert world.multibody_options.variational_max_iterations == 100
     assert world.multibody_options.variational_tolerance == pytest.approx(1.0e-10)
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator",
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
         variational_max_iterations=120,
         variational_tolerance=2.0e-9,
     )
-    assert world.multibody_options.integration_family == "variational integrator"
+    assert world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert world.multibody_options.variational_max_iterations == 120
     assert world.multibody_options.variational_tolerance == pytest.approx(2.0e-9)
     with pytest.raises(Exception):
         world.multibody_options = sx.MultibodyOptions(integration_family="nonsense")
     # A rejected assignment leaves the previous valid selection in place.
-    assert world.multibody_options.integration_family == "variational integrator"
+    assert world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert world.multibody_options.variational_max_iterations == 120
     with pytest.raises(Exception):
         world.multibody_options = sx.MultibodyOptions(
-            integration_family="variational integrator",
+            integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
             variational_max_iterations=0,
         )
     with pytest.raises(Exception):
         world.multibody_options = sx.MultibodyOptions(
-            integration_family="variational integrator",
+            integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
             variational_tolerance=0.0,
         )
 

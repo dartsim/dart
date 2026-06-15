@@ -2,7 +2,7 @@
 
 The variational integrator (VI) is an **experimental** `World` integration family
 (opt-in via `WorldOptions::multibodyOptions` at construction or
-`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`).
+`World::setMultibodyOptions({.integrationFamily = MultibodyIntegrationFamily::Variational})`).
 "Experimental" means we do not yet make the API-stability
 promise (see [`graduation-criteria.md`](graduation-criteria.md)), but the solver
 is fully functional **within the envelope below**. This file states that envelope

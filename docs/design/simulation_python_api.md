@@ -951,7 +951,9 @@ world = sx.World(
     time_step=0.001,
     gravity=(0.0, 0.0, -9.81),
     rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
-    multibody_options=sx.MultibodyOptions(integration_family="semi-implicit"),
+    multibody_options=sx.MultibodyOptions(
+        integration_family=sx.MultibodyIntegrationFamily.SEMI_IMPLICIT
+    ),
     contact_solver_method=sx.ContactSolverMethod.SEQUENTIAL_IMPULSE,
     contact_gradient_mode=sx.ContactGradientMode.ANALYTIC,
 )

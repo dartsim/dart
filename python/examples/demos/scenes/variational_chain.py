@@ -2,7 +2,7 @@
 
 A 5-link revolute chain is released from horizontal under gravity on the
 World with the **variational integrator** selected
-(``MultibodyOptions(integration_family="variational integrator")``). Because the
+(``MultibodyOptions(integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL)``). Because the
 integrator is symplectic, the chain keeps swinging with no secular energy
 loss — visually it does not slowly wind down the way a dissipative
 (semi-implicit Euler) step would. This is the headline visual check for the VI.
@@ -39,7 +39,7 @@ def build() -> SceneSetup:
     # Select the variational integrator before entering simulation mode; the
     # default path stays semi-implicit Euler when this is left unset.
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     world.gravity = (0.0, 0.0, -9.81)
     world.time_step = 0.005

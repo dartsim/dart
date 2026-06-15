@@ -156,12 +156,17 @@ class _RigidMultibodySolverFamily:
         color: tuple[float, float, float],
     ) -> _SolverFamilyCase:
         offset_y = _CASE_Y[key]
+        # The case identifies its family by the documented label; map that label
+        # to the typed selector for the World configuration.
+        family = (
+            sx.MultibodyIntegrationFamily.VARIATIONAL
+            if integration_family == "variational integrator"
+            else sx.MultibodyIntegrationFamily.SEMI_IMPLICIT
+        )
         world = sx.World(
             time_step=_TIME_STEP,
             gravity=(0.0, 0.0, -_GRAVITY),
-            multibody_options=sx.MultibodyOptions(
-                integration_family=integration_family
-            ),
+            multibody_options=sx.MultibodyOptions(integration_family=family),
         )
         world.step_profiling_enabled = True
 

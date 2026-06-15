@@ -39,7 +39,7 @@ def _yaw(link: object) -> float:
 def build() -> SceneSetup:
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
 
     arm = world.add_multibody("avbd_articulated_breakable_motor_arm")

@@ -237,7 +237,8 @@ TEST(VariationalIntegration, VelocityActuatorSinglePrismaticCommandsVelocity)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
 
@@ -267,7 +268,8 @@ TEST(VariationalIntegration, VelocityActuatorCoupledRevoluteCommandsVelocity)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("double_pendulum");
   auto base = robot.addLink("base");
@@ -420,26 +422,31 @@ TEST(VariationalIntegration, PendulumConservesEnergyOverLongHorizon)
 TEST(VariationalIntegration, SelectableThroughWorldStep)
 {
   sx::World world;
-  EXPECT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::SemiImplicit);
   EXPECT_THROW(
-      world.setMultibodyOptions({.integrationFamily = "nonsense"}),
+      world.setMultibodyOptions(
+          {.integrationFamily
+           = static_cast<sx::MultibodyIntegrationFamily>(99)}),
       sx::InvalidArgumentException);
   EXPECT_THROW(
       world.setMultibodyOptions(
-          {.integrationFamily = "variational integrator",
+          {.integrationFamily = sx::MultibodyIntegrationFamily::Variational,
            .variationalMaxIterations = 0}),
       sx::InvalidArgumentException);
   EXPECT_THROW(
       world.setMultibodyOptions(
-          {.integrationFamily = "variational integrator",
+          {.integrationFamily = sx::MultibodyIntegrationFamily::Variational,
            .variationalTolerance = 0.0}),
       sx::InvalidArgumentException);
   world.setMultibodyOptions(
-      {.integrationFamily = "variational integrator",
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational,
        .variationalMaxIterations = 120,
        .variationalTolerance = 2e-9});
   EXPECT_EQ(
-      world.getMultibodyOptions().integrationFamily, "variational integrator");
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   EXPECT_EQ(world.getMultibodyOptions().variationalMaxIterations, 120u);
   EXPECT_DOUBLE_EQ(world.getMultibodyOptions().variationalTolerance, 2e-9);
 
@@ -551,7 +558,8 @@ TEST(VariationalIntegration, DeterministicAcrossRuns)
 {
   const auto rollout = []() {
     sx::World world;
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     auto robot = world.addMultibody("chain");
     auto parent = robot.addLink("base");
     for (int i = 0; i < 3; ++i) {
@@ -945,7 +953,7 @@ TEST(VariationalIntegration, PaperScaleHighRatioChainStaysFiniteAndResets)
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(kDt);
   world.setMultibodyOptions(
-      {.integrationFamily = "variational integrator",
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational,
        .variationalMaxIterations = 200,
        .variationalTolerance = 1e-9});
 
@@ -1124,7 +1132,8 @@ TEST(VariationalIntegration, FloatingBaseConservesMomentum)
 TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const double bend[5] = {0.0, 0.5, -0.5, 0.5, -0.5};
@@ -1181,7 +1190,8 @@ TEST(VariationalIntegration, LoopClosureSolvedThroughWorldStep)
 TEST(VariationalIntegration, LoopClosureConstraintScratchIsBaked)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const double bend[5] = {0.0, 0.5, -0.5, 0.5, -0.5};
@@ -1294,7 +1304,8 @@ TEST(VariationalIntegration, LoopClosureConstraintScratchIsBaked)
 TEST(VariationalIntegration, LoopClosureCrossMultibodyRejectedUnderVariational)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const auto makeArm = [&](const char* name) {
     auto robot = world.addMultibody(name);
     auto base = robot.addLink(std::string(name) + "_base");
@@ -1421,7 +1432,8 @@ TEST(VariationalIntegration, RigidConstraintJacobianMatchesFiniteDifference)
 TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const Eigen::Vector3d axes[7]
@@ -1489,7 +1501,8 @@ TEST(VariationalIntegration, LoopClosureRigidSolvedThroughWorldStep)
 TEST(VariationalIntegration, AvbdFixedPointJointConfigSolvesLinkEndpoint)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("arm");
   auto parent = robot.addLink("base");
   const Eigen::Vector3d axes[7]
@@ -1569,7 +1582,8 @@ TEST(VariationalIntegration, AvbdBreakablePointJointConfigMarksLinkEndpoint)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
@@ -1630,7 +1644,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("resettable_private_breakable_pendulum");
   auto base = robot.addLink("base");
 
@@ -1688,7 +1703,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("resettable_private_breakable_pendulum");
@@ -1747,7 +1763,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("serialized_private_parent_fixed_body");
@@ -1825,7 +1842,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_private_parent_fixed_body");
@@ -1904,7 +1922,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("floater");
@@ -1981,7 +2000,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floater");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -2058,7 +2078,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("serialized_private_spherical_socket_body");
@@ -2119,7 +2140,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_private_spherical_socket_body");
@@ -2218,7 +2240,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot
@@ -2280,7 +2303,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_private_child_spherical_socket_body");
@@ -2383,7 +2407,8 @@ TEST(VariationalIntegration, AvbdCompliantPointJointConfigPullsLinkEndpoint)
   const auto rollout = [](bool compliant) {
     sx::World world;
     world.setGravity(Eigen::Vector3d::Zero());
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     world.setTimeStep(0.002);
 
     auto robot = world.addMultibody("floater");
@@ -2447,7 +2472,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.002);
 
   auto robot = world.addMultibody("floater");
@@ -2515,7 +2541,8 @@ TEST(
   const auto rollout = [](double startStiffness, double maxStiffness) {
     sx::World world;
     world.setGravity(Eigen::Vector3d::Zero());
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     world.setTimeStep(0.002);
 
     auto robot = world.addMultibody("floater");
@@ -2588,7 +2615,8 @@ TEST(
                           bool driveAngular) {
     sx::World world;
     world.setGravity(Eigen::Vector3d::Zero());
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     world.setTimeStep(0.002);
 
     auto robot = world.addMultibody("floater");
@@ -2679,7 +2707,8 @@ TEST(
 TEST(VariationalIntegration, AvbdPointJointConfigSkipsTopologyJoint)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
@@ -2716,7 +2745,8 @@ TEST(VariationalIntegration, AvbdPointJointConfigSkipsTopologyJoint)
 TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   const auto offset = [](double x) {
@@ -2786,7 +2816,8 @@ TEST(VariationalIntegration, LoopClosureDistanceSolvedThroughWorldStep)
 TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
 {
   const auto buildPendulum = [](sx::World& world) {
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     auto robot = world.addMultibody("pendulum");
     auto base = robot.addLink("base");
     Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -2829,7 +2860,8 @@ TEST(VariationalIntegration, StateSerializationRoundTripsTrajectory)
   sx::World loaded;
   buffer.seekg(0);
   loaded.loadBinary(buffer);
-  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  loaded.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   ASSERT_TRUE(loaded.getMultibody("pendulum").has_value());
   for (int k = 0; k < 50; ++k) {
     loaded.step();
@@ -2973,7 +3005,9 @@ TEST(VariationalIntegration, LongChainExactPreconditionerConvergesWithinBudget)
 TEST(VariationalIntegration, DefaultPathDoesNotEngageVariationalIntegrator)
 {
   sx::World world; // default family is "semi-implicit"
-  ASSERT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  ASSERT_EQ(
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::SemiImplicit);
   auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -3377,7 +3411,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -3434,7 +3469,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -3507,7 +3543,8 @@ TEST(
 
     sx::World world;
     world.setGravity(Eigen::Vector3d::Zero());
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     world.setTimeStep(0.005);
 
     auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -3597,7 +3634,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -3665,7 +3703,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -3733,7 +3772,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_fixed_facade");
@@ -3802,7 +3842,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -3865,7 +3906,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -3888,7 +3930,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -3965,7 +4008,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
 
@@ -4110,7 +4154,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto& registry = dart::simulation::detail::registryOf(restored);
   for (const ExpectedJoint& joint : expected) {
@@ -4159,7 +4204,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_spherical_facade");
@@ -4226,7 +4272,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_spherical_offset_facade");
@@ -4294,7 +4341,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("serialized_world_spherical_facade");
@@ -4321,7 +4369,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_world_spherical_facade");
@@ -4388,7 +4437,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -4411,7 +4461,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -4489,7 +4540,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_spherical_breakable_skip");
@@ -4535,7 +4587,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_spherical_breakable_reset");
@@ -4607,7 +4660,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_spherical_save_load_breakage");
@@ -4645,7 +4699,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_world_spherical_save_load_breakage");
@@ -4719,7 +4774,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -4756,7 +4812,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -4857,7 +4914,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -4927,7 +4985,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_revolute_tiny_limit_facade");
@@ -4999,7 +5058,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5069,7 +5129,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5137,7 +5198,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -5216,7 +5278,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5298,7 +5361,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5330,7 +5394,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -5414,7 +5479,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5483,7 +5549,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_prismatic_tiny_limit_facade");
@@ -5560,7 +5627,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5632,7 +5700,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5700,7 +5769,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -5779,7 +5849,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5860,7 +5931,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -5892,7 +5964,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -5976,7 +6049,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_breakable_facade");
@@ -6017,7 +6091,8 @@ TEST(VariationalIntegration, AvbdPublicArticulatedBreakForceResetReengagesJoint)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_breakable_reset_facade");
@@ -6078,7 +6153,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_breakable_save_load_facade");
@@ -6114,7 +6190,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_breakable_save_load_facade");
@@ -6183,7 +6260,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -6241,7 +6319,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6337,7 +6416,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6432,7 +6512,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -6469,7 +6550,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -6561,7 +6643,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6600,7 +6683,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -6702,7 +6786,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6742,7 +6827,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -6850,7 +6936,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6915,7 +7002,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -6983,7 +7071,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7027,7 +7116,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_revolute_save_load_breakage");
@@ -7115,7 +7205,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7188,7 +7279,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7256,7 +7348,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7301,7 +7394,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_prismatic_save_load_breakage");
@@ -7396,7 +7490,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_fixed_facade");
@@ -7450,7 +7545,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_fixed_offset_facade");
@@ -7515,7 +7611,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("serialized_world_fixed_facade");
@@ -7541,7 +7638,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("serialized_world_fixed_facade");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -7609,7 +7707,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_fixed_breakable_facade");
@@ -7679,7 +7778,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_fixed_save_load_breakage");
@@ -7715,7 +7815,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_world_fixed_save_load_breakage");
@@ -7790,7 +7891,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7860,7 +7962,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7937,7 +8040,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -7972,7 +8076,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_world_revolute_facade");
@@ -8050,7 +8155,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_revolute_tiny_limit_facade");
@@ -8119,7 +8225,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8189,7 +8296,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8254,7 +8362,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8321,7 +8430,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8364,7 +8474,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_world_revolute_save_load_breakage");
@@ -8453,7 +8564,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   constexpr double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8514,13 +8626,16 @@ TEST(
   EXPECT_EQ(world.getFrame(), 0u);
   EXPECT_EQ(world.getMultibodyCount(), 0u);
   EXPECT_EQ(world.getArticulatedJointCount(), 0u);
-  EXPECT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::SemiImplicit);
   EXPECT_FALSE(world.hasMultibody("clear_revolute_world_facade"));
   EXPECT_FALSE(world.hasArticulatedJoint("clear_hinge"));
   EXPECT_FALSE(world.getArticulatedJoint("clear_hinge").has_value());
 
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(dt);
 
   auto rebuiltRobot = world.addMultibody("clear_prismatic_world_facade");
@@ -8588,7 +8703,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8658,7 +8774,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8737,7 +8854,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8773,7 +8891,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("serialized_world_prismatic_facade");
@@ -8851,7 +8970,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto robot = world.addMultibody("public_world_prismatic_tiny_limit_facade");
@@ -8925,7 +9045,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -8997,7 +9118,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9070,7 +9192,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9138,7 +9261,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9182,7 +9306,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot
       = restored.getMultibody("public_world_prismatic_save_load_breakage");
@@ -9279,7 +9404,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -9341,7 +9467,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9405,7 +9532,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -9468,7 +9596,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -9529,7 +9658,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -9589,7 +9719,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -9650,7 +9781,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9729,7 +9861,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9805,7 +9938,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9880,7 +10014,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -9956,7 +10091,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10020,7 +10156,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10101,7 +10238,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10183,7 +10321,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10264,7 +10403,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10346,7 +10486,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10408,7 +10549,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10471,7 +10613,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10533,7 +10676,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10596,7 +10740,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10656,7 +10801,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   auto body = addFloatingBody(world, /*mass=*/2.0);
@@ -10708,7 +10854,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10774,7 +10921,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10837,7 +10985,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10895,7 +11044,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -10983,7 +11133,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11072,7 +11223,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11119,7 +11271,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto restoredRobot = restored.getMultibody("floater");
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
@@ -11210,7 +11363,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11258,7 +11412,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto restoredRobot = restored.getMultibody("floater");
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
@@ -11348,7 +11503,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11401,7 +11557,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto restoredRobot = restored.getMultibody("floater");
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
@@ -11505,7 +11662,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11558,7 +11716,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto restoredRobot = restored.getMultibody("floater");
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
@@ -11662,7 +11821,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -11762,7 +11922,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -11874,7 +12035,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -12001,7 +12163,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12101,7 +12264,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12177,7 +12341,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12260,7 +12425,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12293,7 +12459,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -12377,7 +12544,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12411,7 +12579,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -12507,7 +12676,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12606,7 +12776,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -12677,7 +12848,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -12790,7 +12962,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -12906,7 +13079,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -13026,7 +13200,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -13086,7 +13261,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -13217,7 +13393,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   const double dt = 0.005;
   world.setTimeStep(dt);
 
@@ -13279,7 +13456,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -13417,7 +13595,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -13481,7 +13660,8 @@ TEST(
 
   sx::World restored;
   restored.loadBinary(data);
-  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto restoredRobot = restored.getMultibody("floating_pair");
   ASSERT_TRUE(restoredRobot.has_value());
@@ -13594,7 +13774,8 @@ TEST(
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
@@ -13803,7 +13984,8 @@ TEST(ExternalForce, VariationalChainTipDeflectsInForceDirection)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero()); // isolate the applied force
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("chain");
   auto parent = robot.addLink("base");
@@ -13892,7 +14074,8 @@ TEST(ExternalForce, VariationalForceIsClearedAfterStep)
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto body = addFloatingBody(world, mass);
   world.setTimeStep(dt);
   world.enterSimulationMode();
@@ -14569,7 +14752,8 @@ TEST(VariationalGroundContact, WorldSurfaceCompliantContactRestsOnGround)
   const int steps = 3000;
 
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
@@ -14628,7 +14812,7 @@ TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
 
   sx::World reference;
   reference.setMultibodyOptions(
-      {.integrationFamily = "variational integrator"});
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = reference.addMultibody("slider");
   auto base = robot.addLink("base"); // link index 0.
   sx::JointSpec spec;
@@ -14660,7 +14844,8 @@ TEST(VariationalGroundContact, ConfigRoundTripsThroughBinarySaveLoad)
   sx::World loaded;
   buffer.seekg(0);
   loaded.loadBinary(buffer);
-  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  loaded.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   ASSERT_TRUE(loaded.getMultibody("slider").has_value());
 
   // The contact config came back field-for-field, including the std::vector
@@ -14709,7 +14894,8 @@ TEST(VariationalGroundContact, WorldSurfaceAugmentedLagrangianCentersContact)
 
   const auto run = [&](std::size_t dualUpdateCadence) {
     sx::World world;
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     auto carriage = addVerticalSlider(world, mass);
     world.setTimeStep(dt);
     world.enterSimulationMode();
@@ -14763,7 +14949,7 @@ TEST(VariationalGroundContact, AugmentedLagrangianDualStateRoundTrips)
 
   sx::World reference;
   reference.setMultibodyOptions(
-      {.integrationFamily = "variational integrator"});
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto carriage = addVerticalSlider(reference, mass);
   reference.setTimeStep(dt);
   reference.enterSimulationMode();
@@ -14799,7 +14985,8 @@ TEST(VariationalGroundContact, AugmentedLagrangianDualStateRoundTrips)
   sx::World loaded;
   buffer.seekg(0);
   loaded.loadBinary(buffer);
-  loaded.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  loaded.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   ASSERT_TRUE(loaded.getMultibody("slider").has_value());
   for (int step = 0; step < 100; ++step) {
     loaded.step();
@@ -14830,7 +15017,8 @@ TEST(VariationalGroundContact, DampingSettlesContactOnDefaultPath)
   // Highest point the slider reaches after first crossing into the half-space.
   const auto reboundHeight = [&](double damping) {
     sx::World world;
-    world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
     auto carriage = addVerticalSlider(world, mass);
     world.setTimeStep(dt);
     world.enterSimulationMode();
@@ -14880,7 +15068,8 @@ TEST(VariationalGroundContact, DampingSettlesContactOnDefaultPath)
 TEST(VariationalGroundContact, RejectsContactPointFromForeignWorld)
 {
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   robot.setGroundContact(

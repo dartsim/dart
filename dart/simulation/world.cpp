@@ -1472,6 +1472,18 @@ bool isValidContactGradientMode(ContactGradientMode mode)
 }
 
 //==============================================================================
+bool isValidMultibodyIntegrationFamily(MultibodyIntegrationFamily family)
+{
+  switch (family) {
+    case MultibodyIntegrationFamily::SemiImplicit:
+    case MultibodyIntegrationFamily::Variational:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
 {
   switch (solver) {
@@ -5598,18 +5610,18 @@ void World::step(std::size_t count)
 //==============================================================================
 void World::setMultibodyOptions(const MultibodyOptions& options)
 {
-  const std::string& family = options.integrationFamily;
+  DART_SIMULATION_THROW_T_IF(
+      !isValidMultibodyIntegrationFamily(options.integrationFamily),
+      InvalidArgumentException,
+      "MultibodyOptions.integrationFamily is invalid");
   MultibodyIntegrationMethod method = MultibodyIntegrationMethod::SemiImplicit;
-  if (family == "semi-implicit" || family == "semi-implicit Euler") {
-    method = MultibodyIntegrationMethod::SemiImplicit;
-  } else if (family == "variational integrator" || family == "variational") {
-    method = MultibodyIntegrationMethod::Variational;
-  } else {
-    DART_SIMULATION_THROW_T(
-        InvalidArgumentException,
-        "Unknown multibody integrationFamily '{}'; supported method-family "
-        "names are 'semi-implicit' and 'variational integrator'",
-        family);
+  switch (options.integrationFamily) {
+    case MultibodyIntegrationFamily::SemiImplicit:
+      method = MultibodyIntegrationMethod::SemiImplicit;
+      break;
+    case MultibodyIntegrationFamily::Variational:
+      method = MultibodyIntegrationMethod::Variational;
+      break;
   }
   DART_SIMULATION_THROW_T_IF(
       options.variationalMaxIterations == 0,
@@ -5641,8 +5653,8 @@ MultibodyOptions World::getMultibodyOptions() const
   MultibodyOptions options;
   options.integrationFamily
       = m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
-            ? "variational integrator"
-            : "semi-implicit";
+            ? MultibodyIntegrationFamily::Variational
+            : MultibodyIntegrationFamily::SemiImplicit;
   options.variationalMaxIterations = m_variationalIntegratorMaxIterations;
   options.variationalTolerance = m_variationalIntegratorTolerance;
   return options;

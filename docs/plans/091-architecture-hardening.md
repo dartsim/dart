@@ -523,7 +523,7 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   a previously-silent-substitution scene erroring under strict resolution —
   already landed in slice 2 (`StrictResolutionRejectsSubstitution`).
 
-#### WP-091.12 Single selection idiom
+#### WP-091.12 Single selection idiom [claimed]
 
 - Objective: every domain selects its method family through one idiom —
   typed per-domain policy value objects on `WorldOptions` resolved once at
@@ -541,6 +541,28 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run test-py`, `pixi run check-api-boundaries`.
 - Dependencies: WP-091.11.
+- Evidence: `MultibodyOptions::integrationFamily` is now the typed
+  `MultibodyIntegrationFamily` enum (`SemiImplicit` default, `Variational`) in
+  `multibody/multibody_options.hpp`, replacing the parsed `std::string`; the
+  string parse and its `InvalidArgumentException` are gone, and
+  `setMultibodyOptions` validates the value by enum range
+  (`isValidMultibodyIntegrationFamily`) and converts it once to the internal
+  `MultibodyIntegrationMethod`. All four selection mechanisms — the
+  `RigidBodySolver` enum, the `ContactSolverMethod` enum, this multibody family
+  enum, and the AVBD `RigidAvbdContactConfig` component — resolve through the
+  single finalize-time policy path: each is recorded as a note in
+  `m_resolvedConfiguration` and gated by `m_strictSolverResolution &&
+hasSubstitution()`. Python surface matches: nanobind exposes
+  `MultibodyIntegrationFamily` (`SEMI_IMPLICIT`/`VARIATIONAL`), the stub,
+  examples, and the constructor default use the enum. Serialization round-trips
+  the enum (`test_serialization` 57/57). Gates: `pixi run lint` and
+  `check-api-boundaries` clean; the default-step golden trajectories stay 3/3
+  bit-identical (behavior-preserving — the resolved family is unchanged);
+  `test_world` 371/372 (the lone failure,
+  `BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, is the known
+  pre-existing post-#2996 rigid-IPC allocator issue, orthogonal to this change);
+  `test_variational_integration` 178/178; cross-family + corpus green;
+  `pixi run test-py` green (1382 passed, 11 skipped).
 
 #### WP-091.13 Canonical contact assembly [claimed]
 

@@ -902,10 +902,11 @@ world-level construction grouping for defaults and policies
 `WorldOptions::differentiable`) plus the existing interactive setters for the
 policies that are safe to switch after construction (`World::setRigidBodySolver`,
 `World::setMultibodyOptions` / `getMultibodyOptions`, and
-`World::setContactGradientMode`). `MultibodyOptions { std::string
-integrationFamily; }` maps onto the "Integration family" matrix row. Selection
-is parsed to an internal representation on construction or set, so the per-step
-path carries no configuration cost when a non-default family is not in use.
+`World::setContactGradientMode`). `MultibodyOptions {
+MultibodyIntegrationFamily integrationFamily; }` maps onto the "Integration
+family" matrix row. Selection is a typed enum mapped to an internal
+representation on construction or set, so the per-step path carries no
+configuration cost when a non-default family is not in use.
 
 ## Future Capability Shapes
 

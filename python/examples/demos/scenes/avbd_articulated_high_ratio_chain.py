@@ -56,7 +56,7 @@ def _build_high_ratio_chain(
 ) -> SceneSetup:
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, -9.81))
     multibody_options: dict[str, object] = {
-        "integration_family": "variational integrator"
+        "integration_family": sx.MultibodyIntegrationFamily.VARIATIONAL
     }
     if variational_max_iterations is not None:
         multibody_options["variational_max_iterations"] = variational_max_iterations

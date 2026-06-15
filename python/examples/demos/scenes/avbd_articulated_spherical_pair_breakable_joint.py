@@ -70,7 +70,7 @@ def _local_anchor_for_world(link: sx.Link, world_point: np.ndarray) -> np.ndarra
 def build() -> SceneSetup:
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
 
     arm = world.add_multibody("avbd_articulated_spherical_pair_breakable_arm")

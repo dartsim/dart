@@ -67,11 +67,12 @@ already 7/8 deep on its densest branch. Adding one method family costs ~9
 files and ~10 hand-synchronized edit sites across two monolithic translation
 units (`world_step_stage.cpp` ~10.9k lines, `world.cpp` ~6.2k lines).
 
-Four inconsistent selection idioms coexist: the `RigidBodySolver` enum
-(runtime-mutable, alters the schedule), the `ContactSolverMethod` enum
-(construction-only, a branch inside one stage), the
-`MultibodyOptions.integrationFamily` parsed string, and AVBD rigid contact
-selected by a private ECS component invisible to the facade. Scene content
+The domain selectors now share a typed-enum idiom on the facade: the
+`RigidBodySolver` enum (runtime-mutable, alters the schedule), the
+`ContactSolverMethod` enum (construction-only, a branch inside one stage), and
+the `MultibodyOptions.integrationFamily` enum (`MultibodyIntegrationFamily`,
+resolved once at finalize). AVBD rigid contact remains selected by a private ECS
+component invisible to the facade. Scene content
 silently swaps algorithms (VBD falls back per body to projected Newton on
 unsupported scene features with no facade-visible diagnostic; mixed scenes
 reroute contact solves across structurally different assemblies).

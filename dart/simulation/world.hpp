@@ -943,16 +943,16 @@ public:
   //--------------------------------------------------------------------------
 
   /// Set the multibody solver/integration configuration as a whole (see
-  /// `MultibodyOptions`). Configuration is by documented method-family name, so
+  /// `MultibodyOptions`). Configuration is by typed method-family selector, so
   /// new capabilities are added as `MultibodyOptions` fields rather than as new
-  /// World methods, and no solver/stage types are exposed. Throws
-  /// InvalidArgumentException for an unknown `integrationFamily`. Selection is
-  /// parsed to an internal representation here, so the per-step path carries no
-  /// configuration-parsing cost.
+  /// World methods, and no solver/stage types are exposed. Selection is mapped
+  /// to an internal representation here, so the per-step path carries no
+  /// configuration-resolution cost.
   void setMultibodyOptions(const MultibodyOptions& options);
 
   /// The current multibody solver/integration configuration. The
-  /// `integrationFamily` defaults to `"semi-implicit"`.
+  /// `integrationFamily` defaults to
+  /// `MultibodyIntegrationFamily::SemiImplicit`.
   [[nodiscard]] MultibodyOptions getMultibodyOptions() const;
 
   //--------------------------------------------------------------------------

@@ -294,7 +294,8 @@ struct PendulumRollout
   sxc::StepMetrics afterRoll;
 };
 
-PendulumRollout runPendulum(const std::string& integrationFamily, int steps)
+PendulumRollout runPendulum(
+    sx::MultibodyIntegrationFamily integrationFamily, int steps)
 {
   sx::World world;
   buildPendulum(world);
@@ -328,9 +329,10 @@ TEST(CrossFamilyMetrics, MultibodyIntegrationFamiliesAgreeOnConservedEnergy)
   constexpr int kSteps = 20000;
 
   std::vector<std::pair<std::string, PendulumRollout>> runs
-      = {{"multibody:semi-implicit", runPendulum("semi-implicit", kSteps)},
+      = {{"multibody:semi-implicit",
+          runPendulum(sx::MultibodyIntegrationFamily::SemiImplicit, kSteps)},
          {"multibody:variational integrator",
-          runPendulum("variational integrator", kSteps)}};
+          runPendulum(sx::MultibodyIntegrationFamily::Variational, kSteps)}};
 
   std::ostringstream table;
   for (const auto& [family, run] : runs) {
