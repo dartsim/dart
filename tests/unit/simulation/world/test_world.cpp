@@ -111,10 +111,12 @@ std::atomic<std::size_t> g_heapAllocationBytes{0};
 // std::malloc (via Eigen's aligned_malloc), not ::operator new. These globals
 // back a malloc interposer (defined below, Linux/glibc only) so warmed-step
 // Eigen heap traffic becomes measurable. Kept on a distinct flag/counter so the
-// operator-new-based no-heap tests are completely unaffected.
-std::atomic<bool> g_rawHeapAllocationTrackingEnabled{false};
-std::atomic<std::size_t> g_rawHeapAllocationCount{0};
-std::atomic<std::size_t> g_rawHeapAllocationBytes{0};
+// operator-new-based no-heap tests are completely unaffected. maybe_unused:
+// where the interposer is not compiled (non-glibc: macOS, Windows) nothing
+// references the count/byte totals, and -Werror=unused-variable would fire.
+[[maybe_unused]] std::atomic<bool> g_rawHeapAllocationTrackingEnabled{false};
+[[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationCount{0};
+[[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationBytes{0};
 
 void recordHeapAllocation(std::size_t bytes) noexcept
 {
