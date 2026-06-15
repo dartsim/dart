@@ -4,6 +4,13 @@
 
 ### [DART 6.19.0 (TBD)](https://github.com/dartsim/dart/milestone/TBD?closed=1)
 
+* Build
+
+  * Include `<cassert>` before the FCL headers in the FCL compatibility shim so
+    DART builds against Eigen 5 and current GCC/Clang toolchains, which no
+    longer pull `<cassert>` in transitively (FCL's shape headers call `assert`
+    without including it): [#3021](https://github.com/dartsim/dart/pull/3021)
+
 * Constraint
 
   * Add `CylindricalJointConstraint` for runtime slide-and-rotate attachments
