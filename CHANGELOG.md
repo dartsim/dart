@@ -2,6 +2,17 @@
 
 ## DART 6
 
+### [DART 6.19.1 (TBD)](https://github.com/dartsim/dart/milestone/98?closed=1)
+
+* Tests
+
+  * Loosen the `Issue1184` resting-accuracy regression tolerance from `1e-3` to
+    `2e-3` so it is not flipped by micrometer-scale cross-platform
+    floating-point differences in the steady-state contact penetration (~1 mm),
+    which sat exactly on the old bound; fixes the macOS build of the
+    conda-forge feedstock:
+    [#3031](https://github.com/dartsim/dart/pull/3031)
+
 ### [DART 6.19.0 (2026-06-14)](https://github.com/dartsim/dart/milestone/97?closed=1)
 
 DART 6.19.0 is a minor release on the DART 6 LTS line. It adds automatic body
