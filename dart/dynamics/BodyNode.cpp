@@ -633,7 +633,10 @@ const Inertia& BodyNode::getInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  const ConstSkeletonPtr& skel = getSkeleton();
+  // Use the cached raw Skeleton pointer (see mSkeletonRawPtr) rather than
+  // getSkeleton(), which locks a weak_ptr (atomic refcount) on every call. This
+  // accessor is on the articulated-body forward-dynamics hot path.
+  const Skeleton* skel = mSkeletonRawPtr;
   if (skel && CHECK_FLAG(mArticulatedInertia))
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -643,7 +646,7 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  const ConstSkeletonPtr& skel = getSkeleton();
+  const Skeleton* skel = mSkeletonRawPtr;
   if (skel && CHECK_FLAG(mArticulatedInertia))
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -1497,6 +1500,7 @@ Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
+  mSkeletonRawPtr = _skeleton.get();
   DART_ASSERT(_skeleton);
   if (mReferenceCount > 0) {
     mReferenceSkeleton = mSkeleton.lock();
