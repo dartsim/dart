@@ -120,6 +120,14 @@ ContactConstraint::ContactConstraint(
     return;
   }
 
+  // Resolve skeleton pointers and reactivity once; the LCP-assembly hot path
+  // reads these cached values instead of repeatedly calling getSkeleton()
+  // (shared_ptr churn) and isReactive() (ancestor-joint walk). See header.
+  mSkeletonA = mBodyNodeA->getSkeleton().get();
+  mSkeletonB = mBodyNodeB->getSkeleton().get();
+  mIsReactiveA = mBodyNodeA->isReactive();
+  mIsReactiveB = mBodyNodeB->isReactive();
+
   DART_ASSERT(
       contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
 
@@ -374,7 +382,7 @@ void ContactConstraint::update()
     return;
   }
 
-  if (mBodyNodeA->isReactive() || mBodyNodeB->isReactive())
+  if (mIsReactiveA || mIsReactiveB)
     mActive = true;
   else
     mActive = false;
@@ -510,18 +518,18 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
 
   DART_ASSERT(index < mDim && "Invalid Index.");
   // DART_ASSERT(isActive());
-  DART_ASSERT(mBodyNodeA->isReactive() || mBodyNodeB->isReactive());
+  DART_ASSERT(mIsReactiveA || mIsReactiveB);
 
-  dynamics::Skeleton* skelA = mBodyNodeA->getSkeleton().get();
-  dynamics::Skeleton* skelB = mBodyNodeB->getSkeleton().get();
+  dynamics::Skeleton* skelA = mSkeletonA;
+  dynamics::Skeleton* skelB = mSkeletonB;
 
   // Self collision case
   if (mIsSelfCollision) {
     skelA->clearConstraintImpulses();
 
-    if (mBodyNodeA->isReactive()) {
+    if (mIsReactiveA) {
       // Both bodies are reactive
-      if (mBodyNodeB->isReactive()) {
+      if (mIsReactiveB) {
         skelA->updateBiasImpulse(
             mBodyNodeA,
             mSpatialNormalA.col(index),
@@ -534,7 +542,7 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
       }
     } else {
       // Only body2 is reactive
-      if (mBodyNodeB->isReactive()) {
+      if (mIsReactiveB) {
         skelB->updateBiasImpulse(mBodyNodeB, mSpatialNormalB.col(index));
       }
       // Both bodies are not reactive
@@ -548,13 +556,13 @@ void ContactConstraint::applyUnitImpulse(std::size_t index)
   }
   // Colliding two distinct skeletons
   else {
-    if (mBodyNodeA->isReactive()) {
+    if (mIsReactiveA) {
       skelA->clearConstraintImpulses();
       skelA->updateBiasImpulse(mBodyNodeA, mSpatialNormalA.col(index));
       skelA->updateVelocityChange();
     }
 
-    if (mBodyNodeB->isReactive()) {
+    if (mIsReactiveB) {
       skelB->clearConstraintImpulses();
       skelB->updateBiasImpulse(mBodyNodeB, mSpatialNormalB.col(index));
       skelB->updateVelocityChange();
@@ -575,10 +583,10 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
-  if (mBodyNodeA->getSkeleton()->isImpulseApplied() && mBodyNodeA->isReactive())
+  if (mIsReactiveA && mSkeletonA->isImpulseApplied())
     velMap += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
 
-  if (mBodyNodeB->getSkeleton()->isImpulseApplied() && mBodyNodeB->isReactive())
+  if (mIsReactiveB && mSkeletonB->isImpulseApplied())
     velMap += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
 
   // Add small values to the diagnal to keep it away from singular, similar to
@@ -605,11 +613,11 @@ void ContactConstraint::excite()
   if (!hasValidBodyNodes())
     return;
 
-  if (mBodyNodeA->isReactive())
-    mBodyNodeA->getSkeleton()->setImpulseApplied(true);
+  if (mIsReactiveA)
+    mSkeletonA->setImpulseApplied(true);
 
-  if (mBodyNodeB->isReactive())
-    mBodyNodeB->getSkeleton()->setImpulseApplied(true);
+  if (mIsReactiveB)
+    mSkeletonB->setImpulseApplied(true);
 }
 
 //==============================================================================
@@ -618,11 +626,11 @@ void ContactConstraint::unexcite()
   if (!hasValidBodyNodes())
     return;
 
-  if (mBodyNodeA->isReactive())
-    mBodyNodeA->getSkeleton()->setImpulseApplied(false);
+  if (mIsReactiveA)
+    mSkeletonA->setImpulseApplied(false);
 
-  if (mBodyNodeB->isReactive())
-    mBodyNodeB->getSkeleton()->setImpulseApplied(false);
+  if (mIsReactiveB)
+    mSkeletonB->setImpulseApplied(false);
 }
 
 //==============================================================================
@@ -643,9 +651,9 @@ void ContactConstraint::applyImpulse(double* lambda)
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
 
     // Normal impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mIsReactiveA)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
-    if (mBodyNodeB->isReactive())
+    if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
@@ -653,18 +661,18 @@ void ContactConstraint::applyImpulse(double* lambda)
     mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mIsReactiveA)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
-    if (mBodyNodeB->isReactive())
+    if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
     mContact.force += D.col(1) * lambda[2] / mTimeStep;
 
     // Tangential direction-2 impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mIsReactiveA)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
-    if (mBodyNodeB->isReactive())
+    if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
   }
   //----------------------------------------------------------------------------
@@ -672,10 +680,10 @@ void ContactConstraint::applyImpulse(double* lambda)
   //----------------------------------------------------------------------------
   else {
     // Normal impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mIsReactiveA)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
 
-    if (mBodyNodeB->isReactive())
+    if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB * lambda[0]);
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
