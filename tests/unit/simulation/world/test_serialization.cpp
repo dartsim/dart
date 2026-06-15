@@ -1237,9 +1237,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
     EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
   };
 
-  const std::size_t solverSuffixBytes
-      = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
-        + kDeactivationOptionTailBytes;
+  const std::size_t solverSuffixBytes = kIgnoredCollisionPairTailBytes
+                                        + kVariationalOptionTailBytes
+                                        + kDeactivationOptionTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method

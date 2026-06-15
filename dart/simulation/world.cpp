@@ -480,8 +480,7 @@ struct World::ReplayState
                 allocator}),
         deactivationStates(
             SnapshotAllocator<
-                std::pair<entt::entity, comps::DeactivationState>>{
-                allocator}),
+                std::pair<entt::entity, comps::DeactivationState>>{allocator}),
         joints(SnapshotAllocator<JointState>{allocator}),
         links(SnapshotAllocator<LinkState>{allocator}),
         publicFrames(SnapshotAllocator<PublicFrameState>{allocator}),
@@ -5759,12 +5758,11 @@ void World::updateDeactivationAfterStep()
         const auto* jointActuation
             = registry.try_get<comps::JointActuation>(jointEntity);
         if (jointActuation != nullptr) {
-          disturbed
-              = disturbed
-                || jointActuation->torque.squaredNorm()
-                       > disturbanceThresholdSquared
-                || jointActuation->commandVelocity.squaredNorm()
-                       > disturbanceThresholdSquared;
+          disturbed = disturbed
+                      || jointActuation->torque.squaredNorm()
+                             > disturbanceThresholdSquared
+                      || jointActuation->commandVelocity.squaredNorm()
+                             > disturbanceThresholdSquared;
         }
       }
       for (const auto linkEntity : structure->links) {

@@ -91,7 +91,8 @@ struct Force
 /// **Internal Implementation Detail** - Not exposed in public API.
 struct DeactivationState
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(DeactivationState);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeactivationState, "comps.DeactivationState");
 
   bool sleeping = false;
   bool sleepCandidate = false;
