@@ -56,6 +56,9 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <utility>
+
+#include <cstdint>
 
 namespace dart {
 namespace constraint {
@@ -484,7 +487,10 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  {
+    DART_PROFILE_SCOPED_N("collide");
+    mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  }
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
@@ -496,25 +502,43 @@ void ConstraintSolver::updateConstraints()
   using ContactPair
       = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
 
-  // Compare contact pairs while ignoring their order in the pair.
-  struct ContactPairCompare
+  // Hash and equality that ignore the order within a contact pair, so that the
+  // (objA, objB) and (objB, objA) orderings map to the same entry. This matches
+  // the order-independent counting the previous std::map comparator provided,
+  // but with O(1) average lookups instead of O(log n) tree operations.
+  struct ContactPairHash
   {
-    ContactPair getSortedPair(const ContactPair& a) const
+    std::size_t operator()(const ContactPair& pair) const
     {
-      if (a.first < a.second)
-        return std::make_pair(a.second, a.first);
-      return a;
+      auto a = reinterpret_cast<std::uintptr_t>(pair.first);
+      auto b = reinterpret_cast<std::uintptr_t>(pair.second);
+      if (a > b)
+        std::swap(a, b);
+      const std::size_t h1 = std::hash<std::uintptr_t>()(a);
+      const std::size_t h2 = std::hash<std::uintptr_t>()(b);
+      return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
     }
-
-    bool operator()(const ContactPair& a, const ContactPair& b) const
+  };
+  struct ContactPairEqual
+  {
+    bool operator()(const ContactPair& x, const ContactPair& y) const
     {
-      // Sort each pair and then do a lexicographical comparison
-      return getSortedPair(a) < getSortedPair(b);
+      return (x.first == y.first && x.second == y.second)
+             || (x.first == y.second && x.second == y.first);
     }
   };
 
-  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
-  std::vector<collision::Contact*> contacts;
+  // Reused across steps so the per-step contact bookkeeping does not allocate.
+  // thread_local keeps concurrent solves on different threads independent while
+  // leaving the solver's class layout (ABI) untouched. unordered_map::clear()
+  // and vector::clear() retain their buckets/capacity, so steady-state stepping
+  // performs no contact-pair allocation at all.
+  static thread_local std::
+      unordered_map<ContactPair, std::size_t, ContactPairHash, ContactPairEqual>
+          contactPairMap;
+  contactPairMap.clear();
+  static thread_local std::vector<collision::Contact*> contacts;
+  contacts.clear();
 
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {

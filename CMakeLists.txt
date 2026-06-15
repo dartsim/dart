@@ -86,6 +86,15 @@ endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
+dart_option(DART_PROFILE_BUILTIN "Enable the built-in text profiling backend" ON)
+dart_option(DART_PROFILE_TRACY "Enable the Tracy profiling backend for local developer profiling" OFF)
+# Keep legacy variable names in scope for consumers (the profile macros expect
+# DART_PROFILE_ENABLE_*). Accept the legacy DART_PROFILE_TEXT spelling too.
+if(DEFINED DART_PROFILE_TEXT)
+  set(DART_PROFILE_BUILTIN "${DART_PROFILE_TEXT}")
+endif()
+set(DART_PROFILE_ENABLE_TEXT "${DART_PROFILE_BUILTIN}")
+set(DART_PROFILE_ENABLE_TRACY "${DART_PROFILE_TRACY}")
 dart_option(DART_CODECOV "Turn on codecov support" OFF)
 # Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
 # dependent projects on the same machine. If this option is on, then compile

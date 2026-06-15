@@ -218,6 +218,19 @@ private:
   /// Second body node
   dynamics::BodyNode* mBodyNodeB;
 
+  /// Cached skeleton raw pointers and reactivity of the two body nodes,
+  /// resolved once when the constraint is (re)constructed each step. Caching
+  /// them keeps the LCP-assembly hot path (applyUnitImpulse / getVelocityChange
+  /// are each invoked O(contacts^2) times per step) off two avoidable costs per
+  /// call: constructing/destroying the SkeletonPtr (shared_ptr) returned by
+  /// BodyNode::getSkeleton() (atomic refcounting) and the ancestor-joint walk
+  /// inside BodyNode::isReactive(). The cached values are exactly what those
+  /// accessors would return during the solve, so results are unchanged.
+  dynamics::Skeleton* mSkeletonA = nullptr;
+  dynamics::Skeleton* mSkeletonB = nullptr;
+  bool mIsReactiveA = false;
+  bool mIsReactiveB = false;
+
   /// Contact between mBodyNode1 and mBodyNode2
   collision::Contact& mContact;
 
@@ -256,6 +269,13 @@ private:
 
   ///
   bool mIsFrictionOn;
+
+  /// ODE-style tangent basis for the contact normal, cached at construction
+  /// (only when friction is on) so applyImpulse() reuses it instead of calling
+  /// getTangentBasisMatrixODE() a second time. It is a deterministic function
+  /// of mContact.normal, which is fixed for the duration of this step, so the
+  /// cached value is identical to recomputing it.
+  TangentBasisMatrix mTangentBasis;
 
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;
