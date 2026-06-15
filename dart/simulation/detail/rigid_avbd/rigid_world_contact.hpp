@@ -733,7 +733,7 @@ inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
 inline bool isAvbdRigidWorldPointJointFacade(
     const ::dart::simulation::detail::WorldRegistry& registry,
     entt::entity jointEntity,
-    const comps::Joint& joint)
+    const comps::JointModel& joint)
 {
   if (!isAvbdRigidWorldPointJointType(joint.type)
       || joint.parentLink == joint.childLink) {
@@ -768,7 +768,7 @@ inline bool isAvbdRigidWorldPointJointFacade(
 //==============================================================================
 inline bool computeAvbdRigidWorldPointJointDefaultStiffness(
     const ::dart::simulation::detail::WorldRegistry& registry,
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     double& startStiffnessOut,
     double& maxStiffnessOut)
 {
@@ -841,7 +841,7 @@ inline bool computeAvbdRigidWorldPointJointDefaultStiffness(
 }
 
 //==============================================================================
-inline double avbdRigidWorldSymmetricEffortLimit(const comps::Joint& joint)
+inline double avbdRigidWorldSymmetricEffortLimit(const comps::JointModel& joint)
 {
   if (joint.limits.effortLower.size() < 1 || joint.limits.effortUpper.size() < 1
       || std::isnan(joint.limits.effortLower[0])
@@ -877,7 +877,7 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     return false;
   }
 
-  auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  auto* joint = registry.try_get<comps::JointModel>(jointEntity);
   if (joint == nullptr || !isAvbdRigidWorldPointJointType(joint->type)
       || joint->parentLink == joint->childLink) {
     return false;
@@ -1060,7 +1060,7 @@ inline bool configureAvbdRigidWorldFixedJointFromCurrentPose(
     double startStiffness = 1.0,
     double maxStiffness = std::numeric_limits<double>::infinity())
 {
-  const auto* joint = registry.try_get<comps::Joint>(jointEntity);
+  const auto* joint = registry.try_get<comps::JointModel>(jointEntity);
   if (joint == nullptr || joint->type != comps::JointType::Fixed) {
     return false;
   }
@@ -1074,11 +1074,11 @@ inline std::size_t configureAvbdRigidWorldPointJointsFromCurrentPoses(
     ::dart::simulation::detail::WorldRegistry& registry)
 {
   std::size_t configured = 0;
-  const auto view = registry.view<comps::Joint>(
+  const auto view = registry.view<comps::JointModel>(
       entt::exclude<AvbdRigidWorldPointJointConfig>);
 
   for (const entt::entity entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (!isAvbdRigidWorldPointJointType(joint.type)
         || joint.parentLink == joint.childLink) {
       continue;
@@ -2710,13 +2710,13 @@ inline std::size_t markAvbdRigidWorldFracturedPointJoints(
 
     const entt::entity jointEntity = snapshot.jointEntities[jointIndex];
     if (jointEntity == entt::null
-        || !registry.all_of<comps::Joint>(jointEntity)) {
+        || !registry.all_of<comps::JointState>(jointEntity)) {
       continue;
     }
 
-    auto& joint = registry.get<comps::Joint>(jointEntity);
-    if (!joint.broken) {
-      joint.broken = true;
+    auto& jointState = registry.get<comps::JointState>(jointEntity);
+    if (!jointState.broken) {
+      jointState.broken = true;
       ++marked;
     }
   }
@@ -2946,27 +2946,30 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     bool includeWorldAnchors = true)
 {
   const auto view
-      = registry.view<comps::Joint, AvbdRigidWorldPointJointConfig>();
+      = registry.view<comps::JointModel, AvbdRigidWorldPointJointConfig>();
   inputs.clear();
   inputs.reserve(view.size_hint());
 
   for (const entt::entity entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& jointModel = view.get<comps::JointModel>(entity);
+    const auto& jointState = registry.get<comps::JointState>(entity);
+    const auto& jointActuation = registry.get<comps::JointActuation>(entity);
     const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || joint.broken
-        || !isAvbdRigidWorldPointJointType(joint.type)) {
+    if (!config.enabled || jointState.broken
+        || !isAvbdRigidWorldPointJointType(jointModel.type)) {
       continue;
     }
 
-    if (joint.parentLink == entt::null || joint.childLink == entt::null
-        || joint.parentLink == joint.childLink) {
+    if (jointModel.parentLink == entt::null
+        || jointModel.childLink == entt::null
+        || jointModel.parentLink == jointModel.childLink) {
       continue;
     }
 
     const AvbdRigidWorldProjectableBodyView bodyA
-        = avbdRigidWorldProjectableBody(registry, joint.parentLink);
+        = avbdRigidWorldProjectableBody(registry, jointModel.parentLink);
     const AvbdRigidWorldProjectableBodyView bodyB
-        = avbdRigidWorldProjectableBody(registry, joint.childLink);
+        = avbdRigidWorldProjectableBody(registry, jointModel.childLink);
     if (!bodyA || !bodyB || (bodyA.isStatic && bodyB.isStatic)) {
       continue;
     }
@@ -2994,15 +2997,15 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     }
 
     const bool hasAngularVelocityMotor
-        = joint.type == comps::JointType::Revolute
-          && joint.actuatorType == comps::ActuatorType::Velocity
-          && joint.commandVelocity.size() == 1
-          && joint.commandVelocity.allFinite();
+        = jointModel.type == comps::JointType::Revolute
+          && jointActuation.actuatorType == comps::ActuatorType::Velocity
+          && jointActuation.commandVelocity.size() == 1
+          && jointActuation.commandVelocity.allFinite();
     const bool hasLinearVelocityMotor
-        = joint.type == comps::JointType::Prismatic
-          && joint.actuatorType == comps::ActuatorType::Velocity
-          && joint.commandVelocity.size() == 1
-          && joint.commandVelocity.allFinite();
+        = jointModel.type == comps::JointType::Prismatic
+          && jointActuation.actuatorType == comps::ActuatorType::Velocity
+          && jointActuation.commandVelocity.size() == 1
+          && jointActuation.commandVelocity.allFinite();
     const bool useStableFullLinearBasis
         = !includeWorldAnchors
           && config.linearAxisMask == kAvbdRigidJointAllAxesMask
@@ -3018,8 +3021,8 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
 
     AvbdRigidWorldPointJointInput input;
     input.joint = entity;
-    input.bodyA = joint.parentLink;
-    input.bodyB = joint.childLink;
+    input.bodyA = jointModel.parentLink;
+    input.bodyB = jointModel.childLink;
     input.bodyAView = bodyA;
     input.bodyBView = bodyB;
     if (includeWorldAnchors) {
@@ -3043,18 +3046,18 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     input.linearAxisMask = config.linearAxisMask;
     input.angularAxisMask = config.angularAxisMask;
     if (hasAngularVelocityMotor) {
-      const double maxTorque = avbdRigidWorldSymmetricEffortLimit(joint);
+      const double maxTorque = avbdRigidWorldSymmetricEffortLimit(jointModel);
       if (maxTorque > 0.0 && !std::isnan(maxTorque)) {
         input.useAngularMotor = true;
-        input.motorTargetSpeed = joint.commandVelocity[0];
+        input.motorTargetSpeed = jointActuation.commandVelocity[0];
         input.motorMaxTorque = maxTorque;
       }
     }
     if (hasLinearVelocityMotor) {
-      const double maxForce = avbdRigidWorldSymmetricEffortLimit(joint);
+      const double maxForce = avbdRigidWorldSymmetricEffortLimit(jointModel);
       if (maxForce > 0.0 && !std::isnan(maxForce)) {
         input.useLinearMotor = true;
-        input.motorTargetSpeed = joint.commandVelocity[0];
+        input.motorTargetSpeed = jointActuation.commandVelocity[0];
         input.motorMaxForce = maxForce;
       }
     }
@@ -3062,7 +3065,7 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     input.linearMaterialStiffness = config.linearMaterialStiffness;
     input.angularMaterialStiffness = config.angularMaterialStiffness;
     input.maxStiffness = config.maxStiffness;
-    input.fractureThreshold = joint.breakForce;
+    input.fractureThreshold = jointModel.breakForce;
     inputs.push_back(input);
   }
 }
@@ -3080,7 +3083,7 @@ inline bool hasAvbdRigidWorldPointJointConfigs(
     const ::dart::simulation::detail::WorldRegistry& registry)
 {
   const auto view
-      = registry.view<comps::Joint, AvbdRigidWorldPointJointConfig>();
+      = registry.view<comps::JointModel, AvbdRigidWorldPointJointConfig>();
   return view.begin() != view.end();
 }
 
@@ -3088,7 +3091,7 @@ inline bool hasAvbdRigidWorldPointJointConfigs(
 inline bool mayHaveAvbdRigidWorldPointJointConfigs(
     const ::dart::simulation::detail::WorldRegistry& registry)
 {
-  const auto* jointStorage = registry.storage<comps::Joint>();
+  const auto* jointStorage = registry.storage<comps::JointModel>();
   const auto* configStorage
       = registry.storage<AvbdRigidWorldPointJointConfig>();
   return jointStorage != nullptr && configStorage != nullptr

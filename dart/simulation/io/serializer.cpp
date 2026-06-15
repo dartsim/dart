@@ -122,22 +122,6 @@ void setSingleCollisionShape(
   geometry.shapes.push_back(std::move(shape));
 }
 
-Eigen::VectorXd symmetricLowerBound(const Eigen::VectorXd& upperBound)
-{
-  if (upperBound.size() == 0) {
-    return Eigen::VectorXd{};
-  }
-  return -upperBound.cwiseAbs();
-}
-
-Eigen::VectorXd symmetricUpperBound(const Eigen::VectorXd& upperBound)
-{
-  if (upperBound.size() == 0) {
-    return Eigen::VectorXd{};
-  }
-  return upperBound.cwiseAbs();
-}
-
 void writeMatrix3d(std::ostream& output, const Eigen::Matrix3d& matrix)
 {
   for (Eigen::Index row = 0; row < 3; ++row) {
@@ -175,217 +159,6 @@ void readQuaterniond(std::istream& input, Eigen::Quaterniond& q)
   readPOD(input, y);
   readPOD(input, z);
   q = Eigen::Quaterniond(w, x, y, z);
-}
-
-// Staged AVBD point-joint stiffness parsed from a legacy (v17-v19) Joint record
-// where the four stiffness values lived inline on the Joint struct. The Joint
-// component serializer consumes this in postLoadComponent() to materialize the
-// separate comps::AvbdJointStiffness sidecar. When `present` is false the joint
-// had no materialized stiffness, so no sidecar is emplaced and reads fall back
-// to defaults (matching the old hasAvbdStiffnessState == false behavior).
-struct LegacyJointAvbdStiffness
-{
-  bool present = false;
-  comps::AvbdJointStiffness values;
-};
-
-void deserializeJointV1(std::istream& input, comps::Joint& joint)
-{
-  readPOD(input, joint.type);
-  readString(input, joint.name);
-  readVectorXd(input, joint.position);
-  readVectorXd(input, joint.velocity);
-  readVectorXd(input, joint.acceleration);
-  readVectorXd(input, joint.torque);
-
-  readVectorXd(input, joint.limits.lower);
-  readVectorXd(input, joint.limits.upper);
-
-  Eigen::VectorXd legacyVelocityLimit;
-  Eigen::VectorXd legacyEffortLimit;
-  readVectorXd(input, legacyVelocityLimit);
-  readVectorXd(input, legacyEffortLimit);
-
-  readVector3d(input, joint.axis);
-  readVector3d(input, joint.axis2);
-  readPOD(input, joint.pitch);
-
-  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
-  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
-  readPOD(input, parentLink);
-  readPOD(input, childLink);
-  joint.parentLink = static_cast<entt::entity>(parentLink);
-  joint.childLink = static_cast<entt::entity>(childLink);
-
-  const auto dof = static_cast<Eigen::Index>(joint.getDOF());
-  joint.actuatorType = comps::ActuatorType::Force;
-  joint.springStiffness = comps::makeJointVector(dof, 0.0);
-  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
-  joint.restPosition = comps::makeJointVector(dof, 0.0);
-  joint.armature = comps::makeJointVector(dof, 0.0);
-  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
-  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
-  joint.breakForce = 0.0;
-  joint.broken = false;
-
-  const double infinity = std::numeric_limits<double>::infinity();
-  if (joint.limits.lower.size() != dof) {
-    joint.limits.lower = comps::makeJointVector(dof, -infinity);
-  }
-  if (joint.limits.upper.size() != dof) {
-    joint.limits.upper = comps::makeJointVector(dof, infinity);
-  }
-  if (legacyVelocityLimit.size() == dof) {
-    joint.limits.velocityLower = symmetricLowerBound(legacyVelocityLimit);
-    joint.limits.velocityUpper = symmetricUpperBound(legacyVelocityLimit);
-  } else {
-    joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
-    joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
-  }
-
-  if (legacyEffortLimit.size() == dof) {
-    joint.limits.effortLower = symmetricLowerBound(legacyEffortLimit);
-    joint.limits.effortUpper = symmetricUpperBound(legacyEffortLimit);
-  } else {
-    joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
-    joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
-  }
-}
-
-void deserializeJointV2ToV13(
-    std::istream& input, comps::Joint& joint, std::uint32_t formatVersion)
-{
-  readPOD(input, joint.type);
-  readPOD(input, joint.actuatorType);
-  readString(input, joint.name);
-  readVectorXd(input, joint.position);
-  readVectorXd(input, joint.velocity);
-  readVectorXd(input, joint.acceleration);
-  readVectorXd(input, joint.torque);
-
-  readVectorXd(input, joint.springStiffness);
-  readVectorXd(input, joint.dampingCoefficient);
-  readVectorXd(input, joint.restPosition);
-  readVectorXd(input, joint.armature);
-  readVectorXd(input, joint.coulombFriction);
-  readVectorXd(input, joint.commandVelocity);
-
-  joint.breakForce = 0.0;
-  joint.broken = false;
-
-  readVectorXd(input, joint.limits.lower);
-  readVectorXd(input, joint.limits.upper);
-  readVectorXd(input, joint.limits.velocityLower);
-  readVectorXd(input, joint.limits.velocityUpper);
-  readVectorXd(input, joint.limits.effortLower);
-  readVectorXd(input, joint.limits.effortUpper);
-
-  readVector3d(input, joint.axis);
-  readVector3d(input, joint.axis2);
-  readPOD(input, joint.pitch);
-
-  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
-  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
-  readPOD(input, parentLink);
-  readPOD(input, childLink);
-  joint.parentLink = static_cast<entt::entity>(parentLink);
-  joint.childLink = static_cast<entt::entity>(childLink);
-
-  if (formatVersion >= 13u) {
-    readPOD(input, joint.hasRigidBodyFixedJointAnchors);
-    readVector3d(input, joint.rigidBodyFixedJointLocalAnchorParent);
-    readVector3d(input, joint.rigidBodyFixedJointLocalAnchorChild);
-
-    double w = 1.0;
-    double x = 0.0;
-    double y = 0.0;
-    double z = 0.0;
-    readPOD(input, w);
-    readPOD(input, x);
-    readPOD(input, y);
-    readPOD(input, z);
-    joint.rigidBodyFixedJointTargetRelativeOrientation
-        = Eigen::Quaterniond(w, x, y, z);
-  } else {
-    joint.hasRigidBodyFixedJointAnchors = false;
-    joint.rigidBodyFixedJointLocalAnchorParent.setZero();
-    joint.rigidBodyFixedJointLocalAnchorChild.setZero();
-    joint.rigidBodyFixedJointTargetRelativeOrientation.setIdentity();
-  }
-}
-
-void deserializeJointV14ToV19(
-    std::istream& input,
-    comps::Joint& joint,
-    std::uint32_t formatVersion,
-    LegacyJointAvbdStiffness& stagedStiffness)
-{
-  readPOD(input, joint.type);
-  readPOD(input, joint.actuatorType);
-  readString(input, joint.name);
-  readVectorXd(input, joint.position);
-  readVectorXd(input, joint.velocity);
-  readVectorXd(input, joint.acceleration);
-  readVectorXd(input, joint.torque);
-
-  readVectorXd(input, joint.springStiffness);
-  readVectorXd(input, joint.dampingCoefficient);
-  readVectorXd(input, joint.restPosition);
-  readVectorXd(input, joint.armature);
-  readVectorXd(input, joint.coulombFriction);
-  readVectorXd(input, joint.commandVelocity);
-
-  readPOD(input, joint.breakForce);
-  readPOD(input, joint.broken);
-
-  // Versions 17-19 stored the AVBD point-joint stiffness inline on the Joint
-  // record (a bool flag plus four doubles). Newer formats keep it in a separate
-  // comps::AvbdJointStiffness sidecar. Read and stage the legacy values so the
-  // serializer can materialize the sidecar after the Joint is emplaced. Earlier
-  // versions (14-16) had no such block, so the joint loads with no sidecar.
-  stagedStiffness = LegacyJointAvbdStiffness{};
-  if (formatVersion >= 17u) {
-    bool hasAvbdStiffnessState = false;
-    readPOD(input, hasAvbdStiffnessState);
-    readPOD(input, stagedStiffness.values.startStiffness);
-    readPOD(input, stagedStiffness.values.linearStiffness);
-    readPOD(input, stagedStiffness.values.angularStiffness);
-    readPOD(input, stagedStiffness.values.maxStiffness);
-    stagedStiffness.present = hasAvbdStiffnessState;
-  }
-
-  readVectorXd(input, joint.limits.lower);
-  readVectorXd(input, joint.limits.upper);
-  readVectorXd(input, joint.limits.velocityLower);
-  readVectorXd(input, joint.limits.velocityUpper);
-  readVectorXd(input, joint.limits.effortLower);
-  readVectorXd(input, joint.limits.effortUpper);
-
-  readVector3d(input, joint.axis);
-  readVector3d(input, joint.axis2);
-  readPOD(input, joint.pitch);
-
-  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
-  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
-  readPOD(input, parentLink);
-  readPOD(input, childLink);
-  joint.parentLink = static_cast<entt::entity>(parentLink);
-  joint.childLink = static_cast<entt::entity>(childLink);
-
-  readPOD(input, joint.hasRigidBodyFixedJointAnchors);
-  readVector3d(input, joint.rigidBodyFixedJointLocalAnchorParent);
-  readVector3d(input, joint.rigidBodyFixedJointLocalAnchorChild);
-
-  double w = 1.0;
-  double x = 0.0;
-  double y = 0.0;
-  double z = 0.0;
-  readPOD(input, w);
-  readPOD(input, x);
-  readPOD(input, y);
-  readPOD(input, z);
-  joint.rigidBodyFixedJointTargetRelativeOrientation
-      = Eigen::Quaterniond(w, x, y, z);
 }
 
 void initializeCollisionShapeDefaults(CollisionShape& shape)
@@ -565,85 +338,6 @@ void deserializeLinkV8(
       readPOD(input, link.externalForce[i]);
     }
   }
-}
-
-class JointComponentSerializer final
-  : public TypedComponentSerializer<comps::Joint>
-{
-public:
-  [[nodiscard]] std::string_view getTypeName() const override
-  {
-    return comps::Joint::getTypeName();
-  }
-
-private:
-  void saveComponent(
-      std::ostream& output,
-      const comps::Joint& component,
-      const EntityMap& entityMap) const override
-  {
-    autoSerialize(output, component, entityMap);
-  }
-
-  void loadComponent(
-      std::istream& input, comps::Joint& component) const override
-  {
-    autoDeserialize(input, component);
-  }
-
-  void loadComponent(
-      std::istream& input,
-      comps::Joint& component,
-      std::uint32_t formatVersion) const override
-  {
-    // No legacy inline AVBD stiffness unless an older record explicitly stages
-    // it below.
-    m_stagedStiffness = LegacyJointAvbdStiffness{};
-
-    if (formatVersion == 1u) {
-      deserializeJointV1(input, component);
-      return;
-    }
-    if (formatVersion < 14u) {
-      deserializeJointV2ToV13(input, component, formatVersion);
-      return;
-    }
-    if (formatVersion < 20u) {
-      deserializeJointV14ToV19(
-          input, component, formatVersion, m_stagedStiffness);
-      return;
-    }
-
-    loadComponent(input, component);
-  }
-
-  void postLoadComponent(
-      entt::entity entity,
-      ::dart::simulation::detail::WorldRegistry& registry,
-      std::uint32_t /*formatVersion*/) const override
-  {
-    // Versions 17-19 carried the AVBD point-joint stiffness inline on the Joint
-    // record. Materialize the separate comps::AvbdJointStiffness sidecar from
-    // the staged values when the legacy joint had a materialized state; absence
-    // means the joint loads with no sidecar (defaults), matching the old
-    // hasAvbdStiffnessState == false behavior.
-    if (m_stagedStiffness.present) {
-      registry.emplace_or_replace<comps::AvbdJointStiffness>(
-          entity, m_stagedStiffness.values);
-    }
-    m_stagedStiffness = LegacyJointAvbdStiffness{};
-  }
-
-  mutable LegacyJointAvbdStiffness m_stagedStiffness;
-};
-
-void registerJointSerializer(SerializerRegistry& registry)
-{
-  if (registry.getSerializer(comps::Joint::getTypeName()) != nullptr) {
-    return;
-  }
-
-  registry.registerSerializer(std::make_unique<JointComponentSerializer>());
 }
 
 class AvbdRigidWorldPointJointConfigComponentSerializer final
@@ -922,7 +616,9 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
   registerLinkSerializer(registry);
-  registerJointSerializer(registry);
+  registerComponentIfNeeded<comps::JointModel>(registry);
+  registerComponentIfNeeded<comps::JointState>(registry);
+  registerComponentIfNeeded<comps::JointActuation>(registry);
   registerComponentIfNeeded<comps::AvbdJointStiffness>(registry);
   registerAvbdRigidWorldPointJointConfigSerializer(registry);
   registerAvbdRigidWorldDistanceSpringConfigSerializer(registry);
@@ -1101,9 +797,9 @@ void SerializerRegistry::loadAllEntities(
     }
   }
 
-  auto jointView = registry.view<comps::Joint>();
+  auto jointView = registry.view<comps::JointModel>();
   for (auto entity : jointView) {
-    auto& comp = jointView.get<comps::Joint>(entity);
+    auto& comp = jointView.get<comps::JointModel>(entity);
     if (comp.parentLink != entt::null) {
       comp.parentLink = entityMap.at(comp.parentLink);
     }

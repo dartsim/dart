@@ -615,23 +615,25 @@ bool sameReplayJointLimits(
 
 template <typename JointLayout>
 bool sameReplayJointLayout(
-    const comps::Joint& joint,
+    const comps::JointModel& jointModel,
+    const comps::JointActuation& jointActuation,
     const comps::AvbdJointStiffness* avbdStiffness,
     const JointLayout& layout)
 {
   const bool hasAvbdStiffnessState = avbdStiffness != nullptr;
   const comps::AvbdJointStiffness resolvedStiffness
       = hasAvbdStiffnessState ? *avbdStiffness : comps::AvbdJointStiffness{};
-  return joint.type == layout.type && joint.actuatorType == layout.actuatorType
-         && std::string_view{joint.name}
+  return jointModel.type == layout.type
+         && jointActuation.actuatorType == layout.actuatorType
+         && std::string_view{jointModel.name}
                 == std::string_view{layout.name.data(), layout.name.size()}
-         && sameReplayVector(joint.springStiffness, layout.springStiffness)
+         && sameReplayVector(jointModel.springStiffness, layout.springStiffness)
          && sameReplayVector(
-             joint.dampingCoefficient, layout.dampingCoefficient)
-         && sameReplayVector(joint.restPosition, layout.restPosition)
-         && sameReplayVector(joint.armature, layout.armature)
-         && sameReplayVector(joint.coulombFriction, layout.coulombFriction)
-         && joint.breakForce == layout.breakForce
+             jointModel.dampingCoefficient, layout.dampingCoefficient)
+         && sameReplayVector(jointModel.restPosition, layout.restPosition)
+         && sameReplayVector(jointModel.armature, layout.armature)
+         && sameReplayVector(jointModel.coulombFriction, layout.coulombFriction)
+         && jointModel.breakForce == layout.breakForce
          && hasAvbdStiffnessState == layout.hasAvbdStiffnessState
          && resolvedStiffness.startStiffness
                 == layout.avbdStiffness.startStiffness
@@ -640,18 +642,19 @@ bool sameReplayJointLayout(
          && resolvedStiffness.angularStiffness
                 == layout.avbdStiffness.angularStiffness
          && resolvedStiffness.maxStiffness == layout.avbdStiffness.maxStiffness
-         && sameReplayJointLimits(joint.limits, layout.limits)
-         && joint.axis.isApprox(layout.axis, 0.0)
-         && joint.axis2.isApprox(layout.axis2, 0.0)
-         && joint.pitch == layout.pitch && joint.parentLink == layout.parentLink
-         && joint.childLink == layout.childLink
-         && joint.hasRigidBodyFixedJointAnchors
+         && sameReplayJointLimits(jointModel.limits, layout.limits)
+         && jointModel.axis.isApprox(layout.axis, 0.0)
+         && jointModel.axis2.isApprox(layout.axis2, 0.0)
+         && jointModel.pitch == layout.pitch
+         && jointModel.parentLink == layout.parentLink
+         && jointModel.childLink == layout.childLink
+         && jointModel.hasRigidBodyFixedJointAnchors
                 == layout.hasRigidBodyFixedJointAnchors
-         && joint.rigidBodyFixedJointLocalAnchorParent.isApprox(
+         && jointModel.rigidBodyFixedJointLocalAnchorParent.isApprox(
              layout.rigidBodyFixedJointLocalAnchorParent, 0.0)
-         && joint.rigidBodyFixedJointLocalAnchorChild.isApprox(
+         && jointModel.rigidBodyFixedJointLocalAnchorChild.isApprox(
              layout.rigidBodyFixedJointLocalAnchorChild, 0.0)
-         && joint.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+         && jointModel.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
                 .isApprox(
                     layout.rigidBodyFixedJointTargetRelativeOrientation
                         .coeffs(),
@@ -1633,7 +1636,7 @@ bool canSkipDefaultStepPipelineWhenFramesClean(
   if (loopClosureView.begin() != loopClosureView.end()) {
     return false;
   }
-  const auto jointView = registry.view<comps::Joint>();
+  const auto jointView = registry.view<comps::JointModel>();
   if (jointView.begin() != jointView.end()) {
     return false;
   }
@@ -1747,7 +1750,7 @@ comps::JointType toArticulatedPointJointComponentJointType(JointType type)
 
 //==============================================================================
 template <typename Registry>
-bool isRigidBodyJoint(const Registry& registry, const comps::Joint& joint)
+bool isRigidBodyJoint(const Registry& registry, const comps::JointModel& joint)
 {
   if (!isRigidBodyJointType(joint.type) || joint.parentLink == entt::null
       || joint.childLink == entt::null || joint.parentLink == joint.childLink) {
@@ -1760,7 +1763,8 @@ bool isRigidBodyJoint(const Registry& registry, const comps::Joint& joint)
 
 //==============================================================================
 template <typename Registry>
-bool isRigidBodyFixedJoint(const Registry& registry, const comps::Joint& joint)
+bool isRigidBodyFixedJoint(
+    const Registry& registry, const comps::JointModel& joint)
 {
   if (joint.type != comps::JointType::Fixed) {
     return false;
@@ -1774,7 +1778,7 @@ template <typename Registry>
 bool isArticulatedPointJoint(
     const Registry& registry,
     entt::entity jointEntity,
-    const comps::Joint& joint)
+    const comps::JointModel& joint)
 {
   if (!isRigidBodyJointType(joint.type) || joint.childLink == entt::null
       || joint.parentLink == joint.childLink) {
@@ -1810,10 +1814,10 @@ bool isArticulatedPointJoint(
 bool hasRigidBodyJoints(const World& world)
 {
   const auto& registry = detail::registryOf(world);
-  const auto view = registry.view<comps::Joint>();
+  const auto view = registry.view<comps::JointModel>();
   for (auto entity : view) {
     (void)entity;
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isRigidBodyJoint(registry, joint)) {
       return true;
     }
@@ -1841,9 +1845,9 @@ bool hasRigidBodyAvbdPairConstraints(const World& world)
 bool hasArticulatedPointJoints(const World& world)
 {
   const auto& registry = detail::registryOf(world);
-  const auto view = registry.view<comps::Joint>();
+  const auto view = registry.view<comps::JointModel>();
   for (const entt::entity entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isArticulatedPointJoint(registry, entity, joint)) {
       return true;
     }
@@ -1855,9 +1859,9 @@ bool hasArticulatedPointJoints(const World& world)
 bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
 {
   const auto& registry = detail::registryOf(world);
-  const auto view = registry.view<comps::Joint>();
+  const auto view = registry.view<comps::JointModel>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (!isRigidBodyJoint(registry, joint)) {
       continue;
     }
@@ -2238,10 +2242,11 @@ void collectLivePublicRigidBodyJointPairsInto(
 {
   pairs.clear();
 
-  const auto joints = registry.template view<comps::Joint>();
+  const auto joints = registry.template view<comps::JointModel>();
   for (const entt::entity entity : joints) {
-    const auto& joint = joints.template get<comps::Joint>(entity);
-    if (joint.broken || !isRigidBodyJoint(registry, joint)) {
+    const auto& joint = joints.template get<comps::JointModel>(entity);
+    const auto& jointState = registry.template get<comps::JointState>(entity);
+    if (jointState.broken || !isRigidBodyJoint(registry, joint)) {
       continue;
     }
 
@@ -3518,7 +3523,9 @@ void World::reserveRegistryStorageForSimulation()
       comps::MultibodyStructure,
       comps::LoopClosure,
       comps::Link,
-      comps::Joint,
+      comps::JointModel,
+      comps::JointState,
+      comps::JointActuation,
       comps::FrameTag,
       comps::FixedFrameTag,
       comps::FreeFrameTag,
@@ -3580,7 +3587,8 @@ void World::reserveRegistryStorageForSimulation()
         registry, multibodyCount, m_memoryManager.getFreeAllocator());
   }
 
-  const auto jointCount = existingComponentStorageSize<comps::Joint>(registry);
+  const auto jointCount
+      = existingComponentStorageSize<comps::JointModel>(registry);
   if (jointCount > 0u) {
     registry.storage<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>()
         .reserve(jointCount);
@@ -4181,11 +4189,12 @@ Joint World::addArticulatedJoint(
   if (name.empty()) {
     do {
       actualName = std::format("joint_{:03d}", ++m_jointCounter);
-    } while (hasEntityWithName<comps::Joint>(m_storage->registry, actualName));
+    } while (
+        hasEntityWithName<comps::JointModel>(m_storage->registry, actualName));
   } else {
     actualName = std::string(name);
     DART_SIMULATION_THROW_T_IF(
-        hasEntityWithName<comps::Joint>(m_storage->registry, actualName),
+        hasEntityWithName<comps::JointModel>(m_storage->registry, actualName),
         InvalidArgumentException,
         "Joint '{}' already exists",
         actualName);
@@ -4194,34 +4203,39 @@ Joint World::addArticulatedJoint(
   const entt::entity jointEntity = m_storage->registry.create();
   m_storage->registry.emplace<comps::Name>(jointEntity, actualName);
 
-  auto& joint = m_storage->registry.emplace<comps::Joint>(jointEntity);
-  joint.type = componentType;
-  joint.name = std::move(actualName);
-  joint.parentLink = parentEntity;
-  joint.childLink = childEntity;
+  auto& jointModel
+      = m_storage->registry.emplace<comps::JointModel>(jointEntity);
+  auto& jointState
+      = m_storage->registry.emplace<comps::JointState>(jointEntity);
+  auto& jointActuation
+      = m_storage->registry.emplace<comps::JointActuation>(jointEntity);
+  jointModel.type = componentType;
+  jointModel.name = std::move(actualName);
+  jointModel.parentLink = parentEntity;
+  jointModel.childLink = childEntity;
   if (articulatedPointJointUsesAxis(componentType)) {
-    joint.axis = axis.normalized();
+    jointModel.axis = axis.normalized();
   }
 
-  const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
-  joint.position = comps::makeJointVector(dof, 0.0);
-  joint.velocity = comps::makeJointVector(dof, 0.0);
-  joint.acceleration = comps::makeJointVector(dof, 0.0);
-  joint.torque = comps::makeJointVector(dof, 0.0);
-  joint.springStiffness = comps::makeJointVector(dof, 0.0);
-  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
-  joint.restPosition = comps::makeJointVector(dof, 0.0);
-  joint.armature = comps::makeJointVector(dof, 0.0);
-  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
-  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
+  const Eigen::Index dof = static_cast<Eigen::Index>(jointModel.getDOF());
+  jointState.position = comps::makeJointVector(dof, 0.0);
+  jointState.velocity = comps::makeJointVector(dof, 0.0);
+  jointState.acceleration = comps::makeJointVector(dof, 0.0);
+  jointActuation.torque = comps::makeJointVector(dof, 0.0);
+  jointModel.springStiffness = comps::makeJointVector(dof, 0.0);
+  jointModel.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  jointModel.restPosition = comps::makeJointVector(dof, 0.0);
+  jointModel.armature = comps::makeJointVector(dof, 0.0);
+  jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
-  joint.limits.lower = comps::makeJointVector(dof, -infinity);
-  joint.limits.upper = comps::makeJointVector(dof, infinity);
-  joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
-  joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
-  joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
-  joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.upper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   if (parentAnchor.has_value()) {
     Eigen::Matrix3d parentRotation = Eigen::Matrix3d::Identity();
@@ -4246,12 +4260,12 @@ Joint World::addArticulatedJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    joint.hasRigidBodyFixedJointAnchors = true;
-    joint.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    joint.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    joint.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyFixedJointAnchors = true;
+    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyFixedJointTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    joint.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
   }
 
   return Joint(detail::fromRegistryEntity(jointEntity), this);
@@ -4260,9 +4274,9 @@ Joint World::addArticulatedJoint(
 //==============================================================================
 std::optional<Joint> World::getArticulatedJoint(std::string_view name)
 {
-  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
         && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
@@ -4275,9 +4289,9 @@ std::optional<Joint> World::getArticulatedJoint(std::string_view name)
 //==============================================================================
 bool World::hasArticulatedJoint(std::string_view name) const
 {
-  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
         && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
@@ -4291,9 +4305,9 @@ bool World::hasArticulatedJoint(std::string_view name) const
 std::size_t World::getArticulatedJointCount() const
 {
   std::size_t count = 0;
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
       ++count;
     }
@@ -4305,9 +4319,9 @@ std::size_t World::getArticulatedJointCount() const
 std::vector<Joint> World::getArticulatedJoints()
 {
   std::vector<Joint> joints;
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
       joints.emplace_back(detail::fromRegistryEntity(entity), this);
     }
@@ -4768,11 +4782,12 @@ Joint World::addRigidBodyJoint(
   if (name.empty()) {
     do {
       actualName = std::format("joint_{:03d}", ++m_jointCounter);
-    } while (hasEntityWithName<comps::Joint>(m_storage->registry, actualName));
+    } while (
+        hasEntityWithName<comps::JointModel>(m_storage->registry, actualName));
   } else {
     actualName = std::string(name);
     DART_SIMULATION_THROW_T_IF(
-        hasEntityWithName<comps::Joint>(m_storage->registry, actualName),
+        hasEntityWithName<comps::JointModel>(m_storage->registry, actualName),
         InvalidArgumentException,
         "Joint '{}' already exists",
         actualName);
@@ -4781,13 +4796,18 @@ Joint World::addRigidBodyJoint(
   const entt::entity jointEntity = m_storage->registry.create();
   m_storage->registry.emplace<comps::Name>(jointEntity, actualName);
 
-  auto& joint = m_storage->registry.emplace<comps::Joint>(jointEntity);
-  joint.type = componentType;
-  joint.name = std::move(actualName);
-  joint.parentLink = parentEntity;
-  joint.childLink = childEntity;
+  auto& jointModel
+      = m_storage->registry.emplace<comps::JointModel>(jointEntity);
+  auto& jointState
+      = m_storage->registry.emplace<comps::JointState>(jointEntity);
+  auto& jointActuation
+      = m_storage->registry.emplace<comps::JointActuation>(jointEntity);
+  jointModel.type = componentType;
+  jointModel.name = std::move(actualName);
+  jointModel.parentLink = parentEntity;
+  jointModel.childLink = childEntity;
   if (rigidBodyJointUsesAxis(componentType)) {
-    joint.axis = axis.normalized();
+    jointModel.axis = axis.normalized();
   }
 
   if (parentAnchor.has_value()) {
@@ -4807,33 +4827,33 @@ Joint World::addRigidBodyJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    joint.hasRigidBodyFixedJointAnchors = true;
-    joint.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    joint.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    joint.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyFixedJointAnchors = true;
+    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyFixedJointTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    joint.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
   }
 
-  const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
-  joint.position = comps::makeJointVector(dof, 0.0);
-  joint.velocity = comps::makeJointVector(dof, 0.0);
-  joint.acceleration = comps::makeJointVector(dof, 0.0);
-  joint.torque = comps::makeJointVector(dof, 0.0);
-  joint.springStiffness = comps::makeJointVector(dof, 0.0);
-  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
-  joint.restPosition = comps::makeJointVector(dof, 0.0);
-  joint.armature = comps::makeJointVector(dof, 0.0);
-  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
-  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
+  const Eigen::Index dof = static_cast<Eigen::Index>(jointModel.getDOF());
+  jointState.position = comps::makeJointVector(dof, 0.0);
+  jointState.velocity = comps::makeJointVector(dof, 0.0);
+  jointState.acceleration = comps::makeJointVector(dof, 0.0);
+  jointActuation.torque = comps::makeJointVector(dof, 0.0);
+  jointModel.springStiffness = comps::makeJointVector(dof, 0.0);
+  jointModel.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  jointModel.restPosition = comps::makeJointVector(dof, 0.0);
+  jointModel.armature = comps::makeJointVector(dof, 0.0);
+  jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
-  joint.limits.lower = comps::makeJointVector(dof, -infinity);
-  joint.limits.upper = comps::makeJointVector(dof, infinity);
-  joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
-  joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
-  joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
-  joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.upper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
   comps::AvbdJointStiffness defaultStiffness;
@@ -4859,9 +4879,9 @@ Joint World::addRigidBodyJoint(
 //==============================================================================
 std::optional<Joint> World::getRigidBodyJoint(std::string_view name)
 {
-  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
       return Joint(detail::fromRegistryEntity(entity), this);
@@ -4873,9 +4893,9 @@ std::optional<Joint> World::getRigidBodyJoint(std::string_view name)
 //==============================================================================
 bool World::hasRigidBodyJoint(std::string_view name) const
 {
-  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
       return true;
@@ -4888,10 +4908,10 @@ bool World::hasRigidBodyJoint(std::string_view name) const
 std::size_t World::getRigidBodyJointCount() const
 {
   std::size_t count = 0;
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
     (void)entity;
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isRigidBodyJoint(m_storage->registry, joint)) {
       ++count;
     }
@@ -4904,9 +4924,9 @@ std::vector<Joint> World::getRigidBodyJoints()
 {
   std::vector<Joint> joints;
   joints.reserve(getRigidBodyJointCount());
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isRigidBodyJoint(m_storage->registry, joint)) {
       joints.emplace_back(detail::fromRegistryEntity(entity), this);
     }
@@ -4917,9 +4937,9 @@ std::vector<Joint> World::getRigidBodyJoints()
 //==============================================================================
 std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
 {
-  auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
         && isRigidBodyFixedJoint(m_storage->registry, joint)) {
@@ -4932,9 +4952,9 @@ std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
 //==============================================================================
 bool World::hasRigidBodyFixedJoint(std::string_view name) const
 {
-  const auto view = m_storage->registry.view<comps::Joint, comps::Name>();
+  const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
         && isRigidBodyFixedJoint(m_storage->registry, joint)) {
@@ -4948,10 +4968,10 @@ bool World::hasRigidBodyFixedJoint(std::string_view name) const
 std::size_t World::getRigidBodyFixedJointCount() const
 {
   std::size_t count = 0;
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
     (void)entity;
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
       ++count;
     }
@@ -4964,9 +4984,9 @@ std::vector<Joint> World::getRigidBodyFixedJoints()
 {
   std::vector<Joint> joints;
   joints.reserve(getRigidBodyFixedJointCount());
-  const auto view = m_storage->registry.view<comps::Joint>();
+  const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
-    const auto& joint = view.get<comps::Joint>(entity);
+    const auto& joint = view.get<comps::JointModel>(entity);
     if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
       joints.emplace_back(detail::fromRegistryEntity(entity), this);
     }
@@ -5950,10 +5970,10 @@ void World::captureStepDerivatives()
       if (link.parentJoint == entt::null) {
         continue;
       }
-      const auto& joint
-          = m_storage->registry.get<comps::Joint>(link.parentJoint);
-      for (Eigen::Index d = 0; d < joint.torque.size(); ++d) {
-        torques.push_back(joint.torque[d]);
+      const auto& jointActuation
+          = m_storage->registry.get<comps::JointActuation>(link.parentJoint);
+      for (Eigen::Index d = 0; d < jointActuation.torque.size(); ++d) {
+        torques.push_back(jointActuation.torque[d]);
       }
     }
     if (torques.empty()) {
@@ -6235,19 +6255,20 @@ void World::restoreReplayFrame(std::size_t index)
       });
 
   DART_SIMULATION_THROW_T_IF(
-      countReplayView(m_storage->registry.view<comps::Joint>())
+      countReplayView(m_storage->registry.view<comps::JointModel>())
           != replayFrame.joints.size(),
       InvalidOperationException,
       "Cannot restore replay frame: Joint component count changed");
   for (const auto& state : replayFrame.joints) {
     DART_SIMULATION_THROW_T_IF(
         !m_storage->registry.valid(state.entity)
-            || !m_storage->registry.all_of<comps::Joint>(state.entity),
+            || !m_storage->registry.all_of<comps::JointModel>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Joint entity layout changed");
     DART_SIMULATION_THROW_T_IF(
         !sameReplayJointLayout(
-            m_storage->registry.get<comps::Joint>(state.entity),
+            m_storage->registry.get<comps::JointModel>(state.entity),
+            m_storage->registry.get<comps::JointActuation>(state.entity),
             m_storage->registry.try_get<comps::AvbdJointStiffness>(
                 state.entity),
             state.layout),
@@ -6436,13 +6457,15 @@ void World::restoreReplayFrame(std::size_t index)
       });
 
   for (const auto& state : replayFrame.joints) {
-    auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
-    restoreReplayVector(state.position, joint.position);
-    restoreReplayVector(state.velocity, joint.velocity);
-    restoreReplayVector(state.acceleration, joint.acceleration);
-    restoreReplayVector(state.torque, joint.torque);
-    restoreReplayVector(state.commandVelocity, joint.commandVelocity);
-    joint.broken = state.broken;
+    auto& jointState = m_storage->registry.get<comps::JointState>(state.entity);
+    auto& jointActuation
+        = m_storage->registry.get<comps::JointActuation>(state.entity);
+    restoreReplayVector(state.position, jointState.position);
+    restoreReplayVector(state.velocity, jointState.velocity);
+    restoreReplayVector(state.acceleration, jointState.acceleration);
+    restoreReplayVector(state.torque, jointActuation.torque);
+    restoreReplayVector(state.commandVelocity, jointActuation.commandVelocity);
+    jointState.broken = state.broken;
   }
 
   for (const auto& state : replayFrame.links) {
@@ -6581,14 +6604,17 @@ void World::recordReplayFrame()
       = captureReplayComponents<comps::VariationalContactDualState>(
           m_storage->registry, replayAllocator);
 
-  auto jointView = m_storage->registry.view<comps::Joint>();
+  auto jointView = m_storage->registry.view<comps::JointModel>();
   replayFrame.joints.reserve(countReplayView(jointView));
   for (auto entity : jointView) {
-    const auto& joint = jointView.get<comps::Joint>(entity);
+    const auto& joint = jointView.get<comps::JointModel>(entity);
+    const auto& jointState = m_storage->registry.get<comps::JointState>(entity);
+    const auto& jointActuation
+        = m_storage->registry.get<comps::JointActuation>(entity);
     ReplayState::JointState state(replayAllocator);
     state.entity = entity;
     state.layout.type = joint.type;
-    state.layout.actuatorType = joint.actuatorType;
+    state.layout.actuatorType = jointActuation.actuatorType;
     state.layout.name.assign(joint.name.begin(), joint.name.end());
     captureReplayVector(joint.springStiffness, state.layout.springStiffness);
     captureReplayVector(
@@ -6619,12 +6645,12 @@ void World::recordReplayFrame()
         = joint.rigidBodyFixedJointLocalAnchorChild;
     state.layout.rigidBodyFixedJointTargetRelativeOrientation
         = joint.rigidBodyFixedJointTargetRelativeOrientation;
-    captureReplayVector(joint.position, state.position);
-    captureReplayVector(joint.velocity, state.velocity);
-    captureReplayVector(joint.acceleration, state.acceleration);
-    captureReplayVector(joint.torque, state.torque);
-    captureReplayVector(joint.commandVelocity, state.commandVelocity);
-    state.broken = joint.broken;
+    captureReplayVector(jointState.position, state.position);
+    captureReplayVector(jointState.velocity, state.velocity);
+    captureReplayVector(jointState.acceleration, state.acceleration);
+    captureReplayVector(jointActuation.torque, state.torque);
+    captureReplayVector(jointActuation.commandVelocity, state.commandVelocity);
+    state.broken = jointState.broken;
     replayFrame.joints.push_back(std::move(state));
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
@@ -7285,7 +7311,7 @@ void World::resetCountersFromRegistry()
   m_linkCounter = std::max(
       m_linkCounter, countEntities<comps::Link>(m_storage->registry));
   m_jointCounter = std::max(
-      m_jointCounter, countEntities<comps::Joint>(m_storage->registry));
+      m_jointCounter, countEntities<comps::JointModel>(m_storage->registry));
 }
 
 } // namespace dart::simulation

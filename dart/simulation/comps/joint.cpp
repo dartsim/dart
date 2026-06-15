@@ -36,6 +36,8 @@
 
 namespace dart::simulation::comps {
 
-DART_SIMULATION_REGISTER_COMPONENT(Joint)
+DART_SIMULATION_REGISTER_COMPONENT(JointModel)
+DART_SIMULATION_REGISTER_COMPONENT(JointState)
+DART_SIMULATION_REGISTER_COMPONENT(JointActuation)
 
 } // namespace dart::simulation::comps

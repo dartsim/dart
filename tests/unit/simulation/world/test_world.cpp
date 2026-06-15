@@ -3325,8 +3325,12 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   auto& liveJointRegistry = sx::detail::registryOf(liveJointStorageWorld);
   const entt::entity liveJointEntity
       = sx::detail::toRegistryEntity(liveJoint.getEntity());
-  auto& liveJointComponent
-      = liveJointRegistry.get<sx::comps::Joint>(liveJointEntity);
+  auto& liveJointModel
+      = liveJointRegistry.get<sx::comps::JointModel>(liveJointEntity);
+  auto& liveJointState
+      = liveJointRegistry.get<sx::comps::JointState>(liveJointEntity);
+  auto& liveJointActuation
+      = liveJointRegistry.get<sx::comps::JointActuation>(liveJointEntity);
   const Eigen::VectorXd livePosition = Eigen::VectorXd::LinSpaced(6, 0.1, 0.6);
   const Eigen::VectorXd liveVelocity = Eigen::VectorXd::LinSpaced(6, 0.7, 1.2);
   const Eigen::VectorXd liveAcceleration
@@ -3357,22 +3361,22 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   }
   {
     ScopedHeapAllocationCounter heapCounter;
-    liveJointComponent.position = livePosition;
-    liveJointComponent.velocity = liveVelocity;
-    liveJointComponent.acceleration = liveAcceleration;
-    liveJointComponent.torque = liveTorque;
-    liveJointComponent.springStiffness = liveUpper;
-    liveJointComponent.dampingCoefficient = liveUpper;
-    liveJointComponent.restPosition = livePosition;
-    liveJointComponent.armature = liveUpper;
-    liveJointComponent.coulombFriction = liveUpper;
-    liveJointComponent.commandVelocity = liveVelocity;
-    liveJointComponent.limits.lower = liveLower;
-    liveJointComponent.limits.upper = liveUpper;
-    liveJointComponent.limits.velocityLower = liveLower;
-    liveJointComponent.limits.velocityUpper = liveUpper;
-    liveJointComponent.limits.effortLower = liveLower;
-    liveJointComponent.limits.effortUpper = liveUpper;
+    liveJointState.position = livePosition;
+    liveJointState.velocity = liveVelocity;
+    liveJointState.acceleration = liveAcceleration;
+    liveJointActuation.torque = liveTorque;
+    liveJointModel.springStiffness = liveUpper;
+    liveJointModel.dampingCoefficient = liveUpper;
+    liveJointModel.restPosition = livePosition;
+    liveJointModel.armature = liveUpper;
+    liveJointModel.coulombFriction = liveUpper;
+    liveJointActuation.commandVelocity = liveVelocity;
+    liveJointModel.limits.lower = liveLower;
+    liveJointModel.limits.upper = liveUpper;
+    liveJointModel.limits.velocityLower = liveLower;
+    liveJointModel.limits.velocityUpper = liveUpper;
+    liveJointModel.limits.effortLower = liveLower;
+    liveJointModel.limits.effortUpper = liveUpper;
     heapCounter.stop();
     EXPECT_EQ(heapCounter.allocationCount(), 0u)
         << "live 6-DOF joint component payload storage should be bounded and "
@@ -12915,9 +12919,9 @@ TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
       || hasContactBetween(filteredContacts, "rigid_b", "rigid_c"));
 
   auto& registry = sx::detail::registryOf(world);
-  auto& jointComponent = registry.get<sx::comps::Joint>(
+  auto& jointState = registry.get<sx::comps::JointState>(
       sx::detail::toRegistryEntity(joint.getEntity()));
-  jointComponent.broken = true;
+  jointState.broken = true;
   EXPECT_TRUE(joint.isBroken());
   EXPECT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
 
@@ -22162,8 +22166,8 @@ TEST(World, ReplayRecordingRejectsJointRuntimeVectorSizeChanges)
   auto& registry = sx::detail::registryOf(world);
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(joint.getEntity());
-  auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
-  jointComponent.position = sx::comps::makeJointVector(1, 0.0);
+  auto& jointState = registry.get<sx::comps::JointState>(jointEntity);
+  jointState.position = sx::comps::makeJointVector(1, 0.0);
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
 }
@@ -22320,8 +22324,8 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   auto& registry = sx::detail::registryOf(world);
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(joint.getEntity());
-  auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
-  jointComponent.broken = false;
+  auto& jointState = registry.get<sx::comps::JointState>(jointEntity);
+  jointState.broken = false;
   const entt::entity linkEntity
       = sx::detail::toRegistryEntity(link.getEntity());
   auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
@@ -22337,7 +22341,7 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   joint.setVelocity(Eigen::VectorXd::Constant(6, -2.0));
   joint.setForce(Eigen::VectorXd::Constant(6, -3.0));
   joint.setCommandVelocity(Eigen::VectorXd::Constant(6, -4.0));
-  jointComponent.broken = true;
+  jointState.broken = true;
   linkComponent.externalForce.setZero();
 
   world.restoreReplayFrame(0);
@@ -22351,7 +22355,7 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
                   .externalForce.isApprox(initialExternalForce));
 
-  jointComponent.broken = true;
+  jointState.broken = true;
   world.clearReplayRecording();
   ASSERT_EQ(world.getReplayFrameCount(), 1u);
   joint.resetBreakage();

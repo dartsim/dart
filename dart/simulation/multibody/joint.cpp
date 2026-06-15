@@ -121,7 +121,7 @@ ActuatorType toPublicActuatorType(comps::ActuatorType type)
   return ActuatorType::Force;
 }
 
-comps::Joint& getJointComponent(World* world, Entity entityToken)
+comps::JointModel& getJointModel(World* world, Entity entityToken)
 {
   DART_SIMULATION_THROW_T_IF(
       world == nullptr, InvalidArgumentException, "Invalid joint handle");
@@ -129,17 +129,47 @@ comps::Joint& getJointComponent(World* world, Entity entityToken)
   const auto entity = detail::toRegistryEntity(entityToken);
   auto& registry = dart::simulation::detail::registryOf(*world);
   DART_SIMULATION_THROW_T_IF(
-      !registry.valid(entity) || !registry.all_of<comps::Joint>(entity),
+      !registry.valid(entity) || !registry.all_of<comps::JointModel>(entity),
       InvalidArgumentException,
       "Invalid joint handle");
 
-  return registry.get<comps::Joint>(entity);
+  return registry.get<comps::JointModel>(entity);
+}
+
+comps::JointState& getJointState(World* world, Entity entityToken)
+{
+  DART_SIMULATION_THROW_T_IF(
+      world == nullptr, InvalidArgumentException, "Invalid joint handle");
+
+  const auto entity = detail::toRegistryEntity(entityToken);
+  auto& registry = dart::simulation::detail::registryOf(*world);
+  DART_SIMULATION_THROW_T_IF(
+      !registry.valid(entity) || !registry.all_of<comps::JointModel>(entity),
+      InvalidArgumentException,
+      "Invalid joint handle");
+
+  return registry.get<comps::JointState>(entity);
+}
+
+comps::JointActuation& getJointActuation(World* world, Entity entityToken)
+{
+  DART_SIMULATION_THROW_T_IF(
+      world == nullptr, InvalidArgumentException, "Invalid joint handle");
+
+  const auto entity = detail::toRegistryEntity(entityToken);
+  auto& registry = dart::simulation::detail::registryOf(*world);
+  DART_SIMULATION_THROW_T_IF(
+      !registry.valid(entity) || !registry.all_of<comps::JointModel>(entity),
+      InvalidArgumentException,
+      "Invalid joint handle");
+
+  return registry.get<comps::JointActuation>(entity);
 }
 
 detail::deformable_vbd::AvbdRigidWorldPointJointConfig*
 tryGetAvbdRigidWorldPointJointConfig(World* world, Entity entityToken)
 {
-  (void)getJointComponent(world, entityToken);
+  (void)getJointModel(world, entityToken);
   auto& registry = dart::simulation::detail::registryOf(*world);
   const auto entity = detail::toRegistryEntity(entityToken);
   return registry
@@ -149,7 +179,7 @@ tryGetAvbdRigidWorldPointJointConfig(World* world, Entity entityToken)
 void validateAvbdRigidWorldPointJointFacade(
     const dart::simulation::detail::WorldRegistry& registry,
     entt::entity jointEntity,
-    const comps::Joint& joint)
+    const comps::JointModel& joint)
 {
   DART_SIMULATION_THROW_T_IF(
       !detail::deformable_vbd::isAvbdRigidWorldPointJointFacade(
@@ -163,7 +193,7 @@ void validateAvbdRigidWorldPointJointFacade(
 comps::AvbdJointStiffness& materializeAvbdStiffnessState(
     dart::simulation::detail::WorldRegistry& registry,
     entt::entity jointEntity,
-    comps::Joint& joint)
+    comps::JointModel& joint)
 {
   if (auto* stiffness
       = registry.try_get<comps::AvbdJointStiffness>(jointEntity)) {
@@ -305,98 +335,99 @@ Joint::Joint(Entity entity, World* world) : m_entity(entity), m_world(world) {}
 //==============================================================================
 std::string_view Joint::getName() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.name;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.name;
 }
 
 //==============================================================================
 JointType Joint::getType() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return toPublicJointType(jointComp.type);
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return toPublicJointType(jointModel.type);
 }
 
 //==============================================================================
 ActuatorType Joint::getActuatorType() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return toPublicActuatorType(jointComp.actuatorType);
+  const auto& jointActuation = getJointActuation(m_world, m_entity);
+  return toPublicActuatorType(jointActuation.actuatorType);
 }
 
 //==============================================================================
 void Joint::setActuatorType(ActuatorType actuatorType)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  jointComp.actuatorType = toComponentActuatorType(actuatorType);
+  auto& jointActuation = getJointActuation(m_world, m_entity);
+  jointActuation.actuatorType = toComponentActuatorType(actuatorType);
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getCommandVelocity() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.commandVelocity;
+  const auto& jointActuation = getJointActuation(m_world, m_entity);
+  return jointActuation.commandVelocity;
 }
 
 //==============================================================================
 void Joint::setCommandVelocity(const Eigen::VectorXd& velocity)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(velocity, jointComp.getDOF(), "command velocity");
-  jointComp.commandVelocity = velocity;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  auto& jointActuation = getJointActuation(m_world, m_entity);
+  validateJointStateVector(velocity, jointModel.getDOF(), "command velocity");
+  jointActuation.commandVelocity = velocity;
 }
 
 //==============================================================================
 Eigen::Vector3d Joint::getAxis() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
 
   // Validate joint type - Spherical and Floating joints don't have axes
   DART_SIMULATION_THROW_T_IF(
-      jointComp.type == comps::JointType::Spherical
-          || jointComp.type == comps::JointType::Floating,
+      jointModel.type == comps::JointType::Spherical
+          || jointModel.type == comps::JointType::Floating,
       InvalidArgumentException,
       "getAxis() is not valid for Spherical and Floating joints (no axis "
       "concept)");
 
-  return jointComp.axis;
+  return jointModel.axis;
 }
 
 //==============================================================================
 Eigen::Vector3d Joint::getAxis2() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
 
   // Validate joint type
   DART_SIMULATION_THROW_T_IF(
-      jointComp.type != comps::JointType::Universal
-          && jointComp.type != comps::JointType::Planar,
+      jointModel.type != comps::JointType::Universal
+          && jointModel.type != comps::JointType::Planar,
       InvalidArgumentException,
       "getAxis2() is only valid for Universal and Planar joints");
 
-  return jointComp.axis2;
+  return jointModel.axis2;
 }
 
 //==============================================================================
 double Joint::getPitch() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
 
   // Validate joint type
   DART_SIMULATION_THROW_T_IF(
-      jointComp.type != comps::JointType::Screw,
+      jointModel.type != comps::JointType::Screw,
       InvalidArgumentException,
       "getPitch() is only valid for Screw joints");
 
-  return jointComp.pitch;
+  return jointModel.pitch;
 }
 
 //==============================================================================
 void Joint::setPitch(double pitch)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
 
   DART_SIMULATION_THROW_T_IF(
-      jointComp.type != comps::JointType::Screw,
+      jointModel.type != comps::JointType::Screw,
       InvalidArgumentException,
       "setPitch() is only valid for Screw joints");
   DART_SIMULATION_THROW_T_IF(
@@ -404,235 +435,238 @@ void Joint::setPitch(double pitch)
       InvalidArgumentException,
       "Joint pitch must be finite");
 
-  jointComp.pitch = pitch;
+  jointModel.pitch = pitch;
 }
 
 //==============================================================================
 std::size_t Joint::getDOFCount() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.getDOF();
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.getDOF();
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getPosition() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.position;
+  const auto& jointState = getJointState(m_world, m_entity);
+  return jointState.position;
 }
 
 //==============================================================================
 void Joint::setPosition(const Eigen::VectorXd& position)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(position, jointComp.getDOF(), "position");
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  auto& jointState = getJointState(m_world, m_entity);
+  validateJointStateVector(position, jointModel.getDOF(), "position");
 
-  jointComp.position = position;
+  jointState.position = position;
   markSubtreeTransformCacheDirty(
       dart::simulation::detail::registryOf(*m_world),
-      jointComp.childLink,
+      jointModel.childLink,
       m_world->getMemoryManager().getFreeAllocator());
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getVelocity() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.velocity;
+  const auto& jointState = getJointState(m_world, m_entity);
+  return jointState.velocity;
 }
 
 //==============================================================================
 void Joint::setVelocity(const Eigen::VectorXd& velocity)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(velocity, jointComp.getDOF(), "velocity");
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  auto& jointState = getJointState(m_world, m_entity);
+  validateJointStateVector(velocity, jointModel.getDOF(), "velocity");
 
-  jointComp.velocity = velocity;
+  jointState.velocity = velocity;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getForce() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.torque;
+  const auto& jointActuation = getJointActuation(m_world, m_entity);
+  return jointActuation.torque;
 }
 
 //==============================================================================
 void Joint::setForce(const Eigen::VectorXd& force)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(force, jointComp.getDOF(), "force");
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  auto& jointActuation = getJointActuation(m_world, m_entity);
+  validateJointStateVector(force, jointModel.getDOF(), "force");
 
-  jointComp.torque = force;
+  jointActuation.torque = force;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getAcceleration() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.acceleration;
+  const auto& jointState = getJointState(m_world, m_entity);
+  return jointState.acceleration;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getSpringStiffness() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.springStiffness;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.springStiffness;
 }
 
 //==============================================================================
 void Joint::setSpringStiffness(const Eigen::VectorXd& stiffness)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(stiffness, jointComp.getDOF(), "spring stiffness");
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointStateVector(stiffness, jointModel.getDOF(), "spring stiffness");
   DART_SIMULATION_THROW_T_IF(
       (stiffness.array() < 0.0).any(),
       InvalidArgumentException,
       "Joint spring stiffness must be non-negative");
 
-  jointComp.springStiffness = stiffness;
+  jointModel.springStiffness = stiffness;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getRestPosition() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.restPosition;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.restPosition;
 }
 
 //==============================================================================
 void Joint::setRestPosition(const Eigen::VectorXd& restPosition)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(restPosition, jointComp.getDOF(), "rest position");
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointStateVector(restPosition, jointModel.getDOF(), "rest position");
 
-  jointComp.restPosition = restPosition;
+  jointModel.restPosition = restPosition;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getDampingCoefficient() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.dampingCoefficient;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.dampingCoefficient;
 }
 
 //==============================================================================
 void Joint::setDampingCoefficient(const Eigen::VectorXd& damping)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(damping, jointComp.getDOF(), "damping coefficient");
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointStateVector(damping, jointModel.getDOF(), "damping coefficient");
   DART_SIMULATION_THROW_T_IF(
       (damping.array() < 0.0).any(),
       InvalidArgumentException,
       "Joint damping coefficient must be non-negative");
 
-  jointComp.dampingCoefficient = damping;
+  jointModel.dampingCoefficient = damping;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getArmature() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.armature;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.armature;
 }
 
 //==============================================================================
 void Joint::setArmature(const Eigen::VectorXd& armature)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(armature, jointComp.getDOF(), "armature");
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointStateVector(armature, jointModel.getDOF(), "armature");
   DART_SIMULATION_THROW_T_IF(
       (armature.array() < 0.0).any(),
       InvalidArgumentException,
       "Joint armature must be non-negative");
 
-  jointComp.armature = armature;
+  jointModel.armature = armature;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getCoulombFriction() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
-  return jointComp.coulombFriction;
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  return jointModel.coulombFriction;
 }
 
 //==============================================================================
 void Joint::setCoulombFriction(const Eigen::VectorXd& friction)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointStateVector(friction, jointComp.getDOF(), "Coulomb friction");
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointStateVector(friction, jointModel.getDOF(), "Coulomb friction");
   DART_SIMULATION_THROW_T_IF(
       (friction.array() < 0.0).any(),
       InvalidArgumentException,
       "Joint Coulomb friction must be non-negative");
 
-  jointComp.coulombFriction = friction;
+  jointModel.coulombFriction = friction;
 }
 
 //==============================================================================
 void Joint::setPositionLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointLimitPair(lower, upper, jointComp.getDOF(), "position");
-  jointComp.limits.lower = lower;
-  jointComp.limits.upper = upper;
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointModel.getDOF(), "position");
+  jointModel.limits.lower = lower;
+  jointModel.limits.upper = upper;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getPositionLowerLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.lower;
+  return getJointModel(m_world, m_entity).limits.lower;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getPositionUpperLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.upper;
+  return getJointModel(m_world, m_entity).limits.upper;
 }
 
 //==============================================================================
 void Joint::setVelocityLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointLimitPair(lower, upper, jointComp.getDOF(), "velocity");
-  jointComp.limits.velocityLower = lower;
-  jointComp.limits.velocityUpper = upper;
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointModel.getDOF(), "velocity");
+  jointModel.limits.velocityLower = lower;
+  jointModel.limits.velocityUpper = upper;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getVelocityLowerLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.velocityLower;
+  return getJointModel(m_world, m_entity).limits.velocityLower;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getVelocityUpperLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.velocityUpper;
+  return getJointModel(m_world, m_entity).limits.velocityUpper;
 }
 
 //==============================================================================
 void Joint::setEffortLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
-  validateJointLimitPair(lower, upper, jointComp.getDOF(), "effort");
-  jointComp.limits.effortLower = lower;
-  jointComp.limits.effortUpper = upper;
+  auto& jointModel = getJointModel(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointModel.getDOF(), "effort");
+  jointModel.limits.effortLower = lower;
+  jointModel.limits.effortUpper = upper;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getEffortLowerLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.effortLower;
+  return getJointModel(m_world, m_entity).limits.effortLower;
 }
 
 //==============================================================================
 Eigen::VectorXd Joint::getEffortUpperLimits() const
 {
-  return getJointComponent(m_world, m_entity).limits.effortUpper;
+  return getJointModel(m_world, m_entity).limits.effortUpper;
 }
 
 //==============================================================================
@@ -644,43 +678,43 @@ void Joint::setBreakForce(double breakForce)
       "Joint '{}' break force must be finite and non-negative",
       getName());
 
-  getJointComponent(m_world, m_entity).breakForce = breakForce;
+  getJointModel(m_world, m_entity).breakForce = breakForce;
 }
 
 //==============================================================================
 double Joint::getBreakForce() const
 {
-  return getJointComponent(m_world, m_entity).breakForce;
+  return getJointModel(m_world, m_entity).breakForce;
 }
 
 //==============================================================================
 bool Joint::isBroken() const
 {
-  return getJointComponent(m_world, m_entity).broken;
+  return getJointState(m_world, m_entity).broken;
 }
 
 //==============================================================================
 void Joint::resetBreakage()
 {
-  getJointComponent(m_world, m_entity).broken = false;
+  getJointState(m_world, m_entity).broken = false;
 }
 
 //==============================================================================
 void Joint::setAvbdStartStiffness(double stiffness)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
-  validateFiniteNonnegative(stiffness, "AVBD start stiffness", jointComp.name);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
+  validateFiniteNonnegative(stiffness, "AVBD start stiffness", jointModel.name);
   auto& jointStiffness
-      = materializeAvbdStiffnessState(registry, entity, jointComp);
+      = materializeAvbdStiffnessState(registry, entity, jointModel);
 
   DART_SIMULATION_THROW_T_IF(
       stiffness > jointStiffness.maxStiffness,
       InvalidArgumentException,
       "Joint '{}' AVBD start stiffness must not exceed max stiffness",
-      jointComp.name);
+      jointModel.name);
   jointStiffness.startStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
     config->startStiffness = stiffness;
@@ -690,10 +724,10 @@ void Joint::setAvbdStartStiffness(double stiffness)
 //==============================================================================
 double Joint::getAvbdStartStiffness() const
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
   if (const auto* stiffness
       = registry.try_get<comps::AvbdJointStiffness>(entity)) {
     return stiffness->startStiffness;
@@ -710,7 +744,7 @@ double Joint::getAvbdStartStiffness() const
   double maxStiffness = 0.0;
   DART_SIMULATION_THROW_T_IF(
       !detail::deformable_vbd::computeAvbdRigidWorldPointJointDefaultStiffness(
-          registry, jointComp, startStiffness, maxStiffness),
+          registry, jointModel, startStiffness, maxStiffness),
       InvalidArgumentException,
       "Joint is not an AVBD point-joint facade");
   return startStiffness;
@@ -719,13 +753,14 @@ double Joint::getAvbdStartStiffness() const
 //==============================================================================
 void Joint::setAvbdLinearStiffness(double stiffness)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
-  validateMaterialStiffness(stiffness, "AVBD linear stiffness", jointComp.name);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
+  validateMaterialStiffness(
+      stiffness, "AVBD linear stiffness", jointModel.name);
   auto& jointStiffness
-      = materializeAvbdStiffnessState(registry, entity, jointComp);
+      = materializeAvbdStiffnessState(registry, entity, jointModel);
 
   jointStiffness.linearStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
@@ -736,10 +771,10 @@ void Joint::setAvbdLinearStiffness(double stiffness)
 //==============================================================================
 double Joint::getAvbdLinearStiffness() const
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
   if (const auto* stiffness
       = registry.try_get<comps::AvbdJointStiffness>(entity)) {
     return stiffness->linearStiffness;
@@ -757,14 +792,14 @@ double Joint::getAvbdLinearStiffness() const
 //==============================================================================
 void Joint::setAvbdAngularStiffness(double stiffness)
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
   validateMaterialStiffness(
-      stiffness, "AVBD angular stiffness", jointComp.name);
+      stiffness, "AVBD angular stiffness", jointModel.name);
   auto& jointStiffness
-      = materializeAvbdStiffnessState(registry, entity, jointComp);
+      = materializeAvbdStiffnessState(registry, entity, jointModel);
 
   jointStiffness.angularStiffness = stiffness;
   if (auto* config = tryGetAvbdRigidWorldPointJointConfig(m_world, m_entity)) {
@@ -775,10 +810,10 @@ void Joint::setAvbdAngularStiffness(double stiffness)
 //==============================================================================
 double Joint::getAvbdAngularStiffness() const
 {
-  auto& jointComp = getJointComponent(m_world, m_entity);
+  auto& jointModel = getJointModel(m_world, m_entity);
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
-  validateAvbdRigidWorldPointJointFacade(registry, entity, jointComp);
+  validateAvbdRigidWorldPointJointFacade(registry, entity, jointModel);
   if (const auto* stiffness
       = registry.try_get<comps::AvbdJointStiffness>(entity)) {
     return stiffness->angularStiffness;
@@ -796,57 +831,57 @@ double Joint::getAvbdAngularStiffness() const
 //==============================================================================
 Link Joint::getParentLink() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
   DART_SIMULATION_THROW_T_IF(
-      jointComp.parentLink == entt::null
+      jointModel.parentLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::Link>(jointComp.parentLink),
+                  .all_of<comps::Link>(jointModel.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a multibody Link",
-      jointComp.name);
-  return Link(detail::fromRegistryEntity(jointComp.parentLink), m_world);
+      jointModel.name);
+  return Link(detail::fromRegistryEntity(jointModel.parentLink), m_world);
 }
 
 //==============================================================================
 Link Joint::getChildLink() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
   DART_SIMULATION_THROW_T_IF(
-      jointComp.childLink == entt::null
+      jointModel.childLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::Link>(jointComp.childLink),
+                  .all_of<comps::Link>(jointModel.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a multibody Link",
-      jointComp.name);
-  return Link(detail::fromRegistryEntity(jointComp.childLink), m_world);
+      jointModel.name);
+  return Link(detail::fromRegistryEntity(jointModel.childLink), m_world);
 }
 
 //==============================================================================
 RigidBody Joint::getParentRigidBody() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
   DART_SIMULATION_THROW_T_IF(
-      jointComp.parentLink == entt::null
+      jointModel.parentLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::RigidBodyTag>(jointComp.parentLink),
+                  .all_of<comps::RigidBodyTag>(jointModel.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a rigid body",
-      jointComp.name);
-  return RigidBody(detail::fromRegistryEntity(jointComp.parentLink), m_world);
+      jointModel.name);
+  return RigidBody(detail::fromRegistryEntity(jointModel.parentLink), m_world);
 }
 
 //==============================================================================
 RigidBody Joint::getChildRigidBody() const
 {
-  const auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto& jointModel = getJointModel(m_world, m_entity);
   DART_SIMULATION_THROW_T_IF(
-      jointComp.childLink == entt::null
+      jointModel.childLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::RigidBodyTag>(jointComp.childLink),
+                  .all_of<comps::RigidBodyTag>(jointModel.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a rigid body",
-      jointComp.name);
-  return RigidBody(detail::fromRegistryEntity(jointComp.childLink), m_world);
+      jointModel.name);
+  return RigidBody(detail::fromRegistryEntity(jointModel.childLink), m_world);
 }
 
 //==============================================================================
@@ -861,8 +896,8 @@ bool Joint::isValid() const
   const auto entity = detail::toRegistryEntity(m_entity);
   return m_world != nullptr
          && dart::simulation::detail::registryOf(*m_world).valid(entity)
-         && dart::simulation::detail::registryOf(*m_world).all_of<comps::Joint>(
-             entity);
+         && dart::simulation::detail::registryOf(*m_world)
+                .all_of<comps::JointModel>(entity);
 }
 
 } // namespace dart::simulation

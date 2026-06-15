@@ -4732,7 +4732,9 @@ TEST(AvbdRigidBlock, RigidWorldPairConstraintRowsSkipStaticStaticPairs)
   auto& registry = dart::simulation::detail::registryOf(world);
 
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = entityA;
   joint.childLink = entityB;
@@ -4991,7 +4993,9 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureMarksJointBroken)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
 
   std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
@@ -5034,7 +5038,7 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureMarksJointBroken)
   ASSERT_EQ(result.solve.fracturedJointIndices.size(), 1u);
   EXPECT_EQ(result.solve.fracturedJointIndices[0], 0u);
   EXPECT_EQ(result.fracturedJoints, 1u);
-  EXPECT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  EXPECT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
 }
 
 //==============================================================================
@@ -5055,7 +5059,9 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureUsesSolveScratchAllocator)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
 
   vbd::AvbdRigidWorldPointJointInput input;
@@ -5484,7 +5490,9 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   EXPECT_TRUE(baseEndpoint.canProjectAsRigidBody);
 
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.breakForce = 1.0e12;
   joint.parentLink
@@ -5573,7 +5581,9 @@ TEST(AvbdRigidBlock, RigidWorldPairConstraintConfigPresenceGuardsExtraction)
   EXPECT_FALSE(vbd::hasAvbdRigidWorldPairConstraintConfigs(registry));
 
   const entt::entity jointEntity = registry.create();
-  registry.emplace<sx::comps::Joint>(jointEntity);
+  registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   registry.emplace<vbd::AvbdRigidWorldPointJointConfig>(jointEntity);
 
   EXPECT_TRUE(vbd::hasAvbdRigidWorldPointJointConfigs(registry));
@@ -5686,7 +5696,9 @@ TEST(AvbdRigidBlock, RigidWorldSkipsBrokenPointJointInputs)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.breakForce = 42.0;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
@@ -5705,7 +5717,7 @@ TEST(AvbdRigidBlock, RigidWorldSkipsBrokenPointJointInputs)
   EXPECT_EQ(joints[0].joint, jointEntity);
   EXPECT_DOUBLE_EQ(joints[0].fractureThreshold, 42.0);
 
-  joint.broken = true;
+  registry.get<sx::comps::JointState>(jointEntity).broken = true;
   joints = vbd::extractAvbdRigidWorldPointJointInputs(registry);
   EXPECT_TRUE(joints.empty());
 }
@@ -5811,7 +5823,9 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperDerivesCurrentPoseConfig)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());

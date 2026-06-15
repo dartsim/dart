@@ -216,8 +216,8 @@ std::size_t Multibody::getDOFCount() const
   const auto& registry = dart::simulation::detail::registryOf(*m_world);
 
   for (const auto& jointEntity : structure.joints) {
-    const auto& joint = safeGet<comps::Joint>(registry, jointEntity);
-    dof += joint.getDOF();
+    const auto& jointModel = safeGet<comps::JointModel>(registry, jointEntity);
+    dof += jointModel.getDOF();
   }
 
   return dof;
@@ -510,9 +510,11 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   registry.emplace<comps::Name>(jointEntity, actualJointName);
 
   // Add Joint with type-specific configuration
-  auto& jointComp = registry.emplace<comps::Joint>(jointEntity);
-  jointComp.type = toComponentJointType(options.jointType);
-  jointComp.name = std::move(actualJointName);
+  auto& jointModel = registry.emplace<comps::JointModel>(jointEntity);
+  auto& jointState = registry.emplace<comps::JointState>(jointEntity);
+  auto& jointActuation = registry.emplace<comps::JointActuation>(jointEntity);
+  jointModel.type = toComponentJointType(options.jointType);
+  jointModel.name = std::move(actualJointName);
 
   DART_SIMULATION_THROW_T_IF(
       !options.axis.allFinite(),
@@ -523,7 +525,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
       axisNorm <= 1e-9,
       InvalidArgumentException,
       "Joint axis must be non-zero");
-  jointComp.axis = options.axis / axisNorm;
+  jointModel.axis = options.axis / axisNorm;
 
   DART_SIMULATION_THROW_T_IF(
       !options.axis2.allFinite(),
@@ -534,45 +536,45 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
       axis2Norm <= 1e-9,
       InvalidArgumentException,
       "Joint axis2 must be non-zero");
-  jointComp.axis2 = options.axis2 / axis2Norm;
+  jointModel.axis2 = options.axis2 / axis2Norm;
 
   // Planar and universal joints build a second in-plane/rotation direction from
   // axis2. If axis is parallel to axis2 the derived basis collapses (its cross
   // product is zero), producing degenerate transforms during sync/step, so
   // reject it at construction time.
-  if (jointComp.type == comps::JointType::Planar
-      || jointComp.type == comps::JointType::Universal) {
+  if (jointModel.type == comps::JointType::Planar
+      || jointModel.type == comps::JointType::Universal) {
     DART_SIMULATION_THROW_T_IF(
-        jointComp.axis.cross(jointComp.axis2).norm() <= 1e-6,
+        jointModel.axis.cross(jointModel.axis2).norm() <= 1e-6,
         InvalidArgumentException,
         "Joint axis must not be parallel to axis2 for planar and universal "
         "joints");
   }
 
-  jointComp.parentLink = parentEntity;
-  jointComp.childLink = linkEntity;
+  jointModel.parentLink = parentEntity;
+  jointModel.childLink = linkEntity;
 
   // Initialize state based on joint type
-  const auto dof = static_cast<Eigen::Index>(jointComp.getDOF());
-  jointComp.position = comps::makeJointVector(dof, 0.0);
-  jointComp.velocity = comps::makeJointVector(dof, 0.0);
-  jointComp.acceleration = comps::makeJointVector(dof, 0.0);
-  jointComp.torque = comps::makeJointVector(dof, 0.0);
-  jointComp.springStiffness = comps::makeJointVector(dof, 0.0);
-  jointComp.dampingCoefficient = comps::makeJointVector(dof, 0.0);
-  jointComp.restPosition = comps::makeJointVector(dof, 0.0);
-  jointComp.armature = comps::makeJointVector(dof, 0.0);
-  jointComp.coulombFriction = comps::makeJointVector(dof, 0.0);
-  jointComp.commandVelocity = comps::makeJointVector(dof, 0.0);
+  const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
+  jointState.position = comps::makeJointVector(dof, 0.0);
+  jointState.velocity = comps::makeJointVector(dof, 0.0);
+  jointState.acceleration = comps::makeJointVector(dof, 0.0);
+  jointActuation.torque = comps::makeJointVector(dof, 0.0);
+  jointModel.springStiffness = comps::makeJointVector(dof, 0.0);
+  jointModel.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  jointModel.restPosition = comps::makeJointVector(dof, 0.0);
+  jointModel.armature = comps::makeJointVector(dof, 0.0);
+  jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   // Position, velocity, and effort limits default to unbounded.
   const double infinity = std::numeric_limits<double>::infinity();
-  jointComp.limits.lower = comps::makeJointVector(dof, -infinity);
-  jointComp.limits.upper = comps::makeJointVector(dof, infinity);
-  jointComp.limits.velocityLower = comps::makeJointVector(dof, -infinity);
-  jointComp.limits.velocityUpper = comps::makeJointVector(dof, infinity);
-  jointComp.limits.effortLower = comps::makeJointVector(dof, -infinity);
-  jointComp.limits.effortUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.upper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  jointModel.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  jointModel.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   // Link the parent link to this joint
   auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);

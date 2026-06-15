@@ -9724,12 +9724,14 @@ void collectRigidIpcArticulationConstraints(
   constraints.clear();
 
   auto view
-      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+      = registry
+            .view<comps::JointModel, dvbd::AvbdRigidWorldPointJointConfig>();
   for (const auto jointEntity : view) {
-    const auto& joint = view.get<comps::Joint>(jointEntity);
+    const auto& joint = view.get<comps::JointModel>(jointEntity);
+    const auto& jointState = registry.get<comps::JointState>(jointEntity);
     const auto& config
         = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
-    if (!config.enabled || joint.broken || joint.breakForce > 0.0
+    if (!config.enabled || jointState.broken || joint.breakForce > 0.0
         || joint.parentLink == entt::null || joint.childLink == entt::null
         || (joint.type != comps::JointType::Fixed
             && joint.type != comps::JointType::Revolute)
@@ -10606,7 +10608,9 @@ void RigidBodyContactStage::prepare(World& world)
   const std::size_t jointCapacity
       = mayHavePointJointConfigs
             ? registry
-                  .view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
+                  .view<
+                      comps::JointModel,
+                      dvbd::AvbdRigidWorldPointJointConfig>()
                   .size_hint()
             : 0u;
   const auto* distanceSpringStorage

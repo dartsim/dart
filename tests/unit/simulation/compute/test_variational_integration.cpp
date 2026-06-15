@@ -1522,7 +1522,9 @@ TEST(VariationalIntegration, AvbdFixedPointJointConfigSolvesLinkEndpoint)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(tip.getEntity());
   joint.childLink = entt::null;
@@ -1586,7 +1588,9 @@ TEST(VariationalIntegration, AvbdBreakablePointJointConfigMarksLinkEndpoint)
   target.translation() = spec.transformFromParent.translation();
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
   joint.childLink = entt::null;
@@ -1606,7 +1610,7 @@ TEST(VariationalIntegration, AvbdBreakablePointJointConfigMarksLinkEndpoint)
   link.applyForce(100.0 * Eigen::Vector3d::UnitZ());
   world.step();
 
-  EXPECT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  EXPECT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
 
   double maxPositionResidual = 0.0;
   for (int k = 0; k < 100; ++k) {
@@ -1649,7 +1653,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_resettable_private_fixed");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_resettable_private_fixed";
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(link.getEntity());
@@ -1670,7 +1676,7 @@ TEST(
   link.applyForce(100.0 * Eigen::Vector3d::UnitZ());
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
+  auto& liveJoint = registry.get<sx::comps::JointState>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
 
   double maxBrokenPositionResidual = 0.0;
@@ -1698,23 +1704,25 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_resettable_private_fixed") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Fixed);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Fixed);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredLink->getEntity()));
-  EXPECT_TRUE(restoredJoint.childLink == entt::null);
+  EXPECT_TRUE(restoredJointModel.childLink == entt::null);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -1726,13 +1734,13 @@ TEST(
   EXPECT_TRUE(std::isinf(restoredConfig.startStiffness));
   EXPECT_TRUE(std::isinf(restoredConfig.maxStiffness));
 
-  restoredJoint.breakForce = std::numeric_limits<double>::infinity();
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = std::numeric_limits<double>::infinity();
+  restoredJointState.broken = false;
 
   restored.step();
 
   const Eigen::Isometry3d resetTransform = restoredLink->getWorldTransform();
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT((resetTransform.translation() - target.translation()).norm(), 1e-6);
   EXPECT_LT((resetTransform.linear() - target.linear()).norm(), 1e-6);
 }
@@ -1771,7 +1779,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_resettable_private_parent_fixed");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_resettable_private_parent_fixed";
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
@@ -1803,7 +1813,7 @@ TEST(
   applyOffCenterForce();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
+  auto& liveJoint = registry.get<sx::comps::JointState>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(rotationError(), 1e-6);
@@ -1835,23 +1845,25 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_resettable_private_parent_fixed") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Fixed);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Fixed);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_TRUE(restoredJoint.childLink == entt::null);
+  EXPECT_TRUE(restoredJointModel.childLink == entt::null);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -1877,8 +1889,8 @@ TEST(
   };
 
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = std::numeric_limits<double>::infinity();
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = std::numeric_limits<double>::infinity();
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -1889,7 +1901,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_LT(restoredRotationError(), 1e-6);
 }
@@ -1928,7 +1940,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_resettable_private_child_fixed");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_resettable_private_child_fixed";
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = entt::null;
@@ -1959,7 +1973,7 @@ TEST(
   applyOffCenterForce();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
+  auto& liveJoint = registry.get<sx::comps::JointState>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(rotationError(), 1e-6);
@@ -1990,22 +2004,24 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_resettable_private_child_fixed") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Fixed);
-  EXPECT_TRUE(restoredJoint.parentLink == entt::null);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Fixed);
+  EXPECT_TRUE(restoredJointModel.parentLink == entt::null);
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
@@ -2032,8 +2048,8 @@ TEST(
   };
 
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = std::numeric_limits<double>::infinity();
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = std::numeric_limits<double>::infinity();
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -2044,7 +2060,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_LT(restoredRotationError(), 1e-6);
 }
@@ -2082,7 +2098,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_breakable_socket");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  auto& jointState = registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_breakable_socket";
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
@@ -2111,7 +2129,7 @@ TEST(
   applyOffCenterForce();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(jointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   const Eigen::Isometry3d savedBrokenTransform = body.getWorldTransform();
   std::stringstream data;
@@ -2129,23 +2147,25 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_breakable_socket") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Spherical);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Spherical);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_TRUE(restoredJoint.childLink == entt::null);
+  EXPECT_TRUE(restoredJointModel.childLink == entt::null);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -2191,8 +2211,8 @@ TEST(
   ASSERT_GT(maxBrokenRotationChange, 1e-4);
 
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = std::numeric_limits<double>::infinity();
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = std::numeric_limits<double>::infinity();
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -2203,7 +2223,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, 0u);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_GT(restoredRotationChange(), 1e-4);
 }
@@ -2243,7 +2263,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_child_breakable_socket");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  auto& jointState = registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_child_breakable_socket";
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = entt::null;
@@ -2272,7 +2294,7 @@ TEST(
   applyOffCenterForce();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(jointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   const Eigen::Isometry3d savedBrokenTransform = body.getWorldTransform();
   std::stringstream data;
@@ -2290,22 +2312,24 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_child_breakable_socket") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Spherical);
-  EXPECT_TRUE(restoredJoint.parentLink == entt::null);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Spherical);
+  EXPECT_TRUE(restoredJointModel.parentLink == entt::null);
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
@@ -2352,8 +2376,8 @@ TEST(
   ASSERT_GT(maxBrokenRotationChange, 1e-4);
 
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = std::numeric_limits<double>::infinity();
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = std::numeric_limits<double>::infinity();
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -2364,7 +2388,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, 0u);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_GT(restoredRotationChange(), 1e-4);
 }
@@ -2398,7 +2422,9 @@ TEST(VariationalIntegration, AvbdCompliantPointJointConfigPullsLinkEndpoint)
     if (compliant) {
       auto& registry = dart::simulation::detail::registryOf(world);
       const entt::entity jointEntity = registry.create();
-      auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+      auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+      registry.emplace<sx::comps::JointState>(jointEntity);
+      registry.emplace<sx::comps::JointActuation>(jointEntity);
       joint.type = sx::comps::JointType::Fixed;
       joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
       joint.childLink = entt::null;
@@ -2461,7 +2487,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
@@ -2529,7 +2557,9 @@ TEST(
 
     auto& registry = dart::simulation::detail::registryOf(world);
     const entt::entity jointEntity = registry.create();
-    auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+    auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+    registry.emplace<sx::comps::JointState>(jointEntity);
+    registry.emplace<sx::comps::JointActuation>(jointEntity);
     joint.type = sx::comps::JointType::Fixed;
     joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
     joint.childLink = entt::null;
@@ -3387,7 +3417,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
@@ -3445,7 +3477,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
@@ -3518,7 +3552,9 @@ TEST(
 
     auto& registry = dart::simulation::detail::registryOf(world);
     const entt::entity jointEntity = registry.create();
-    auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+    auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+    registry.emplace<sx::comps::JointState>(jointEntity);
+    registry.emplace<sx::comps::JointActuation>(jointEntity);
     joint.type = sx::comps::JointType::Spherical;
     if (linkIsParentEndpoint) {
       joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
@@ -3606,15 +3642,18 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -3673,16 +3712,19 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9287,7 +9329,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
@@ -9350,13 +9394,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9413,13 +9460,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -9476,13 +9526,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -9537,13 +9590,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -9597,13 +9653,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -9659,13 +9718,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9704,7 +9766,7 @@ TEST(
     yawAfterForward = stepAndYaw();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -9738,13 +9800,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9780,7 +9845,7 @@ TEST(
     yawAfterForward = stepAndYaw();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -9814,13 +9879,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9855,7 +9923,7 @@ TEST(
     yawAfterForward = stepAndYaw();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -9889,13 +9957,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -9931,7 +10002,7 @@ TEST(
     yawAfterForward = stepAndYaw();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -9964,13 +10035,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -10028,13 +10102,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -10074,7 +10151,7 @@ TEST(
     positionAfterForward = stepAndSliderPosition();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -10109,13 +10186,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -10156,7 +10236,7 @@ TEST(
     positionAfterForward = stepAndSliderPosition();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -10191,13 +10271,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -10237,7 +10320,7 @@ TEST(
     positionAfterForward = stepAndSliderPosition();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -10272,13 +10355,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
 
@@ -10319,7 +10405,7 @@ TEST(
     positionAfterForward = stepAndSliderPosition();
   }
 
-  registry.get<sx::comps::Joint>(jointEntity).commandVelocity
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
       = Eigen::VectorXd::Constant(1, -targetSpeed);
 
   constexpr int reverseSteps = 10;
@@ -10353,12 +10439,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -10415,12 +10504,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -10478,12 +10570,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -10540,12 +10635,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -10603,7 +10701,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
@@ -10664,7 +10764,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
@@ -10686,7 +10788,7 @@ TEST(
   body.applyForce(4.0 * Eigen::Vector3d::UnitY());
   world.step();
 
-  EXPECT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  EXPECT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
 
   double maxPositionResidual = 0.0;
   for (int k = 0; k < 20; ++k) {
@@ -10717,13 +10819,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -10742,21 +10847,22 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   auto yaw = [&]() {
     const Eigen::Matrix3d rotation = body.getWorldTransform().linear();
     return std::atan2(rotation(1, 0), rotation(0, 0));
   };
   EXPECT_NEAR(yaw(), targetSpeed * dt, 1e-6);
 
-  liveJoint.broken = false;
-  liveJoint.breakForce = 1e6;
+  liveJointState.broken = false;
+  liveJointModel.breakForce = 1e6;
 
   world.step();
 
   const Eigen::Isometry3d transform = body.getWorldTransform();
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(transform.translation().norm(), 1e-6);
   EXPECT_LT(
       (transform.linear() * Eigen::Vector3d::UnitZ() - Eigen::Vector3d::UnitZ())
@@ -10783,13 +10889,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -10808,21 +10917,22 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   auto yaw = [&]() {
     return signedRotationAroundAxis(
         body.getWorldTransform().linear(), hingeAxis);
   };
   EXPECT_NEAR(yaw(), -targetSpeed * dt, 1e-6);
 
-  liveJoint.broken = false;
-  liveJoint.breakForce = 1e6;
+  liveJointState.broken = false;
+  liveJointModel.breakForce = 1e6;
 
   world.step();
 
   const Eigen::Isometry3d transform = body.getWorldTransform();
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(transform.translation().norm(), 1e-6);
   EXPECT_LT((transform.linear() * hingeAxis - hingeAxis).norm(), 1e-6);
   EXPECT_NEAR(yaw(), -targetSpeed * dt * 2.0, 1e-6);
@@ -10845,12 +10955,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -10871,7 +10984,7 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  EXPECT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  EXPECT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
 
   double maxOrthogonalDrift = 0.0;
   for (int k = 0; k < 20; ++k) {
@@ -10903,12 +11016,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -10929,8 +11045,11 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  EXPECT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  auto& liveJointActuation
+      = registry.get<sx::comps::JointActuation>(jointEntity);
+  EXPECT_TRUE(liveJointState.broken);
 
   double maxBrokenOrthogonalDrift = 0.0;
   for (int k = 0; k < 20; ++k) {
@@ -10945,8 +11064,8 @@ TEST(
 
   const double sliderPositionBeforeReset
       = body.getWorldTransform().translation().dot(sliderAxis);
-  liveJoint.broken = false;
-  liveJoint.breakForce = 1e6;
+  liveJointState.broken = false;
+  liveJointModel.breakForce = 1e6;
 
   double maxResetOrthogonalDrift = 0.0;
   double maxResetRotationError = 0.0;
@@ -10965,12 +11084,12 @@ TEST(
 
   const double sliderPositionAfterReset
       = body.getWorldTransform().translation().dot(sliderAxis);
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(maxResetOrthogonalDrift, 1e-6);
   EXPECT_LT(maxResetRotationError, 1e-6);
   EXPECT_NEAR(
       sliderPositionAfterReset - sliderPositionBeforeReset,
-      liveJoint.commandVelocity[0] * dt * resetSteps,
+      liveJointActuation.commandVelocity[0] * dt * resetSteps,
       1e-6);
 }
 
@@ -10991,12 +11110,15 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11017,8 +11139,11 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  EXPECT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  auto& liveJointActuation
+      = registry.get<sx::comps::JointActuation>(jointEntity);
+  EXPECT_TRUE(liveJointState.broken);
 
   double maxBrokenOrthogonalDrift = 0.0;
   for (int k = 0; k < 20; ++k) {
@@ -11033,8 +11158,8 @@ TEST(
 
   const double sliderPositionBeforeReset
       = body.getWorldTransform().translation().dot(sliderAxis);
-  liveJoint.broken = false;
-  liveJoint.breakForce = 1e6;
+  liveJointState.broken = false;
+  liveJointModel.breakForce = 1e6;
 
   double maxResetOrthogonalDrift = 0.0;
   double maxResetRotationError = 0.0;
@@ -11053,12 +11178,12 @@ TEST(
 
   const double sliderPositionAfterReset
       = body.getWorldTransform().translation().dot(sliderAxis);
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(maxResetOrthogonalDrift, 1e-6);
   EXPECT_LT(maxResetRotationError, 1e-6);
   EXPECT_NEAR(
       sliderPositionAfterReset - sliderPositionBeforeReset,
-      -liveJoint.commandVelocity[0] * dt * resetSteps,
+      -liveJointActuation.commandVelocity[0] * dt * resetSteps,
       1e-6);
 }
 
@@ -11083,14 +11208,17 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_breakable_hinge");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_breakable_hinge";
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11109,7 +11237,7 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(
       signedRotationAroundAxis(body.getWorldTransform().linear(), hingeAxis),
       targetSpeed * dt,
@@ -11127,30 +11255,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_breakable_hinge") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Revolute);
-  EXPECT_TRUE(restoredJoint.parentLink == entt::null);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Revolute);
+  EXPECT_TRUE(restoredJointModel.parentLink == entt::null);
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -11178,9 +11311,10 @@ TEST(
   const double hingeBeforeReset = signedRotationAroundAxis(
       restoredBody->getWorldTransform().linear(), hingeAxis);
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
@@ -11190,7 +11324,7 @@ TEST(
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const Eigen::Isometry3d resetTransform = restoredBody->getWorldTransform();
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(resetTransform.translation().norm(), 2e-3);
   EXPECT_LT((resetTransform.linear() * hingeAxis - hingeAxis).norm(), 2e-3);
   EXPECT_NEAR(
@@ -11221,14 +11355,17 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_parent_breakable_hinge");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_parent_breakable_hinge";
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11248,7 +11385,7 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(
       signedRotationAroundAxis(body.getWorldTransform().linear(), hingeAxis),
       -targetSpeed * dt,
@@ -11266,30 +11403,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_parent_breakable_hinge") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Revolute);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Revolute);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_TRUE(restoredJoint.childLink == entt::null);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
+  EXPECT_TRUE(restoredJointModel.childLink == entt::null);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -11317,9 +11459,10 @@ TEST(
   const double hingeBeforeReset = signedRotationAroundAxis(
       restoredBody->getWorldTransform().linear(), hingeAxis);
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
@@ -11329,7 +11472,7 @@ TEST(
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const Eigen::Isometry3d resetTransform = restoredBody->getWorldTransform();
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(resetTransform.translation().norm(), 2e-3);
   EXPECT_LT((resetTransform.linear() * hingeAxis - hingeAxis).norm(), 2e-3);
   EXPECT_NEAR(
@@ -11358,14 +11501,17 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_breakable_slider");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_breakable_slider";
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = entt::null;
   joint.childLink = sx::detail::toRegistryEntity(body.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11391,7 +11537,7 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(
       body.getWorldTransform().translation().dot(sliderAxis),
       targetSpeed * dt,
@@ -11409,30 +11555,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_breakable_slider") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Prismatic);
-  EXPECT_TRUE(restoredJoint.parentLink == entt::null);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Prismatic);
+  EXPECT_TRUE(restoredJointModel.parentLink == entt::null);
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -11466,9 +11617,10 @@ TEST(
 
   const double sliderBeforeReset = sliderPosition();
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   double maxResetOrthogonalDrift = 0.0;
@@ -11486,7 +11638,7 @@ TEST(
 
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(maxResetOrthogonalDrift, 2e-3);
   EXPECT_LT(maxResetRotationError, 1e-6);
   EXPECT_NEAR(
@@ -11515,14 +11667,17 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_private_parent_breakable_slider");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_private_parent_breakable_slider";
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(body.getEntity());
   joint.childLink = entt::null;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11548,7 +11703,7 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  ASSERT_TRUE(joint.broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(
       body.getWorldTransform().translation().dot(sliderAxis),
       -targetSpeed * dt,
@@ -11566,30 +11721,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_private_parent_breakable_slider") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Prismatic);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Prismatic);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredBody->getEntity()));
-  EXPECT_TRUE(restoredJoint.childLink == entt::null);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
+  EXPECT_TRUE(restoredJointModel.childLink == entt::null);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -11623,9 +11783,10 @@ TEST(
 
   const double sliderBeforeReset = sliderPosition();
   restoredBody->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   double maxResetOrthogonalDrift = 0.0;
@@ -11643,7 +11804,7 @@ TEST(
 
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(maxResetOrthogonalDrift, 2e-3);
   EXPECT_LT(maxResetRotationError, 1e-6);
   EXPECT_NEAR(
@@ -11672,7 +11833,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
@@ -11716,8 +11879,9 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
 
@@ -11736,8 +11900,8 @@ TEST(
 
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   world.step();
 
@@ -11747,7 +11911,7 @@ TEST(
       = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
 }
@@ -11773,13 +11937,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11821,8 +11988,9 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   const double firstStepHingePosition = relativeHingePosition();
   EXPECT_NEAR(firstStepHingePosition, targetSpeed * dt, 1e-6);
   EXPECT_LT(anchorResidual(), 1e-6);
@@ -11845,16 +12013,17 @@ TEST(
   const double hingeBeforeReset = relativeHingePosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
     world.step();
   }
 
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(axisTilt(), 2e-3);
   EXPECT_NEAR(
@@ -11885,13 +12054,16 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -11940,8 +12112,9 @@ TEST(
   world.enterSimulationMode();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_NEAR(sliderPosition(), targetSpeed * dt, 1e-6);
   EXPECT_LT(orthogonalAnchorResidual(), 2e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
@@ -11964,9 +12137,10 @@ TEST(
   const double sliderBeforeReset = sliderPosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
@@ -11980,7 +12154,7 @@ TEST(
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
   EXPECT_EQ(resetConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_NEAR(resetConfig.linearAxes.col(2).dot(sliderAxis), 1.0, 1e-12);
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   const double resetOrthogonalResidual = orthogonalAnchorResidual();
   EXPECT_LT(resetOrthogonalResidual, maxBrokenOrthogonalResidual * 0.05);
   EXPECT_LT(resetOrthogonalResidual, 2e-3);
@@ -12011,7 +12185,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
@@ -12057,8 +12233,9 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
 
   double maxBrokenAnchorResidual = 0.0;
@@ -12076,8 +12253,8 @@ TEST(
 
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   world.step();
 
@@ -12087,7 +12264,7 @@ TEST(
       = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(resetConfig.angularAxisMask, 0u);
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_GT(relativeRotationChange(), 1e-4);
 }
@@ -12111,14 +12288,17 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
   joint.axis = hingeAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.4);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.4);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -12187,15 +12367,18 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -12272,15 +12455,18 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_tiny_hinge");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_tiny_hinge";
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.4);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.4);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -12304,25 +12490,28 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_tiny_hinge") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  const auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Revolute);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], 0.4);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1e-9);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1e-9);
+  const auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  const auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Revolute);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], 0.4);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1e-9);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1e-9);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -12389,7 +12578,10 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_tiny_slider");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_tiny_slider";
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
@@ -12397,8 +12589,8 @@ TEST(
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
 
@@ -12422,25 +12614,28 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_tiny_slider") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  const auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Prismatic);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], 0.3);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1e-9);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1e-9);
+  const auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  const auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Prismatic);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], 0.3);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1e-9);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1e-9);
   ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
       restoredJointEntity));
   const auto& restoredConfig
@@ -12517,7 +12712,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
@@ -12566,8 +12763,9 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
 
@@ -12586,12 +12784,12 @@ TEST(
 
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   world.step();
 
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
 }
@@ -12618,7 +12816,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_movable_fixed");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_movable_fixed";
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
@@ -12666,7 +12866,7 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  ASSERT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
   const Eigen::Isometry3d savedParentTransform
@@ -12688,32 +12888,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_movable_fixed") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Fixed);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Fixed);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredParent->getEntity()));
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_TRUE(restoredJoint.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorChild - childAnchor).norm(),
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+          .norm(),
       1e-12);
   EXPECT_LT(
       (restoredParent->getWorldTransform().matrix()
@@ -12763,8 +12966,8 @@ TEST(
 
   restoredParent->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   restoredChild->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -12775,7 +12978,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(restoredConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(restoredConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_LT(restoredRelativeRotationError(), 1e-6);
 }
@@ -12801,16 +13004,19 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d hingeAxis
       = Eigen::Vector3d(-2.0, 1.0, 3.0).normalized();
   joint.axis = hingeAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -12853,8 +13059,9 @@ TEST(
 
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   const double firstStepHingePosition = relativeHingePosition();
   EXPECT_NEAR(firstStepHingePosition, targetSpeed * dt, 1e-6);
   EXPECT_LT(anchorResidual(), 1e-6);
@@ -12877,16 +13084,17 @@ TEST(
   const double hingeBeforeReset = relativeHingePosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
     world.step();
   }
 
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 2e-3);
   EXPECT_LT(axisTilt(), 2e-3);
   EXPECT_NEAR(
@@ -12917,16 +13125,19 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(0.5, -1.0, 2.0).normalized();
   joint.axis = sliderAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -12973,8 +13184,9 @@ TEST(
 
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_NEAR(sliderPosition(), targetSpeed * dt, 1e-6);
   EXPECT_LT(orthogonalAnchorResidual(), 2e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
@@ -12997,16 +13209,17 @@ TEST(
   const double sliderBeforeReset = sliderPosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  registry.get<sx::comps::JointActuation>(jointEntity).commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
     world.step();
   }
 
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   const double resetOrthogonalResidual = orthogonalAnchorResidual();
   EXPECT_LT(resetOrthogonalResidual, maxBrokenOrthogonalResidual * 0.05);
   EXPECT_LT(resetOrthogonalResidual, 2e-3);
@@ -13039,16 +13252,19 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_movable_hinge");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_movable_hinge";
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   joint.axis = hingeAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -13076,7 +13292,7 @@ TEST(
 
   world.step();
 
-  ASSERT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(relativeHingePosition(), targetSpeed * dt, 1e-6);
   const Eigen::Isometry3d savedParentTransform
       = pair.parent.getWorldTransform();
@@ -13097,40 +13313,46 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_movable_hinge") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Revolute);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Revolute);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredParent->getEntity()));
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_LT((restoredJoint.axis - hingeAxis).norm(), 1e-12);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
-  EXPECT_TRUE(restoredJoint.hasRigidBodyFixedJointAnchors);
+  EXPECT_LT((restoredJointModel.axis - hingeAxis).norm(), 1e-12);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorChild - childAnchor).norm(),
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+          .norm(),
       1e-12);
   EXPECT_LT(
       (restoredParent->getWorldTransform().translation()
@@ -13181,9 +13403,10 @@ TEST(
   const double hingeBeforeReset = restoredRelativeHingePosition();
   restoredParent->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   restoredChild->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
@@ -13199,7 +13422,7 @@ TEST(
   EXPECT_EQ(
       restoredConfig.angularAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
   EXPECT_NEAR(restoredConfig.angularAxes.col(2).dot(hingeAxis), 1.0, 1e-12);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(anchorResidual(), 2e-3);
   EXPECT_LT(axisTilt(), 2e-3);
   EXPECT_NEAR(
@@ -13230,7 +13453,10 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_movable_slider");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  auto& jointActuation
+      = registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_movable_slider";
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
@@ -13238,9 +13464,9 @@ TEST(
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   joint.axis = sliderAxis;
-  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  jointActuation.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
-  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  jointActuation.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
   joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
@@ -13269,7 +13495,7 @@ TEST(
 
   world.step();
 
-  ASSERT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_NEAR(anchorDelta().dot(sliderAxis), targetSpeed * dt, 1e-6);
   const Eigen::Isometry3d savedParentTransform
       = pair.parent.getWorldTransform();
@@ -13290,40 +13516,46 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_movable_slider") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Prismatic);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  auto& restoredJointActuation
+      = restoredRegistry.get<sx::comps::JointActuation>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Prismatic);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredParent->getEntity()));
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_LT((restoredJoint.axis - sliderAxis).norm(), 1e-12);
-  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
-  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], targetSpeed);
-  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
-  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1000.0);
-  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1000.0);
-  EXPECT_TRUE(restoredJoint.hasRigidBodyFixedJointAnchors);
+  EXPECT_LT((restoredJointModel.axis - sliderAxis).norm(), 1e-12);
+  EXPECT_EQ(
+      restoredJointActuation.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJointActuation.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointActuation.commandVelocity[0], targetSpeed);
+  ASSERT_EQ(restoredJointModel.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
+  EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorChild - childAnchor).norm(),
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+          .norm(),
       1e-12);
   EXPECT_LT(
       (restoredParent->getWorldTransform().translation()
@@ -13378,9 +13610,10 @@ TEST(
   const double sliderBeforeReset = sliderPosition();
   restoredParent->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   restoredChild->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointActuation.commandVelocity
+      = Eigen::VectorXd::Constant(1, -targetSpeed);
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   constexpr int resetSteps = 10;
   for (int k = 0; k < resetSteps; ++k) {
@@ -13396,7 +13629,7 @@ TEST(
       restoredConfig.linearAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
   EXPECT_EQ(restoredConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_NEAR(restoredConfig.linearAxes.col(2).dot(sliderAxis), 1.0, 1e-12);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   const double resetOrthogonalResidual = orthogonalAnchorResidual();
   EXPECT_LT(resetOrthogonalResidual, maxBrokenOrthogonalResidual * 0.05);
   EXPECT_LT(resetOrthogonalResidual, 2e-3);
@@ -13429,7 +13662,9 @@ TEST(
   const entt::entity jointEntity = registry.create();
   registry.emplace<sx::comps::Name>(
       jointEntity, "serialized_generated_movable_spherical");
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.name = "serialized_generated_movable_spherical";
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
@@ -13471,7 +13706,7 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  ASSERT_TRUE(registry.get<sx::comps::Joint>(jointEntity).broken);
+  ASSERT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   const Eigen::Isometry3d savedParentTransform
       = pair.parent.getWorldTransform();
@@ -13492,32 +13727,35 @@ TEST(
 
   auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
   entt::entity restoredJointEntity = entt::null;
-  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  auto jointView = restoredRegistry.view<sx::comps::JointModel>();
   for (const entt::entity entity : jointView) {
-    if (jointView.get<sx::comps::Joint>(entity).name
+    if (jointView.get<sx::comps::JointModel>(entity).name
         == "serialized_generated_movable_spherical") {
       restoredJointEntity = entity;
       break;
     }
   }
   ASSERT_TRUE(restoredJointEntity != entt::null);
-  auto& restoredJoint
-      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
-  ASSERT_TRUE(restoredJoint.broken);
-  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Spherical);
+  auto& restoredJointModel
+      = restoredRegistry.get<sx::comps::JointModel>(restoredJointEntity);
+  auto& restoredJointState
+      = restoredRegistry.get<sx::comps::JointState>(restoredJointEntity);
+  ASSERT_TRUE(restoredJointState.broken);
+  EXPECT_EQ(restoredJointModel.type, sx::comps::JointType::Spherical);
   EXPECT_EQ(
-      restoredJoint.parentLink,
+      restoredJointModel.parentLink,
       sx::detail::toRegistryEntity(restoredParent->getEntity()));
   EXPECT_EQ(
-      restoredJoint.childLink,
+      restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_TRUE(restoredJoint.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJoint.rigidBodyFixedJointLocalAnchorChild - childAnchor).norm(),
+      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+          .norm(),
       1e-12);
   EXPECT_LT(
       (restoredParent->getWorldTransform().matrix()
@@ -13567,8 +13805,8 @@ TEST(
 
   restoredParent->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   restoredChild->getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  restoredJoint.breakForce = 1e6;
-  restoredJoint.broken = false;
+  restoredJointModel.breakForce = 1e6;
+  restoredJointState.broken = false;
 
   restored.step();
 
@@ -13579,7 +13817,7 @@ TEST(
           restoredJointEntity);
   EXPECT_EQ(restoredConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
   EXPECT_EQ(restoredConfig.angularAxisMask, 0u);
-  EXPECT_FALSE(restoredJoint.broken);
+  EXPECT_FALSE(restoredJointState.broken);
   EXPECT_LT(restoredAnchorResidual(), 1e-6);
   EXPECT_GT(restoredRelativeRotationChange(), 1e-4);
 }
@@ -13604,7 +13842,9 @@ TEST(
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Spherical;
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
@@ -13653,8 +13893,9 @@ TEST(
   applyOpposingOffsetForces();
   world.step();
 
-  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
-  ASSERT_TRUE(liveJoint.broken);
+  auto& liveJointModel = registry.get<sx::comps::JointModel>(jointEntity);
+  auto& liveJointState = registry.get<sx::comps::JointState>(jointEntity);
+  ASSERT_TRUE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
 
   double maxBrokenAnchorResidual = 0.0;
@@ -13672,12 +13913,12 @@ TEST(
 
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
-  liveJoint.breakForce = 1e6;
-  liveJoint.broken = false;
+  liveJointModel.breakForce = 1e6;
+  liveJointState.broken = false;
 
   world.step();
 
-  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_FALSE(liveJointState.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_GT(relativeRotationChange(), 1e-4);
 }

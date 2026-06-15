@@ -185,10 +185,16 @@ struct JointLimits
   JointVector effortUpper;   ///< Actuation effort upper bounds
 };
 
-/// Joint component (single joint in articulated body)
+/// Joint **Model** component: static topology, geometry, and solver parameters
+/// of a single joint, frozen at finalization (the design-mode configuration).
 ///
-/// Stores all joint properties in a unified structure. Different fields
-/// are used depending on the joint type:
+/// This is the canonical "this entity is a joint" component and the one that
+/// carries the kinematic-tree topology (`parentLink`/`childLink`), so iterating
+/// joints is a view over `JointModel`. Per the Model/State/Control/Contracts
+/// data contract (WP-091.20), it holds only design-frozen data: the geometric
+/// parameters, the limits, and the passive/solver parameters (spring, damping,
+/// armature, friction, rest position, break threshold). Per-step dynamic values
+/// live in `JointState`; commanded inputs live in `JointActuation`.
 ///
 /// Field usage by joint type:
 /// - Fixed:      rigidBodyFixedJointLocalAnchor* for public rigid-body joints
@@ -201,18 +207,12 @@ struct JointLimits
 /// - Floating:       (no geometric parameters - 6-DOF position)
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
-struct Joint
+struct JointModel
 {
-  DART_SIMULATION_STATE_COMPONENT(Joint, "comps.Joint");
+  DART_SIMULATION_STATE_COMPONENT(JointModel, "comps.JointModel");
 
   JointType type = JointType::Revolute;
-  ActuatorType actuatorType = ActuatorType::Force;
   std::string name;
-
-  JointVector position;
-  JointVector velocity;
-  JointVector acceleration;
-  JointVector torque;
 
   /// Passive joint dynamics (per generalized coordinate).
   JointVector springStiffness;
@@ -227,16 +227,9 @@ struct Joint
   /// (per generalized coordinate).
   JointVector coulombFriction;
 
-  /// Commanded target velocity used by the Velocity actuator type (per
-  /// generalized coordinate).
-  JointVector commandVelocity;
-
   /// Maximum AVBD constraint force before the joint is marked broken. A value
   /// of 0 disables automatic breakage.
   double breakForce = 0.0;
-
-  /// Whether the joint has been broken by an AVBD break-force threshold.
-  bool broken = false;
 
   JointLimits limits;
 
@@ -258,7 +251,7 @@ struct Joint
 
   static constexpr auto entityFields()
   {
-    return std::make_tuple(&Joint::parentLink, &Joint::childLink);
+    return std::make_tuple(&JointModel::parentLink, &JointModel::childLink);
   }
 
   [[nodiscard]] std::size_t getDOF() const
@@ -286,6 +279,45 @@ struct Joint
         return 0;
     }
   }
+};
+
+/// Joint **State** component: the per-step dynamic values of a joint that the
+/// integrator advances every step (generalized position/velocity/acceleration)
+/// plus the runtime break flag. Per the Model/State/Control/Contracts contract
+/// (WP-091.20), this holds only mutable per-step data; design-frozen parameters
+/// live in `JointModel` and commanded inputs live in `JointActuation`.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct JointState
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(JointState, "comps.JointState");
+
+  JointVector position;
+  JointVector velocity;
+  JointVector acceleration;
+
+  /// Whether the joint has been broken by an AVBD break-force threshold.
+  bool broken = false;
+};
+
+/// Joint **Control** component: the commanded inputs that drive the joint
+/// during forward dynamics (actuator mode, commanded effort, commanded
+/// velocity). Per the Model/State/Control/Contracts contract (WP-091.20), this
+/// holds only user/controller inputs; design-frozen parameters live in
+/// `JointModel` and per-step dynamic values live in `JointState`.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct JointActuation
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(JointActuation, "comps.JointActuation");
+
+  ActuatorType actuatorType = ActuatorType::Force;
+
+  JointVector torque;
+
+  /// Commanded target velocity used by the Velocity actuator type (per
+  /// generalized coordinate).
+  JointVector commandVelocity;
 };
 
 /// Family-owned AVBD point-joint stiffness sidecar.
