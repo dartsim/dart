@@ -555,6 +555,33 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
+      # Diagnostic only: the Clang variant fails to find std::expected. Print
+      # how the compiler resolves the C++ standard library inside the pixi env
+      # so the real fix can be grounded in evidence rather than guesswork.
+      # Read-only and continue-on-error so it never affects the job result.
+      - name: Diagnose Clang stdlib resolution
+        if: matrix.compiler.name == 'Clang'
+        continue-on-error: true
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+        run: |
+          pixi run bash -c '
+            set -x
+            command -v "$CXX"; "$CXX" --version
+            printf "#include <expected>\nstd::expected<int,int> e{1};\nint main(){ return e.has_value() ? 0 : 1; }\n" > /tmp/exp.cpp
+            echo "== include search list (-v) =="
+            "$CXX" -std=gnu++23 -v -c /tmp/exp.cpp -o /tmp/exp.o 2>&1 | sed -n "/search starts here/,/End of search list/p" || true
+            echo "== std::expected compile result =="
+            "$CXX" -std=gnu++23 -c /tmp/exp.cpp -o /tmp/exp.o && echo "std::expected OK" || echo "std::expected FAILED"
+            echo "== key feature macros =="
+            "$CXX" -dM -E -std=gnu++23 -x c++ /dev/null | grep -iE "cpp_concepts|cpp_lib_expected|_LIBCPP_VERSION|GLIBCXX|__cplusplus" || true
+            echo "== toolchains visible =="
+            ls -d /usr/include/c++/* /usr/lib/gcc/x86_64-linux-gnu/* 2>/dev/null || true
+            ls -d "$PWD"/.pixi/envs/default/include/c++/* 2>/dev/null || echo "(no conda c++ headers)"
+            ls "$PWD"/.pixi/envs/default/bin/*g++* "$PWD"/.pixi/envs/default/bin/*clang* 2>/dev/null || echo "(no conda compilers in env)"
+          '
+
       - name: Build and run DART GUI smoke tests
         env:
           CC: ${{ matrix.compiler.cc }}
