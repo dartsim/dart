@@ -705,7 +705,10 @@ void recursiveNewtonEulerInto(
     const auto i = count - 1 - reverse;
     const auto& link = links[i];
     if (link.dof > 0) {
-      tau.segment(link.dofOffset, link.dof)
+      // noalias() writes the (dynamic-length) joint-space projection directly
+      // into the tau segment, avoiding a per-call heap-allocated Eigen
+      // temporary on every warmed step.
+      tau.segment(link.dofOffset, link.dof).noalias()
           = link.subspace.transpose() * force[i];
     }
     if (link.parentIndex >= 0) {
@@ -876,6 +879,23 @@ struct MultibodyDynamicsScratch
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
   Eigen::VectorXd contactImpulseDelta;
+
+  // Persistent factorizations and buffers for the unconstrained semi-implicit
+  // solve and the velocity-actuator constraint solve. Reused across warmed
+  // steps so neither path allocates Eigen temporaries once their dimensions
+  // stabilize (each multibody owns its own scratch, so n and k are constant).
+  // Reuse is allocation-free only while tree.dofCount and the velocity-actuated
+  // DOF set are constant; a structure edit or joint lock/unlock changes n or k
+  // and resizes these (and re-factorizes) once -- correct, but not a "warmed"
+  // step for the no-malloc gate.
+  Eigen::LDLT<Eigen::MatrixXd> unconstrainedMassLdlt;  // M qddot = rhs
+  Eigen::LDLT<Eigen::MatrixXd> velocityMassLdlt;       // M^-1 (M is SPD)
+  Eigen::MatrixXd velocityMassInverse;                 // n x n
+  Eigen::MatrixXd velocityIdentity;                    // n x n identity (baked)
+  Eigen::MatrixXd velocityConstraintMatrix;            // k x k
+  Eigen::VectorXd velocityConstraintResidual;          // k
+  Eigen::LDLT<Eigen::MatrixXd> velocityConstraintLdlt; // k x k
+  Eigen::VectorXd velocityConstraintLambda;            // k
 };
 
 MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
@@ -1041,7 +1061,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
   } else {
     scratch.rhs.resize(n);
     scratch.rhs = scratch.appliedForce - scratch.massAndBias.bias;
-    scratch.qddot = scratch.massAndBias.massMatrix.ldlt().solve(scratch.rhs);
+    // Factor into a persistent LDLT so warmed steps reuse its storage rather
+    // than constructing (and heap-allocating) a fresh decomposition each step.
+    scratch.unconstrainedMassLdlt.compute(scratch.massAndBias.massMatrix);
+    scratch.qddot = scratch.unconstrainedMassLdlt.solve(scratch.rhs);
   }
 
   // Unconstrained next generalized velocity (semi-implicit Euler), then apply
@@ -1106,27 +1129,39 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
   if (!scratch.constrainedDof.empty()) {
-    const Eigen::MatrixXd inverseMass
-        = scratch.massAndBias.massMatrix.inverse();
+    // M^-1 via a persistent LDLT (the joint-space mass matrix is symmetric
+    // positive-definite, as the unconstrained solve above already assumes)
+    // solved in place against a baked identity. LDLT::solveInPlace reuses the
+    // factor and result buffers across warmed steps with no Eigen temporary,
+    // and matches massMatrix.inverse() to machine precision for SPD M; unlike
+    // PartialPivLU::solve, it allocates nothing.
+    scratch.velocityMassLdlt.compute(scratch.massAndBias.massMatrix);
+    scratch.velocityIdentity.setIdentity(n, n);
+    scratch.velocityMassInverse = scratch.velocityIdentity;
+    scratch.velocityMassLdlt.solveInPlace(scratch.velocityMassInverse);
+    const Eigen::MatrixXd& inverseMass = scratch.velocityMassInverse;
     const auto k = static_cast<Eigen::Index>(scratch.constrainedDof.size());
-    Eigen::MatrixXd constraintMatrix(k, k);
-    Eigen::VectorXd residual(k);
+    scratch.velocityConstraintMatrix.resize(k, k);
+    scratch.velocityConstraintResidual.resize(k);
     for (Eigen::Index a = 0; a < k; ++a) {
-      residual[a] = scratch.constrainedTarget[static_cast<std::size_t>(a)]
-                    - scratch.nextVelocity
-                          [scratch.constrainedDof[static_cast<std::size_t>(a)]];
+      scratch.velocityConstraintResidual[a]
+          = scratch.constrainedTarget[static_cast<std::size_t>(a)]
+            - scratch.nextVelocity
+                  [scratch.constrainedDof[static_cast<std::size_t>(a)]];
       for (Eigen::Index b = 0; b < k; ++b) {
-        constraintMatrix(a, b) = inverseMass(
+        scratch.velocityConstraintMatrix(a, b) = inverseMass(
             scratch.constrainedDof[static_cast<std::size_t>(a)],
             scratch.constrainedDof[static_cast<std::size_t>(b)]);
       }
     }
-    const Eigen::VectorXd lambda = constraintMatrix.ldlt().solve(residual);
+    scratch.velocityConstraintLdlt.compute(scratch.velocityConstraintMatrix);
+    scratch.velocityConstraintLambda = scratch.velocityConstraintLdlt.solve(
+        scratch.velocityConstraintResidual);
     for (Eigen::Index a = 0; a < k; ++a) {
-      scratch.nextVelocity
+      scratch.nextVelocity.noalias()
           += inverseMass.col(
                  scratch.constrainedDof[static_cast<std::size_t>(a)])
-             * lambda[a];
+             * scratch.velocityConstraintLambda[a];
     }
   }
 

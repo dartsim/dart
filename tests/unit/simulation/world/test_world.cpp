@@ -80,6 +80,7 @@
 #include <array>
 #include <atomic>
 
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
 #if defined(_WIN32)
@@ -104,6 +105,16 @@ namespace {
 std::atomic<bool> g_heapAllocationTrackingEnabled{false};
 std::atomic<std::size_t> g_heapAllocationCount{0};
 std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+// Separate raw-heap (malloc family) tracking. The operator-new counter above is
+// blind to Eigen's dynamic-matrix temporaries, which allocate through
+// std::malloc (via Eigen's aligned_malloc), not ::operator new. These globals
+// back a malloc interposer (defined below, Linux/glibc only) so warmed-step
+// Eigen heap traffic becomes measurable. Kept on a distinct flag/counter so the
+// operator-new-based no-heap tests are completely unaffected.
+std::atomic<bool> g_rawHeapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_rawHeapAllocationCount{0};
+std::atomic<std::size_t> g_rawHeapAllocationBytes{0};
 
 void recordHeapAllocation(std::size_t bytes) noexcept
 {
@@ -289,6 +300,90 @@ void operator delete[](
   deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
 }
 
+// Detect whether AddressSanitizer is active: it installs its own malloc
+// interceptor, so we must not define a competing strong `malloc` symbol.
+#if defined(__SANITIZE_ADDRESS__)
+  #define DART_TEST_ASAN_ACTIVE 1
+#elif defined(__has_feature)
+  #if __has_feature(address_sanitizer)
+    #define DART_TEST_ASAN_ACTIVE 1
+  #endif
+#endif
+
+// Raw malloc interposer (Linux/glibc, non-ASan only). DART does not override
+// Eigen's allocator, so Eigen dynamic-matrix temporaries allocate via
+// std::malloc and are invisible to the ::operator new counter above. By
+// interposing the malloc family at global scope (the same whole-program symbol
+// interposition the operator-new overrides rely on) and forwarding to the
+// glibc-internal __libc_* entry points (no dlsym, so no init-time recursion),
+// warmed-step Eigen heap traffic in the precompiled dart-simulation library
+// becomes countable. Allocations are only tallied while a
+// ScopedRawHeapAllocationCounter has tracking enabled.
+#if defined(__linux__) && defined(__GLIBC__) && !defined(DART_TEST_ASAN_ACTIVE)
+  #define DART_TEST_HAS_RAW_MALLOC_INTERPOSE 1
+
+extern "C" {
+void* __libc_malloc(std::size_t);
+void* __libc_calloc(std::size_t, std::size_t);
+void* __libc_realloc(void*, std::size_t);
+void* __libc_memalign(std::size_t, std::size_t);
+}
+
+namespace {
+void recordRawHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_rawHeapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_rawHeapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_rawHeapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+} // namespace
+
+extern "C" void* malloc(std::size_t bytes)
+{
+  recordRawHeapAllocation(bytes);
+  return __libc_malloc(bytes);
+}
+
+extern "C" void* calloc(std::size_t count, std::size_t size)
+{
+  // Saturate the byte tally (advisory only; the gate asserts on the count) so a
+  // pathological count*size cannot wrap. __libc_calloc does its own overflow
+  // check for the real allocation.
+  const std::size_t bytes
+      = (size != 0 && count > SIZE_MAX / size) ? SIZE_MAX : count * size;
+  recordRawHeapAllocation(bytes);
+  return __libc_calloc(count, size);
+}
+
+extern "C" void* realloc(void* pointer, std::size_t bytes)
+{
+  recordRawHeapAllocation(bytes);
+  return __libc_realloc(pointer, bytes);
+}
+
+extern "C" void* aligned_alloc(std::size_t alignment, std::size_t bytes)
+{
+  // Intentionally forwarded to __libc_memalign (how glibc implements
+  // aligned_alloc); the C11 size-is-a-multiple-of-alignment constraint is not
+  // re-enforced, which is harmless for a counting interposer.
+  recordRawHeapAllocation(bytes);
+  return __libc_memalign(alignment, bytes);
+}
+
+extern "C" int posix_memalign(
+    void** out, std::size_t alignment, std::size_t bytes)
+{
+  recordRawHeapAllocation(bytes);
+  void* pointer = __libc_memalign(alignment, bytes);
+  if (pointer == nullptr) {
+    return ENOMEM;
+  }
+  *out = pointer;
+  return 0;
+}
+#endif // raw malloc interposer
+
 namespace {
 
 class ScopedHeapAllocationCounter final
@@ -334,6 +429,64 @@ public:
     return 0;
 #else
     return g_heapAllocationBytes.load(std::memory_order_relaxed);
+#endif
+  }
+};
+
+// Counts raw malloc-family allocations (the malloc interposer above) while in
+// scope. Unlike ScopedHeapAllocationCounter this also sees Eigen's dynamic
+// temporaries. Tracking is a no-op (count == 0) under DART_CODECOV (coverage
+// instrumentation itself allocates) or where the interposer is unavailable; the
+// tests gate on DART_TEST_HAS_RAW_MALLOC_INTERPOSE so they SKIP rather than
+// pass vacuously when no measurement is possible.
+#if defined(DART_CODECOV) || !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  #define DART_TEST_RAW_HEAP_TRACKING_INERT 1
+#endif
+
+class ScopedRawHeapAllocationCounter final
+{
+public:
+  ScopedRawHeapAllocationCounter()
+  {
+#ifdef DART_TEST_RAW_HEAP_TRACKING_INERT
+    g_rawHeapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+#else
+    g_rawHeapAllocationCount.store(0, std::memory_order_relaxed);
+    g_rawHeapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_rawHeapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+#endif
+  }
+
+  ~ScopedRawHeapAllocationCounter()
+  {
+    stop();
+  }
+
+  ScopedRawHeapAllocationCounter(const ScopedRawHeapAllocationCounter&)
+      = delete;
+  ScopedRawHeapAllocationCounter& operator=(
+      const ScopedRawHeapAllocationCounter&) = delete;
+
+  void stop() noexcept
+  {
+    g_rawHeapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+#ifdef DART_TEST_RAW_HEAP_TRACKING_INERT
+    return 0;
+#else
+    return g_rawHeapAllocationCount.load(std::memory_order_relaxed);
+#endif
+  }
+
+  [[nodiscard]] std::size_t allocationBytes() const noexcept
+  {
+#ifdef DART_TEST_RAW_HEAP_TRACKING_INERT
+    return 0;
+#else
+    return g_rawHeapAllocationBytes.load(std::memory_order_relaxed);
 #endif
   }
 };
@@ -790,6 +943,48 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
       << "global heap bytes allocated during baked steps: "
       << heapCounter.allocationBytes();
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+// Like expectNoGlobalHeapAllocationsDuringBakedSteps, but counts the raw malloc
+// family (via the interposer above) so it also catches Eigen dynamic-matrix
+// temporaries the operator-new counter cannot see. Used to guard hot paths that
+// previously leaned on per-step Eigen temporaries.
+template <typename ConfigureScene>
+void expectNoRawHeapAllocationsDuringBakedSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
+{
+  namespace sx = dart::simulation;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+  world.enterSimulationMode();
+  if (requireInitialContact) {
+    ASSERT_FALSE(world.collide().empty());
+  }
+
+  // Unlike the operator-new counter, the malloc counter sees Eigen scratch and
+  // decomposition buffers that are sized lazily on the first few steps (that
+  // sizing is malloc, hence invisible to ::operator new). Per the HMM
+  // definition of "baked" -- a few prewarm steps size every buffer, then steady
+  // steps allocate nothing -- prewarm before measuring so only steady-state
+  // (reused scratch) steps are counted.
+  for (int i = 0; i < 8; ++i) {
+    world.step();
+  }
+
+  ScopedRawHeapAllocationCounter rawCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  rawCounter.stop();
+
+  EXPECT_EQ(rawCounter.allocationCount(), 0u)
+      << "raw heap (malloc) bytes allocated during baked steps: "
+      << rawCounter.allocationBytes();
 }
 
 template <typename ConfigureScene>
@@ -8696,6 +8891,78 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
               entity, cfg);
         }
       });
+}
+
+// Velocity-actuated multibody joints solve a per-step coupled velocity
+// constraint (lambda = (J M^-1 J^T)^-1 (target - J v)). This used to allocate
+// Eigen dynamic temporaries every warmed step (the full mass-matrix inverse,
+// the k x k constraint matrix, the residual, and the LDLT solve), plus the
+// unconstrained semi-implicit solve's own per-step LDLT. Those allocate through
+// std::malloc, so the ::operator new no-heap gate above is blind to them; this
+// test uses the raw-malloc counter to assert the warmed steps are now backed by
+// persistent scratch and perform zero heap allocations. Covers both k == 1
+// (prismatic slider) and k >= 2 (coupled revolute chain) constraint paths.
+TEST(World, BakedVelocityActuatedMultibodyStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  namespace sx = dart::simulation;
+
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "velocity-actuated multibody (k==1 slider + k>=2 coupled revolute chain)",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        world.setTimeStep(0.005);
+
+        // k == 1: a prismatic slider driven to a commanded velocity.
+        auto slider = world.addMultibody("slider");
+        auto sliderBase = slider.addLink("base");
+        sx::JointSpec railSpec;
+        railSpec.name = "rail";
+        railSpec.type = sx::JointType::Prismatic;
+        railSpec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = slider.addLink("carriage", sliderBase, railSpec);
+        carriage.setMass(2.0);
+        auto rail = carriage.getParentJoint();
+        rail.setActuatorType(sx::ActuatorType::Velocity);
+        rail.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.5));
+
+        // k >= 2: a 2-link revolute chain with both joints velocity-actuated,
+        // exercising the coupled k x k constraint solve.
+        auto robot = world.addMultibody("double_pendulum");
+        auto base = robot.addLink("base");
+        Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+        offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+        Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+        offset2.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+        sx::JointSpec spec1;
+        spec1.name = "j1";
+        spec1.type = sx::JointType::Revolute;
+        spec1.axis = Eigen::Vector3d::UnitY();
+        spec1.transformFromParent = offset1;
+        auto link1 = robot.addLink("link1", base, spec1);
+        link1.setMass(1.5);
+        link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+        sx::JointSpec spec2;
+        spec2.name = "j2";
+        spec2.type = sx::JointType::Revolute;
+        spec2.axis = Eigen::Vector3d::UnitY();
+        spec2.transformFromParent = offset2;
+        auto link2 = robot.addLink("link2", link1, spec2);
+        link2.setMass(1.0);
+        link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+        link1.getParentJoint().setActuatorType(sx::ActuatorType::Velocity);
+        link2.getParentJoint().setActuatorType(sx::ActuatorType::Velocity);
+        link1.getParentJoint().setCommandVelocity(
+            Eigen::VectorXd::Constant(1, 0.3));
+        link2.getParentJoint().setCommandVelocity(
+            Eigen::VectorXd::Constant(1, -0.4));
+      });
+#endif
 }
 
 TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)

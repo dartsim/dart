@@ -1,5 +1,48 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-15, Eigen-malloc Visibility + Multibody Forward Dynamics)
+
+Work is on `pr/hmm-eigen-malloc-visibility-multibody-velocity`, branched off
+`main` after follow-up PR #3025 squash-merged. Two coupled deliverables:
+
+- **Malloc-visibility test gate.** The existing no-heap gate
+  (`ScopedHeapAllocationCounter`) overrides only global `::operator new`, so it is
+  structurally blind to Eigen dynamic-matrix temporaries: Eigen allocates through
+  `std::malloc` (via `aligned_malloc`), not `operator new`. A standalone probe
+  confirmed `MatrixXd::inverse()` + `ldlt().solve()` record **zero** operator-new
+  allocations. `tests/unit/simulation/world/test_world.cpp` now also installs a
+  Linux/glibc `malloc`-family interposer (forwarding to `__libc_*`, gated on a
+  separate flag so existing operator-new tests are untouched, compiled out under
+  ASan, inert under `DART_CODECOV`) behind `ScopedRawHeapAllocationCounter` and
+  `expectNoRawHeapAllocationsDuringBakedSteps`. Raw-malloc tests prewarm before
+  measuring (Eigen scratch sizes lazily on the first steps -- that sizing is
+  malloc, hence one-time and excluded from steady-state).
+- **Multibody forward dynamics is now warmed-step allocation-free.** A
+  velocity-actuated 2-multibody scene allocated 42 mallocs/step (all in
+  `computeUnconstrainedMultibodyVelocityInto`, `recursiveNewtonEulerInto`, and
+  `computeMassAndBiasInto`). Fixes in `multibody_dynamics.cpp`: RNEA's
+  `tau.segment = subspace^T * force` now uses `.noalias()` (the dynamic-length
+  product temporary was the bulk); the unconstrained semi-implicit solve uses a
+  persistent `LDLT` instead of a per-step `massMatrix.ldlt()`; the
+  velocity-actuator constraint solve backs `M^-1` (now a persistent `LDLT` +
+  `solveInPlace` against a baked identity -- bit-exact to `inverse()` for SPD M
+  and, unlike `PartialPivLU::solve`, allocation-free), the `k x k` constraint
+  matrix/residual/`lambda`, and its `LDLT` with persistent scratch. New gate
+  `World.BakedVelocityActuatedMultibodyStepsDoNotMallocOnHeap` drove this to 0
+  (168 -> 33 -> 8 -> 0).
+
+Validation: `test_world` 373/373 (Release); full `pixi run test-all` in progress
+at handoff.
+
+**Backlog this surfaced (per-step Eigen mallocs the operator-new gate cannot see,
+now measurable with the raw-malloc counter):** `rigid_ipc_barrier.cpp:1261`
+(per-step dense `LDLT<MatrixXd>` in the rigid-IPC barrier solve, currently
+"passing" `BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` only because that
+gate is blind); `world_step_stage.cpp` deformable `setFromTriplets`; and
+`smooth_jacobians.cpp` `contactFreeStepDerivatives` (differentiable opt-in only,
+default off). Each is the same class of fix: persistent decomposition/buffer
+scratch, guarded by a `expectNoRawHeapAllocationsDuringBakedSteps` gate.
+
 ## Hard Stop Handoff (2026-06-14, Rigid-IPC Bake Warm Through the Real Solve)
 
 Work continues on `pr/hmm-phase45-followup-allocation-slice` (pushed; tracking
