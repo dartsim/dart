@@ -20,6 +20,13 @@
     benchmarks, dartpy bindings, and an ImGui-based GUI example:
     [#2985](https://github.com/dartsim/dart/pull/2985)
 
+* Examples and Tutorials
+
+  * Enlarge the floor and add an FPS / physics real-time-factor HUD to the
+    `glut_add_delete_skels` example, so spawned cubes keep room on the ground
+    and the effect of adding skeletons on real-time performance is visible:
+    [#3019](https://github.com/dartsim/dart/pull/3019)
+
 * GUI
 
   * Fix every GLUT example failing to open a window on modern Mesa/Xwayland:
