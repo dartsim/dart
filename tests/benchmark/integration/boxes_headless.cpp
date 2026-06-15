@@ -107,13 +107,33 @@ int main(int argc, char** argv)
   const std::size_t checkpoint
       = argc > 3 ? static_cast<std::size_t>(std::atoi(argv[3])) : 500u;
 
-  auto world = test::createBoxesWorld(dim);
+  // Scene selection via the SCENE env var keeps the positional CLI (and the
+  // ab_boxes.sh harness) unchanged. SCENE=chains runs the articulated-contact
+  // scenario; LINKS controls the chain length (default 4).
+  const char* sceneEnv = std::getenv("SCENE");
+  const bool chains = (sceneEnv != nullptr && std::string(sceneEnv) == "chains");
 
-  std::printf(
-      "# boxes_headless dim=%zu steps=%zu boxes=%zu\n",
-      dim,
-      steps,
-      dim * dim * dim);
+  simulation::WorldPtr world;
+  if (chains) {
+    const char* linksEnv = std::getenv("LINKS");
+    const std::size_t links
+        = linksEnv != nullptr ? static_cast<std::size_t>(std::atoi(linksEnv))
+                              : 4u;
+    world = test::createChainsWorld(dim, links);
+    std::printf(
+        "# boxes_headless scene=chains dim=%zu links=%zu chains=%zu steps=%zu\n",
+        dim,
+        links,
+        dim * dim,
+        steps);
+  } else {
+    world = test::createBoxesWorld(dim);
+    std::printf(
+        "# boxes_headless scene=boxes dim=%zu steps=%zu boxes=%zu\n",
+        dim,
+        steps,
+        dim * dim * dim);
+  }
 
   const auto t0 = std::chrono::steady_clock::now();
   for (std::size_t s = 0; s < steps; ++s) {

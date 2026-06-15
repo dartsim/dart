@@ -122,6 +122,97 @@ namespace dart::test {
   return world;
 }
 
+/// Builds one articulated chain: a free-floating root box link followed by
+/// `links - 1` revolute-jointed box links extending along +z. Deterministic.
+[[nodiscard]] inline dynamics::SkeletonPtr createChain(
+    std::size_t index,
+    const Eigen::Vector3d& basePosition,
+    std::size_t links)
+{
+  auto skel = dynamics::Skeleton::create("chain" + std::to_string(index));
+  const Eigen::Vector3d linkSize(0.3, 0.3, 0.5);
+
+  dynamics::BodyNode* parent = nullptr;
+  for (std::size_t l = 0; l < links; ++l) {
+    dynamics::BodyNode* body = nullptr;
+    if (l == 0) {
+      auto pair
+          = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(nullptr);
+      body = pair.second;
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.translation() = basePosition;
+      pair.first->setTransformFromParentBodyNode(tf);
+    } else {
+      auto pair = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          parent);
+      auto* joint = pair.first;
+      body = pair.second;
+      // Alternate the hinge axis so the chain folds in a non-planar way.
+      joint->setAxis(
+          (l % 2 == 0) ? Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitY());
+      Eigen::Isometry3d parentToJoint = Eigen::Isometry3d::Identity();
+      parentToJoint.translation() = Eigen::Vector3d(0.0, 0.0, linkSize.z());
+      joint->setTransformFromParentBodyNode(parentToJoint);
+    }
+
+    auto shape = std::make_shared<dynamics::BoxShape>(linkSize);
+    auto* shapeNode = body->createShapeNodeWith<
+        dynamics::VisualAspect,
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(
+        static_cast<double>(l) / static_cast<double>(links), 0.4, 0.6));
+    shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.6);
+    parent = body;
+  }
+
+  return skel;
+}
+
+/// Builds a `dim x dim` grid of articulated chains (each `links` box links long)
+/// dropped above a welded ground plane. This exercises contact constraints on
+/// articulated bodies: the cost of resolving a contact scales with how far the
+/// solver must propagate impulses along each chain, which is exactly the
+/// rigid-body case plus articulation depth.
+[[nodiscard]] inline simulation::WorldPtr createChainsWorld(
+    std::size_t dim, std::size_t links)
+{
+  auto world = simulation::World::create();
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::BulletCollisionDetector::create());
+
+  // Pack the chains closely (0.5 m grid for 0.3 m-wide links) and stagger their
+  // drop height so they buckle and tangle into a dense pile of articulated
+  // bodies in mutual contact, rather than falling as isolated columns.
+  std::size_t index = 0;
+  for (auto i = 0u; i < dim; ++i) {
+    for (auto j = 0u; j < dim; ++j) {
+      const double x
+          = (static_cast<double>(i) - static_cast<double>(dim) / 2.0) * 0.5;
+      const double y
+          = (static_cast<double>(j) - static_cast<double>(dim) / 2.0) * 0.5;
+      const double z = 3.0 + 0.25 * static_cast<double>((i + j) % 4);
+      world->addSkeleton(
+          createChain(index++, Eigen::Vector3d(x, y, z), links));
+    }
+  }
+
+  auto ground = dynamics::Skeleton::create("ground");
+  auto groundBody
+      = ground->createJointAndBodyNodePair<dynamics::WeldJoint>().second;
+  auto groundShapeNode = groundBody->createShapeNodeWith<
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(0.6);
+  world->addSkeleton(ground);
+
+  return world;
+}
+
 } // namespace dart::test
 
 #endif // DART_BENCHMARK_INTEGRATION_BOXES_SCENE_HPP_
