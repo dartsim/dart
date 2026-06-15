@@ -11317,6 +11317,100 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+namespace {
+
+// Build the projected-Newton solve options for a rigid-IPC step: the adaptive
+// barrier-stiffness inputs (world AABB diagonal over all collision surfaces and
+// the average dynamic-body mass), barrier/friction settings, and the moved-in
+// dynamics terms. Shared by execute() (the real solve) and prepare() (the
+// bake-time warm solve) so a baked step warms exactly the buffers the real
+// solve allocates, taking the identical adaptive-kappa configuration rather
+// than a divergent fixed-stiffness assemble-only prewarm.
+template <
+    typename SolverBodies,
+    typename SolveDynamicsTerms,
+    typename DynamicsTerms,
+    typename ArticulationConstraints>
+sxdetail::RigidIpcProjectedNewtonSolveOptions buildRigidIpcSolveOptions(
+    World& world,
+    const SolverBodies& solverBodies,
+    SolveDynamicsTerms& solveDynamicsTerms,
+    const DynamicsTerms& dynamicsTerms,
+    const ArticulationConstraints& articulationConstraints,
+    const RigidIpcContactStageOptions& stageOptions,
+    common::MemoryManager* memoryManager,
+    double adaptiveBarrierStiffnessLowerBound)
+{
+  solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
+
+  const double timeStep = world.getTimeStep();
+  Eigen::Vector3d aabbMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d aabbMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  double massSum = 0.0;
+  std::size_t massCount = 0;
+  for (const auto& body : solverBodies) {
+    const Eigen::Matrix3d rotation
+        = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
+    for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
+      const Eigen::Vector3d worldVertex
+          = rotation * localVertex + body.surface.pose.position;
+      aabbMin = aabbMin.cwiseMin(worldVertex);
+      aabbMax = aabbMax.cwiseMax(worldVertex);
+    }
+    if (body.surface.dynamic && body.dynamicsTerm.active && timeStep > 0.0
+        && std::isfinite(timeStep)) {
+      const double mass
+          = body.dynamicsTerm.diagonalWeights[0] * timeStep * timeStep;
+      if (std::isfinite(mass) && mass > 0.0) {
+        massSum += mass;
+        ++massCount;
+      }
+    }
+  }
+  double bboxDiagonal = 1.0;
+  if (aabbMin.allFinite() && aabbMax.allFinite()
+      && (aabbMax.array() >= aabbMin.array()).all()) {
+    const double diagonal = (aabbMax - aabbMin).norm();
+    if (std::isfinite(diagonal) && diagonal > 0.0) {
+      bboxDiagonal = diagonal;
+    }
+  }
+  const double averageMass
+      = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
+
+  sxdetail::RigidIpcProjectedNewtonSolveOptions options
+      = memoryManager != nullptr
+            ? sxdetail::
+                  RigidIpcProjectedNewtonSolveOptions{memoryManager
+                                                          ->getFreeAllocator()}
+            : sxdetail::RigidIpcProjectedNewtonSolveOptions{};
+  options.barrier.squaredActivationDistance
+      = stageOptions.activationDistance * stageOptions.activationDistance;
+  options.barrier.stiffness = std::max(1.0, adaptiveBarrierStiffnessLowerBound);
+  options.lineSearch.maxIterations = 256;
+  options.adaptiveStiffness.enabled = true;
+  options.adaptiveStiffness.averageMass = averageMass;
+  options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
+  options.friction.coefficient = 1.0;
+  options.friction.staticFrictionDisplacement
+      = std::max(0.0, stageOptions.staticFrictionSpeedBound * timeStep);
+  options.dynamicsTerms = std::move(solveDynamicsTerms);
+  options.articulationConstraints = articulationConstraints;
+  options.maxIterations = stageOptions.maxIterations;
+  options.frictionIterations = stageOptions.frictionIterations;
+  options.frictionConvergenceTolerance
+      = stageOptions.frictionConvergenceTolerance;
+  options.useLineSearch = true;
+  options.newton.gradientTolerance = 1e-10;
+  options.newton.relativeGradientTolerance = 1e-6;
+  options.stepTolerance = 1e-12;
+  return options;
+}
+
+} // namespace
+
 void RigidIpcContactStage::prepare(World& world)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
@@ -11404,23 +11498,29 @@ void RigidIpcContactStage::prepare(World& world)
   assembly.activeArticulationConstraints.reserve(
       m_scratch->articulationConstraints.size());
 
-  sxdetail::RigidIpcBarrierOptions barrierOptions;
-  barrierOptions.squaredActivationDistance
-      = m_options.activationDistance * m_options.activationDistance;
-  barrierOptions.stiffness
-      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
-  sxdetail::RigidIpcFrictionOptions frictionOptions;
-  frictionOptions.coefficient = 1.0;
-  frictionOptions.staticFrictionDisplacement
-      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
-  sxdetail::prewarmRigidIpcProjectedNewtonAssemblyScratch(
+  // Warm the projected-Newton solve through the same options + solve path
+  // execute() uses, so a baked step reuses every buffer the real solve
+  // allocates (barrier assembly, line search, reduced factorization) instead of
+  // growing the world allocator on the first warmed step. The result is
+  // discarded and no body moves -- the solve only fills scratch, and it takes
+  // the identical adaptive-kappa configuration the step will, so the warmed
+  // active-pair set matches and nothing is reallocated on the first step.
+  sxdetail::RigidIpcProjectedNewtonSolveOptions warmOptions
+      = buildRigidIpcSolveOptions(
+          world,
+          m_scratch->solverBodies,
+          m_scratch->solveDynamicsTerms,
+          m_scratch->dynamicsTerms,
+          m_scratch->articulationConstraints,
+          m_options,
+          m_memoryManager,
+          world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
+  sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
       m_scratch->surfaces,
-      m_scratch->surfaces,
-      m_scratch->dynamicsTerms,
-      m_scratch->articulationConstraints,
-      barrierOptions,
-      frictionOptions,
+      warmOptions,
+      m_scratch->solveResult,
       m_scratch->solveScratch);
+  m_scratch->solveDynamicsTerms = std::move(warmOptions.dynamicsTerms);
 }
 
 //==============================================================================
@@ -11481,99 +11581,27 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   auto& dynamicsTerms = scratch.dynamicsTerms;
   auto& solveDynamicsTerms = scratch.solveDynamicsTerms;
   auto& articulationConstraints = scratch.articulationConstraints;
-  solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
   collectRigidIpcArticulationConstraints(
       world, solverBodies, articulationConstraints);
 
-  // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
-  // collision surfaces and the average dynamic-body mass. These drive the IPC
-  // adaptive-kappa scheme so the barrier is stiff enough to hold bodies at a
-  // gap > 0 under gravity instead of letting them creep into penetration.
-  const double timeStep = world.getTimeStep();
-  Eigen::Vector3d aabbMin
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-  Eigen::Vector3d aabbMax
-      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
-  double massSum = 0.0;
-  std::size_t massCount = 0;
-  for (const auto& body : solverBodies) {
-    const Eigen::Matrix3d rotation
-        = sxdetail::rigidIpcRotationVectorToMatrix(body.surface.pose.rotation);
-    for (const Eigen::Vector3d& localVertex : body.surface.vertices) {
-      const Eigen::Vector3d worldVertex
-          = rotation * localVertex + body.surface.pose.position;
-      aabbMin = aabbMin.cwiseMin(worldVertex);
-      aabbMax = aabbMax.cwiseMax(worldVertex);
-    }
-    if (body.surface.dynamic && body.dynamicsTerm.active && timeStep > 0.0
-        && std::isfinite(timeStep)) {
-      const double mass
-          = body.dynamicsTerm.diagonalWeights[0] * timeStep * timeStep;
-      if (std::isfinite(mass) && mass > 0.0) {
-        massSum += mass;
-        ++massCount;
-      }
-    }
-  }
-  double bboxDiagonal = 1.0;
-  if (aabbMin.allFinite() && aabbMax.allFinite()
-      && (aabbMax.array() >= aabbMin.array()).all()) {
-    const double diagonal = (aabbMax - aabbMin).norm();
-    if (std::isfinite(diagonal) && diagonal > 0.0) {
-      bboxDiagonal = diagonal;
-    }
-  }
-  const double averageMass
-      = massCount > 0u ? massSum / static_cast<double>(massCount) : 1.0;
-
-  auto makeSolveOptions = [&]() {
-    return m_memoryManager != nullptr
-               ? sxdetail::
-                     RigidIpcProjectedNewtonSolveOptions{m_memoryManager
-                                                             ->getFreeAllocator()}
-               : sxdetail::RigidIpcProjectedNewtonSolveOptions{};
-  };
-  sxdetail::RigidIpcProjectedNewtonSolveOptions options = makeSolveOptions();
-  options.barrier.squaredActivationDistance
-      = m_options.activationDistance * m_options.activationDistance;
-  options.barrier.stiffness
-      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
   // The conservative line search runs a curved ACCD per candidate primitive
-  // pair. If the ACCD exhausts its iteration budget on a tight, slowly
-  // converging pair it returns Indeterminate, which the line search treats as a
-  // zero step -- so the whole solve reports LineSearchBlocked and is skipped.
-  // Dense resting contacts (stacks, piles, arches) routinely produce such pairs
-  // once they settle into compression, freezing the solve even though the
-  // contacts are advanceable. Give the ACCD a larger budget so those pairs
-  // resolve to a real Hit/Miss instead. This only increases CCD accuracy -- a
-  // real contact still limits the step -- so it cannot weaken the
-  // intersection-free guarantee; well-separated scenes converge well under the
-  // cap and are unaffected.
-  options.lineSearch.maxIterations = 256;
-  options.adaptiveStiffness.enabled = true;
-  options.adaptiveStiffness.averageMass = averageMass;
-  options.adaptiveStiffness.bboxDiagonal = bboxDiagonal;
-  options.friction.coefficient = 1.0;
-  options.friction.staticFrictionDisplacement
-      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
-  options.dynamicsTerms = std::move(solveDynamicsTerms);
-  options.articulationConstraints = articulationConstraints;
-  options.maxIterations = m_options.maxIterations;
-  options.frictionIterations = m_options.frictionIterations;
-  options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
-  // The apply policy below writes back a not-fully-converged result when it
-  // made progress, relying on every accepted Newton step having passed the
-  // conservative line-search feasibility check. That guarantee only holds with
-  // the line search enabled, so pin it explicitly (it is the default, but the
-  // anti-tunneling invariant must not silently depend on that default).
-  options.useLineSearch = true;
-  options.newton.gradientTolerance = 1e-10;
-  // The adaptive barrier is stiff (kappa can reach ~1e6), so the absolute
-  // gradient tolerance is unreachable at a resting contact. A relative floor
-  // lets a near-stationary contact converge instead of being skipped as
-  // non-converged (which would otherwise freeze the body at near-rest).
-  options.newton.relativeGradientTolerance = 1e-6;
-  options.stepTolerance = 1e-12;
+  // pair; resting contacts that settle into compression routinely exhaust the
+  // ACCD budget (returning Indeterminate -> a zero step -> LineSearchBlocked),
+  // so options.lineSearch.maxIterations is raised inside
+  // buildRigidIpcSolveOptions. The apply policy below writes back a
+  // not-fully-converged result when it made progress, relying on every accepted
+  // Newton step having passed the conservative line-search feasibility check,
+  // so options.useLineSearch is pinned there as well.
+  sxdetail::RigidIpcProjectedNewtonSolveOptions options
+      = buildRigidIpcSolveOptions(
+          world,
+          solverBodies,
+          solveDynamicsTerms,
+          dynamicsTerms,
+          articulationConstraints,
+          m_options,
+          m_memoryManager,
+          world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
 
   sxdetail::RigidIpcProjectedNewtonSolveResult& result = scratch.solveResult;
   // With one supported dynamic surface and no articulation rows, there are no
