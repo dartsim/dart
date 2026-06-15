@@ -110,8 +110,14 @@ jobs:
     if: needs.changes.outputs.core_branch_push == 'true' && needs.changes.outputs.code == 'true'
     name: Core Tests (Linux)
     runs-on: ubuntu-latest
+    # Cap runaway/hung jobs well below the ~6h GitHub default.
+    timeout-minutes: 90
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase. CI historically ran tests sequentially
+      # (a DART 6-era default); DART 7's far larger suite makes that the
+      # dominant CI cost. ctest honors CTEST_PARALLEL_LEVEL natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -163,8 +169,12 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Release Tests
     runs-on: ubuntu-latest
+    # Cap runaway/hung jobs well below the ~6h GitHub default.
+    timeout-minutes: 120
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -338,8 +348,13 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Debug Tests
     runs-on: ubuntu-latest
+    # Debug + serial ctest used to run ~6h and hit the default kill; parallel
+    # ctest should bring this well down. Keep a generous cold-cache cap.
+    timeout-minutes: 150
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
