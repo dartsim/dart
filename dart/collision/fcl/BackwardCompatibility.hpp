@@ -53,9 +53,12 @@
 // FCL's shape headers (e.g. geometry/shape/convex-inl.h) call assert() without
 // including <cassert> themselves, relying on it being pulled in transitively.
 // Newer toolchains and Eigen versions (e.g. Eigen 5) no longer provide that
-// transitive include, so make the declaration available before the FCL headers
-// are parsed. See conda-forge/dartsim-feedstock#171.
+// transitive include, so it must be included before the FCL headers below.
+// Guarded so clang-format's include sorting does not move it past them.
+// See conda-forge/dartsim-feedstock#171.
+// clang-format off
 #include <cassert>
+// clang-format on
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 #include <fcl/config.h>
