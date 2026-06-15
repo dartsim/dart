@@ -23,6 +23,14 @@ DEFAULT_TEST_REGEX = ""
 DEFAULT_CTEST_TIMEOUT = 1200
 DEFAULT_CTEST_STOP_ON_FAILURE = True
 DEFAULT_PORTS_PATCH_DIR = "docker/freebsd/ports-patches"
+# DART's top-level cmake_minimum_required (CMakeLists.txt). FreeBSD ports still
+# ships CMake 3.31, so when the packaged cmake is older than this we build it
+# from source in the VM (see ensure_cmake).
+REQUIRED_CMAKE_VERSION = "4.2.3"
+# DART requires Eigen >= 5.0 (cmake/dart_find_eigen3.cmake) but FreeBSD ports
+# ships Eigen 3.4, so when the packaged Eigen is older we install the headers
+# from source in the VM (see ensure_eigen).
+REQUIRED_EIGEN_VERSION = "5.0.0"
 DEFAULT_PACKAGES = [
     "assimp",
     "boost-libs",
@@ -502,6 +510,78 @@ def should_skip_bootstrap():
     return value.lower() in {"1", "true", "yes"}
 
 
+def _su_root_command(command, root_password):
+    return (
+        f"printf '%s\\n' {shlex.quote(root_password)} | "
+        f"su -m root -c {shlex.quote(command)}"
+    )
+
+
+def ensure_cmake(args):
+    """Install CMake >= REQUIRED_CMAKE_VERSION in the VM when ports is too old.
+
+    FreeBSD ports currently ships CMake 3.31, but DART's top-level
+    cmake_minimum_required is 4.2.3, so a stock VM fails to configure with
+    "CMake 4.2.3 or higher is required". Build the release tarball from source
+    (configuring it with the packaged cmake) and install it over the ports copy.
+    This is a no-op once FreeBSD ports ships a new enough CMake. Override the
+    URL/version with FREEBSD_VM_CMAKE_VERSION if needed.
+    """
+    req = os.getenv("FREEBSD_VM_CMAKE_VERSION", REQUIRED_CMAKE_VERSION)
+    root_password = os.getenv("FREEBSD_VM_ROOT_PASSWORD", "freebsd")
+    script = f"""set -e
+req={shlex.quote(req)}
+have=$(cmake --version 2>/dev/null | awk 'NR==1{{print $3}}')
+if [ -n "$have" ] && [ "$(printf '%s\\n%s\\n' "$req" "$have" | sort -V | head -n1)" = "$req" ]; then
+  echo "cmake $have already satisfies >= $req; skipping source build"
+  exit 0
+fi
+echo "FreeBSD ports cmake is ${{have:-missing}}; building CMake $req from source (DART requires >= $req)"
+cd /tmp
+fetch -q -o cmake-src.tar.gz "https://github.com/Kitware/CMake/releases/download/v$req/cmake-$req.tar.gz"
+rm -rf "cmake-$req"
+tar xf cmake-src.tar.gz
+cd "cmake-$req"
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_USE_OPENSSL=OFF -DBUILD_TESTING=OFF
+cmake --build build --parallel "$(sysctl -n hw.ncpu)"
+cmake --install build
+hash -r
+cmake --version | head -n1
+"""
+    ssh_command(args, _su_root_command(script, root_password), user=args.user, tty=True)
+
+
+def ensure_eigen(args):
+    """Install Eigen >= 5.0 in the VM when ports is too old.
+
+    FreeBSD ports ships Eigen 3.4, but DART requires Eigen >= 5.0
+    (cmake/dart_find_eigen3.cmake, a hard FATAL_ERROR with no FetchContent
+    fallback). Eigen is header-only, so fetch the release tarball and install
+    its headers + CMake config files over the ports copy. No-op once FreeBSD
+    ports ships >= 5.0. Override the version with FREEBSD_VM_EIGEN_VERSION.
+    """
+    ver = os.getenv("FREEBSD_VM_EIGEN_VERSION", REQUIRED_EIGEN_VERSION)
+    root_password = os.getenv("FREEBSD_VM_ROOT_PASSWORD", "freebsd")
+    script = f"""set -e
+ver={shlex.quote(ver)}
+macros=/usr/local/include/eigen3/Eigen/src/Core/util/Macros.h
+world=$(awk '/define EIGEN_WORLD_VERSION/{{print $3}}' "$macros" 2>/dev/null)
+if [ -n "$world" ] && [ "$world" -ge 5 ]; then
+  echo "system Eigen world version $world >= 5; skipping source install"
+  exit 0
+fi
+echo "FreeBSD ports Eigen is too old (world=${{world:-missing}}); installing Eigen $ver from source"
+cd /tmp
+fetch -q -o eigen-src.tar.gz "https://gitlab.com/libeigen/eigen/-/archive/$ver/eigen-$ver.tar.gz"
+rm -rf "eigen-$ver"
+tar xf eigen-src.tar.gz
+cmake -S "eigen-$ver" -B eigen-build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DEIGEN_BUILD_DOC=OFF
+cmake --install eigen-build
+awk '/define EIGEN_WORLD_VERSION/||/define EIGEN_MAJOR_VERSION/{{print}}' "$macros" | head -2
+"""
+    ssh_command(args, _su_root_command(script, root_password), user=args.user, tty=True)
+
+
 def bootstrap_vm(args):
     ensure_started(args)
     if should_skip_bootstrap():
@@ -514,11 +594,13 @@ def bootstrap_vm(args):
         "ASSUME_ALWAYS_YES=yes pkg update -f && "
         f"ASSUME_ALWAYS_YES=yes pkg install -y {package_list}"
     )
-    su_command = (
-        f"printf '%s\\n' {shlex.quote(root_password)} | "
-        f"su -m root -c {shlex.quote(command)}"
+    ssh_command(
+        args, _su_root_command(command, root_password), user=args.user, tty=True
     )
-    ssh_command(args, su_command, user=args.user, tty=True)
+    # FreeBSD ports' CMake (3.31) and Eigen (3.4) are older than DART's required
+    # 4.2.3 / 5.0; install new enough versions before any configure step runs.
+    ensure_cmake(args)
+    ensure_eigen(args)
 
 
 def test_vm(args):
