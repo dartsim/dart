@@ -391,9 +391,11 @@ Link Multibody::addLink(std::string_view name)
   registry.emplace<comps::FreeFrameProperties>(linkEntity).localTransform
       = Eigen::Isometry3d::Identity();
 
-  auto& linkComp = registry.emplace<comps::Link>(linkEntity);
+  auto& linkComp = registry.emplace<comps::LinkModel>(linkEntity);
+  registry.emplace<comps::LinkState>(linkEntity);
+  registry.emplace<comps::LinkControl>(linkEntity);
   linkComp.childJoints
-      = comps::Link::EntityVector{dart::common::StlAllocator<entt::entity>{
+      = comps::LinkModel::EntityVector{dart::common::StlAllocator<entt::entity>{
           m_world->getMemoryManager().getFreeAllocator()}};
   linkComp.name = std::move(actualName);
   linkComp.parentJoint = entt::null;
@@ -486,9 +488,11 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
       = Eigen::Isometry3d::Identity();
 
   // Add link component
-  auto& linkComp = registry.emplace<comps::Link>(linkEntity);
+  auto& linkComp = registry.emplace<comps::LinkModel>(linkEntity);
+  registry.emplace<comps::LinkState>(linkEntity);
+  registry.emplace<comps::LinkControl>(linkEntity);
   linkComp.childJoints
-      = comps::Link::EntityVector{dart::common::StlAllocator<entt::entity>{
+      = comps::LinkModel::EntityVector{dart::common::StlAllocator<entt::entity>{
           m_world->getMemoryManager().getFreeAllocator()}};
   linkComp.name = std::move(actualLinkName);
 
@@ -577,7 +581,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   jointModel.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   // Link the parent link to this joint
-  auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);
+  auto& parentLinkComp = safeGet<comps::LinkModel>(registry, parentEntity);
   parentLinkComp.childJoints.push_back(jointEntity);
 
   // Link this link to the parent joint

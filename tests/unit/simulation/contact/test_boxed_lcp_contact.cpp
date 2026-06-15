@@ -8013,8 +8013,8 @@ ArticulatedGroundStepResult runArticulatedGroundStep(
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
     contactTouchesLink = contactTouchesLink
-                         || registry.all_of<sx::comps::Link>(entityA)
-                         || registry.all_of<sx::comps::Link>(entityB);
+                         || registry.all_of<sx::comps::LinkModel>(entityA)
+                         || registry.all_of<sx::comps::LinkModel>(entityB);
   }
 
   world->step(400);
@@ -8057,8 +8057,8 @@ MultiArticulatedGroundStepResult runMultiArticulatedGroundStep(
         = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
-    if (registry.all_of<sx::comps::Link>(entityA)
-        || registry.all_of<sx::comps::Link>(entityB)) {
+    if (registry.all_of<sx::comps::LinkModel>(entityA)
+        || registry.all_of<sx::comps::LinkModel>(entityB)) {
       ++linkContactCount;
     }
   }
@@ -8114,8 +8114,8 @@ CartesianArticulatedGroundStepResult runCartesianArticulatedGroundStep(
         = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
-    if (registry.all_of<sx::comps::Link>(entityA)
-        || registry.all_of<sx::comps::Link>(entityB)) {
+    if (registry.all_of<sx::comps::LinkModel>(entityA)
+        || registry.all_of<sx::comps::LinkModel>(entityB)) {
       ++linkContactCount;
     }
   }
@@ -8211,8 +8211,8 @@ ArticulatedRigidImpactResult runArticulatedRigidImpactStep(
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
     contactTouchesLink = contactTouchesLink
-                         || registry.all_of<sx::comps::Link>(entityA)
-                         || registry.all_of<sx::comps::Link>(entityB);
+                         || registry.all_of<sx::comps::LinkModel>(entityA)
+                         || registry.all_of<sx::comps::LinkModel>(entityB);
     contactTouchesRigidBody
         = contactTouchesRigidBody
           || registry.all_of<sx::comps::RigidBodyTag>(entityA)
@@ -8266,8 +8266,8 @@ MultiArticulatedRigidImpactResult runMultiArticulatedRigidImpactStep(
         = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
-    if (registry.all_of<sx::comps::Link>(entityA)
-        || registry.all_of<sx::comps::Link>(entityB)) {
+    if (registry.all_of<sx::comps::LinkModel>(entityA)
+        || registry.all_of<sx::comps::LinkModel>(entityB)) {
       ++linkContactCount;
     }
     if (registry.all_of<sx::comps::RigidBodyTag>(entityA)
@@ -8360,9 +8360,10 @@ ArticulatedLinkImpactResult runArticulatedLinkImpactStep(
         = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
-    contactTouchesTwoLinks = contactTouchesTwoLinks
-                             || (registry.all_of<sx::comps::Link>(entityA)
-                                 && registry.all_of<sx::comps::Link>(entityB));
+    contactTouchesTwoLinks
+        = contactTouchesTwoLinks
+          || (registry.all_of<sx::comps::LinkModel>(entityA)
+              && registry.all_of<sx::comps::LinkModel>(entityB));
   }
 
   world->step();
@@ -8412,8 +8413,8 @@ MultiArticulatedLinkImpactResult runMultiArticulatedLinkImpactStep(
         = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
     const entt::entity entityB
         = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
-    if (registry.all_of<sx::comps::Link>(entityA)
-        && registry.all_of<sx::comps::Link>(entityB)) {
+    if (registry.all_of<sx::comps::LinkModel>(entityA)
+        && registry.all_of<sx::comps::LinkModel>(entityB)) {
       ++twoLinkContactCount;
     }
   }

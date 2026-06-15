@@ -694,7 +694,7 @@ inline AvbdRigidWorldEndpoint classifyAvbdRigidWorldEndpoint(
     return endpoint;
   }
 
-  if (registry.all_of<comps::Link>(entity)) {
+  if (registry.all_of<comps::LinkModel>(entity)) {
     endpoint.kind = AvbdRigidWorldEndpointKind::MultibodyLink;
     return endpoint;
   }
@@ -746,7 +746,7 @@ inline bool isAvbdRigidWorldPointJointFacade(
     return false;
   }
 
-  const auto* childLink = registry.try_get<comps::Link>(joint.childLink);
+  const auto* childLink = registry.try_get<comps::LinkModel>(joint.childLink);
   if (childLink != nullptr && childLink->parentJoint == jointEntity) {
     return false;
   }
@@ -888,7 +888,7 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
   if (worldA && worldB) {
     return false;
   }
-  const auto* childLink = registry.try_get<comps::Link>(joint->childLink);
+  const auto* childLink = registry.try_get<comps::LinkModel>(joint->childLink);
   if (childLink != nullptr && childLink->parentJoint == jointEntity) {
     return false;
   }
@@ -925,7 +925,7 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
       return true;
     }
 
-    if (const auto* link = registry.try_get<comps::Link>(entity)) {
+    if (const auto* link = registry.try_get<comps::LinkState>(entity)) {
       if (!link->worldTransform.matrix().allFinite()) {
         return false;
       }
@@ -1089,7 +1089,7 @@ inline std::size_t configureAvbdRigidWorldPointJointsFromCurrentPoses(
     if (worldA && worldB) {
       continue;
     }
-    const auto* childLink = registry.try_get<comps::Link>(joint.childLink);
+    const auto* childLink = registry.try_get<comps::LinkModel>(joint.childLink);
     if (childLink != nullptr && childLink->parentJoint == entity) {
       continue;
     }

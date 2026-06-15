@@ -112,7 +112,13 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      commanded effort, commanded velocity). Clean break: DART 7 has no
 //      compatibility debt, so packets written with the unified comps.Joint
 //      record (versions <= 21) no longer round-trip the joint. See WP-091.20.
-constexpr std::uint32_t kBinaryFormatVersion = 22;
+//   23: The unified comps.Link record is split into three contract-aligned
+//      components: comps.LinkModel (frozen topology, geometry, and inertia),
+//      comps.LinkState (per-step world pose), and comps.LinkControl (the
+//      user-applied external force). Clean break: DART 7 has no compatibility
+//      debt, so packets written with the unified comps.Link record
+//      (versions <= 22) no longer round-trip the link. See WP-091.20 (20b).
+constexpr std::uint32_t kBinaryFormatVersion = 23;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

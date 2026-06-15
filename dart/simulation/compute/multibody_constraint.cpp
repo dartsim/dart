@@ -109,7 +109,7 @@ void integrateMultibodyPositions(
 {
   Eigen::Index expectedDof = 0;
   for (const auto linkEntity : structure.links) {
-    const auto& link = registry.get<comps::Link>(linkEntity);
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
     if (link.parentJoint == entt::null) {
       continue;
     }
@@ -129,7 +129,7 @@ void integrateMultibodyPositions(
   Eigen::Index velocityOffset = 0;
   bool wroteJointPosition = false;
   for (const auto linkEntity : structure.links) {
-    const auto& link = registry.get<comps::Link>(linkEntity);
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
     if (link.parentJoint == entt::null) {
       continue;
     }

@@ -94,8 +94,8 @@ bool CollisionBody::isRigidBody() const
 bool CollisionBody::isLink() const
 {
   return isValid()
-         && dart::simulation::detail::registryOf(*m_world).all_of<comps::Link>(
-             detail::toRegistryEntity(m_entity));
+         && dart::simulation::detail::registryOf(*m_world)
+                .all_of<comps::LinkModel>(detail::toRegistryEntity(m_entity));
 }
 
 //==============================================================================

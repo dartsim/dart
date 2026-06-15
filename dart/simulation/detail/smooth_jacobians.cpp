@@ -117,7 +117,7 @@ void collectCoordinatesInto(
   coordinates.clear();
   coordinates.reserve(structure.links.size());
   for (const auto linkEntity : structure.links) {
-    const auto& link = registry.get<comps::Link>(linkEntity);
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
     if (link.parentJoint == entt::null) {
       continue;
     }
