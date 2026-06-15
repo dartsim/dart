@@ -1315,6 +1315,195 @@ def _validate_scene_runtime_combined_candidate_buffer(
     }
 
 
+def _validate_world_step_surface_contact_counters(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    packet_pair_capacity: int,
+    label: str,
+) -> dict[str, int]:
+    line_search_trials = int(_counter(cpu_row, "world_step_line_search_trials"))
+    gpu_line_search_trials = int(_counter(gpu_row, "world_step_line_search_trials"))
+    if line_search_trials != gpu_line_search_trials:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step line-search trial mismatch: "
+            f"{line_search_trials}/{gpu_line_search_trials}"
+        )
+
+    candidate_builds = int(
+        _counter(cpu_row, "world_step_surface_contact_candidate_builds")
+    )
+    gpu_candidate_builds = int(
+        _counter(gpu_row, "world_step_surface_contact_candidate_builds")
+    )
+    if candidate_builds != gpu_candidate_builds:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step candidate-build mismatch: "
+            f"{candidate_builds}/{gpu_candidate_builds}"
+        )
+    if candidate_builds <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record a World::step surface-contact candidate build"
+        )
+
+    pair_capacity = int(
+        _counter(cpu_row, "world_step_surface_contact_candidate_pair_capacity")
+    )
+    gpu_pair_capacity = int(
+        _counter(gpu_row, "world_step_surface_contact_candidate_pair_capacity")
+    )
+    if pair_capacity != gpu_pair_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step pair-capacity mismatch: "
+            f"{pair_capacity}/{gpu_pair_capacity}"
+        )
+    expected_capacity = packet_pair_capacity * candidate_builds
+    if pair_capacity != expected_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} World::step pair capacity {pair_capacity} does not match "
+            "filtered packet capacity per build "
+            f"{packet_pair_capacity} * builds {candidate_builds}"
+        )
+
+    rejected_pairs = int(
+        _counter(cpu_row, "world_step_surface_contact_candidate_rejected_pairs")
+    )
+    gpu_rejected_pairs = int(
+        _counter(gpu_row, "world_step_surface_contact_candidate_rejected_pairs")
+    )
+    if rejected_pairs != gpu_rejected_pairs:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step rejected-pair mismatch: "
+            f"{rejected_pairs}/{gpu_rejected_pairs}"
+        )
+    if rejected_pairs <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record World::step filtering pressure"
+        )
+
+    point_triangle_candidates = int(
+        _counter(cpu_row, "world_step_surface_contact_point_triangle_candidates")
+    )
+    gpu_point_triangle_candidates = int(
+        _counter(gpu_row, "world_step_surface_contact_point_triangle_candidates")
+    )
+    if point_triangle_candidates != gpu_point_triangle_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step point-triangle candidate mismatch: "
+            f"{point_triangle_candidates}/{gpu_point_triangle_candidates}"
+        )
+
+    edge_edge_candidates = int(
+        _counter(cpu_row, "world_step_surface_contact_edge_edge_candidates")
+    )
+    gpu_edge_edge_candidates = int(
+        _counter(gpu_row, "world_step_surface_contact_edge_edge_candidates")
+    )
+    if edge_edge_candidates != gpu_edge_edge_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step edge-edge candidate mismatch: "
+            f"{edge_edge_candidates}/{gpu_edge_edge_candidates}"
+        )
+
+    ccd_counters: dict[str, int] = {}
+    for suffix in (
+        "ccd_point_triangle_checks",
+        "ccd_edge_edge_checks",
+        "ccd_hits",
+        "ccd_limited_steps",
+        "ccd_zero_step_count",
+    ):
+        counter_name = f"world_step_surface_contact_{suffix}"
+        cpu_value = int(_counter(cpu_row, counter_name))
+        gpu_value = int(_counter(gpu_row, counter_name))
+        if cpu_value != gpu_value:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU World::step {suffix} mismatch: "
+                f"{cpu_value}/{gpu_value}"
+            )
+        ccd_counters[suffix] = cpu_value
+
+    ccd_checks = (
+        ccd_counters["ccd_point_triangle_checks"] + ccd_counters["ccd_edge_edge_checks"]
+    )
+    if ccd_checks <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record World::step surface-contact CCD checks"
+        )
+    if ccd_counters["ccd_hits"] > ccd_checks:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} World::step CCD hits {ccd_counters['ccd_hits']} exceed "
+            f"checks {ccd_checks}"
+        )
+
+    inter_body_builds = int(
+        _counter(cpu_row, "world_step_inter_body_surface_contact_candidate_builds")
+    )
+    gpu_inter_body_builds = int(
+        _counter(gpu_row, "world_step_inter_body_surface_contact_candidate_builds")
+    )
+    if inter_body_builds != gpu_inter_body_builds:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU World::step inter-body candidate-build mismatch: "
+            f"{inter_body_builds}/{gpu_inter_body_builds}"
+        )
+    if inter_body_builds <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record a World::step inter-body candidate build"
+        )
+
+    inter_body: dict[str, int] = {"candidate_builds": inter_body_builds}
+    for suffix in (
+        "candidate_pair_capacity",
+        "candidate_rejected_pairs",
+        "point_triangle_candidates",
+        "edge_edge_candidates",
+    ):
+        counter_name = f"world_step_inter_body_surface_contact_{suffix}"
+        cpu_value = int(_counter(cpu_row, counter_name))
+        gpu_value = int(_counter(gpu_row, counter_name))
+        if cpu_value != gpu_value:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU World::step inter-body {suffix} mismatch: "
+                f"{cpu_value}/{gpu_value}"
+            )
+        inter_body[suffix] = cpu_value
+
+    inter_body_emitted = (
+        inter_body["point_triangle_candidates"] + inter_body["edge_edge_candidates"]
+    )
+    if (
+        inter_body["candidate_pair_capacity"]
+        != inter_body_emitted + inter_body["candidate_rejected_pairs"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} World::step inter-body capacity "
+            f"{inter_body['candidate_pair_capacity']} does not equal emitted "
+            f"{inter_body_emitted} + rejected "
+            f"{inter_body['candidate_rejected_pairs']}"
+        )
+    if inter_body["candidate_rejected_pairs"] <= 0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} did not record World::step inter-body filtering pressure"
+        )
+
+    return {
+        "line_search_trials": line_search_trials,
+        "candidate_builds": candidate_builds,
+        "candidate_pair_capacity": pair_capacity,
+        "candidate_pair_capacity_per_build": packet_pair_capacity,
+        "rejected_pairs": rejected_pairs,
+        "point_triangle_candidates": point_triangle_candidates,
+        "edge_edge_candidates": edge_edge_candidates,
+        "ccd_point_triangle_checks": ccd_counters["ccd_point_triangle_checks"],
+        "ccd_edge_edge_checks": ccd_counters["ccd_edge_edge_checks"],
+        "ccd_hits": ccd_counters["ccd_hits"],
+        "ccd_limited_steps": ccd_counters["ccd_limited_steps"],
+        "ccd_zero_step_count": ccd_counters["ccd_zero_step_count"],
+        "inter_body": inter_body,
+    }
+
+
 def _validate_scene_runtime_filtered_candidate_buffer(
     *,
     cpu_row: Mapping[str, Any],
@@ -1473,6 +1662,13 @@ def _validate_scene_runtime_filtered_candidate_buffer(
             f"{cpu_scene_bodies}/{gpu_scene_bodies}"
         )
 
+    world_step_surface_contact = _validate_world_step_surface_contact_counters(
+        cpu_row=cpu_row,
+        gpu_row=gpu_row,
+        packet_pair_capacity=cpu_pair_capacity,
+        label=label,
+    )
+
     speedup = cpu_ns / gpu_ns
     timing_ns = {
         "setup": _counter(gpu_row, "host_setup_ns"),
@@ -1498,6 +1694,7 @@ def _validate_scene_runtime_filtered_candidate_buffer(
         "triangle_count": cpu_triangles,
         "edge_count": cpu_edges,
         "scene_body_count": cpu_scene_bodies,
+        "world_step_surface_contact": world_step_surface_contact,
         "max_result_abs_error": max_error,
         "speedup": speedup,
         "meets_speedup_gate": speedup >= speedup_gate,

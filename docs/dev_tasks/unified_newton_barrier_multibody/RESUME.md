@@ -2,6 +2,147 @@
 
 ## Current Reality (2026-06-14)
 
+GPU slowness root-cause (2026-06-14): at maintainer direction the session
+pivoted from witness packets to root-causing the sub-1x GPU speedups. See
+`docs/plans/083-unified-newton-barrier-multibody/gpu-slowness-root-cause.md`.
+Sweep/scene rows are kernel-bound (device sort issued as ~133 per-stage bitonic
+launches, `<<<1,1>>>` serial prefix sums, FP64 on a 1:64-FP64 Ada laptop GPU,
+~31 MB all-pairs allocation per call); small mask/buffer rows are
+per-call-overhead-bound and already reach GPU parity at the largest size. The
+gate failure is structural but fixable (CUB scan/sort, FP32/mixed path,
+persistent buffers, fused higher-occupancy kernels, harness warmup). Analysis
+only — no production CUDA changed.
+
+Latest `World::step` inter-body candidate witness follow-up (2026-06-14): work
+continues locally on `simx/plan083-worldstep-gpu-candidate-bridge` (local-only,
+no PR), stacked on the milestone checkpoint PR #3000 branch
+`simx/plan083-worldstep-contact-filter-stats`.
+
+This slice extends the private GPU contact-candidate packet's
+`world_step_surface_contact` witness with an `inter_body` sub-witness: the
+inter-body deformable surface-contact candidate counters from a dedicated minimal
+two-body `World::step` (a moving-point deformable body crossing a stationary
+triangle obstacle, mirroring the CPU scene corpus inter-body witness). The packet
+writer now CPU/GPU-parity-checks the inter-body candidate builds, pair capacity,
+rejected pairs, point-triangle candidates, and edge-edge candidates, requires a
+nonzero candidate build and nonzero rejection pressure, and enforces
+`capacity == emitted + rejected`. Fresh CUDA packet evidence records
+`world_step_surface_contact.inter_body.candidate_builds=33`,
+`candidate_pair_capacity=528`, `candidate_rejected_pairs=495`,
+`point_triangle_candidates=33`, and `edge_edge_candidates=0`. These are
+deterministic scene counts; the recorded
+`max_result_abs_error=5.551115123125783e-17` and sub-1x speedup
+(`meets_speedup_gate=false`) are unchanged by this slice.
+
+This proves a reduced same-process inter-body deformable `World::step` candidate
+filter-pressure witness only. It does not prove production runtime scene
+filtering inside `World::step`, GPU `World::step` contact-candidate construction,
+inter-body CCD parity, or a top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
+Latest `World::step` self-surface CCD witness follow-up (2026-06-14): the
+checkpoint branch `simx/plan083-worldstep-contact-filter-stats` has been pushed
+and **merged into `main`** as the milestone checkpoint **PR #3000** (2026-06-14,
+with explicit maintainer approval). It was an honest work-in-progress checkpoint,
+not a completion claim, and carries the full local follow-up stack up to the
+contact-filter-stats slice. Work continues locally on the stacked branch
+`simx/plan083-worldstep-gpu-candidate-bridge` (local-only, no PR); the maintainer
+elected to continue evidence packets here rather than carve a focused PR.
+
+This slice extends the private GPU contact-candidate packet's reduced
+scene-owned filtered candidate-buffer `world_step_surface_contact` witness with
+the matching self-surface continuous-collision (CCD) counters from the same
+generated DART `World::step`. The packet writer now CPU/GPU-parity-checks the
+runtime CCD point-triangle checks, edge-edge checks, hits, limited steps, and
+zero-step counts, requires nonzero CCD checks, and rejects CCD hits exceeding
+total checks. Fresh CUDA packet evidence records
+`world_step_surface_contact.ccd_point_triangle_checks=47488`,
+`ccd_edge_edge_checks=101888`, `ccd_hits=39168`, `ccd_limited_steps=1`, and
+`ccd_zero_step_count=16384`, alongside the existing filtered-row counters. These
+are deterministic scene counts; the recorded
+`max_result_abs_error=5.551115123125783e-17` and sub-1x speedup
+(`meets_speedup_gate=false`) are unchanged by this slice.
+
+This proves a richer reduced packet-level bridge between GPU filtered candidate
+construction evidence and a same-scene runtime `World::step` self-surface CCD
+witness only. It does not prove production runtime scene filtering inside
+`World::step`, GPU `World::step` contact-candidate construction, or a top-level
+runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
+Latest `World::step` GPU contact-candidate bridge follow-up (2026-06-14):
+work continues locally on `simx/plan083-worldstep-gpu-candidate-bridge`,
+stacked on the clean checkpoint branch
+`simx/plan083-worldstep-contact-filter-stats` at `2a32080431d`. The branch
+already contains `origin/main` at `9de4ac6af87`, has not been pushed, and has
+no open PR. Keep `simx/plan083-worldstep-contact-filter-stats` available as
+the checkpoint/milestone PR candidate, and push/open this stacked follow-up
+branch only after explicit maintainer approval. Do not push, PR-comment,
+resolve review threads, trigger CI, open or close PRs, delete branches, or
+claim production GPU `World::step` coverage without explicit maintainer
+approval.
+
+This slice extends the private GPU contact-candidate packet's reduced
+scene-owned filtered candidate-buffer row with a matching `World::step`
+self-surface contact-filter diagnostic witness from the same generated DART
+`World` surface. The packet writer now rejects missing or mismatched
+`World::step` diagnostic counters and requires the runtime per-build pair
+capacity to match the reduced filtered packet capacity. Fresh CUDA packet
+evidence records `pair_capacity=7274496`, `candidate_count=2048`,
+`rejected_count=7272448`,
+`world_step_surface_contact.candidate_builds=33`,
+`world_step_surface_contact.candidate_pair_capacity_per_build=7274496`,
+`world_step_surface_contact.candidate_pair_capacity=240058368`,
+`world_step_surface_contact.rejected_pairs=239908992`,
+`world_step_surface_contact.point_triangle_candidates=47488`,
+`world_step_surface_contact.edge_edge_candidates=101888`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.09728698147728942x` (`meets_speedup_gate=false`). The top-level
+contact-candidate packet records `max_result_abs_error=5.551115123125783e-17`
+and `speedup=0.024982985278583135x` (`meets_speedup_gate=false`).
+
+This proves a reduced packet-level bridge between GPU filtered candidate
+construction evidence and a same-scene runtime `World::step` self-surface
+filter-pressure witness only. It does not prove production runtime scene
+filtering inside `World::step`, GPU `World::step` contact-candidate
+construction, or a top-level runtime speedup claim.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`
+- `pixi run -e cuda cmake --build build/cuda/cpp/Release --target bm_plan083_gpu_contact_candidates --parallel`
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run lint`
+- `git diff --check`
+
 Latest `World::step` contact-filter stats follow-up (2026-06-14): after PR
 #2978 merged and the old remote branch was deleted, work continues locally on
 the new branch `simx/plan083-worldstep-contact-filter-stats`, created from
