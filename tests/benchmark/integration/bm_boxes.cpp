@@ -30,103 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/simulation.hpp>
-
-#include <dart/constraint/constraint.hpp>
-
-#include <dart/collision/bullet/bullet.hpp>
-
-#include <dart/dynamics/dynamics.hpp>
-
-#include <dart/math/math.hpp>
+#include "boxes_scene.hpp"
 
 #include <benchmark/benchmark.h>
 
 using namespace dart;
 
-namespace {
-
-[[nodiscard]] dynamics::SkeletonPtr createBox(
-    const Eigen::Vector3d& position,
-    const Eigen::Vector3d& size = Eigen::Vector3d(1, 1, 1),
-    const Eigen::Vector3d& color
-    = dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0))
-{
-  static size_t index = 0;
-  auto boxSkel = dynamics::Skeleton::create("box" + std::to_string(index++));
-
-  // Give the floor a body
-  auto boxBody
-      = boxSkel->createJointAndBodyNodePair<dynamics::FreeJoint>(nullptr)
-            .second;
-
-  // Give the body a shape
-  auto boxShape = std::make_shared<dynamics::BoxShape>(size);
-  dynamics::ShapeNode* shapeNode = boxBody->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(boxShape);
-  shapeNode->getVisualAspect()->setColor(color);
-  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
-
-  // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = position;
-  boxBody->getParentJoint()->setTransformFromParentBodyNode(tf);
-
-  return boxSkel;
-}
-
-[[nodiscard]] simulation::WorldPtr createWorld(size_t dim)
-{
-  // Create an empty world
-  auto world = simulation::World::create();
-
-  // Set collision detector type
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::BulletCollisionDetector::create());
-
-  // Create dim x dim x dim boxes
-  for (auto i = 0u; i < dim; ++i) {
-    for (auto j = 0u; j < dim; ++j) {
-      for (auto k = 0u; k < dim; ++k) {
-        auto x = i - dim / 2;
-        auto y = j - dim / 2;
-        auto z = k + 5;
-        auto position = Eigen::Vector3d(x, y, z);
-        auto size = Eigen::Vector3d(0.9, 0.9, 0.9);
-        auto color = Eigen::Vector3d(
-            static_cast<double>(i) / dim,
-            static_cast<double>(j) / dim,
-            static_cast<double>(k) / dim);
-        auto box = createBox(position, size, color);
-        world->addSkeleton(box);
-      }
-    }
-  }
-
-  // Create ground
-  auto ground = dynamics::Skeleton::create("ground");
-  auto groundBody
-      = ground->createJointAndBodyNodePair<dynamics::WeldJoint>().second;
-  auto groundShapeNode = groundBody->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(
-      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
-  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
-  groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
-  world->addSkeleton(ground);
-
-  return world;
-}
-
-} // namespace
-
 static void BM_RunBoxes(benchmark::State& state)
 {
   const auto steps = 2000u;
-  auto world = createWorld(state.range(0));
+  auto world = test::createBoxesWorld(static_cast<std::size_t>(state.range(0)));
 
   for (auto _ : state) {
     for (size_t i = 0; i < steps; ++i) {

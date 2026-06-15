@@ -484,7 +484,10 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  {
+    DART_PROFILE_SCOPED_N("collide");
+    mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
+  }
 
   // Destroy previous contact constraints
   mContactConstraints.clear();

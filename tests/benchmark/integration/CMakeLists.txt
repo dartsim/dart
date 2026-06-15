@@ -53,6 +53,12 @@ if(TARGET dart-collision-bullet)
       dart-collision-bullet
   )
 
+  # Headless boxes driver: doubles as a determinism/correctness oracle (prints
+  # state checksums) and a headless profiling target (dumps the built-in text
+  # profiler when DART_BUILD_PROFILE is on). Not a Google Benchmark target.
+  add_executable(boxes_headless boxes_headless.cpp)
+  target_link_libraries(boxes_headless PRIVATE dart dart-collision-bullet)
+
 endif()
 
 if(TARGET dart-utils)
