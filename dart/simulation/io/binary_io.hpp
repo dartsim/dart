@@ -118,7 +118,13 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      user-applied external force). Clean break: DART 7 has no compatibility
 //      debt, so packets written with the unified comps.Link record
 //      (versions <= 22) no longer round-trip the link. See WP-091.20 (20b).
-constexpr std::uint32_t kBinaryFormatVersion = 23;
+//   24: The DeformableNodeState record is split into comps.DeformableNodeModel
+//      (per-node mass and pinning mask, frozen) and comps.DeformableNodeState
+//      (per-step node positions, previous positions, and velocities), matching
+//      the Model/State data contract. Clean break: packets written with the
+//      unified DeformableNodeState record (versions <= 23) no longer round-trip
+//      the deformable node data. See WP-091.20 (20c).
+constexpr std::uint32_t kBinaryFormatVersion = 24;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

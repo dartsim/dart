@@ -701,7 +701,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS2 — Physical data architecture
 
-#### WP-091.20 Model/State/Control component split [partial — joint+link slices landed]
+#### WP-091.20 Model/State/Control component split [claimed]
 
 - Objective: the articulated and deformable component fusion is split so
   storage matches the documented Model/State/Control/Contacts contract (the
@@ -761,8 +761,25 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   Gates: `pixi run lint` and `check-api-boundaries` clean; default-step golden
   trajectories stay **3/3 bit-identical**; `pixi run test-unit` green
   (serialization round-trip + the three new stable IDs; variational 178/178;
-  cross-family; boxed-LCP 122/122; test_world 372/372). Remaining: slice 20c
-  (`DeformableNodeState` → model/state).
+  cross-family; boxed-LCP 122/122; test_world 372/372).
+- Evidence (slice 20c — deformable, landed): `DeformableNodeState` is split into
+  two contract-aligned components in `comps/deformable_body.hpp` —
+  `DeformableNodeModel` (frozen per-node mass and pinning mask: masses, fixed)
+  and `DeformableNodeState` (per-step node kinematics: positions,
+  previousPositions, velocities). Both are non-aggregate (allocator
+  constructors over `DeformableVector` fields), so each keeps a hand-written
+  custom serializer (`DeformableNodeModelSerializer` /
+  `DeformableNodeStateSerializer`); both are registered. The bake emplaces both
+  (allocator-aware); the deformable solver stage, replay capture/restore, the
+  allocator-rebind loop, the facade, scene diagnostics, and tests read masses/
+  fixed via `DeformableNodeModel` (the `ScalarVector`/`MaskVector` typedefs moved
+  with them) while `DeformableNodeState` stays the canonical per-node component
+  for presence/iteration. Binary format bumped 23 → 24 (clean break). Gates:
+  `pixi run lint` and `check-api-boundaries` clean; default-step golden
+  trajectories stay **3/3 bit-identical**; `pixi run test-unit` green
+  (serialization round-trip; AVBD 107/107; test_world 372/372 including the
+  deformable suites). All three slices (20a/20b/20c) of WP-091.20 are now
+  landed.
 
 #### WP-091.21 Baked dense-index Model artifact
 

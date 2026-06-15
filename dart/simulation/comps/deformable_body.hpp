@@ -58,32 +58,54 @@ struct DeformableBodyTag
   DART_SIMULATION_TAG_COMPONENT(DeformableBodyTag, "comps.DeformableBodyTag");
 };
 
-/// Internal per-node state for a deformable body.
+/// Internal per-node **Model** data for a deformable body: the per-node mass
+/// and pinning mask, frozen at finalization. Per the Model/State/Control/
+/// Contracts data contract (WP-091.20), this holds only design-frozen per-node
+/// parameters; the per-step node kinematics live in `DeformableNodeState`.
+struct DeformableNodeModel
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableNodeModel, "comps.DeformableNodeModel");
+
+  using ScalarVector = DeformableVector<double>;
+  using MaskVector = DeformableVector<std::uint8_t>;
+
+  DeformableNodeModel() = default;
+
+  explicit DeformableNodeModel(dart::common::MemoryAllocator& allocator)
+    : masses(dart::common::StlAllocator<double>{allocator}),
+      fixed(dart::common::StlAllocator<std::uint8_t>{allocator})
+  {
+  }
+
+  ScalarVector masses;
+  MaskVector fixed;
+};
+
+/// Internal per-node **State** for a deformable body: the per-step node
+/// positions, previous positions, and velocities advanced by the solver every
+/// step. Per the Model/State/Control/Contracts contract (WP-091.20), this holds
+/// only mutable per-step data; the per-node mass and pinning mask live in
+/// `DeformableNodeModel`.
 struct DeformableNodeState
 {
   DART_SIMULATION_PROPERTY_COMPONENT(
       DeformableNodeState, "comps.DeformableNodeState");
 
   using Vector3Vector = DeformableVector<Eigen::Vector3d>;
-  using ScalarVector = DeformableVector<double>;
-  using MaskVector = DeformableVector<std::uint8_t>;
 
   DeformableNodeState() = default;
 
   explicit DeformableNodeState(dart::common::MemoryAllocator& allocator)
     : positions(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
       previousPositions(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
-      velocities(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
-      masses(dart::common::StlAllocator<double>{allocator}),
-      fixed(dart::common::StlAllocator<std::uint8_t>{allocator})
+      velocities(dart::common::StlAllocator<Eigen::Vector3d>{allocator})
   {
   }
 
   Vector3Vector positions;
   Vector3Vector previousPositions;
   Vector3Vector velocities;
-  ScalarVector masses;
-  MaskVector fixed;
 };
 
 /// Internal spring edge connecting two deformable nodes.

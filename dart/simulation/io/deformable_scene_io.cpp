@@ -867,6 +867,7 @@ DeformableSceneDiagnostics collectDeformableSceneDiagnostics(const World& world)
       comps::DeformableMeshTopology>();
   for (const auto entity : view) {
     const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& model = registry.get<comps::DeformableNodeModel>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     ++diagnostics.bodyCount;
     diagnostics.nodeCount += state.positions.size();
@@ -874,7 +875,7 @@ DeformableSceneDiagnostics collectDeformableSceneDiagnostics(const World& world)
     diagnostics.surfaceTriangleCount += topology.surfaceTriangles.size();
 
     for (std::size_t i = 0; i < state.positions.size(); ++i) {
-      diagnostics.totalMass += state.masses[i];
+      diagnostics.totalMass += model.masses[i];
       diagnostics.maxDisplacement = std::max(
           diagnostics.maxDisplacement,
           (state.positions[i] - topology.restPositions[i]).norm());

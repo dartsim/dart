@@ -3511,6 +3511,7 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     ASSERT_EQ(view.size_hint(), 1u);
     for (const auto entity : view) {
       const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& model = registry.get<sx::comps::DeformableNodeModel>(entity);
       const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
       const auto& topology
           = view.get<sx::comps::DeformableMeshTopology>(entity);
@@ -3531,9 +3532,9 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
           state.velocities.data(),
           state.velocities.size() * sizeof(Eigen::Vector3d)));
       EXPECT_TRUE(hasAllocated(
-          state.masses.data(), state.masses.size() * sizeof(double)));
+          model.masses.data(), model.masses.size() * sizeof(double)));
       EXPECT_TRUE(hasAllocated(
-          state.fixed.data(), state.fixed.size() * sizeof(std::uint8_t)));
+          model.fixed.data(), model.fixed.size() * sizeof(std::uint8_t)));
       EXPECT_TRUE(hasAllocated(
           topology.restPositions.data(),
           topology.restPositions.size() * sizeof(Eigen::Vector3d)));
@@ -3628,6 +3629,7 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     ASSERT_EQ(view.size_hint(), 1u);
     for (const auto entity : view) {
       const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& model = registry.get<sx::comps::DeformableNodeModel>(entity);
       const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
       const auto& topology
           = view.get<sx::comps::DeformableMeshTopology>(entity);
@@ -3636,8 +3638,8 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       expectWorldAllocator(loadedDeformableWorld, state.positions);
       expectWorldAllocator(loadedDeformableWorld, state.previousPositions);
       expectWorldAllocator(loadedDeformableWorld, state.velocities);
-      expectWorldAllocator(loadedDeformableWorld, state.masses);
-      expectWorldAllocator(loadedDeformableWorld, state.fixed);
+      expectWorldAllocator(loadedDeformableWorld, model.masses);
+      expectWorldAllocator(loadedDeformableWorld, model.fixed);
       expectWorldAllocator(loadedDeformableWorld, spring.edges);
       expectWorldAllocator(loadedDeformableWorld, topology.restPositions);
       expectWorldAllocator(loadedDeformableWorld, topology.surfaceTriangles);

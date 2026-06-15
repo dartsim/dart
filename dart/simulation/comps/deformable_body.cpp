@@ -61,6 +61,48 @@ void readVector(std::istream& input, Vector& values, Read read)
 }
 
 //==============================================================================
+class DeformableNodeModelSerializer final
+  : public io::TypedComponentSerializer<DeformableNodeModel>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return DeformableNodeModel::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableNodeModel& component,
+      const io::EntityMap&) const override
+  {
+    const auto writeDouble = [&](double value) {
+      io::writePOD(output, value);
+    };
+    const auto writeByte = [&](std::uint8_t value) {
+      io::writePOD(output, value);
+    };
+
+    writeVector(output, component.masses, writeDouble);
+    writeVector(output, component.fixed, writeByte);
+  }
+
+  void loadComponent(
+      std::istream& input, DeformableNodeModel& component) const override
+  {
+    const auto readDouble = [&](double& value) {
+      io::readPOD(input, value);
+    };
+    const auto readByte = [&](std::uint8_t& value) {
+      io::readPOD(input, value);
+    };
+
+    readVector(input, component.masses, readDouble);
+    readVector(input, component.fixed, readByte);
+  }
+};
+
+//==============================================================================
 class DeformableNodeStateSerializer final
   : public io::TypedComponentSerializer<DeformableNodeState>
 {
@@ -79,18 +121,10 @@ private:
     const auto writeVector3 = [&](const Eigen::Vector3d& value) {
       io::writeVector3d(output, value);
     };
-    const auto writeDouble = [&](double value) {
-      io::writePOD(output, value);
-    };
-    const auto writeByte = [&](std::uint8_t value) {
-      io::writePOD(output, value);
-    };
 
     writeVector(output, component.positions, writeVector3);
     writeVector(output, component.previousPositions, writeVector3);
     writeVector(output, component.velocities, writeVector3);
-    writeVector(output, component.masses, writeDouble);
-    writeVector(output, component.fixed, writeByte);
   }
 
   void loadComponent(
@@ -99,18 +133,10 @@ private:
     const auto readVector3 = [&](Eigen::Vector3d& value) {
       io::readVector3d(input, value);
     };
-    const auto readDouble = [&](double& value) {
-      io::readPOD(input, value);
-    };
-    const auto readByte = [&](std::uint8_t& value) {
-      io::readPOD(input, value);
-    };
 
     readVector(input, component.positions, readVector3);
     readVector(input, component.previousPositions, readVector3);
     readVector(input, component.velocities, readVector3);
-    readVector(input, component.masses, readDouble);
-    readVector(input, component.fixed, readByte);
   }
 };
 
@@ -370,6 +396,7 @@ void registerSerializerIfNeeded(io::SerializerRegistry& registry)
 //==============================================================================
 void registerDeformableBodySerializers(io::SerializerRegistry& registry)
 {
+  registerSerializerIfNeeded<DeformableNodeModelSerializer>(registry);
   registerSerializerIfNeeded<DeformableNodeStateSerializer>(registry);
   registerSerializerIfNeeded<DeformableSpringModelSerializer>(registry);
   registerSerializerIfNeeded<DeformableMeshTopologySerializer>(registry);

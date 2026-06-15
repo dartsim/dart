@@ -5244,7 +5244,7 @@ double addFemElasticityEnergy(
 }
 
 double evaluateDeformableObjective(
-    const comps::DeformableNodeState& state,
+    const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableSpringModel& model,
     std::span<const Eigen::Vector3d> positions,
     std::span<const Eigen::Vector3d> inertialTargets,
@@ -5277,9 +5277,9 @@ double evaluateDeformableObjective(
     }
 
     const Eigen::Vector3d delta = positions[i] - inertialTargets[i];
-    energy += 0.5 * state.masses[i] * invDt2 * delta.squaredNorm();
+    energy += 0.5 * nodeModel.masses[i] * invDt2 * delta.squaredNorm();
     if (gradient != nullptr) {
-      (*gradient)[i] += state.masses[i] * invDt2 * delta;
+      (*gradient)[i] += nodeModel.masses[i] * invDt2 * delta;
     }
   }
 
@@ -6137,6 +6137,7 @@ void syncFemRestShapeScratch(
 //==============================================================================
 void prepareDeformableBoundaryConditions(
     comps::DeformableNodeState& state,
+    const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableBoundaryConditions* boundaryConditions,
     double time,
     double timeStep,
@@ -6148,7 +6149,7 @@ void prepareDeformableBoundaryConditions(
   scratch.previousStepPositions.assign(
       state.positions.begin(), state.positions.end());
   scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
-  scratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
+  scratch.activeFixed.assign(nodeModel.fixed.begin(), nodeModel.fixed.end());
   scratch.activeDirichlet.assign(nodeCount, 0u);
 
   if (boundaryConditions == nullptr) {
@@ -6312,6 +6313,7 @@ void primeVbdStaticContactScratch(
 void runVbdDeformableSolve(
     entt::entity entity,
     const comps::DeformableNodeState& state,
+    const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableSpringModel& model,
     const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
@@ -6947,7 +6949,7 @@ void runVbdDeformableSolve(
       const Eigen::Vector3d axis = dvbd::canonicalAvbdAttachmentAxis(axisId);
       const bool isScriptedDirichlet
           = hasDirichletMask && scratch.activeDirichlet[vertex] != 0u;
-      const Eigen::Vector3d target = (state.fixed[vertex] != 0u
+      const Eigen::Vector3d target = (nodeModel.fixed[vertex] != 0u
                                       && !isScriptedDirichlet && hasRestTargets)
                                          ? topology.restPositions[vertex]
                                          : state.positions[vertex];
@@ -7019,7 +7021,7 @@ void runVbdDeformableSolve(
     selfContactFrictionOptions.maxStiffness = config.avbdMaxStiffness;
     result = dvbd::blockDescentMassSpringAvbdRows(
         scratch.next,
-        state.masses,
+        nodeModel.masses,
         vbdScratch.avbdSolveFixed,
         scratch.inertialTargets,
         vbdScratch.springs,
@@ -7300,7 +7302,7 @@ void runVbdDeformableSolve(
     selfContactFrictionOptions.maxStiffness = config.avbdMaxStiffness;
     result = dvbd::blockDescentTetMeshAvbdFiniteStiffness(
         scratch.next,
-        state.masses,
+        nodeModel.masses,
         scratch.activeFixed,
         scratch.inertialTargets,
         vbdScratch.tets,
@@ -7366,7 +7368,7 @@ void runVbdDeformableSolve(
     // driver when workerThreads <= 1.
     result = dvbd::parallelBlockDescentDeformable(
         scratch.next,
-        state.masses,
+        nodeModel.masses,
         scratch.activeFixed,
         scratch.inertialTargets,
         vbdScratch.springs,
@@ -7404,7 +7406,7 @@ void runVbdDeformableSolve(
 // eigen-decompositions and the triplet assembly are data-parallel GPU
 // candidates.
 bool computeProjectedNewtonDirection(
-    const comps::DeformableNodeState& state,
+    const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableSpringModel& model,
     std::span<const Eigen::Vector3d> positions,
     std::span<const std::uint8_t> fixed,
@@ -7535,7 +7537,7 @@ bool computeProjectedNewtonDirection(
   // Inertia: block diagonal, positive definite for free nodes. Fixed DOFs get
   // a unit diagonal so the global matrix stays positive definite.
   for (std::size_t i = 0; i < nodeCount; ++i) {
-    const double diagonal = isFree(i) ? state.masses[i] * invDt2 : 1.0;
+    const double diagonal = isFree(i) ? nodeModel.masses[i] * invDt2 : 1.0;
     addDiagonalBlock3(i, diagonal);
   }
 
@@ -8094,6 +8096,7 @@ bool computeProjectedNewtonDirection(
 void advanceDeformableBody(
     entt::entity entity,
     comps::DeformableNodeState& state,
+    const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableSpringModel& model,
     const comps::DeformableMeshTopology& topology,
     comps::DeformableSolverScratch& scratch,
@@ -8147,7 +8150,7 @@ void advanceDeformableBody(
   if (material.useAdaptiveBarrierStiffness) {
     double maxNodalMass = 0.0;
     for (std::size_t i = 0; i < nodeCount; ++i) {
-      maxNodalMass = std::max(maxNodalMass, state.masses[i]);
+      maxNodalMass = std::max(maxNodalMass, nodeModel.masses[i]);
     }
     barrierStiffness = adaptiveBarrierStiffness(
         maxNodalMass, timeStep, staticGroundBarrierActivationDistance());
@@ -8175,7 +8178,7 @@ void advanceDeformableBody(
   scratch.direction.resize(nodeCount);
   scratch.candidate.resize(nodeCount);
   if (scratch.activeFixed.size() != nodeCount) {
-    scratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
+    scratch.activeFixed.assign(nodeModel.fixed.begin(), nodeModel.fixed.end());
   }
   if (scratch.externalAccelerations.size() != nodeCount) {
     scratch.externalAccelerations.assign(nodeCount, Eigen::Vector3d::Zero());
@@ -8233,6 +8236,7 @@ void advanceDeformableBody(
     runVbdDeformableSolve(
         entity,
         state,
+        nodeModel,
         model,
         topology,
         scratch,
@@ -8389,7 +8393,7 @@ void advanceDeformableBody(
       }
 
       const double energy = evaluateDeformableObjective(
-          state,
+          nodeModel,
           model,
           scratch.next,
           scratch.inertialTargets,
@@ -8426,7 +8430,7 @@ void advanceDeformableBody(
       const auto fillSteepestDescentDirection = [&]() {
         for (std::size_t i = 0; i < nodeCount; ++i) {
           if (scratch.activeFixed[i] == 0u) {
-            scratch.direction[i] = -(timeStep * timeStep / state.masses[i])
+            scratch.direction[i] = -(timeStep * timeStep / nodeModel.masses[i])
                                    * scratch.gradient[i];
           } else {
             scratch.direction[i].setZero();
@@ -8508,7 +8512,7 @@ void advanceDeformableBody(
                   scratch.candidate, scratch.activeFixed, barriers)) {
             ++stats.objectiveEvaluations;
             const double candidateEnergy = evaluateDeformableObjective(
-                state,
+                nodeModel,
                 model,
                 scratch.candidate,
                 scratch.inertialTargets,
@@ -8564,7 +8568,7 @@ void advanceDeformableBody(
       // to mass-scaled steepest descent if the sparse solve is skipped or
       // fails. Newton lets the stiff barrier term converge cleanly.
       const bool newtonDirection = computeProjectedNewtonDirection(
-          state,
+          nodeModel,
           model,
           scratch.next,
           scratch.activeFixed,
@@ -8691,7 +8695,7 @@ void advanceDeformableBody(
                 selfContactFrictionContacts.size());
       }
       const double terminalEnergy = evaluateDeformableObjective(
-          state,
+          nodeModel,
           model,
           scratch.next,
           scratch.inertialTargets,
@@ -12060,6 +12064,7 @@ void DeformableDynamicsStage::prepare(World& world)
 
   for (const auto entity : view) {
     const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& nodeModel = registry.get<comps::DeformableNodeModel>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     auto& solverScratch
         = registry.get_or_emplace<comps::DeformableSolverScratch>(
@@ -12069,7 +12074,8 @@ void DeformableDynamicsStage::prepare(World& world)
         state.positions.begin(), state.positions.end());
     solverScratch.externalAccelerations.assign(
         state.positions.size(), Eigen::Vector3d::Zero());
-    solverScratch.activeFixed.assign(state.fixed.begin(), state.fixed.end());
+    solverScratch.activeFixed.assign(
+        nodeModel.fixed.begin(), nodeModel.fixed.end());
     solverScratch.activeDirichlet.assign(state.positions.size(), 0u);
 
     auto& contactScratch
@@ -12289,6 +12295,7 @@ void DeformableDynamicsStage::execute(
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& nodeModel = registry.get<comps::DeformableNodeModel>(entity);
     auto& scratch = registry.get_or_emplace<comps::DeformableSolverScratch>(
         entity, worldFreeAllocator);
     const auto* boundaryConditions
@@ -12296,6 +12303,7 @@ void DeformableDynamicsStage::execute(
     ++m_lastStats.bodyCount;
     prepareDeformableBoundaryConditions(
         state,
+        nodeModel,
         boundaryConditions,
         world.getTime(),
         timeStep,
@@ -12313,6 +12321,7 @@ void DeformableDynamicsStage::execute(
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& nodeModel = registry.get<comps::DeformableNodeModel>(entity);
     const auto& model = view.get<comps::DeformableSpringModel>(entity);
     const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
     const auto& material = view.get<comps::DeformableMaterial>(entity);
@@ -12328,6 +12337,7 @@ void DeformableDynamicsStage::execute(
     advanceDeformableBody(
         entity,
         state,
+        nodeModel,
         model,
         topology,
         scratch,
