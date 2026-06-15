@@ -85,7 +85,7 @@ Chain makeChain(int n)
   for (const auto jointEntity : chain.structure->joints) {
     chain.joints.push_back(jointEntity);
     chain.initialPositions.push_back(
-        registry.get<sx::comps::Joint>(jointEntity).position);
+        registry.get<sx::comps::JointState>(jointEntity).position);
   }
   return chain;
 }
@@ -93,7 +93,7 @@ Chain makeChain(int n)
 void resetToInitial(sx::detail::WorldRegistry& registry, const Chain& chain)
 {
   for (std::size_t j = 0; j < chain.joints.size(); ++j) {
-    auto& joint = registry.get<sx::comps::Joint>(chain.joints[j]);
+    auto& joint = registry.get<sx::comps::JointState>(chain.joints[j]);
     joint.position = chain.initialPositions[j];
     joint.velocity.setZero();
     joint.acceleration.setZero();

@@ -121,8 +121,8 @@ void collectCoordinatesInto(
     if (link.parentJoint == entt::null) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
-    const auto dof = static_cast<Eigen::Index>(joint.getDOF());
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
     for (Eigen::Index d = 0; d < dof; ++d) {
       coordinates.push_back({link.parentJoint, d});
     }
@@ -180,8 +180,8 @@ StepDerivatives contactFreeStepDerivatives(
   Eigen::VectorXd qdot = Eigen::VectorXd::Zero(ndof);
   for (Eigen::Index k = 0; k < ndof; ++k) {
     const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
-    const auto& joint = registry.get<comps::Joint>(coordinate.joint);
-    qdot[k] = joint.velocity[coordinate.local];
+    const auto& jointState = registry.get<comps::JointState>(coordinate.joint);
+    qdot[k] = jointState.velocity[coordinate.local];
   }
 
   const Eigen::MatrixXd inverseMass = massMatrix.inverse();
@@ -230,18 +230,18 @@ StepDerivatives contactFreeStepDerivatives(
   } else {
     for (Eigen::Index k = 0; k < ndof; ++k) {
       const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
-      auto& joint = registry.get<comps::Joint>(coordinate.joint);
+      auto& jointState = registry.get<comps::JointState>(coordinate.joint);
 
       // --- Position perturbation: dM/dq_k and dc/dq_k. ---
       {
-        const double original = joint.position[coordinate.local];
+        const double original = jointState.position[coordinate.local];
         const double h = 1e-6 * (1.0 + std::abs(original));
 
-        joint.position[coordinate.local] = original + h;
+        jointState.position[coordinate.local] = original + h;
         const auto& plus = evalTermsInto(plusTerms);
-        joint.position[coordinate.local] = original - h;
+        jointState.position[coordinate.local] = original - h;
         const auto& minus = evalTermsInto(minusTerms);
-        joint.position[coordinate.local] = original; // restore exactly
+        jointState.position[coordinate.local] = original; // restore exactly
 
         const Eigen::MatrixXd dMass
             = (plus.massMatrix - minus.massMatrix) / (2.0 * h);
@@ -258,14 +258,14 @@ StepDerivatives contactFreeStepDerivatives(
       // --- Velocity perturbation: dc/dq̇_k (the Coriolis velocity derivative).
       // ---
       {
-        const double original = joint.velocity[coordinate.local];
+        const double original = jointState.velocity[coordinate.local];
         const double h = 1e-6 * (1.0 + std::abs(original));
 
-        joint.velocity[coordinate.local] = original + h;
+        jointState.velocity[coordinate.local] = original + h;
         const auto& plus = evalTermsInto(plusTerms);
-        joint.velocity[coordinate.local] = original - h;
+        jointState.velocity[coordinate.local] = original - h;
         const auto& minus = evalTermsInto(minusTerms);
-        joint.velocity[coordinate.local] = original; // restore exactly
+        jointState.velocity[coordinate.local] = original; // restore exactly
 
         Eigen::VectorXd dBias = plus.coriolisForces;
         dBias += plus.gravityForces;
@@ -304,14 +304,15 @@ StepDerivatives contactFreeStepDerivatives(
   Eigen::Index offset = 0;
   while (offset < ndof) {
     const auto& coordinate = coordinates[static_cast<std::size_t>(offset)];
-    const auto& joint = registry.get<comps::Joint>(coordinate.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(coordinate.joint);
+    const auto& jointState = registry.get<comps::JointState>(coordinate.joint);
     // Movable joints in `coordinates` always have a positive DOF count, so this
     // advances by at least one each iteration.
-    const auto jointDof = static_cast<Eigen::Index>(joint.getDOF());
+    const auto jointDof = static_cast<Eigen::Index>(jointModel.getDOF());
 
-    if (joint.type == comps::JointType::Spherical) {
+    if (jointModel.type == comps::JointType::Spherical) {
       // q_local is the rotation vector; q̇'_local is the body angular velocity.
-      const Eigen::Vector3d phi = joint.position.head<3>();
+      const Eigen::Vector3d phi = jointState.position.head<3>();
       const Eigen::Vector3d omegaNext = nextVelocity.segment<3>(offset);
       const Eigen::Vector3d twist = omegaNext * timeStep;
       const Eigen::Vector3d phiNext
@@ -322,11 +323,11 @@ StepDerivatives contactFreeStepDerivatives(
           = jrInvNext * rotationExp(-twist) * rotationRightJacobian(phi);
       posPartialVel.block<3, 3>(offset, offset)
           = jrInvNext * rotationRightJacobian(twist) * timeStep;
-    } else if (joint.type == comps::JointType::Floating) {
+    } else if (jointModel.type == comps::JointType::Floating) {
       // q_local = [translation; rotation vector]; q̇'_local = [linear; angular]
       // body twist. Translation advances in the parent frame (R · v), rotation
       // integrates on SO(3).
-      const Eigen::Vector3d theta = joint.position.tail<3>();
+      const Eigen::Vector3d theta = jointState.position.tail<3>();
       const Eigen::Matrix3d rotation = rotationExp(theta);
       const Eigen::Vector3d linearNext = nextVelocity.segment<3>(offset);
       const Eigen::Vector3d angularNext = nextVelocity.segment<3>(offset + 3);

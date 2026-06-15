@@ -158,55 +158,60 @@ inline Vector6 crossForce(const Vector6& v, const Vector6& f)
 }
 
 //==============================================================================
-Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
+Eigen::Isometry3d jointMotionTransform(
+    const comps::JointModel& jointModel, const comps::JointState& jointState)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  switch (joint.type) {
+  switch (jointModel.type) {
     case comps::JointType::Fixed:
       return transform;
     case comps::JointType::Revolute:
       transform.linear()
-          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
+          = Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+                .toRotationMatrix();
       return transform;
     case comps::JointType::Prismatic:
-      transform.translation() = joint.axis * joint.position[0];
+      transform.translation() = jointModel.axis * jointState.position[0];
       return transform;
     case comps::JointType::Screw:
       // Coupled rotation + translation along the axis: theta rotates and
       // advances by pitch * theta.
       transform.linear()
-          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
-      transform.translation() = joint.axis * (joint.pitch * joint.position[0]);
+          = Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+                .toRotationMatrix();
+      transform.translation()
+          = jointModel.axis * (jointModel.pitch * jointState.position[0]);
       return transform;
     case comps::JointType::Universal:
       // Two sequential rotations: theta1 about axis, then theta2 about axis2
       // (axis2 expressed in the intermediate frame).
-      transform.linear() = (Eigen::AngleAxisd(joint.position[0], joint.axis)
-                            * Eigen::AngleAxisd(joint.position[1], joint.axis2))
-                               .toRotationMatrix();
+      transform.linear()
+          = (Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+             * Eigen::AngleAxisd(jointState.position[1], jointModel.axis2))
+                .toRotationMatrix();
       return transform;
     case comps::JointType::Planar: {
       // In-plane translation (position[0], position[1]) along two orthogonal
       // directions plus rotation (position[2]) about the plane normal. This
       // matches the kinematics convention in world_kinematics_graph/frame.
-      const Eigen::Vector3d normal = joint.axis.normalized();
-      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d normal = jointModel.axis.normalized();
+      const Eigen::Vector3d inPlane1 = jointModel.axis2.normalized();
       const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
-      transform.linear()
-          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
-      transform.translation()
-          = inPlane1 * joint.position[0] + inPlane2 * joint.position[1];
+      transform.linear() = Eigen::AngleAxisd(jointState.position[2], normal)
+                               .toRotationMatrix();
+      transform.translation() = inPlane1 * jointState.position[0]
+                                + inPlane2 * jointState.position[1];
       return transform;
     }
     case comps::JointType::Spherical:
       // Orientation stored as a rotation vector (exponential coordinates).
-      transform.linear() = rotationExp(joint.position.head<3>());
+      transform.linear() = rotationExp(jointState.position.head<3>());
       return transform;
     case comps::JointType::Floating:
       // 6-DOF pose: translation (position[0..2]) then orientation as a rotation
       // vector (position[3..5]), matching the kinematics convention.
-      transform.linear() = rotationExp(joint.position.tail<3>());
-      transform.translation() = joint.position.head<3>();
+      transform.linear() = rotationExp(jointState.position.tail<3>());
+      transform.translation() = jointState.position.head<3>();
       return transform;
     default:
       DART_SIMULATION_THROW_T(
@@ -220,29 +225,32 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
 //==============================================================================
 // Joint motion subspace expressed in the joint frame (before the post-joint
 // link offset), in the [angular; linear] convention.
-void setJointSubspaceInJointFrame(const comps::Joint& joint, Subspace& subspace)
+void setJointSubspaceInJointFrame(
+    const comps::JointModel& jointModel,
+    const comps::JointState& jointState,
+    Subspace& subspace)
 {
-  switch (joint.type) {
+  switch (jointModel.type) {
     case comps::JointType::Fixed:
       subspace.resize(6, 0);
       return;
     case comps::JointType::Revolute: {
       subspace.resize(6, 1);
-      subspace.col(0).head<3>() = joint.axis;
+      subspace.col(0).head<3>() = jointModel.axis;
       subspace.col(0).tail<3>().setZero();
       return;
     }
     case comps::JointType::Prismatic: {
       subspace.resize(6, 1);
       subspace.col(0).head<3>().setZero();
-      subspace.col(0).tail<3>() = joint.axis;
+      subspace.col(0).tail<3>() = jointModel.axis;
       return;
     }
     case comps::JointType::Screw: {
       // Twist of a screw: angular = axis, linear = pitch * axis.
       subspace.resize(6, 1);
-      subspace.col(0).head<3>() = joint.axis;
-      subspace.col(0).tail<3>() = joint.axis * joint.pitch;
+      subspace.col(0).head<3>() = jointModel.axis;
+      subspace.col(0).tail<3>() = jointModel.axis * jointModel.pitch;
       return;
     }
     case comps::JointType::Universal: {
@@ -253,11 +261,11 @@ void setJointSubspaceInJointFrame(const comps::Joint& joint, Subspace& subspace)
       // dependent, which the velocity-product term cJ accounts for.
       subspace.resize(6, 2);
       const Eigen::Matrix3d secondRotation
-          = Eigen::AngleAxisd(joint.position[1], joint.axis2)
+          = Eigen::AngleAxisd(jointState.position[1], jointModel.axis2)
                 .toRotationMatrix();
-      subspace.col(0).head<3>() = secondRotation.transpose() * joint.axis;
+      subspace.col(0).head<3>() = secondRotation.transpose() * jointModel.axis;
       subspace.col(0).tail<3>().setZero();
-      subspace.col(1).head<3>() = joint.axis2;
+      subspace.col(1).head<3>() = jointModel.axis2;
       subspace.col(1).tail<3>().setZero();
       return;
     }
@@ -266,11 +274,12 @@ void setJointSubspaceInJointFrame(const comps::Joint& joint, Subspace& subspace)
       // output frame. The translation directions are carried by the rotation
       // (R(theta_rot, normal)^T * in-plane axis), making them configuration
       // dependent; the rotation column is the constant normal.
-      const Eigen::Vector3d normal = joint.axis.normalized();
-      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d normal = jointModel.axis.normalized();
+      const Eigen::Vector3d inPlane1 = jointModel.axis2.normalized();
       const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
       const Eigen::Matrix3d rotation
-          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
+          = Eigen::AngleAxisd(jointState.position[2], normal)
+                .toRotationMatrix();
       subspace.resize(6, 3);
       subspace.col(0).head<3>().setZero();
       subspace.col(0).tail<3>() = rotation.transpose() * inPlane1;
@@ -327,22 +336,23 @@ struct JointBiasTerm
 // the motion subspace).
 template <typename JointBiasTermVector>
 void setJointBiasTerms(
-    const comps::Joint& joint,
+    const comps::JointModel& jointModel,
+    const comps::JointState& jointState,
     const Matrix6& offsetAdjoint,
     JointBiasTermVector& terms)
 {
   terms.clear();
-  switch (joint.type) {
+  switch (jointModel.type) {
     case comps::JointType::Universal: {
       // d/dt(col0) = (s1 x axis2) * theta2dot with s1 = R(theta2, axis2)^T
       // axis, so cJ = (s1 x axis2) * theta1dot * theta2dot (angular; linear
       // zero).
       const Eigen::Matrix3d secondRotation
-          = Eigen::AngleAxisd(joint.position[1], joint.axis2)
+          = Eigen::AngleAxisd(jointState.position[1], jointModel.axis2)
                 .toRotationMatrix();
-      const Eigen::Vector3d s1 = secondRotation.transpose() * joint.axis;
+      const Eigen::Vector3d s1 = secondRotation.transpose() * jointModel.axis;
       Vector6 coeff = Vector6::Zero();
-      coeff.head<3>() = s1.cross(joint.axis2);
+      coeff.head<3>() = s1.cross(jointModel.axis2);
       terms.push_back(JointBiasTerm{0, 1, offsetAdjoint * coeff});
       return;
     }
@@ -350,11 +360,11 @@ void setJointBiasTerms(
       // The two in-plane translation columns rotate with position[2], so
       // d/dt(col_t) = -theta_rot_dot * R^T (normal x inplane_t). Each couples a
       // translation rate with the rotation rate (angular part zero).
-      const Eigen::Vector3d normal = joint.axis.normalized();
-      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d normal = jointModel.axis.normalized();
+      const Eigen::Vector3d inPlane1 = jointModel.axis2.normalized();
       const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
       const Eigen::Matrix3d rotationTranspose
-          = Eigen::AngleAxisd(joint.position[2], normal)
+          = Eigen::AngleAxisd(jointState.position[2], normal)
                 .toRotationMatrix()
                 .transpose();
       Vector6 coeff0 = Vector6::Zero();
@@ -500,10 +510,13 @@ void buildDynamicsTreeInto(
       continue;
     }
 
-    const auto& joint = registry.get<comps::Joint>(linkComp.parentJoint);
+    const auto& jointModel
+        = registry.get<comps::JointModel>(linkComp.parentJoint);
+    const auto& jointState
+        = registry.get<comps::JointState>(linkComp.parentJoint);
     const auto parentIt
         = std::find_if(indexOf.begin(), indexOf.end(), [&](const auto& entry) {
-            return entry.first == joint.parentLink;
+            return entry.first == jointModel.parentLink;
           });
     DART_SIMULATION_THROW_T_IF(
         parentIt == indexOf.end(),
@@ -513,20 +526,22 @@ void buildDynamicsTreeInto(
     dynamics.jointEntity = linkComp.parentJoint;
     tree.jointOf[i] = linkComp.parentJoint;
 
-    const Eigen::Isometry3d childInParent = linkComp.transformFromParentToJoint
-                                            * jointMotionTransform(joint)
-                                            * linkComp.transformFromParentJoint;
+    const Eigen::Isometry3d childInParent
+        = linkComp.transformFromParentToJoint
+          * jointMotionTransform(jointModel, jointState)
+          * linkComp.transformFromParentJoint;
     dynamics.parentToChild = adjoint(childInParent.inverse());
     dynamics.childToParentForce = dynamics.parentToChild.transpose();
     dynamics.worldTransform
         = tree.links[parentIt->second].worldTransform * childInParent;
 
-    setJointSubspaceInJointFrame(joint, jointFrameSubspace);
+    setJointSubspaceInJointFrame(jointModel, jointState, jointFrameSubspace);
     const Matrix6 offsetAdjoint
         = adjoint(linkComp.transformFromParentJoint.inverse());
     dynamics.subspace.resize(6, jointFrameSubspace.cols());
     dynamics.subspace.noalias() = offsetAdjoint * jointFrameSubspace;
-    setJointBiasTerms(joint, offsetAdjoint, dynamics.biasTerms);
+    setJointBiasTerms(
+        jointModel, jointState, offsetAdjoint, dynamics.biasTerms);
     dynamics.dof = static_cast<std::size_t>(jointFrameSubspace.cols());
     dynamics.dofOffset = tree.dofCount;
     tree.dofCount += dynamics.dof;
@@ -541,9 +556,9 @@ void buildDynamicsTreeInto(
     if (dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    if (joint.armature.size() == static_cast<Eigen::Index>(dof)) {
-      tree.armature.segment(tree.links[i].dofOffset, dof) = joint.armature;
+    const auto& jointModel = registry.get<comps::JointModel>(tree.jointOf[i]);
+    if (jointModel.armature.size() == static_cast<Eigen::Index>(dof)) {
+      tree.armature.segment(tree.links[i].dofOffset, dof) = jointModel.armature;
     }
   }
 }
@@ -885,8 +900,9 @@ void gatherMultibodyVelocityInto(
     if (tree.links[i].dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+    const auto& jointState = registry.get<comps::JointState>(tree.jointOf[i]);
+    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof)
+        = jointState.velocity;
   }
 }
 
@@ -923,27 +939,34 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (scratch.tree.links[i].dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(scratch.tree.jointOf[i]);
+    const auto& jointModel
+        = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
+    const auto& jointState
+        = registry.get<comps::JointState>(scratch.tree.jointOf[i]);
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
 
     // Determine the commanded actuation effort by actuator type. Force applies
     // the clamped joint effort; Passive applies none. Passive spring and
     // damping forces are not subject to the effort limits and always apply.
     const auto dof = scratch.tree.links[i].dof;
-    switch (joint.actuatorType) {
+    switch (jointActuation.actuatorType) {
       case comps::ActuatorType::Force:
         for (std::size_t d = 0; d < dof; ++d) {
           const auto local = static_cast<Eigen::Index>(d);
           const auto global
               = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
           const double effort = std::clamp(
-              joint.torque[local],
-              joint.limits.effortLower[local],
-              joint.limits.effortUpper[local]);
+              jointActuation.torque[local],
+              jointModel.limits.effortLower[local],
+              jointModel.limits.effortUpper[local]);
           scratch.appliedForce[global]
               = effort
-                - joint.springStiffness[local]
-                      * (joint.position[local] - joint.restPosition[local])
-                - joint.dampingCoefficient[local] * joint.velocity[local];
+                - jointModel.springStiffness[local]
+                      * (jointState.position[local]
+                         - jointModel.restPosition[local])
+                - jointModel.dampingCoefficient[local]
+                      * jointState.velocity[local];
         }
         break;
       case comps::ActuatorType::Passive:
@@ -955,9 +978,11 @@ bool computeUnconstrainedMultibodyVelocityInto(
           const auto global
               = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
           scratch.appliedForce[global]
-              = -joint.springStiffness[local]
-                    * (joint.position[local] - joint.restPosition[local])
-                - joint.dampingCoefficient[local] * joint.velocity[local];
+              = -jointModel.springStiffness[local]
+                    * (jointState.position[local]
+                       - jointModel.restPosition[local])
+                - jointModel.dampingCoefficient[local]
+                      * jointState.velocity[local];
         }
         break;
       default:
@@ -1030,13 +1055,14 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(scratch.tree.jointOf[i]);
-    if (joint.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
+    const auto& jointModel
+        = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
+    if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
       continue;
     }
     for (std::size_t d = 0; d < dof; ++d) {
       const double bound
-          = joint.coulombFriction[static_cast<Eigen::Index>(d)] * timeStep;
+          = jointModel.coulombFriction[static_cast<Eigen::Index>(d)] * timeStep;
       if (bound <= 0.0) {
         continue;
       }
@@ -1062,16 +1088,18 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(scratch.tree.jointOf[i]);
-    if (joint.actuatorType != comps::ActuatorType::Velocity) {
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
+    if (jointActuation.actuatorType != comps::ActuatorType::Velocity) {
       continue;
     }
     for (std::size_t d = 0; d < dof; ++d) {
       scratch.constrainedDof.push_back(
           static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d));
       scratch.constrainedTarget.push_back(
-          joint.commandVelocity.size() == static_cast<Eigen::Index>(dof)
-              ? joint.commandVelocity[static_cast<Eigen::Index>(d)]
+          jointActuation.commandVelocity.size()
+                  == static_cast<Eigen::Index>(dof)
+              ? jointActuation.commandVelocity[static_cast<Eigen::Index>(d)]
               : 0.0);
     }
   }
@@ -1781,8 +1809,8 @@ void enforceMultibodyVelocityLimits(
       continue;
     }
 
-    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
-    expectedDof += static_cast<Eigen::Index>(joint.getDOF());
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    expectedDof += static_cast<Eigen::Index>(jointModel.getDOF());
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -1801,13 +1829,13 @@ void enforceMultibodyVelocityLimits(
       continue;
     }
 
-    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
-    const auto dof = static_cast<Eigen::Index>(joint.getDOF());
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
     if (dof == 0) {
       continue;
     }
-    if (joint.limits.velocityLower.size() != static_cast<Eigen::Index>(dof)
-        || joint.limits.velocityUpper.size()
+    if (jointModel.limits.velocityLower.size() != static_cast<Eigen::Index>(dof)
+        || jointModel.limits.velocityUpper.size()
                != static_cast<Eigen::Index>(dof)) {
       velocityOffset += dof;
       continue;
@@ -1816,8 +1844,8 @@ void enforceMultibodyVelocityLimits(
       const auto globalDof = velocityOffset + d;
       nextVelocity[globalDof] = std::clamp(
           nextVelocity[globalDof],
-          joint.limits.velocityLower[d],
-          joint.limits.velocityUpper[d]);
+          jointModel.limits.velocityLower[d],
+          jointModel.limits.velocityUpper[d]);
     }
     velocityOffset += dof;
   }
@@ -2109,10 +2137,10 @@ bool treeSupportsAnalyticDerivatives(
     if (tree.links[i].dof != 1) {
       return false;
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    if (joint.type != comps::JointType::Revolute
-        && joint.type != comps::JointType::Prismatic
-        && joint.type != comps::JointType::Screw) {
+    const auto& jointModel = registry.get<comps::JointModel>(tree.jointOf[i]);
+    if (jointModel.type != comps::JointType::Revolute
+        && jointModel.type != comps::JointType::Prismatic
+        && jointModel.type != comps::JointType::Screw) {
       return false;
     }
   }

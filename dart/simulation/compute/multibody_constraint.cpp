@@ -66,21 +66,24 @@ Eigen::Vector3d rotationLog(const Eigen::Matrix3d& rotation)
 
 //==============================================================================
 void applyPositionLimits(
-    comps::Joint& joint, Eigen::Index firstDof, Eigen::Index dofCount)
+    const comps::JointModel& jointModel,
+    comps::JointState& jointState,
+    Eigen::Index firstDof,
+    Eigen::Index dofCount)
 {
-  if (joint.limits.lower.size() != joint.position.size()
-      || joint.limits.upper.size() != joint.position.size()) {
+  if (jointModel.limits.lower.size() != jointState.position.size()
+      || jointModel.limits.upper.size() != jointState.position.size()) {
     return;
   }
 
   const Eigen::Index endDof = firstDof + dofCount;
   for (Eigen::Index d = firstDof; d < endDof; ++d) {
-    if (joint.position[d] < joint.limits.lower[d]) {
-      joint.position[d] = joint.limits.lower[d];
-      joint.velocity[d] = std::max(joint.velocity[d], 0.0);
-    } else if (joint.position[d] > joint.limits.upper[d]) {
-      joint.position[d] = joint.limits.upper[d];
-      joint.velocity[d] = std::min(joint.velocity[d], 0.0);
+    if (jointState.position[d] < jointModel.limits.lower[d]) {
+      jointState.position[d] = jointModel.limits.lower[d];
+      jointState.velocity[d] = std::max(jointState.velocity[d], 0.0);
+    } else if (jointState.position[d] > jointModel.limits.upper[d]) {
+      jointState.position[d] = jointModel.limits.upper[d];
+      jointState.velocity[d] = std::min(jointState.velocity[d], 0.0);
     }
   }
 }
@@ -111,8 +114,8 @@ void integrateMultibodyPositions(
       continue;
     }
 
-    const auto& joint = registry.get<comps::Joint>(link.parentJoint);
-    expectedDof += static_cast<Eigen::Index>(joint.getDOF());
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    expectedDof += static_cast<Eigen::Index>(jointModel.getDOF());
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -131,45 +134,49 @@ void integrateMultibodyPositions(
       continue;
     }
 
-    auto& joint = registry.get<comps::Joint>(link.parentJoint);
-    const auto dof = static_cast<Eigen::Index>(joint.getDOF());
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    auto& jointState = registry.get<comps::JointState>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
     if (dof == 0) {
       continue;
     }
     wroteJointPosition = true;
 
-    joint.acceleration = joint.velocity;
-    joint.velocity = nextVelocity.segment(velocityOffset, dof);
+    jointState.acceleration = jointState.velocity;
+    jointState.velocity = nextVelocity.segment(velocityOffset, dof);
     velocityOffset += dof;
 
     const auto updateAccelerationFromVelocityDelta = [&]() {
-      joint.acceleration = (joint.velocity - joint.acceleration) / timeStep;
+      jointState.acceleration
+          = (jointState.velocity - jointState.acceleration) / timeStep;
     };
 
-    if (joint.type == comps::JointType::Spherical) {
+    if (jointModel.type == comps::JointType::Spherical) {
       // Body angular velocity integrated by right multiplication on SO(3).
-      const Eigen::Matrix3d rotation = rotationExp(joint.position.head<3>());
-      joint.position.head<3>() = rotationLog(
-          rotation * rotationExp(joint.velocity.head<3>() * timeStep));
+      const Eigen::Matrix3d rotation
+          = rotationExp(jointState.position.head<3>());
+      jointState.position.head<3>() = rotationLog(
+          rotation * rotationExp(jointState.velocity.head<3>() * timeStep));
       updateAccelerationFromVelocityDelta();
       continue;
     }
 
-    if (joint.type == comps::JointType::Floating) {
+    if (jointModel.type == comps::JointType::Floating) {
       // Velocity is [linear; angular] body twist. Translation advances in the
       // parent frame (R * v) and orientation integrates on SO(3).
-      const Eigen::Matrix3d rotation = rotationExp(joint.position.tail<3>());
-      joint.position.head<3>()
-          += rotation * joint.velocity.head<3>() * timeStep;
-      joint.position.tail<3>() = rotationLog(
-          rotation * rotationExp(joint.velocity.tail<3>() * timeStep));
-      applyPositionLimits(joint, 0, 3);
+      const Eigen::Matrix3d rotation
+          = rotationExp(jointState.position.tail<3>());
+      jointState.position.head<3>()
+          += rotation * jointState.velocity.head<3>() * timeStep;
+      jointState.position.tail<3>() = rotationLog(
+          rotation * rotationExp(jointState.velocity.tail<3>() * timeStep));
+      applyPositionLimits(jointModel, jointState, 0, 3);
       updateAccelerationFromVelocityDelta();
       continue;
     }
 
-    joint.position += joint.velocity * timeStep;
-    applyPositionLimits(joint, 0, joint.position.size());
+    jointState.position += jointState.velocity * timeStep;
+    applyPositionLimits(jointModel, jointState, 0, jointState.position.size());
     updateAccelerationFromVelocityDelta();
   }
 

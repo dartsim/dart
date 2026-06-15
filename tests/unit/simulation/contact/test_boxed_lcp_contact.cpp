@@ -6667,7 +6667,9 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
       toReg(sphere->getEntity()));
 
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = toReg(ground->getEntity());
   joint.childLink = toReg(sphere->getEntity());
@@ -6707,7 +6709,9 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink
       = dart::simulation::detail::toRegistryEntity(base.getEntity());
@@ -6751,7 +6755,9 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
       sx::detail::toRegistryEntity(link.getEntity()));
 
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
@@ -6804,7 +6810,9 @@ TEST(AvbdContact, RevoluteRigidBodyJointPoseBridgeCapturesAxisConfig)
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Revolute;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
@@ -6858,7 +6866,9 @@ TEST(AvbdContact, PrismaticRigidBodyJointPoseBridgeCapturesAxisConfig)
   const Eigen::Vector3d translationAxis
       = Eigen::Vector3d(-0.5, 0.25, 1.0).normalized();
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Prismatic;
   joint.parentLink = sx::detail::toRegistryEntity(base.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(link.getEntity());
@@ -7125,7 +7135,8 @@ TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   registry
-      .get<sx::comps::Joint>(sx::detail::toRegistryEntity(joint.getEntity()))
+      .get<sx::comps::JointState>(
+          sx::detail::toRegistryEntity(joint.getEntity()))
       .broken = true;
 
   std::stringstream data;
@@ -7277,7 +7288,9 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink
       = dart::simulation::detail::toRegistryEntity(base.getEntity());
@@ -7321,7 +7334,9 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
 
   auto& registry = dart::simulation::detail::registryOf(*world);
   const entt::entity jointEntity = registry.create();
-  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
   joint.type = sx::comps::JointType::Fixed;
   joint.parentLink
       = dart::simulation::detail::toRegistryEntity(base.getEntity());

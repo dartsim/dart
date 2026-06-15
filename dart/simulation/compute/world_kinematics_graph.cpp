@@ -64,46 +64,51 @@ Eigen::Isometry3d rotationVectorTransform(const Eigen::Vector3d& rotation)
 }
 
 //==============================================================================
-Eigen::Isometry3d getJointTransform(const comps::Joint& joint)
+Eigen::Isometry3d getJointTransform(
+    const comps::JointModel& jointModel, const comps::JointState& jointState)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 
-  switch (joint.type) {
+  switch (jointModel.type) {
     case comps::JointType::Fixed:
       return transform;
     case comps::JointType::Revolute:
       transform.linear()
-          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
+          = Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+                .toRotationMatrix();
       return transform;
     case comps::JointType::Prismatic:
-      transform.translation() = joint.axis * joint.position[0];
+      transform.translation() = jointModel.axis * jointState.position[0];
       return transform;
     case comps::JointType::Screw:
       transform.linear()
-          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
-      transform.translation() = joint.axis * joint.pitch * joint.position[0];
+          = Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+                .toRotationMatrix();
+      transform.translation()
+          = jointModel.axis * jointModel.pitch * jointState.position[0];
       return transform;
     case comps::JointType::Universal:
-      transform.linear() = (Eigen::AngleAxisd(joint.position[0], joint.axis)
-                            * Eigen::AngleAxisd(joint.position[1], joint.axis2))
-                               .toRotationMatrix();
+      transform.linear()
+          = (Eigen::AngleAxisd(jointState.position[0], jointModel.axis)
+             * Eigen::AngleAxisd(jointState.position[1], jointModel.axis2))
+                .toRotationMatrix();
       return transform;
     case comps::JointType::Spherical:
-      return rotationVectorTransform(joint.position.head<3>());
+      return rotationVectorTransform(jointState.position.head<3>());
     case comps::JointType::Planar: {
-      const Eigen::Vector3d normal = joint.axis.normalized();
-      const Eigen::Vector3d axis1 = joint.axis2.normalized();
+      const Eigen::Vector3d normal = jointModel.axis.normalized();
+      const Eigen::Vector3d axis1 = jointModel.axis2.normalized();
       const Eigen::Vector3d axis2 = normal.cross(axis1).normalized();
       transform.translation()
-          = axis1 * joint.position[0] + axis2 * joint.position[1];
-      transform.linear()
-          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
+          = axis1 * jointState.position[0] + axis2 * jointState.position[1];
+      transform.linear() = Eigen::AngleAxisd(jointState.position[2], normal)
+                               .toRotationMatrix();
       return transform;
     }
     case comps::JointType::Floating:
-      transform.translation() = joint.position.head<3>();
+      transform.translation() = jointState.position.head<3>();
       transform.linear()
-          = rotationVectorTransform(joint.position.tail<3>()).linear();
+          = rotationVectorTransform(jointState.position.tail<3>()).linear();
       return transform;
     case comps::JointType::Custom:
       DART_SIMULATION_THROW_T(
@@ -120,13 +125,22 @@ Eigen::Isometry3d getLocalTransform(
 {
   if (const auto* link = registry.try_get<comps::Link>(entity)) {
     if (link->parentJoint != entt::null) {
-      const auto* joint = registry.try_get<comps::Joint>(link->parentJoint);
+      const auto* jointModel
+          = registry.try_get<comps::JointModel>(link->parentJoint);
       DART_SIMULATION_THROW_T_IF(
-          !joint,
+          !jointModel,
           InvalidOperationException,
           "Link parent joint is missing a Joint component");
 
-      return link->transformFromParentToJoint * getJointTransform(*joint)
+      const auto* jointState
+          = registry.try_get<comps::JointState>(link->parentJoint);
+      DART_SIMULATION_THROW_T_IF(
+          !jointState,
+          InvalidOperationException,
+          "Link parent joint is missing a Joint component");
+
+      return link->transformFromParentToJoint
+             * getJointTransform(*jointModel, *jointState)
              * link->transformFromParentJoint;
     }
   }

@@ -183,7 +183,7 @@ Eigen::Vector3d rotationLog3(const Eigen::Matrix3d& rotation)
 // Relative transform produced by a joint at the given generalized position
 // (Phase A1: fixed/revolute/prismatic), before the post-joint link offset.
 Eigen::Isometry3d jointMotionTransform(
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     const Eigen::Ref<const Eigen::VectorXd>& position)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -221,7 +221,7 @@ Eigen::Isometry3d jointMotionTransform(
 // manifold, matching the semi-implicit integration convention
 // (R_new = R exp(omega), p_new = p + R v).
 void jointRetractInto(
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     const Eigen::Ref<const Eigen::VectorXd>& q,
     const Eigen::Ref<const Eigen::VectorXd>& delta,
     Eigen::Ref<Eigen::VectorXd> result)
@@ -247,7 +247,7 @@ void jointRetractInto(
 // The generalized-coordinate tangent `tau` with `jointRetract(q, tau) == qNext`
 // (so the generalized velocity is `tau / dt`). Inverse of jointRetract.
 void jointLogDifferenceInto(
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     const Eigen::Ref<const Eigen::VectorXd>& qNext,
     const Eigen::Ref<const Eigen::VectorXd>& q,
     Eigen::Ref<Eigen::VectorXd> result)
@@ -369,7 +369,7 @@ void resetVarLinkForBuild(
 }
 
 void setLinkFrameJointSubspaceInto(
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     const Eigen::Isometry3d& linkFromJoint,
     Subspace& subspace)
 {
@@ -469,22 +469,25 @@ void buildVarTreeInto(
       continue;
     }
 
-    const auto& joint = registry.get<comps::Joint>(linkComp.parentJoint);
+    const auto& jointModel
+        = registry.get<comps::JointModel>(linkComp.parentJoint);
+    const auto& jointState
+        = registry.get<comps::JointState>(linkComp.parentJoint);
     link.joint = linkComp.parentJoint;
-    const auto parentIt = indexOf.find(joint.parentLink);
+    const auto parentIt = indexOf.find(jointModel.parentLink);
     DART_SIMULATION_THROW_T_IF(
         parentIt == indexOf.end(),
         InvalidOperationException,
         "Multibody link parent is not part of the same multibody");
     link.parent = static_cast<int>(parentIt->second);
 
-    setLinkFrameJointSubspaceInto(joint, link.offset, link.subspace);
+    setLinkFrameJointSubspaceInto(jointModel, link.offset, link.subspace);
     link.dof = static_cast<std::size_t>(link.subspace.cols());
     link.dofOffset = tree.dofCount;
     tree.dofCount += link.dof;
-    link.currentRelative = link.parentToJoint
-                           * jointMotionTransform(joint, joint.position)
-                           * link.offset;
+    link.currentRelative
+        = link.parentToJoint
+          * jointMotionTransform(jointModel, jointState.position) * link.offset;
     link.worldTransform
         = tree.links[static_cast<std::size_t>(link.parent)].worldTransform
           * link.currentRelative;
@@ -514,12 +517,13 @@ void updateVarTreeConfigurationInto(
     if (link.parent < 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
     link.currentRelative
         = link.parentToJoint
-          * jointMotionTransform(joint, position.segment(seg, n)) * link.offset;
+          * jointMotionTransform(jointModel, position.segment(seg, n))
+          * link.offset;
     link.worldTransform
         = tree.links[static_cast<std::size_t>(link.parent)].worldTransform
           * link.currentRelative;
@@ -612,7 +616,7 @@ void reserveVariationalStepScratch(
 bool isTopologyMultibodyJoint(
     const detail::WorldRegistry& registry,
     entt::entity jointEntity,
-    const comps::Joint& joint)
+    const comps::JointModel& joint)
 {
   const auto* childLink = registry.try_get<comps::Link>(joint.childLink);
   return childLink != nullptr && childLink->parentJoint == jointEntity;
@@ -880,7 +884,7 @@ VariationalCompliantLoopScratch& getOrCreateVariationalCompliantLoopScratch(
 dvbd::AvbdScalarRowDescriptor makeVariationalCompliantLoopRowDescriptor(
     dvbd::AvbdScalarRowRole role,
     entt::entity jointEntity,
-    const comps::Joint& joint,
+    const comps::JointModel& joint,
     const dvbd::AvbdRigidWorldPointJointConfig& config,
     std::uint8_t axis)
 {
@@ -954,23 +958,27 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
   };
 
   auto view
-      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+      = registry
+            .view<comps::JointModel, dvbd::AvbdRigidWorldPointJointConfig>();
   for (const entt::entity jointEntity : view) {
-    const auto& joint = view.get<comps::Joint>(jointEntity);
+    const auto& jointModel = view.get<comps::JointModel>(jointEntity);
+    const auto& jointState = registry.get<comps::JointState>(jointEntity);
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(jointEntity);
     const auto& config
         = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
 
     const bool hard = isHardAvbdRigidWorldPointJointConfig(config);
     const std::optional<double> compliantStiffness
         = avbdRigidWorldCompliantPointJointStiffness(config);
-    if (!config.enabled || joint.broken
-        || !dvbd::isAvbdRigidWorldPointJointType(joint.type)
-        || isTopologyMultibodyJoint(registry, jointEntity, joint)) {
+    if (!config.enabled || jointState.broken
+        || !dvbd::isAvbdRigidWorldPointJointType(jointModel.type)
+        || isTopologyMultibodyJoint(registry, jointEntity, jointModel)) {
       continue;
     }
     if (!hard
         && (compliantScratch == nullptr || !compliantStiffness.has_value()
-            || joint.type != comps::JointType::Fixed)) {
+            || jointModel.type != comps::JointType::Fixed)) {
       continue;
     }
     if (!dvbd::detail::hasValidActiveAvbdRigidJointAxes(
@@ -992,12 +1000,12 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
       continue;
     }
 
-    const bool worldA = joint.parentLink == entt::null;
-    const bool worldB = joint.childLink == entt::null;
+    const bool worldA = jointModel.parentLink == entt::null;
+    const bool worldB = jointModel.childLink == entt::null;
     const dvbd::AvbdRigidWorldEndpoint endpointA
-        = dvbd::classifyAvbdRigidWorldEndpoint(registry, joint.parentLink);
+        = dvbd::classifyAvbdRigidWorldEndpoint(registry, jointModel.parentLink);
     const dvbd::AvbdRigidWorldEndpoint endpointB
-        = dvbd::classifyAvbdRigidWorldEndpoint(registry, joint.childLink);
+        = dvbd::classifyAvbdRigidWorldEndpoint(registry, jointModel.childLink);
     if ((!worldA
          && endpointA.kind != dvbd::AvbdRigidWorldEndpointKind::MultibodyLink)
         || (!worldB
@@ -1006,8 +1014,10 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
       continue;
     }
 
-    const int linkIndexA = worldA ? -1 : linkIndexInStructure(joint.parentLink);
-    const int linkIndexB = worldB ? -1 : linkIndexInStructure(joint.childLink);
+    const int linkIndexA
+        = worldA ? -1 : linkIndexInStructure(jointModel.parentLink);
+    const int linkIndexB
+        = worldB ? -1 : linkIndexInStructure(jointModel.childLink);
     if ((!worldA && linkIndexA < 0) || (!worldB && linkIndexB < 0)) {
       continue;
     }
@@ -1016,9 +1026,9 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     }
 
     VariationalLoopConstraint constraint;
-    constraint.linkA = linkIndexA >= 0 ? joint.parentLink : entt::null;
+    constraint.linkA = linkIndexA >= 0 ? jointModel.parentLink : entt::null;
     constraint.pointA = config.localAnchorA;
-    constraint.linkB = linkIndexB >= 0 ? joint.childLink : entt::null;
+    constraint.linkB = linkIndexB >= 0 ? jointModel.childLink : entt::null;
     constraint.pointB = config.localAnchorB;
     constraint.rigid = angularRows > 0u;
     constraint.rotationA
@@ -1028,13 +1038,13 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     Eigen::Matrix3d worldRotationA = Eigen::Matrix3d::Identity();
     if (!worldA) {
       worldRotationA = dvbd::avbdRigidWorldContactFrameWorldTransform(
-                           registry, joint.parentLink)
+                           registry, jointModel.parentLink)
                            .linear();
     }
     Eigen::Matrix3d worldRotationB = Eigen::Matrix3d::Identity();
     if (!worldB) {
       worldRotationB = dvbd::avbdRigidWorldContactFrameWorldTransform(
-                           registry, joint.childLink)
+                           registry, jointModel.childLink)
                            .linear();
     }
     const Eigen::Matrix3d axisFrame = worldRotationA;
@@ -1067,7 +1077,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                 makeVariationalCompliantLoopRowDescriptor(
                     dvbd::AvbdScalarRowRole::JointLinear,
                     jointEntity,
-                    joint,
+                    jointModel,
                     config,
                     axis),
                 *compliantStiffness});
@@ -1084,7 +1094,7 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                 makeVariationalCompliantLoopRowDescriptor(
                     dvbd::AvbdScalarRowRole::JointAngular,
                     jointEntity,
-                    joint,
+                    jointModel,
                     config,
                     axis),
                 *compliantStiffness});
@@ -1097,11 +1107,12 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     constraint.angularAxes = axisFrame * config.angularAxes;
     constraint.linearAxisMask = config.linearAxisMask;
     constraint.angularAxisMask = config.angularAxisMask;
-    if (joint.type == comps::JointType::Prismatic
-        && joint.actuatorType == comps::ActuatorType::Velocity
-        && joint.commandVelocity.size() == 1
-        && joint.commandVelocity.allFinite()) {
-      const double maxForce = dvbd::avbdRigidWorldSymmetricEffortLimit(joint);
+    if (jointModel.type == comps::JointType::Prismatic
+        && jointActuation.actuatorType == comps::ActuatorType::Velocity
+        && jointActuation.commandVelocity.size() == 1
+        && jointActuation.commandVelocity.allFinite()) {
+      const double maxForce
+          = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
       const std::optional<std::uint8_t> freeAxis
           = singleInactiveVariationalLoopAxis(config.linearAxisMask);
       if (maxForce > 0.0 && !std::isnan(maxForce) && freeAxis.has_value()) {
@@ -1111,25 +1122,26 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
         const Eigen::Vector3d pointA
             = (worldA ? Eigen::Isometry3d::Identity()
                       : dvbd::avbdRigidWorldContactFrameWorldTransform(
-                            registry, joint.parentLink))
+                            registry, jointModel.parentLink))
               * constraint.pointA;
         const Eigen::Vector3d pointB
             = (worldB ? Eigen::Isometry3d::Identity()
                       : dvbd::avbdRigidWorldContactFrameWorldTransform(
-                            registry, joint.childLink))
+                            registry, jointModel.childLink))
               * constraint.pointB;
         const Eigen::Vector3d positionResidual = pointA - pointB;
         constraint.linearMotorReferencePosition
             = -constraint.linearMotorAxis.dot(positionResidual);
-        constraint.linearMotorTargetSpeed = joint.commandVelocity[0];
+        constraint.linearMotorTargetSpeed = jointActuation.commandVelocity[0];
         constraint.linearMotorMaxForce = maxForce;
       }
     }
-    if (joint.type == comps::JointType::Revolute
-        && joint.actuatorType == comps::ActuatorType::Velocity
-        && joint.commandVelocity.size() == 1
-        && joint.commandVelocity.allFinite()) {
-      const double maxTorque = dvbd::avbdRigidWorldSymmetricEffortLimit(joint);
+    if (jointModel.type == comps::JointType::Revolute
+        && jointActuation.actuatorType == comps::ActuatorType::Velocity
+        && jointActuation.commandVelocity.size() == 1
+        && jointActuation.commandVelocity.allFinite()) {
+      const double maxTorque
+          = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
       const std::optional<std::uint8_t> freeAxis
           = singleInactiveVariationalLoopAxis(config.angularAxisMask);
       if (maxTorque > 0.0 && !std::isnan(maxTorque) && freeAxis.has_value()) {
@@ -1142,12 +1154,12 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
             = rotB * rotationLog3(rotB.transpose() * rotA);
         constraint.angularMotorReferencePosition
             = -constraint.angularMotorAxis.dot(angularResidual);
-        constraint.angularMotorTargetSpeed = joint.commandVelocity[0];
+        constraint.angularMotorTargetSpeed = jointActuation.commandVelocity[0];
         constraint.angularMotorMaxTorque = maxTorque;
       }
     }
     constraint.sourceJoint = jointEntity;
-    constraint.breakForce = joint.breakForce;
+    constraint.breakForce = jointModel.breakForce;
     constraints.push_back(constraint);
   }
 }
@@ -1166,11 +1178,12 @@ void markBrokenAvbdVariationalLoopConstraints(
 
     if (constraint.sourceJoint != entt::null && constraint.breakForce > 0.0
         && std::isfinite(constraint.breakForce) && row + rows <= lambda.size()
-        && registry.all_of<comps::Joint>(constraint.sourceJoint)) {
+        && registry.all_of<comps::JointModel>(constraint.sourceJoint)) {
       const double load = lambda.segment(row, rows).norm();
-      auto& joint = registry.get<comps::Joint>(constraint.sourceJoint);
+      auto& jointState
+          = registry.get<comps::JointState>(constraint.sourceJoint);
       if (load >= constraint.breakForce) {
-        joint.broken = true;
+        jointState.broken = true;
       }
     }
 
@@ -1337,29 +1350,33 @@ void gatherState(
     if (link.dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
+    const auto& jointState = registry.get<comps::JointState>(link.joint);
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    position.segment(seg, n) = joint.position;
-    velocity.segment(seg, n) = joint.velocity;
+    position.segment(seg, n) = jointState.position;
+    velocity.segment(seg, n) = jointState.velocity;
 
     auto effort = appliedForce.segment(seg, n);
     effort.setZero();
-    if (joint.actuatorType == comps::ActuatorType::Force
-        && joint.torque.size() == n) {
-      effort = joint.torque;
-      if (joint.limits.effortLower.size() == n
-          && joint.limits.effortUpper.size() == n) {
-        effort = effort.cwiseMax(joint.limits.effortLower)
-                     .cwiseMin(joint.limits.effortUpper);
+    if (jointActuation.actuatorType == comps::ActuatorType::Force
+        && jointActuation.torque.size() == n) {
+      effort = jointActuation.torque;
+      if (jointModel.limits.effortLower.size() == n
+          && jointModel.limits.effortUpper.size() == n) {
+        effort = effort.cwiseMax(jointModel.limits.effortLower)
+                     .cwiseMin(jointModel.limits.effortUpper);
       }
     }
-    if (joint.springStiffness.size() == n && joint.restPosition.size() == n) {
-      effort -= joint.springStiffness.cwiseProduct(
-          joint.position - joint.restPosition);
+    if (jointModel.springStiffness.size() == n
+        && jointModel.restPosition.size() == n) {
+      effort -= jointModel.springStiffness.cwiseProduct(
+          jointState.position - jointModel.restPosition);
     }
-    if (joint.dampingCoefficient.size() == n) {
-      effort -= joint.dampingCoefficient.cwiseProduct(joint.velocity);
+    if (jointModel.dampingCoefficient.size() == n) {
+      effort -= jointModel.dampingCoefficient.cwiseProduct(jointState.velocity);
     }
   }
 }
@@ -1376,18 +1393,20 @@ void gatherVelocity(
     if (link.dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointState = registry.get<comps::JointState>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    velocity.segment(seg, n) = joint.velocity;
+    velocity.segment(seg, n) = jointState.velocity;
   }
 }
 
-bool isVariationalVelocityProjectionJoint(const comps::Joint& joint)
+bool isVariationalVelocityProjectionJoint(
+    const comps::JointModel& jointModel,
+    const comps::JointActuation& jointActuation)
 {
-  return joint.actuatorType == comps::ActuatorType::Velocity
-         && (joint.type == comps::JointType::Revolute
-             || joint.type == comps::JointType::Prismatic);
+  return jointActuation.actuatorType == comps::ActuatorType::Velocity
+         && (jointModel.type == comps::JointType::Revolute
+             || jointModel.type == comps::JointType::Prismatic);
 }
 
 Eigen::Index variationalVelocityProjectionRowCount(
@@ -1398,8 +1417,10 @@ Eigen::Index variationalVelocityProjectionRowCount(
     if (link.dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
-    if (!isVariationalVelocityProjectionJoint(joint)) {
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.joint);
+    if (!isVariationalVelocityProjectionJoint(jointModel, jointActuation)) {
       continue;
     }
     rows += static_cast<Eigen::Index>(link.dof);
@@ -1422,21 +1443,24 @@ Eigen::Index writeVariationalVelocityProjectionRows(
     if (link.dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
-    if (!isVariationalVelocityProjectionJoint(joint)) {
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.joint);
+    if (!isVariationalVelocityProjectionJoint(jointModel, jointActuation)) {
       continue;
     }
 
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    const bool useCommand = joint.commandVelocity.size() == n
-                            && joint.commandVelocity.allFinite();
+    const bool useCommand = jointActuation.commandVelocity.size() == n
+                            && jointActuation.commandVelocity.allFinite();
     for (Eigen::Index d = 0; d < n; ++d) {
       if (row >= residual.size()) {
         return row;
       }
       const Eigen::Index dof = seg + d;
-      const double command = useCommand ? joint.commandVelocity[d] : 0.0;
+      const double command
+          = useCommand ? jointActuation.commandVelocity[d] : 0.0;
       residual[row] = nextPosition[dof] - (position[dof] + timeStep * command);
       jacobian(row, dof) = 1.0;
       ++row;
@@ -1474,18 +1498,24 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     return std::nullopt;
   }
 
-  auto& joint = registry.get<comps::Joint>(childLink.parentJoint);
-  if (joint.type != comps::JointType::Prismatic || joint.position.size() != 1
-      || joint.velocity.size() != 1 || joint.acceleration.size() != 1
-      || joint.parentLink != baseEntity || joint.childLink != childEntity) {
+  const auto& jointModel
+      = registry.get<comps::JointModel>(childLink.parentJoint);
+  auto& jointState = registry.get<comps::JointState>(childLink.parentJoint);
+  const auto& jointActuation
+      = registry.get<comps::JointActuation>(childLink.parentJoint);
+  if (jointModel.type != comps::JointType::Prismatic
+      || jointState.position.size() != 1 || jointState.velocity.size() != 1
+      || jointState.acceleration.size() != 1
+      || jointModel.parentLink != baseEntity
+      || jointModel.childLink != childEntity) {
     return std::nullopt;
   }
-  if (joint.actuatorType == comps::ActuatorType::Velocity) {
+  if (jointActuation.actuatorType == comps::ActuatorType::Velocity) {
     return std::nullopt;
   }
 
   Vector6 jointFrameSubspace = Vector6::Zero();
-  jointFrameSubspace.tail<3>() = joint.axis;
+  jointFrameSubspace.tail<3>() = jointModel.axis;
   const Vector6 linkFrameSubspace
       = adjoint(childLink.transformFromParentJoint.inverse())
         * jointFrameSubspace;
@@ -1497,35 +1527,38 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
   }
 
   double effort = 0.0;
-  if (joint.actuatorType == comps::ActuatorType::Force
-      && joint.torque.size() == 1) {
-    effort = joint.torque[0];
-    if (joint.limits.effortLower.size() == 1
-        && joint.limits.effortUpper.size() == 1) {
+  if (jointActuation.actuatorType == comps::ActuatorType::Force
+      && jointActuation.torque.size() == 1) {
+    effort = jointActuation.torque[0];
+    if (jointModel.limits.effortLower.size() == 1
+        && jointModel.limits.effortUpper.size() == 1) {
       effort = std::clamp(
-          effort, joint.limits.effortLower[0], joint.limits.effortUpper[0]);
+          effort,
+          jointModel.limits.effortLower[0],
+          jointModel.limits.effortUpper[0]);
     }
   }
-  if (joint.springStiffness.size() == 1 && joint.restPosition.size() == 1) {
-    effort -= joint.springStiffness[0]
-              * (joint.position[0] - joint.restPosition[0]);
+  if (jointModel.springStiffness.size() == 1
+      && jointModel.restPosition.size() == 1) {
+    effort -= jointModel.springStiffness[0]
+              * (jointState.position[0] - jointModel.restPosition[0]);
   }
-  if (joint.dampingCoefficient.size() == 1) {
-    effort -= joint.dampingCoefficient[0] * joint.velocity[0];
+  if (jointModel.dampingCoefficient.size() == 1) {
+    effort -= jointModel.dampingCoefficient[0] * jointState.velocity[0];
   }
 
   const auto& baseCache = registry.get<comps::FrameCache>(baseEntity);
   const Eigen::Vector3d axisWorld
       = baseCache.worldTransform.linear()
-        * childLink.transformFromParentToJoint.linear() * joint.axis;
+        * childLink.transformFromParentToJoint.linear() * jointModel.axis;
   const double generalizedGravity = effectiveMass * axisWorld.dot(gravity);
   const double generalizedExternal
       = linkFrameSubspace.dot(childLink.externalForce);
   const double noContactGeneralizedForce
       = effort + generalizedExternal + generalizedGravity;
 
-  const double previousPosition = joint.position[0];
-  const double previousVelocity = joint.velocity[0];
+  const double previousPosition = jointState.position[0];
+  const double previousVelocity = jointState.velocity[0];
   const Eigen::Isometry3d childOffset = childLink.transformFromParentJoint;
   const Eigen::Isometry3d parentToJoint = childLink.transformFromParentToJoint;
 
@@ -1539,7 +1572,7 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
 
     double generalizedForce = 0.0;
     Eigen::Isometry3d jointMotion = Eigen::Isometry3d::Identity();
-    jointMotion.translation() = joint.axis * trialPosition;
+    jointMotion.translation() = jointModel.axis * trialPosition;
     const Eigen::Isometry3d childWorld
         = baseCache.worldTransform * parentToJoint * jointMotion * childOffset;
     const Eigen::Vector3d pointVelocity = axisWorld * previousVelocity;
@@ -1608,9 +1641,9 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
 
   const double nextVelocity = previousVelocity + timeStep * acceleration;
 
-  joint.position[0] = nextPosition;
-  joint.velocity[0] = nextVelocity;
-  joint.acceleration[0] = acceleration;
+  jointState.position[0] = nextPosition;
+  jointState.velocity[0] = nextVelocity;
+  jointState.acceleration[0] = acceleration;
 
   state.previousDeltaTransform.resize(
       structure.links.size(), Eigen::Isometry3d::Identity());
@@ -1619,7 +1652,8 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
   state.previousMomentum[0].setZero();
 
   Eigen::Isometry3d jointDelta = Eigen::Isometry3d::Identity();
-  jointDelta.translation() = joint.axis * (nextPosition - previousPosition);
+  jointDelta.translation()
+      = jointModel.axis * (nextPosition - previousPosition);
   state.previousDeltaTransform[1] = childLink.transformFromParentJoint.inverse()
                                     * jointDelta
                                     * childLink.transformFromParentJoint;
@@ -1683,12 +1717,12 @@ void computeResidualInto(
       link.averageVelocity.setZero();
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
     const auto seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
-    link.nextRelative
-        = link.parentToJoint * jointMotionTransform(joint, seg) * link.offset;
+    link.nextRelative = link.parentToJoint
+                        * jointMotionTransform(jointModel, seg) * link.offset;
     link.deltaTransform
         = link.currentRelative.inverse()
           * tree.links[static_cast<std::size_t>(link.parent)].deltaTransform
@@ -2373,12 +2407,13 @@ void evaluateContactForceInto(
     if (link.parent < 0) {
       continue; // root keeps its fixed world transform from buildVarTree.
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
     const auto seg = nextPosition.segment(
         static_cast<Eigen::Index>(link.dofOffset),
         static_cast<Eigen::Index>(link.dof));
-    scratch.trialRelativeTransforms[i]
-        = link.parentToJoint * jointMotionTransform(joint, seg) * link.offset;
+    scratch.trialRelativeTransforms[i] = link.parentToJoint
+                                         * jointMotionTransform(jointModel, seg)
+                                         * link.offset;
     scratch.trialWorldTransforms[i]
         = scratch.trialWorldTransforms[static_cast<std::size_t>(link.parent)]
           * scratch.trialRelativeTransforms[i];
@@ -3437,7 +3472,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     if (link.dof == 0) {
       continue;
     }
-    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
     linearSolve.jointWork.head(n).noalias()
@@ -3445,7 +3480,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     linearSolve.jointWork.head(n).noalias()
         += timeStep * timeStep * guessAcceleration.segment(seg, n);
     jointRetractInto(
-        joint,
+        jointModel,
         position.segment(seg, n),
         linearSolve.jointWork.head(n),
         nextPosition.segment(seg, n));
@@ -3484,7 +3519,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     if (link.dof == 0) {
       continue;
     }
-    const auto type = registry.get<comps::Joint>(link.joint).type;
+    const auto type = registry.get<comps::JointModel>(link.joint).type;
     if (type == comps::JointType::Spherical
         || type == comps::JointType::Floating) {
       euclideanCoordinates = false;
@@ -3508,12 +3543,12 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       if (link.dof == 0) {
         continue;
       }
-      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto& jointModel = registry.get<comps::JointModel>(link.joint);
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto n = static_cast<Eigen::Index>(link.dof);
       anderson.jointDelta.head(n) = -scale * increment.segment(seg, n);
       jointRetractInto(
-          joint,
+          jointModel,
           base.segment(seg, n),
           anderson.jointDelta.head(n),
           result.segment(seg, n));
@@ -3533,11 +3568,11 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       if (link.dof == 0) {
         continue;
       }
-      const auto& joint = registry.get<comps::Joint>(link.joint);
+      const auto& jointModel = registry.get<comps::JointModel>(link.joint);
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto n = static_cast<Eigen::Index>(link.dof);
       jointLogDifferenceInto(
-          joint,
+          jointModel,
           to.segment(seg, n),
           from.segment(seg, n),
           tangent.segment(seg, n));
@@ -3921,11 +3956,11 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         if (link.dof == 0) {
           continue;
         }
-        const auto& joint = registry.get<comps::Joint>(link.joint);
+        const auto& jointModel = registry.get<comps::JointModel>(link.joint);
         const auto seg = static_cast<Eigen::Index>(link.dofOffset);
         const auto n = static_cast<Eigen::Index>(link.dof);
         jointRetractInto(
-            joint,
+            jointModel,
             nextPosition.segment(seg, n),
             projectionScratchStorage.correction.segment(seg, n),
             anderson.trialPosition.segment(seg, n));
@@ -3957,28 +3992,30 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       continue;
     }
     wroteJointPosition = true;
-    auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
+    auto& jointState = registry.get<comps::JointState>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    const bool hasPreviousVelocity = joint.velocity.size() == n;
+    const bool hasPreviousVelocity = jointState.velocity.size() == n;
     if (hasPreviousVelocity) {
-      stepScratchStorage.previousJointVelocity.head(n) = joint.velocity;
+      stepScratchStorage.previousJointVelocity.head(n) = jointState.velocity;
     }
     // q^k is the captured `position`; loop-closure projection works on the
     // scratch tree and leaves registry joint state unchanged until writeback.
-    joint.velocity.resize(n);
+    jointState.velocity.resize(n);
     jointLogDifferenceInto(
-        joint,
+        jointModel,
         nextPosition.segment(seg, n),
         position.segment(seg, n),
-        joint.velocity);
-    joint.velocity /= timeStep;
-    joint.position = nextPosition.segment(seg, n);
+        jointState.velocity);
+    jointState.velocity /= timeStep;
+    jointState.position = nextPosition.segment(seg, n);
     if (hasPreviousVelocity) {
-      joint.acceleration.resize(n);
-      joint.acceleration = joint.velocity;
-      joint.acceleration -= stepScratchStorage.previousJointVelocity.head(n);
-      joint.acceleration /= timeStep;
+      jointState.acceleration.resize(n);
+      jointState.acceleration = jointState.velocity;
+      jointState.acceleration
+          -= stepScratchStorage.previousJointVelocity.head(n);
+      jointState.acceleration /= timeStep;
     }
   }
   if (wroteJointPosition) {
@@ -4297,7 +4334,8 @@ void reserveMultibodyVariationalRegistryStorage(
   stateStorage.reserve(multibodyCount);
   scratchStorage.reserve(multibodyCount);
   auto pointJointConfigs
-      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+      = registry
+            .view<comps::JointModel, dvbd::AvbdRigidWorldPointJointConfig>();
   const bool hasPointJointConfigs
       = pointJointConfigs.begin() != pointJointConfigs.end();
   if (hasPointJointConfigs) {
@@ -4464,7 +4502,8 @@ void MultibodyVariationalIntegrationStage::execute(
   // so by here every binding is Ignored or Supported (never Unsupported).
   auto closures = registry.view<comps::LoopClosure>();
   auto pointJointConfigs
-      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+      = registry
+            .view<comps::JointModel, dvbd::AvbdRigidWorldPointJointConfig>();
   const bool hasPointJointConfigs
       = pointJointConfigs.begin() != pointJointConfigs.end();
 

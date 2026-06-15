@@ -701,7 +701,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS2 — Physical data architecture
 
-#### WP-091.20 Model/State/Control component split
+#### WP-091.20 Model/State/Control component split [partial — joint slice landed]
 
 - Objective: the articulated and deformable component fusion is split so
   storage matches the documented Model/State/Control/Contacts contract (the
@@ -716,6 +716,34 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.2.
+- Slicing: the packet is landed in three independently-verifiable slices —
+  20a `comps::Joint`, 20b `comps::Link`, 20c `DeformableNodeState`. Each follows
+  the rigid-domain reference pattern (single-contract components) and must keep
+  golden trajectories bit-identical and serialization/replay round-trips green.
+- Evidence (slice 20a — joint, landed): `comps::Joint` is split into three
+  contract-aligned components in `comps/joint.hpp` — `JointModel` (frozen
+  topology/geometry and the passive/solver parameters: type, name, axis/axis2/
+  pitch, limits, spring/damping/armature/coulombFriction/restPosition,
+  breakForce, parent/child links, rigid-body-fixed anchors; carries getDOF() and
+  entityFields(), and is the canonical "is a joint" component), `JointState`
+  (per-step position/velocity/acceleration and the runtime broken flag), and
+  `JointActuation` (actuatorType, torque, commandVelocity). Every consumer (the
+  Joint facade's `getJointComponent` split into three accessors, the two bake
+  paths in `world.cpp` + `multibody.cpp`, the multibody-dynamics/variational/
+  stage/constraint/kinematics-graph hot paths, the AVBD contact code in
+  `detail/rigid_avbd/rigid_world_contact.hpp` and `detail/smooth_jacobians.cpp`,
+  replay capture/restore, and serialization) reads each field through its owning
+  component. Serialization registers the three components via the generic
+  `registerComponentIfNeeded` path (PFR auto-serialize; `JointModel` entity refs
+  remapped via `entityFields`); the unified `comps.Joint` serializer and the now
+  clean-break-dropped legacy v1–v19 joint deserializers are removed and the
+  binary format is bumped 21 → 22. Gates: `pixi run lint` and
+  `check-api-boundaries` clean; default-step golden trajectories stay **3/3
+  bit-identical** (behavior-preserving); `pixi run test-unit` 163/163 binaries
+  pass (serialization round-trip + the three new stable IDs; variational 178/178;
+  cross-family; AVBD 107/107; boxed-LCP 122/122). Remaining: slice 20b
+  (`comps::Link` → LinkModel/LinkState) and slice 20c (`DeformableNodeState` →
+  model/state).
 
 #### WP-091.21 Baked dense-index Model artifact
 

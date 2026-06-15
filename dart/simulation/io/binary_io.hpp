@@ -105,7 +105,14 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      DART 7 has no compatibility debt, so packets written with mangled-name
 //      component identities (versions <= 20) no longer round-trip their
 //      components. See WP-091.23 and comps/component_category.hpp.
-constexpr std::uint32_t kBinaryFormatVersion = 21;
+//   22: The unified comps.Joint record is split into three contract-aligned
+//      components: comps.JointModel (frozen topology, geometry, and solver
+//      parameters), comps.JointState (per-step position/velocity/acceleration
+//      and the runtime broken flag), and comps.JointActuation (actuator mode,
+//      commanded effort, commanded velocity). Clean break: DART 7 has no
+//      compatibility debt, so packets written with the unified comps.Joint
+//      record (versions <= 21) no longer round-trip the joint. See WP-091.20.
+constexpr std::uint32_t kBinaryFormatVersion = 22;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

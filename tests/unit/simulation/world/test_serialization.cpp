@@ -261,7 +261,7 @@ void expectBrokenRigidBodyJointRoundTrips(
   joint.setBreakForce(12.5);
 
   auto& jointComp
-      = dart::simulation::detail::registryOf(world1).get<sx::comps::Joint>(
+      = dart::simulation::detail::registryOf(world1).get<sx::comps::JointState>(
           dart::simulation::detail::toRegistryEntity(joint.getEntity()));
   jointComp.broken = true;
   world1.enterSimulationMode();
@@ -331,7 +331,7 @@ void expectBrokenArticulatedPointJointRoundTrips(
 
   world1.enterSimulationMode();
   auto& jointComp
-      = dart::simulation::detail::registryOf(world1).get<sx::comps::Joint>(
+      = dart::simulation::detail::registryOf(world1).get<sx::comps::JointState>(
           dart::simulation::detail::toRegistryEntity(joint.getEntity()));
   jointComp.broken = true;
 
@@ -378,81 +378,6 @@ void expectBrokenArticulatedPointJointRoundTrips(
 
   restoredJoint->resetBreakage();
   EXPECT_FALSE(restoredJoint->isBroken());
-}
-
-void writeLegacyJointV1(
-    std::ostream& output,
-    const dart::simulation::comps::Joint& joint,
-    const dart::simulation::io::EntityMap& entityMap)
-{
-  namespace io = dart::simulation::io;
-
-  io::writePOD(output, joint.type);
-  io::writeString(output, joint.name);
-  io::writeVectorXd(output, joint.position);
-  io::writeVectorXd(output, joint.velocity);
-  io::writeVectorXd(output, joint.acceleration);
-  io::writeVectorXd(output, joint.torque);
-  io::writeVectorXd(output, joint.limits.lower);
-  io::writeVectorXd(output, joint.limits.upper);
-  io::writeVectorXd(output, joint.limits.velocityUpper);
-  io::writeVectorXd(output, joint.limits.effortUpper);
-  io::writeVector3d(output, joint.axis);
-  io::writeVector3d(output, joint.axis2);
-  io::writePOD(output, joint.pitch);
-
-  const auto mappedParent
-      = joint.parentLink != entt::null
-            ? static_cast<std::uint32_t>(entityMap.at(joint.parentLink))
-            : static_cast<std::uint32_t>(entt::null);
-  const auto mappedChild
-      = joint.childLink != entt::null
-            ? static_cast<std::uint32_t>(entityMap.at(joint.childLink))
-            : static_cast<std::uint32_t>(entt::null);
-  io::writePOD(output, mappedParent);
-  io::writePOD(output, mappedChild);
-}
-
-void writeLegacyJointV2ToV12(
-    std::ostream& output,
-    const dart::simulation::comps::Joint& joint,
-    const dart::simulation::io::EntityMap& entityMap)
-{
-  namespace io = dart::simulation::io;
-
-  io::writePOD(output, joint.type);
-  io::writePOD(output, joint.actuatorType);
-  io::writeString(output, joint.name);
-  io::writeVectorXd(output, joint.position);
-  io::writeVectorXd(output, joint.velocity);
-  io::writeVectorXd(output, joint.acceleration);
-  io::writeVectorXd(output, joint.torque);
-  io::writeVectorXd(output, joint.springStiffness);
-  io::writeVectorXd(output, joint.dampingCoefficient);
-  io::writeVectorXd(output, joint.restPosition);
-  io::writeVectorXd(output, joint.armature);
-  io::writeVectorXd(output, joint.coulombFriction);
-  io::writeVectorXd(output, joint.commandVelocity);
-  io::writeVectorXd(output, joint.limits.lower);
-  io::writeVectorXd(output, joint.limits.upper);
-  io::writeVectorXd(output, joint.limits.velocityLower);
-  io::writeVectorXd(output, joint.limits.velocityUpper);
-  io::writeVectorXd(output, joint.limits.effortLower);
-  io::writeVectorXd(output, joint.limits.effortUpper);
-  io::writeVector3d(output, joint.axis);
-  io::writeVector3d(output, joint.axis2);
-  io::writePOD(output, joint.pitch);
-
-  const auto mappedParent
-      = joint.parentLink != entt::null
-            ? static_cast<std::uint32_t>(entityMap.at(joint.parentLink))
-            : static_cast<std::uint32_t>(entt::null);
-  const auto mappedChild
-      = joint.childLink != entt::null
-            ? static_cast<std::uint32_t>(entityMap.at(joint.childLink))
-            : static_cast<std::uint32_t>(entt::null);
-  io::writePOD(output, mappedParent);
-  io::writePOD(output, mappedChild);
 }
 
 void writeMassPropertiesV8(
@@ -549,14 +474,7 @@ void saveLegacyWorldWithCurrentEntities(
     io::writePOD(output, componentTypes.size());
     for (const auto& typeName : componentTypes) {
       io::writeString(output, typeName);
-      if (legacyVersion == 1u && typeName == comps::Joint::getTypeName()) {
-        writeLegacyJointV1(
-            output, registry.get<comps::Joint>(entity), entityMap);
-      } else if (
-          legacyVersion < 13u && typeName == comps::Joint::getTypeName()) {
-        writeLegacyJointV2ToV12(
-            output, registry.get<comps::Joint>(entity), entityMap);
-      } else if (typeName == comps::Link::getTypeName()) {
+      if (typeName == comps::Link::getTypeName()) {
         writeLegacyLinkV8(
             output,
             registry.get<comps::Link>(entity),
@@ -567,12 +485,6 @@ void saveLegacyWorldWithCurrentEntities(
       }
     }
   }
-}
-
-void saveLegacyV1WorldWithCurrentEntities(
-    std::ostream& output, const dart::simulation::World& world)
-{
-  saveLegacyWorldWithCurrentEntities(output, world, /*legacyVersion=*/1u);
 }
 
 void saveLegacyV8WorldWithCurrentEntities(
@@ -854,75 +766,6 @@ TEST(Serialization, PreservesJointLimits)
   EXPECT_DOUBLE_EQ(joint_restored->getVelocityUpperLimits()[0], 2.5);
   EXPECT_DOUBLE_EQ(joint_restored->getEffortLowerLimits()[0], -3.0);
   EXPECT_DOUBLE_EQ(joint_restored->getEffortUpperLimits()[0], 4.0);
-}
-
-// Test that v1 joint records migrate the legacy single-sided velocity/effort
-// limit vectors and default fields added in later binary formats.
-TEST(Serialization, LoadsLegacyV1JointRecord)
-{
-  namespace sx = dart::simulation;
-  namespace comps = dart::simulation::comps;
-
-  sx::World world1;
-  auto mb = world1.addMultibody("robot");
-  auto base = mb.addLink("base");
-  auto link = mb.addLink(
-      "link",
-      base,
-      sx::JointSpec{
-          .name = "joint",
-          .type = sx::JointType::Revolute,
-          .axis = Eigen::Vector3d::UnitX()});
-
-  auto joint = link.getParentJoint();
-  joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
-  joint.setVelocity(Eigen::VectorXd::Constant(1, -0.75));
-  dart::simulation::detail::registryOf(world1)
-      .get<comps::Joint>(
-          dart::simulation::detail::toRegistryEntity(joint.getEntity()))
-      .acceleration = Eigen::VectorXd::Constant(1, 1.25);
-  joint.setForce(Eigen::VectorXd::Constant(1, 2.25));
-  joint.setPositionLimits(
-      Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
-  joint.setVelocityLimits(
-      Eigen::VectorXd::Constant(1, -1.5), Eigen::VectorXd::Constant(1, 1.5));
-  joint.setEffortLimits(
-      Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 3.0));
-
-  std::stringstream legacy;
-  saveLegacyV1WorldWithCurrentEntities(legacy, world1);
-
-  sx::World world2;
-  world2.loadBinary(legacy);
-
-  auto mbRestored = world2.getMultibody("robot");
-  ASSERT_TRUE(mbRestored.has_value());
-  auto jointRestored = mbRestored->getJoint("joint");
-  ASSERT_TRUE(jointRestored.has_value());
-  EXPECT_EQ(jointRestored->getType(), sx::JointType::Revolute);
-  EXPECT_TRUE(jointRestored->getAxis().isApprox(Eigen::Vector3d::UnitX()));
-  EXPECT_DOUBLE_EQ(jointRestored->getPosition()[0], 0.25);
-  EXPECT_DOUBLE_EQ(jointRestored->getVelocity()[0], -0.75);
-  EXPECT_DOUBLE_EQ(jointRestored->getAcceleration()[0], 1.25);
-  EXPECT_DOUBLE_EQ(jointRestored->getForce()[0], 2.25);
-  EXPECT_DOUBLE_EQ(jointRestored->getPositionLowerLimits()[0], -0.5);
-  EXPECT_DOUBLE_EQ(jointRestored->getPositionUpperLimits()[0], 0.5);
-  EXPECT_DOUBLE_EQ(jointRestored->getVelocityLowerLimits()[0], -1.5);
-  EXPECT_DOUBLE_EQ(jointRestored->getVelocityUpperLimits()[0], 1.5);
-  EXPECT_DOUBLE_EQ(jointRestored->getEffortLowerLimits()[0], -3.0);
-  EXPECT_DOUBLE_EQ(jointRestored->getEffortUpperLimits()[0], 3.0);
-
-  const auto& jointComp
-      = dart::simulation::detail::registryOf(world2).get<comps::Joint>(
-          dart::simulation::detail::toRegistryEntity(
-              jointRestored->getEntity()));
-  EXPECT_EQ(jointComp.actuatorType, comps::ActuatorType::Force);
-  EXPECT_TRUE(jointComp.springStiffness.isZero());
-  EXPECT_TRUE(jointComp.dampingCoefficient.isZero());
-  EXPECT_TRUE(jointComp.restPosition.isZero());
-  EXPECT_TRUE(jointComp.armature.isZero());
-  EXPECT_TRUE(jointComp.coulombFriction.isZero());
-  EXPECT_TRUE(jointComp.commandVelocity.isZero());
 }
 
 TEST(Serialization, LoadsLegacyV8LinkRecord)
@@ -3106,7 +2949,9 @@ TEST(StableComponentIds, ComponentsReturnExplicitStableId)
   EXPECT_EQ(comps::MassProperties::getTypeName(), "comps.MassProperties");
   EXPECT_EQ(comps::Force::getTypeName(), "comps.Force");
   EXPECT_EQ(comps::ContactMaterial::getTypeName(), "comps.ContactMaterial");
-  EXPECT_EQ(comps::Joint::getTypeName(), "comps.Joint");
+  EXPECT_EQ(comps::JointModel::getTypeName(), "comps.JointModel");
+  EXPECT_EQ(comps::JointState::getTypeName(), "comps.JointState");
+  EXPECT_EQ(comps::JointActuation::getTypeName(), "comps.JointActuation");
   EXPECT_EQ(
       comps::AvbdJointStiffness::getTypeName(), "comps.AvbdJointStiffness");
   EXPECT_EQ(comps::Link::getTypeName(), "comps.Link");
@@ -3168,7 +3013,9 @@ TEST(StableComponentIds, RegisteredIdsAreUniqueAndNotMangled)
   // Spot-check that the dotted stable IDs are present in the registry, proving
   // the macro-generated identities flow through to the registry key.
   EXPECT_TRUE(seen.contains("comps.Name"));
-  EXPECT_TRUE(seen.contains("comps.Joint"));
+  EXPECT_TRUE(seen.contains("comps.JointModel"));
+  EXPECT_TRUE(seen.contains("comps.JointState"));
+  EXPECT_TRUE(seen.contains("comps.JointActuation"));
   EXPECT_TRUE(seen.contains("comps.Link"));
   EXPECT_TRUE(seen.contains("comps.AvbdJointStiffness"));
 }
