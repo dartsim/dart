@@ -79,20 +79,27 @@ TEST(Issue1184, Accuracy)
     return std::make_shared<dart::dynamics::SphereShape>(s);
   };
 
+  // `tolerance` below bounds the allowed error between the object's resting
+  // height and its half-size. A resting object sits ~1 mm into the ground
+  // (DART's steady-state contact penetration), which is right at the old 1e-3
+  // bound; use 2e-3 so small cross-platform floating-point differences near
+  // that bound do not flip the assertion, while still catching real failures
+  // (fall-through / not-settling is centimeter-scale). See
+  // https://github.com/dartsim/dart/issues/1184.
 #if DART_BUILD_MODE_DEBUG
   const auto groundInfoFunctions = {makePlaneGround};
   const auto objectShapeFunctions = {makeSphereObject};
   const auto halfsizes = {10.0};
   const auto fallingModes = {true};
   const double dropHeight = 0.1;
-  const double tolerance = 1e-3;
+  const double tolerance = 2e-3;
 #else
   const auto groundInfoFunctions = {makePlaneGround, makeBoxGround};
   const auto objectShapeFunctions = {makeBoxObject, makeSphereObject};
   const auto halfsizes = {0.25, 1.0, 5.0, 10.0, 20.0};
   const auto fallingModes = {true, false};
   const double dropHeight = 1.0;
-  const double tolerance = 1e-3;
+  const double tolerance = 2e-3;
 #endif
 
   for (const auto& groundInfoFunction : groundInfoFunctions) {
