@@ -34,6 +34,8 @@
 
 #include <dart/simulation/compute/compute_executor.hpp>
 
+#include <vector>
+
 namespace dart::simulation::compute {
 
 /// Reference executor that runs graph nodes in topological order.
@@ -43,11 +45,16 @@ public:
   void execute(const ComputeGraph& graph) override;
   [[nodiscard]] ComputeExecutionProfile executeProfiled(
       const ComputeGraph& graph) override;
+  void executeProfiled(
+      const ComputeGraph& graph, ComputeExecutionProfile& profile) override;
 
   [[nodiscard]] std::size_t getWorkerCount() const override
   {
     return 1;
   }
+
+private:
+  std::vector<ComputeExecutionProfile::Duration> m_profilePathTimes;
 };
 
 } // namespace dart::simulation::compute

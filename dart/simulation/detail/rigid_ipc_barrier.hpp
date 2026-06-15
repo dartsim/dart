@@ -1035,20 +1035,6 @@ DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
     RigidIpcProjectedNewtonSolveResult& result,
     RigidIpcProjectedNewtonSolveScratch& scratch);
 
-/// Prewarm solve-local projected-Newton assembly scratch for a same-shape
-/// solve. This performs assembly work but does not mutate input surfaces or
-/// solver results; allocator-backed storage owned by @p scratch remains
-/// reserved for later solves.
-DART_SIMULATION_API void prewarmRigidIpcProjectedNewtonAssemblyScratch(
-    std::span<const RigidIpcBarrierSurface> surfaces,
-    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
-    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
-    std::span<const RigidIpcArticulationConstraintInput>
-        articulationConstraints,
-    const RigidIpcBarrierOptions& barrierOptions,
-    const RigidIpcFrictionOptions& frictionOptions,
-    RigidIpcProjectedNewtonSolveScratch& scratch);
-
 /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
 ///
 /// Ports `ipc::initial_barrier_stiffness` (with `dmin = 0`) using DART's

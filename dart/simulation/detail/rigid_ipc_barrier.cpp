@@ -2732,30 +2732,6 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
   return result;
 }
 
-void prewarmRigidIpcProjectedNewtonAssemblyScratch(
-    std::span<const RigidIpcBarrierSurface> surfaces,
-    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
-    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
-    std::span<const RigidIpcArticulationConstraintInput>
-        articulationConstraints,
-    const RigidIpcBarrierOptions& barrierOptions,
-    const RigidIpcFrictionOptions& frictionOptions,
-    RigidIpcProjectedNewtonSolveScratch& scratch)
-{
-  RigidIpcAssemblyScratch localAssemblyScratch(scratch.memoryAllocator);
-  RigidIpcAssemblyScratch& assemblyScratch
-      = scratch.workspace != nullptr ? scratch.workspace->assemblyScratch
-                                     : localAssemblyScratch;
-  static_cast<void>(assembleRigidIpcObjectiveSystemWithScratch(
-      surfaces,
-      laggedSurfaces,
-      dynamicsTerms,
-      articulationConstraints,
-      barrierOptions,
-      frictionOptions,
-      assemblyScratch));
-}
-
 void solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options,

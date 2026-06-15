@@ -113,6 +113,46 @@ std::size_t computeMaxParallelism(
   return maxParallelism;
 }
 
+//==============================================================================
+std::size_t findNodeIndex(
+    std::span<ComputeNode* const> nodes, const ComputeNode* node)
+{
+  for (std::size_t i = 0; i < nodes.size(); ++i) {
+    if (nodes[i] == node) {
+      return i;
+    }
+  }
+  return nodes.size();
+}
+
+//==============================================================================
+void resetNodeProfile(
+    ComputeNodeExecutionProfile& profile,
+    const ComputeGraph& graph,
+    std::span<ComputeNode* const> order,
+    std::size_t index)
+{
+  auto* node = order[index];
+  profile.name = node->getName();
+  profile.topologicalIndex = index;
+  profile.dependencyCount = 0;
+  profile.dependentCount = 0;
+  profile.level = 0;
+  profile.workerIndex = 0;
+  profile.startTime = {};
+  profile.endTime = {};
+  profile.duration = {};
+
+  for (const auto& edge : graph.getEdges()) {
+    if (edge.to == node) {
+      ++profile.dependencyCount;
+    }
+    if (edge.from == node) {
+      ++profile.dependentCount;
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -215,6 +255,83 @@ ComputeExecutionProfiler::ComputeExecutionProfiler(
     nodeProfile.dependentCount = m_graph.getDependents(*node).size();
     nodeProfile.level = levels[i];
   }
+}
+
+//==============================================================================
+void ComputeExecutionProfiler::executeInline(
+    const ComputeGraph& graph,
+    std::size_t workerCount,
+    ComputeExecutionProfile& profile,
+    std::vector<ComputeExecutionProfile::Duration>& pathTimes)
+{
+  const auto order = graph.getTopologicalOrderView();
+
+  profile.workerCount = workerCount;
+  profile.wallTime = {};
+  profile.totalNodeTime = {};
+  profile.criticalPathTime = {};
+  profile.maxParallelism = 0;
+  profile.nodes.resize(order.size());
+
+  for (std::size_t i = 0; i < order.size(); ++i) {
+    resetNodeProfile(profile.nodes[i], graph, order, i);
+    for (const auto& edge : graph.getEdges()) {
+      if (edge.to != order[i]) {
+        continue;
+      }
+
+      const auto dependencyIndex = findNodeIndex(order, edge.from);
+      if (dependencyIndex < i) {
+        profile.nodes[i].level = std::max(
+            profile.nodes[i].level, profile.nodes[dependencyIndex].level + 1);
+      }
+    }
+  }
+
+  const auto start = Clock::now();
+  for (std::size_t i = 0; i < order.size(); ++i) {
+    auto& nodeProfile = profile.nodes[i];
+    nodeProfile.workerIndex = 0;
+
+    const auto nodeStart = Clock::now();
+    nodeProfile.startTime = nodeStart - start;
+    try {
+      order[i]->execute();
+    } catch (...) {
+      const auto nodeEnd = Clock::now();
+      nodeProfile.endTime = nodeEnd - start;
+      nodeProfile.duration = nodeProfile.endTime - nodeProfile.startTime;
+      throw;
+    }
+
+    const auto nodeEnd = Clock::now();
+    nodeProfile.endTime = nodeEnd - start;
+    nodeProfile.duration = nodeProfile.endTime - nodeProfile.startTime;
+  }
+
+  profile.wallTime = Clock::now() - start;
+
+  pathTimes.assign(order.size(), Duration{});
+  for (std::size_t i = 0; i < order.size(); ++i) {
+    profile.totalNodeTime += profile.nodes[i].duration;
+
+    Duration dependencyPath{};
+    for (const auto& edge : graph.getEdges()) {
+      if (edge.to != order[i]) {
+        continue;
+      }
+
+      const auto dependencyIndex = findNodeIndex(order, edge.from);
+      if (dependencyIndex < i) {
+        dependencyPath = std::max(dependencyPath, pathTimes[dependencyIndex]);
+      }
+    }
+
+    pathTimes[i] = dependencyPath + profile.nodes[i].duration;
+    profile.criticalPathTime = std::max(profile.criticalPathTime, pathTimes[i]);
+  }
+
+  profile.maxParallelism = profile.nodes.empty() ? 0u : 1u;
 }
 
 //==============================================================================

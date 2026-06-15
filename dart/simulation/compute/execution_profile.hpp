@@ -122,6 +122,12 @@ public:
   explicit ComputeExecutionProfiler(
       const ComputeGraph& graph, std::size_t workerCount);
 
+  static void executeInline(
+      const ComputeGraph& graph,
+      std::size_t workerCount,
+      ComputeExecutionProfile& profile,
+      std::vector<ComputeExecutionProfile::Duration>& pathTimes);
+
   void start();
   void executeNode(ComputeNode& node);
   [[nodiscard]] ComputeExecutionProfile finish();

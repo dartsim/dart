@@ -55,6 +55,8 @@ public:
   void execute(const ComputeGraph& graph) override;
   [[nodiscard]] ComputeExecutionProfile executeProfiled(
       const ComputeGraph& graph) override;
+  void executeProfiled(
+      const ComputeGraph& graph, ComputeExecutionProfile& profile) override;
   [[nodiscard]] std::size_t getWorkerCount() const override;
 
   /// Cost gate: graphs with at most this many nodes execute inline

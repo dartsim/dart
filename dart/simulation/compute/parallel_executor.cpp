@@ -47,8 +47,10 @@
 #include <taskflow/taskflow.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 namespace dart::simulation::compute {
 
@@ -65,8 +67,83 @@ public:
     }
   }
 
+  // Dispatch a cached task: profile through the per-run profiler when one is
+  // active, otherwise execute the node directly. Captured by the cached tasks
+  // via the stable `this` pointer so a single Taskflow serves both execute()
+  // and executeProfiled().
+  void runNode(ComputeNode* node)
+  {
+#if DART_BUILD_PROFILE
+    if (activeProfiler != nullptr) {
+      activeProfiler->executeNode(*node);
+      return;
+    }
+#endif
+    node->execute();
+  }
+
+  // Reuse the Taskflow built for the most recent same-shape graph so warmed
+  // same-shape parallel executions skip the per-run task/edge rebuild. The
+  // shape is identified by the (alloc-free) topological-order and edge views;
+  // any node-set or dependency change rebuilds the cache.
+  bool cacheMatches(const ComputeGraph& graph) const
+  {
+    if (!cacheValid) {
+      return false;
+    }
+    const auto order = graph.getTopologicalOrderView();
+    if (order.size() != cachedNodes.size()
+        || !std::equal(order.begin(), order.end(), cachedNodes.begin())) {
+      return false;
+    }
+    const auto edges = graph.getEdges();
+    return edges.size() == cachedEdges.size()
+           && std::equal(
+               edges.begin(),
+               edges.end(),
+               cachedEdges.begin(),
+               [](const ComputeEdge& a, const ComputeEdge& b) {
+                 return a.from == b.from && a.to == b.to;
+               });
+  }
+
+  void ensureTaskflow(const ComputeGraph& graph)
+  {
+    if (cacheMatches(graph)) {
+      return;
+    }
+
+    cachedTaskflow.clear();
+    cachedTasks.clear();
+    const auto order = graph.getTopologicalOrderView();
+    for (auto* node : order) {
+      cachedTasks.emplace(
+          node,
+          cachedTaskflow.emplace([this, node]() { runNode(node); })
+              .name(node->getName()));
+    }
+    for (const auto& edge : graph.getEdges()) {
+      cachedTasks.at(edge.from).precede(cachedTasks.at(edge.to));
+    }
+
+    cachedNodes.assign(order.begin(), order.end());
+    const auto edges = graph.getEdges();
+    cachedEdges.assign(edges.begin(), edges.end());
+    cacheValid = true;
+  }
+
   std::unique_ptr<tf::Executor> executor;
   std::size_t inlineThreshold = 1;
+  std::vector<ComputeExecutionProfile::Duration> inlineProfilePathTimes;
+
+  tf::Taskflow cachedTaskflow;
+  std::unordered_map<ComputeNode*, tf::Task> cachedTasks;
+  std::vector<ComputeNode*> cachedNodes;
+  std::vector<ComputeEdge> cachedEdges;
+  bool cacheValid = false;
+#if DART_BUILD_PROFILE
+  ComputeExecutionProfiler* activeProfiler = nullptr;
+#endif
 };
 
 //==============================================================================
@@ -106,25 +183,25 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
     return;
   }
 
-  tf::Taskflow taskflow;
-  std::unordered_map<ComputeNode*, tf::Task> tasks;
-
-  for (auto* node : graph.getNodes()) {
-    tasks.emplace(
-        node,
-        taskflow.emplace([node]() { node->execute(); }).name(node->getName()));
-  }
-
-  for (const auto& edge : graph.getEdges()) {
-    tasks.at(edge.from).precede(tasks.at(edge.to));
-  }
-
-  m_impl->executor->run(taskflow).get();
+  m_impl->ensureTaskflow(graph);
+#if DART_BUILD_PROFILE
+  m_impl->activeProfiler = nullptr;
+#endif
+  m_impl->executor->run(m_impl->cachedTaskflow).get();
 }
 
 //==============================================================================
 ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
+{
+  ComputeExecutionProfile profile;
+  executeProfiled(graph, profile);
+  return profile;
+}
+
+//==============================================================================
+void ParallelExecutor::executeProfiled(
+    const ComputeGraph& graph, ComputeExecutionProfile& profile)
 {
 #if DART_BUILD_PROFILE
   DART_SIMULATION_ASSERT_MSG(
@@ -132,38 +209,24 @@ ComputeExecutionProfile ParallelExecutor::executeProfiled(
       "Parallel execution found unordered resource-access hazards; add an "
       "explicit dependency or declare a reduction");
 
-  ComputeExecutionProfiler profiler(graph, getWorkerCount());
-
   // Cost gate: mirror execute(); a sub-threshold graph profiles its inline
   // (sequential) run, which is what actually executes.
   if (graph.getNodeCount() <= m_impl->inlineThreshold) {
-    profiler.start();
-    for (auto* node : graph.getTopologicalOrderView()) {
-      profiler.executeNode(*node);
-    }
-    return profiler.finish();
+    ComputeExecutionProfiler::executeInline(
+        graph, getWorkerCount(), profile, m_impl->inlineProfilePathTimes);
+    return;
   }
 
-  tf::Taskflow taskflow;
-  std::unordered_map<ComputeNode*, tf::Task> tasks;
-
-  for (auto* node : graph.getNodes()) {
-    tasks.emplace(
-        node,
-        taskflow.emplace([&profiler, node]() { profiler.executeNode(*node); })
-            .name(node->getName()));
-  }
-
-  for (const auto& edge : graph.getEdges()) {
-    tasks.at(edge.from).precede(tasks.at(edge.to));
-  }
-
+  m_impl->ensureTaskflow(graph);
+  ComputeExecutionProfiler profiler(graph, getWorkerCount());
+  m_impl->activeProfiler = &profiler;
   profiler.start();
-  m_impl->executor->run(taskflow).get();
-  return profiler.finish();
+  m_impl->executor->run(m_impl->cachedTaskflow).get();
+  m_impl->activeProfiler = nullptr;
+  profile = profiler.finish();
 #else
   execute(graph);
-  return {};
+  profile = {};
 #endif
 }
 
