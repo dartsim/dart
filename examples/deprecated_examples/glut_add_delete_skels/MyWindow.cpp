@@ -82,7 +82,10 @@ void MyWindow::draw()
 
   if (mSimulating)
     std::snprintf(
-        line, sizeof(line), "Physics RTF: %.2fx", mRtfEma < 0.0 ? 0.0 : mRtfEma);
+        line,
+        sizeof(line),
+        "Physics RTF: %.2fx",
+        mRtfEma < 0.0 ? 0.0 : mRtfEma);
   else
     std::snprintf(line, sizeof(line), "Physics RTF: paused");
   dart::gui::glut::drawStringOnScreen(0.02f, 0.91f, line);
