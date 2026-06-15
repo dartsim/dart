@@ -68,22 +68,6 @@ function(dart_get_max_string_length var)
 endfunction()
 
 #-------------------------------------------------------------------------------
-# Get list of subdirectories in a given directory
-# Usage:
-#   dart_get_subdir_list(var curdir)
-#-------------------------------------------------------------------------------
-function(dart_get_subdir_list var curdir)
-  file(GLOB children RELATIVE "${curdir}" "${curdir}/*")
-  set(dirlist)
-  foreach(child IN LISTS children)
-    if(IS_DIRECTORY "${curdir}/${child}")
-      list(APPEND dirlist "${child}")
-    endif()
-  endforeach()
-  set(${var} "${dirlist}" PARENT_SCOPE)
-endfunction()
-
-#-------------------------------------------------------------------------------
 # Add or append property to a global property list
 # Usage:
 #   dart_property_add(property_name value1 [value2...])
@@ -231,7 +215,6 @@ function(dart_print_options)
     list(GET option_default_values ${val} option_default_value)
 
     set(option_str "- ${option_variable}")
-    set(spaces "")
     string(LENGTH ${option_variable} option_variable_len)
     math(EXPR space_count "${option_variable_max_len} - ${option_variable_len}")
     foreach(loop_var RANGE ${space_count})
@@ -419,106 +402,6 @@ function(dart_maybe_apply_coverage_config _target_name)
   endif()
 endfunction()
 
-function(dart_library)
-  set(prefix _ARG)
-  set(options GLOB_HEADERS GLOB_SOURCES)
-  set(oneValueArgs NAME)
-  set(
-    multiValueArgs
-    HEADERS
-    SOURCES
-    PUBLIC_LINK_LIBRARIES
-    PRIVATE_LINK_LIBRARIES
-    PUBLIC_COMPILE_DEFINITIONS
-    PRIVATE_COMPILE_DEFINITIONS
-  )
-  cmake_parse_arguments(
-    "${prefix}"
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
-
-  # Get the current directory relative to the root of the project
-  # assuming that dart/* is the root of the source tree
-  string(
-    REPLACE
-    "${CMAKE_SOURCE_DIR}/"
-    ""
-    relative_path
-    ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-
-  if(${_ARG_GLOB_HEADERS})
-    file(GLOB_RECURSE headers "*.hpp")
-    list(APPEND _ARG_HEADERS ${headers})
-  endif()
-
-  if(${_ARG_GLOB_SOURCES})
-    file(GLOB_RECURSE sources "*.cpp")
-    list(APPEND _ARG_SOURCES ${sources})
-  endif()
-
-  add_library(${_ARG_NAME} ${_ARG_HEADERS} ${_ARG_SOURCES})
-  dart_apply_strict_symbol_visibility(${_ARG_NAME})
-  dart_maybe_apply_coverage_config(${_ARG_NAME})
-
-  target_include_directories(
-    ${_ARG_NAME}
-    PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-
-  target_compile_features(${_ARG_NAME} PUBLIC cxx_std_23)
-
-  target_link_libraries(
-    ${_ARG_NAME}
-    PUBLIC ${_ARG_PUBLIC_LINK_LIBRARIES}
-    PRIVATE ${_ARG_PRIVATE_LINK_LIBRARIES}
-  )
-
-  target_compile_definitions(
-    ${_ARG_NAME}
-    PUBLIC ${_ARG_PUBLIC_COMPILE_DEFINITIONS}
-    PRIVATE ${_ARG_PRIVATE_COMPILE_DEFINITIONS}
-  )
-
-  set_target_properties(${_ARG_NAME} PROPERTIES OUTPUT_NAME dart-${_ARG_NAME})
-
-  include(GNUInstallDirs)
-
-  foreach(header IN LISTS _ARG_HEADERS)
-    # Compute the relative path of each header from the root_dir
-    file(RELATIVE_PATH rel_path "${CMAKE_SOURCE_DIR}" "${header}")
-    get_filename_component(rel_dir "${rel_path}" DIRECTORY)
-
-    # Install the file to the destination, preserving the directory structure
-    install(
-      FILES "${header}"
-      DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
-    )
-  endforeach()
-
-  install(
-    TARGETS ${_ARG_NAME}
-    EXPORT dart_${_ARG_NAME}Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
-
-  install(
-    EXPORT dart_${_ARG_NAME}Targets
-    NAMESPACE DART::
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake
-  )
-
-  dart_format_add(${_ARG_HEADERS} ${_ARG_SOURCES})
-endfunction()
-
 #===============================================================================
 function(dart_coverage)
   set(prefix _ARG)
@@ -670,114 +553,6 @@ function(dart_coverage)
   endif()
 endfunction()
 
-function(dart_benchmarks)
-  set(prefix _ARG)
-  set(options)
-  set(oneValueArgs TYPE TARGET_PREFIX TEST_LIST)
-  set(
-    multiValueArgs
-    SOURCES
-    INCLUDE_DIRS
-    LINK_LIBRARIES
-    LINK_DART_LIBRARIES
-    COMPILE_DEFINITIONS
-  )
-  cmake_parse_arguments(
-    "${prefix}"
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
-
-  if(NOT _ARG_TYPE)
-    message(
-      FATAL_ERROR
-      "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!"
-    )
-  endif()
-
-  if(NOT DEFINED _ARG_SOURCES)
-    message(STATUS "No benchmarks have been specified for ${_ARG_TYPE}")
-  else()
-    list(LENGTH _ARG_SOURCES num_benchmarks)
-    message(STATUS "Adding ${num_benchmarks} ${_ARG_TYPE} benchmarks")
-  endif()
-
-  if(_ARG_TEST_LIST)
-    set(${_ARG_TEST_LIST} "")
-  endif()
-
-  foreach(source IN LISTS _ARG_SOURCES)
-    # Set target name: <TYPE>[_<TARGET_PREFIX>]_<source>
-    set(target_name ${_ARG_TYPE})
-    if(_ARG_TARGET_PREFIX)
-      set(target_name "${target_name}_${_ARG_TARGET_PREFIX}")
-    endif()
-    get_filename_component(source_name ${source} NAME_WE)
-    string(REPLACE "bm_" "" source_name ${source_name})
-    get_filename_component(source_dir ${source} DIRECTORY)
-    if(source_dir)
-      string(REPLACE "/" "_" source_prefix ${source_dir})
-      set(target_name "${target_name}_${source_prefix}_${source_name}")
-    else()
-      set(target_name "${target_name}_${source_name}")
-    endif()
-
-    add_executable(${target_name} ${source})
-    target_include_directories(${target_name} PRIVATE ${_ARG_INCLUDE_DIRS})
-
-    target_link_libraries(
-      ${target_name}
-      PRIVATE benchmark::benchmark benchmark::benchmark_main
-    )
-
-    if(UNIX)
-      # gbenchmark requires pthread when compiled on a Unix machine
-      target_link_libraries(${target_name} PRIVATE pthread)
-    endif()
-
-    target_link_libraries(${target_name} PRIVATE ${_ARG_LINK_LIBRARIES})
-
-    target_compile_definitions(
-      ${target_name}
-      PRIVATE ${_ARG_COMPILE_DEFINITIONS}
-    )
-
-    foreach(dart_lib IN LISTS _ARG_LINK_DART_LIBRARIES)
-      if(NOT TARGET ${dart_lib})
-        message(FATAL_ERROR "Invalid target: ${dart_lib}")
-      endif()
-      target_link_libraries(${target_name} PRIVATE ${dart_lib})
-    endforeach()
-
-    set_target_properties(
-      ${target_name}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-    )
-
-    if(_ARG_TEST_LIST)
-      list(APPEND ${_ARG_TEST_LIST} ${target_name})
-    endif()
-
-    # Add executable target
-    add_custom_target(
-      RUN_${target_name}
-      COMMAND ${target_name}
-      COMMENT "Running benchmark ${target_name}..."
-      VERBATIM
-    )
-
-    dart_property_add(DART_${_ARG_TYPE}_BENCHMARKS ${target_name})
-  endforeach()
-
-  if(_ARG_TEST_LIST)
-    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}" PARENT_SCOPE)
-  endif()
-
-  dart_format_add(${_ARG_SOURCES})
-endfunction()
-
 #===============================================================================
 # Component Management
 #===============================================================================
@@ -862,21 +637,6 @@ function(add_component package_name component)
     GLOBAL
     APPEND
     PROPERTY "${package_name}_COMPONENTS" "${component}"
-  )
-endfunction()
-
-#-------------------------------------------------------------------------------
-# Add include directories to a component
-# Usage:
-#   add_component_include_directories(package_name component dir1 [dir2...])
-#-------------------------------------------------------------------------------
-function(add_component_include_directories package_name component)
-  set(component_prefix "${package_name}_component_")
-  set(target "${component_prefix}${component}")
-  set_property(
-    TARGET "${target}"
-    APPEND
-    PROPERTY "${component_prefix}INCLUDE_DIRS" ${ARGN}
   )
 endfunction()
 
@@ -1787,30 +1547,6 @@ macro(dart_check_dependent_target target)
   endforeach()
 endmacro()
 
-#-------------------------------------------------------------------------------
-# Add a custom target from a directory
-# Usage:
-#   dart_add_custom_target(rel_dir property_name [link_libraries...])
-#-------------------------------------------------------------------------------
-function(dart_add_custom_target rel_dir property_name)
-  set(abs_dir "${CMAKE_CURRENT_LIST_DIR}/${rel_dir}")
-
-  if(NOT IS_DIRECTORY ${abs_dir})
-    message(SEND_ERROR "Failed to find directory: ${abs_dir}")
-    return()
-  endif()
-
-  get_filename_component(target_name ${rel_dir} NAME)
-
-  file(GLOB hdrs "${abs_dir}/*.hpp")
-  file(GLOB srcs "${abs_dir}/*.cpp")
-  if(srcs)
-    add_executable(${target_name} EXCLUDE_FROM_ALL ${hdrs} ${srcs})
-    target_link_libraries(${target_name} ${ARGN})
-    dart_property_add(${property_name} ${target_name})
-  endif()
-endfunction()
-
 #===============================================================================
 # Examples and Tutorials
 #===============================================================================
@@ -1822,15 +1558,6 @@ endfunction()
 #-------------------------------------------------------------------------------
 function(dart_add_example)
   dart_property_add(DART_EXAMPLES ${ARGN})
-endfunction()
-
-#-------------------------------------------------------------------------------
-# Add a tutorial to the global tutorials list
-# Usage:
-#   dart_add_tutorial(target1 [target2...])
-#-------------------------------------------------------------------------------
-function(dart_add_tutorial)
-  dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction()
 
 #===============================================================================
@@ -1869,94 +1596,6 @@ endfunction()
 #===============================================================================
 # Building Targets, Examples, and Tutorials
 #===============================================================================
-
-#-------------------------------------------------------------------------------
-# Build a target from source files in the current directory
-# Usage:
-#   dart_build_target_in_source(target
-#     [LINK_LIBRARIES library1...]
-#     [COMPILE_FEATURES feature1...]
-#     [COMPILE_OPTIONS option1...]
-#   )
-#-------------------------------------------------------------------------------
-function(dart_build_target_in_source target)
-  set(prefix _ARG)
-  set(options)
-  set(oneValueArgs)
-  set(multiValueArgs LINK_LIBRARIES COMPILE_FEATURES COMPILE_OPTIONS)
-  cmake_parse_arguments(
-    "${prefix}"
-    "${options}"
-    "${oneValueArgs}"
-    "${multiValueArgs}"
-    ${ARGN}
-  )
-
-  if(_ARG_LINK_LIBRARIES)
-    foreach(dep_target ${_ARG_LINK_LIBRARIES})
-      if(NOT TARGET ${dep_target})
-        if(DART_VERBOSE)
-          message(
-            WARNING
-            "Skipping ${target} because required target '${dep_target}' not found"
-          )
-        endif()
-        return()
-      endif()
-    endforeach()
-  endif()
-
-  file(GLOB srcs "*.cpp" "*.hpp")
-
-  add_executable(${target} ${srcs})
-
-  if(_ARG_LINK_LIBRARIES)
-    target_link_libraries(${target} ${_ARG_LINK_LIBRARIES})
-  endif()
-
-  if(_ARG_COMPILE_FEATURES)
-    target_compile_features(${target} PUBLIC ${_ARG_COMPILE_FEATURES})
-  endif()
-
-  if(_ARG_COMPILE_OPTIONS)
-    target_compile_options(${target} PUBLIC ${_ARG_COMPILE_OPTIONS})
-  endif()
-
-  set_target_properties(
-    ${target}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
-  )
-
-  dart_format_add(${srcs})
-endfunction()
-
-#-------------------------------------------------------------------------------
-# Build an example from source files in the current directory
-# Usage:
-#   dart_build_example_in_source(target
-#     [LINK_LIBRARIES library1...]
-#     [COMPILE_FEATURES feature1...]
-#     [COMPILE_OPTIONS option1...]
-#   )
-#-------------------------------------------------------------------------------
-function(dart_build_example_in_source target)
-  dart_build_target_in_source(${target} ${ARGN})
-  dart_add_example(${target})
-endfunction()
-
-#-------------------------------------------------------------------------------
-# Build a tutorial from source files in the current directory
-# Usage:
-#   dart_build_tutorial_in_source(target
-#     [LINK_LIBRARIES library1...]
-#     [COMPILE_FEATURES feature1...]
-#     [COMPILE_OPTIONS option1...]
-#   )
-#-------------------------------------------------------------------------------
-function(dart_build_tutorial_in_source target)
-  dart_build_target_in_source(${target} ${ARGN})
-  dart_add_tutorial(${target})
-endfunction()
 
 #===============================================================================
 # Testing
@@ -2300,8 +1939,6 @@ function(dart_create_library)
   # Extract version components for SOVERSION
   string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${ARG_VERSION})
   set(VERSION_MAJOR ${CMAKE_MATCH_1})
-  set(VERSION_MINOR ${CMAKE_MATCH_2})
-  set(VERSION_PATCH ${CMAKE_MATCH_3})
 
   # Create library
   add_library(${ARG_NAME} SHARED ${ARG_SOURCES})

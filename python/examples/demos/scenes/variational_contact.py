@@ -8,7 +8,7 @@ settles on the floor instead of swinging through. Contact is configured entirely
 through the **World surface** (``Multibody.set_ground_contact`` /
 ``add_ground_contact_point``), and the World's variational
 integrator folds it into the forced discrete-Euler-Lagrange root-find each step
-(PLAN-082 Phase C, rungs C1/C2 -- compliant contact + lagged friction).
+(PLAN-084 Phase C, rungs C1/C2 -- compliant contact + lagged friction).
 
 World owns the physics; WorldRenderBridge mirrors each link's world transform
 onto a SimpleFrame box visual so the C++ viewer renders the motion, and a thin

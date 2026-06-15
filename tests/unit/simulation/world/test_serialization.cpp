@@ -34,14 +34,17 @@
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/constants.hpp>
+#include <dart/simulation/comps/contact_material.hpp>
+#include <dart/simulation/comps/dynamics.hpp>
 #include <dart/simulation/comps/frame_types.hpp>
 #include <dart/simulation/comps/joint.hpp>
 #include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/name.hpp>
+#include <dart/simulation/compute/variational_integration.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
-#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
 #include <dart/simulation/frame/frame.hpp>
@@ -63,9 +66,11 @@
 #include <map>
 #include <new>
 #include <ranges>
+#include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <typeinfo>
 #include <vector>
 
 #include <cstdint>
@@ -3066,4 +3071,134 @@ TEST(Serialization, RigidBodyCheckpointReloadContinuesIdentically)
       (worldB.getStateVector() - worldA.getStateVector()).norm(), kReplayTol)
       << "Reloaded world must continue identically for the rigid-body path";
   EXPECT_DOUBLE_EQ(worldB.getTime(), worldA.getTime());
+}
+
+//==============================================================================
+// Stable serialization identity (WP-091.23)
+//
+// On-disk component identity must be an explicit, stable, compiler-independent
+// string ID, decoupled from the C++ type spelling. These tests are the
+// acceptance gate: they prove the identity is NOT the compiler-mangled
+// typeid(T).name(), that IDs are globally unique, and that a component
+// round-trips keyed by its stable ID.
+//==============================================================================
+
+// Each component's getTypeName() returns the EXPLICIT stable ID, not the
+// compiler-mangled typeid string. Renaming the C++ type must not change these
+// literals. The expected literals below are hard-coded on purpose so that a
+// future C++ rename that silently changes the on-disk identity fails here.
+TEST(StableComponentIds, ComponentsReturnExplicitStableId)
+{
+  namespace comps = dart::simulation::comps;
+  namespace compute = dart::simulation::compute;
+
+  EXPECT_EQ(comps::Name::getTypeName(), "comps.Name");
+  EXPECT_EQ(comps::Transform::getTypeName(), "comps.Transform");
+  EXPECT_EQ(comps::Velocity::getTypeName(), "comps.Velocity");
+  EXPECT_EQ(comps::MassProperties::getTypeName(), "comps.MassProperties");
+  EXPECT_EQ(comps::Force::getTypeName(), "comps.Force");
+  EXPECT_EQ(comps::ContactMaterial::getTypeName(), "comps.ContactMaterial");
+  EXPECT_EQ(comps::Joint::getTypeName(), "comps.Joint");
+  EXPECT_EQ(
+      comps::AvbdJointStiffness::getTypeName(), "comps.AvbdJointStiffness");
+  EXPECT_EQ(comps::Link::getTypeName(), "comps.Link");
+  EXPECT_EQ(comps::FrameTag::getTypeName(), "comps.FrameTag");
+  EXPECT_EQ(comps::FrameState::getTypeName(), "comps.FrameState");
+  EXPECT_EQ(comps::FrameCache::getTypeName(), "comps.FrameCache");
+  EXPECT_EQ(
+      comps::MultibodyStructure::getTypeName(), "comps.MultibodyStructure");
+  EXPECT_EQ(
+      compute::MultibodyVariationalState::getTypeName(),
+      "compute.MultibodyVariationalState");
+
+  // The identity must not be the compiler-mangled typeid name. On Itanium ABI
+  // (GCC/Clang) the mangled name for comps::Name is non-empty and differs from
+  // the stable literal; this guards against a regression that re-introduces
+  // typeid(T).name() into the macro.
+  EXPECT_NE(
+      std::string_view(comps::Name::getTypeName()),
+      std::string_view(typeid(comps::Name).name()));
+}
+
+// Every registered serializer's identity (the SerializerRegistry key) is
+// globally unique and never looks like a compiler-mangled typeid string. A
+// duplicate key would silently corrupt serialization (two components sharing
+// one on-disk identity), so this is the core uniqueness guard.
+TEST(StableComponentIds, RegisteredIdsAreUniqueAndNotMangled)
+{
+  namespace io = dart::simulation::io;
+
+  const auto& serializers = io::SerializerRegistry::instance().getSerializers();
+  ASSERT_FALSE(serializers.empty());
+
+  std::set<std::string> seen;
+  for (const auto& [key, serializer] : serializers) {
+    // The map key and the serializer's reported identity must agree.
+    EXPECT_EQ(key, serializer->getTypeName());
+
+    // Identity must be non-empty.
+    EXPECT_FALSE(key.empty()) << "Empty component identity is not allowed";
+
+    // Uniqueness: std::unordered_map keys are unique by construction, but
+    // assert explicitly to document the invariant and to catch any future
+    // change that iterates a non-map container.
+    const bool inserted = seen.insert(key).second;
+    EXPECT_TRUE(inserted) << "Duplicate component identity: " << key;
+
+    // Identity must not be a typeid mangled name. Itanium-ABI mangled names for
+    // class types begin with 'N' (nested name) or a digit (length-prefixed
+    // unqualified name) and never contain '.', whereas every stable ID here is
+    // dotted ("comps.X"/"compute.X"). The detail::deformable_vbd configs use a
+    // "dart::simulation::...::Type" literal, which is likewise not a mangled
+    // form. Require either a dotted ID or an explicit "::"-qualified literal.
+    const bool dotted = key.find('.') != std::string::npos;
+    const bool qualified = key.find("::") != std::string::npos;
+    EXPECT_TRUE(dotted || qualified)
+        << "Component identity looks mangled (not a stable string): " << key;
+  }
+
+  // Spot-check that the dotted stable IDs are present in the registry, proving
+  // the macro-generated identities flow through to the registry key.
+  EXPECT_TRUE(seen.contains("comps.Name"));
+  EXPECT_TRUE(seen.contains("comps.Joint"));
+  EXPECT_TRUE(seen.contains("comps.Link"));
+  EXPECT_TRUE(seen.contains("comps.AvbdJointStiffness"));
+}
+
+// Cross-component rename stability: a component round-trips through the
+// registry keyed purely by its stable string ID. We look the serializer up by
+// the literal "comps.ContactMaterial" (NOT by C++ type), which proves the
+// on-disk identity is decoupled from the C++ type name -- a rename of the
+// comps::ContactMaterial C++ type would leave this on-disk identity (and thus
+// this lookup) unchanged.
+TEST(StableComponentIds, RoundTripIsKeyedByStableIdNotCppType)
+{
+  namespace sx = dart::simulation;
+  namespace comps = dart::simulation::comps;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "comps.ContactMaterial");
+  ASSERT_NE(serializer, nullptr)
+      << "ContactMaterial must be registered under its stable ID";
+  EXPECT_EQ(serializer->getTypeName(), "comps.ContactMaterial");
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity entity1 = registry1.create();
+  auto& material = registry1.emplace<comps::ContactMaterial>(entity1);
+  material.friction = 0.4242;
+  material.restitution = 0.1234;
+
+  sx::io::EntityMap entityMap;
+  entityMap.emplace(entity1, entity1);
+  std::stringstream stream;
+  serializer->save(stream, entity1, registry1, entityMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity entity2 = registry2.create();
+  serializer->load(stream, entity2, registry2);
+
+  ASSERT_TRUE(registry2.all_of<comps::ContactMaterial>(entity2));
+  const auto& restored = registry2.get<comps::ContactMaterial>(entity2);
+  EXPECT_DOUBLE_EQ(restored.friction, material.friction);
+  EXPECT_DOUBLE_EQ(restored.restitution, material.restitution);
 }

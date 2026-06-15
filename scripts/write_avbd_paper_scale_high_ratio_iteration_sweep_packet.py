@@ -16,7 +16,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
+from avbd_packet_schema import (  # noqa: E402
+    AVBD_PACKET_SCHEMA_VERSION,
+    make_resolved_solver_identity,
+)
 
 DEFAULT_OUTPUT = Path(
     "docs/plans/104-vertex-block-descent-solver/"
@@ -33,12 +36,12 @@ REPLAY_STEPS = 32
 REPLAY_SECONDS = 0.16
 TOLERANCE = 1e-9
 EXPECTED_MAX_ITERATIONS = (25, 50, 100, 200)
-RESOLVED_SOLVER_IDENTITY = {
-    "avbd_rigid_contact_config_emplaced": False,
-    "recorded_from": "paper-scale high-ratio iteration benchmark row family",
-    "rigid_contact_solver": "none",
-    "rigid_point_joint_solver": "avbd",
-}
+RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
+    resolved_rigid_contact_family=None,
+    rigid_point_joint_solver="avbd",
+    avbd_rigid_contact_config_emplaced=False,
+    recorded_from="paper-scale high-ratio iteration benchmark row family",
+)
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _SVG_SIZE_RE = re.compile(

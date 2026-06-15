@@ -1,7 +1,7 @@
 # Variational Integrator Solver — Dev Task
 
-Implementation tracking for PLAN-082 (linear-time variational integrator).
-Plan: [`../../plans/082-variational-integrator-solver.md`](../../plans/082-variational-integrator-solver.md).
+Implementation tracking for PLAN-084 (linear-time variational integrator).
+Plan: [`../../plans/084-variational-integrator-solver.md`](../../plans/084-variational-integrator-solver.md).
 Design: [`../../design/simulation_variational_integrator.md`](../../design/simulation_variational_integrator.md).
 Paper experiment replication + measured results:
 [`paper-experiment-replication.md`](paper-experiment-replication.md).
@@ -191,7 +191,7 @@ energy behavior on a passive chain before optimizing to O(n). The
 
 ## Gaps From Current Progress (Road to the North Star)
 
-All committed PLAN-082 phases (A1, A2, B1, B2), every acceptance gate, the paper
+All committed PLAN-084 phases (A1, A2, B1, B2), every acceptance gate, the paper
 experiment replication
 ([`paper-experiment-replication.md`](paper-experiment-replication.md)), the
 scalable `MultibodyOptions` config, the zero-default-overhead guarantee, and the
@@ -208,7 +208,7 @@ gaps to the [north star](#north-star), in priority order:
    (cheap distance/gradient at an arbitrary trial `qᵏ⁺¹` inside the RIQN loop;
    today `World::collide()` rebuilds the whole collision world once per step
    with no such query) — **scoped in gate 1** of the
-   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md).
+   [contact roadmap](../../plans/084-variational-integrator-solver/contact-roadmap.md).
    The implemented ground slice is a real, configurable query
    (`makeVariationalGroundContactHook`:
    analytic half-space + body-fixed points, VBD/XPBD quadratic penalty,
@@ -226,7 +226,7 @@ gaps to the [north star](#north-star), in priority order:
    piece is **rigid/articulated candidate generation** (its `candidate_set.hpp` is
    mesh-vertex specific) plus a warm-started per-step query — a ~2–3-week
    PLAN-scale workstream coordinated with PLAN-081, not an in-task slice (see the
-   [contact roadmap](../../plans/082-variational-integrator-solver/contact-roadmap.md)).
+   [contact roadmap](../../plans/084-variational-integrator-solver/contact-roadmap.md)).
    The **C4 IPC barrier** is intentionally **out of scope** — this task stops at
    C3 (stiff barrier curvature mis-scales the `Δt·M⁻¹` quasi-Newton; it is the
    _optional_ last rung).

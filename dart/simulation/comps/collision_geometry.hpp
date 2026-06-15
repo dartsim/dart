@@ -47,7 +47,8 @@ namespace dart::simulation::comps {
 /// surface is the `CollisionShape` value object plus body/link accessors.
 struct CollisionGeometry
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(CollisionGeometry);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      CollisionGeometry, "comps.CollisionGeometry");
 
   std::vector<CollisionShape> shapes;
   std::uint64_t revision = 0;
@@ -70,14 +71,16 @@ struct CollisionGeometry
 /// deformable bodies.
 struct DeformableGroundBarrierTag
 {
-  DART_SIMULATION_TAG_COMPONENT(DeformableGroundBarrierTag);
+  DART_SIMULATION_TAG_COMPONENT(
+      DeformableGroundBarrierTag, "comps.DeformableGroundBarrierTag");
 };
 
 /// Tag marking static box collision geometry as a stationary surface obstacle
 /// for the experimental deformable CCD line-search limiter.
 struct DeformableSurfaceCcdObstacleTag
 {
-  DART_SIMULATION_TAG_COMPONENT(DeformableSurfaceCcdObstacleTag);
+  DART_SIMULATION_TAG_COMPONENT(
+      DeformableSurfaceCcdObstacleTag, "comps.DeformableSurfaceCcdObstacleTag");
 };
 
 /// Tag marking a deformable obstacle as barrier-only: it still exerts its
@@ -90,7 +93,8 @@ struct DeformableSurfaceCcdObstacleTag
 /// meaningful on a body that also carries DeformableSurfaceCcdObstacleTag.
 struct DeformableObstacleNoCcdTag
 {
-  DART_SIMULATION_TAG_COMPONENT(DeformableObstacleNoCcdTag);
+  DART_SIMULATION_TAG_COMPONENT(
+      DeformableObstacleNoCcdTag, "comps.DeformableObstacleNoCcdTag");
 };
 
 } // namespace dart::simulation::comps

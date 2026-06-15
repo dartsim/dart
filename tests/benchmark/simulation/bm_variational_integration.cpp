@@ -8,7 +8,7 @@
  * This file is provided under the "BSD-style" License
  */
 
-// Scaling evidence for the linear-time variational integrator (PLAN-082). The
+// Scaling evidence for the linear-time variational integrator (PLAN-084). The
 // RIQN root update uses an O(n) articulated-body-inertia inverse-mass solve and
 // the DRNEA residual is O(n), so the per-step cost is O(iterations * n). To
 // isolate intrinsic scaling from chaotic chain dynamics, the full-step

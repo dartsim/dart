@@ -66,7 +66,8 @@ struct VariationalProjectionRowBounds
 /// remapping pass is needed.
 struct MultibodyVariationalState
 {
-  DART_SIMULATION_STATE_COMPONENT(MultibodyVariationalState);
+  DART_SIMULATION_STATE_COMPONENT(
+      MultibodyVariationalState, "compute.MultibodyVariationalState");
 
   using DeltaTransformVector = std::
       vector<Eigen::Isometry3d, dart::common::StlAllocator<Eigen::Isometry3d>>;
@@ -149,7 +150,7 @@ struct VariationalLoopConstraint
   double breakForce = 0.0; ///< >0 marks sourceJoint broken.
 };
 
-/// **EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2).** Kinematics of the
+/// **EXPERIMENTAL SPIKE (PLAN-084 contact-roadmap gate 2).** Kinematics of the
 /// *trial* configuration `q^{k+1}` passed to an in-loop contact-force hook on
 /// each RIQN iteration, so the hook can evaluate a contact potential's
 /// generalized force `Q_c(q^{k+1})` at the current iterate (the coupling that
@@ -215,7 +216,7 @@ DART_SIMULATION_API void variationalContactPointForceInto(
     const Eigen::Vector3d& worldForce,
     Eigen::VectorXd& generalizedForce);
 
-/// **EXPERIMENTAL (PLAN-082 Phase C).** A body-fixed contact point: the point
+/// **EXPERIMENTAL (PLAN-084 Phase C).** A body-fixed contact point: the point
 /// at body-frame position `localPoint` on link `linkIndex`, evaluated against
 /// the contact geometry at the trial configuration.
 struct VariationalContactPoint
@@ -224,7 +225,7 @@ struct VariationalContactPoint
   Eigen::Vector3d localPoint = Eigen::Vector3d::Zero(); ///< body-frame position
 };
 
-/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2 — compliant contact).** A static
+/// **EXPERIMENTAL (PLAN-084 Phase C, rung C2 — compliant contact).** A static
 /// ground half-space `{x : n . (x - p0) >= 0}` and a set of body-fixed contact
 /// points repelled by a one-sided quadratic penalty potential
 /// `E = 1/2 k max(0,-d)^2`, where `d = n . (p - p0)` is the signed distance of
@@ -265,7 +266,7 @@ struct VariationalGroundContact
   PointVector points;              ///< body-fixed contact points
 };
 
-/// **EXPERIMENTAL (PLAN-082 Phase C, rung C2).** Build an in-loop
+/// **EXPERIMENTAL (PLAN-084 Phase C, rung C2).** Build an in-loop
 /// `VariationalContactHook` for compliant ground contact. Each RIQN iteration
 /// it evaluates every contact point's world position at the trial
 /// configuration, computes the signed plane distance, and for penetrating
@@ -277,7 +278,7 @@ struct VariationalGroundContact
 [[nodiscard]] DART_SIMULATION_API VariationalContactHook
 makeVariationalGroundContactHook(VariationalGroundContact contact);
 
-/// **EXPERIMENTAL (PLAN-082 Phase C, rung C3 — augmented Lagrangian).** A
+/// **EXPERIMENTAL (PLAN-084 Phase C, rung C3 — augmented Lagrangian).** A
 /// stateful augmented-Lagrangian wrapper over ground contact that drives the
 /// penetration toward zero at finite stiffness (unlike the pure-penalty `mg/k`
 /// residual). It holds a per-contact-point dual `lambda >= 0`: each step the
@@ -581,7 +582,8 @@ struct VariationalAndersonScratch
 /// should be sized during bake and reused by the step loop.
 struct MultibodyVariationalScratch
 {
-  DART_SIMULATION_CACHE_COMPONENT(MultibodyVariationalScratch);
+  DART_SIMULATION_CACHE_COMPONENT(
+      MultibodyVariationalScratch, "compute.MultibodyVariationalScratch");
 
   using PostContactTransformAllocator
       = dart::common::StlAllocator<Eigen::Isometry3d>;
@@ -605,7 +607,7 @@ struct MultibodyVariationalScratch
   PostContactTransformVector postContactTransforms;
 };
 
-/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link).** A sphere-sphere contact
+/// **EXPERIMENTAL (PLAN-084 Phase C -- link-vs-link).** A sphere-sphere contact
 /// pair between two links of a multibody (self-contact): spheres of radius
 /// `radiusA`/`radiusB` fixed at body-frame centers `centerA`/`centerB` on links
 /// `linkA`/`linkB` (structure link indices).
@@ -619,7 +621,7 @@ struct VariationalSphereContactPair
   double radiusB = 0.0;
 };
 
-/// **EXPERIMENTAL (PLAN-082 Phase C -- link-vs-link contact, first slice).**
+/// **EXPERIMENTAL (PLAN-084 Phase C -- link-vs-link contact, first slice).**
 /// Build an in-loop hook for compliant sphere-sphere contact between links of
 /// the same multibody. Each RIQN iteration, at the trial configuration, every
 /// overlapping pair contributes an equal-and-opposite penalty force
@@ -735,6 +737,25 @@ DART_SIMULATION_API VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalTreeScratch& treeScratch,
     VariationalStepScratch& stepScratch);
 
+/// The kinetic/potential split of a multibody's mechanical energy, computed
+/// from the same forward-kinematics world transforms as
+/// `computeMultibodyMechanicalEnergy` (so `kinetic + potential` equals it). Use
+/// this for a physical per-domain energy split: deriving the split from the
+/// stored `comps::Link::worldTransform` cache is unreliable (it is not always
+/// refreshed for the current configuration), which is why the metrics layer
+/// routes through this helper instead.
+struct MultibodyMechanicalEnergyTerms
+{
+  double kinetic = 0.0;
+  double potential = 0.0;
+};
+
+[[nodiscard]] DART_SIMULATION_API MultibodyMechanicalEnergyTerms
+computeMultibodyMechanicalEnergyTerms(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity);
+
 /// O(n) product `M(q)^{-1} * impulse` for one multibody at its current
 /// configuration, via the articulated-body algorithm (zero velocity/gravity).
 /// This is the linear-time inverse-mass apply that powers the variational
@@ -845,7 +866,7 @@ public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   /// Pre-reserve per-multibody variational state storage before baked steps.
-  void prepare(World& world);
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
 private:

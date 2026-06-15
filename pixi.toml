@@ -2395,6 +2395,12 @@ libcxx-devel = ">=22.1.7,<23"
 
 [target.osx-64.dependencies]
 git = ">=2.54.0,<3"
+# Pin the C++ toolchain to conda clang + libc++ 22 (see the osx-arm64 note and
+# docs/design/cpp23_modernization.md): the system AppleClang otherwise departs
+# from DART's documented C++23 floor.
+clang_osx-64 = ">=22.1.7,<23"
+clangxx_osx-64 = ">=22.1.7,<23"
+libcxx = ">=22.1.7,<23"
 
 ################################################################################
 # osx-arm64
@@ -2402,6 +2408,15 @@ git = ">=2.54.0,<3"
 
 [target.osx-arm64.dependencies]
 git = ">=2.54.0,<3"
+# Pin the C++ toolchain to conda clang + libc++ 22 so macOS rides DART's
+# documented C++23 floor (docs/design/cpp23_modernization.md). Without a conda
+# compiler in the env, CMake falls back to the system AppleClang (17 on
+# macos-latest), which lacks deducing-this (needs Clang >= 18) and whose SDK
+# libc++ lacks std::views::zip; conda clang 22 / libc++ 22 provide both.
+# clangxx_osx-arm64's activation sets CC/CXX so CMake picks the conda compiler.
+clang_osx-arm64 = ">=22.1.7,<23"
+clangxx_osx-arm64 = ">=22.1.7,<23"
+libcxx = ">=22.1.7,<23"
 
 ################################################################################
 # win-64

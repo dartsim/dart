@@ -12,7 +12,7 @@ Before implementation starts, the owner plan or dev task should record:
 1. **Family routing.** Name the existing DART solver family and owner plan that
    receives the work, or justify a new family. Examples: PLAN-081/082/083 for
    IPC and Newton-barrier variants, PLAN-104 for VBD/OGC/AVBD variants,
-   PLAN-110 plus PLAN-082 for differentiable variational rigid-body work.
+   PLAN-110 plus PLAN-084 for differentiable variational rigid-body work.
 2. **Shared-component inventory.** List the collision, kinematics, model/state,
    contact buffer, numeric optimization, linear-solver, compute-backend,
    diagnostics, benchmark, and example components the slice will reuse. Any new

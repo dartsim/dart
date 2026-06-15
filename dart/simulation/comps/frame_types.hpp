@@ -48,19 +48,19 @@ namespace dart::simulation::comps {
 /// Tag component marking an entity as a Frame
 struct FrameTag
 {
-  DART_SIMULATION_TAG_COMPONENT(FrameTag);
+  DART_SIMULATION_TAG_COMPONENT(FrameTag, "comps.FrameTag");
 };
 
 /// Tag component marking an entity as a FixedFrame
 struct FixedFrameTag
 {
-  DART_SIMULATION_TAG_COMPONENT(FixedFrameTag);
+  DART_SIMULATION_TAG_COMPONENT(FixedFrameTag, "comps.FixedFrameTag");
 };
 
 /// Tag component marking an entity as a FreeFrame
 struct FreeFrameTag
 {
-  DART_SIMULATION_TAG_COMPONENT(FreeFrameTag);
+  DART_SIMULATION_TAG_COMPONENT(FreeFrameTag, "comps.FreeFrameTag");
 };
 
 //==============================================================================
@@ -73,7 +73,7 @@ struct FreeFrameTag
 /// remapping during serialization.
 struct FrameState
 {
-  DART_SIMULATION_STATE_COMPONENT(FrameState);
+  DART_SIMULATION_STATE_COMPONENT(FrameState, "comps.FrameState");
 
   /// Parent frame entity (entt::null = world frame)
   entt::entity parentFrame = entt::null;
@@ -91,7 +91,7 @@ struct FrameState
 /// Reconstructed automatically after deserialization.
 struct FrameCache
 {
-  DART_SIMULATION_CACHE_COMPONENT(FrameCache);
+  DART_SIMULATION_CACHE_COMPONENT(FrameCache, "comps.FrameCache");
 
   /// Cached world-frame transform
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
@@ -106,7 +106,8 @@ struct FrameCache
 /// Automatically serialized via DART_SIMULATION_PROPERTY_COMPONENT macro.
 struct FixedFrameProperties
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(FixedFrameProperties);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      FixedFrameProperties, "comps.FixedFrameProperties");
 
   /// Fixed transform offset relative to parent frame (local transform)
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
@@ -118,7 +119,8 @@ struct FixedFrameProperties
 /// Automatically serialized via DART_SIMULATION_PROPERTY_COMPONENT macro.
 struct FreeFrameProperties
 {
-  DART_SIMULATION_PROPERTY_COMPONENT(FreeFrameProperties);
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      FreeFrameProperties, "comps.FreeFrameProperties");
 
   /// Transform relative to parent frame (local transform)
   Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
