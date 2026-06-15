@@ -46,7 +46,11 @@ jobs:
     name: Coverage (Debug)
     runs-on: ubuntu-latest
     env:
-      DART_PARALLEL_JOBS: 8
+      # The Debug + --coverage build instruments every translation unit, using
+      # materially more memory than a normal build; eight parallel jobs starve
+      # the hosted runner ("lost communication with the server"). Keep
+      # parallelism lower to avoid OOM kills (cf. the ASAN build below).
+      DART_PARALLEL_JOBS: 4
     strategy:
       fail-fast: false
     steps:
