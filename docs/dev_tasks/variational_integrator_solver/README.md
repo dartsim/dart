@@ -14,7 +14,7 @@ semi-implicit Euler for multibody systems, faithful to Lee/Liu/Park/Srinivasa
 (WAFR 2016, arXiv:1609.02898) and extended to DART's needs. It lives entirely
 behind the DART 7 World's method-name facade
 (`WorldOptions::multibodyOptions` at construction or
-`World::setMultibodyOptions({.integrationFamily = "variational integrator"})`),
+`World::setMultibodyOptions({.integrationFamily = MultibodyIntegrationFamily::Variational})`),
 never exposing solver / stage / component / backend types, and adds **zero
 runtime overhead** when not selected (the default path stays semi-implicit
 Euler).

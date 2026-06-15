@@ -69,7 +69,8 @@ std::unique_ptr<sx::World> makeAvbdEmptyWorld()
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
   return world;
 }
@@ -1936,7 +1937,8 @@ std::unique_ptr<sx::World> makeArticulatedRevoluteMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot = world->addMultibody("articulated_revolute_motor_robot");
@@ -1995,7 +1997,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot = world->addMultibody("articulated_breakable_motor_robot");
@@ -2058,7 +2061,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot = world->addMultibody("articulated_prismatic_motor_robot");
@@ -2117,7 +2121,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticBreakableMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot
@@ -2181,7 +2186,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldPrismaticBreakableMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot = world->addMultibody(
@@ -2244,7 +2250,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldRevoluteBreakableMotorWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot
@@ -2307,7 +2314,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableJointWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot = world->addMultibody("articulated_breakable_robot");
@@ -2360,7 +2368,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldSphericalBreakableJointWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot
@@ -2416,7 +2425,8 @@ std::unique_ptr<sx::World> makeArticulatedSphericalPairBreakableJointWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   world->setMultibodyOptions(multibodyOptions);
 
   auto robot
@@ -2494,7 +2504,8 @@ ArticulatedHighRatioChainFixture makeArticulatedHighRatioChainWorld(
   auto world = std::make_unique<sx::World>(options);
 
   sx::MultibodyOptions multibodyOptions;
-  multibodyOptions.integrationFamily = "variational integrator";
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   multibodyOptions.variationalMaxIterations = maxIterations;
   multibodyOptions.variationalTolerance = tolerance;
   world->setMultibodyOptions(multibodyOptions);

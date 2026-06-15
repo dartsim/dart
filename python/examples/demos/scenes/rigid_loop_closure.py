@@ -168,7 +168,7 @@ class _RigidLoopClosureVerifier:
         offset_y = _FAMILY_BASE_Y[family_label] + _POLICY_OFFSET_Y[policy_label]
         world = sx.World(time_step=_TIME_STEP)
         world.multibody_options = sx.MultibodyOptions(
-            integration_family="variational integrator"
+            integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
         )
         world.step_profiling_enabled = True
 

@@ -8008,7 +8008,7 @@ def test_avbd_empty_baseline_demo_steps_empty_world() -> None:
     assert sx_world.num_rigid_bodies == 0
     assert sx_world.num_multibodies == 0
     assert sx_world.num_articulated_joints == 0
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert setup.info["source_demo_rows"] == (
         "avbd-demo2d empty",
         "avbd-demo3d empty",
@@ -11397,7 +11397,7 @@ def test_avbd_articulated_revolute_motor_demo_reverses_command() -> None:
     switch_time = float(setup.info["command_switch_time"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
         target_speed
@@ -11441,7 +11441,7 @@ def test_avbd_articulated_prismatic_motor_demo_reverses_command() -> None:
     switch_time = float(setup.info["command_switch_time"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
         target_speed
@@ -11485,7 +11485,7 @@ def test_avbd_articulated_motor_breakable_joint_demo_resets_motor_rows() -> None
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -11556,7 +11556,7 @@ def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> 
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.num_dofs == 1
     assert joint.child_link == carriage
@@ -11631,7 +11631,7 @@ def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows(
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -11701,7 +11701,7 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.num_dofs == 1
     assert joint.child_link == rotor
@@ -11777,7 +11777,7 @@ def test_avbd_articulated_high_ratio_chain_demo_swings_and_resets() -> None:
     replay_state = setup.info["replay_state"]
     initial_tip = np.asarray(setup.info["initial_tip"], dtype=float).reshape(3)
 
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert sx_world.num_articulated_joints == 0
     assert multibody.num_dofs == len(joints)
     assert len(links) == 5
@@ -11819,7 +11819,7 @@ def test_avbd_paper_scale_high_ratio_chain_demo_builds_and_resets() -> None:
     reset_chain = setup.info["reset_chain"]
     initial_tip = np.asarray(setup.info["initial_tip"], dtype=float).reshape(3)
 
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert sx_world.multibody_options.variational_max_iterations == 200
     assert sx_world.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
     assert multibody.num_dofs == len(joints)
@@ -12014,6 +12014,7 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
 
 
 def test_avbd_articulated_breakable_joint_demo_marks_and_resets_joint() -> None:
+    import dartpy as sx
     import numpy as np
 
     _require_simulation_experimental_symbols("World", "MultibodyOptions")
@@ -12030,7 +12031,7 @@ def test_avbd_articulated_breakable_joint_demo_marks_and_resets_joint() -> None:
     ).reshape(3)
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
     assert not joint.is_broken
     with pytest.raises(Exception, match="parent endpoint"):
@@ -12085,7 +12086,7 @@ def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose()
     relative_transform = setup.info["relative_transform"]
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
     assert joint.parent_link == base
@@ -12154,7 +12155,7 @@ def test_avbd_articulated_spherical_breakable_joint_demo_resets_anchor_only() ->
     )
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -12220,7 +12221,7 @@ def test_avbd_articulated_spherical_pair_breakable_joint_demo_resets_anchor_only
     )
 
     assert sx_world.num_articulated_joints == 1
-    assert sx_world.multibody_options.integration_family == "variational integrator"
+    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
     assert joint.parent_link == base

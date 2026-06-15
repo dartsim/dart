@@ -44,7 +44,7 @@ def _translation(x: float, y: float, z: float) -> np.ndarray:
 def build() -> SceneSetup:
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     world.gravity = (0.0, 0.0, -9.81)
     world.time_step = 0.002

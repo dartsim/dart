@@ -27,7 +27,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 def build() -> SceneSetup:
     world = sx.World()
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     # Torque-free: zero gravity so the only motion is the conserved tumble.
     world.gravity = (0.0, 0.0, 0.0)

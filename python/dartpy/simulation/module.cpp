@@ -542,6 +542,9 @@ void defSimulationModule(nb::module_& m)
   nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
       .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
       .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);
+  nb::enum_<sim::MultibodyIntegrationFamily>(m, "MultibodyIntegrationFamily")
+      .value("SEMI_IMPLICIT", sim::MultibodyIntegrationFamily::SemiImplicit)
+      .value("VARIATIONAL", sim::MultibodyIntegrationFamily::Variational);
 
   nb::enum_<sim::ContactGradientMode>(m, "ContactGradientMode")
       .value("ANALYTIC", sim::ContactGradientMode::Analytic)
@@ -1276,7 +1279,7 @@ void defSimulationModule(nb::module_& m)
 
   nb::class_<sim::MultibodyOptions>(m, "MultibodyOptions")
       .def(
-          nb::new_([](const std::string& integrationFamily,
+          nb::new_([](sim::MultibodyIntegrationFamily integrationFamily,
                       std::size_t variationalMaxIterations,
                       double variationalTolerance) {
             return sim::MultibodyOptions{
@@ -1284,7 +1287,8 @@ void defSimulationModule(nb::module_& m)
                 .variationalMaxIterations = variationalMaxIterations,
                 .variationalTolerance = variationalTolerance};
           }),
-          nb::arg("integration_family") = "semi-implicit",
+          nb::arg("integration_family")
+          = sim::MultibodyIntegrationFamily::SemiImplicit,
           nb::arg("variational_max_iterations") = 100,
           nb::arg("variational_tolerance") = 1e-10)
       .def_rw("integration_family", &sim::MultibodyOptions::integrationFamily)

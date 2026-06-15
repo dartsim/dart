@@ -4786,13 +4786,15 @@ TEST(World, WorldOptionsConfigureDomainSolverFamilies)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
 
   sx::World world(options);
 
   EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
   EXPECT_EQ(
-      world.getMultibodyOptions().integrationFamily, "variational integrator");
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
 }
 
 TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
@@ -4801,7 +4803,8 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
@@ -4810,7 +4813,9 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
   world.clear();
 
   EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
-  EXPECT_EQ(world.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::SemiImplicit);
   EXPECT_FALSE(world.isDifferentiable());
   EXPECT_EQ(
       world.getContactSolverMethod(),
@@ -4832,7 +4837,8 @@ TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
       sx::InvalidArgumentException);
 
   sx::WorldOptions invalidMultibody;
-  invalidMultibody.multibodyOptions.integrationFamily = "unknown-family";
+  invalidMultibody.multibodyOptions.integrationFamily
+      = static_cast<sx::MultibodyIntegrationFamily>(99);
   EXPECT_THROW(
       {
         sx::World world(invalidMultibody);
@@ -5588,7 +5594,7 @@ TEST(World, SetMultibodyOptionsReservesVariationalStateAfterBake)
 
   world.setTimeStep(0.01);
   world.enterSimulationMode();
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   const auto& registry = sx::detail::registryOf(world);
   const auto capacities = registryStorageCapacities(registry);
@@ -5643,7 +5649,7 @@ TEST(World, SolverMethodSwitchesAfterBakeSharePreparationPath)
   world.enterSimulationMode();
 
   world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   const auto& registry = sx::detail::registryOf(world);
   auto capacities = registryStorageCapacities(registry);
@@ -5663,7 +5669,7 @@ TEST(World, SolverMethodSwitchesAfterBakeSharePreparationPath)
   EXPECT_EQ(
       allocator.alignedDeallocationCount, alignedDeallocationsAfterSwitch);
 
-  world.setMultibodyOptions({"semi-implicit"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::SemiImplicit});
   world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
 
   capacities = registryStorageCapacities(registry);
@@ -5714,7 +5720,7 @@ void configureVariationalLoopClosureChainScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
 
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
   world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(1.0e-3);
 
@@ -5759,7 +5765,7 @@ void configureLongVariationalArticulatedPointJointScene(
 {
   namespace sx = dart::simulation;
 
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
   world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(1.0e-3);
 
@@ -5786,7 +5792,7 @@ void configureCompliantVariationalContactSliderScene(
 {
   namespace sx = dart::simulation;
 
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(1.0e-3);
 
@@ -5824,7 +5830,7 @@ void configureVariationalContactDualStateSliderScene(
 {
   namespace sx = dart::simulation;
 
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(1.0e-3);
 
@@ -6155,7 +6161,8 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
   configureVariationalContactDualStateSliderScene(world);
   auto& registry = sx::detail::registryOf(world);
@@ -6227,7 +6234,8 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
   const common::StlAllocator<double> expectedDualAllocator{
       world.getMemoryManager().getFreeAllocator()};
@@ -6305,7 +6313,8 @@ TEST(World, EnterSimulationModeReservesCompliantVariationalContactScratch)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
   configureCompliantVariationalContactSliderScene(world);
 
@@ -6340,7 +6349,8 @@ TEST(World, VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
   configureLongVariationalArticulatedPointJointScene(world);
 
@@ -6373,7 +6383,8 @@ TEST(World, VariationalLoopClosureRegistryStorageRebuildsAfterClear)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
 
   const auto bakeAndCheckStableSteps = [&]() {
@@ -6536,7 +6547,8 @@ TEST(World, ContactHeavyRegistryStorageRebuildsAfterClear)
   CountingMemoryAllocator allocator;
   sx::WorldOptions options;
   options.baseAllocator = &allocator;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   sx::World world(options);
 
   const auto bakeAndCheckStableSteps = [&]() {
@@ -6865,7 +6877,8 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         spec.axis = Eigen::Vector3d::UnitZ();
         auto carriage = robot.addLink("carriage", base, spec);
         carriage.setMass(3.0);
-        world.setMultibodyOptions({"variational integrator"});
+        world.setMultibodyOptions(
+            {sx::MultibodyIntegrationFamily::Variational});
         world.setTimeStep(0.01);
       });
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -8334,7 +8347,8 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         spec.axis = Eigen::Vector3d::UnitZ();
         auto carriage = robot.addLink("carriage", base, spec);
         carriage.setMass(3.0);
-        world.setMultibodyOptions({"variational integrator"});
+        world.setMultibodyOptions(
+            {sx::MultibodyIntegrationFamily::Variational});
         world.setTimeStep(0.01);
       });
   expectNoGlobalHeapAllocationsDuringBakedSteps(
@@ -19399,7 +19413,7 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
   namespace sx = dart::simulation;
 
   sx::World world;
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -19458,7 +19472,7 @@ TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
   namespace sx = dart::simulation;
 
   sx::World world;
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -19510,7 +19524,7 @@ TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
   namespace sx = dart::simulation;
 
   sx::World world;
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -19552,7 +19566,7 @@ TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
   namespace sx = dart::simulation;
 
   sx::World world;
-  world.setMultibodyOptions({"variational integrator"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -19571,7 +19585,8 @@ TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
   auto otherChild = otherRobot.addLink("child", otherBase, otherSpec);
 
   sx::World foreignWorld;
-  foreignWorld.setMultibodyOptions({"variational integrator"});
+  foreignWorld.setMultibodyOptions(
+      {sx::MultibodyIntegrationFamily::Variational});
   auto foreignRobot = foreignWorld.addMultibody("foreign");
   auto foreignBase = foreignRobot.addLink("base");
 
@@ -21469,7 +21484,8 @@ TEST(World, ReplayRecordingRestoresSolverOptions)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
@@ -21485,7 +21501,7 @@ TEST(World, ReplayRecordingRestoresSolverOptions)
   ASSERT_EQ(world.getReplayFrameCount(), 2u);
 
   world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
-  world.setMultibodyOptions({"semi-implicit"});
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::SemiImplicit});
   world.setContactGradientMode(sx::ContactGradientMode::Analytic);
 
   world.restoreReplayFrame(1);
@@ -21493,7 +21509,8 @@ TEST(World, ReplayRecordingRestoresSolverOptions)
   EXPECT_TRUE(world.isSimulationMode());
   EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
   EXPECT_EQ(
-      world.getMultibodyOptions().integrationFamily, "variational integrator");
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   EXPECT_TRUE(world.isDifferentiable());
   EXPECT_EQ(world.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
   EXPECT_EQ(
@@ -21628,7 +21645,8 @@ TEST(World, ReplayRecordingRestoresTransientVariationalComponents)
   namespace compute = dart::simulation::compute;
 
   sx::World world;
-  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(1e-3);
 

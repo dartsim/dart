@@ -158,6 +158,11 @@ class ContactGradientMode(enum.Enum):
 
     PRE_CONTACT_SURROGATE = 2
 
+class MultibodyIntegrationFamily(enum.Enum):
+    SEMI_IMPLICIT = 0
+
+    VARIATIONAL = 1
+
 class PhysicalParameter(enum.Enum):
     MASS = 0
 
@@ -867,16 +872,16 @@ class LoopClosureRuntimePolicy:
 class MultibodyOptions:
     def __init__(
         self,
-        integration_family: str = ...,
+        integration_family: MultibodyIntegrationFamily = ...,
         variational_max_iterations: int = ...,
         variational_tolerance: float = ...,
     ) -> None: ...
 
     @property
-    def integration_family(self) -> str: ...
+    def integration_family(self) -> MultibodyIntegrationFamily: ...
 
     @integration_family.setter
-    def integration_family(self, arg: str, /) -> None: ...
+    def integration_family(self, arg: MultibodyIntegrationFamily, /) -> None: ...
 
     @property
     def variational_max_iterations(self) -> int: ...

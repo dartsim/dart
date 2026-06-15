@@ -39,7 +39,7 @@ def _orthogonal(position: np.ndarray, axis: np.ndarray) -> np.ndarray:
 def build() -> SceneSetup:
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, 0.0))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
 
     slider = world.add_multibody("avbd_articulated_prismatic_pair_breakable_motor")

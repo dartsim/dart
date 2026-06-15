@@ -306,7 +306,7 @@ void expectBrokenArticulatedPointJointRoundTrips(
 
   sx::World world1;
   world1.setGravity(Eigen::Vector3d::Zero());
-  world1.setMultibodyOptions({"variational integrator"});
+  world1.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world1.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -343,7 +343,8 @@ void expectBrokenArticulatedPointJointRoundTrips(
 
   EXPECT_TRUE(world2.isSimulationMode());
   EXPECT_EQ(
-      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+      world2.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   EXPECT_EQ(world2.getArticulatedJointCount(), 1u);
   auto restoredJoint = world2.getArticulatedJoint(jointName);
   ASSERT_TRUE(restoredJoint.has_value());
@@ -1287,7 +1288,8 @@ TEST(Serialization, PreservesWorldSolverOptions)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   options.multibodyOptions.variationalMaxIterations = 200;
   options.multibodyOptions.variationalTolerance = 1e-9;
   options.differentiable = true;
@@ -1304,7 +1306,8 @@ TEST(Serialization, PreservesWorldSolverOptions)
 
   EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
   EXPECT_EQ(
-      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+      world2.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   EXPECT_EQ(world2.getMultibodyOptions().variationalMaxIterations, 200u);
   EXPECT_DOUBLE_EQ(world2.getMultibodyOptions().variationalTolerance, 1e-9);
   EXPECT_TRUE(world2.isDifferentiable());
@@ -1350,7 +1353,8 @@ TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
   EXPECT_TRUE(world.isDifferentiable());
   EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
   EXPECT_EQ(
-      world.getMultibodyOptions().integrationFamily, "variational integrator");
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   EXPECT_EQ(world.getMultibodyOptions().variationalMaxIterations, 100u);
   EXPECT_DOUBLE_EQ(world.getMultibodyOptions().variationalTolerance, 1e-10);
   EXPECT_EQ(world.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
@@ -1420,7 +1424,8 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
-  options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
   options.multibodyOptions.variationalMaxIterations = 200;
   options.multibodyOptions.variationalTolerance = 1e-9;
   options.differentiable = true;
@@ -1432,7 +1437,9 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
 
   EXPECT_EQ(
       loaded.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
-  EXPECT_EQ(loaded.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_EQ(
+      loaded.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::SemiImplicit);
   EXPECT_EQ(loaded.getMultibodyOptions().variationalMaxIterations, 100u);
   EXPECT_DOUBLE_EQ(loaded.getMultibodyOptions().variationalTolerance, 1e-10);
   EXPECT_FALSE(loaded.isDifferentiable());
@@ -1522,7 +1529,7 @@ TEST(Serialization, PreservesJointCounterAcrossArticulatedGeneratedNames)
   namespace sx = dart::simulation;
 
   sx::World world1;
-  world1.setMultibodyOptions({"variational integrator"});
+  world1.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world1.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -2081,7 +2088,7 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
   namespace sx = dart::simulation;
 
   sx::World world1;
-  world1.setMultibodyOptions({"variational integrator"});
+  world1.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
 
   auto robot = world1.addMultibody("robot");
   auto base = robot.addLink("base");
@@ -2179,7 +2186,8 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
 
   ASSERT_FALSE(world2.isSimulationMode());
   EXPECT_EQ(
-      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+      world2.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
   for (const auto& expected : expectedBeforeMutation) {
     SCOPED_TRACE(expected.name);
     auto restoredJoint = world2.getArticulatedJoint(expected.name);

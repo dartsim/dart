@@ -107,7 +107,7 @@ def _axis_transform(axis: np.ndarray) -> np.ndarray:
 def build() -> SceneSetup:
     world = sx.World(time_step=_SOURCE_TIME_STEP, gravity=(0.0, 0.0, _SOURCE_GRAVITY))
     world.multibody_options = sx.MultibodyOptions(
-        integration_family="variational integrator"
+        integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )
     world.enter_simulation_mode()
 
