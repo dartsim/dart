@@ -1,9 +1,9 @@
 """Cycle smoke for the headless `dart-demos` Python runner (PLAN-103 Phase 1).
 
-Asserts the registry has scenes, every scene can build and step a few frames
-without crashing, and the runner's `--list` lists the catalog. The runner's
-soft-fail path turns an unbuildable scene (e.g. a missing asset) into a logged
-skip, so this test also passes when a robot URDF is unavailable; what we
+Asserts the registry has scenes, a representative scene cycle can build and step
+a few frames without crashing, and the runner's `--list` lists the catalog. The
+runner's soft-fail path turns an unbuildable scene (e.g. a missing asset) into a
+logged skip, so this test also passes when a robot URDF is unavailable; what we
 guarantee is that the runner itself stays healthy.
 """
 
@@ -403,7 +403,12 @@ def test_runner_cycle_returns_zero() -> None:
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
     if not _simulation_has("World"):
         pytest.skip("dartpy.World unavailable in this build")
-    rc = run(["--cycle-scenes", "--frames", "1", "--headless"], make_demo_scenes())
+    # Keep the GUI cycle smoke bounded; the registry and scene-specific tests
+    # below cover the full catalog without paying a full viewer scene switch for
+    # every demo in Debug CI.
+    smoke_scenes = make_demo_scenes()[:3]
+    assert len(smoke_scenes) == 3
+    rc = run(["--cycle-scenes", "--frames", "1", "--headless"], smoke_scenes)
     assert rc == 0
 
 
