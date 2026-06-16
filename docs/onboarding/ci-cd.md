@@ -235,6 +235,10 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 ## Next-Time Accelerators
 
 - When running dartpy tests against an in-tree build, set `PYTHONPATH` and `DARTPY_RUNTIME_DIR` to the build output.
+- If Ubuntu Debug Python tests appear stuck at the final dartpy module link,
+  inspect the generated `build.ninja` edge before assuming pytest started. The
+  Debug binding-layer symbol policy is documented in
+  [python-bindings.md](python-bindings.md#debug-build-symbols).
 - If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
 - If editor or IDE context references a path, verify it exists before making edits or writing guidance.
 - Re-run only the failed CI job (via job databaseId) to keep feedback loops short.
