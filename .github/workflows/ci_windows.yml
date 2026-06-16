@@ -11,7 +11,9 @@ on:
     branches:
       - "**"
   schedule:
-    - cron: "0 2 * * 0,3"
+    # Offset from ci_ubuntu (02:00) and ci_macos (02:40) so the scheduled runs
+    # do not stampede the shared/hosted runner pools simultaneously.
+    - cron: "20 2 * * 0,3"
   workflow_dispatch:
 
 concurrency:
@@ -40,6 +42,9 @@ jobs:
     env:
       # Pin the VS 2026 image required by DART's Windows toolchain floor.
       DART_WINDOWS_CMAKE_GENERATOR: Visual Studio 18 2026
+      # Parallelize the ctest phase; the serial suite (incl. the ~350s long
+      # pole) dominated the Windows job's ~90min wall-clock.
+      CTEST_PARALLEL_LEVEL: 4
     # Fail fast on a regression instead of waiting for the ~6h default kill.
     # Sized generously for a first cold-sccache Ninja build.
     timeout-minutes: 120
