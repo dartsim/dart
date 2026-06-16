@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp>
 
 #include <gtest/gtest.h>
@@ -40,6 +41,7 @@
 namespace vbd = dart::simulation::detail::deformable_vbd;
 namespace dc = dart::simulation::detail::deformable_contact;
 namespace sim = dart::simulation;
+namespace compute = dart::simulation::compute;
 
 namespace {
 
@@ -120,6 +122,7 @@ std::vector<Vec3> runParallel(
     const GridScene& scene, std::size_t iterations, unsigned int threads)
 {
   std::vector<Vec3> positions = scene.inertialTargets;
+  compute::ParallelExecutor executor(threads);
   vbd::BlockDescentOptions options;
   options.iterations = iterations;
   vbd::parallelBlockDescentMassSpring(
@@ -133,7 +136,7 @@ std::vector<Vec3> runParallel(
       scene.coloring,
       scene.adjacency,
       options,
-      threads);
+      executor);
   return positions;
 }
 
@@ -175,6 +178,7 @@ TEST(VbdParallelBlockDescent, ConvergesToLowResidual)
   std::vector<Vec3> positions = scene.inertialTargets;
   vbd::BlockDescentOptions options;
   options.iterations = 200;
+  compute::ParallelExecutor executor(4);
   const vbd::BlockDescentStats stats = vbd::parallelBlockDescentMassSpring(
       positions,
       scene.masses,
@@ -186,7 +190,7 @@ TEST(VbdParallelBlockDescent, ConvergesToLowResidual)
       scene.coloring,
       scene.adjacency,
       options,
-      4u);
+      executor);
   EXPECT_LT(stats.finalResidualNormSquared, 1e-12);
 }
 
@@ -262,6 +266,7 @@ TEST(VbdParallelBlockDescent, DeformableMatchesSerialExactly)
 
   for (const unsigned int threads : {2u, 4u}) {
     std::vector<Vec3> parallel = inertialTargets;
+    compute::ParallelExecutor executor(threads);
     vbd::parallelBlockDescentDeformable(
         parallel,
         masses,
@@ -277,7 +282,7 @@ TEST(VbdParallelBlockDescent, DeformableMatchesSerialExactly)
         timeStep,
         coloring,
         options,
-        threads);
+        executor);
     for (std::size_t i = 0; i < serial.size(); ++i) {
       EXPECT_NEAR((serial[i] - parallel[i]).norm(), 0.0, 1e-12)
           << "threads=" << threads << " vertex=" << i;
@@ -351,6 +356,7 @@ TEST(VbdParallelBlockDescent, ActiveSelfContactFallsBackToSerial)
       &selfContact);
 
   std::vector<Vec3> parallel = rest;
+  compute::ParallelExecutor executor(4);
   const vbd::BlockDescentStats parallelStats
       = vbd::parallelBlockDescentDeformable(
           parallel,
@@ -367,7 +373,7 @@ TEST(VbdParallelBlockDescent, ActiveSelfContactFallsBackToSerial)
           /*timeStep=*/0.01,
           coloring,
           options,
-          /*threadCount=*/4u,
+          executor,
           {},
           {},
           0.0,

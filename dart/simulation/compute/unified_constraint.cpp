@@ -33,6 +33,7 @@
 #include "dart/simulation/compute/unified_constraint.hpp"
 
 #include "dart/simulation/comps/dynamics.hpp"
+#include "dart/simulation/compute/compute_executor.hpp"
 
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
@@ -382,6 +383,65 @@ bool solveBoxedLcpInto(
   const auto result = scratch.solver.solve(
       delassus, rhs, lo, hi, findex, lambda, scratch.dantzig, options);
   return result.succeeded() && lambda.size() == size;
+}
+
+//==============================================================================
+bool solveUnifiedConstraintIslandInto(
+    const UnifiedConstraintProblem& problem,
+    std::span<const Eigen::Index> islandRows,
+    Eigen::VectorXd& globalLambda,
+    UnifiedConstraintSolveScratch& scratch)
+{
+  const Eigen::Index size = problem.rhs.size();
+  const Eigen::Index islandSize = static_cast<Eigen::Index>(islandRows.size());
+  scratch.localIndex.assign(static_cast<std::size_t>(size), -1);
+  for (Eigen::Index local = 0; local < islandSize; ++local) {
+    scratch.localIndex[static_cast<std::size_t>(islandRows[local])] = local;
+  }
+
+  scratch.islandDelassus.resize(islandSize, islandSize);
+  scratch.islandRhs.resize(islandSize);
+  scratch.islandLo.resize(islandSize);
+  scratch.islandHi.resize(islandSize);
+  scratch.islandFindex.setConstant(islandSize, -1);
+  for (Eigen::Index row = 0; row < islandSize; ++row) {
+    const Eigen::Index globalRow = islandRows[row];
+    scratch.islandRhs[row] = problem.rhs[globalRow];
+    scratch.islandLo[row] = problem.lo[globalRow];
+    scratch.islandHi[row] = problem.hi[globalRow];
+    const Eigen::Index globalFindex = problem.findex[globalRow];
+    if (globalFindex >= 0) {
+      if (globalFindex >= size) {
+        return false;
+      }
+      const Eigen::Index remapped
+          = scratch.localIndex[static_cast<std::size_t>(globalFindex)];
+      if (remapped < 0) {
+        return false;
+      }
+      scratch.islandFindex[row] = static_cast<int>(remapped);
+    }
+    for (Eigen::Index col = 0; col < islandSize; ++col) {
+      scratch.islandDelassus(row, col)
+          = problem.delassus(globalRow, islandRows[col]);
+    }
+  }
+
+  const bool islandSucceeded = solveBoxedLcpInto(
+      scratch.islandDelassus,
+      scratch.islandRhs,
+      scratch.islandLo,
+      scratch.islandHi,
+      scratch.islandFindex,
+      scratch.islandLambda,
+      scratch);
+  if (!islandSucceeded) {
+    return false;
+  }
+  for (Eigen::Index local = 0; local < islandSize; ++local) {
+    globalLambda[islandRows[local]] = scratch.islandLambda[local];
+  }
+  return true;
 }
 
 //==============================================================================
@@ -763,7 +823,31 @@ UnifiedConstraintSolution solveUnifiedConstraintProblem(
 //==============================================================================
 bool solveUnifiedConstraintProblemInto(
     const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch,
+    ComputeExecutor* executor);
+
+//==============================================================================
+bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
     UnifiedConstraintSolveScratch& scratch)
+{
+  return solveUnifiedConstraintProblemInto(problem, scratch, nullptr);
+}
+
+//==============================================================================
+bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch,
+    ComputeExecutor& executor)
+{
+  return solveUnifiedConstraintProblemInto(problem, scratch, &executor);
+}
+
+//==============================================================================
+bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch,
+    ComputeExecutor* executor)
 {
   const Eigen::Index size = problem.rhs.size();
   if (size == 0) {
@@ -790,62 +874,47 @@ bool solveUnifiedConstraintProblemInto(
   }
 
   scratch.lambda.setZero(size);
-  scratch.localIndex.assign(static_cast<std::size_t>(size), -1);
+  if (executor != nullptr && executor->getWorkerCount() > 1u
+      && islandCount > 1u) {
+    std::vector<char> islandSucceeded(islandCount, 1);
+    executor->parallelFor(
+        islandCount, 1u, [&](std::size_t begin, std::size_t end) {
+          for (std::size_t islandIndex = begin; islandIndex < end;
+               ++islandIndex) {
+            const auto islandBegin = scratch.islandOffsets[islandIndex];
+            const auto islandEnd = scratch.islandOffsets[islandIndex + 1u];
+            UnifiedConstraintSolveScratch islandScratch;
+            islandSucceeded[islandIndex]
+                = solveUnifiedConstraintIslandInto(
+                      problem,
+                      std::span<const Eigen::Index>{
+                          scratch.islandRows.data()
+                              + static_cast<std::ptrdiff_t>(islandBegin),
+                          static_cast<std::size_t>(islandEnd - islandBegin)},
+                      scratch.lambda,
+                      islandScratch)
+                      ? 1
+                      : 0;
+          }
+        });
+    return std::all_of(
+        islandSucceeded.begin(), islandSucceeded.end(), [](char succeeded) {
+          return succeeded != 0;
+        });
+  }
+
   for (std::size_t islandIndex = 0; islandIndex < islandCount; ++islandIndex) {
     const auto islandBegin = scratch.islandOffsets[islandIndex];
     const auto islandEnd = scratch.islandOffsets[islandIndex + 1];
-    const auto islandSize = static_cast<Eigen::Index>(islandEnd - islandBegin);
-    for (Eigen::Index local = 0; local < islandSize; ++local) {
-      scratch.localIndex[static_cast<std::size_t>(
-          scratch.islandRows[islandBegin + static_cast<std::size_t>(local)])]
-          = local;
-    }
-
-    scratch.islandDelassus.resize(islandSize, islandSize);
-    scratch.islandRhs.resize(islandSize);
-    scratch.islandLo.resize(islandSize);
-    scratch.islandHi.resize(islandSize);
-    scratch.islandFindex.setConstant(islandSize, -1);
-    for (Eigen::Index row = 0; row < islandSize; ++row) {
-      const Eigen::Index globalRow
-          = scratch.islandRows[islandBegin + static_cast<std::size_t>(row)];
-      scratch.islandRhs[row] = problem.rhs[globalRow];
-      scratch.islandLo[row] = problem.lo[globalRow];
-      scratch.islandHi[row] = problem.hi[globalRow];
-      const Eigen::Index globalFindex = problem.findex[globalRow];
-      if (globalFindex >= 0) {
-        if (globalFindex >= size) {
-          return false;
-        }
-        const Eigen::Index remapped
-            = scratch.localIndex[static_cast<std::size_t>(globalFindex)];
-        if (remapped < 0) {
-          return false;
-        }
-        scratch.islandFindex[row] = static_cast<int>(remapped);
-      }
-      for (Eigen::Index col = 0; col < islandSize; ++col) {
-        scratch.islandDelassus(row, col) = problem.delassus(
-            globalRow,
-            scratch.islandRows[islandBegin + static_cast<std::size_t>(col)]);
-      }
-    }
-
-    const bool islandSucceeded = solveBoxedLcpInto(
-        scratch.islandDelassus,
-        scratch.islandRhs,
-        scratch.islandLo,
-        scratch.islandHi,
-        scratch.islandFindex,
-        scratch.islandLambda,
-        scratch);
-    if (!islandSucceeded) {
+    if (!solveUnifiedConstraintIslandInto(
+            problem,
+            std::span<const Eigen::Index>{
+                scratch.islandRows.data()
+                    + static_cast<std::ptrdiff_t>(islandBegin),
+                static_cast<std::size_t>(islandEnd - islandBegin)},
+            scratch.lambda,
+            scratch)) {
       return false;
-    }
-    for (Eigen::Index local = 0; local < islandSize; ++local) {
-      scratch.lambda
-          [scratch.islandRows[islandBegin + static_cast<std::size_t>(local)]]
-          = scratch.islandLambda[local];
     }
   }
 

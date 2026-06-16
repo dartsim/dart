@@ -45,9 +45,10 @@
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 
+#include <dart/common/parallel_for.hpp>
+
 #include <algorithm>
 #include <limits>
-#include <thread>
 #include <utility>
 
 namespace dart::collision::native {
@@ -652,114 +653,94 @@ bool CollisionWorld::collideAll(
     }
   } else {
     const std::size_t numPairs = snapshot.pairs.size();
-    int numThreads = settings.maxThreads;
-    const unsigned int hwThreads = std::thread::hardware_concurrency();
-    if (hwThreads > 0) {
-      numThreads = std::min(numThreads, static_cast<int>(hwThreads));
-    }
-    numThreads = std::max(numThreads, 1);
-
-    const std::size_t chunkSize = std::max(
+    const std::size_t chunkCount = dart::common::parallelForChunkCount(
+        numPairs,
         settings.grainSize,
-        (numPairs + static_cast<std::size_t>(numThreads) - 1)
-            / static_cast<std::size_t>(numThreads));
+        static_cast<std::size_t>(settings.maxThreads));
 
-    std::vector<CollisionResult> threadResults(
-        static_cast<std::size_t>(numThreads));
-    std::vector<std::vector<BroadPhasePair>> threadPairs(
-        static_cast<std::size_t>(numThreads));
-    std::vector<std::size_t> threadPairsTested(
-        static_cast<std::size_t>(numThreads), 0);
-    std::vector<bool> threadHasCollision(
-        static_cast<std::size_t>(numThreads), false);
-    std::vector<std::thread> threads;
-    threads.reserve(static_cast<std::size_t>(numThreads));
+    std::vector<CollisionResult> threadResults(chunkCount);
+    std::vector<std::vector<BroadPhasePair>> threadPairs(chunkCount);
+    std::vector<std::size_t> threadPairsTested(chunkCount, 0);
+    std::vector<char> threadHasCollision(chunkCount, 0);
 
-    for (int t = 0; t < numThreads; ++t) {
-      const std::size_t begin = static_cast<std::size_t>(t) * chunkSize;
-      const std::size_t end = std::min(begin + chunkSize, numPairs);
-      if (begin >= end) {
-        break;
-      }
+    dart::common::parallelForChunks(
+        numPairs,
+        settings.grainSize,
+        static_cast<std::size_t>(settings.maxThreads),
+        [&](std::size_t begin, std::size_t end, std::size_t t) {
+          auto& localResult = threadResults[t];
+          auto& localPairs = threadPairs[t];
+          std::size_t localPairsTested = 0;
+          bool localHasCollision = false;
 
-      threads.emplace_back([&, begin, end, t]() {
-        auto& localResult = threadResults[static_cast<std::size_t>(t)];
-        auto& localPairs = threadPairs[static_cast<std::size_t>(t)];
-        std::size_t localPairsTested = 0;
-        bool localHasCollision = false;
+          for (std::size_t i = begin; i < end; ++i) {
+            const auto& pair = snapshot.pairs[i];
+            const auto index1 = view.indexForId(pair.first);
+            const auto index2 = view.indexForId(pair.second);
+            if (index1 == view.invalidIndex || index2 == view.invalidIndex
+                || index1 >= view.shapes.size() || index2 >= view.shapes.size()
+                || index1 >= view.transforms.size()
+                || index2 >= view.transforms.size()) {
+              continue;
+            }
 
-        for (std::size_t i = begin; i < end; ++i) {
-          const auto& pair = snapshot.pairs[i];
-          const auto index1 = view.indexForId(pair.first);
-          const auto index2 = view.indexForId(pair.second);
-          if (index1 == view.invalidIndex || index2 == view.invalidIndex
-              || index1 >= view.shapes.size() || index2 >= view.shapes.size()
-              || index1 >= view.transforms.size()
-              || index2 >= view.transforms.size()) {
-            continue;
-          }
+            const auto* shape1 = view.shapes[index1];
+            const auto* shape2 = view.shapes[index2];
+            if (!shape1 || !shape2) {
+              continue;
+            }
+            const auto& tf1 = view.transforms[index1];
+            const auto& tf2 = view.transforms[index2];
 
-          const auto* shape1 = view.shapes[index1];
-          const auto* shape2 = view.shapes[index2];
-          if (!shape1 || !shape2) {
-            continue;
-          }
-          const auto& tf1 = view.transforms[index1];
-          const auto& tf2 = view.transforms[index2];
-
-          if (needsFilterCheck && pair.first < m_idToEntity.size()
-              && pair.second < m_idToEntity.size()) {
-            auto entity1 = m_idToEntity[pair.first];
-            auto entity2 = m_idToEntity[pair.second];
-            if (entity1 != entt::null && entity2 != entt::null) {
-              auto* filter1
-                  = m_registry.try_get<comps::CollisionFilterComponent>(
-                      entity1);
-              auto* filter2
-                  = m_registry.try_get<comps::CollisionFilterComponent>(
-                      entity2);
-              if (filter1 && filter2) {
-                if (m_hasCustomCollisionFilters
-                    && !shouldCollide(
-                        filter1->filterData, filter2->filterData)) {
-                  continue;
-                }
-                if (option.collisionFilter) {
-                  CollisionObject obj1(entity1, this);
-                  CollisionObject obj2(entity2, this);
-                  if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+            if (needsFilterCheck && pair.first < m_idToEntity.size()
+                && pair.second < m_idToEntity.size()) {
+              auto entity1 = m_idToEntity[pair.first];
+              auto entity2 = m_idToEntity[pair.second];
+              if (entity1 != entt::null && entity2 != entt::null) {
+                auto* filter1
+                    = m_registry.try_get<comps::CollisionFilterComponent>(
+                        entity1);
+                auto* filter2
+                    = m_registry.try_get<comps::CollisionFilterComponent>(
+                        entity2);
+                if (filter1 && filter2) {
+                  if (m_hasCustomCollisionFilters
+                      && !shouldCollide(
+                          filter1->filterData, filter2->filterData)) {
                     continue;
+                  }
+                  if (option.collisionFilter) {
+                    CollisionObject obj1(entity1, this);
+                    CollisionObject obj2(entity2, this);
+                    if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+                      continue;
+                    }
                   }
                 }
               }
             }
+
+            ++localPairsTested;
+
+            const std::size_t manifoldsBefore = localResult.numManifolds();
+            if (collideShapePair(
+                    shape1, tf1, shape2, tf2, option, localResult)) {
+              localHasCollision = true;
+              const std::size_t manifoldsAfter = localResult.numManifolds();
+              for (std::size_t m = manifoldsBefore; m < manifoldsAfter; ++m) {
+                localPairs.push_back(pair);
+              }
+              if (option.enableContact == false
+                  || (option.maxNumContacts > 0
+                      && localResult.numContacts() >= option.maxNumContacts)) {
+                break;
+              }
+            }
           }
 
-          ++localPairsTested;
-
-          const std::size_t manifoldsBefore = localResult.numManifolds();
-          if (collideShapePair(shape1, tf1, shape2, tf2, option, localResult)) {
-            localHasCollision = true;
-            const std::size_t manifoldsAfter = localResult.numManifolds();
-            for (std::size_t m = manifoldsBefore; m < manifoldsAfter; ++m) {
-              localPairs.push_back(pair);
-            }
-            if (option.enableContact == false
-                || (option.maxNumContacts > 0
-                    && localResult.numContacts() >= option.maxNumContacts)) {
-              break;
-            }
-          }
-        }
-
-        threadPairsTested[static_cast<std::size_t>(t)] = localPairsTested;
-        threadHasCollision[static_cast<std::size_t>(t)] = localHasCollision;
-      });
-    }
-
-    for (auto& thread : threads) {
-      thread.join();
-    }
+          threadPairsTested[t] = localPairsTested;
+          threadHasCollision[t] = localHasCollision ? 1 : 0;
+        });
 
     std::vector<std::pair<BroadPhasePair, ContactManifold>> merged;
     std::size_t mergedReserve = 0;
@@ -769,7 +750,7 @@ bool CollisionWorld::collideAll(
     merged.reserve(mergedReserve);
 
     for (std::size_t t = 0; t < threadResults.size(); ++t) {
-      if (threadHasCollision[t]) {
+      if (threadHasCollision[t] != 0) {
         hasCollision = true;
       }
       if (stats) {

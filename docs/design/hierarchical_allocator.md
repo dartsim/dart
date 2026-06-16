@@ -55,7 +55,16 @@ component IDs.
 
 `World::step()` resets frame scratch at the step boundary. Any storage that must
 survive across iterations, contacts, solver warm starts, bake/rebuild, or
-diagnostic inspection must not live in frame scratch.
+diagnostic inspection must not live in frame scratch. The first production
+consumer is the built-in boxed-LCP rigid-contact step: bake warms the frame
+arena for the resolved contact shape, and each step borrows the resettable arena
+for the one-shot Delassus, Jacobian, impulse, and Dantzig work arrays. The
+diagnostic `BoxedLcpContactSnapshot` and public `solveBoxedLcpContacts()` helper
+keep caller-owned/persistent storage because their results outlive the
+step-local solve. Return-by-value facade queries are treated the same way:
+their output must survive the call, so they use caller-owned output containers,
+world free-list cached storage, or ordinary value storage rather than frame
+scratch.
 
 ## Registry And Bake Boundaries
 
@@ -82,8 +91,11 @@ storage capacity. The rigid-body velocity stage's force-batch payload vectors,
 the rigid-body contact stage's sequential-impulse constraint vector, and the
 contact stage's private AVBD contact snapshot, row-counter scratch, solve
 scratch, warm-start inventories, and point-joint input vector also borrow the
-World free allocator when the built-in pipeline constructs those stages. The
-rigid IPC
+World free allocator when the built-in pipeline constructs those stages.
+Boxed-LCP contact is the exception by lifetime: its persistent contact-query
+cache stays under the World free allocator, but its dense per-step solve arrays
+borrow the frame allocator after bake has warmed the arena for the current
+contact shape. The rigid IPC
 contact stage similarly routes its top-level runtime, solver, surface,
 writeback, resting-contact, dynamics-term, projected-Newton result, and solver
 scratch vectors through the World free allocator when the stage constructs the
@@ -142,7 +154,8 @@ verifiers over large copied scene inventories in this design doc:
   `tests/test_allocator_comparative_check.py`;
 - World memory hierarchy and diagnostics: `dart/simulation/world.hpp` and
   `dart/simulation/world.cpp`;
-- registry/no-growth gates: `tests/unit/simulation/world/test_world.cpp`;
+- registry/no-growth gates and boxed-LCP frame-scratch production coverage:
+  `tests/unit/simulation/world/test_world.cpp`;
 - active phase status while HMM remains open:
   `docs/dev_tasks/hierarchical_memory_manager/README.md`.
 

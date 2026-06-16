@@ -180,16 +180,16 @@ double DeformableBody::getMass(std::size_t node) const
   DART_SIMULATION_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state
-      = detail::registryOf(*m_world).get<comps::DeformableNodeState>(
+  const auto& model
+      = detail::registryOf(*m_world).get<comps::DeformableNodeModel>(
           detail::toRegistryEntity(m_entity));
   DART_SIMULATION_THROW_T_IF(
-      node >= state.masses.size(),
+      node >= model.masses.size(),
       OutOfRangeException,
       "DeformableBody node index {} is out of range",
       node);
 
-  return state.masses[node];
+  return model.masses[node];
 }
 
 //==============================================================================
@@ -198,16 +198,16 @@ bool DeformableBody::isFixedNode(std::size_t node) const
   DART_SIMULATION_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid deformable body handle");
 
-  const auto& state
-      = detail::registryOf(*m_world).get<comps::DeformableNodeState>(
+  const auto& model
+      = detail::registryOf(*m_world).get<comps::DeformableNodeModel>(
           detail::toRegistryEntity(m_entity));
   DART_SIMULATION_THROW_T_IF(
-      node >= state.fixed.size(),
+      node >= model.fixed.size(),
       OutOfRangeException,
       "DeformableBody node index {} is out of range",
       node);
 
-  return state.fixed[node] != 0u;
+  return model.fixed[node] != 0u;
 }
 
 //==============================================================================

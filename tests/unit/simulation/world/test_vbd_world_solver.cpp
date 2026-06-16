@@ -35,6 +35,7 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/comps/deformable_body.hpp>
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
@@ -120,12 +121,20 @@ void enableVbdConfig(
   }
 }
 
-void stepOnce(sx::World& world, compute::DeformableDynamicsStage& stage)
+void stepOnce(
+    sx::World& world,
+    compute::DeformableDynamicsStage& stage,
+    compute::ComputeExecutor& executor)
 {
-  compute::SequentialExecutor executor;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(stage);
   world.step(executor, pipeline);
+}
+
+void stepOnce(sx::World& world, compute::DeformableDynamicsStage& stage)
+{
+  compute::SequentialExecutor executor;
+  stepOnce(world, stage, executor);
 }
 
 void expectNoAvbdRows(const compute::DeformableSolverStats& stats)
@@ -782,9 +791,16 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
     expectNoAvbdRows(stats);
   }
   {
-    auto cfg = baseConfig();
-    cfg.workerThreads = 2;
-    const auto stats = run(makeChainOptions(8, 0.5), cfg);
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.01);
+    world.addDeformableBody("body", makeChainOptions(8, 0.5));
+    enableVbdConfig(world, baseConfig());
+
+    compute::DeformableDynamicsStage stage;
+    compute::ParallelExecutor executor(2);
+    stepOnce(world, stage, executor);
+    const auto stats = stage.getLastStats();
     expectNoAvbdRows(stats);
   }
 }
@@ -1382,14 +1398,14 @@ TEST(VbdWorldSolver, MultithreadedSolveMatchesSingleThreaded)
   serialCfg.iterations = 40;
   enableVbdConfig(serialWorld, serialCfg);
   sx::comps::DeformableVbdConfig parallelCfg = serialCfg;
-  parallelCfg.workerThreads = 4;
   enableVbdConfig(parallelWorld, parallelCfg);
 
   compute::DeformableDynamicsStage serialStage;
   compute::DeformableDynamicsStage parallelStage;
+  compute::ParallelExecutor parallelExecutor(4);
   for (int step = 0; step < 10; ++step) {
     stepOnce(serialWorld, serialStage);
-    stepOnce(parallelWorld, parallelStage);
+    stepOnce(parallelWorld, parallelStage, parallelExecutor);
   }
 
   const auto serialBody = serialWorld.getDeformableBody("chain");

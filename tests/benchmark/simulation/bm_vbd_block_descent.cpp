@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 #include <dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp>
 
@@ -39,6 +40,7 @@
 #include <vector>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace compute = dart::simulation::compute;
 
 namespace {
 
@@ -362,6 +364,7 @@ static void BM_VbdParallelGridStep(benchmark::State& state)
   const int side = 96;
   const unsigned int threads = static_cast<unsigned int>(state.range(0));
   const GridScene base = makeGrid(side);
+  compute::ParallelExecutor executor(threads);
   vbd::BlockDescentOptions options;
   options.iterations = 20;
   for (auto _ : state) {
@@ -379,7 +382,7 @@ static void BM_VbdParallelGridStep(benchmark::State& state)
         base.coloring,
         base.adjacency,
         options,
-        threads);
+        executor);
     benchmark::DoNotOptimize(stats.finalResidualNormSquared);
     benchmark::DoNotOptimize(positions);
   }

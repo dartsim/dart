@@ -25,6 +25,10 @@
     are no longer built. `[tool.mypy]` now type-checks against Python 3.14.
   - Disabled unnecessary CMake C++ module dependency scanning so Clang builds
     do not require `clang-scan-deps` while DART has no C++ module sources.
+  - Removed the VBD-specific `DeformableSolverOptions::workerThreads` /
+    `dartpy.simulation.DeformableSolverOptions.worker_threads` knob; deformable
+    VBD parallelism now comes from the `ComputeExecutor` passed to
+    `World::step()`.
   - Fixed the DART GUI smoke runner to use an absolute build-library path so
     CTest working directories do not load stale installed DART libraries.
   - Removed the `dart/common/filesystem.hpp` compatibility header; include `<filesystem>` and use `std::filesystem`/`std::error_code` directly.
@@ -4170,17 +4174,16 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     iterate, the World accelerated solve matches the plain one, and World
     Rayleigh damping dissipates kinetic energy. Chebyshev is opt-in and
     conservative by default because too high a spectral radius can over-relax.
-  - Wired the deterministic multithreaded color sweep into the World VBD path.
+  - Wired the deterministic executor-backed color sweep into the World VBD path.
     Added `parallelBlockDescentDeformable` (the springs + tetrahedra counterpart
-    of the mass-spring parallel driver: a worker pool updates each color's
-    disjoint vertex slices with a `std::barrier` between colors) and a
-    `workerThreads` knob on `DeformableVbdConfig`. With more than one worker the
-    World VBD solve runs the multithreaded sweep, which is bit-identical to the
-    serial driver (verified at the kernel level for springs + tets and at the
-    World level over ten steps). The serial path keeps Chebyshev and residual
-    early termination; the multithreaded path omits them (they need a global
-    extrapolation / cross-thread reduction) and falls back to the serial driver
-    for a single worker.
+    of the mass-spring parallel driver: the injected `ComputeExecutor` updates
+    each color's disjoint vertex slices and blocks between colors). With more
+    than one executor worker the World VBD solve runs the parallel sweep, which
+    is bit-identical to the serial driver (verified at the kernel level for
+    springs + tets and at the World level over ten steps). The serial path keeps
+    Chebyshev and residual early termination; the parallel path omits them (they
+    need a global extrapolation / chunk reduction) and falls back to the serial
+    driver for a single worker.
   - Wired static ground/obstacle contact (and optional Coulomb friction) into
     the World VBD path. `blockDescentDeformable` and
     `parallelBlockDescentDeformable` now accept per-vertex `ContactPlane`s and a

@@ -3511,6 +3511,7 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     ASSERT_EQ(view.size_hint(), 1u);
     for (const auto entity : view) {
       const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& model = registry.get<sx::comps::DeformableNodeModel>(entity);
       const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
       const auto& topology
           = view.get<sx::comps::DeformableMeshTopology>(entity);
@@ -3531,9 +3532,9 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
           state.velocities.data(),
           state.velocities.size() * sizeof(Eigen::Vector3d)));
       EXPECT_TRUE(hasAllocated(
-          state.masses.data(), state.masses.size() * sizeof(double)));
+          model.masses.data(), model.masses.size() * sizeof(double)));
       EXPECT_TRUE(hasAllocated(
-          state.fixed.data(), state.fixed.size() * sizeof(std::uint8_t)));
+          model.fixed.data(), model.fixed.size() * sizeof(std::uint8_t)));
       EXPECT_TRUE(hasAllocated(
           topology.restPositions.data(),
           topology.restPositions.size() * sizeof(Eigen::Vector3d)));
@@ -3628,6 +3629,7 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     ASSERT_EQ(view.size_hint(), 1u);
     for (const auto entity : view) {
       const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& model = registry.get<sx::comps::DeformableNodeModel>(entity);
       const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
       const auto& topology
           = view.get<sx::comps::DeformableMeshTopology>(entity);
@@ -3636,8 +3638,8 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       expectWorldAllocator(loadedDeformableWorld, state.positions);
       expectWorldAllocator(loadedDeformableWorld, state.previousPositions);
       expectWorldAllocator(loadedDeformableWorld, state.velocities);
-      expectWorldAllocator(loadedDeformableWorld, state.masses);
-      expectWorldAllocator(loadedDeformableWorld, state.fixed);
+      expectWorldAllocator(loadedDeformableWorld, model.masses);
+      expectWorldAllocator(loadedDeformableWorld, model.fixed);
       expectWorldAllocator(loadedDeformableWorld, spring.edges);
       expectWorldAllocator(loadedDeformableWorld, topology.restPositions);
       expectWorldAllocator(loadedDeformableWorld, topology.surfaceTriangles);
@@ -8761,6 +8763,42 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       configureCrossMultibodyMixedStressFallbackScene,
       true,
       61);
+}
+
+TEST(World, BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  configureRigidBoxedLcpContactRowsScene(world);
+
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  const auto afterBake = world.getMemoryDiagnostics();
+  EXPECT_EQ(afterBake.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(afterBake.frameScratchOverflowCount, 0u);
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  world.step();
+
+  const auto afterStep = world.getMemoryDiagnostics();
+  EXPECT_EQ(afterStep.frameScratchResetCount, 1u);
+  EXPECT_GT(afterStep.frameScratchUsedBytes, 0u)
+      << "boxed-LCP dense per-step temporaries should borrow frame scratch";
+  EXPECT_EQ(afterStep.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(afterStep.frameScratchOverflowBytes, 0u);
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
 }
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
@@ -20386,6 +20424,65 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
                   tolerance))
           << "workers=" << workers << " body=" << i;
     }
+  }
+}
+
+// Test that an executor-parallel multibody structure stage matches the
+// sequential reference bit-for-bit for independent articulated structures.
+TEST(World, MultibodyVelocityStageParallelMatchesSequential)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::Joint>& joints) {
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.01);
+    for (int i = 0; i < 6; ++i) {
+      auto robot = world.addMultibody("slider_" + std::to_string(i));
+      auto base = robot.addLink("base");
+      sx::JointSpec spec;
+      spec.name = "rail";
+      spec.type = sx::JointType::Prismatic;
+      spec.axis = Eigen::Vector3d::UnitZ();
+      auto carriage = robot.addLink("carriage", base, spec);
+      carriage.setMass(1.0 + 0.25 * i);
+      auto joint = carriage.getParentJoint();
+      joint.setForce(Eigen::VectorXd::Constant(1, 0.5 + 0.1 * i));
+      joints.push_back(joint);
+    }
+    world.enterSimulationMode();
+  };
+
+  sx::World sequentialWorld;
+  sx::World parallelWorld;
+  std::vector<sx::Joint> sequentialJoints;
+  std::vector<sx::Joint> parallelJoints;
+  buildWorld(sequentialWorld, sequentialJoints);
+  buildWorld(parallelWorld, parallelJoints);
+
+  compute::SequentialExecutor sequentialExecutor;
+  compute::ParallelExecutor parallelExecutor(3);
+  compute::MultibodyVelocityStage sequentialVelocity;
+  compute::MultibodyVelocityStage parallelVelocity;
+  compute::MultibodyPositionStage sequentialPosition;
+  compute::MultibodyPositionStage parallelPosition;
+  for (int step = 0; step < 4; ++step) {
+    sequentialVelocity.execute(sequentialWorld, sequentialExecutor);
+    sequentialPosition.execute(sequentialWorld, sequentialExecutor);
+    parallelVelocity.execute(parallelWorld, parallelExecutor);
+    parallelPosition.execute(parallelWorld, parallelExecutor);
+  }
+
+  ASSERT_EQ(sequentialJoints.size(), parallelJoints.size());
+  for (std::size_t i = 0; i < sequentialJoints.size(); ++i) {
+    EXPECT_TRUE((sequentialJoints[i].getPosition().array()
+                 == parallelJoints[i].getPosition().array())
+                    .all())
+        << "joint=" << i << " position not bitwise";
+    EXPECT_TRUE((sequentialJoints[i].getVelocity().array()
+                 == parallelJoints[i].getVelocity().array())
+                    .all())
+        << "joint=" << i << " velocity not bitwise";
   }
 }
 

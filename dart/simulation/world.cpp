@@ -925,13 +925,14 @@ auto captureReplayDeformableNodeStates(
   snapshot.reserve(countReplayView(view));
   for (auto entity : view) {
     const auto& state = view.template get<comps::DeformableNodeState>(entity);
+    const auto& model = registry.get<comps::DeformableNodeModel>(entity);
     DeformableNodeStateSnapshot snapshotState(allocator);
     captureReplayVectorPayload(snapshotState.positions, state.positions);
     captureReplayVectorPayload(
         snapshotState.previousPositions, state.previousPositions);
     captureReplayVectorPayload(snapshotState.velocities, state.velocities);
-    captureReplayVectorPayload(snapshotState.masses, state.masses);
-    captureReplayVectorPayload(snapshotState.fixed, state.fixed);
+    captureReplayVectorPayload(snapshotState.masses, model.masses);
+    captureReplayVectorPayload(snapshotState.fixed, model.fixed);
     snapshot.emplace_back(entity, std::move(snapshotState));
   }
   std::ranges::sort(snapshot, [](const auto& lhs, const auto& rhs) {
@@ -1033,6 +1034,7 @@ void restoreReplayDeformableNodeStates(
 
   for (const auto& [entity, replayState] : snapshot) {
     auto& state = registry.get<comps::DeformableNodeState>(entity);
+    auto& model = registry.get<comps::DeformableNodeModel>(entity);
     restoreReplayVectorPayload(
         replayState.positions, state.positions, componentName, "positions");
     restoreReplayVectorPayload(
@@ -1043,9 +1045,9 @@ void restoreReplayDeformableNodeStates(
     restoreReplayVectorPayload(
         replayState.velocities, state.velocities, componentName, "velocities");
     restoreReplayVectorPayload(
-        replayState.masses, state.masses, componentName, "masses");
+        replayState.masses, model.masses, componentName, "masses");
     restoreReplayVectorPayload(
-        replayState.fixed, state.fixed, componentName, "fixed");
+        replayState.fixed, model.fixed, componentName, "fixed");
   }
 }
 
@@ -2438,8 +2440,8 @@ void validateDeformableMaterial(const DeformableMaterialProperties& material)
 struct PreparedDeformableBodyData
 {
   using Vector3Vector = comps::DeformableNodeState::Vector3Vector;
-  using ScalarVector = comps::DeformableNodeState::ScalarVector;
-  using MaskVector = comps::DeformableNodeState::MaskVector;
+  using ScalarVector = comps::DeformableNodeModel::ScalarVector;
+  using MaskVector = comps::DeformableNodeModel::MaskVector;
   using EdgeVector = comps::DeformableSpringModel::EdgeVector;
   using SurfaceTriangleVector
       = comps::DeformableMeshTopology::SurfaceTriangleVector;
@@ -3158,11 +3160,12 @@ void rebindLoadedWorldComponentAllocators(
   auto deformableNodeView = registry.view<comps::DeformableNodeState>();
   for (const auto entity : deformableNodeView) {
     auto& state = deformableNodeView.get<comps::DeformableNodeState>(entity);
+    auto& nodeModel = registry.get<comps::DeformableNodeModel>(entity);
     rebindLoadedVectorAllocator(state.positions, allocator);
     rebindLoadedVectorAllocator(state.previousPositions, allocator);
     rebindLoadedVectorAllocator(state.velocities, allocator);
-    rebindLoadedVectorAllocator(state.masses, allocator);
-    rebindLoadedVectorAllocator(state.fixed, allocator);
+    rebindLoadedVectorAllocator(nodeModel.masses, allocator);
+    rebindLoadedVectorAllocator(nodeModel.fixed, allocator);
   }
 
   auto springView = registry.view<comps::DeformableSpringModel>();
@@ -5068,8 +5071,11 @@ DeformableBody World::addDeformableBody(
   state.positions = std::move(data.positions);
   state.previousPositions = state.positions;
   state.velocities = std::move(data.velocities);
-  state.masses = std::move(data.masses);
-  state.fixed = std::move(data.fixed);
+
+  auto& nodeModel = m_storage->registry.emplace<comps::DeformableNodeModel>(
+      entity, allocator);
+  nodeModel.masses = std::move(data.masses);
+  nodeModel.fixed = std::move(data.fixed);
 
   auto& model = m_storage->registry.emplace<comps::DeformableSpringModel>(
       entity, allocator);
@@ -5144,7 +5150,6 @@ void World::configureDeformableSolver(
                                    options.useAcceleration,
                                    options.accelerationSpectralRadius,
                                    options.stiffnessDamping,
-                                   options.workerThreads,
                                    options.groundContactStiffness});
     return;
   }

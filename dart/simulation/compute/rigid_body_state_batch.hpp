@@ -54,9 +54,11 @@ namespace dart::simulation::compute {
 /// alignment constraints in containers and map directly onto SIMD lanes and
 /// device buffers.
 ///
-/// This is the seed of the batched state representation that later multi-core,
-/// SIMD, and GPU paths consume. It is an internal experimental value type;
-/// per-world public handles remain the user-facing API.
+/// This is the canonical-direction seed of the batched state representation
+/// that later multi-core, SIMD, and GPU paths consume: one immutable Model plus
+/// mutable SoA State blocks with a leading world dimension. It is an internal
+/// experimental value type; per-world public handles remain the user-facing
+/// API.
 struct DART_SIMULATION_API RigidBodyStateBatch
 {
   std::size_t worldCount = 1;
