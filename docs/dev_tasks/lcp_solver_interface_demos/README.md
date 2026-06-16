@@ -1,5 +1,58 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-15 Current Continuation - bm_lcpsolver_solvers Benchmark Guards (standalone audit complete)
+
+This is the latest hand-off state. Sections below are historical checkpoints.
+
+Fresh AI session priority:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. The milestone (#3001), the benchmark/demo guard follow-up (#3007), and the
+   Dantzig allocator-fast-path fix (#3011) are all merged to `main`.
+3. Continue the broader LCP interface/demo audit one bounded gap at a time.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+What this checkpoint changes:
+
+- Added concrete `supportsProblem(problem)` runtime guards to the 10 standalone
+  solver-on-problem benchmarks in
+  `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` (Dantzig/Pgs/Lemke across
+  Standard / BoxedActiveBounds / FrictionIndex / ActiveFrictionIndexContact and
+  the PGS relaxation sweep). This file was not touched by #3007 and was the last
+  standalone benchmark surface still timing a solve without a concrete support
+  recheck. The standalone solver-on-problem benchmark guard audit is now
+  complete across both `bm_lcp_compare.cpp` and `bm_lcpsolver_solvers.cpp`,
+  except the intentional `RunMprgpSpdCheckSweepBenchmark` exception.
+
+Completeness audit (3 parallel auditors) dispositions:
+
+- `bm_lcpsolver_solvers.cpp`: 10 unguarded standalone runners → fixed here.
+- `RunMprgpSpdCheckSweepBenchmark`: intentionally unguarded (benchmarks the
+  parameter-dependent PD-check; a guard would reject the rows it measures).
+- `lcp_physics.py` "Native forms" / manifest-summary columns report form-level
+  support by design (the per-problem tables already use concrete
+  `supports_problem`); deferred as maintainer design judgment, not changed.
+- `BM_LcpValidation_*` (time `computeEffectiveBounds`), `BM_LcpWorld*Step_BoxedLcp`
+  (time `World::step`), and CUDA batch runners (GPU kernels) do not fit the
+  standalone supportsProblem-before-solve pattern; separate gating design if
+  desired.
+
+Verification completed for this checkpoint:
+
+- `pixi run config` + build of `BM_LCPSOLVER_SOLVERS` succeeded.
+- `BM_LCPSOLVER_SOLVERS --benchmark_min_time=0.001s --benchmark_repetitions=1`:
+  43 rows ran across all 10 benchmarks, 0 skipped by the new guards (defensive
+  backstops; every solver natively supports its paired family).
+- `clang-format --dry-run --Werror` and `git diff --check` clean.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before older handoffs.
+2. Rerun `pixi run lint`, `git diff --check`, and any broader gate before
+   committing future changes.
+3. Do not treat the broad LCP objective as complete.
+
 ## 2026-06-14 Current Continuation - Remaining Standalone Runner Guards
 
 This is the latest hand-off state. Sections below are historical checkpoints

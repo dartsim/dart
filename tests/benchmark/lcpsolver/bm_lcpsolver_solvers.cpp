@@ -180,6 +180,12 @@ static void BM_DantzigSolver_Standard(benchmark::State& state)
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
+
   for (auto _ : state) {
     x.setZero();
     auto result = solver.solve(problem, x, options);
@@ -201,6 +207,12 @@ static void BM_PgsSolver_Standard(benchmark::State& state)
   options.maxIterations = static_cast<int>(state.range(1));
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
 
   for (auto _ : state) {
     x.setZero();
@@ -225,6 +237,12 @@ static void BM_PgsSolver_Standard_Relax15(benchmark::State& state)
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
+
   for (auto _ : state) {
     x.setZero();
     auto result = solver.solve(problem, x, options);
@@ -246,6 +264,12 @@ static void BM_LemkeSolver_Standard(benchmark::State& state)
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
+
   for (auto _ : state) {
     x.setZero();
     auto result = solver.solve(problem, x, options);
@@ -266,6 +290,12 @@ static void BM_DantzigSolver_BoxedActiveBounds(benchmark::State& state)
   options.validateSolution = false;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
 
   for (auto _ : state) {
     x.setZero();
@@ -289,6 +319,12 @@ static void BM_PgsSolver_BoxedActiveBounds(benchmark::State& state)
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
+
   for (auto _ : state) {
     x.setZero();
     auto result = solver.solve(problem, x, options);
@@ -310,6 +346,12 @@ static void BM_DantzigSolver_FrictionIndex(benchmark::State& state)
   options.validateSolution = false;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
 
   for (auto _ : state) {
     x.setZero();
@@ -334,6 +376,12 @@ static void BM_PgsSolver_FrictionIndex(benchmark::State& state)
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
+
   for (auto _ : state) {
     x.setZero();
     auto result = solver.solve(problem, x, options);
@@ -352,6 +400,12 @@ static void BM_DantzigSolver_ActiveFrictionIndexContact(benchmark::State& state)
   options.validateSolution = false;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
 
   for (auto _ : state) {
     x.setZero();
@@ -372,6 +426,12 @@ static void BM_PgsSolver_ActiveFrictionIndexContact(benchmark::State& state)
   options.maxIterations = 100;
 
   Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  if (!solver.supportsProblem(problem)) {
+    state.SkipWithError(
+        "Standalone solver benchmark case exceeds concrete solver support");
+    return;
+  }
 
   for (auto _ : state) {
     x.setZero();
