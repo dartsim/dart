@@ -287,11 +287,19 @@ if(
   CMAKE_SYSTEM_NAME STREQUAL "Linux"
   AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
 )
-  # Debug dartpy is binding-heavy and otherwise embeds enough DWARF into each
-  # object that the final shared-module link can dominate Linux CI. Split DWARF
-  # keeps full debug info available in the build tree while keeping link inputs
-  # small.
-  list(APPEND _dartpy_debug_compile_options "$<$<CONFIG:Debug>:-gsplit-dwarf>")
+  if(DARTPY_DEBUG_SYMBOLS)
+    # Split DWARF keeps binding debug info available without feeding the full
+    # payload through the final shared-module link.
+    list(
+      APPEND _dartpy_debug_compile_options
+      "$<$<CONFIG:Debug>:-gsplit-dwarf>"
+    )
+  else()
+    # The Debug binding layer is much larger than the core C++ libraries and
+    # can make the final dartpy module link exceed hosted-runner time limits.
+    # Core DART libraries still keep their normal Debug symbols.
+    list(APPEND _dartpy_debug_compile_options "$<$<CONFIG:Debug>:-g0>")
+  endif()
 endif()
 
 foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
