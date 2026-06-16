@@ -341,3 +341,49 @@ TEST(AvbdConstraint, RowInventoryFiniteRowsDropLambdaAndClampToMaterial)
   EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 0.0);
   EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 12.0);
 }
+
+//==============================================================================
+TEST(AvbdConstraint, RowInventoryColdStartsReplacedKeyAtConstantCount)
+{
+  // rowB sorts after rowC by key, so under the slow path the cold-started rowC
+  // must not inherit rowB's stale persistent state when a single key is
+  // replaced while the active-row count stays constant.
+  vbd::AvbdScalarRowDescriptor rowA
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 1);
+  vbd::AvbdScalarRowDescriptor rowB
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 5);
+  vbd::AvbdScalarRowDescriptor rowC
+      = makeRow(vbd::AvbdScalarRowRole::ContactNormal, 3);
+
+  vbd::AvbdScalarRowInventory inventory;
+  std::vector<vbd::AvbdScalarRowDescriptor> descriptors = {rowA, rowB};
+  inventory.syncActiveRows(descriptors, {});
+  ASSERT_EQ(inventory.size(), 2u);
+  inventory[0].state.stiffness = 40.0;
+  inventory[0].state.lambda = 10.0;
+  inventory[1].state.stiffness = 80.0;
+  inventory[1].state.lambda = 20.0;
+
+  vbd::AvbdRowWarmStartOptions options;
+  options.alpha = 0.5;
+  options.gamma = 0.25;
+
+  // Replace rowB with the brand-new rowC; count is unchanged at 2.
+  descriptors = {rowA, rowC};
+  inventory.syncActiveRows(descriptors, options);
+
+  ASSERT_EQ(inventory.size(), 2u);
+
+  // rowA persists -> warm starts from its seeded state.
+  EXPECT_EQ(inventory[0].descriptor.key, rowA.key);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 1.25);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 10.0);
+
+  // rowC is a new key -> cold starts: lambda 0, stiffness = clamped start
+  // stiffness, never rowB's stale 80.0/20.0.
+  EXPECT_EQ(inventory[1].descriptor.key, rowC.key);
+  EXPECT_DOUBLE_EQ(inventory[1].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(inventory[1].state.stiffness, 4.0);
+
+  EXPECT_EQ(inventory.find(rowB.key), nullptr);
+}
