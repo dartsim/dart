@@ -175,6 +175,22 @@ Do not report GPU runtime validation from that run.
 ## Next-Time Accelerators
 
 - Run lint early (and again after test-all if it reformats) to surface formatting/codespell changes before longer build/test cycles.
+- When `pixi run test-py` is quiet for a long time, isolate the Python file or
+  test directly instead of assuming the CMake target is still building. The
+  generated `pytest` target can buffer output for the whole file. Use the build
+  output paths explicitly so the direct run matches the in-tree dartpy build:
+
+  ```bash
+  PYTHONPATH=build/default/cpp/Debug/python:build/default/cpp/Debug/python/dartpy \
+    DARTPY_RUNTIME_DIR=build/default/cpp/Debug/python/dartpy \
+    .pixi/envs/default/bin/python3.14 -u -m pytest -vv -s <TEST_PATH>::<TEST_NAME>
+  ```
+
+  Debug builds make deformable and scene-style integration tests much more
+  expensive than Release. Keep smoke fixtures small enough for Debug CI while
+  preserving the behavior under test; put paper-scale or visual showcase
+  coverage in benchmark/demo surfaces instead of routine Python integration
+  tests.
 
 ## Directory Structure
 

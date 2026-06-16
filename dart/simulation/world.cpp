@@ -478,6 +478,9 @@ struct World::ReplayState
             SnapshotAllocator<
                 std::pair<entt::entity, comps::VariationalContactDualState>>{
                 allocator}),
+        deactivationStates(
+            SnapshotAllocator<
+                std::pair<entt::entity, comps::DeactivationState>>{allocator}),
         joints(SnapshotAllocator<JointState>{allocator}),
         links(SnapshotAllocator<LinkState>{allocator}),
         publicFrames(SnapshotAllocator<PublicFrameState>{allocator}),
@@ -495,6 +498,7 @@ struct World::ReplayState
     ContactSolverMethod contactSolverMethod{
         ContactSolverMethod::SequentialImpulse};
     ContactGradientMode contactGradientMode{ContactGradientMode::Analytic};
+    DeactivationOptions deactivationOptions{};
     double time = 0.0;
     std::size_t frame = 0;
     DeformableSolverDiagnostics deformableSolverDiagnostics{};
@@ -513,6 +517,7 @@ struct World::ReplayState
         multibodyVariationalStates;
     ComponentSnapshot<comps::VariationalContactDualState>
         variationalContactDualStates;
+    ComponentSnapshot<comps::DeactivationState> deactivationStates;
     SnapshotVector<JointState> joints;
     SnapshotVector<LinkState> links;
     SnapshotVector<PublicFrameState> publicFrames;
@@ -1489,6 +1494,44 @@ bool isValidMultibodyIntegrationFamily(MultibodyIntegrationFamily family)
 }
 
 //==============================================================================
+void validateDeactivationOptions(const DeactivationOptions& options)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.linearSpeedThreshold)
+          || options.linearSpeedThreshold < 0.0,
+      InvalidArgumentException,
+      "DeactivationOptions.linearSpeedThreshold must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.angularSpeedThreshold)
+          || options.angularSpeedThreshold < 0.0,
+      InvalidArgumentException,
+      "DeactivationOptions.angularSpeedThreshold must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.generalizedSpeedThreshold)
+          || options.generalizedSpeedThreshold < 0.0,
+      InvalidArgumentException,
+      "DeactivationOptions.generalizedSpeedThreshold must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.timeUntilSleep) || options.timeUntilSleep < 0.0,
+      InvalidArgumentException,
+      "DeactivationOptions.timeUntilSleep must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.wakeThresholdScale)
+          || options.wakeThresholdScale < 1.0,
+      InvalidArgumentException,
+      "DeactivationOptions.wakeThresholdScale must be finite and at least 1");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(options.disturbanceForceThreshold)
+          || options.disturbanceForceThreshold < 0.0,
+      InvalidArgumentException,
+      "DeactivationOptions.disturbanceForceThreshold must be finite and "
+      "non-negative");
+}
+
+//==============================================================================
 std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
 {
   switch (solver) {
@@ -1682,6 +1725,34 @@ entt::entity findOwningMultibodyStructure(
         != structure.links.end()) {
       return structureEntity;
     }
+  }
+
+  return entt::null;
+}
+
+//==============================================================================
+bool isDynamicRigidDeactivationEntity(
+    const detail::WorldRegistry& registry, entt::entity entity)
+{
+  return registry.all_of<comps::RigidBodyTag, comps::Velocity>(entity)
+         && !registry.all_of<comps::StaticBodyTag>(entity)
+         && !registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
+entt::entity deactivationEntityForContactBody(
+    const detail::WorldRegistry& registry,
+    const CollisionBody& body,
+    bool rigidSupported,
+    bool multibodySupported)
+{
+  const auto entity = detail::toRegistryEntity(body.getEntity());
+  if (rigidSupported && isDynamicRigidDeactivationEntity(registry, entity)) {
+    return entity;
+  }
+
+  if (multibodySupported && registry.all_of<comps::LinkModel>(entity)) {
+    return findOwningMultibodyStructure(registry, entity);
   }
 
   return entt::null;
@@ -3348,6 +3419,7 @@ World::World(const WorldOptions& options)
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
     m_strictSolverResolution(options.strictSolverResolution),
+    m_deactivationOptions(options.deactivationOptions),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
     m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
@@ -3373,6 +3445,7 @@ World::World(const WorldOptions& options)
       !isValidContactGradientMode(options.contactGradientMode),
       InvalidArgumentException,
       "WorldOptions.contactGradientMode is invalid");
+  validateDeactivationOptions(options.deactivationOptions);
   setMultibodyOptions(options.multibodyOptions);
 }
 
@@ -3470,6 +3543,7 @@ void World::clear()
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
   m_contactGradientMode = ContactGradientMode::Analytic;
+  m_deactivationOptions = {};
   resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
   m_lastDeformableSolverDiagnostics = {};
   m_time = 0.0;
@@ -3555,6 +3629,7 @@ void World::reserveRegistryStorageForSimulation()
       comps::Velocity,
       comps::MassProperties,
       comps::Force,
+      comps::DeactivationState,
       comps::DeformableBodyTag,
       comps::DeformableNodeState,
       comps::DeformableSpringModel,
@@ -5266,6 +5341,553 @@ void World::setContactGradientMode(ContactGradientMode mode)
 }
 
 //==============================================================================
+void World::setDeactivationOptions(const DeactivationOptions& options)
+{
+  validateDeactivationOptions(options);
+  m_deactivationOptions = options;
+  if (!m_deactivationOptions.enabled) {
+    clearDeactivationState();
+  }
+}
+
+//==============================================================================
+const DeactivationOptions& World::getDeactivationOptions() const noexcept
+{
+  return m_deactivationOptions;
+}
+
+//==============================================================================
+bool World::isDeactivationEnabled() const noexcept
+{
+  return m_deactivationOptions.enabled;
+}
+
+//==============================================================================
+bool World::isDeactivationActiveForStep() const noexcept
+{
+  if (!m_deactivationOptions.enabled || m_differentiable) {
+    return false;
+  }
+
+  return m_rigidBodySolver == RigidBodySolver::SequentialImpulse
+         || m_multibodyIntegrationMethod
+                == MultibodyIntegrationMethod::SemiImplicit;
+}
+
+//==============================================================================
+bool World::isDeactivationEntitySleeping(Entity entity) const
+{
+  if (!isDeactivationActiveForStep()) {
+    return false;
+  }
+
+  const auto registryEntity = detail::toRegistryEntity(entity);
+  if (!m_storage->registry.valid(registryEntity)) {
+    return false;
+  }
+  if (m_storage->registry.all_of<comps::RigidBodyTag>(registryEntity)) {
+    if (m_rigidBodySolver != RigidBodySolver::SequentialImpulse
+        || !isDynamicRigidDeactivationEntity(
+            m_storage->registry, registryEntity)) {
+      return false;
+    }
+  } else if (
+      m_storage->registry.all_of<comps::MultibodyStructure>(registryEntity)) {
+    if (m_multibodyIntegrationMethod
+        != MultibodyIntegrationMethod::SemiImplicit) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+  const auto* state
+      = m_storage->registry.try_get<comps::DeactivationState>(registryEntity);
+  return state != nullptr && state->sleeping;
+}
+
+//==============================================================================
+int World::getDeactivationGroupIndex(Entity entity) const
+{
+  if (!isDeactivationActiveForStep()) {
+    return -1;
+  }
+
+  const auto registryEntity = detail::toRegistryEntity(entity);
+  if (!m_storage->registry.valid(registryEntity)) {
+    return -1;
+  }
+  if (m_storage->registry.all_of<comps::RigidBodyTag>(registryEntity)) {
+    if (m_rigidBodySolver != RigidBodySolver::SequentialImpulse
+        || !isDynamicRigidDeactivationEntity(
+            m_storage->registry, registryEntity)) {
+      return -1;
+    }
+  } else if (
+      m_storage->registry.all_of<comps::MultibodyStructure>(registryEntity)) {
+    if (m_multibodyIntegrationMethod
+        != MultibodyIntegrationMethod::SemiImplicit) {
+      return -1;
+    }
+  } else {
+    return -1;
+  }
+  const auto* state
+      = m_storage->registry.try_get<comps::DeactivationState>(registryEntity);
+  return state != nullptr ? state->groupIndex : -1;
+}
+
+//==============================================================================
+void World::wakeDeactivationEntity(Entity entity)
+{
+  const auto registryEntity = detail::toRegistryEntity(entity);
+  if (!m_storage->registry.valid(registryEntity)) {
+    return;
+  }
+  auto* state
+      = m_storage->registry.try_get<comps::DeactivationState>(registryEntity);
+  if (state == nullptr) {
+    return;
+  }
+
+  state->sleeping = false;
+  state->sleepCandidate = false;
+  state->quietTime = 0.0;
+  state->smoothedLinearSpeed = 0.0;
+  state->smoothedAngularSpeed = 0.0;
+  state->smoothedGeneralizedSpeed = 0.0;
+  state->groupIndex = -1;
+}
+
+//==============================================================================
+void World::clearDeactivationState()
+{
+  std::vector<entt::entity> entities;
+  auto view = m_storage->registry.view<comps::DeactivationState>();
+  entities.reserve(countReplayView(view));
+  for (auto entity : view) {
+    entities.push_back(entity);
+  }
+  for (auto entity : entities) {
+    m_storage->registry.remove<comps::DeactivationState>(entity);
+  }
+}
+
+//==============================================================================
+void World::prepareDeactivationForStep()
+{
+  if (!m_deactivationOptions.enabled || !isDeactivationActiveForStep()) {
+    clearDeactivationState();
+    return;
+  }
+
+  auto& registry = m_storage->registry;
+  const bool rigidSupported
+      = m_rigidBodySolver == RigidBodySolver::SequentialImpulse;
+  const bool multibodySupported = m_multibodyIntegrationMethod
+                                  == MultibodyIntegrationMethod::SemiImplicit;
+  const double disturbanceThresholdSquared
+      = m_deactivationOptions.disturbanceForceThreshold
+        * m_deactivationOptions.disturbanceForceThreshold;
+
+  std::vector<entt::entity> stale;
+  auto stateView = registry.view<comps::DeactivationState>();
+  stale.reserve(countReplayView(stateView));
+  for (auto entity : stateView) {
+    const bool keepRigid
+        = rigidSupported && isDynamicRigidDeactivationEntity(registry, entity);
+    const bool keepMultibody
+        = multibodySupported
+          && registry.all_of<comps::MultibodyStructure>(entity);
+    if (!keepRigid && !keepMultibody) {
+      stale.push_back(entity);
+    }
+  }
+  for (auto entity : stale) {
+    registry.remove<comps::DeactivationState>(entity);
+  }
+
+  if (rigidSupported) {
+    auto rigidView = registry.view<comps::RigidBodyTag, comps::Velocity>();
+    for (auto entity : rigidView) {
+      if (!isDynamicRigidDeactivationEntity(registry, entity)) {
+        continue;
+      }
+
+      auto& state = registry.get_or_emplace<comps::DeactivationState>(entity);
+      if (const auto* force = registry.try_get<comps::Force>(entity)) {
+        const bool disturbed
+            = force->force.squaredNorm() > disturbanceThresholdSquared
+              || force->torque.squaredNorm() > disturbanceThresholdSquared;
+        if (disturbed) {
+          wakeDeactivationEntity(detail::fromRegistryEntity(entity));
+        }
+      }
+      (void)state;
+    }
+  }
+
+  if (multibodySupported) {
+    auto multibodyView = registry.view<comps::MultibodyStructure>();
+    for (auto entity : multibodyView) {
+      const auto& structure
+          = multibodyView.get<comps::MultibodyStructure>(entity);
+      auto& state = registry.get_or_emplace<comps::DeactivationState>(entity);
+      bool disturbed = false;
+      for (const auto jointEntity : structure.joints) {
+        const auto* jointActuation
+            = registry.try_get<comps::JointActuation>(jointEntity);
+        if (jointActuation == nullptr) {
+          continue;
+        }
+        disturbed = disturbed
+                    || jointActuation->torque.squaredNorm()
+                           > disturbanceThresholdSquared
+                    || jointActuation->commandVelocity.squaredNorm()
+                           > disturbanceThresholdSquared;
+      }
+      for (const auto linkEntity : structure.links) {
+        const auto* linkControl
+            = registry.try_get<comps::LinkControl>(linkEntity);
+        if (linkControl == nullptr) {
+          continue;
+        }
+        disturbed = disturbed
+                    || linkControl->externalForce.squaredNorm()
+                           > disturbanceThresholdSquared;
+      }
+      if (disturbed) {
+        wakeDeactivationEntity(detail::fromRegistryEntity(entity));
+      }
+      (void)state;
+    }
+  }
+}
+
+//==============================================================================
+std::vector<Contact> World::filterContactsForDeactivation(
+    std::span<const Contact> contacts)
+{
+  if (!isDeactivationActiveForStep()) {
+    return {contacts.begin(), contacts.end()};
+  }
+
+  auto& registry = m_storage->registry;
+  const bool rigidSupported
+      = m_rigidBodySolver == RigidBodySolver::SequentialImpulse;
+  const bool multibodySupported = m_multibodyIntegrationMethod
+                                  == MultibodyIntegrationMethod::SemiImplicit;
+
+  std::vector<Contact> activeContacts;
+  activeContacts.reserve(contacts.size());
+  for (const auto& contact : contacts) {
+    entt::entity entityA = deactivationEntityForContactBody(
+        registry, contact.bodyA, rigidSupported, multibodySupported);
+    entt::entity entityB = deactivationEntityForContactBody(
+        registry, contact.bodyB, rigidSupported, multibodySupported);
+
+    const auto isSleeping = [&](entt::entity entity) {
+      if (entity == entt::null) {
+        return false;
+      }
+      const auto* state = registry.try_get<comps::DeactivationState>(entity);
+      return state != nullptr && state->sleeping;
+    };
+
+    bool sleepingA = isSleeping(entityA);
+    bool sleepingB = isSleeping(entityB);
+    const bool dynamicA = entityA != entt::null;
+    const bool dynamicB = entityB != entt::null;
+
+    if (sleepingA && dynamicB && !sleepingB) {
+      wakeDeactivationEntity(detail::fromRegistryEntity(entityA));
+      sleepingA = false;
+    }
+    if (sleepingB && dynamicA && !sleepingA) {
+      wakeDeactivationEntity(detail::fromRegistryEntity(entityB));
+      sleepingB = false;
+    }
+
+    const bool inactiveA = !dynamicA || sleepingA;
+    const bool inactiveB = !dynamicB || sleepingB;
+    if (inactiveA && inactiveB) {
+      continue;
+    }
+
+    activeContacts.push_back(contact);
+  }
+
+  return activeContacts;
+}
+
+//==============================================================================
+void World::updateDeactivationAfterStep()
+{
+  if (!m_deactivationOptions.enabled || !isDeactivationActiveForStep()) {
+    clearDeactivationState();
+    return;
+  }
+
+  auto& registry = m_storage->registry;
+  const bool rigidSupported
+      = m_rigidBodySolver == RigidBodySolver::SequentialImpulse;
+  const bool multibodySupported = m_multibodyIntegrationMethod
+                                  == MultibodyIntegrationMethod::SemiImplicit;
+  const double disturbanceThresholdSquared
+      = m_deactivationOptions.disturbanceForceThreshold
+        * m_deactivationOptions.disturbanceForceThreshold;
+
+  std::vector<entt::entity> participants;
+  if (rigidSupported) {
+    auto rigidView = registry.view<comps::RigidBodyTag, comps::Velocity>();
+    for (auto entity : rigidView) {
+      if (!isDynamicRigidDeactivationEntity(registry, entity)) {
+        continue;
+      }
+      (void)registry.get_or_emplace<comps::DeactivationState>(entity);
+      participants.push_back(entity);
+    }
+  }
+  if (multibodySupported) {
+    auto multibodyView = registry.view<comps::MultibodyStructure>();
+    for (auto entity : multibodyView) {
+      (void)registry.get_or_emplace<comps::DeactivationState>(entity);
+      participants.push_back(entity);
+    }
+  }
+  if (participants.empty()) {
+    return;
+  }
+
+  std::vector<std::size_t> parent(participants.size());
+  for (std::size_t i = 0; i < parent.size(); ++i) {
+    parent[i] = i;
+  }
+  const auto participantIndex = [&](entt::entity entity) {
+    for (std::size_t i = 0; i < participants.size(); ++i) {
+      if (participants[i] == entity) {
+        return i;
+      }
+    }
+    return participants.size();
+  };
+  const auto findRoot = [&](std::size_t index) {
+    while (parent[index] != index) {
+      parent[index] = parent[parent[index]];
+      index = parent[index];
+    }
+    return index;
+  };
+  const auto unite = [&](std::size_t a, std::size_t b) {
+    auto rootA = findRoot(a);
+    auto rootB = findRoot(b);
+    if (rootA != rootB) {
+      parent[rootB] = rootA;
+    }
+  };
+
+  const auto& contacts = queryContacts(CollisionQueryOptions{});
+  for (const auto& contact : contacts) {
+    const auto entityA = deactivationEntityForContactBody(
+        registry, contact.bodyA, rigidSupported, multibodySupported);
+    const auto entityB = deactivationEntityForContactBody(
+        registry, contact.bodyB, rigidSupported, multibodySupported);
+    if (entityA == entt::null || entityB == entt::null) {
+      continue;
+    }
+    const auto indexA = participantIndex(entityA);
+    const auto indexB = participantIndex(entityB);
+    if (indexA < participants.size() && indexB < participants.size()) {
+      unite(indexA, indexB);
+    }
+  }
+
+  // A contact island may sleep only once its penetration correction has
+  // essentially converged. Mirrors DART 6 (#2920): keep an island awake while
+  // any of its contacts still overlaps beyond this tolerance so bodies are
+  // never frozen mid-interpenetration, including penetration against static
+  // geometry.
+  constexpr double kSleepContactPenetrationTolerance = 1e-3;
+  std::vector<bool> rootPenetrationBlocked(participants.size(), false);
+  for (const auto& contact : contacts) {
+    if (contact.depth <= kSleepContactPenetrationTolerance) {
+      continue;
+    }
+    const auto entityA = deactivationEntityForContactBody(
+        registry, contact.bodyA, rigidSupported, multibodySupported);
+    const auto entityB = deactivationEntityForContactBody(
+        registry, contact.bodyB, rigidSupported, multibodySupported);
+    for (const auto entity : {entityA, entityB}) {
+      if (entity == entt::null) {
+        continue;
+      }
+      const auto index = participantIndex(entity);
+      if (index < participants.size()) {
+        rootPenetrationBlocked[findRoot(index)] = true;
+      }
+    }
+  }
+
+  std::map<std::size_t, int> groupIndices;
+  int nextGroupIndex = 0;
+  std::vector<bool> ready(participants.size(), false);
+
+  for (std::size_t i = 0; i < participants.size(); ++i) {
+    const auto entity = participants[i];
+    auto& state = registry.get<comps::DeactivationState>(entity);
+    const auto root = findRoot(i);
+    auto [it, inserted] = groupIndices.emplace(root, nextGroupIndex);
+    if (inserted) {
+      ++nextGroupIndex;
+    }
+    state.groupIndex = it->second;
+
+    bool disturbed = false;
+    double linearSpeed = 0.0;
+    double angularSpeed = 0.0;
+    double generalizedSpeed = 0.0;
+    if (registry.all_of<comps::RigidBodyTag>(entity)) {
+      const auto& velocity = registry.get<comps::Velocity>(entity);
+      linearSpeed = velocity.linear.norm();
+      angularSpeed = velocity.angular.norm();
+      if (const auto* force = registry.try_get<comps::Force>(entity)) {
+        disturbed
+            = force->force.squaredNorm() > disturbanceThresholdSquared
+              || force->torque.squaredNorm() > disturbanceThresholdSquared;
+      }
+    } else if (
+        const auto* structure
+        = registry.try_get<comps::MultibodyStructure>(entity)) {
+      for (const auto jointEntity : structure->joints) {
+        const auto* jointState
+            = registry.try_get<comps::JointState>(jointEntity);
+        if (jointState != nullptr && jointState->velocity.size() > 0) {
+          generalizedSpeed = std::max(
+              generalizedSpeed, jointState->velocity.cwiseAbs().maxCoeff());
+        }
+        const auto* jointActuation
+            = registry.try_get<comps::JointActuation>(jointEntity);
+        if (jointActuation != nullptr) {
+          disturbed = disturbed
+                      || jointActuation->torque.squaredNorm()
+                             > disturbanceThresholdSquared
+                      || jointActuation->commandVelocity.squaredNorm()
+                             > disturbanceThresholdSquared;
+        }
+      }
+      for (const auto linkEntity : structure->links) {
+        const auto* linkControl
+            = registry.try_get<comps::LinkControl>(linkEntity);
+        if (linkControl == nullptr) {
+          continue;
+        }
+        disturbed = disturbed
+                    || linkControl->externalForce.squaredNorm()
+                           > disturbanceThresholdSquared;
+      }
+    }
+
+    if (disturbed) {
+      wakeDeactivationEntity(detail::fromRegistryEntity(entity));
+      state.groupIndex = it->second;
+      continue;
+    }
+
+    constexpr double alpha = 0.2;
+    state.smoothedLinearSpeed
+        = alpha * linearSpeed + (1.0 - alpha) * state.smoothedLinearSpeed;
+    state.smoothedAngularSpeed
+        = alpha * angularSpeed + (1.0 - alpha) * state.smoothedAngularSpeed;
+    state.smoothedGeneralizedSpeed
+        = alpha * generalizedSpeed
+          + (1.0 - alpha) * state.smoothedGeneralizedSpeed;
+
+    const bool overWakeBand
+        = state.smoothedLinearSpeed
+              > m_deactivationOptions.linearSpeedThreshold
+                    * m_deactivationOptions.wakeThresholdScale
+          || state.smoothedAngularSpeed
+                 > m_deactivationOptions.angularSpeedThreshold
+                       * m_deactivationOptions.wakeThresholdScale
+          || state.smoothedGeneralizedSpeed
+                 > m_deactivationOptions.generalizedSpeedThreshold
+                       * m_deactivationOptions.wakeThresholdScale;
+    if (state.sleeping && overWakeBand) {
+      wakeDeactivationEntity(detail::fromRegistryEntity(entity));
+      state.groupIndex = it->second;
+      continue;
+    }
+    if (state.sleeping) {
+      ready[i] = true;
+      continue;
+    }
+
+    const bool belowSleepBand
+        = state.smoothedLinearSpeed
+              <= m_deactivationOptions.linearSpeedThreshold
+          && state.smoothedAngularSpeed
+                 <= m_deactivationOptions.angularSpeedThreshold
+          && state.smoothedGeneralizedSpeed
+                 <= m_deactivationOptions.generalizedSpeedThreshold;
+    if (!belowSleepBand) {
+      state.sleepCandidate = false;
+      state.quietTime = 0.0;
+      continue;
+    }
+
+    state.quietTime += m_timeStep;
+    state.sleepCandidate
+        = state.quietTime >= m_deactivationOptions.timeUntilSleep;
+    ready[i] = state.sleepCandidate;
+  }
+
+  for (const auto& [root, groupIndex] : groupIndices) {
+    bool groupReady = !rootPenetrationBlocked[root];
+    std::vector<entt::entity> groupMembers;
+    for (std::size_t i = 0; i < participants.size(); ++i) {
+      if (findRoot(i) != root) {
+        continue;
+      }
+      groupMembers.push_back(participants[i]);
+      const auto& state
+          = registry.get<comps::DeactivationState>(participants[i]);
+      groupReady = groupReady && (state.sleeping || ready[i]);
+    }
+
+    if (!groupReady) {
+      for (const auto entity : groupMembers) {
+        auto& state = registry.get<comps::DeactivationState>(entity);
+        if (state.sleeping && groupMembers.size() > 1u) {
+          wakeDeactivationEntity(detail::fromRegistryEntity(entity));
+        }
+        state.groupIndex = groupIndex;
+      }
+      continue;
+    }
+
+    for (const auto entity : groupMembers) {
+      auto& state = registry.get<comps::DeactivationState>(entity);
+      state.sleeping = true;
+      state.sleepCandidate = true;
+      state.groupIndex = groupIndex;
+      if (auto* velocity = registry.try_get<comps::Velocity>(entity)) {
+        velocity->linear.setZero();
+        velocity->angular.setZero();
+      }
+      if (const auto* structure
+          = registry.try_get<comps::MultibodyStructure>(entity)) {
+        for (const auto jointEntity : structure->joints) {
+          if (auto* jointState
+              = registry.try_get<comps::JointState>(jointEntity)) {
+            jointState->velocity.setZero();
+            jointState->acceleration.setZero();
+          }
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
 StepDerivatives World::getStepDerivatives() const
 {
   DART_SIMULATION_THROW_T_IF(
@@ -5875,6 +6497,7 @@ void World::stepPipelineOnce(
   }
 
   resetFrameScratchForStep();
+  prepareDeactivationForStep();
 
   // Differentiable opt-in: record the analytic contact-free step Jacobians at
   // the pre-step state before integration. This is a single predictable branch;
@@ -5895,6 +6518,7 @@ void World::stepPipelineOnce(
   pipeline.execute(*this, executor);
 #endif
 
+  updateDeactivationAfterStep();
   m_time += m_timeStep;
   ++m_frame;
   refreshMemoryDiagnostics();
@@ -6273,6 +6897,14 @@ void World::restoreReplayFrame(std::size_t index)
             .all_of<comps::MultibodyStructure, comps::VariationalContact>(
                 entity);
       });
+  validateReplayTransientComponents<comps::DeactivationState>(
+      m_storage->registry,
+      replayFrame.deactivationStates,
+      "DeactivationState",
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry.all_of<comps::RigidBodyTag>(entity)
+               || registry.all_of<comps::MultibodyStructure>(entity);
+      });
 
   DART_SIMULATION_THROW_T_IF(
       countReplayView(m_storage->registry.view<comps::JointModel>())
@@ -6475,6 +7107,15 @@ void World::restoreReplayFrame(std::size_t index)
         restoreReplayVariationalContactDualState(
             replayState, *state, replayAllocator);
       });
+  restoreReplayTransientComponents<comps::DeactivationState>(
+      m_storage->registry,
+      replayFrame.deactivationStates,
+      "DeactivationState",
+      replayAllocator,
+      [](const detail::WorldRegistry& registry, entt::entity entity) {
+        return registry.all_of<comps::RigidBodyTag>(entity)
+               || registry.all_of<comps::MultibodyStructure>(entity);
+      });
 
   for (const auto& state : replayFrame.joints) {
     auto& jointState = m_storage->registry.get<comps::JointState>(state.entity);
@@ -6541,6 +7182,7 @@ void World::restoreReplayFrame(std::size_t index)
   m_differentiable = replayFrame.differentiable;
   m_contactSolverMethod = replayFrame.contactSolverMethod;
   m_contactGradientMode = replayFrame.contactGradientMode;
+  m_deactivationOptions = replayFrame.deactivationOptions;
   m_time = replayFrame.time;
   m_frame = replayFrame.frame;
   m_lastDeformableSolverDiagnostics = replayFrame.deformableSolverDiagnostics;
@@ -6597,6 +7239,7 @@ void World::recordReplayFrame()
   replayFrame.differentiable = m_differentiable;
   replayFrame.contactSolverMethod = m_contactSolverMethod;
   replayFrame.contactGradientMode = m_contactGradientMode;
+  replayFrame.deactivationOptions = m_deactivationOptions;
   replayFrame.time = m_time;
   replayFrame.frame = m_frame;
   replayFrame.deformableSolverDiagnostics = m_lastDeformableSolverDiagnostics;
@@ -6622,6 +7265,9 @@ void World::recordReplayFrame()
           m_storage->registry, replayAllocator);
   replayFrame.variationalContactDualStates
       = captureReplayComponents<comps::VariationalContactDualState>(
+          m_storage->registry, replayAllocator);
+  replayFrame.deactivationStates
+      = captureReplayComponents<comps::DeactivationState>(
           m_storage->registry, replayAllocator);
 
   auto jointView = m_storage->registry.view<comps::JointModel>();
@@ -7164,6 +7810,16 @@ void World::saveBinary(std::ostream& output) const
 
   io::writePOD(output, m_variationalIntegratorMaxIterations);
   io::writePOD(output, m_variationalIntegratorTolerance);
+
+  const std::uint8_t deactivationEnabled
+      = m_deactivationOptions.enabled ? 1u : 0u;
+  io::writePOD(output, deactivationEnabled);
+  io::writePOD(output, m_deactivationOptions.linearSpeedThreshold);
+  io::writePOD(output, m_deactivationOptions.angularSpeedThreshold);
+  io::writePOD(output, m_deactivationOptions.generalizedSpeedThreshold);
+  io::writePOD(output, m_deactivationOptions.timeUntilSleep);
+  io::writePOD(output, m_deactivationOptions.wakeThresholdScale);
+  io::writePOD(output, m_deactivationOptions.disturbanceForceThreshold);
 }
 
 //==============================================================================
@@ -7284,6 +7940,21 @@ void World::loadBinary(std::istream& input)
           "Serialized World variational tolerance is invalid");
       m_variationalIntegratorMaxIterations = variationalMaxIterations;
       m_variationalIntegratorTolerance = variationalTolerance;
+    }
+
+    if (formatVersion >= 23 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t deactivationEnabled = 0u;
+      DeactivationOptions options;
+      io::readPOD(input, deactivationEnabled);
+      io::readPOD(input, options.linearSpeedThreshold);
+      io::readPOD(input, options.angularSpeedThreshold);
+      io::readPOD(input, options.generalizedSpeedThreshold);
+      io::readPOD(input, options.timeUntilSleep);
+      io::readPOD(input, options.wakeThresholdScale);
+      io::readPOD(input, options.disturbanceForceThreshold);
+      options.enabled = deactivationEnabled != 0u;
+      validateDeactivationOptions(options);
+      m_deactivationOptions = options;
     }
   }
 

@@ -585,6 +585,14 @@ clear reason, such as removing sensitive content, repairing broken branch
 history, or cleaning up noisy local work before the PR is first published.
 Force-pushes are PR mutations and require explicit maintainer/user approval.
 
+If a PR was temporarily based on another PR branch, and that base PR lands into
+`main`, GitHub may retarget the dependent PR to `main` and mark it behind. Treat
+the retargeted branch as the new base state: fetch `main`, merge `origin/main`
+into the published PR branch, confirm the diff against `origin/main` still
+contains only the intended changes, run the required gates, then push only with
+explicit maintainer/user approval. Do not keep acting on stale checks from the
+pre-retarget head; the post-merge-base push is the state that matters.
+
 ### Review-Fix Loop Workflow
 
 After identifying an AI-generated review comment to address:

@@ -10324,6 +10324,11 @@ void RigidBodyVelocityStage::execute(
         || registry.all_of<comps::KinematicBodyTag>(entity)) {
       continue; // Static and kinematic bodies do not accelerate.
     }
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      continue;
+    }
 
     const Eigen::Vector3d force(
         forces.force[3 * i + 0],
@@ -10370,6 +10375,11 @@ void RigidBodyPositionStage::execute(
     if (registry.all_of<comps::StaticBodyTag>(entity)
         || registry.all_of<comps::KinematicBodyTag>(entity)) {
       continue; // Static and kinematic bodies do not move under this stage.
+    }
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      continue;
     }
     integrateRigidBodyPosition(registry, entity, timeStep);
   }
@@ -10786,9 +10796,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   const bool mayUseAvbdContactDetails
       = mayHaveRigidAvbdContactConfigs(registry);
-  const auto contacts = world.queryContacts(
+  const auto queriedContacts = world.queryContacts(
       CollisionQueryOptions{},
       /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
+  std::vector<Contact> deactivationContacts;
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;

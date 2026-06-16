@@ -189,7 +189,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     "rigid_body_modes": (
         "Which body mode should I choose?",
         ("Dynamic vs static vs kinematic lanes", "Static drift and path error"),
-        "Contact-free mode semantics row; no sleep/wake or island activation API claim.",
+        "Contact-free mode semantics row; sleep/wake deactivation routes to related evidence.",
     ),
     "rigid_free_flight": (
         "Do initial velocity, gravity, and spin evolve?",
@@ -595,18 +595,6 @@ _RIGID_VISUAL_WORKFLOW_PHASE: Mapping[str, str] = {
 }
 
 _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
-    "rigid_body_modes": (
-        "activation state",
-        "body activation",
-        "body deactivation",
-        "deactivation",
-        "island activation",
-        "sleep",
-        "sleep state",
-        "sleep wake",
-        "sleeping body",
-        "wake",
-    ),
     "rigid_external_loads": (
         "apply angular impulse",
         "apply force",
@@ -889,26 +877,6 @@ class _DeferredWorkflowSearch:
 _RIGID_VISUAL_WORKFLOW_DEFERRED_API_SEARCHES: Mapping[
     str, tuple[_DeferredWorkflowSearch, ...]
 ] = {
-    "rigid_body_modes": (
-        _DeferredWorkflowSearch(
-            aliases=(
-                "activation state",
-                "body activation",
-                "body deactivation",
-                "deactivation",
-                "island activation",
-                "sleep",
-                "sleep state",
-                "sleep wake",
-                "sleeping body",
-                "wake",
-            ),
-            note=(
-                "No public sleep/wake/island activation API is exposed yet; "
-                "this row only verifies body-mode semantics."
-            ),
-        ),
-    ),
     "rigid_loop_closure": (
         _DeferredWorkflowSearch(
             aliases=(
@@ -1068,6 +1036,20 @@ _RIGID_VISUAL_WORKFLOW_BADGES = {
 _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
     str, tuple[RigidWorkflowRelatedEvidence, ...]
 ] = {
+    "rigid_body_modes": (
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "World Rigid Body / deactivation_sleeping - public sleep wake "
+                "and island activation deactivation route"
+            ),
+            scene_id="deactivation_sleeping",
+            shelf="World Rigid Body",
+            reason=(
+                "Dedicated DART 7 body-deactivation scene; use the numbered "
+                "row only for dynamic/static/kinematic mode semantics."
+            ),
+        ),
+    ),
     "rigid_free_flight": (
         RigidWorkflowRelatedEvidence(
             label="World Rigid Body / floating_base - broader floating-joint row",

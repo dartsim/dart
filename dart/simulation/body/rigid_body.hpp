@@ -220,6 +220,15 @@ public:
   /// Return whether the body is kinematic.
   [[nodiscard]] bool isKinematic() const;
 
+  /// Return whether this body is currently asleep under World deactivation.
+  ///
+  /// Returns false when deactivation is disabled, unsupported for the active
+  /// world configuration, or the body has not entered sleep.
+  [[nodiscard]] bool isSleeping() const;
+
+  /// Return this body's current deactivation group index, or -1 when none.
+  [[nodiscard]] int getDeactivationGroupIndex() const;
+
   /// Set the body's restitution (bounciness) coefficient in [0, 1].
   ///
   /// The contact solver combines two bodies' restitution by taking the maximum.

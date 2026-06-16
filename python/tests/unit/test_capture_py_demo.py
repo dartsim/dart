@@ -1144,26 +1144,13 @@ def test_rigid_workflow_dry_run_writes_deferred_api_caveats(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     body_modes, loop_closure = manifest["captures"]
-    assert body_modes["deferred_api_caveats"] == [
-        "No public sleep/wake/island activation API is exposed yet; "
-        "this row only verifies body-mode semantics."
-    ]
+    assert body_modes.get("deferred_api_caveats", []) == []
     assert loop_closure["deferred_api_caveats"] == [
         "No public loop-closure compliance/stiffness/damping API is exposed "
         "yet; this row compares closure families and policies."
     ]
-    assert manifest["deferred_api_caveat_count"] == 2
+    assert manifest["deferred_api_caveat_count"] == 1
     assert manifest["deferred_api_caveat_summary"] == [
-        {
-            "caveat_count": 1,
-            "caveats": [
-                "No public sleep/wake/island activation API is exposed yet; "
-                "this row only verifies body-mode semantics."
-            ],
-            "row": 1,
-            "scene": "rigid_body_modes",
-            "workflow_label": "Body modes",
-        },
         {
             "caveat_count": 1,
             "caveats": [
@@ -1177,11 +1164,11 @@ def test_rigid_workflow_dry_run_writes_deferred_api_caveats(
     ]
 
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
-    assert "<strong>deferred API caveats</strong> 2" in review_html
+    assert "<strong>deferred API caveats</strong> 1" in review_html
     assert "Deferred API Caveats" in review_html
     assert "<th>Row</th><th>Scene</th><th>Route</th><th>Caveat</th>" in review_html
-    assert review_html.count("<dt>deferred API caveat</dt>") == 2
-    assert "No public sleep/wake/island activation API is exposed yet" in review_html
+    assert review_html.count("<dt>deferred API caveat</dt>") == 1
+    assert "No public sleep/wake/island activation API is exposed yet" not in review_html
     assert (
         "No public loop-closure compliance/stiffness/damping API is exposed yet"
         in review_html
