@@ -454,14 +454,15 @@ void buildVarTreeInto(
 
   for (std::size_t i = 0; i < linkEntities.size(); ++i) {
     const auto linkEntity = linkEntities[i];
-    const auto& linkComp = registry.get<comps::Link>(linkEntity);
+    const auto& linkModel = registry.get<comps::LinkModel>(linkEntity);
+    const auto& linkControl = registry.get<comps::LinkControl>(linkEntity);
     auto& link = tree.links[i];
-    link.inertia = spatialInertia(linkComp.mass);
-    link.parentToJoint = linkComp.transformFromParentToJoint;
-    link.offset = linkComp.transformFromParentJoint;
-    link.externalForce = linkComp.externalForce;
+    link.inertia = spatialInertia(linkModel.mass);
+    link.parentToJoint = linkModel.transformFromParentToJoint;
+    link.offset = linkModel.transformFromParentJoint;
+    link.externalForce = linkControl.externalForce;
 
-    if (linkComp.parentJoint == entt::null) {
+    if (linkModel.parentJoint == entt::null) {
       const auto& cache = registry.get<comps::FrameCache>(linkEntity);
       link.worldTransform = cache.worldTransform;
       link.subspace.resize(6, 0);
@@ -470,10 +471,10 @@ void buildVarTreeInto(
     }
 
     const auto& jointModel
-        = registry.get<comps::JointModel>(linkComp.parentJoint);
+        = registry.get<comps::JointModel>(linkModel.parentJoint);
     const auto& jointState
-        = registry.get<comps::JointState>(linkComp.parentJoint);
-    link.joint = linkComp.parentJoint;
+        = registry.get<comps::JointState>(linkModel.parentJoint);
+    link.joint = linkModel.parentJoint;
     const auto parentIt = indexOf.find(jointModel.parentLink);
     DART_SIMULATION_THROW_T_IF(
         parentIt == indexOf.end(),
@@ -618,7 +619,7 @@ bool isTopologyMultibodyJoint(
     entt::entity jointEntity,
     const comps::JointModel& joint)
 {
-  const auto* childLink = registry.try_get<comps::Link>(joint.childLink);
+  const auto* childLink = registry.try_get<comps::LinkModel>(joint.childLink);
   return childLink != nullptr && childLink->parentJoint == jointEntity;
 }
 
@@ -1491,8 +1492,9 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
 
   const entt::entity baseEntity = structure.links[0];
   const entt::entity childEntity = structure.links[1];
-  const auto& baseLink = registry.get<comps::Link>(baseEntity);
-  const auto& childLink = registry.get<comps::Link>(childEntity);
+  const auto& baseLink = registry.get<comps::LinkModel>(baseEntity);
+  const auto& childLink = registry.get<comps::LinkModel>(childEntity);
+  const auto& childLinkControl = registry.get<comps::LinkControl>(childEntity);
   if (baseLink.parentJoint != entt::null
       || childLink.parentJoint == entt::null) {
     return std::nullopt;
@@ -1553,7 +1555,7 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
         * childLink.transformFromParentToJoint.linear() * jointModel.axis;
   const double generalizedGravity = effectiveMass * axisWorld.dot(gravity);
   const double generalizedExternal
-      = linkFrameSubspace.dot(childLink.externalForce);
+      = linkFrameSubspace.dot(childLinkControl.externalForce);
   const double noContactGeneralizedForce
       = effort + generalizedExternal + generalizedGravity;
 
@@ -4111,7 +4113,7 @@ double computeMultibodyMechanicalEnergy(
     const auto& link = tree.links[i];
     const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
     kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
-    const auto& linkComp = registry.get<comps::Link>(structure.links[i]);
+    const auto& linkComp = registry.get<comps::LinkModel>(structure.links[i]);
     const Eigen::Vector3d comWorld
         = link.worldTransform * linkComp.mass.localCenterOfMass;
     potential -= linkComp.mass.mass * gravity.dot(comWorld);
@@ -4146,7 +4148,7 @@ MultibodyMechanicalEnergyTerms computeMultibodyMechanicalEnergyTerms(
     const auto& link = tree.links[i];
     const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
     terms.kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
-    const auto& linkComp = registry.get<comps::Link>(structure.links[i]);
+    const auto& linkComp = registry.get<comps::LinkModel>(structure.links[i]);
     const Eigen::Vector3d comWorld
         = link.worldTransform * linkComp.mass.localCenterOfMass;
     terms.potential -= linkComp.mass.mass * gravity.dot(comWorld);
@@ -4263,7 +4265,7 @@ VariationalLoopClosureBinding bindVariationalLoopClosure(
       structureOut = entt::null; // world anchor
       return true;
     }
-    if (!registry.all_of<comps::Link>(frame)) {
+    if (!registry.all_of<comps::LinkModel>(frame)) {
       return false; // rigid-body or other non-link frame
     }
     for (auto entity : registry.view<comps::MultibodyStructure>()) {
@@ -4668,7 +4670,7 @@ void MultibodyVariationalIntegrationStage::execute(
     // BodyNode::addExtForce): clear them after they have been consumed by this
     // step's dynamics.
     for (const auto linkEntity : structure.links) {
-      registry.get<comps::Link>(linkEntity).externalForce.setZero();
+      registry.get<comps::LinkControl>(linkEntity).externalForce.setZero();
     }
   }
 }

@@ -174,7 +174,7 @@ Eigen::Isometry3d getJointTransform(
 Eigen::Isometry3d getFrameLocalTransform(
     const auto& registry, entt::entity entity)
 {
-  if (const auto* link = registry.template try_get<comps::Link>(entity)) {
+  if (const auto* link = registry.template try_get<comps::LinkModel>(entity)) {
     if (link->parentJoint != entt::null) {
       const auto* jointModel
           = registry.template try_get<comps::JointModel>(link->parentJoint);
@@ -206,7 +206,7 @@ Eigen::Isometry3d getFrameLocalTransform(
     return props->localTransform;
   }
 
-  if (const auto* link = registry.template try_get<comps::Link>(entity)) {
+  if (const auto* link = registry.template try_get<comps::LinkModel>(entity)) {
     return link->transformFromParentToJoint * link->transformFromParentJoint;
   }
 
@@ -308,7 +308,8 @@ void Frame::setParentFrame(const Frame& parent)
       "Cannot change parent frame of Link. Links are connected through "
       "joints in a fixed tree structure.");
 
-  if (registry.valid(enttEntity) && registry.all_of<comps::Link>(enttEntity)) {
+  if (registry.valid(enttEntity)
+      && registry.all_of<comps::LinkModel>(enttEntity)) {
     DART_SIMULATION_THROW_T(
         InvalidOperationException,
         "Cannot change parent frame of Link. Links are connected through "

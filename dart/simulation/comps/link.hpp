@@ -46,12 +46,18 @@
 
 namespace dart::simulation::comps {
 
-/// Link component (body in articulated chain)
+/// Link **Model** component: the static topology, geometry, and inertial
+/// parameters of a body in an articulated chain, frozen at finalization. Per
+/// the Model/State/Control/Contracts data contract (WP-091.20), it holds only
+/// design-frozen data and the kinematic-tree topology (`parentJoint`/
+/// `childJoints`), so it is the canonical "is a link" component. The per-step
+/// world pose lives in `LinkState`; user-applied external forces live in
+/// `LinkControl`.
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
-struct Link
+struct LinkModel
 {
-  DART_SIMULATION_STATE_COMPONENT(Link, "comps.Link");
+  DART_SIMULATION_STATE_COMPONENT(LinkModel, "comps.LinkModel");
 
   using EntityVector
       = std::vector<entt::entity, dart::common::StlAllocator<entt::entity>>;
@@ -69,7 +75,34 @@ struct Link
   entt::entity parentJoint = entt::null;
   EntityVector childJoints;
 
+  static constexpr auto entityFields()
+  {
+    return std::make_tuple(&LinkModel::parentJoint, &LinkModel::childJoints);
+  }
+};
+
+/// Link **State** component: the per-step world pose of the link, advanced by
+/// the kinematics stage every step. Per the Model/State/Control/Contracts
+/// contract (WP-091.20), this holds only mutable per-step data; design-frozen
+/// parameters live in `LinkModel` and applied forces live in `LinkControl`.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct LinkState
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(LinkState, "comps.LinkState");
+
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
+};
+
+/// Link **Control** component: the user-applied external force on the link. Per
+/// the Model/State/Control/Contracts contract (WP-091.20), this holds only the
+/// commanded/applied input (the articulated analog of the rigid `Force`
+/// component); per-step kinematic state lives in `LinkState`.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct LinkControl
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(LinkControl, "comps.LinkControl");
 
   /// Accumulated external spatial force (wrench) expressed in the link frame,
   /// using the `[angular; linear]` = `[torque; force]` convention shared by the
@@ -78,11 +111,6 @@ struct Link
   /// world step (one-shot per step, mirroring legacy `BodyNode::addExtForce`).
   Eigen::Matrix<double, 6, 1> externalForce
       = Eigen::Matrix<double, 6, 1>::Zero();
-
-  static constexpr auto entityFields()
-  {
-    return std::make_tuple(&Link::parentJoint, &Link::childJoints);
-  }
 };
 
 } // namespace dart::simulation::comps

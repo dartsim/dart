@@ -525,9 +525,9 @@ void setParentToJointTransform(Link& link, const Eigen::Isometry3d& transform)
       "Cannot set parent-to-joint transform on an invalid loaded Link");
 
   auto& registry = dart::simulation::detail::registryOf(*world);
-  auto& linkComp = registry.get<comps::Link>(
+  auto& linkModel = registry.get<comps::LinkModel>(
       dart::simulation::detail::toRegistryEntity(link.getEntity()));
-  linkComp.transformFromParentToJoint = transform;
+  linkModel.transformFromParentToJoint = transform;
 }
 
 void copyBodyInertia(const dynamics::BodyNode& source, Link& target)

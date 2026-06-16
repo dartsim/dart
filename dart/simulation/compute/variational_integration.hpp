@@ -741,9 +741,9 @@ DART_SIMULATION_API VariationalSolveReport integrateMultibodyVariational(
 /// from the same forward-kinematics world transforms as
 /// `computeMultibodyMechanicalEnergy` (so `kinetic + potential` equals it). Use
 /// this for a physical per-domain energy split: deriving the split from the
-/// stored `comps::Link::worldTransform` cache is unreliable (it is not always
-/// refreshed for the current configuration), which is why the metrics layer
-/// routes through this helper instead.
+/// stored `comps::LinkState::worldTransform` cache is unreliable (it is not
+/// always refreshed for the current configuration), which is why the metrics
+/// layer routes through this helper instead.
 struct MultibodyMechanicalEnergyTerms
 {
   double kinetic = 0.0;

@@ -3602,11 +3602,11 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     }
     ASSERT_EQ(structureCount, 1u);
 
-    auto links = registry.view<sx::comps::Link>();
+    auto links = registry.view<sx::comps::LinkModel>();
     std::size_t linkCount = 0;
     for (const auto entity : links) {
       ++linkCount;
-      const auto& link = links.get<sx::comps::Link>(entity);
+      const auto& link = links.get<sx::comps::LinkModel>(entity);
       expectWorldAllocator(loadedMultibodyWorld, link.childJoints);
     }
     ASSERT_GE(linkCount, 2u);
@@ -22346,7 +22346,7 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   jointState.broken = false;
   const entt::entity linkEntity
       = sx::detail::toRegistryEntity(link.getEntity());
-  auto& linkComponent = registry.get<sx::comps::Link>(linkEntity);
+  auto& linkComponent = registry.get<sx::comps::LinkControl>(linkEntity);
   const Eigen::Matrix<double, 6, 1> initialExternalForce
       = (Eigen::Matrix<double, 6, 1>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
             .finished();
@@ -22370,7 +22370,7 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
   EXPECT_DOUBLE_EQ(joint.getBreakForce(), initialBreakForce);
   EXPECT_FALSE(joint.isBroken());
-  EXPECT_TRUE(registry.get<sx::comps::Link>(linkEntity)
+  EXPECT_TRUE(registry.get<sx::comps::LinkControl>(linkEntity)
                   .externalForce.isApprox(initialExternalForce));
 
   jointState.broken = true;

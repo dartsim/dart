@@ -1917,7 +1917,7 @@ bool isRigidContactCandidate(
   }
 
   return registry.all_of<comps::RigidBodyTag>(entity)
-         || registry.all_of<comps::Link>(entity);
+         || registry.all_of<comps::LinkModel>(entity);
 }
 
 //==============================================================================
