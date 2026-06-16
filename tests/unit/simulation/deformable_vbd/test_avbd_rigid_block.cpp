@@ -1536,6 +1536,71 @@ TEST(
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidContactTangentBasisIsOrthonormalAndRightHanded)
+{
+  // Contract: for a generic, well-conditioned normal the returned 3x2 basis
+  // has unit-norm, mutually orthogonal columns that are each orthogonal to the
+  // (normalized) normal, and forms a right-handed frame with it
+  // (col0 x col1 == normal).
+  const Vec3 normal = Vec3(1.0, -2.0, 3.0).normalized();
+  const Eigen::Matrix<double, 3, 2> basis
+      = vbd::avbdRigidContactTangentBasis(normal);
+
+  EXPECT_TRUE(basis.allFinite());
+  EXPECT_NEAR(basis.col(0).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(basis.col(1).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(basis.col(0).dot(basis.col(1)), 0.0, 1e-12);
+  EXPECT_NEAR(basis.col(0).dot(normal), 0.0, 1e-12);
+  EXPECT_NEAR(basis.col(1).dot(normal), 0.0, 1e-12);
+  EXPECT_NEAR((basis.col(0).cross(basis.col(1)) - normal).norm(), 0.0, 1e-12);
+
+  // Same contract holds for the axis-aligned UnitZ normal.
+  const Vec3 unitZ = Vec3::UnitZ();
+  const Eigen::Matrix<double, 3, 2> basisZ
+      = vbd::avbdRigidContactTangentBasis(unitZ);
+
+  EXPECT_TRUE(basisZ.allFinite());
+  EXPECT_NEAR(basisZ.col(0).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(basisZ.col(1).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(basisZ.col(0).dot(basisZ.col(1)), 0.0, 1e-12);
+  EXPECT_NEAR(basisZ.col(0).dot(unitZ), 0.0, 1e-12);
+  EXPECT_NEAR(basisZ.col(1).dot(unitZ), 0.0, 1e-12);
+  EXPECT_NEAR((basisZ.col(0).cross(basisZ.col(1)) - unitZ).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactTangentBasisFallsBackForDegenerateNormals)
+{
+  // Degenerate guard: a zero normal and a NaN normal both fall back to the
+  // UnitX normal, yielding an all-finite, orthonormal, right-handed basis
+  // relative to UnitX.
+  const Vec3 unitX = Vec3::UnitX();
+
+  const Eigen::Matrix<double, 3, 2> zeroBasis
+      = vbd::avbdRigidContactTangentBasis(Vec3::Zero());
+  EXPECT_TRUE(zeroBasis.allFinite());
+  EXPECT_NEAR(zeroBasis.col(0).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(zeroBasis.col(1).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(zeroBasis.col(0).dot(zeroBasis.col(1)), 0.0, 1e-12);
+  EXPECT_NEAR(zeroBasis.col(0).dot(unitX), 0.0, 1e-12);
+  EXPECT_NEAR(zeroBasis.col(1).dot(unitX), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (zeroBasis.col(0).cross(zeroBasis.col(1)) - unitX).norm(), 0.0, 1e-12);
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::Matrix<double, 3, 2> nanBasis
+      = vbd::avbdRigidContactTangentBasis(Vec3(nan, nan, nan));
+  EXPECT_TRUE(nanBasis.allFinite());
+  EXPECT_NEAR(nanBasis.col(0).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(nanBasis.col(1).norm(), 1.0, 1e-12);
+  EXPECT_NEAR(nanBasis.col(0).dot(nanBasis.col(1)), 0.0, 1e-12);
+  EXPECT_NEAR(nanBasis.col(0).dot(unitX), 0.0, 1e-12);
+  EXPECT_NEAR(nanBasis.col(1).dot(unitX), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (nanBasis.col(0).cross(nanBasis.col(1)) - unitX).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
