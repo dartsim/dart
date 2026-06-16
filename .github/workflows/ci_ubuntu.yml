@@ -122,6 +122,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # The Release job builds a normal tree, dartpy, examples, and then a
+      # separate ASAN tree in the same workspace. Reclaim unused hosted-runner
+      # toolchains up front so the ASAN object files do not exhaust disk.
+      - name: Free up disk space
+        run: |
+          set -x
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
         with:
@@ -397,11 +410,10 @@ jobs:
 
       - name: Run Debug Python tests
         run: |
-          # This step builds the dartpy pybind11 extension. In Debug each
-          # binding TU is large and memory-heavy, so building at
-          # DART_PARALLEL_JOBS=8 thrashes the 16 GB hosted runner -- this step
-          # (not the C++ ctest) dominated the old ~6h Debug job. Cap parallelism
-          # like the ASAN build above so the build fits in RAM and progresses.
+          # This step builds the dartpy nanobind extension. In Debug each
+          # binding TU is large, so keep parallelism below the 16 GB hosted
+          # runner's memory limit. Binding-layer Debug symbols are disabled by
+          # default in CMake; the core DART libraries still keep Debug symbols.
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_PARALLEL_JOBS=4 \
