@@ -1,3 +1,8 @@
+---
+type: ai-session-policy
+owner: self
+---
+
 # AI Sessions
 
 Multi-session AI work uses the existing `docs/dev_tasks/` lifecycle. Do not add

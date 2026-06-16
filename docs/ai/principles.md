@@ -1,3 +1,8 @@
+---
+type: ai-principles
+owner: self
+---
+
 # AI Principles
 
 This compact file is loaded for every DART agent session. It owns DART's

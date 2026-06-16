@@ -60,12 +60,16 @@ command as the hindsight workflow; do not duplicate the routing table here.
 3. Decide whether each lesson is general enough for shared AI infra. Do not
    update AI components after every session.
 4. Prefer update, remove, consolidate, or restructure over adding new files.
-5. Keep `docs/ai/principles.md` compact; put procedures in the owner docs it
+5. Make every durable learning discoverable from its owner surface: update an
+   existing owner doc when possible, and when a new durable file is justified,
+   link it from the relevant owner index or plan before retiring temporary
+   context.
+6. Keep `docs/ai/principles.md` compact; put procedures in the owner docs it
    links to.
-6. Avoid ephemeral branch, PR, commit, or username details.
-7. If adding a workflow command or skill, edit `.claude/` source files and run
+7. Avoid ephemeral branch, PR, commit, or username details.
+8. If adding a workflow command or skill, edit `.claude/` source files and run
    `pixi run sync-ai-commands`.
-8. Run `pixi run lint` before committing. For AI docs or adapter changes, also
+9. Run `pixi run lint` before committing. For AI docs or adapter changes, also
    run the verification gates from `docs/ai/verification.md`: `pixi run
 lint-md`, `pixi run check-lint-md`, `pixi run sync-ai-commands`, `pixi run
 check-ai-commands`, `pixi run check-docs-policy`, and `pixi run

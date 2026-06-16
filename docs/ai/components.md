@@ -1,3 +1,8 @@
+---
+type: ai-component-policy
+owner: self
+---
+
 # AI Components
 
 This document defines how DART maintains AI-facing components.
@@ -11,6 +16,11 @@ source is `.claude/skills/`.
 `docs/ai/capabilities.json` owns machine-readable capability status, category,
 and gate profile; `docs/ai/workflows.md` owns the human-readable public paths
 and gate details.
+
+The Markdown files directly under `docs/ai/` use a narrow frontmatter pilot
+with only stable identity fields: `type` and `owner`. The pilot does not carry
+mutable status, freshness, or relationship lists; those stay in the owner docs,
+the plan dashboard, or generated manifests with an explicit consumer.
 
 Generated surfaces are first-class entrypoints for their tools:
 
@@ -75,6 +85,11 @@ Prefer improving or consolidating an existing component over adding a new
 surface. If two docs would need the same changing fact, pick one owner and make
 the other a pointer.
 
+Durable retrospect learnings must be discoverable from the owner surface they
+improve. Prefer editing an existing owner doc. If a learning justifies a new
+durable file, link that file from the relevant owner index or plan before the
+temporary session or dev-task context is retired.
+
 ## Public Path Requirement
 
 Every AI workflow must map back to public docs and `pixi run ...` commands so a
@@ -107,7 +122,11 @@ faster; it must not be the only path.
 
 `pixi run check-docs-policy` also enforces documentation lifecycle rules that
 are outside generated-adapter sync, including docs bucket visibility,
-dev-task shape, and plan cleanup invariants.
+dev-task shape, plan cleanup invariants, the `docs/ai/` frontmatter pilot, and
+the `docs/readthedocs/papers.md` catalog schema. It also reports advisory
+signals for pilot-scoped internal Markdown links, conservative owner-index
+discoverability, and north-star evidence freshness while those checks are in
+their report-only rollout.
 
 These checks are structural. The principle audit in `docs/ai/principles.md`
 owns judgment calls such as source-of-truth placement, public path quality, and

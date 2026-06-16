@@ -1,3 +1,8 @@
+---
+type: ai-north-star
+owner: self
+---
+
 # AI-Native North Star
 
 This file is the repo-level source of truth for DART's mission and current
@@ -81,6 +86,8 @@ These map onto two distribution surfaces:
 - `dartsim/` is the **standalone application** distribution serving mode 3. It
   ships as a runtime executable (via package managers), not as a library, so it
   is not consumed by downstream code and keeps minimal runtime dependencies.
+
+<!-- docs-policy: evidence-last-verified=2026-06-16 -->
 
 ## Current State
 

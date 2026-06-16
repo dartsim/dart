@@ -1,3 +1,8 @@
+---
+type: ai-entrypoint
+owner: self
+---
+
 # AI Agent Entrypoint
 
 This directory is the shared AI-native starting point for DART. It keeps

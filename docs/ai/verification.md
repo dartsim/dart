@@ -1,3 +1,8 @@
+---
+type: ai-verification-policy
+owner: self
+---
+
 # AI Verification
 
 AI work is complete only when the requested outcome is mapped to concrete
