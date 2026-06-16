@@ -55,7 +55,7 @@ void stepWorldsBatched(
     DART_SIMULATION_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
-        "stepWorldsBatched received a null world at index {}",
+        "stepWorldsBatched received a null world at lane {}",
         w);
     // The nodes have no edges and run concurrently, so the same World must not
     // appear twice -- that would step one object from multiple threads at once
@@ -63,7 +63,7 @@ void stepWorldsBatched(
     DART_SIMULATION_THROW_T_IF(
         !seen.insert(worlds[w]).second,
         InvalidArgumentException,
-        "stepWorldsBatched received a duplicate world at index {}; each world "
+        "stepWorldsBatched received a duplicate world at lane {}; each world "
         "must be unique",
         w);
 
