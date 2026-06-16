@@ -1,5 +1,74 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-15 bm_lcpsolver_solvers Benchmark Guards (standalone audit complete)
+
+This is the latest hand-off. Older sections below are historical checkpoints.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and the README.
+2. The milestone (#3001), the benchmark/demo guard follow-up (#3007), and the
+   Dantzig allocator-fast-path fix (#3011) are all merged to `main`.
+3. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+What this checkpoint changes:
+
+- Added concrete `supportsProblem(problem)` runtime guards to the 10 standalone
+  solver-on-problem benchmarks in
+  `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` (Dantzig/Pgs/Lemke ×
+  Standard / BoxedActiveBounds / FrictionIndex / ActiveFrictionIndexContact,
+  plus the PGS relaxation sweep). This file was NOT touched by #3007, so it was
+  the last standalone benchmark surface still timing a solve without a concrete
+  support recheck.
+- With this, the **standalone solver-on-problem benchmark guard audit is
+  complete across BOTH benchmark files** (`bm_lcp_compare.cpp` +
+  `bm_lcpsolver_solvers.cpp`), except the one intentional exception below.
+
+Completeness-audit findings (3 parallel auditors over benchmarks, demos/scripts,
+C++/dartpy) and their disposition:
+
+- `bm_lcpsolver_solvers.cpp` — 10 unguarded standalone runners → FIXED here.
+- `RunMprgpSpdCheckSweepBenchmark` (in `bm_lcp_compare.cpp`) — intentionally
+  NOT guarded: it benchmarks MPRGP's PD-check across conditioning kinds, and
+  `MprgpSolver::supportsProblem` is parameter-dependent
+  (`checkPositiveDefinite` default `true`), so a guard would reject the rows the
+  sweep exists to measure. Leave it.
+- Python demo "Native forms" / "solver manifest summary" columns
+  (`lcp_physics.py` ~1705-1710, ~2526-2532, ~2639) report FORM-level support
+  (supports_standard/boxed/friction_index) rather than concrete per-problem
+  support. The audit flagged these, but the columns are explicitly form-level
+  ("Native forms"), and the per-problem tables already route through concrete
+  `supports_problem`. Treat as an intentional form-level display / maintainer
+  design judgment — deferred, not changed here.
+- Non-standalone benchmark categories (`BM_LcpValidation_*` time
+  `computeEffectiveBounds`; `BM_LcpWorld*Step_BoxedLcp` time `World::step`; CUDA
+  batch runners use GPU kernels) do NOT fit the standalone
+  supportsProblem-before-solve pattern and need their own gating design if
+  desired — out of scope for this audit thread.
+
+Verification completed for this checkpoint:
+
+```bash
+pixi run config   # ensures nanobind_DIR (main requires nanobind >= 2.12)
+cmake --build build/default/cpp/Release --target BM_LCPSOLVER_SOLVERS
+build/default/cpp/Release/bin/BM_LCPSOLVER_SOLVERS \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+clang-format --dry-run --Werror tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp
+git diff --check
+```
+
+Result: build green; **43 rows ran across all 10 benchmarks, 0 skipped** by the
+new guards (defensive backstops; every solver natively supports its paired
+family); clang-format and whitespace clean.
+
+How to resume:
+
+```bash
+git status -sb
+git log --oneline --decorate -8
+```
+
 ## Current Reality - 2026-06-14 Remaining Standalone Runner Guards
 
 This is the latest hand-off. Older sections below are historical checkpoints

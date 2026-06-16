@@ -58,6 +58,10 @@ public:
   void executeProfiled(
       const ComputeGraph& graph, ComputeExecutionProfile& profile) override;
   [[nodiscard]] std::size_t getWorkerCount() const override;
+  void parallelFor(
+      std::size_t count,
+      std::size_t grainSize,
+      const ParallelForRange& function) override;
 
   /// Cost gate: graphs with at most this many nodes execute inline
   /// (sequentially, in topological order) instead of building a Taskflow, since

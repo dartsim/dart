@@ -42,6 +42,7 @@
 #include "dart/simulation/comps/link.hpp"
 #include "dart/simulation/comps/multibody.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
+#include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/multibody_constraint.hpp"
 #include "dart/simulation/compute/unified_constraint.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
@@ -705,7 +706,10 @@ void recursiveNewtonEulerInto(
     const auto i = count - 1 - reverse;
     const auto& link = links[i];
     if (link.dof > 0) {
-      tau.segment(link.dofOffset, link.dof)
+      // noalias() writes the (dynamic-length) joint-space projection directly
+      // into the tau segment, avoiding a per-call heap-allocated Eigen
+      // temporary on every warmed step.
+      tau.segment(link.dofOffset, link.dof).noalias()
           = link.subspace.transpose() * force[i];
     }
     if (link.parentIndex >= 0) {
@@ -876,6 +880,23 @@ struct MultibodyDynamicsScratch
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
   Eigen::VectorXd contactImpulseDelta;
+
+  // Persistent factorizations and buffers for the unconstrained semi-implicit
+  // solve and the velocity-actuator constraint solve. Reused across warmed
+  // steps so neither path allocates Eigen temporaries once their dimensions
+  // stabilize (each multibody owns its own scratch, so n and k are constant).
+  // Reuse is allocation-free only while tree.dofCount and the velocity-actuated
+  // DOF set are constant; a structure edit or joint lock/unlock changes n or k
+  // and resizes these (and re-factorizes) once -- correct, but not a "warmed"
+  // step for the no-malloc gate.
+  Eigen::LDLT<Eigen::MatrixXd> unconstrainedMassLdlt;  // M qddot = rhs
+  Eigen::LDLT<Eigen::MatrixXd> velocityMassLdlt;       // M^-1 (M is SPD)
+  Eigen::MatrixXd velocityMassInverse;                 // n x n
+  Eigen::MatrixXd velocityIdentity;                    // n x n identity (baked)
+  Eigen::MatrixXd velocityConstraintMatrix;            // k x k
+  Eigen::VectorXd velocityConstraintResidual;          // k
+  Eigen::LDLT<Eigen::MatrixXd> velocityConstraintLdlt; // k x k
+  Eigen::VectorXd velocityConstraintLambda;            // k
 };
 
 MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
@@ -1041,7 +1062,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
   } else {
     scratch.rhs.resize(n);
     scratch.rhs = scratch.appliedForce - scratch.massAndBias.bias;
-    scratch.qddot = scratch.massAndBias.massMatrix.ldlt().solve(scratch.rhs);
+    // Factor into a persistent LDLT so warmed steps reuse its storage rather
+    // than constructing (and heap-allocating) a fresh decomposition each step.
+    scratch.unconstrainedMassLdlt.compute(scratch.massAndBias.massMatrix);
+    scratch.qddot = scratch.unconstrainedMassLdlt.solve(scratch.rhs);
   }
 
   // Unconstrained next generalized velocity (semi-implicit Euler), then apply
@@ -1106,27 +1130,39 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
   if (!scratch.constrainedDof.empty()) {
-    const Eigen::MatrixXd inverseMass
-        = scratch.massAndBias.massMatrix.inverse();
+    // M^-1 via a persistent LDLT (the joint-space mass matrix is symmetric
+    // positive-definite, as the unconstrained solve above already assumes)
+    // solved in place against a baked identity. LDLT::solveInPlace reuses the
+    // factor and result buffers across warmed steps with no Eigen temporary,
+    // and matches massMatrix.inverse() to machine precision for SPD M; unlike
+    // PartialPivLU::solve, it allocates nothing.
+    scratch.velocityMassLdlt.compute(scratch.massAndBias.massMatrix);
+    scratch.velocityIdentity.setIdentity(n, n);
+    scratch.velocityMassInverse = scratch.velocityIdentity;
+    scratch.velocityMassLdlt.solveInPlace(scratch.velocityMassInverse);
+    const Eigen::MatrixXd& inverseMass = scratch.velocityMassInverse;
     const auto k = static_cast<Eigen::Index>(scratch.constrainedDof.size());
-    Eigen::MatrixXd constraintMatrix(k, k);
-    Eigen::VectorXd residual(k);
+    scratch.velocityConstraintMatrix.resize(k, k);
+    scratch.velocityConstraintResidual.resize(k);
     for (Eigen::Index a = 0; a < k; ++a) {
-      residual[a] = scratch.constrainedTarget[static_cast<std::size_t>(a)]
-                    - scratch.nextVelocity
-                          [scratch.constrainedDof[static_cast<std::size_t>(a)]];
+      scratch.velocityConstraintResidual[a]
+          = scratch.constrainedTarget[static_cast<std::size_t>(a)]
+            - scratch.nextVelocity
+                  [scratch.constrainedDof[static_cast<std::size_t>(a)]];
       for (Eigen::Index b = 0; b < k; ++b) {
-        constraintMatrix(a, b) = inverseMass(
+        scratch.velocityConstraintMatrix(a, b) = inverseMass(
             scratch.constrainedDof[static_cast<std::size_t>(a)],
             scratch.constrainedDof[static_cast<std::size_t>(b)]);
       }
     }
-    const Eigen::VectorXd lambda = constraintMatrix.ldlt().solve(residual);
+    scratch.velocityConstraintLdlt.compute(scratch.velocityConstraintMatrix);
+    scratch.velocityConstraintLambda = scratch.velocityConstraintLdlt.solve(
+        scratch.velocityConstraintResidual);
     for (Eigen::Index a = 0; a < k; ++a) {
-      scratch.nextVelocity
+      scratch.nextVelocity.noalias()
           += inverseMass.col(
                  scratch.constrainedDof[static_cast<std::size_t>(a)])
-             * lambda[a];
+             * scratch.velocityConstraintLambda[a];
     }
   }
 
@@ -3062,14 +3098,20 @@ ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
 }
 
 //==============================================================================
-void MultibodyVelocityStage::execute(
-    World& world, ComputeExecutor& /*executor*/)
+void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
   auto view = registry.view<comps::MultibodyStructure>();
+  struct WorkItem
+  {
+    const comps::MultibodyStructure* structure = nullptr;
+    MultibodyDynamicsScratch* scratch = nullptr;
+    PendingMultibodyVelocity* pendingVelocity = nullptr;
+  };
+  std::vector<entt::entity> entities;
   for (auto entity : view) {
     if (world.isDeactivationActiveForStep()
         && world.isDeactivationEntitySleeping(
@@ -3077,21 +3119,42 @@ void MultibodyVelocityStage::execute(
       continue;
     }
 
-    const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch
-        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
+    getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
-    if (!computeUnconstrainedMultibodyVelocityInto(
-            registry, structure, gravity, timeStep, scratch)) {
-      pendingVelocity.active = false;
-    } else {
-      pendingVelocity.velocity = scratch.nextVelocity;
-      pendingVelocity.active = true;
-    }
-
-    clearMultibodyExternalForces(registry, structure);
+    (void)pendingVelocity;
+    entities.push_back(entity);
   }
+
+  std::vector<WorkItem> workItems;
+  workItems.reserve(entities.size());
+  for (auto entity : entities) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+    auto& pendingVelocity = registry.get<PendingMultibodyVelocity>(entity);
+    workItems.push_back({&structure, &scratch, &pendingVelocity});
+  }
+
+  executor.parallelFor(
+      workItems.size(), 1u, [&](std::size_t begin, std::size_t end) {
+        for (std::size_t i = begin; i < end; ++i) {
+          auto& item = workItems[i];
+          auto& pendingVelocity = *item.pendingVelocity;
+          if (!computeUnconstrainedMultibodyVelocityInto(
+                  registry,
+                  *item.structure,
+                  gravity,
+                  timeStep,
+                  *item.scratch)) {
+            pendingVelocity.active = false;
+          } else {
+            pendingVelocity.velocity = item.scratch->nextVelocity;
+            pendingVelocity.active = true;
+          }
+
+          clearMultibodyExternalForces(registry, *item.structure);
+        }
+      });
 }
 
 //==============================================================================
@@ -3792,8 +3855,7 @@ bool tryResolveSequentialMultibodyContacts(
 }
 
 //==============================================================================
-void UnifiedConstraintStage::execute(
-    World& world, ComputeExecutor& /*executor*/)
+void UnifiedConstraintStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
@@ -3820,12 +3882,22 @@ void UnifiedConstraintStage::execute(
     return;
   }
 
-  resolveUnifiedConstraints(
-      registry,
-      scratch.problem,
-      std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
-      m_frictionIterations,
-      scratch.solveScratch);
+  if (solveUnifiedConstraintProblemInto(
+          scratch.problem, scratch.solveScratch, executor)) {
+    applyUnifiedConstraintImpulses(
+        registry,
+        scratch.problem,
+        scratch.solveScratch.lambda,
+        std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
+        scratch.solveScratch);
+  } else {
+    applyUnifiedConstraintFallback(
+        registry,
+        scratch.problem,
+        std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
+        m_frictionIterations,
+        scratch.solveScratch);
+  }
 
   // Write each multibody's resolved generalized velocity back to its staging
   // component so the position stage integrates the post-contact velocity. The

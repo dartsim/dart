@@ -51,6 +51,8 @@
 
 namespace dart::simulation::compute {
 
+class ComputeExecutor;
+
 /// Which solver domain a unified-constraint row belongs to.
 enum class UnifiedContactDomain
 {
@@ -320,6 +322,11 @@ solveUnifiedConstraintProblem(const UnifiedConstraintProblem& problem);
 DART_SIMULATION_API bool solveUnifiedConstraintProblemInto(
     const UnifiedConstraintProblem& problem,
     UnifiedConstraintSolveScratch& scratch);
+
+DART_SIMULATION_API bool solveUnifiedConstraintProblemInto(
+    const UnifiedConstraintProblem& problem,
+    UnifiedConstraintSolveScratch& scratch,
+    ComputeExecutor& executor);
 
 /// Solve into caller-owned scratch and result storage. Reusing both objects
 /// lets same-shape callers avoid the result-vector allocation that

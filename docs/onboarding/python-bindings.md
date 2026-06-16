@@ -207,6 +207,28 @@ Signals to look for:
 - Lint completes without errors; auto-formatting changes are reviewed before committing.
 - The dartpy build finishes without nanobind compile errors.
 
+### Debug Build Symbols
+
+On Linux GNU/Clang Debug builds, dartpy and nanobind binding objects omit
+binding-layer debug symbols by default (`DARTPY_DEBUG_SYMBOLS=OFF`). The core
+DART libraries keep their normal Debug symbols; only the binding translation
+units are trimmed. This keeps the final `_dartpy` shared-module link within
+GitHub-hosted runner limits.
+
+Enable binding debug symbols only when you need to debug the binding layer
+itself:
+
+```bash
+cmake -S . -B build/default/cpp/Debug \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DDART_BUILD_DARTPY=ON \
+  -DDARTPY_DEBUG_SYMBOLS=ON
+```
+
+When `DARTPY_DEBUG_SYMBOLS=ON`, Linux GNU/Clang builds use split DWARF for the
+binding objects so debug information remains available without feeding the full
+DWARF payload through the module link.
+
 ## Gotchas
 
 - `ImGuiKey` can be a typedef to `int` in some ImGui releases; nanobind `enum_` requires an enum type, so bind a shim enum and cast back to `ImGuiKey` for ImGui calls.

@@ -9,7 +9,22 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest follow-up (2026-06-14): PR #3004 is now MERGED to `main` at
+- Latest follow-up (2026-06-14): PR #3018 (box edge/vertex contact feature-ID
+  coverage) is MERGED to `main` at `6bf7b2e8336`. New unpublished branch
+  `avbd/bounded-regression-coverage` (off merged `main`) bundles three more
+  mutation-verified, non-perf regression guards from the coverage scout:
+  `AvbdRigidBlock.RigidContactTangentBasis*` (orthonormal/right-handed contract +
+  degenerate-normal `UnitX` fallback for `avbdRigidContactTangentBasis`),
+  `VariationalIntegration.AvbdPublicArticulatedBreakForceReArmsAfterReset` (the
+  break -> reset -> break-again re-arm lifecycle no prior test exercised), and
+  `AvbdConstraint.RowInventoryColdStartsReplacedKeyAtConstantCount` (a
+  warm-start aliasing guard for the constant-count one-key-replaced sync). Each
+  was mutation-verified (new test fails under a targeted production mutation
+  while a named control stays green) with clean reverts; no production code
+  change. Full suites pass (test_avbd_rigid_block 109, test_variational_integration
+  179, test_avbd_constraint 12); `pixi run lint` passes. The AVBD CPU-win, GPU,
+  and paper-number gates remain open and no parity is claimed.
+- Earlier follow-up (2026-06-14): PR #3004 is MERGED to `main` at
   `356384967f8`, landing the Spring/Spring Ratio contact-filtering slices, the
   inertia-orientation cleanup, refreshed packets, and the contact-skip
   regressions. The Dantzig allocator regression diagnosed during that work got

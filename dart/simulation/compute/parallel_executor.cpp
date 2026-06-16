@@ -237,6 +237,33 @@ std::size_t ParallelExecutor::getWorkerCount() const
 }
 
 //==============================================================================
+void ParallelExecutor::parallelFor(
+    std::size_t count, std::size_t grainSize, const ParallelForRange& function)
+{
+  if (count == 0u) {
+    return;
+  }
+
+  const std::size_t safeGrainSize = std::max<std::size_t>(1u, grainSize);
+  const std::size_t chunkCount = (count + safeGrainSize - 1u) / safeGrainSize;
+  if (chunkCount <= 1u || getWorkerCount() <= 1u) {
+    function(0u, count);
+    return;
+  }
+
+  tf::Taskflow taskflow;
+  for (std::size_t chunk = 0u; chunk < chunkCount; ++chunk) {
+    const std::size_t begin = chunk * safeGrainSize;
+    const std::size_t end = std::min(begin + safeGrainSize, count);
+    if (begin >= end) {
+      continue;
+    }
+    taskflow.emplace([begin, end, &function]() { function(begin, end); });
+  }
+  m_impl->executor->run(taskflow).get();
+}
+
+//==============================================================================
 void ParallelExecutor::setInlineThreshold(std::size_t threshold) noexcept
 {
   m_impl->inlineThreshold = threshold;

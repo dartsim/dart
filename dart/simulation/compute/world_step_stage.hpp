@@ -357,9 +357,10 @@ private:
 /// scalar-generic SoA integrator, and applies the result back to the World. The
 /// world-space dynamics are frame-independent, so the integration runs in flat
 /// SoA order; frame-coupled rigid bodies only require parent-before-child
-/// local-transform bookkeeping after state write-back. This is the experimental
-/// seam through which the later SIMD and device batch paths drive a live World
-/// step.
+/// local-transform bookkeeping after state write-back. This is the
+/// canonical-direction seed for a live World stage; later SIMD and device batch
+/// paths should keep the same Model/State separation without exposing backend
+/// residency details.
 class DART_SIMULATION_API BatchedRigidBodyIntegrationStage final
   : public WorldStepStage
 {

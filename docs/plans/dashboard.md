@@ -67,6 +67,21 @@ its own line so status updates remain git-history friendly.
 - Gate: `check-ai-commands`, `check-docs-policy`, and `sync-ai-commands` cover
   adapter sync, required-reading coverage, and dev-task shape.
 
+### PLAN-121: AI Docs Knowledge Graph Guardrails
+
+- Owner doc:
+  [`121-ai-docs-knowledge-graph.md`](121-ai-docs-knowledge-graph.md)
+- Status: Active
+- Horizon: Now
+- Dimension: AI-native execution
+- Next step: Land the first guardrail wave as pilot-scoped graph-health
+  advisories plus strict low-risk metadata/catalog checks, then watch for one
+  clean cycle before deciding whether any advisory should become blocking.
+- Gate: `pixi run python -m pytest tests/test_check_docs_policy.py`,
+  `pixi run check-docs-policy`, `pixi run check-ai-commands`, and
+  `pixi run lint` prove the local checker, AI adapter sync, and docs formatting
+  surfaces.
+
 ### PLAN-010: Easy-Start API And Package Readiness
 
 - Owner doc: [`../../README.md#quick-start`](../../README.md#quick-start)

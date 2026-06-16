@@ -6185,6 +6185,89 @@ TEST(VariationalIntegration, AvbdPublicArticulatedBreakForceResetReengagesJoint)
   EXPECT_LT((resetTransform.linear() - captured.linear()).norm(), 1e-6);
 }
 
+//==============================================================================
+// PLAN-104 AVBD articulated bridge: the break-force lifecycle must be fully
+// re-armable. After a public articulated point joint breaks, is reset (so it
+// holds again), the application can lower the break force a second time; the
+// next overloaded step must re-break the joint instead of leaving it
+// permanently immune to further breakage.
+TEST(VariationalIntegration, AvbdPublicArticulatedBreakForceReArmsAfterReset)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+  world.setTimeStep(0.005);
+
+  auto robot = world.addMultibody("public_breakable_rearm_facade");
+  auto base = robot.addLink("base");
+  sx::JointSpec floatingSpec;
+  floatingSpec.name = "floating";
+  floatingSpec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, floatingSpec);
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
+
+  Eigen::VectorXd pose(6);
+  pose << 0.1, -0.2, 0.15, 0.0, 0.0, 0.2;
+  body.getParentJoint().setPosition(pose);
+
+  sx::Joint joint = world.addArticulatedFixedJoint("rearm_hold", base, body);
+  joint.setBreakForce(1e-18);
+
+  world.enterSimulationMode();
+  const Eigen::Isometry3d captured = body.getWorldTransform();
+
+  // Phase 1: weak break force + applied force breaks the joint.
+  body.applyForce(4.0 * Eigen::Vector3d::UnitY());
+  world.step();
+  ASSERT_TRUE(joint.isBroken());
+
+  double maxBrokenTranslationError = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    body.applyForce(4.0 * Eigen::Vector3d::UnitY());
+    world.step();
+    maxBrokenTranslationError = std::max(
+        maxBrokenTranslationError,
+        (body.getWorldTransform().translation() - captured.translation())
+            .norm());
+  }
+  ASSERT_GT(maxBrokenTranslationError, 1e-4);
+
+  // Phase 2: reset to the captured pose with a large break force; the joint
+  // re-engages and holds without re-breaking.
+  body.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+  body.getParentJoint().setPosition(pose);
+  joint.setBreakForce(1.0e12);
+  joint.resetBreakage();
+  ASSERT_FALSE(joint.isBroken());
+
+  world.step();
+  ASSERT_FALSE(joint.isBroken());
+  const Eigen::Isometry3d resetTransform = body.getWorldTransform();
+  ASSERT_LT(
+      (resetTransform.translation() - captured.translation()).norm(), 1e-6);
+  ASSERT_LT((resetTransform.linear() - captured.linear()).norm(), 1e-6);
+
+  // Phase 3: re-arm with a weak break force and overload again; the joint must
+  // break a second time.
+  joint.setBreakForce(1e-18);
+  body.applyForce(4.0 * Eigen::Vector3d::UnitY());
+  world.step();
+  EXPECT_TRUE(joint.isBroken());
+
+  double maxReBrokenTranslationError = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    body.applyForce(4.0 * Eigen::Vector3d::UnitY());
+    world.step();
+    maxReBrokenTranslationError = std::max(
+        maxReBrokenTranslationError,
+        (body.getWorldTransform().translation() - captured.translation())
+            .norm());
+  }
+  EXPECT_GT(maxReBrokenTranslationError, 1e-4);
+}
+
 // PLAN-104 AVBD articulated bridge: broken-state bookkeeping must also survive
 // binary save/load while the world is already in simulation mode. The restored
 // public fixed joint remains skipped until reset, then the existing explicit

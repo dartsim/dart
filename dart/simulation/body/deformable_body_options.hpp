@@ -231,8 +231,9 @@ struct DeformableBodyOptions
 /// `World::configureDeformableSolver`. Calling that method opts the body into
 /// the iterative block-coordinate inner solver (the default per-step solver
 /// runs otherwise); these fields tune its iteration budget, acceleration,
-/// damping, parallelism, and static ground-contact response. The fields are
-/// intentionally algorithm-neutral and carry no solver-name vocabulary; the
+/// damping, and static ground-contact response. Parallelism is sourced from the
+/// executor passed to `World::step()`, so the public deformable options stay
+/// algorithm-neutral and carry no backend or worker-ownership vocabulary; the
 /// World step pipeline owns the mapping to a concrete inner solver.
 struct DeformableSolverOptions
 {
@@ -254,11 +255,6 @@ struct DeformableSolverOptions
   /// Stiffness-proportional damping coefficient (0 disables it). Must be
   /// non-negative.
   double stiffnessDamping = 0.0;
-
-  /// Worker threads for the inner solve (1 = serial). With more than one thread
-  /// the deterministic parallel inner solve runs, which does not apply
-  /// acceleration or early termination.
-  unsigned int workerThreads = 1;
 
   /// Penalty stiffness for static ground/obstacle half-space contact (0 lets
   /// the body fall freely past barriers). Must be non-negative.

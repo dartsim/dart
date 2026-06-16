@@ -129,6 +129,7 @@ docs/plans/104-vertex-block-descent-solver/*.json
 
 # AI tool local state
 .omc/
+.omx/
 .sisyphus/
 
 # Benchmark result artifacts

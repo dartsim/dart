@@ -13,6 +13,7 @@
 #include <dart/simulation/comps/dynamics.hpp>
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/rigid_body_constraint.hpp>
 #include <dart/simulation/compute/unified_constraint.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
@@ -1407,6 +1408,38 @@ TEST(UnifiedConstraint, SolvesIndependentIslandsWithLocalFindex)
   EXPECT_DOUBLE_EQ(solution.lambda[3], 2.0);
   EXPECT_DOUBLE_EQ(solution.lambda[4], -0.5);
   EXPECT_DOUBLE_EQ(solution.lambda[5], 0.5);
+}
+
+//==============================================================================
+TEST(UnifiedConstraint, ExecutorParallelIslandSolveMatchesSequential)
+{
+  sx::compute::UnifiedConstraintProblem problem;
+  problem.delassus = Eigen::MatrixXd::Identity(6, 6);
+  problem.rhs.resize(6);
+  problem.rhs << 1.0, 2.0, -2.0, 2.0, -3.0, 3.0;
+  problem.lo.resize(6);
+  problem.lo << 0.0, -0.5, -0.5, 0.0, -0.25, -0.25;
+  problem.hi.resize(6);
+  problem.hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.25, 0.25;
+  problem.findex.resize(6);
+  problem.findex << -1, 0, 0, -1, 3, 3;
+
+  sx::compute::UnifiedConstraintSolveScratch sequentialScratch;
+  ASSERT_TRUE(
+      sx::compute::solveUnifiedConstraintProblemInto(
+          problem, sequentialScratch));
+
+  sx::compute::ParallelExecutor executor(2);
+  sx::compute::UnifiedConstraintSolveScratch parallelScratch;
+  ASSERT_TRUE(
+      sx::compute::solveUnifiedConstraintProblemInto(
+          problem, parallelScratch, executor));
+
+  ASSERT_EQ(parallelScratch.lambda.size(), sequentialScratch.lambda.size());
+  for (Eigen::Index i = 0; i < sequentialScratch.lambda.size(); ++i) {
+    EXPECT_DOUBLE_EQ(parallelScratch.lambda[i], sequentialScratch.lambda[i]);
+  }
 }
 
 //==============================================================================

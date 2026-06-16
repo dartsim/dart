@@ -2702,7 +2702,6 @@ void defSimulationModule(nb::module_& m)
           &sim::DeformableSolverOptions::accelerationSpectralRadius)
       .def_rw(
           "stiffness_damping", &sim::DeformableSolverOptions::stiffnessDamping)
-      .def_rw("worker_threads", &sim::DeformableSolverOptions::workerThreads)
       .def_rw(
           "ground_contact_stiffness",
           &sim::DeformableSolverOptions::groundContactStiffness);

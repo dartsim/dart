@@ -17,9 +17,11 @@ issue, not an AVBD one. The remaining `World.BakedDynamicRigidIpcStepsDoNotGrowW
 profile-build allocator gate is likewise a pre-existing rigid-IPC issue outside
 AVBD scope.
 
-The active local follow-up is unpublished branch
-`avbd/box-contact-feature-id-coverage`, based on merged `main` at
-`356384967f8`, carrying a single `test_avbd_rigid_block` regression. Do not push,
+PR #3018 (box edge/vertex contact feature-ID coverage) is also MERGED to `main`
+at `6bf7b2e8336`. The active local follow-up is unpublished branch
+`avbd/bounded-regression-coverage`, based on merged `main`, bundling three more
+mutation-verified non-perf regression tests (tangent-basis contract, articulated
+break re-arm lifecycle, row-inventory replaced-key cold-start). Do not push,
 open a PR, resolve review threads, comment, retrigger reviews, or mutate CI
 without explicit maintainer approval.
 
@@ -28,7 +30,42 @@ Earlier checkpoint: PR #2991 (branch `avbd/source-row-extraction-precheck` into
 coverage and contact-precheck work, the CI-fix commits, the AVBD contact-config
 guard follow-up, and handoff-doc refreshes.
 
-Latest local slice: new branch `avbd/box-contact-feature-id-coverage` adds
+Latest local slice: branch `avbd/bounded-regression-coverage` bundles three
+mutation-verified, non-perf regression guards selected by a coverage scout, each
+in its own test file with a clean revert and no production code change:
+
+- `AvbdRigidBlock.RigidContactTangentBasisIsOrthonormalAndRightHanded` and
+  `...FallsBackForDegenerateNormals` (in `test_avbd_rigid_block.cpp`) pin the
+  `avbdRigidContactTangentBasis` contract — unit-norm, mutually orthogonal,
+  normal-orthogonal, right-handed (`col0 x col1 == normal`) columns — plus the
+  zero/NaN `UnitX` degenerate fallback that was previously only used
+  self-referentially inside larger friction tests. Mutation: flipping the col1
+  cross product failed both new tests; control
+  `RigidContactManifoldFrictionProjectsWarmStartedDualAcrossTangentBasis` stayed
+  green.
+- `VariationalIntegration.AvbdPublicArticulatedBreakForceReArmsAfterReset` (in
+  `test_variational_integration.cpp`) covers the break -> reset -> break-again
+  re-arm lifecycle no prior test exercised (existing reset tests only re-engage
+  with a strong break force). Mutation: making `Joint::resetBreakage()` leave
+  `broken=true` failed the new test; control
+  `AvbdPublicArticulatedBreakForceMarksJointBrokenAndSkipsLaterSteps` stayed
+  green. (Note: the re-arm phase shares the break/reset code path, so no mutation
+  isolates phase 3 alone; the test still uniquely guards the re-arm lifecycle.)
+- `AvbdConstraint.RowInventoryColdStartsReplacedKeyAtConstantCount` (in
+  `test_avbd_constraint.cpp`) guards warm-start aliasing: when the active-row
+  count is unchanged but one key is replaced, the survivor warm-starts and the
+  new key cold-starts instead of inheriting the dropped sibling's stale
+  lambda/stiffness. Mutation: dropping the exact-key guard in
+  `findInSorted` failed the new test; control
+  `RowInventoryWarmStartsOutOfOrderPreviousRows` stayed green.
+
+Validation: the three targets rebuilt, all new tests passed, full suites passed
+(test_avbd_rigid_block 109, test_variational_integration 179 with 1 pre-existing
+disabled, test_avbd_constraint 12), all three mutation checks were decisive with
+clean reverts (no production diff), and `pixi run lint` passed. This slice does
+not refresh a tracked packet, close a CPU/GPU gate, or claim parity.
+
+Previous local slice: branch `avbd/box-contact-feature-id-coverage` adds
 `AvbdRigidBlock.RigidWorldContactSnapshotUsesBoxEdgeAndVertexFeatureIds` to
 `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`. It feeds three
 contacts onto a unit-cube box endpoint whose body-local points are strictly
