@@ -3926,14 +3926,33 @@ bool Skeleton::hasExternalDisturbance() const
   // and defeat sleeping.
   const double tolerance = 1e-9;
 
+  // getExternalForces() returns a cached const reference (no allocation).
   if (getExternalForces().cwiseAbs().maxCoeff() > tolerance)
     return true;
 
-  if (getForces().cwiseAbs().maxCoeff() > tolerance)
-    return true;
-
-  if (getCommands().cwiseAbs().maxCoeff() > tolerance)
-    return true;
+  // Scan generalized forces and commands per-DOF instead of materializing
+  // getForces()/getCommands(): each returns an Eigen::VectorXd by value (a heap
+  // allocation) and this runs per mobile skeleton every step. getForces()[i] is
+  // exactly getDof(i)->getForce() (MetaSkeleton::getValuesFromAllDofs), and
+  // `|x| > tol` is `x > tol || x < -tol`, so the disturbance decision is
+  // identical -- just without the temporaries.
+  const std::size_t nDofs = getNumDofs();
+  for (std::size_t i = 0; i < nDofs; ++i) {
+    const DegreeOfFreedom* dof = getDof(i);
+    if (!dof)
+      continue;
+    const double f = dof->getForce();
+    if (f > tolerance || f < -tolerance)
+      return true;
+  }
+  for (std::size_t i = 0; i < nDofs; ++i) {
+    const DegreeOfFreedom* dof = getDof(i);
+    if (!dof)
+      continue;
+    const double c = dof->getCommand();
+    if (c > tolerance || c < -tolerance)
+      return true;
+  }
 
   return false;
 }
