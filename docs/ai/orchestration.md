@@ -1,3 +1,8 @@
+---
+type: ai-operating-model
+owner: self
+---
+
 # Orchestrator / Executor Operating Model
 
 This file owns DART's two-role AI operating model and the work-packet

@@ -245,6 +245,24 @@ Plan discussions can be exploratory. Plan edits should leave the files in a
 state where the next agent can immediately tell what changed, why it changed,
 and what to do next.
 
+## Decision Needed Blocks
+
+When consequential ambiguity blocks roadmap or owner-doc work, record the
+decision locally instead of creating a global queue. Use this compact block in
+the owning plan, design doc, or onboarding doc:
+
+```markdown
+> **Decision needed:** <question>
+> **Choices:** <option A>; <option B>; <option C if needed>
+> **Current default:** <what agents should assume until decided>
+> **Evidence needed:** <repo evidence, maintainer input, CI/benchmark result>
+> **Unblocks:** <plan packet, owner-doc update, or implementation path>
+```
+
+Keep these blocks for live ambiguity only. Once the decision is made, replace
+the block with the decision and rationale in the owner doc, then update the
+dashboard if plan state changes.
+
 ## Structural Checks
 
 The living plan system relies on repository checks instead of manual memory:

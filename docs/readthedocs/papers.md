@@ -1256,6 +1256,159 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
 | `ppf-contact-solver` | ZOZO's Contact Solver                     | GPU shell/solid/rod contact stack and API/platform baseline (`ando-2024-cubic-barrier`) | referenced | baseline  |
 | `dojo`               | Dojo.jl                                   | Dojo-style differentiable rigid-body solver evaluation (`howell-2022-dojo`)             | referenced | evaluate  |
 
+### `drake`
+
+Drake `MultibodyPlant`. <https://drake.mit.edu/doxygen_cxx/group__multibody__plant.html>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** terminology and stepping comparisons in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md) and
+  [`simulation_python_api.md`](../design/simulation_python_api.md).
+- **Notes:** Mature robotics-dynamics baseline for multibody terminology,
+  constraint vocabulary, and stepping API shape. DART borrows field-standard
+  terms where they match the literature, not Drake-specific API names.
+
+### `pinocchio`
+
+Pinocchio. <https://github.com/stack-of-tasks/pinocchio>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** terminology comparisons in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Baseline for robotics dynamics algorithms and the
+  Spherical/FreeFlyer naming comparison. DART uses the terminology evidence
+  without adopting Pinocchio's API topology.
+
+### `rbdl`
+
+Rigid Body Dynamics Library. <https://github.com/rbdl/rbdl>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** dynamics and terminology comparisons in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Baseline for ABA/RNEA/CRBA-style dynamics algorithms and
+  FloatingBase/Helical terminology. DART keeps DART-owned public API names.
+
+### `mujoco`
+
+MuJoCo / MJX. <https://mujoco.readthedocs.io/>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** stepping, state vocabulary, and equality-constraint
+  comparisons in [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Baseline for compact simulation state, model/data separation, and
+  equality-constraint vocabulary. DART compares behavior and API shape without
+  copying MuJoCo-specific names.
+
+### `physx-isaac`
+
+NVIDIA PhysX / Isaac Sim / Isaac Lab. <https://nvidia-omniverse.github.io/PhysX/>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** reference
+- **Where used:** articulation and closed-loop rigging comparison in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Useful reference for production articulation concepts and
+  tool-facing rigging, but DART avoids engine-specific names such as
+  "Articulation" when robotics literature has clearer terms.
+
+### `newton`
+
+NVIDIA Newton. <https://github.com/newton-physics/newton>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** reference
+- **Where used:** model/solver split and GPU-direction comparisons in
+  [`simulation_solver_architecture.md`](../design/simulation_solver_architecture.md).
+- **Notes:** Reference for GPU-oriented model/solver separation and batched
+  execution ideas. DART treats it as design evidence, not a dependency.
+
+### `genesis`
+
+Genesis. <https://github.com/Genesis-Embodied-AI/Genesis>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** reference
+- **Where used:** entity/morph and batched-simulation comparisons in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Reference for high-level scene/entity modeling and batched
+  simulation. DART keeps its own model/component vocabulary.
+
+### `bullet`
+
+Bullet / PyBullet. <https://github.com/bulletphysics/bullet3>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** reference
+- **Where used:** facade-over-engine and rigid-body terminology comparisons in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** Reference for a facade layered over multiple engine paths and for
+  `btMultiBody` terminology. DART keeps "RigidBody" as a public term while
+  preserving DART-owned API structure.
+
+### `gazebo`
+
+Gazebo / gz-physics / SDFormat. <https://gazebosim.org/>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** downstream integration and kinematic-loop evidence in
+  [`simulation_cpp_api.md`](../design/simulation_cpp_api.md).
+- **Notes:** DART's primary downstream integration baseline. SDFormat and
+  gz-physics needs stay important compatibility evidence for model loading and
+  kinematic-loop support.
+
+### `gaia`
+
+Gaia VBD research framework. <https://github.com/AnkaChan/Gaia>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** VBD correctness and performance comparison under
+  [`PLAN-104`](../plans/104-vertex-block-descent-solver.md).
+- **Notes:** Reference implementation for `chen-2024-vbd` and related VBD
+  work. DART compares against it but reimplements VBD independently.
+
+### `tinyvbd`
+
+TinyVBD. <https://github.com/AnkaChan/TinyVBD>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** minimal VBD algorithm comparison under
+  [`PLAN-104`](../plans/104-vertex-block-descent-solver.md).
+- **Notes:** Minimal reference for the VBD update structure. It is useful for
+  source audit and small-scene comparison, not as vendored runtime code.
+
+### `kaolin-simplicits`
+
+NVIDIA Kaolin `kaolin.physics.simplicits`.
+<https://kaolin.readthedocs.io/en/latest/notes/simplicits.html>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** Simplicits method/API/code comparison under
+  [`PLAN-105`](../plans/105-simplicits-geometry-agnostic-elastic-solver.md).
+- **Notes:** Public implementation and tutorial baseline for
+  `modi-2024-simplicits`. DART should compare tests, demos, and benchmarks
+  without making Kaolin, Warp, Torch, or notebook infrastructure dependencies.
+
+### `ppf-contact-solver`
+
+ZOZO's Contact Solver. <https://github.com/st-tech/ppf-contact-solver>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
+- **Where used:** GPU contact-stack comparison under
+  [`PLAN-083`](../plans/083-unified-newton-barrier-multibody.md).
+- **Notes:** Independent Apache-2.0 software stack around
+  `ando-2024-cubic-barrier`. DART should use it for API, diagnostics,
+  precision, examples, and GPU-performance lessons without exposing
+  PPF/ZOZO/frontend-specific concepts through public APIs.
+
+### `dojo`
+
+Dojo.jl. <https://github.com/dojo-sim/Dojo.jl>
+
+- **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** evaluate
+- **Where used:** differentiable solver comparison under
+  [`PLAN-110`](../plans/110-differentiable-simulation.md).
+- **Notes:** Julia implementation and paper/site reference for a
+  differentiable maximal-coordinate variational hard-contact solver. DART uses
+  it as method evidence for a possible second solver family after the active
+  Nimble-style path is de-risked.
+
 ### Notes on engine verdicts
 
 - **`drake`, `pinocchio`, `rbdl`, `mujoco`, `gazebo` — baseline:** mature

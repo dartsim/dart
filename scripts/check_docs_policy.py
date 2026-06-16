@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -53,15 +55,83 @@ DASHBOARD_REQUIRED_FIELDS = (
 )
 DASHBOARD_STATUS_VALUES = {"Proposed", "Active", "Blocked", "Complete", "Parked"}
 DASHBOARD_HORIZON_VALUES = {"Now", "Next", "Later", "Parked"}
+DOCS_AI_FRONTMATTER_FILES = {
+    "README.md",
+    "components.md",
+    "north-star.md",
+    "orchestration.md",
+    "principles.md",
+    "sessions.md",
+    "verification.md",
+    "workflows.md",
+}
+DOCS_AI_FRONTMATTER_KEYS = {"type", "owner"}
+DISCOVERABILITY_INDEXES = {
+    "docs/ai": "docs/ai/README.md",
+}
+MARKDOWN_LINK_ADVISORY_PATTERNS = (
+    ":(glob)docs/*.md",
+    ":(glob)docs/ai/*.md",
+    "docs/plans/121-ai-docs-knowledge-graph.md",
+    "docs/readthedocs/papers.md",
+)
+NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
+    r"<!--\s*docs-policy:\s*evidence-last-verified=(?P<date>\d{4}-\d{2}-\d{2})\s*-->"
+)
+PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
+MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
-    files: list[Path] = []
-    for path in repo_root.rglob("*.md"):
-        if any(part in SKIP_DIRS for part in path.parts):
+    return iter_tracked_files(repo_root, ["*.md"])
+
+
+def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
+    """Return git-tracked files for the requested pathspecs.
+
+    The fallback keeps unit tests and source archives usable outside a git
+    checkout, while the normal path avoids linting ignored local research notes.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+                *patterns,
+            ],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except OSError, subprocess.CalledProcessError:
+        files: list[Path] = []
+        for pattern in patterns:
+            fallback_pattern = pattern.removeprefix(":(glob)")
+            for path in repo_root.glob(fallback_pattern):
+                if any(part in SKIP_DIRS for part in path.parts):
+                    continue
+                files.append(path)
+        return sorted(set(files))
+
+    files = []
+    for line in result.stdout.splitlines():
+        if not line:
             continue
-        files.append(path)
+        path = repo_root / line
+        if path.exists():
+            files.append(path)
     return sorted(files)
+
+
+def _display_path(path: Path, repo_root: Path) -> str:
+    try:
+        return str(path.relative_to(repo_root))
+    except ValueError:
+        return str(path)
 
 
 def check_file(path: Path, repo_root: Path) -> list[str]:
@@ -174,7 +244,20 @@ def _normalize_plan_owner(owner: str) -> str:
 
 
 def _is_external_link(link: str) -> bool:
-    return "://" in link or link.startswith("mailto:")
+    return "://" in link or link.startswith(("mailto:", "tel:"))
+
+
+def _strip_markdown_link_target(link: str) -> str:
+    target = link.strip()
+    if target.startswith("<") and ">" in target:
+        return target[1 : target.index(">")]
+    return target.split(None, maxsplit=1)[0] if target else ""
+
+
+def _normalize_markdown_link(link: str) -> str:
+    target = _strip_markdown_link_target(link)
+    target = target.split("?", maxsplit=1)[0]
+    return target.split("#", maxsplit=1)[0].strip()
 
 
 def _resolve_dashboard_owner(
@@ -206,15 +289,47 @@ def _direct_numbered_plan_file(owner_path: Path, plans_dir: Path) -> str | None:
     return None
 
 
-def _resolve_markdown_link(link: str, base_dir: Path) -> Path | None:
-    target = _normalize_plan_owner(link)
+def _resolve_markdown_link(
+    link: str,
+    base_dir: Path,
+    repo_root: Path | None = None,
+    current_file: Path | None = None,
+) -> Path | None:
+    target = _normalize_markdown_link(link)
+    raw_target = _strip_markdown_link_target(link)
+    if raw_target.startswith("#"):
+        return current_file.resolve() if current_file else base_dir.resolve()
     if not target or _is_external_link(target):
         return None
+
+    if target.startswith("/"):
+        if repo_root is None:
+            return Path(target).resolve()
+        return (repo_root / target.lstrip("/")).resolve()
 
     target_path = Path(target)
     if target_path.is_absolute():
         return target_path.resolve()
+    if repo_root is not None and target_path.parts[:1] in {
+        ("docs",),
+        ("scripts",),
+        ("tests",),
+        ("dart",),
+        ("python",),
+        ("examples",),
+        ("tutorials",),
+        (".github",),
+    }:
+        return (repo_root / target_path).resolve()
     return (base_dir / target_path).resolve()
+
+
+def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
+    links: list[tuple[int, str]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        for match in MARKDOWN_LINK_RE.finditer(line):
+            links.append((line_number, match.group("link")))
+    return links
 
 
 def check_plan_id_uniqueness(entries: list[dict[str, str]]) -> list[str]:
@@ -372,15 +487,544 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_markdown_internal_links(repo_root: Path) -> list[str]:
+    """Report broken internal links in tracked pilot markdown docs.
+
+    This is intentionally advisory and pilot-scoped for the first rollout: it
+    catches regressions in the new AI-graph guardrail surfaces without making
+    the existing repository-wide link inventory noisy on every policy run.
+    Fragments are normalized to their owning file; heading anchors are not
+    validated yet.
+    """
+    warnings: list[str] = []
+    for path in iter_tracked_files(repo_root, list(MARKDOWN_LINK_ADVISORY_PATTERNS)):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for line_number, raw_link in _iter_markdown_links(text):
+            target = _strip_markdown_link_target(raw_link)
+            if not target or _is_external_link(target):
+                continue
+            resolved = _resolve_markdown_link(
+                raw_link,
+                path.parent,
+                repo_root=repo_root,
+                current_file=path,
+            )
+            if resolved is None:
+                continue
+            try:
+                resolved.relative_to(repo_root.resolve())
+            except ValueError:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: internal link "
+                    f"escapes repository: `{raw_link}`"
+                )
+                continue
+            if not resolved.exists():
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: broken internal "
+                    f"link `{raw_link}` -> `{_display_path(resolved, repo_root)}`"
+                )
+    return warnings
+
+
+def check_docs_discoverability(repo_root: Path) -> list[str]:
+    """Report owner-index discoverability gaps for conservative pilot buckets."""
+    warnings: list[str] = []
+    for directory, index in DISCOVERABILITY_INDEXES.items():
+        docs_dir = repo_root / directory
+        index_path = repo_root / index
+        if not docs_dir.exists() or not index_path.exists():
+            continue
+
+        index_text = index_path.read_text(encoding="utf-8", errors="replace")
+        linked_targets: set[Path] = set()
+        for _, raw_link in _iter_markdown_links(index_text):
+            resolved = _resolve_markdown_link(
+                raw_link,
+                index_path.parent,
+                repo_root=repo_root,
+                current_file=index_path,
+            )
+            if resolved:
+                linked_targets.add(resolved)
+
+        for doc in sorted(docs_dir.glob("*.md")):
+            if doc.name in {"README.md"}:
+                continue
+            repo_relative = str(doc.relative_to(repo_root))
+            text_mentions_doc = repo_relative in index_text or doc.name in index_text
+            if doc.resolve() not in linked_targets and not text_mentions_doc:
+                warnings.append(
+                    f"{doc.relative_to(repo_root)}: not linked from `{index}`"
+                )
+    return warnings
+
+
+def _parse_frontmatter(text: str) -> dict[str, str]:
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    if not match:
+        return {}
+
+    frontmatter: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        key_value = re.match(r"^([A-Za-z0-9_-]+):\s*(.+)$", line)
+        if key_value:
+            frontmatter[key_value.group(1)] = _normalize_frontmatter_value(
+                key_value.group(2).strip()
+            )
+    return frontmatter
+
+
+def _normalize_frontmatter_value(value: str) -> str:
+    """Normalize the single-line YAML scalars used in DART frontmatter."""
+    if len(value) < 2:
+        return value
+    if value[0] == '"' and value[-1] == '"':
+        try:
+            return str(json.loads(value))
+        except json.JSONDecodeError:
+            return value[1:-1]
+    if value[0] == "'" and value[-1] == "'":
+        return value[1:-1].replace("''", "'")
+    return value
+
+
+def check_ai_doc_frontmatter(repo_root: Path) -> list[str]:
+    """Enforce the narrow docs/ai frontmatter pilot."""
+    failures: list[str] = []
+    ai_dir = repo_root / "docs" / "ai"
+    actual_docs = (
+        {path.name for path in ai_dir.glob("*.md")} if ai_dir.exists() else set()
+    )
+    for filename in sorted(actual_docs - DOCS_AI_FRONTMATTER_FILES):
+        failures.append(
+            f"docs/ai/{filename}: docs/ai frontmatter pilot roster is missing "
+            "this Markdown file"
+        )
+    for filename in sorted(DOCS_AI_FRONTMATTER_FILES):
+        path = ai_dir / filename
+        rel_path = path.relative_to(repo_root)
+        if not path.exists():
+            failures.append(f"{rel_path}: missing required AI policy document")
+            continue
+
+        frontmatter = _parse_frontmatter(
+            path.read_text(encoding="utf-8", errors="replace")
+        )
+        if not frontmatter:
+            failures.append(f"{rel_path}: missing required docs/ai frontmatter")
+            continue
+
+        for key in DOCS_AI_FRONTMATTER_KEYS:
+            if not frontmatter.get(key):
+                failures.append(f"{rel_path}: missing frontmatter field `{key}`")
+
+        unknown_keys = set(frontmatter) - DOCS_AI_FRONTMATTER_KEYS
+        if unknown_keys:
+            failures.append(
+                f"{rel_path}: unsupported docs/ai frontmatter field(s): "
+                + ", ".join(f"`{key}`" for key in sorted(unknown_keys))
+            )
+
+        owner = frontmatter.get("owner", "")
+        if owner and owner != "self":
+            owner_path = _resolve_markdown_link(owner, path.parent, repo_root=repo_root)
+            if owner_path is None or not owner_path.exists():
+                failures.append(
+                    f"{rel_path}: frontmatter owner does not resolve: `{owner}`"
+                )
+
+    return failures
+
+
+def _line_number_for_offset(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset) + 1
+
+
+def _parse_markdown_tables(text: str) -> list[tuple[int, list[str], list[list[str]]]]:
+    lines = text.splitlines()
+    tables: list[tuple[int, list[str], list[list[str]]]] = []
+    index = 0
+    while index + 1 < len(lines):
+        header = lines[index]
+        divider = lines[index + 1]
+        if not (header.startswith("|") and divider.startswith("|")):
+            index += 1
+            continue
+        if not re.match(r"^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$", divider):
+            index += 1
+            continue
+
+        headers = [cell.strip() for cell in header.strip("|").split("|")]
+        rows: list[list[str]] = []
+        row_index = index + 2
+        while row_index < len(lines) and lines[row_index].startswith("|"):
+            rows.append(
+                [cell.strip() for cell in lines[row_index].strip("|").split("|")]
+            )
+            row_index += 1
+        tables.append((index + 1, headers, rows))
+        index = row_index
+    return tables
+
+
+def _strip_code_ticks(value: str) -> str:
+    value = value.strip()
+    if value.startswith("`") and value.endswith("`"):
+        return value[1:-1]
+    return value
+
+
+def _strip_markdown_cell_markup(value: str) -> str:
+    return re.sub(r"[*_`]", "", value).strip()
+
+
+def _parse_papers_property_values(text: str) -> dict[str, set[str]]:
+    values_by_property: dict[str, set[str]] = {}
+    for _, headers, rows in _parse_markdown_tables(text):
+        if "Property" not in headers or "Values" not in headers:
+            continue
+        for row in rows:
+            if len(row) != len(headers):
+                continue
+            row_data = dict(zip(headers, row, strict=True))
+            property_name = _strip_markdown_cell_markup(row_data["Property"])
+            values = set(re.findall(r"`([^`]+)`", row_data.get("Values", "")))
+            if values:
+                values_by_property[property_name] = values
+    return values_by_property
+
+
+def check_papers_catalog(repo_root: Path) -> list[str]:
+    """Validate the papers catalog shape without generating a second source."""
+    failures: list[str] = []
+    path = repo_root / "docs" / "readthedocs" / "papers.md"
+    if not path.exists():
+        return failures
+
+    text = path.read_text(encoding="utf-8", errors="replace")
+    allowed_values_by_field = _parse_papers_property_values(text)
+    for field in PAPERS_CLOSED_VALUE_FIELDS:
+        if not allowed_values_by_field.get(field):
+            failures.append(
+                "docs/readthedocs/papers.md: property legend is missing "
+                f"closed values for `{field}`"
+            )
+
+    summary_entries: dict[str, dict[str, str]] = {}
+    for table_line, headers, rows in _parse_markdown_tables(text):
+        if "ID" not in headers:
+            continue
+        for row_offset, row in enumerate(rows, start=2):
+            if len(row) != len(headers):
+                failures.append(
+                    f"docs/readthedocs/papers.md:{table_line + row_offset}: "
+                    "summary table row has the wrong number of cells"
+                )
+                continue
+            row_data = dict(zip(headers, row, strict=True))
+            entry_id = _strip_code_ticks(row_data["ID"])
+            if not entry_id:
+                continue
+            if entry_id in summary_entries:
+                failures.append(
+                    "docs/readthedocs/papers.md: duplicate summary entry "
+                    f"`{entry_id}`"
+                )
+            else:
+                summary_entries[entry_id] = {
+                    "Status": _strip_code_ticks(row_data.get("Status", "")),
+                    "Priority": _strip_code_ticks(row_data.get("Priority", "")),
+                    "Verdict": _strip_code_ticks(row_data.get("Verdict", "")),
+                }
+            _validate_papers_table_value(
+                failures,
+                table_line + row_offset,
+                entry_id,
+                "Status",
+                row_data.get("Status", ""),
+                allowed_values_by_field.get("Status", set()),
+            )
+            _validate_papers_table_value(
+                failures,
+                table_line + row_offset,
+                entry_id,
+                "Priority",
+                row_data.get("Priority", ""),
+                allowed_values_by_field.get("Priority", set()),
+            )
+            _validate_papers_table_value(
+                failures,
+                table_line + row_offset,
+                entry_id,
+                "Verdict",
+                row_data.get("Verdict", ""),
+                allowed_values_by_field.get("Verdict", set()),
+            )
+
+    detail_matches = list(re.finditer(r"^### `(?P<id>[^`]+)`\s*$", text, re.MULTILINE))
+    detail_ids: set[str] = set()
+    for index, match in enumerate(detail_matches):
+        entry_id = match.group("id")
+        if entry_id in detail_ids:
+            failures.append(
+                f"docs/readthedocs/papers.md:{_line_number_for_offset(text, match.start())}: "
+                f"duplicate detail entry `{entry_id}`"
+            )
+        detail_ids.add(entry_id)
+        next_start = (
+            detail_matches[index + 1].start()
+            if index + 1 < len(detail_matches)
+            else len(text)
+        )
+        next_section = re.search(r"^## ", text[match.end() :], re.MULTILINE)
+        if next_section:
+            next_start = min(next_start, match.end() + next_section.start())
+        block = text[match.end() : next_start]
+        line_number = _line_number_for_offset(text, match.start())
+        detail_fields = _validate_papers_detail_block(
+            failures,
+            repo_root,
+            path,
+            text,
+            block,
+            entry_id,
+            line_number,
+            allowed_values_by_field,
+        )
+        if detail_fields and entry_id in summary_entries:
+            _validate_papers_summary_detail_parity(
+                failures,
+                line_number,
+                entry_id,
+                summary_entries[entry_id],
+                detail_fields,
+            )
+
+    summary_ids = set(summary_entries)
+    for entry_id in sorted(summary_ids - detail_ids):
+        failures.append(
+            f"docs/readthedocs/papers.md: summary entry `{entry_id}` has no detail block"
+        )
+    for entry_id in sorted(detail_ids - summary_ids):
+        failures.append(
+            f"docs/readthedocs/papers.md: detail entry `{entry_id}` has no summary row"
+        )
+
+    return failures
+
+
+def _validate_papers_table_value(
+    failures: list[str],
+    line_number: int,
+    entry_id: str,
+    field: str,
+    value: str,
+    allowed_values: set[str],
+) -> None:
+    if not value:
+        return
+    normalized = _strip_code_ticks(value)
+    if allowed_values and normalized not in allowed_values:
+        failures.append(
+            f"docs/readthedocs/papers.md:{line_number}: `{entry_id}` has invalid "
+            f"{field} `{normalized}`"
+        )
+
+
+def _validate_papers_detail_block(
+    failures: list[str],
+    repo_root: Path,
+    path: Path,
+    full_text: str,
+    block: str,
+    entry_id: str,
+    heading_line: int,
+    allowed_values_by_field: dict[str, set[str]],
+) -> dict[str, str] | None:
+    property_match = re.search(
+        r"- \*\*Type:\*\*\s*(?P<type>[^·\n]+)"
+        r"\s*·\s*\*\*Topic:\*\*\s*(?P<topic>[^·\n]+)"
+        r"\s*·\s*\*\*Status:\*\*\s*(?P<status>[^·\n]+)"
+        r"\s*·\s*\*\*Priority:\*\*\s*(?P<priority>[^·\n]+)"
+        r"\s*·\s*\*\*Verdict:\*\*\s*(?P<verdict>[^\n]+)",
+        block,
+    )
+    if not property_match:
+        failures.append(
+            f"docs/readthedocs/papers.md:{heading_line}: detail entry `{entry_id}` "
+            "is missing the Type/Topic/Status/Priority/Verdict property line"
+        )
+        return None
+
+    field_values = {
+        "Type": (
+            _strip_code_ticks(property_match.group("type").strip()),
+            allowed_values_by_field.get("Type", set()),
+        ),
+        "Status": (
+            _strip_code_ticks(property_match.group("status").strip()),
+            allowed_values_by_field.get("Status", set()),
+        ),
+        "Priority": (
+            _strip_code_ticks(property_match.group("priority").strip()),
+            allowed_values_by_field.get("Priority", set()),
+        ),
+        "Verdict": (
+            _strip_code_ticks(property_match.group("verdict").strip()),
+            allowed_values_by_field.get("Verdict", set()),
+        ),
+    }
+    property_line = heading_line + block[: property_match.start()].count("\n") + 1
+    for field, (value, allowed_values) in field_values.items():
+        if allowed_values and value not in allowed_values:
+            failures.append(
+                f"docs/readthedocs/papers.md:{property_line}: `{entry_id}` has "
+                f"invalid {field} `{value}`"
+            )
+
+    block_offset = full_text.find(block)
+    for relative_line, raw_link in _iter_markdown_links(block):
+        target = _strip_markdown_link_target(raw_link)
+        if not target or _is_external_link(target):
+            continue
+        resolved = _resolve_markdown_link(
+            raw_link,
+            path.parent,
+            repo_root=repo_root,
+            current_file=path,
+        )
+        if resolved is None:
+            continue
+        if not resolved.exists():
+            line_number = (
+                _line_number_for_offset(full_text, block_offset) + relative_line - 1
+            )
+            failures.append(
+                f"docs/readthedocs/papers.md:{line_number}: `{entry_id}` has "
+                f"broken local link `{raw_link}`"
+            )
+    return {field: value for field, (value, _) in field_values.items()}
+
+
+def _validate_papers_summary_detail_parity(
+    failures: list[str],
+    line_number: int,
+    entry_id: str,
+    summary_fields: dict[str, str],
+    detail_fields: dict[str, str],
+) -> None:
+    for field in ("Status", "Priority", "Verdict"):
+        summary_value = summary_fields.get(field, "")
+        detail_value = detail_fields.get(field, "")
+        if summary_value and detail_value and summary_value != detail_value:
+            failures.append(
+                f"docs/readthedocs/papers.md:{line_number}: `{entry_id}` has "
+                f"mismatched {field}: summary `{summary_value}`, detail "
+                f"`{detail_value}`"
+            )
+
+
+def check_north_star_evidence_freshness(repo_root: Path) -> list[str]:
+    """Report committed evidence paths newer than the verification marker."""
+    path = repo_root / "docs" / "ai" / "north-star.md"
+    if not path.exists():
+        return []
+
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marker = NORTH_STAR_FRESHNESS_MARKER_RE.search(text)
+    if not marker:
+        return [
+            "docs/ai/north-star.md: missing advisory evidence freshness marker "
+            "`<!-- docs-policy: evidence-last-verified=YYYY-MM-DD -->`"
+        ]
+    last_verified = marker.group("date")
+
+    current_state = re.search(
+        r"## Current State(?P<body>.*?)(?=^## What Is Missing|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if not current_state:
+        return []
+
+    warnings: list[str] = []
+    candidates = _extract_repo_path_candidates(current_state.group("body"))
+    for candidate in sorted(candidates):
+        candidate_path = repo_root / candidate
+        if not candidate_path.exists():
+            continue
+        last_commit_date = _git_last_commit_date(repo_root, candidate)
+        if last_commit_date and last_commit_date > last_verified:
+            warnings.append(
+                "docs/ai/north-star.md: evidence path "
+                f"`{candidate}` changed on {last_commit_date}, newer than "
+                f"evidence-last-verified={last_verified}"
+            )
+    return warnings
+
+
+def _extract_repo_path_candidates(text: str) -> set[str]:
+    candidates: set[str] = set()
+    path_re = re.compile(
+        r"(?<![\w/.-])"
+        r"(?P<path>"
+        r"(?:docs|dart|python|scripts|tests|examples|tutorials|\.github)"
+        r"/[A-Za-z0-9_./*-]+"
+        r"|README\.md|CHANGELOG\.md|AGENTS\.md|pixi\.toml"
+        r")"
+    )
+    for match in path_re.finditer(text):
+        candidate = match.group("path").rstrip(".,;:)")
+        if "*" not in candidate:
+            candidates.add(candidate)
+    return candidates
+
+
+def _git_last_commit_date(repo_root: Path, repo_relative_path: str) -> str | None:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "log",
+                "-1",
+                "--date=short",
+                "--format=%ad",
+                "--",
+                repo_relative_path,
+            ],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except OSError, subprocess.CalledProcessError:
+        return None
+    return result.stdout.strip() or None
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
+    warnings: list[str] = []
     for path in iter_markdown_files(repo_root):
         failures.extend(check_file(path, repo_root))
     failures.extend(check_docs_indexes(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
     failures.extend(check_plan_lifecycle(repo_root))
     failures.extend(check_design_docs_index(repo_root))
+    failures.extend(check_ai_doc_frontmatter(repo_root))
+    failures.extend(check_papers_catalog(repo_root))
+    warnings.extend(check_markdown_internal_links(repo_root))
+    warnings.extend(check_docs_discoverability(repo_root))
+    warnings.extend(check_north_star_evidence_freshness(repo_root))
+
+    if warnings:
+        print("Documentation policy advisories:", file=sys.stderr)
+        for warning in warnings:
+            print(f"  - {warning}", file=sys.stderr)
 
     if not failures:
         return 0

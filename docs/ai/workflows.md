@@ -1,3 +1,8 @@
+---
+type: ai-workflow-map
+owner: self
+---
+
 # AI Workflow Map
 
 DART exposes the same effective workflow set across supported AI tools:
