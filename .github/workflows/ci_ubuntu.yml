@@ -397,11 +397,10 @@ jobs:
 
       - name: Run Debug Python tests
         run: |
-          # This step builds the dartpy pybind11 extension. In Debug each
-          # binding TU is large and memory-heavy, so building at
-          # DART_PARALLEL_JOBS=8 thrashes the 16 GB hosted runner -- this step
-          # (not the C++ ctest) dominated the old ~6h Debug job. Cap parallelism
-          # like the ASAN build above so the build fits in RAM and progresses.
+          # This step builds the dartpy nanobind extension. In Debug each
+          # binding TU is large, so keep parallelism below the 16 GB hosted
+          # runner's memory limit. Binding-layer Debug symbols are disabled by
+          # default in CMake; the core DART libraries still keep Debug symbols.
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_PARALLEL_JOBS=4 \
