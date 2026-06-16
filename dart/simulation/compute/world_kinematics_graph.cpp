@@ -123,7 +123,7 @@ Eigen::Isometry3d getJointTransform(
 Eigen::Isometry3d getLocalTransform(
     const detail::WorldRegistry& registry, entt::entity entity)
 {
-  if (const auto* link = registry.try_get<comps::Link>(entity)) {
+  if (const auto* link = registry.try_get<comps::LinkModel>(entity)) {
     if (link->parentJoint != entt::null) {
       const auto* jointModel
           = registry.try_get<comps::JointModel>(link->parentJoint);

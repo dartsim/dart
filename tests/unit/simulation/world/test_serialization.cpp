@@ -380,55 +380,6 @@ void expectBrokenArticulatedPointJointRoundTrips(
   EXPECT_FALSE(restoredJoint->isBroken());
 }
 
-void writeMassPropertiesV8(
-    std::ostream& output, const dart::simulation::comps::MassProperties& mass)
-{
-  namespace io = dart::simulation::io;
-
-  io::writePOD(output, mass.mass);
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
-      io::writePOD(output, mass.inertia(i, j));
-    }
-  }
-  io::writeVector3d(output, mass.localCenterOfMass);
-}
-
-void writeLegacyLinkV8(
-    std::ostream& output,
-    const dart::simulation::comps::Link& link,
-    const dart::simulation::io::EntityMap& entityMap,
-    bool includeExternalForce)
-{
-  namespace io = dart::simulation::io;
-
-  io::writeString(output, link.name);
-  writeMassPropertiesV8(output, link.mass);
-  io::writeIsometry3d(output, link.transformFromParentJoint);
-
-  const auto mappedParent
-      = link.parentJoint != entt::null
-            ? static_cast<std::uint32_t>(entityMap.at(link.parentJoint))
-            : static_cast<std::uint32_t>(entt::null);
-  io::writePOD(output, mappedParent);
-
-  io::writePOD(output, link.childJoints.size());
-  for (const auto childJoint : link.childJoints) {
-    const auto mappedChild
-        = childJoint != entt::null
-              ? static_cast<std::uint32_t>(entityMap.at(childJoint))
-              : static_cast<std::uint32_t>(entt::null);
-    io::writePOD(output, mappedChild);
-  }
-
-  io::writeIsometry3d(output, link.worldTransform);
-  if (includeExternalForce) {
-    for (Eigen::Index i = 0; i < link.externalForce.size(); ++i) {
-      io::writePOD(output, link.externalForce[i]);
-    }
-  }
-}
-
 void saveLegacyWorldWithCurrentEntities(
     std::ostream& output,
     const dart::simulation::World& world,
@@ -474,23 +425,9 @@ void saveLegacyWorldWithCurrentEntities(
     io::writePOD(output, componentTypes.size());
     for (const auto& typeName : componentTypes) {
       io::writeString(output, typeName);
-      if (typeName == comps::Link::getTypeName()) {
-        writeLegacyLinkV8(
-            output,
-            registry.get<comps::Link>(entity),
-            entityMap,
-            legacyVersion >= 5u);
-      } else {
-        serializers.at(typeName)->save(output, entity, registry, entityMap);
-      }
+      serializers.at(typeName)->save(output, entity, registry, entityMap);
     }
   }
-}
-
-void saveLegacyV8WorldWithCurrentEntities(
-    std::ostream& output, const dart::simulation::World& world)
-{
-  saveLegacyWorldWithCurrentEntities(output, world, /*legacyVersion=*/8u);
 }
 
 void writeLegacyV15EmptyWorldWithSolverOptions(std::ostream& output)
@@ -766,80 +703,6 @@ TEST(Serialization, PreservesJointLimits)
   EXPECT_DOUBLE_EQ(joint_restored->getVelocityUpperLimits()[0], 2.5);
   EXPECT_DOUBLE_EQ(joint_restored->getEffortLowerLimits()[0], -3.0);
   EXPECT_DOUBLE_EQ(joint_restored->getEffortUpperLimits()[0], 4.0);
-}
-
-TEST(Serialization, LoadsLegacyV8LinkRecord)
-{
-  namespace sx = dart::simulation;
-  namespace comps = dart::simulation::comps;
-
-  sx::World world1;
-  auto mb = world1.addMultibody("robot");
-  auto base = mb.addLink("base");
-  auto link = mb.addLink(
-      "link",
-      base,
-      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
-
-  Eigen::Isometry3d legacyJointToLink = Eigen::Isometry3d::Identity();
-  legacyJointToLink.translate(Eigen::Vector3d(0.25, -0.5, 0.75));
-  legacyJointToLink.rotate(Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()));
-
-  Eigen::Isometry3d unsavedParentToJoint = Eigen::Isometry3d::Identity();
-  unsavedParentToJoint.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
-
-  Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
-  worldTransform.translate(Eigen::Vector3d(-1.0, 0.5, 2.0));
-
-  Eigen::Matrix<double, 6, 1> externalForce;
-  externalForce << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0;
-
-  auto& linkComp
-      = dart::simulation::detail::registryOf(world1).get<comps::Link>(
-          dart::simulation::detail::toRegistryEntity(link.getEntity()));
-  linkComp.transformFromParentToJoint = unsavedParentToJoint;
-  linkComp.transformFromParentJoint = legacyJointToLink;
-  linkComp.worldTransform = worldTransform;
-  linkComp.externalForce = externalForce;
-
-  std::stringstream legacy;
-  saveLegacyV8WorldWithCurrentEntities(legacy, world1);
-
-  sx::World world2;
-  world2.loadBinary(legacy);
-
-  auto mbRestored = world2.getMultibody("robot");
-  ASSERT_TRUE(mbRestored.has_value());
-  auto linkRestored = mbRestored->getLink("link");
-  ASSERT_TRUE(linkRestored.has_value());
-
-  const auto& restoredLinkComp
-      = dart::simulation::detail::registryOf(world2).get<comps::Link>(
-          dart::simulation::detail::toRegistryEntity(
-              linkRestored->getEntity()));
-  EXPECT_TRUE(restoredLinkComp.transformFromParentToJoint.isApprox(
-      Eigen::Isometry3d::Identity()));
-  EXPECT_TRUE(
-      restoredLinkComp.transformFromParentJoint.isApprox(legacyJointToLink));
-  EXPECT_TRUE(restoredLinkComp.worldTransform.isApprox(worldTransform));
-  EXPECT_TRUE(restoredLinkComp.externalForce.isApprox(externalForce));
-
-  auto jointRestored = mbRestored->getJoint("joint");
-  ASSERT_TRUE(jointRestored.has_value());
-  EXPECT_EQ(
-      restoredLinkComp.parentJoint,
-      dart::simulation::detail::toRegistryEntity(jointRestored->getEntity()));
-
-  auto baseRestored = mbRestored->getLink("base");
-  ASSERT_TRUE(baseRestored.has_value());
-  const auto& restoredBaseComp
-      = dart::simulation::detail::registryOf(world2).get<comps::Link>(
-          dart::simulation::detail::toRegistryEntity(
-              baseRestored->getEntity()));
-  ASSERT_EQ(restoredBaseComp.childJoints.size(), 1u);
-  EXPECT_EQ(
-      restoredBaseComp.childJoints.front(),
-      dart::simulation::detail::toRegistryEntity(jointRestored->getEntity()));
 }
 
 // Test save/load preserves names
@@ -2954,7 +2817,9 @@ TEST(StableComponentIds, ComponentsReturnExplicitStableId)
   EXPECT_EQ(comps::JointActuation::getTypeName(), "comps.JointActuation");
   EXPECT_EQ(
       comps::AvbdJointStiffness::getTypeName(), "comps.AvbdJointStiffness");
-  EXPECT_EQ(comps::Link::getTypeName(), "comps.Link");
+  EXPECT_EQ(comps::LinkModel::getTypeName(), "comps.LinkModel");
+  EXPECT_EQ(comps::LinkState::getTypeName(), "comps.LinkState");
+  EXPECT_EQ(comps::LinkControl::getTypeName(), "comps.LinkControl");
   EXPECT_EQ(comps::FrameTag::getTypeName(), "comps.FrameTag");
   EXPECT_EQ(comps::FrameState::getTypeName(), "comps.FrameState");
   EXPECT_EQ(comps::FrameCache::getTypeName(), "comps.FrameCache");
@@ -3016,7 +2881,9 @@ TEST(StableComponentIds, RegisteredIdsAreUniqueAndNotMangled)
   EXPECT_TRUE(seen.contains("comps.JointModel"));
   EXPECT_TRUE(seen.contains("comps.JointState"));
   EXPECT_TRUE(seen.contains("comps.JointActuation"));
-  EXPECT_TRUE(seen.contains("comps.Link"));
+  EXPECT_TRUE(seen.contains("comps.LinkModel"));
+  EXPECT_TRUE(seen.contains("comps.LinkState"));
+  EXPECT_TRUE(seen.contains("comps.LinkControl"));
   EXPECT_TRUE(seen.contains("comps.AvbdJointStiffness"));
 }
 

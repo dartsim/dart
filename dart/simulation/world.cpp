@@ -1169,7 +1169,7 @@ bool isReplayPublicFrameEntity(
 {
   return registry.all_of<comps::FrameState, comps::FrameCache>(entity)
          && !registry.all_of<comps::RigidBodyTag>(entity)
-         && !registry.all_of<comps::Link>(entity)
+         && !registry.all_of<comps::LinkModel>(entity)
          && (registry.all_of<comps::FreeFrameTag, comps::FreeFrameProperties>(
                  entity)
              || registry
@@ -1667,7 +1667,8 @@ bool hasDeformableBodies(const World& world)
 entt::entity findOwningMultibodyStructure(
     const detail::WorldRegistry& registry, entt::entity linkEntity)
 {
-  if (linkEntity == entt::null || !registry.all_of<comps::Link>(linkEntity)) {
+  if (linkEntity == entt::null
+      || !registry.all_of<comps::LinkModel>(linkEntity)) {
     return entt::null;
   }
 
@@ -1798,15 +1799,15 @@ bool isArticulatedPointJoint(
   }
 
   if (joint.parentLink != entt::null
-      && !registry.template all_of<comps::Link>(joint.parentLink)) {
+      && !registry.template all_of<comps::LinkModel>(joint.parentLink)) {
     return false;
   }
-  if (!registry.template all_of<comps::Link>(joint.childLink)) {
+  if (!registry.template all_of<comps::LinkModel>(joint.childLink)) {
     return false;
   }
 
   const auto* childLink
-      = registry.template try_get<comps::Link>(joint.childLink);
+      = registry.template try_get<comps::LinkModel>(joint.childLink);
   if (childLink != nullptr && childLink->parentJoint == jointEntity) {
     return false;
   }
@@ -2289,7 +2290,7 @@ entt::entity resolveCollisionPairFrame(
   const auto& registry = detail::registryOf(world);
   DART_SIMULATION_THROW_T_IF(
       !registry.all_of<comps::RigidBodyTag>(entity)
-          && !registry.all_of<comps::Link>(entity),
+          && !registry.all_of<comps::LinkModel>(entity),
       InvalidArgumentException,
       "Collision pair {} frame must be a rigid body or multibody link",
       fieldName);
@@ -3148,9 +3149,9 @@ void rebindLoadedWorldComponentAllocators(
     rebindLoadedVectorAllocator(structure.joints, allocator);
   }
 
-  auto linkView = registry.view<comps::Link>();
+  auto linkView = registry.view<comps::LinkModel>();
   for (const auto entity : linkView) {
-    auto& link = linkView.get<comps::Link>(entity);
+    auto& link = linkView.get<comps::LinkModel>(entity);
     rebindLoadedVectorAllocator(link.childJoints, allocator);
   }
 
@@ -3534,7 +3535,9 @@ void World::reserveRegistryStorageForSimulation()
       comps::MultibodyTag,
       comps::MultibodyStructure,
       comps::LoopClosure,
-      comps::Link,
+      comps::LinkModel,
+      comps::LinkState,
+      comps::LinkControl,
       comps::JointModel,
       comps::JointState,
       comps::JointActuation,
@@ -5978,7 +5981,7 @@ void World::captureStepDerivatives()
     torques.clear();
     torques.reserve(structure.links.size());
     for (const auto linkEntity : structure.links) {
-      const auto& link = m_storage->registry.get<comps::Link>(linkEntity);
+      const auto& link = m_storage->registry.get<comps::LinkModel>(linkEntity);
       if (link.parentJoint == entt::null) {
         continue;
       }
@@ -6124,7 +6127,7 @@ compute::StepMetrics World::computeStepMetrics() const
   // kinetic and potential terms are taken from the variational integrator's own
   // energy helper, which evaluates them on the VarTree's forward-kinematics
   // world transforms. This makes the per-domain split physical -- an earlier
-  // version derived potential from the stored comps::Link::worldTransform
+  // version derived potential from the stored comps::LinkState::worldTransform
   // cache, whose gauge did not match the helper (yielding negative kinetic
   // energy at rest). World-frame multibody-link momentum aggregation still
   // needs the link Jacobian and is deferred to a later WP-091.24 slice.
@@ -6289,17 +6292,17 @@ void World::restoreReplayFrame(std::size_t index)
   }
 
   DART_SIMULATION_THROW_T_IF(
-      countReplayView(m_storage->registry.view<comps::Link>())
+      countReplayView(m_storage->registry.view<comps::LinkModel>())
           != replayFrame.links.size(),
       InvalidOperationException,
       "Cannot restore replay frame: Link component count changed");
   for (const auto& state : replayFrame.links) {
     DART_SIMULATION_THROW_T_IF(
         !m_storage->registry.valid(state.entity)
-            || !m_storage->registry.all_of<comps::Link>(state.entity),
+            || !m_storage->registry.all_of<comps::LinkModel>(state.entity),
         InvalidOperationException,
         "Cannot restore replay frame: Link entity layout changed");
-    const auto& link = m_storage->registry.get<comps::Link>(state.entity);
+    const auto& link = m_storage->registry.get<comps::LinkModel>(state.entity);
     DART_SIMULATION_THROW_T_IF(
         !sameReplayMassProperties(link.mass, state.massProperties)
             || !sameReplayCollisionGeometry(
@@ -6334,7 +6337,7 @@ void World::restoreReplayFrame(std::size_t index)
           || !m_storage->registry.all_of<comps::FrameState, comps::FrameCache>(
               state.entity)
           || m_storage->registry.all_of<comps::RigidBodyTag>(state.entity)
-          || m_storage->registry.all_of<comps::Link>(state.entity)
+          || m_storage->registry.all_of<comps::LinkModel>(state.entity)
           || currentFree != expectedFree || currentFixed != expectedFixed
           || currentFree == currentFixed;
     DART_SIMULATION_THROW_T_IF(
@@ -6481,7 +6484,7 @@ void World::restoreReplayFrame(std::size_t index)
   }
 
   for (const auto& state : replayFrame.links) {
-    m_storage->registry.get<comps::Link>(state.entity).externalForce
+    m_storage->registry.get<comps::LinkControl>(state.entity).externalForce
         = state.externalForce;
   }
 
@@ -6670,17 +6673,19 @@ void World::recordReplayFrame()
            < static_cast<std::uint32_t>(rhs.entity);
   });
 
-  auto linkView = m_storage->registry.view<comps::Link>();
+  auto linkView = m_storage->registry.view<comps::LinkModel>();
   replayFrame.links.reserve(countReplayView(linkView));
   for (auto entity : linkView) {
-    const auto& link = linkView.get<comps::Link>(entity);
+    const auto& link = linkView.get<comps::LinkModel>(entity);
+    const auto& linkControl
+        = m_storage->registry.get<comps::LinkControl>(entity);
     replayFrame.links.push_back(
         ReplayState::LinkState{
             entity,
             link.mass,
             captureReplayOptionalComponent<comps::CollisionGeometry>(
                 m_storage->registry, entity),
-            link.externalForce});
+            linkControl.externalForce});
   }
   std::ranges::sort(replayFrame.links, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)
@@ -6986,9 +6991,10 @@ std::span<const Contact> World::updateCollisionQueryCache(
 
   // Multibody links pose their collision shapes through the frame accessor so
   // dirty joint-driven caches are refreshed before the query.
-  auto linkView
-      = m_storage->registry
-            .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
+  auto linkView = m_storage->registry.view<
+      comps::CollisionGeometry,
+      comps::LinkModel,
+      comps::FrameCache>();
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
     const Link link(detail::fromRegistryEntity(entity), this);
@@ -7321,7 +7327,7 @@ void World::resetCountersFromRegistry()
       m_deformableBodyCounter,
       countEntities<comps::DeformableBodyTag>(m_storage->registry));
   m_linkCounter = std::max(
-      m_linkCounter, countEntities<comps::Link>(m_storage->registry));
+      m_linkCounter, countEntities<comps::LinkModel>(m_storage->registry));
   m_jointCounter = std::max(
       m_jointCounter, countEntities<comps::JointModel>(m_storage->registry));
 }

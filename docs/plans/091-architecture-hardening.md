@@ -701,7 +701,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS2 — Physical data architecture
 
-#### WP-091.20 Model/State/Control component split [partial — joint slice landed]
+#### WP-091.20 Model/State/Control component split [partial — joint+link slices landed]
 
 - Objective: the articulated and deformable component fusion is split so
   storage matches the documented Model/State/Control/Contacts contract (the
@@ -741,9 +741,28 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `check-api-boundaries` clean; default-step golden trajectories stay **3/3
   bit-identical** (behavior-preserving); `pixi run test-unit` 163/163 binaries
   pass (serialization round-trip + the three new stable IDs; variational 178/178;
-  cross-family; AVBD 107/107; boxed-LCP 122/122). Remaining: slice 20b
-  (`comps::Link` → LinkModel/LinkState) and slice 20c (`DeformableNodeState` →
-  model/state).
+  cross-family; AVBD 107/107; boxed-LCP 122/122).
+- Evidence (slice 20b — link, landed): `comps::Link` is split into three
+  contract-aligned components in `comps/link.hpp` — `LinkModel` (frozen
+  topology, geometry, and inertia: name, mass, transformFromParentToJoint,
+  transformFromParentJoint, parentJoint, childJoints; carries entityFields();
+  the canonical "is a link" component), `LinkState` (per-step worldTransform),
+  and `LinkControl` (the user-applied externalForce, the articulated analog of
+  the rigid `Force` component). Every consumer (the Link facade, the two bake
+  paths in `multibody.cpp`, the multibody-dynamics/variational/constraint/stage/
+  kinematics-graph hot paths, world.cpp readers + `ensureRegistryStorages`, AVBD
+  contact, frame, skeleton-loader, collision-body, and tests) reads each field
+  through its owning component. Serialization registers the three via the
+  generic `registerComponentIfNeeded` path; the property-component
+  auto-serializer gained a fixed `Eigen::Matrix<double,6,1>` branch (it
+  previously existed only on the state path the unified `Link` used) so
+  `LinkControl` round-trips. The unified `comps.Link` serializer and the legacy
+  v8 link deserializer are removed (clean break); binary format bumped 22 → 23.
+  Gates: `pixi run lint` and `check-api-boundaries` clean; default-step golden
+  trajectories stay **3/3 bit-identical**; `pixi run test-unit` green
+  (serialization round-trip + the three new stable IDs; variational 178/178;
+  cross-family; boxed-LCP 122/122; test_world 372/372). Remaining: slice 20c
+  (`DeformableNodeState` → model/state).
 
 #### WP-091.21 Baked dense-index Model artifact
 
