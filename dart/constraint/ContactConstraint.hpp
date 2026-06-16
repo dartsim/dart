@@ -261,11 +261,16 @@ private:
   /// Whether this contact is self-collision.
   bool mIsSelfCollision;
 
-  /// Local body jacobians for mBodyNode1
-  Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalA;
+  /// Local body jacobians for mBodyNode1. The column count is dynamic (1 for a
+  /// frictionless contact, 3 with friction) but capped at 3, so the matrix uses
+  /// fixed inline storage and the per-contact resize() during construction
+  /// allocates no heap.
+  Eigen::Matrix<double, 6, Eigen::Dynamic, Eigen::ColMajor, 6, 3>
+      mSpatialNormalA;
 
-  /// Local body jacobians for mBodyNode2
-  Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalB;
+  /// Local body jacobians for mBodyNode2 (see mSpatialNormalA).
+  Eigen::Matrix<double, 6, Eigen::Dynamic, Eigen::ColMajor, 6, 3>
+      mSpatialNormalB;
 
   ///
   bool mIsFrictionOn;
