@@ -1158,7 +1158,7 @@ private:
   void prepareDeactivationForStep();
   void updateDeactivationAfterStep();
   [[nodiscard]] std::vector<Contact> filterContactsForDeactivation(
-      const std::vector<Contact>& contacts);
+      std::span<const Contact> contacts);
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
   /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this

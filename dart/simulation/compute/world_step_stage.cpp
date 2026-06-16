@@ -10789,14 +10789,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       CollisionQueryOptions{},
       /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
   std::vector<Contact> deactivationContacts;
-  const auto& contacts = [&]() -> const std::vector<Contact>& {
-    if (world.isDeactivationActiveForStep()) {
-      deactivationContacts
-          = world.filterContactsForDeactivation(queriedContacts);
-      return deactivationContacts;
-    }
-    return queriedContacts;
-  }();
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;

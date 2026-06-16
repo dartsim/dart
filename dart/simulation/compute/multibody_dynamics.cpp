@@ -3121,16 +3121,13 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  const auto& queriedContacts = world.queryContacts(CollisionQueryOptions{});
+  const auto queriedContacts = world.queryContacts(CollisionQueryOptions{});
   std::vector<Contact> deactivationContacts;
-  const auto& contacts = [&]() -> const std::vector<Contact>& {
-    if (world.isDeactivationActiveForStep()) {
-      deactivationContacts
-          = world.filterContactsForDeactivation(queriedContacts);
-      return deactivationContacts;
-    }
-    return queriedContacts;
-  }();
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
@@ -3803,16 +3800,13 @@ void UnifiedConstraintStage::execute(
   if (!hasAnyCollisionShapes(registry)) {
     return;
   }
-  const auto& queriedContacts = world.queryContacts(CollisionQueryOptions{});
+  const auto queriedContacts = world.queryContacts(CollisionQueryOptions{});
   std::vector<Contact> deactivationContacts;
-  const auto& contacts = [&]() -> const std::vector<Contact>& {
-    if (world.isDeactivationActiveForStep()) {
-      deactivationContacts
-          = world.filterContactsForDeactivation(queriedContacts);
-      return deactivationContacts;
-    }
-    return queriedContacts;
-  }();
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   if (contacts.empty()) {
     return;
   }

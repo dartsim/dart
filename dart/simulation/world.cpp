@@ -1749,7 +1749,7 @@ entt::entity deactivationEntityForContactBody(
     return entity;
   }
 
-  if (multibodySupported && registry.all_of<comps::Link>(entity)) {
+  if (multibodySupported && registry.all_of<comps::LinkModel>(entity)) {
     return findOwningMultibodyStructure(registry, entity);
   }
 
@@ -5541,12 +5541,13 @@ void World::prepareDeactivationForStep()
                            > disturbanceThresholdSquared;
       }
       for (const auto linkEntity : structure.links) {
-        const auto* link = registry.try_get<comps::Link>(linkEntity);
-        if (link == nullptr) {
+        const auto* linkControl
+            = registry.try_get<comps::LinkControl>(linkEntity);
+        if (linkControl == nullptr) {
           continue;
         }
         disturbed = disturbed
-                    || link->externalForce.squaredNorm()
+                    || linkControl->externalForce.squaredNorm()
                            > disturbanceThresholdSquared;
       }
       if (disturbed) {
@@ -5559,10 +5560,10 @@ void World::prepareDeactivationForStep()
 
 //==============================================================================
 std::vector<Contact> World::filterContactsForDeactivation(
-    const std::vector<Contact>& contacts)
+    std::span<const Contact> contacts)
 {
   if (!isDeactivationActiveForStep()) {
-    return contacts;
+    return {contacts.begin(), contacts.end()};
   }
 
   auto& registry = m_storage->registry;
@@ -5769,12 +5770,13 @@ void World::updateDeactivationAfterStep()
         }
       }
       for (const auto linkEntity : structure->links) {
-        const auto* link = registry.try_get<comps::Link>(linkEntity);
-        if (link == nullptr) {
+        const auto* linkControl
+            = registry.try_get<comps::LinkControl>(linkEntity);
+        if (linkControl == nullptr) {
           continue;
         }
         disturbed = disturbed
-                    || link->externalForce.squaredNorm()
+                    || linkControl->externalForce.squaredNorm()
                            > disturbanceThresholdSquared;
       }
     }
