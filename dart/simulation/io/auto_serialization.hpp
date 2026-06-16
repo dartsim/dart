@@ -361,6 +361,11 @@ void autoSerialize(
           writePOD(out, field(i, j));
         }
       }
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      // Fixed 6-vector (e.g. a spatial force/wrench).
+      for (int i = 0; i < 6; ++i) {
+        writePOD(out, field[i]);
+      }
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       // POD types (int, double, bool, enums, etc.)
       writePOD(out, field);
@@ -409,6 +414,11 @@ void autoDeserialize(std::istream& in, T& component)
             field(j, i) = field(i, j); // Symmetric
           }
         }
+      }
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix<double, 6, 1>>) {
+      // Fixed 6-vector (e.g. a spatial force/wrench).
+      for (int i = 0; i < 6; ++i) {
+        readPOD(in, field[i]);
       }
     } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       // POD types

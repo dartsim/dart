@@ -293,53 +293,6 @@ void deserializeBranchV11CollisionGeometry(
   geometry.revision = 0;
 }
 
-void deserializeLegacyMassProperties(
-    std::istream& input, comps::MassProperties& mass)
-{
-  readPOD(input, mass.mass);
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
-      readPOD(input, mass.inertia(i, j));
-      if (i != j) {
-        mass.inertia(j, i) = mass.inertia(i, j);
-      }
-    }
-  }
-  readVector3d(input, mass.localCenterOfMass);
-}
-
-void deserializeLinkV8(
-    std::istream& input, comps::Link& link, std::uint32_t formatVersion)
-{
-  readString(input, link.name);
-  deserializeLegacyMassProperties(input, link.mass);
-
-  link.transformFromParentToJoint = Eigen::Isometry3d::Identity();
-  readIsometry3d(input, link.transformFromParentJoint);
-
-  std::uint32_t parentJoint = static_cast<std::uint32_t>(entt::null);
-  readPOD(input, parentJoint);
-  link.parentJoint = static_cast<entt::entity>(parentJoint);
-
-  std::size_t childJointCount = 0;
-  readPOD(input, childJointCount);
-  link.childJoints.resize(childJointCount);
-  for (entt::entity& childJoint : link.childJoints) {
-    std::uint32_t entityId = static_cast<std::uint32_t>(entt::null);
-    readPOD(input, entityId);
-    childJoint = static_cast<entt::entity>(entityId);
-  }
-
-  readIsometry3d(input, link.worldTransform);
-
-  link.externalForce.setZero();
-  if (formatVersion >= 5u) {
-    for (Eigen::Index i = 0; i < link.externalForce.size(); ++i) {
-      readPOD(input, link.externalForce[i]);
-    }
-  }
-}
-
 class AvbdRigidWorldPointJointConfigComponentSerializer final
   : public TypedComponentSerializer<::dart::simulation::detail::deformable_vbd::
                                         AvbdRigidWorldPointJointConfig>
@@ -533,52 +486,6 @@ void registerCollisionGeometrySerializer(SerializerRegistry& registry)
       std::make_unique<CollisionGeometryComponentSerializer>());
 }
 
-class LinkComponentSerializer final
-  : public TypedComponentSerializer<comps::Link>
-{
-public:
-  [[nodiscard]] std::string_view getTypeName() const override
-  {
-    return comps::Link::getTypeName();
-  }
-
-private:
-  void saveComponent(
-      std::ostream& output,
-      const comps::Link& component,
-      const EntityMap& entityMap) const override
-  {
-    autoSerialize(output, component, entityMap);
-  }
-
-  void loadComponent(std::istream& input, comps::Link& component) const override
-  {
-    autoDeserialize(input, component);
-  }
-
-  void loadComponent(
-      std::istream& input,
-      comps::Link& component,
-      std::uint32_t formatVersion) const override
-  {
-    if (formatVersion < 9u) {
-      deserializeLinkV8(input, component, formatVersion);
-      return;
-    }
-
-    loadComponent(input, component);
-  }
-};
-
-void registerLinkSerializer(SerializerRegistry& registry)
-{
-  if (registry.getSerializer(comps::Link::getTypeName()) != nullptr) {
-    return;
-  }
-
-  registry.registerSerializer(std::make_unique<LinkComponentSerializer>());
-}
-
 void registerBuiltInSerializers(SerializerRegistry& registry)
 {
   registerComponentIfNeeded<comps::Name>(registry);
@@ -615,7 +522,9 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
-  registerLinkSerializer(registry);
+  registerComponentIfNeeded<comps::LinkModel>(registry);
+  registerComponentIfNeeded<comps::LinkState>(registry);
+  registerComponentIfNeeded<comps::LinkControl>(registry);
   registerComponentIfNeeded<comps::JointModel>(registry);
   registerComponentIfNeeded<comps::JointState>(registry);
   registerComponentIfNeeded<comps::JointActuation>(registry);
@@ -808,9 +717,9 @@ void SerializerRegistry::loadAllEntities(
     }
   }
 
-  auto linkView = registry.view<comps::Link>();
+  auto linkView = registry.view<comps::LinkModel>();
   for (auto entity : linkView) {
-    auto& comp = linkView.get<comps::Link>(entity);
+    auto& comp = linkView.get<comps::LinkModel>(entity);
     if (comp.parentJoint != entt::null) {
       comp.parentJoint = entityMap.at(comp.parentJoint);
     }

@@ -167,26 +167,26 @@ Link::Link(Entity entity, World* world) : Frame(entity, world) {}
 //==============================================================================
 std::string_view Link::getName() const
 {
-  const auto& linkComp
+  const auto& linkModel
       = dart::simulation::detail::registryOf(*getWorld())
-            .get<comps::Link>(detail::toRegistryEntity(getEntity()));
-  return linkComp.name;
+            .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()));
+  return linkModel.name;
 }
 
 //==============================================================================
 Joint Link::getParentJoint() const
 {
-  const auto& linkComp
+  const auto& linkModel
       = dart::simulation::detail::registryOf(*getWorld())
-            .get<comps::Link>(detail::toRegistryEntity(getEntity()));
-  return Joint(detail::fromRegistryEntity(linkComp.parentJoint), getWorld());
+            .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()));
+  return Joint(detail::fromRegistryEntity(linkModel.parentJoint), getWorld());
 }
 
 //==============================================================================
 double Link::getMass() const
 {
   return dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.mass;
 }
 
@@ -199,7 +199,7 @@ void Link::setMass(double mass)
       "Link mass must be positive and finite");
 
   dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.mass = mass;
 }
 
@@ -207,7 +207,7 @@ void Link::setMass(double mass)
 Eigen::Matrix3d Link::getInertia() const
 {
   return dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.inertia;
 }
 
@@ -220,7 +220,7 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
       "Link inertia must be symmetric positive definite");
 
   dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.inertia = inertia;
 }
 
@@ -228,7 +228,7 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
 Eigen::Vector3d Link::getCenterOfMass() const
 {
   return dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.localCenterOfMass;
 }
 
@@ -241,7 +241,7 @@ void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
       "Link center of mass must contain only finite values");
 
   dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::Link>(detail::toRegistryEntity(getEntity()))
+      .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.localCenterOfMass = centerOfMass;
 }
 
@@ -265,8 +265,9 @@ void Link::applyForce(
   // point into the link frame, build the wrench [torque; force] at the point,
   // then transport it to the link origin and accumulate in the link frame.
   const Eigen::Isometry3d& worldTransform = getWorldTransform();
-  auto& linkComp = dart::simulation::detail::registryOf(*getWorld())
-                       .get<comps::Link>(detail::toRegistryEntity(getEntity()));
+  auto& linkControl
+      = dart::simulation::detail::registryOf(*getWorld())
+            .get<comps::LinkControl>(detail::toRegistryEntity(getEntity()));
 
   Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
   pointTransform.translation()
@@ -276,7 +277,7 @@ void Link::applyForce(
   wrench.tail<3>()
       = forceInWorldFrame ? worldTransform.linear().transpose() * force : force;
 
-  linkComp.externalForce += dm::dAdInvT(pointTransform, wrench);
+  linkControl.externalForce += dm::dAdInvT(pointTransform, wrench);
 }
 
 //==============================================================================

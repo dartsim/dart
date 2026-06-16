@@ -488,7 +488,7 @@ void buildDynamicsTreeInto(
 
   for (std::size_t i = 0; i < linkEntities.size(); ++i) {
     const auto linkEntity = linkEntities[i];
-    const auto& linkComp = registry.get<comps::Link>(linkEntity);
+    const auto& linkComp = registry.get<comps::LinkModel>(linkEntity);
     auto& dynamics = tree.links[i];
     dynamics.parentIndex = -1;
     dynamics.jointEntity = entt::null;
@@ -1000,7 +1000,8 @@ bool computeUnconstrainedMultibodyVelocityInto(
   {
     bool anyExternalForce = false;
     for (const auto linkEntity : structure.links) {
-      if (!registry.get<comps::Link>(linkEntity).externalForce.isZero()) {
+      if (!registry.get<comps::LinkControl>(linkEntity)
+               .externalForce.isZero()) {
         anyExternalForce = true;
         break;
       }
@@ -1009,7 +1010,8 @@ bool computeUnconstrainedMultibodyVelocityInto(
       linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
       for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
         const Vector6 wrench
-            = registry.get<comps::Link>(structure.links[i]).externalForce;
+            = registry.get<comps::LinkControl>(structure.links[i])
+                  .externalForce;
         if (!wrench.isZero()) {
           scratch.appliedForce.noalias()
               += scratch.bodyJacobian[i].transpose() * wrench;
@@ -1804,7 +1806,7 @@ void enforceMultibodyVelocityLimits(
 {
   Eigen::Index expectedDof = 0;
   for (const auto linkEntity : structure.links) {
-    const auto& link = registry.get<comps::Link>(linkEntity);
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
     if (link.parentJoint == entt::null) {
       continue;
     }
@@ -1824,7 +1826,7 @@ void enforceMultibodyVelocityLimits(
   // Enforce velocity limits by clamping the generalized velocity.
   Eigen::Index velocityOffset = 0;
   for (const auto linkEntity : structure.links) {
-    const auto& link = registry.get<comps::Link>(linkEntity);
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
     if (link.parentJoint == entt::null) {
       continue;
     }
@@ -1863,7 +1865,7 @@ void collectMultibodyLinkContactsInto(
     return registry.all_of<comps::RigidBodyTag>(entity);
   };
   const auto isLink = [&](entt::entity entity) {
-    return registry.all_of<comps::Link>(entity);
+    return registry.all_of<comps::LinkModel>(entity);
   };
   const auto isDynamic = [&](entt::entity entity) {
     return !hasPrescribedRigidBodyContactResponse(registry, entity);
@@ -1964,7 +1966,7 @@ void clearMultibodyExternalForces(
     detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
 {
   for (const auto linkEntity : structure.links) {
-    registry.get<comps::Link>(linkEntity).externalForce.setZero();
+    registry.get<comps::LinkControl>(linkEntity).externalForce.setZero();
   }
 }
 
@@ -3595,7 +3597,7 @@ bool tryResolveSequentialMultibodyContacts(
     return registry.all_of<comps::RigidBodyTag>(entity);
   };
   const auto isLink = [&](entt::entity entity) {
-    return registry.all_of<comps::Link>(entity);
+    return registry.all_of<comps::LinkModel>(entity);
   };
 
   for (const auto& contact : contacts) {

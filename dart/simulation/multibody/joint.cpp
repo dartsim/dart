@@ -835,7 +835,7 @@ Link Joint::getParentLink() const
   DART_SIMULATION_THROW_T_IF(
       jointModel.parentLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::Link>(jointModel.parentLink),
+                  .all_of<comps::LinkModel>(jointModel.parentLink),
       InvalidArgumentException,
       "Joint '{}' parent endpoint is not a multibody Link",
       jointModel.name);
@@ -849,7 +849,7 @@ Link Joint::getChildLink() const
   DART_SIMULATION_THROW_T_IF(
       jointModel.childLink == entt::null
           || !dart::simulation::detail::registryOf(*m_world)
-                  .all_of<comps::Link>(jointModel.childLink),
+                  .all_of<comps::LinkModel>(jointModel.childLink),
       InvalidArgumentException,
       "Joint '{}' child endpoint is not a multibody Link",
       jointModel.name);

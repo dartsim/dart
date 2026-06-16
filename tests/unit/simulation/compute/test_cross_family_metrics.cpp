@@ -353,8 +353,8 @@ TEST(CrossFamilyMetrics, MultibodyIntegrationFamiliesAgreeOnConservedEnergy)
     // variational integrator's own forward-kinematics terms (PLAN-091 WP-091.24
     // fix), so it is physical: released from rest, the kinetic energy is ~0 and
     // the potential carries the total. (An earlier version derived the split
-    // from the stored comps::Link transform cache, whose frame gauge differed,
-    // giving a non-physical negative kinetic energy at rest.)
+    // from the stored comps::LinkState transform cache, whose frame gauge
+    // differed, giving a non-physical negative kinetic energy at rest.)
     ASSERT_GT(std::abs(run.atRelease.totalEnergy), 1e-6) << family;
     EXPECT_NEAR(run.atRelease.kineticEnergy, 0.0, 1e-6)
         << family << " released-from-rest multibody kinetic energy must be ~0";
