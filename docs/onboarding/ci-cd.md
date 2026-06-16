@@ -84,6 +84,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 ## Common CI Failure Modes
 
 - Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
+- Linux `Release Tests` ASAN compile fails with `No space left on device`:
+  treat this as hosted-runner disk exhaustion, not a failing DART test. The job
+  builds a normal Release tree, dartpy, examples, and then a separate ASAN tree
+  in the same workspace; keep disk cleanup at the start of that job before
+  rerunning the failed check.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Example or test links fail with `cannot find -ldart-<component>`: inspect the

@@ -122,19 +122,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # The Release job builds a normal tree, dartpy, examples, and then a
-      # separate ASAN tree in the same workspace. Reclaim unused hosted-runner
-      # toolchains up front so the ASAN object files do not exhaust disk.
-      - name: Free up disk space
-        run: |
-          set -x
-          df -h /
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
-            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
-            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
-          sudo docker image prune --all --force || true
-          df -h /
-
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
         with:
@@ -193,6 +180,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      # The Release job builds a normal tree, dartpy, examples, and then a
+      # separate ASAN tree in the same workspace. Reclaim unused hosted-runner
+      # toolchains up front so the ASAN object files do not exhaust disk.
+      - name: Free up disk space
+        run: |
+          set -x
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
