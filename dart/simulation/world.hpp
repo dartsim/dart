@@ -79,7 +79,11 @@ struct WorldStorage;
 namespace compute {
 class MultibodyContactStage;
 class MultibodyForwardDynamicsStage;
+class MultibodyPositionStage;
+class MultibodyVelocityStage;
 class RigidBodyContactStage;
+class RigidBodyPositionStage;
+class RigidBodyVelocityStage;
 class RigidIpcContactStage;
 class UnifiedConstraintStage;
 } // namespace compute
@@ -673,6 +677,21 @@ public:
   ///         `ContactGradientMode` enumerator.
   void setContactGradientMode(ContactGradientMode mode);
 
+  /// Set the automatic deactivation ("sleeping") policy.
+  ///
+  /// Deactivation is opt-in and defaults disabled. Disabling it clears any
+  /// existing sleep state immediately so subsequent steps resume normal
+  /// integration. The policy is a solver/domain-level facade: unsupported
+  /// solver paths keep the option value but do not deactivate bodies.
+  void setDeactivationOptions(const DeactivationOptions& options);
+
+  /// Return the current automatic deactivation policy.
+  [[nodiscard]] const DeactivationOptions& getDeactivationOptions()
+      const noexcept;
+
+  /// Return whether automatic deactivation is requested by options.
+  [[nodiscard]] bool isDeactivationEnabled() const noexcept;
+
   /// Get the explicit Jacobian blocks of the most recent step.
   ///
   /// With the default `SequentialImpulse` contact solver this returns the
@@ -1023,7 +1042,11 @@ private:
   friend class io::detail::SkeletonLoaderWorldAccess;
   friend class compute::MultibodyContactStage;
   friend class compute::MultibodyForwardDynamicsStage;
+  friend class compute::MultibodyPositionStage;
+  friend class compute::MultibodyVelocityStage;
   friend class compute::RigidBodyContactStage;
+  friend class compute::RigidBodyPositionStage;
+  friend class compute::RigidBodyVelocityStage;
   friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
   friend class compute::UnifiedConstraintStage;
@@ -1127,6 +1150,15 @@ private:
   void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();
+  [[nodiscard]] bool isDeactivationActiveForStep() const noexcept;
+  [[nodiscard]] bool isDeactivationEntitySleeping(Entity entity) const;
+  [[nodiscard]] int getDeactivationGroupIndex(Entity entity) const;
+  void wakeDeactivationEntity(Entity entity);
+  void clearDeactivationState();
+  void prepareDeactivationForStep();
+  void updateDeactivationAfterStep();
+  [[nodiscard]] std::vector<Contact> filterContactsForDeactivation(
+      std::span<const Contact> contacts);
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
   /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this
@@ -1166,6 +1198,9 @@ private:
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   bool m_strictSolverResolution{false};
+
+  DeactivationOptions m_deactivationOptions{};
+
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};

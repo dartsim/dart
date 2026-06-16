@@ -86,6 +86,7 @@ struct LoopClosureResidual;
 struct LoopClosureSpec;
 struct MultibodyOptions;
 struct RigidBodyOptions;
+struct DeactivationOptions;
 struct WorldOptions;
 
 } // namespace dart::simulation

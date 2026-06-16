@@ -297,6 +297,7 @@ RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
 
 
 RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+    ("deactivation_sleeping", 72, 960, 540, True),
     ("floating_base", 72, 960, 540, True),
     ("articulated", 72, 960, 540, True),
     ("rigid_ipc_tunnel", 24, 960, 540, True),

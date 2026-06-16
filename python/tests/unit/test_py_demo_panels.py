@@ -28,6 +28,7 @@ from examples.demos.runner import (
     _rigid_workflow_viewer_command,
     _scene_build_timeout_ms,
     _workflow_matching_guides,
+    _workflow_related_evidence_matches,
     _validate_scene,
 )
 
@@ -36,6 +37,7 @@ from examples.demos.scenes import (
     atlas_simbicon,
     avbd_demo2d_dynamic_friction,
     contact,
+    deactivation_sleeping,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
     diff_pre_contact_surrogate,
@@ -1137,6 +1139,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (contact, "Rigid Link Contact"),
         (lcp_physics, "LCP Physics"),
         (rigid_body, "Rigid Bodies"),
+        (deactivation_sleeping, "Body Deactivation"),
         (rigid_body_modes, "Rigid Body Modes"),
         (rigid_free_flight, "Rigid Free Flight"),
         (rigid_frame_hierarchy, "Rigid Frame Hierarchy"),
@@ -1227,6 +1230,25 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "text:External force" in builder.events
         assert any(event.startswith("text:drag target: ") for event in builder.events)
         assert "checkbox:Enable external force" in builder.events
+
+
+def test_deactivation_sleeping_scene_exposes_sleep_state_panel() -> None:
+    _require_simulation_symbols("World", "DeactivationOptions")
+
+    setup = deactivation_sleeping.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["Body Deactivation"]
+    assert setup.info["sx_world"].deactivation_enabled
+
+    setup.panels[0].build(builder, object())
+
+    assert "checkbox:Enable deactivation" in builder.events
+    assert "slider:Sleep after:0.02:0.4" in builder.events
+    assert any(event.startswith("plot:Sleeping bodies:") for event in builder.events)
+    assert any(event.startswith("plot:Contacts:") for event in builder.events)
+    assert "table:Sleep state table:Body,State,Group,Speed" in builder.events
+    assert any(event.startswith("text:sleep_candidate_0") for event in builder.events)
 
 
 def _write_lcp_profile_evidence(
@@ -3852,7 +3874,7 @@ def test_rigid_workflow_panel_explains_workflow_phase_search_matches() -> None:
     assert context.scene_switch_requests == ["rigid_solver_compare"]
 
 
-def test_rigid_workflow_panel_explains_deferred_api_search_matches() -> None:
+def test_rigid_workflow_panel_routes_public_activation_and_deferred_api_matches() -> None:
     scene = PythonDemoScene(
         id="rigid_solver_compare",
         title="Test rigid_solver_compare",
@@ -3865,7 +3887,7 @@ def test_rigid_workflow_panel_explains_deferred_api_search_matches() -> None:
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "02/36 Body modes - rigid_body_modes"
+        "02/36 Body modes - rigid_body_modes (related: deactivation_sleeping)"
         "##rigid_workflow_find_rigid_body_modes"
     )
     builder = _ScriptedPanelBuilder(
@@ -3877,17 +3899,17 @@ def test_rigid_workflow_panel_explains_deferred_api_search_matches() -> None:
 
     assert (
         "selectable:"
-        "02/36 Body modes - rigid_body_modes"
+        "02/36 Body modes - rigid_body_modes (related: deactivation_sleeping)"
         "##rigid_workflow_find_rigid_body_modes:False"
     ) in builder.events
     assert any(
         event.startswith("tooltip:Which body mode should I choose?")
-        and "Deferred API caveat: No public sleep/wake/island activation API "
-        "is exposed yet; this row only verifies body-mode semantics." in event
-        and event.endswith("Search match: deferred API caveat.")
+        and "Related evidence match: World Rigid Body / deactivation_sleeping"
+        in event
+        and event.endswith("Search match: related evidence.")
         for event in builder.events
     )
-    assert context.scene_switch_requests == ["rigid_body_modes"]
+    assert context.scene_switch_requests == ["deactivation_sleeping"]
 
     closure_builder = _ScriptedPanelBuilder(
         text_input_values={"Find row": "loop closure compliance"}
@@ -4165,7 +4187,13 @@ def test_rigid_workflow_search_routes_deferred_api_terms() -> None:
     assert "direct rigid-body impulse" in (
         RIGID_VISUAL_WORKFLOW_GUIDES["rigid_external_loads"].scope
     )
-    assert "no sleep/wake or island activation API claim" in (
+    activation_related = _workflow_related_evidence_matches(
+        RIGID_VISUAL_WORKFLOW_GUIDES["rigid_body_modes"],
+        ("sleep", "wake"),
+    )
+    assert activation_related
+    assert activation_related[0].scene_id == "deactivation_sleeping"
+    assert "mode semantics" in (
         RIGID_VISUAL_WORKFLOW_GUIDES["rigid_body_modes"].scope
     )
     assert "not a compliance" in (

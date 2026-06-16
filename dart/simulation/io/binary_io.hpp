@@ -124,7 +124,10 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      the Model/State data contract. Clean break: packets written with the
 //      unified DeformableNodeState record (versions <= 23) no longer round-trip
 //      the deformable node data. See WP-091.20 (20c).
-constexpr std::uint32_t kBinaryFormatVersion = 24;
+//   25: World automatic deactivation options serialized after variational
+//      multibody solve budget metadata, plus DeactivationState as a
+//      serializable runtime component.
+constexpr std::uint32_t kBinaryFormatVersion = 25;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

@@ -3113,6 +3113,12 @@ void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
   };
   std::vector<entt::entity> entities;
   for (auto entity : view) {
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      continue;
+    }
+
     getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
@@ -3178,7 +3184,13 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  const auto contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto queriedContacts = world.queryContacts(CollisionQueryOptions{});
+  std::vector<Contact> deactivationContacts;
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
@@ -3240,6 +3252,16 @@ void MultibodyPositionStage::execute(
 
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      if (auto* pendingVelocity
+          = registry.try_get<PendingMultibodyVelocity>(entity)) {
+        pendingVelocity->active = false;
+      }
+      continue;
+    }
+
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
         = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
@@ -3840,7 +3862,13 @@ void UnifiedConstraintStage::execute(World& world, ComputeExecutor& executor)
   if (!hasAnyCollisionShapes(registry)) {
     return;
   }
-  const auto contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto queriedContacts = world.queryContacts(CollisionQueryOptions{});
+  std::vector<Contact> deactivationContacts;
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   if (contacts.empty()) {
     return;
   }

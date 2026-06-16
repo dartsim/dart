@@ -16,7 +16,7 @@ from drifting.
   `scripts/capture_py_demo.py`, focused Python tests, this PLAN-103 sidecar,
   `python/examples/demos/README.md`, and `CHANGELOG.md`.
 - Non-goals: new C++ `dart-demos` rows, public APIs for unsupported
-  sleep/island/loop-closure compliance behavior, benchmark replacement, or
+  loop-closure compliance behavior, benchmark replacement, or
   maintainer acceptance/PR publication without explicit approval.
 - Acceptance evidence: default 36-row and optional extended workflow manifests
   report complete guidance, scene metrics, and resolved solver identity; static
@@ -63,17 +63,18 @@ Out of scope:
 - claiming exact analytic thresholds for near-discontinuous contact behavior;
 - live-GUI-heavy IPC stacks that are better handled as benchmark or
   capture-first packets until runtime improves;
-- sleep/deactivation/island-state and loop-closure compliance rows until public
-  dartpy exposes those surfaces.
+- loop-closure compliance rows until public dartpy exposes that surface.
 
 Current public API audit: `RigidBody` exposes force/torque accumulators plus
-direct linear/angular impulse and momentum accessors, `Link.apply_force()`
-exposes one-shot point-load semantics, and
+direct linear/angular impulse, momentum, sleep state, and deactivation-group
+accessors; `World` exposes deactivation options and enablement; `Link.apply_force()`
+exposes one-shot point-load semantics; and
 `Multibody.compute_impulse_response()` exposes joint-space impulse response.
 The public direct rigid-body impulse surface is covered by
-`rigid_external_loads`; there is still no public sleep/wake or island
-activation surface and no public loop-closure compliance surface, so those
-candidate GUI rows remain deferred.
+`rigid_external_loads`; the public sleep/wake deactivation surface is covered
+by `deactivation_sleeping` as a related route from the body-mode row; there is
+still no public loop-closure compliance surface, so that candidate GUI row
+remains deferred.
 
 ## Curated Workflow
 
@@ -188,26 +189,27 @@ documented snake_case or singular terms.
 Search-result tooltips name the match source, such as maintained alias, row
 number, user question, workflow phase, focus axis, related evidence, or scope
 caveat, so the navigator is auditable before the user switches scenes.
-Deferred public-API searches such as `sleep wake`, `island activation`, and
-`loop closure compliance` additionally show a deferred API caveat in the
-tooltip, guide payload, workflow manifest, and static review card before
-opening or reviewing the closest current verifier row. The workflow manifest
-also publishes a `deferred_api_caveat_summary`, and the review index shows a
-top-level `Deferred API Caveats` table and badge so unsupported API routes are
-visible during packet triage.
+Public activation searches such as `sleep wake` and `island activation` route
+from the body-mode row to the related `deactivation_sleeping` verifier. Deferred
+public-API searches such as `loop closure compliance` additionally show a
+deferred API caveat in the tooltip, guide payload, workflow manifest, and
+static review card before opening or reviewing the closest current verifier
+row. The workflow manifest also publishes a `deferred_api_caveat_summary`, and
+the review index shows a top-level `Deferred API Caveats` table and badge so
+unsupported API routes are visible during packet triage.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Direct impulse queries route to the public
-`rigid_external_loads` row, multibody impulse-response API queries route to the
-generalized dynamics row, while deferred
-activation and compliance queries route to the closest current row while
-preserving the row's caveat, so the workflow remains searchable without
-claiming unsupported activation or compliance behavior.
+`rigid_external_loads` row, sleep/wake activation queries open the related
+`deactivation_sleeping` row, and multibody impulse-response API queries route
+to the generalized dynamics row. Deferred compliance queries route to the
+closest current row while preserving the row's caveat, so the workflow remains
+searchable without claiming unsupported compliance behavior.
 
 | Order | Scene id                         | User question                                                            | Solver(s)                        | Controls and diagnostics                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Capture command                                                                                                      | Automated evidence                                                                                                                                                                                                                                                                                                                 | Known limitation                                                                                         |
 | ----- | -------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | 1     | `rigid_body`                     | What is the baseline DART 7 World rigid-body path?                       | Selectable rigid solver          | Solver, friction, restitution, reset, force drag, max speed, min height, kinetic energy, contact count, step profile timing, replay snapshots for baseline controls, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                                             | `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui`                     | `test_rigid_body_baseline_reports_restartable_first_run_diagnostics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                     | Baseline front door; focused edge cases stay in the specialized verifier rows.                           |
-| 2     | `rigid_body_modes`               | Which body mode should I choose?                                         | Selectable rigid solver          | Rigid-body mode-semantics comparison axis, held-fixed solver/executor/gravity/force/body-mass/time-step context, kinematic speed, dynamic height/x, static drift, kinematic path error, mode flags, force norm, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 --width 960 --height 540 --show-ui`                | `test_rigid_body_modes_compare_dynamic_static_kinematic_semantics`, comparison-axis panel/capture coverage, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                               | Contact-free mode semantics row; no sleep/wake or island activation API claim.                           |
+| 2     | `rigid_body_modes`               | Which body mode should I choose?                                         | Selectable rigid solver          | Rigid-body mode-semantics comparison axis, held-fixed solver/executor/gravity/force/body-mass/time-step context, kinematic speed, dynamic height/x, static drift, kinematic path error, mode flags, force norm, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 --width 960 --height 540 --show-ui`                | `test_rigid_body_modes_compare_dynamic_static_kinematic_semantics`, comparison-axis panel/capture coverage, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                               | Contact-free mode semantics row; sleep/wake deactivation routes to related evidence.                     |
 | 3     | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?                           | Sequential impulse               | Executor, launch speed, launch angle, gravity scale, spin speed, spin inertia ratio, path error, momentum residual, energy drift, spin ratios, contact count, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                                       | `pixi run py-demo-capture -- --scene rigid_free_flight --frames 96 --width 960 --height 540 --show-ui`               | `test_rigid_free_flight_preserves_initial_state_diagnostics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                             | No-contact initial-state row; not a load, restitution, contact, or solver row.                           |
 | 4     | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?                           | World frame hierarchy            | Executor, body yaw speed, path radius, local offset/yaw, parent name, body/sensor world pose, world-transform residual, relative-transform residual, orientation error, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                             | `pixi run py-demo-capture -- --scene rigid_frame_hierarchy --frames 72 --width 960 --height 540 --show-ui`           | `test_rigid_frame_hierarchy_tracks_body_fixed_frame`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                                     | Kinematics/frame row only; not a force, contact, sensor model, or solver-family claim.                   |
 | 5     | `rigid_external_loads`           | How do external loads and direct impulses move and spin bodies?          | Sequential impulse               | Executor, force magnitude, torque magnitude, direct linear impulse, direct angular impulse, heavy mass ratio, high inertia ratio, speed, acceleration versus expected, direct impulse momentum, angular response, static drift, step profile timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                             | `pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 --width 960 --height 540 --show-ui`            | `test_rigid_external_loads_scale_force_and_torque_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                              | Contact-free zero-gravity load and direct rigid-body impulse row; no contact or solver-family claim.     |
@@ -312,19 +314,20 @@ The in-viewer `Rigid Workflow` panel may route a numbered rigid row to a
 non-numbered shelf only through this table. These scenes remain outside the
 36-row World Rigid Body sequence.
 
-| Source row                       | Related scene                          | Shelf                       | Panel label                                                                                                      | Scope note                                                                                                               |
-| -------------------------------- | -------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `rigid_free_flight`              | `floating_base`                        | World Rigid Body            | Related shelf: World Rigid Body / floating_base - broader floating-joint row                                     | Broader floating-joint SE(3) drift/spin example; use the numbered row for baseline rigid-body initial-state diagnostics. |
-| `rigid_multibody_dynamics_terms` | `articulated`                          | World Rigid Body            | Related shelf: World Rigid Body / articulated - broader two-link arm row                                         | Broader two-link arm example; use the numbered row for mass, inverse-dynamics, and impulse-response diagnostics.         |
-| `rigid_solver_compare`           | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                          | Focused IPC capability scene; not a broad solver comparison or general proof.                                            |
-| `rigid_solver_compare`           | `rigid_ipc_edge_drop`                  | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_edge_drop - degenerate edge-contact view                                    | Focused IPC degenerate edge-contact capability scene; not a broad solver comparison or contact-manifold inspector.       |
-| `rigid_contact_solver_compare`   | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                      | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.                                       |
-| `rigid_contact_solver_compare`   | `diff_pre_contact_surrogate`           | Differentiable              | Related shelf: Differentiable / diff_pre_contact_surrogate - pre-contact gradient route                          | Analytic vs pre-contact surrogate backward-only gradient for an approaching but not touching body; not a solver row.     |
-| `contact`                        | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route          | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.                                 |
-| `rigid_joint_breakage`           | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset           | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.                               |
-| `rigid_joint_breakage`           | `avbd_rigid_spherical_breakable_joint` | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_spherical_breakable_joint - spherical anchor break/reset | Dedicated free-rigid spherical anchor break/reset row; orientation remains intentionally free.                           |
-| `rigid_joint_motor_limits`       | `avbd_rigid_revolute_motor`            | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor - free-rigid hinge motor                  | AVBD free-rigid revolute velocity motor; not a World multibody motor/limit comparison.                                   |
-| `rigid_joint_motor_limits`       | `avbd_rigid_prismatic_motor`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor - free-rigid slider motor                | AVBD free-rigid prismatic velocity motor; not a World multibody motor/limit comparison.                                  |
+| Source row                       | Related scene                          | Shelf                       | Panel label                                                                                                          | Scope note                                                                                                               |
+| -------------------------------- | -------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `rigid_body_modes`               | `deactivation_sleeping`                | World Rigid Body            | Related shelf: World Rigid Body / deactivation_sleeping - public sleep wake and island activation deactivation route | Dedicated DART 7 body-deactivation scene; use the numbered row only for dynamic/static/kinematic mode semantics.         |
+| `rigid_free_flight`              | `floating_base`                        | World Rigid Body            | Related shelf: World Rigid Body / floating_base - broader floating-joint row                                         | Broader floating-joint SE(3) drift/spin example; use the numbered row for baseline rigid-body initial-state diagnostics. |
+| `rigid_multibody_dynamics_terms` | `articulated`                          | World Rigid Body            | Related shelf: World Rigid Body / articulated - broader two-link arm row                                             | Broader two-link arm example; use the numbered row for mass, inverse-dynamics, and impulse-response diagnostics.         |
+| `rigid_solver_compare`           | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                              | Focused IPC capability scene; not a broad solver comparison or general proof.                                            |
+| `rigid_solver_compare`           | `rigid_ipc_edge_drop`                  | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_edge_drop - degenerate edge-contact view                                        | Focused IPC degenerate edge-contact capability scene; not a broad solver comparison or contact-manifold inspector.       |
+| `rigid_contact_solver_compare`   | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                          | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.                                       |
+| `rigid_contact_solver_compare`   | `diff_pre_contact_surrogate`           | Differentiable              | Related shelf: Differentiable / diff_pre_contact_surrogate - pre-contact gradient route                              | Analytic vs pre-contact surrogate backward-only gradient for an approaching but not touching body; not a solver row.     |
+| `contact`                        | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route              | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.                                 |
+| `rigid_joint_breakage`           | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset               | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.                               |
+| `rigid_joint_breakage`           | `avbd_rigid_spherical_breakable_joint` | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_spherical_breakable_joint - spherical anchor break/reset     | Dedicated free-rigid spherical anchor break/reset row; orientation remains intentionally free.                           |
+| `rigid_joint_motor_limits`       | `avbd_rigid_revolute_motor`            | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_revolute_motor - free-rigid hinge motor                      | AVBD free-rigid revolute velocity motor; not a World multibody motor/limit comparison.                                   |
+| `rigid_joint_motor_limits`       | `avbd_rigid_prismatic_motor`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_prismatic_motor - free-rigid slider motor                    | AVBD free-rigid prismatic velocity motor; not a World multibody motor/limit comparison.                                  |
 
 Capture every non-numbered related-evidence route with the docked UI visible:
 
@@ -332,6 +335,7 @@ These commands are also included after the numbered rows by
 `py-demo-capture -- --rigid-workflow --include-related`.
 
 ```bash
+pixi run py-demo-capture -- --scene deactivation_sleeping --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
@@ -465,13 +469,13 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 --width 960 --hei
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 48-49 are the two
+`--include-related --include-packets`, rows 49-50 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 52-53.
+packet rows become 53-54.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 17 --dry-run
-pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 48 --workflow-end-row 49 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 49 --workflow-end-row 50 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
 When a row range selects only part of a larger packet, the top-level manifest
@@ -999,21 +1003,22 @@ workflow rows` line before the selectable results. This keeps the navigator
   capture state after the phase/focus metadata export. The focused
   capture-helper guard reported `3 passed`; a follow-up focused guard covering
   phase status/focus-axis display reported `4 passed`.
-- Latest deferred-search UX follow-up: deferred public-API searches such as
-  `sleep wake`, `island activation`, and `loop closure compliance` still route
-  to the closest current verifier rows, but the result tooltip, guide payload,
-  workflow manifest, static review card, and top-level review-index caveat map
-  now show a `Deferred API caveat` note before reporting the search match. The
-  focused panel/capture/docs guard reported `7 passed` for the latest summary
-  update after the earlier tooltip/card guard reported `8 passed`.
+- Latest public/deferred API search follow-up: public activation searches such
+  as `sleep wake` and `island activation` now route to the related
+  `deactivation_sleeping` verifier, while deferred public-API searches such as
+  `loop closure compliance` still route to the closest current verifier row
+  with a `Deferred API caveat` note. The focused panel/capture/docs guard
+  reported `7 passed` for the latest summary update after the earlier
+  tooltip/card guard reported `8 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
-  surfaces, while sleep/wake or island activation and loop-closure
-  compliance/stiffness/damping remain unavailable. The in-viewer `Rigid
+  surfaces and sleep/deactivation state, while loop-closure
+  compliance/stiffness/damping remains unavailable. The in-viewer `Rigid
 Workflow` search routes `direct rigid body impulse` to
-  `rigid_external_loads`, and continues to route `sleep wake`,
-  `island activation`, and `loop closure compliance` to the closest current
-  rows with their explicit non-claim caveats.
+  `rigid_external_loads`, routes `sleep wake` and `island activation` to
+  related `deactivation_sleeping` evidence, and continues to route
+  `loop closure compliance` to the closest current row with its explicit
+  non-claim caveat.
 - Latest optional extended-packet capture refresh:
   `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053`
   completed the non-numbered related-evidence, direct Rigid IPC shelf, and
@@ -1237,11 +1242,11 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   `RigidBody.apply_force()`, `RigidBody.apply_torque()`,
   `RigidBody.apply_linear_impulse()`, `RigidBody.apply_angular_impulse()`,
   rigid-body linear/angular momentum accessors, `Link.apply_force(..., point,
-...)`, and `Multibody.compute_impulse_response()`, but no public sleep/wake
-  or island activation surface or loop-closure compliance surface. The drift guard
+...)`, sleep/deactivation state, and `Multibody.compute_impulse_response()`,
+  but no public loop-closure compliance surface. The drift guard
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-  reported `4 passed`. This keeps those deferrals explicit and points future
-  API additions back to this workflow.
+  reported `4 passed`. This keeps remaining deferrals explicit and points
+  future API additions back to this workflow.
 - Latest joint-breakage follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
   reported `8 passed`. It keeps `rigid_joint_breakage` ordered after the
