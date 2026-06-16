@@ -8765,6 +8765,42 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
       61);
 }
 
+TEST(World, BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+  configureRigidBoxedLcpContactRowsScene(world);
+
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+
+  const auto afterBake = world.getMemoryDiagnostics();
+  EXPECT_EQ(afterBake.frameScratchUsedBytes, 0u);
+  EXPECT_EQ(afterBake.frameScratchOverflowCount, 0u);
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  world.step();
+
+  const auto afterStep = world.getMemoryDiagnostics();
+  EXPECT_EQ(afterStep.frameScratchResetCount, 1u);
+  EXPECT_GT(afterStep.frameScratchUsedBytes, 0u)
+      << "boxed-LCP dense per-step temporaries should borrow frame scratch";
+  EXPECT_EQ(afterStep.frameScratchOverflowCount, 0u);
+  EXPECT_EQ(afterStep.frameScratchOverflowBytes, 0u);
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
 {
   expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(

@@ -798,7 +798,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
 
-#### WP-091.22 Frame arena: wire or delete
+#### WP-091.22 Frame arena: wire or delete [claimed]
 
 - Objective: the per-step frame-scratch arena either gains real consumers
   (transient contact rows, facade-query temporaries) with its diagnostics

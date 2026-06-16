@@ -10509,12 +10509,11 @@ struct RigidBodyContactStage::ContactScratch
   ContactScratch() = default;
 
   explicit ContactScratch(common::MemoryAllocator& allocator)
-    : constraints(ConstraintAllocator{allocator}), boxedLcp(allocator)
+    : constraints(ConstraintAllocator{allocator})
   {
   }
 
   std::vector<NormalConstraint, ConstraintAllocator> constraints;
-  detail::BoxedLcpContactScratch boxedLcp;
 };
 
 //==============================================================================
@@ -10622,13 +10621,18 @@ void RigidBodyContactStage::prepare(World& world)
     constraints.reserve(contactCapacity);
     // Warm the collision-query cache and its contact buffer at bake time so
     // baked steps reuse the reserved capacity instead of growing the world
-    // allocator. BoxedLcp additionally reserves its Delassus scratch from the
-    // resolved contact set.
+    // allocator. BoxedLcp additionally warms the frame arena for its per-step
+    // Delassus/Dantzig dense temporaries; persistent solver state must stay out
+    // of the resettable frame scratch.
     [[maybe_unused]] const auto contacts
         = world.queryContacts(CollisionQueryOptions{});
     if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
-      detail::reserveBoxedLcpContactScratch(
-          registry, contacts, m_contactScratch->boxedLcp);
+      auto& frameAllocator = world.getMemoryManager().getFrameAllocator();
+      {
+        detail::BoxedLcpContactScratch frameWarmup(frameAllocator);
+        detail::reserveBoxedLcpContactScratch(registry, contacts, frameWarmup);
+      }
+      frameAllocator.reset();
     }
   }
 
@@ -10914,13 +10918,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // the resulting impulses to body velocities. The default SequentialImpulse
   // path below is unchanged.
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
-    if (m_contactScratch == nullptr) {
-      m_contactScratch = ContactScratchPtr(
-          createContactScratch(m_memoryManager),
-          ContactScratchDeleter{m_memoryManager});
-    }
+    detail::BoxedLcpContactScratch frameScratch(
+        world.getMemoryManager().getFrameAllocator());
     detail::applyBoxedLcpContacts(
-        registry, contacts, world.getTimeStep(), m_contactScratch->boxedLcp);
+        registry, contacts, world.getTimeStep(), frameScratch);
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
     return;
   }
