@@ -169,8 +169,10 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Release Tests
     runs-on: ubuntu-latest
-    # Cap runaway/hung jobs well below the ~6h GitHub default.
-    timeout-minutes: 120
+    # This job is build-bound (Release build + dartpy + examples + a full ASAN
+    # build/test + install) and runs ~150-180min; cap above that but well below
+    # the ~6h default so a genuine hang still fails fast.
+    timeout-minutes: 210
     env:
       DART_PARALLEL_JOBS: 8
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
@@ -351,7 +353,7 @@ jobs:
     # The Debug job's dominant cost is the dartpy pybind11 build (see the
     # Python tests step), not the C++ ctest; parallel ctest plus a capped
     # dartpy build bring it well under the old ~6h. Generous cold-cache cap.
-    timeout-minutes: 180
+    timeout-minutes: 210
     env:
       DART_PARALLEL_JOBS: 8
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
