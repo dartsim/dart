@@ -1,5 +1,39 @@
 # Resume: Python SIMBICON Locomotion
 
+## Current Resume Checkpoint (2026-06-16, Foot Tilt Comparison Utility)
+
+Current branch: `feature/simbicon-foot-tilt-metric`.
+
+This branch starts from current `origin/main` and keeps the large
+`feature/dart7-unified-contact-warm-start` branch as a checkpoint only. It ports
+the small Atlas SIMBICON pose-window comparison utility and adds per-foot pose
+metrics: transform translation, trace-vertical position, local z-axis tilt
+relative to the trace vertical axis, and stance/swing aliases when the trace
+state identifies the active limb.
+
+Validation so far:
+
+- `pixi run python -m pytest python/tests/unit/test_compare_atlas_simbicon_pose_window.py -q`
+- `pixi run lint`
+
+Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py` against
+the late state-`0` DART 6/DART 7 trace JSONs once those artifacts are present
+locally, then compare stance-foot local z-axis tilt with support-row counts
+around steps `3970`, `4000`, `4070`, and `4100` before trying another stance
+hip-roll or torso-reaction probe. Do not return to global native surface
+tolerance or blunt swing `hpx`/`hpy` target clamps without new evidence.
+
+How to resume:
+
+```bash
+git checkout feature/simbicon-foot-tilt-metric
+git status --short --branch
+pixi run python -m pytest python/tests/unit/test_compare_atlas_simbicon_pose_window.py -q
+```
+
+Then run the compare script with appropriate `--dart6-json`, `--dart7-json`,
+`--mesh-dir`, and `--steps 3970,4000,4070,4100` arguments.
+
 ## Last Session Summary
 
 The robot-agnostic Python SIMBICON controller and its three py-demos scenes
