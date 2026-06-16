@@ -523,15 +523,17 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     import numpy as np
     from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
 
+    # Keep this volumetric self-contact check small enough for Debug CI while
+    # still forcing the barrier path to activate.
     options, _edges = build_fem_compression_bar(
-        cells_x=24,
-        cells_y=2,
-        cells_z=2,
+        cells_x=6,
+        cells_y=1,
+        cells_z=1,
         cell_size=0.05,
         origin=(-0.6, -0.05, 0.5),
         youngs_modulus=2.0e4,
-        compression_rate=0.12,
-        compression_end_time=3.0,
+        compression_rate=0.35,
+        compression_end_time=1.0,
     )
 
     world = sx.World()
@@ -542,7 +544,7 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
 
     max_active = 0
     positive_separation_samples = 0
-    for _ in range(260):
+    for _ in range(40):
         world.step()
         diag = world.last_deformable_solver_diagnostics
         max_active = max(max_active, diag.self_contact_barrier_active_contacts)
