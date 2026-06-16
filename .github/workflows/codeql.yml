@@ -68,6 +68,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # The C++ build plus the CodeQL database fills the ~14 GB free on the
+      # default ubuntu-latest image (CodeQL DB creation fails with
+      # "No space left on device"). Reclaim the large preinstalled toolchains
+      # we do not use before building.
+      - name: Free disk space
+        if: matrix.run_build
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/.ghcup /usr/local/share/boost || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - name: Setup pixi (CI)
         if: matrix.run_build
         uses: ./.github/actions/setup-pixi-ci

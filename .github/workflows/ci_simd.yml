@@ -2,8 +2,11 @@ name: CI SIMD Multi-Arch
 
 on:
   push:
+    # Branch validation happens via pull_request; only run on push for the
+    # mainline refs to avoid duplicate push+PR runs on feature branches.
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     paths:
       - "dart/simd/**"
       - "tests/unit/simd/**"

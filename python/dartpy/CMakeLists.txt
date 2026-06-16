@@ -282,9 +282,32 @@ nanobind_add_module(dartpy
   ${dartpy_sources}
 )
 
+set(_dartpy_debug_compile_options)
+if(
+  CMAKE_SYSTEM_NAME STREQUAL "Linux"
+  AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
+)
+  if(DARTPY_DEBUG_SYMBOLS)
+    # Split DWARF keeps binding debug info available without feeding the full
+    # payload through the final shared-module link.
+    list(
+      APPEND _dartpy_debug_compile_options
+      "$<$<CONFIG:Debug>:-gsplit-dwarf>"
+    )
+  else()
+    # The Debug binding layer is much larger than the core C++ libraries and
+    # can make the final dartpy module link exceed hosted-runner time limits.
+    # Core DART libraries still keep their normal Debug symbols.
+    list(APPEND _dartpy_debug_compile_options "$<$<CONFIG:Debug>:-g0>")
+  endif()
+endif()
+
 foreach(_nb_target nanobind-static nanobind-static-abi3 nanobind-static-ft)
   if(TARGET ${_nb_target})
-    target_compile_options(${_nb_target} PRIVATE "-UNB_COMPACT_ASSERTIONS")
+    target_compile_options(
+      ${_nb_target}
+      PRIVATE "-UNB_COMPACT_ASSERTIONS" ${_dartpy_debug_compile_options}
+    )
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       # Silence format warnings from nanobind sources that become errors under
       # our global -Werror. These are third-party sources.
@@ -360,7 +383,10 @@ endif()
 
 # Surface a version string to Python.
 target_compile_definitions(dartpy PRIVATE DARTPY_VERSION_INFO="${DART_VERSION}")
-target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
+target_compile_options(
+  dartpy
+  PRIVATE "-UNB_COMPACT_ASSERTIONS" ${_dartpy_debug_compile_options}
+)
 if(
   CMAKE_SYSTEM_NAME STREQUAL "Linux"
   AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
