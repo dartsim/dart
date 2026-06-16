@@ -107,7 +107,8 @@ snapshots beside the World frames instead of storing static scene assets.
 The rigid-body rows are ordered as a short debugging path instead of a flat
 feature list. Start with **`rigid_body`** for default World rigid dynamics,
 use **`rigid_body_modes`** when dynamic/static/kinematic mode semantics need a
-first check, use **`rigid_free_flight`** when contact-free initial velocity,
+first check, use **`deactivation_sleeping`** when the public sleep/wake
+deactivation surface needs inspection, use **`rigid_free_flight`** when contact-free initial velocity,
 gravity, spin, inertia, momentum, or energy diagnostics need inspection, use
 **`rigid_frame_hierarchy`** when body-fixed sensor/tool frames, local transforms,
 world transforms, or relative transforms need inspection, use
@@ -177,23 +178,25 @@ same rows as their documented snake_case or singular forms.
 Search-result tooltips name the match source, such as maintained alias, row
 number, user question, workflow phase, focus axis, related evidence, or scope
 caveat, so users can see why the navigator chose a row before switching scenes.
-Deferred public-API searches such as `sleep wake`, `island activation`, and
-`loop closure compliance` also show a deferred API caveat in the tooltip, guide
-payload, workflow manifest, and static review card before opening or reviewing
-the closest current verifier row. Workflow manifests include
-`deferred_api_caveat_summary`, and review indexes include a top-level
+Public activation searches such as `sleep wake` and `island activation` route
+to the related `deactivation_sleeping` verifier. Deferred public-API searches
+such as `loop closure compliance` also show a deferred API caveat in the
+tooltip, guide payload, workflow manifest, and static review card before
+opening or reviewing the closest current verifier row. Workflow manifests
+include `deferred_api_caveat_summary`, and review indexes include a top-level
 `Deferred API Caveats` table and badge for packet triage.
 Broad queries keep the list compact by showing the top six ranked rows, but the
 panel also states the full match count so users can tell when a term like
 `contact` or `solver` has more rows than are visible.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
-`rigid_executor_equivalence` row. Scope caveats
-remain visible in the row, so deferred public-API searches route to the closest
-current row without claiming unsupported activation or compliance behavior.
-Direct rigid-body impulse API searches route to the public load/impulse row,
-while multibody impulse-response API searches route to the generalized dynamics
-row. The filter ranks positive intent matches first so searches such as
+`rigid_executor_equivalence` row. Scope caveats remain visible in the row, so
+deferred public-API searches route to the closest current row without claiming
+unsupported compliance behavior. Direct rigid-body impulse API searches route
+to the public load/impulse row, activation API searches open the public
+deactivation scene as related evidence, and multibody impulse-response API
+searches route to the generalized dynamics row. The filter ranks positive
+intent matches first so searches such as
 `contact`, `solver`, `step profile`, `backend comparison`,
 `GPU backend`, `variational solver`, `joint damping`, `raycast`,
 `friction coefficient`, `CollisionQueryOptions`, `generalized force`,
@@ -988,15 +991,15 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 \
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 48-49 are the two
+`--include-related --include-packets`, rows 49-50 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 52-53.
+packet rows become 53-54.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow \
     --workflow-start-row 15 --workflow-end-row 17 --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
-    --include-packets --workflow-start-row 48 --workflow-end-row 49 \
+    --include-packets --workflow-start-row 49 --workflow-end-row 50 \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
@@ -1161,6 +1164,8 @@ These commands are also included after the numbered rows by
 `py-demo-capture -- --rigid-workflow --include-related`.
 
 ```bash
+pixi run py-demo-capture -- --scene deactivation_sleeping --frames 72 \
+    --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene floating_base --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene articulated --frames 72 \
@@ -1267,7 +1272,9 @@ into this README.
 quiet rigid bodies sleep, an active striker wakes them through contact, and an
 untouched reference body remains asleep. The scene exposes `is_sleeping` and
 `deactivation_group_index` in a diagnostics table and works with the shared
-headless capture path:
+headless capture path. The rigid workflow filter routes `sleep wake` and
+`island activation` searches here as related evidence without a deferred API
+caveat:
 
 ```bash
 pixi run py-demo-capture -- --scene deactivation_sleeping --show-ui \

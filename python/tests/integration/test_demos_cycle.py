@@ -1202,6 +1202,19 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
 
     assert related_rows == [
         (
+            "rigid_body_modes",
+            "deactivation_sleeping",
+            "World Rigid Body",
+            (
+                "Related shelf: World Rigid Body / deactivation_sleeping - "
+                "public sleep wake and island activation deactivation route"
+            ),
+            (
+                "Dedicated DART 7 body-deactivation scene; use the numbered "
+                "row only for dynamic/static/kinematic mode semantics."
+            ),
+        ),
+        (
             "rigid_free_flight",
             "floating_base",
             "World Rigid Body",
@@ -2060,11 +2073,14 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
             for token in ("sleep", "wake", "island", "activation", "deactivation")
         )
     }
-    assert not activation_attrs, (
-        "Public sleep/wake/island activation API appeared; update the rigid-body "
-        "visual workflow and revisit the activation-state row deferral."
-    )
-    assert "no public sleep/wake or island activation surface" in normalized_text
+    assert {
+        "deactivation_enabled",
+        "deactivation_group_index",
+        "deactivation_options",
+        "is_sleeping",
+    } <= activation_attrs
+    assert "public sleep/wake deactivation surface" in normalized_text
+    assert "deactivation_sleeping" in normalized_text
 
     compliance_attrs = {
         name
@@ -2245,6 +2261,7 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
     )
     readme = root / "python" / "examples" / "demos" / "README.md"
     expected_specs = [
+        ("deactivation_sleeping", 72, 960, 540, True),
         ("floating_base", 72, 960, 540, True),
         ("articulated", 72, 960, 540, True),
         ("rigid_ipc_tunnel", 24, 960, 540, True),

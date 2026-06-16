@@ -16,7 +16,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 1.0 / 120.0
 _BOX_HALF = np.array([0.16, 0.16, 0.16], dtype=float)
@@ -148,6 +148,35 @@ def build() -> SceneSetup:
         sync_visuals()
         return bridge.render_world.renderable_provider()
 
+    def capture_metrics() -> dict[str, Any]:
+        options = world.deactivation_options
+        sleeping_count = sum(1 for body in sleepers if body.is_sleeping)
+        contacts = len(world.collide())
+        return {
+            "row": "deactivation_sleeping",
+            "category": "World Rigid Body",
+            "related_source_row": "rigid_body_modes",
+            "solver": "sequential_impulse",
+            "executor": "World.step default",
+            "scope": "public_sleep_wake_deactivation",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(world.time),
+            "deactivation_enabled": bool(options.enabled),
+            "time_until_sleep": float(options.time_until_sleep),
+            "linear_speed_threshold": float(options.linear_speed_threshold),
+            "angular_speed_threshold": float(options.angular_speed_threshold),
+            "generalized_speed_threshold": float(options.generalized_speed_threshold),
+            "wake_threshold_scale": float(options.wake_threshold_scale),
+            "sleeping_candidates": float(sleeping_count),
+            "candidate_count": float(len(sleepers)),
+            "contacts": float(contacts),
+            "striker_speed": _body_speed(striker),
+            "quiet_reference_sleeping": bool(quiet_reference.is_sleeping),
+            "deactivation_groups": [
+                int(body.deactivation_group_index) for body in dynamic_bodies
+            ],
+        }
+
     def set_deactivation_options(
         *, enabled: bool | None = None, time_until_sleep: float | None = None
     ) -> None:
@@ -215,6 +244,7 @@ def build() -> SceneSetup:
             "quiet_reference": quiet_reference,
             "striker": striker,
             "replay_sync": sync_visuals,
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )
 
