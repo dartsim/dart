@@ -250,6 +250,9 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
   inspect the generated `build.ninja` edge before assuming pytest started. The
   Debug binding-layer symbol policy is documented in
   [python-bindings.md](python-bindings.md#debug-build-symbols).
+- If the Debug Python step has already entered pytest but stays quiet, use the
+  direct pytest isolation workflow in [testing.md](testing.md#next-time-accelerators)
+  to identify the slow file or test.
 - If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
 - If editor or IDE context references a path, verify it exists before making edits or writing guidance.
 - Re-run only the failed CI job (via job databaseId) to keep feedback loops short.
