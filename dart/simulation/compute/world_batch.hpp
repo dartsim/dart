@@ -52,10 +52,11 @@ class ComputeExecutor;
 /// Each world becomes an independent node in a single compute graph and is
 /// stepped @p stepCount times through the default (sequential) per-world path;
 /// @p executor then runs the nodes, so a parallel executor advances the whole
-/// batch concurrently. This is the "homogeneous batch" execution shape
-/// (replicated environments, Pattern A) realized on the CPU by reusing the
-/// existing compute-graph executor seam, with no change to per-world step
-/// semantics.
+/// batch concurrently. This is the heterogeneous-fallback seed for batched
+/// execution: it preserves exact per-World semantics by scheduling independent
+/// Worlds through the existing compute-graph executor seam. The canonical
+/// homogeneous direction is a baked immutable Model plus SoA State blocks with
+/// a leading world dimension.
 ///
 /// The worlds must be independent (no shared state); their per-world results
 /// are identical to stepping each world on its own. Throws if any pointer is

@@ -1034,7 +1034,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   benchmark delta.
 - Dependencies: WP-091.2, WP-091.21.
 
-#### WP-091.33 Batched-World and device-residency design notes
+#### WP-091.33 Batched-World and device-residency design notes [claimed]
 
 - Objective: the batching endgame has an owner and a contract — a design
   note pinning batched stepping semantics to "identical to n independent
@@ -1051,6 +1051,18 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   headers.
 - Gates: docs-only gate set.
 - Dependencies: WP-091.21 (index/Model artifact shapes the State blocks).
+- Evidence: `docs/design/batched_world_device_residency.md` now pins
+  homogeneous batched execution to "identical to n independent sequential
+  Worlds", defines immutable Model plus mutable State/Control/Contacts/Scratch
+  blocks with a leading `worldCount` dimension, records the internal
+  device-residency synchronization contract, states the double-reference
+  precision policy, and labels the existing `RigidBodyStateBatch`,
+  `world_batch.hpp`, `BatchedRigidBodyIntegrationStage`, and CUDA rigid-batch
+  kernels as canonical-direction or heterogeneous-fallback seeds. Follow-up
+  packets are cut as WP-091.33a (batch semantics tests), WP-091.33b (baked
+  rigid Model/State owner), WP-091.33c (control-sequence rollout shape),
+  WP-091.33d (resident device owner), and WP-091.33e (precision and packet
+  reporting).
 
 #### WP-091.34 Graph granularity policy
 
