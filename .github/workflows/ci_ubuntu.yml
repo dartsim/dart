@@ -46,7 +46,11 @@ jobs:
     name: Coverage (Debug)
     runs-on: ubuntu-latest
     env:
-      DART_PARALLEL_JOBS: 8
+      # The Debug + --coverage build instruments every translation unit, using
+      # materially more memory than a normal build; eight parallel jobs starve
+      # the hosted runner ("lost communication with the server"). Keep
+      # parallelism lower to avoid OOM kills (cf. the ASAN build below).
+      DART_PARALLEL_JOBS: 4
     strategy:
       fail-fast: false
     steps:
@@ -106,8 +110,14 @@ jobs:
     if: needs.changes.outputs.core_branch_push == 'true' && needs.changes.outputs.code == 'true'
     name: Core Tests (Linux)
     runs-on: ubuntu-latest
+    # Cap runaway/hung jobs well below the ~6h GitHub default.
+    timeout-minutes: 90
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase. CI historically ran tests sequentially
+      # (a DART 6-era default); DART 7's far larger suite makes that the
+      # dominant CI cost. ctest honors CTEST_PARALLEL_LEVEL natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -159,8 +169,14 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Release Tests
     runs-on: ubuntu-latest
+    # This job is build-bound (Release build + dartpy + examples + a full ASAN
+    # build/test + install) and runs ~150-180min; cap above that but well below
+    # the ~6h default so a genuine hang still fails fast.
+    timeout-minutes: 210
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -334,8 +350,14 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Debug Tests
     runs-on: ubuntu-latest
+    # The Debug job's dominant cost is the dartpy pybind11 build (see the
+    # Python tests step), not the C++ ctest; parallel ctest plus a capped
+    # dartpy build bring it well under the old ~6h. Generous cold-cache cap.
+    timeout-minutes: 210
     env:
       DART_PARALLEL_JOBS: 8
+      # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -375,8 +397,13 @@ jobs:
 
       - name: Run Debug Python tests
         run: |
+          # This step builds the dartpy nanobind extension. In Debug each
+          # binding TU is large, so keep parallelism below the 16 GB hosted
+          # runner's memory limit. Binding-layer Debug symbols are disabled by
+          # default in CMake; the core DART libraries still keep Debug symbols.
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_PARALLEL_JOBS=4 \
           pixi run test-py ON Debug
 
   build-asserts:
@@ -531,9 +558,17 @@ jobs:
           - name: GCC
             cc: gcc
             cxx: g++
+            extra_cxxflags: ""
           - name: Clang
             cc: clang
             cxx: clang++
+            # Clang 18 reports __cpp_concepts=201907L, but libstdc++ 14 gates
+            # std::expected (and other C++20/23 library features) behind
+            # __cpp_concepts>=202002L, so std::expected is hidden and the build
+            # fails (dart/common/result.hpp). Advertise the final C++20 concepts
+            # value so libstdc++ exposes <expected>. This keeps the build on
+            # libstdc++ -- ABI-matching the conda deps -- unlike -stdlib=libc++.
+            extra_cxxflags: "-D__cpp_concepts=202002L -Wno-builtin-macro-redefined"
     env:
       DART_PARALLEL_JOBS: 2
       LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
@@ -559,6 +594,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
+          CXXFLAGS: ${{ matrix.compiler.extra_cxxflags }}
         run: |
           DART_VERBOSE=ON \
           pixi run test-dart-gui-smoke

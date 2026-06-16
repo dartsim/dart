@@ -2,8 +2,11 @@ name: CI Lint
 
 on:
   push:
+    # Branch validation happens via pull_request; only run on push for the
+    # mainline refs to avoid duplicate push+PR runs on feature branches.
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
   pull_request:

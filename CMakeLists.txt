@@ -242,6 +242,11 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
+dart_option(
+  DARTPY_DEBUG_SYMBOLS
+  "Build Debug dartpy/nanobind binding objects with debug symbols" OFF
+  CATEGORY performance
+)
 set(_dart_default_gui OFF)
 if(
   CMAKE_SYSTEM_NAME STREQUAL "Linux"
