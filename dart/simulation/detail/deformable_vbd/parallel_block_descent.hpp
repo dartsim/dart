@@ -32,14 +32,13 @@
 
 #pragma once
 
+#include <dart/simulation/compute/compute_executor.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 
 #include <Eigen/Core>
 
 #include <algorithm>
-#include <barrier>
 #include <span>
-#include <thread>
 #include <vector>
 
 #include <cstddef>
@@ -48,19 +47,18 @@
 namespace dart::simulation::detail::deformable_vbd {
 
 //==============================================================================
-/// Multithreaded graph-colored Gauss-Seidel mass-spring block descent.
+/// Executor-parallel graph-colored Gauss-Seidel mass-spring block descent.
 ///
 /// This is the CPU realization of VBD's parallelism: within a color, vertices
-/// share no spring, so a fixed pool of worker threads each updates a disjoint
-/// contiguous slice of that color's vertices with no data races (each writes
-/// only its own vertices and reads only other-colored neighbors). A
-/// `std::barrier` synchronizes the threads between colors so the Gauss-Seidel
-/// color order is preserved. The result is therefore identical to the serial
-/// `blockDescentMassSpring` for the same iteration count.
+/// share no spring, so the injected executor updates deterministic contiguous
+/// slices of each color with no data races. `parallelFor()` blocks at the end
+/// of each color, preserving Gauss-Seidel color order. The result is therefore
+/// identical to the serial `blockDescentMassSpring` for the same iteration
+/// count.
 ///
-/// `threadCount <= 1` falls back to the serial driver. Early termination is not
-/// applied here (it would need a cross-thread reduction), so the full
-/// `options.iterations` budget runs.
+/// A single-worker executor falls back to the serial driver. Early termination
+/// is not applied on the parallel path (it would need a deterministic chunked
+/// reduction), so the full `options.iterations` budget runs.
 inline BlockDescentStats parallelBlockDescentMassSpring(
     std::vector<Eigen::Vector3d>& positions,
     std::span<const double> masses,
@@ -72,9 +70,10 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
-    unsigned int threadCount)
+    compute::ComputeExecutor& executor)
 {
-  if (threadCount <= 1) {
+  const std::size_t workerCount = executor.getWorkerCount();
+  if (workerCount <= 1u) {
     BlockDescentOptions serialOptions = options;
     serialOptions.convergenceDisplacement = 0.0;
     return blockDescentMassSpring(
@@ -91,45 +90,33 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
   }
 
   const std::size_t vertexCount = positions.size();
-  std::barrier sync(static_cast<std::ptrdiff_t>(threadCount));
-
-  const auto worker = [&](unsigned int threadId) {
-    for (std::size_t iteration = 0; iteration < options.iterations;
-         ++iteration) {
-      for (const auto& group : coloring.groups) {
-        const std::size_t groupSize = group.size();
-        const std::size_t chunk = (groupSize + threadCount - 1) / threadCount;
-        const std::size_t begin = std::min(groupSize, threadId * chunk);
-        const std::size_t end = std::min(groupSize, begin + chunk);
-        for (std::size_t k = begin; k < end; ++k) {
-          const std::uint32_t vertex = group[k];
-          if (vertex >= vertexCount || fixed[vertex] != 0u) {
-            continue;
-          }
-          const VertexBlock block = detail::assembleVertexBlock(
-              vertex,
-              positions,
-              masses,
-              inertialTargets,
-              springs,
-              adjacency,
-              springStiffness,
-              timeStep,
-              options.clampSpringHessian);
-          positions[vertex] += solveVertexBlock(block, options.regularization);
-        }
-        sync.arrive_and_wait();
-      }
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    for (const auto& group : coloring.groups) {
+      const std::size_t groupSize = group.size();
+      const std::size_t chunkSize
+          = (groupSize + workerCount - 1u) / workerCount;
+      executor.parallelFor(
+          groupSize, chunkSize, [&](std::size_t begin, std::size_t end) {
+            for (std::size_t k = begin; k < end; ++k) {
+              const std::uint32_t vertex = group[k];
+              if (vertex >= vertexCount || fixed[vertex] != 0u) {
+                continue;
+              }
+              const VertexBlock block = detail::assembleVertexBlock(
+                  vertex,
+                  positions,
+                  masses,
+                  inertialTargets,
+                  springs,
+                  adjacency,
+                  springStiffness,
+                  timeStep,
+                  options.clampSpringHessian);
+              positions[vertex]
+                  += solveVertexBlock(block, options.regularization);
+            }
+          });
     }
-  };
-
-  std::vector<std::thread> threads;
-  threads.reserve(threadCount);
-  for (unsigned int t = 0; t < threadCount; ++t) {
-    threads.emplace_back(worker, t);
-  }
-  for (auto& thread : threads) {
-    thread.join();
   }
 
   BlockDescentStats stats;
@@ -158,17 +145,17 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 }
 
 //==============================================================================
-/// Multithreaded graph-colored Gauss-Seidel block descent for a body that mixes
-/// distance springs and Stable Neo-Hookean tetrahedra (the parallel counterpart
-/// of blockDescentDeformable). Same-color vertices share neither a spring nor a
-/// tetrahedron, so a fixed worker pool updates each color's disjoint vertex
-/// slices race-free with a `std::barrier` between colors, giving a result
-/// identical to the serial driver for the same iteration count.
+/// Executor-parallel graph-colored Gauss-Seidel block descent for a body that
+/// mixes distance springs and Stable Neo-Hookean tetrahedra (the parallel
+/// counterpart of blockDescentDeformable). Same-color vertices share neither a
+/// spring nor a tetrahedron, so the injected executor updates deterministic
+/// contiguous slices of each color race-free, giving a result identical to the
+/// serial driver for the same iteration count.
 ///
 /// Optional Rayleigh damping is honored via `stepStartPositions`. Chebyshev
 /// over-relaxation and residual early termination are NOT applied on the
-/// multithreaded path (they need cross-thread reductions / a global
-/// extrapolation); `threadCount <= 1` falls back to the full-featured serial
+/// parallel path (they need chunk reductions / a global extrapolation); a
+/// single-worker executor falls back to the full-featured serial
 /// blockDescentDeformable, which does honor them. Active self-contact also
 /// falls back to the serial driver because the lagged VT/EE contact stencils
 /// are not part of the cached spring/tet coloring.
@@ -192,7 +179,7 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     double timeStep,
     const VertexColoring& coloring,
     const BlockDescentOptions& options,
-    unsigned int threadCount,
+    compute::ComputeExecutor& executor,
     std::span<const Eigen::Vector3d> stepStartPositions = {},
     std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
@@ -200,7 +187,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     ChebyshevTwoStepsBackVector* chebyshevTwoStepsBackScratch = nullptr,
     ChebyshevBeforeSweepVector* chebyshevBeforeSweepScratch = nullptr)
 {
-  if (threadCount <= 1 || (selfContact != nullptr && selfContact->active())) {
+  const std::size_t workerCount = executor.getWorkerCount();
+  if (workerCount <= 1u || (selfContact != nullptr && selfContact->active())) {
     return blockDescentDeformable(
         positions,
         masses,
@@ -277,35 +265,23 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     return block;
   };
 
-  std::barrier sync(static_cast<std::ptrdiff_t>(threadCount));
-  const auto worker = [&](unsigned int threadId) {
-    for (std::size_t iteration = 0; iteration < options.iterations;
-         ++iteration) {
-      for (const auto& group : coloring.groups) {
-        const std::size_t groupSize = group.size();
-        const std::size_t chunk = (groupSize + threadCount - 1) / threadCount;
-        const std::size_t begin = std::min(groupSize, threadId * chunk);
-        const std::size_t end = std::min(groupSize, begin + chunk);
-        for (std::size_t k = begin; k < end; ++k) {
-          const std::uint32_t vertex = group[k];
-          if (vertex >= vertexCount || fixed[vertex] != 0u) {
-            continue;
-          }
-          positions[vertex]
-              += solveVertexBlock(assemble(vertex), options.regularization);
-        }
-        sync.arrive_and_wait();
-      }
+  for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    for (const auto& group : coloring.groups) {
+      const std::size_t groupSize = group.size();
+      const std::size_t chunkSize
+          = (groupSize + workerCount - 1u) / workerCount;
+      executor.parallelFor(
+          groupSize, chunkSize, [&](std::size_t begin, std::size_t end) {
+            for (std::size_t k = begin; k < end; ++k) {
+              const std::uint32_t vertex = group[k];
+              if (vertex >= vertexCount || fixed[vertex] != 0u) {
+                continue;
+              }
+              positions[vertex]
+                  += solveVertexBlock(assemble(vertex), options.regularization);
+            }
+          });
     }
-  };
-
-  std::vector<std::thread> threads;
-  threads.reserve(threadCount);
-  for (unsigned int t = 0; t < threadCount; ++t) {
-    threads.emplace_back(worker, t);
-  }
-  for (auto& thread : threads) {
-    thread.join();
   }
 
   BlockDescentStats stats;

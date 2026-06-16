@@ -299,11 +299,6 @@ struct DeformableVbdConfig
   double chebyshevRho = 0.95;
   /// Stiffness-proportional (Rayleigh) damping coefficient k_d (0 disables it).
   double rayleighDamping = 0.0;
-  /// Worker threads for the colored sweep (1 = serial). With more than one
-  /// thread the deterministic multithreaded driver runs, which does not apply
-  /// Chebyshev over-relaxation or residual early termination (those run only on
-  /// the serial path).
-  unsigned int workerThreads = 1;
   /// Penalty stiffness k_c for static ground/obstacle half-space contact
   /// (0 disables ground contact, so the body falls freely past barriers). With
   /// a positive value the VBD solve keeps the body resting on the ground

@@ -42,6 +42,7 @@
 #include "dart/simulation/comps/link.hpp"
 #include "dart/simulation/comps/multibody.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
+#include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/multibody_constraint.hpp"
 #include "dart/simulation/compute/unified_constraint.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
@@ -3062,30 +3063,57 @@ ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
 }
 
 //==============================================================================
-void MultibodyVelocityStage::execute(
-    World& world, ComputeExecutor& /*executor*/)
+void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
   auto view = registry.view<comps::MultibodyStructure>();
+  struct WorkItem
+  {
+    const comps::MultibodyStructure* structure = nullptr;
+    MultibodyDynamicsScratch* scratch = nullptr;
+    PendingMultibodyVelocity* pendingVelocity = nullptr;
+  };
+  std::vector<entt::entity> entities;
   for (auto entity : view) {
-    const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch
-        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
+    getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
-    if (!computeUnconstrainedMultibodyVelocityInto(
-            registry, structure, gravity, timeStep, scratch)) {
-      pendingVelocity.active = false;
-    } else {
-      pendingVelocity.velocity = scratch.nextVelocity;
-      pendingVelocity.active = true;
-    }
-
-    clearMultibodyExternalForces(registry, structure);
+    (void)pendingVelocity;
+    entities.push_back(entity);
   }
+
+  std::vector<WorkItem> workItems;
+  workItems.reserve(entities.size());
+  for (auto entity : entities) {
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
+    auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+    auto& pendingVelocity = registry.get<PendingMultibodyVelocity>(entity);
+    workItems.push_back({&structure, &scratch, &pendingVelocity});
+  }
+
+  executor.parallelFor(
+      workItems.size(), 1u, [&](std::size_t begin, std::size_t end) {
+        for (std::size_t i = begin; i < end; ++i) {
+          auto& item = workItems[i];
+          auto& pendingVelocity = *item.pendingVelocity;
+          if (!computeUnconstrainedMultibodyVelocityInto(
+                  registry,
+                  *item.structure,
+                  gravity,
+                  timeStep,
+                  *item.scratch)) {
+            pendingVelocity.active = false;
+          } else {
+            pendingVelocity.velocity = item.scratch->nextVelocity;
+            pendingVelocity.active = true;
+          }
+
+          clearMultibodyExternalForces(registry, *item.structure);
+        }
+      });
 }
 
 //==============================================================================
@@ -3770,8 +3798,7 @@ bool tryResolveSequentialMultibodyContacts(
 }
 
 //==============================================================================
-void UnifiedConstraintStage::execute(
-    World& world, ComputeExecutor& /*executor*/)
+void UnifiedConstraintStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
@@ -3792,12 +3819,22 @@ void UnifiedConstraintStage::execute(
     return;
   }
 
-  resolveUnifiedConstraints(
-      registry,
-      scratch.problem,
-      std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
-      m_frictionIterations,
-      scratch.solveScratch);
+  if (solveUnifiedConstraintProblemInto(
+          scratch.problem, scratch.solveScratch, executor)) {
+    applyUnifiedConstraintImpulses(
+        registry,
+        scratch.problem,
+        scratch.solveScratch.lambda,
+        std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
+        scratch.solveScratch);
+  } else {
+    applyUnifiedConstraintFallback(
+        registry,
+        scratch.problem,
+        std::span<Eigen::VectorXd>(scratch.multibodyVelocities),
+        m_frictionIterations,
+        scratch.solveScratch);
+  }
 
   // Write each multibody's resolved generalized velocity back to its staging
   // component so the position stage integrates the post-contact velocity. The

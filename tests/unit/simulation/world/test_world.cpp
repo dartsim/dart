@@ -20427,6 +20427,65 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
   }
 }
 
+// Test that an executor-parallel multibody structure stage matches the
+// sequential reference bit-for-bit for independent articulated structures.
+TEST(World, MultibodyVelocityStageParallelMatchesSequential)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::Joint>& joints) {
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.01);
+    for (int i = 0; i < 6; ++i) {
+      auto robot = world.addMultibody("slider_" + std::to_string(i));
+      auto base = robot.addLink("base");
+      sx::JointSpec spec;
+      spec.name = "rail";
+      spec.type = sx::JointType::Prismatic;
+      spec.axis = Eigen::Vector3d::UnitZ();
+      auto carriage = robot.addLink("carriage", base, spec);
+      carriage.setMass(1.0 + 0.25 * i);
+      auto joint = carriage.getParentJoint();
+      joint.setForce(Eigen::VectorXd::Constant(1, 0.5 + 0.1 * i));
+      joints.push_back(joint);
+    }
+    world.enterSimulationMode();
+  };
+
+  sx::World sequentialWorld;
+  sx::World parallelWorld;
+  std::vector<sx::Joint> sequentialJoints;
+  std::vector<sx::Joint> parallelJoints;
+  buildWorld(sequentialWorld, sequentialJoints);
+  buildWorld(parallelWorld, parallelJoints);
+
+  compute::SequentialExecutor sequentialExecutor;
+  compute::ParallelExecutor parallelExecutor(3);
+  compute::MultibodyVelocityStage sequentialVelocity;
+  compute::MultibodyVelocityStage parallelVelocity;
+  compute::MultibodyPositionStage sequentialPosition;
+  compute::MultibodyPositionStage parallelPosition;
+  for (int step = 0; step < 4; ++step) {
+    sequentialVelocity.execute(sequentialWorld, sequentialExecutor);
+    sequentialPosition.execute(sequentialWorld, sequentialExecutor);
+    parallelVelocity.execute(parallelWorld, parallelExecutor);
+    parallelPosition.execute(parallelWorld, parallelExecutor);
+  }
+
+  ASSERT_EQ(sequentialJoints.size(), parallelJoints.size());
+  for (std::size_t i = 0; i < sequentialJoints.size(); ++i) {
+    EXPECT_TRUE((sequentialJoints[i].getPosition().array()
+                 == parallelJoints[i].getPosition().array())
+                    .all())
+        << "joint=" << i << " position not bitwise";
+    EXPECT_TRUE((sequentialJoints[i].getVelocity().array()
+                 == parallelJoints[i].getVelocity().array())
+                    .all())
+        << "joint=" << i << " velocity not bitwise";
+  }
+}
+
 // Test the Phase 3 determinism gate's strong half: rigid-body integration is a
 // map-only stage (each body reads and writes only its own components, with no
 // cross-body reduction), so parallel execution must equal the sequential

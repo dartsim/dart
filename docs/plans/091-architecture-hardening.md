@@ -968,7 +968,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS3 — Compute axis reality
 
-#### WP-091.30 Executor primitives and one converted stage per domain
+#### WP-091.30 Executor primitives and one converted stage per domain [claimed]
 
 - Objective: stages source CPU parallelism from the injected executor through
   two or three primitives (parallel-for over bodies/structures/islands/colors
@@ -986,6 +986,18 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   thread-pool code and the public knob are gone.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.2.
+- Evidence: `ComputeExecutor::parallelFor` is now the CPU parallel primitive
+  (Taskflow-backed in `ParallelExecutor` and sequential by default). The
+  multibody velocity structure loop, unified-constraint contact-island solve,
+  and VBD graph-color sweep source CPU work through the injected executor, with
+  sequential-vs-parallel parity coverage in `test_world`,
+  `test_unified_constraint`, `test_vbd_parallel_block_descent`, and
+  `test_compute_graph`; the public deformable `workerThreads` /
+  `worker_threads` knob is removed from C++ and dartpy; the native collision
+  batch fan-out now uses the layer-neutral `dart/common/parallel_for.hpp`
+  helper instead of depending on `simulation/compute`. Validated with
+  `pixi run lint`, `pixi run build`, and `pixi run test-unit` (163/163 test
+  binaries).
 
 #### WP-091.31 Per-World accelerator policy
 

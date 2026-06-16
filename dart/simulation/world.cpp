@@ -5150,7 +5150,6 @@ void World::configureDeformableSolver(
                                    options.useAcceleration,
                                    options.accelerationSpectralRadius,
                                    options.stiffnessDamping,
-                                   options.workerThreads,
                                    options.groundContactStiffness});
     return;
   }

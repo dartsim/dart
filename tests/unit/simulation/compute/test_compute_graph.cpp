@@ -788,6 +788,28 @@ TEST(SimulationParallelExecutor, RespectsDependencies)
 }
 
 //==============================================================================
+TEST(SimulationParallelExecutor, ParallelForCoversRange)
+{
+  compute::ParallelExecutor executor(3);
+  std::vector<int> values(17, -1);
+  executor.parallelFor(
+      values.size(), 4u, [&](std::size_t begin, std::size_t end) {
+        for (std::size_t i = begin; i < end; ++i) {
+          values[i] = static_cast<int>(2u * i);
+        }
+      });
+
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    EXPECT_EQ(values[i], static_cast<int>(2u * i));
+  }
+
+  bool called = false;
+  executor.parallelFor(
+      0u, 4u, [&](std::size_t, std::size_t) { called = true; });
+  EXPECT_FALSE(called);
+}
+
+//==============================================================================
 TEST(SimulationParallelExecutor, PropagatesNodeExceptions)
 {
   compute::ComputeGraph graph;

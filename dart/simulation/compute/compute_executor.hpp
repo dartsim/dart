@@ -35,6 +35,8 @@
 #include <dart/simulation/compute/execution_profile.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <functional>
+
 #include <cstddef>
 
 namespace dart::simulation::compute {
@@ -60,6 +62,9 @@ class ComputeGraph;
 class DART_SIMULATION_API ComputeExecutor
 {
 public:
+  using ParallelForRange
+      = std::function<void(std::size_t begin, std::size_t end)>;
+
   virtual ~ComputeExecutor() = default;
 
   ComputeExecutor() = default;
@@ -77,6 +82,24 @@ public:
     profile = executeProfiled(graph);
   }
   [[nodiscard]] virtual std::size_t getWorkerCount() const = 0;
+
+  /// Execute @p function over the half-open index range [0, @p count).
+  ///
+  /// Parallel backends split the range into deterministic contiguous chunks of
+  /// at least @p grainSize indices and block until every chunk completes.
+  /// Callers that need reductions must write one result per chunk and merge
+  /// those results in chunk order after this call returns.
+  virtual void parallelFor(
+      std::size_t count,
+      std::size_t grainSize,
+      const ParallelForRange& function)
+  {
+    (void)grainSize;
+    if (count == 0u) {
+      return;
+    }
+    function(0u, count);
+  }
 };
 
 } // namespace dart::simulation::compute

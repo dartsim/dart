@@ -6329,6 +6329,7 @@ void runVbdDeformableSolve(
     std::span<const std::uint8_t> surfaceContactPointMask,
     double frictionCoeff,
     const comps::DeformableVbdConfig& config,
+    ComputeExecutor& executor,
     DeformableSolverStats& stats)
 {
   const std::size_t nodeCount = scratch.next.size();
@@ -6547,13 +6548,13 @@ void runVbdDeformableSolve(
       = hasRequestedAvbdMassSpringRows && vbdScratch.tets.empty()
         && !hasUnsupportedAvbdFrictionSource
         && (selfContact == nullptr || useAvbdSelfContactRows)
-        && config.workerThreads <= 1 && !options.useChebyshev
+        && executor.getWorkerCount() <= 1u && !options.useChebyshev
         && options.rayleighDamping <= 0.0;
   const bool canUseAvbdTetMaterialRows
       = config.useAvbdFiniteStiffnessRows && !config.useAvbdContactNormalRows
         && !config.useAvbdAttachmentRows && contactPlanes.empty()
         && vbdScratch.springs.empty() && !vbdScratch.tets.empty()
-        && !hasUnsupportedAvbdFrictionSource && config.workerThreads <= 1
+        && !hasUnsupportedAvbdFrictionSource && executor.getWorkerCount() <= 1u
         && !options.useChebyshev && options.rayleighDamping <= 0.0;
 
   dvbd::BlockDescentStats result;
@@ -7365,7 +7366,7 @@ void runVbdDeformableSolve(
     // state.positions holds x^t for this step (the write-back to the live state
     // happens after the solve), so it is the Rayleigh displacement reference.
     // parallelBlockDescentDeformable falls back to the full-featured serial
-    // driver when workerThreads <= 1.
+    // driver when the injected executor has a single worker.
     result = dvbd::parallelBlockDescentDeformable(
         scratch.next,
         nodeModel.masses,
@@ -7381,7 +7382,7 @@ void runVbdDeformableSolve(
         timeStep,
         vbdScratch.coloring,
         options,
-        config.workerThreads,
+        executor,
         state.positions,
         contactPlanes,
         frictionCoeff,
@@ -8113,6 +8114,7 @@ void advanceDeformableBody(
     std::span<const BoxObstacleBarrier> boxObstacles,
     std::span<const CapsuleObstacleBarrier> capsuleObstacles,
     const comps::DeformableMaterial& material,
+    ComputeExecutor& executor,
     DeformableSolverStats& stats)
 {
   const auto nodeCount = state.positions.size();
@@ -8253,6 +8255,7 @@ void advanceDeformableBody(
         contactScratch.surfaceContactPointMask,
         frictionCoefficient,
         *vbdConfig,
+        executor,
         stats);
     applySurfaceContactCcdCandidateLimit(
         state.positions, scratch.activeFixed, contactScratch, stats, scratch);
@@ -12235,8 +12238,7 @@ void DeformableDynamicsStage::prepare(World& world)
 }
 
 //==============================================================================
-void DeformableDynamicsStage::execute(
-    World& world, ComputeExecutor& /*executor*/)
+void DeformableDynamicsStage::execute(World& world, ComputeExecutor& executor)
 {
   m_lastStats.reset();
 
@@ -12355,6 +12357,7 @@ void DeformableDynamicsStage::execute(
         boxObstacles,
         capsuleObstacles,
         material,
+        executor,
         m_lastStats);
   }
 }
