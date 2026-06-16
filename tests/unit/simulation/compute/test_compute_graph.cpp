@@ -43,6 +43,7 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 
 #include <dart/common/memory_manager.hpp>
+#include <dart/common/parallel_for.hpp>
 
 #include <gtest/gtest.h>
 
@@ -64,6 +65,23 @@ namespace sx = dart::simulation;
 namespace common = dart::common;
 
 namespace {
+
+class InlineOnlyExecutor final : public compute::ComputeExecutor
+{
+public:
+  void execute(const compute::ComputeGraph&) override {}
+
+  compute::ComputeExecutionProfile executeProfiled(
+      const compute::ComputeGraph&) override
+  {
+    return {};
+  }
+
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return 1u;
+  }
+};
 
 std::atomic<bool> g_heapAllocationTrackingEnabled{false};
 std::atomic<std::size_t> g_heapAllocationCount{0};
@@ -807,6 +825,96 @@ TEST(SimulationParallelExecutor, ParallelForCoversRange)
   executor.parallelFor(
       0u, 4u, [&](std::size_t, std::size_t) { called = true; });
   EXPECT_FALSE(called);
+
+  compute::ParallelExecutor singleWorker(1);
+  std::vector<int> inlineValues(5, -1);
+  singleWorker.parallelFor(
+      inlineValues.size(), 0u, [&](std::size_t begin, std::size_t end) {
+        EXPECT_EQ(begin, 0u);
+        EXPECT_EQ(end, inlineValues.size());
+        for (std::size_t i = begin; i < end; ++i) {
+          inlineValues[i] = static_cast<int>(i);
+        }
+      });
+  for (std::size_t i = 0; i < inlineValues.size(); ++i) {
+    EXPECT_EQ(inlineValues[i], static_cast<int>(i));
+  }
+}
+
+//==============================================================================
+TEST(ComputeExecutor, DefaultParallelForRunsInlineAndSkipsEmptyRange)
+{
+  InlineOnlyExecutor executor;
+
+  bool called = false;
+  executor.parallelFor(
+      0u, 0u, [&](std::size_t, std::size_t) { called = true; });
+  EXPECT_FALSE(called);
+
+  std::vector<int> values(4, -1);
+  executor.parallelFor(
+      values.size(), 8u, [&](std::size_t begin, std::size_t end) {
+        EXPECT_EQ(begin, 0u);
+        EXPECT_EQ(end, values.size());
+        for (std::size_t i = begin; i < end; ++i) {
+          values[i] = static_cast<int>(i + 1u);
+        }
+      });
+  EXPECT_EQ(values, (std::vector<int>{1, 2, 3, 4}));
+}
+
+//==============================================================================
+TEST(CommonParallelFor, ChunkHelpersClampWorkerAndGrainCounts)
+{
+  EXPECT_GE(common::resolveParallelForWorkerCount(0u), 1u);
+  EXPECT_EQ(common::resolveParallelForWorkerCount(1u), 1u);
+  EXPECT_EQ(common::parallelForChunkSize(0u, 1u, 4u), 0u);
+  EXPECT_EQ(common::parallelForChunkCount(0u, 1u, 4u), 0u);
+
+  EXPECT_EQ(common::parallelForChunkSize(5u, 0u, 1u), 5u);
+  EXPECT_EQ(common::parallelForChunkCount(5u, 0u, 1u), 1u);
+  EXPECT_EQ(common::parallelForChunkCount(5u, 64u, 4u), 1u);
+}
+
+//==============================================================================
+TEST(CommonParallelFor, ParallelForChunksCoversEmptyInlineAndChunkedRanges)
+{
+  bool called = false;
+  common::parallelForChunks(
+      0u, 1u, 4u, [&](std::size_t, std::size_t, std::size_t) {
+        called = true;
+      });
+  EXPECT_FALSE(called);
+
+  std::vector<int> inlineValues(3, -1);
+  common::parallelForChunks(
+      inlineValues.size(),
+      64u,
+      4u,
+      [&](std::size_t begin, std::size_t end, std::size_t chunkIndex) {
+        EXPECT_EQ(chunkIndex, 0u);
+        EXPECT_EQ(begin, 0u);
+        EXPECT_EQ(end, inlineValues.size());
+        for (std::size_t i = begin; i < end; ++i) {
+          inlineValues[i] = static_cast<int>(i);
+        }
+      });
+  EXPECT_EQ(inlineValues, (std::vector<int>{0, 1, 2}));
+
+  std::vector<int> chunkedValues(16, -1);
+  common::parallelForChunks(
+      chunkedValues.size(),
+      2u,
+      4u,
+      [&](std::size_t begin, std::size_t end, std::size_t chunkIndex) {
+        EXPECT_LT(begin, end);
+        for (std::size_t i = begin; i < end; ++i) {
+          chunkedValues[i] = static_cast<int>(chunkIndex);
+        }
+      });
+  for (const int value : chunkedValues) {
+    EXPECT_GE(value, 0);
+  }
 }
 
 //==============================================================================
