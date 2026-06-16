@@ -348,9 +348,10 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Debug Tests
     runs-on: ubuntu-latest
-    # Debug + serial ctest used to run ~6h and hit the default kill; parallel
-    # ctest should bring this well down. Keep a generous cold-cache cap.
-    timeout-minutes: 150
+    # The Debug job's dominant cost is the dartpy pybind11 build (see the
+    # Python tests step), not the C++ ctest; parallel ctest plus a capped
+    # dartpy build bring it well under the old ~6h. Generous cold-cache cap.
+    timeout-minutes: 180
     env:
       DART_PARALLEL_JOBS: 8
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
@@ -394,8 +395,14 @@ jobs:
 
       - name: Run Debug Python tests
         run: |
+          # This step builds the dartpy pybind11 extension. In Debug each
+          # binding TU is large and memory-heavy, so building at
+          # DART_PARALLEL_JOBS=8 thrashes the 16 GB hosted runner -- this step
+          # (not the C++ ctest) dominated the old ~6h Debug job. Cap parallelism
+          # like the ASAN build above so the build fits in RAM and progresses.
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_PARALLEL_JOBS=4 \
           pixi run test-py ON Debug
 
   build-asserts:
