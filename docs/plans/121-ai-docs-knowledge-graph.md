@@ -81,17 +81,17 @@ adding a new documentation platform.
   `docs/readthedocs/papers.md`, and focused tests.
 - Non-goals: generated `papers_graph.json`, mandatory new frontmatter on the
   catalog, or external URL health checks.
-- Acceptance evidence: summary/detail ID and shared-field parity, enum
-  legality, duplicate IDs, detail property lines, and local catalog links are
-  checked.
+- Acceptance evidence: summary/detail ID and shared-field parity,
+  legend-owned enum legality, duplicate IDs, detail property lines, and local
+  catalog links are checked.
 - Gates: `pixi run python -m pytest tests/test_check_docs_policy.py`,
   `pixi run check-docs-policy`, `pixi run lint`.
 - Dependencies: none.
 
 #### WP-121.5 North-star freshness advisory [done — local implementation]
 
-- Objective: the north-star status evidence table exposes when cited local
-  evidence has changed after its last manual verification.
+- Objective: the north-star status evidence table exposes when cited committed
+  local evidence has changed after its last manual verification.
 - Scope: `docs/ai/north-star.md` and `scripts/check_docs_policy.py`.
 - Non-goals: blocking CI on git-date freshness, parsing every dashboard code
   span as evidence, or moving freshness into frontmatter.

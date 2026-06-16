@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -77,17 +78,7 @@ MARKDOWN_LINK_ADVISORY_PATTERNS = (
 NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
     r"<!--\s*docs-policy:\s*evidence-last-verified=(?P<date>\d{4}-\d{2}-\d{2})\s*-->"
 )
-PAPERS_STATUS_VALUES = {
-    "referenced",
-    "planned",
-    "in-progress",
-    "implemented",
-    "deferred",
-    "rejected",
-}
-PAPERS_PRIORITY_VALUES = {"high", "medium", "low", "—"}
-PAPERS_VERDICT_VALUES = {"adopt", "baseline", "reference", "evaluate", "reject"}
-PAPERS_TYPE_VALUES = {"textbook", "paper", "standard", "engine"}
+PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
 
 
@@ -502,6 +493,8 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
     This is intentionally advisory and pilot-scoped for the first rollout: it
     catches regressions in the new AI-graph guardrail surfaces without making
     the existing repository-wide link inventory noisy on every policy run.
+    Fragments are normalized to their owning file; heading anchors are not
+    validated yet.
     """
     warnings: list[str] = []
     for path in iter_tracked_files(repo_root, list(MARKDOWN_LINK_ADVISORY_PATTERNS)):
@@ -578,14 +571,38 @@ def _parse_frontmatter(text: str) -> dict[str, str]:
             continue
         key_value = re.match(r"^([A-Za-z0-9_-]+):\s*(.+)$", line)
         if key_value:
-            frontmatter[key_value.group(1)] = key_value.group(2).strip()
+            frontmatter[key_value.group(1)] = _normalize_frontmatter_value(
+                key_value.group(2).strip()
+            )
     return frontmatter
+
+
+def _normalize_frontmatter_value(value: str) -> str:
+    """Normalize the single-line YAML scalars used in DART frontmatter."""
+    if len(value) < 2:
+        return value
+    if value[0] == '"' and value[-1] == '"':
+        try:
+            return str(json.loads(value))
+        except json.JSONDecodeError:
+            return value[1:-1]
+    if value[0] == "'" and value[-1] == "'":
+        return value[1:-1].replace("''", "'")
+    return value
 
 
 def check_ai_doc_frontmatter(repo_root: Path) -> list[str]:
     """Enforce the narrow docs/ai frontmatter pilot."""
     failures: list[str] = []
     ai_dir = repo_root / "docs" / "ai"
+    actual_docs = (
+        {path.name for path in ai_dir.glob("*.md")} if ai_dir.exists() else set()
+    )
+    for filename in sorted(actual_docs - DOCS_AI_FRONTMATTER_FILES):
+        failures.append(
+            f"docs/ai/{filename}: docs/ai frontmatter pilot roster is missing "
+            "this Markdown file"
+        )
     for filename in sorted(DOCS_AI_FRONTMATTER_FILES):
         path = ai_dir / filename
         rel_path = path.relative_to(repo_root)
@@ -660,6 +677,26 @@ def _strip_code_ticks(value: str) -> str:
     return value
 
 
+def _strip_markdown_cell_markup(value: str) -> str:
+    return re.sub(r"[*_`]", "", value).strip()
+
+
+def _parse_papers_property_values(text: str) -> dict[str, set[str]]:
+    values_by_property: dict[str, set[str]] = {}
+    for _, headers, rows in _parse_markdown_tables(text):
+        if "Property" not in headers or "Values" not in headers:
+            continue
+        for row in rows:
+            if len(row) != len(headers):
+                continue
+            row_data = dict(zip(headers, row, strict=True))
+            property_name = _strip_markdown_cell_markup(row_data["Property"])
+            values = set(re.findall(r"`([^`]+)`", row_data.get("Values", "")))
+            if values:
+                values_by_property[property_name] = values
+    return values_by_property
+
+
 def check_papers_catalog(repo_root: Path) -> list[str]:
     """Validate the papers catalog shape without generating a second source."""
     failures: list[str] = []
@@ -668,6 +705,14 @@ def check_papers_catalog(repo_root: Path) -> list[str]:
         return failures
 
     text = path.read_text(encoding="utf-8", errors="replace")
+    allowed_values_by_field = _parse_papers_property_values(text)
+    for field in PAPERS_CLOSED_VALUE_FIELDS:
+        if not allowed_values_by_field.get(field):
+            failures.append(
+                "docs/readthedocs/papers.md: property legend is missing "
+                f"closed values for `{field}`"
+            )
+
     summary_entries: dict[str, dict[str, str]] = {}
     for table_line, headers, rows in _parse_markdown_tables(text):
         if "ID" not in headers:
@@ -700,7 +745,7 @@ def check_papers_catalog(repo_root: Path) -> list[str]:
                 entry_id,
                 "Status",
                 row_data.get("Status", ""),
-                PAPERS_STATUS_VALUES,
+                allowed_values_by_field.get("Status", set()),
             )
             _validate_papers_table_value(
                 failures,
@@ -708,7 +753,7 @@ def check_papers_catalog(repo_root: Path) -> list[str]:
                 entry_id,
                 "Priority",
                 row_data.get("Priority", ""),
-                PAPERS_PRIORITY_VALUES,
+                allowed_values_by_field.get("Priority", set()),
             )
             _validate_papers_table_value(
                 failures,
@@ -716,7 +761,7 @@ def check_papers_catalog(repo_root: Path) -> list[str]:
                 entry_id,
                 "Verdict",
                 row_data.get("Verdict", ""),
-                PAPERS_VERDICT_VALUES,
+                allowed_values_by_field.get("Verdict", set()),
             )
 
     detail_matches = list(re.finditer(r"^### `(?P<id>[^`]+)`\s*$", text, re.MULTILINE))
@@ -747,6 +792,7 @@ def check_papers_catalog(repo_root: Path) -> list[str]:
             block,
             entry_id,
             line_number,
+            allowed_values_by_field,
         )
         if detail_fields and entry_id in summary_entries:
             _validate_papers_summary_detail_parity(
@@ -781,7 +827,7 @@ def _validate_papers_table_value(
     if not value:
         return
     normalized = _strip_code_ticks(value)
-    if normalized not in allowed_values:
+    if allowed_values and normalized not in allowed_values:
         failures.append(
             f"docs/readthedocs/papers.md:{line_number}: `{entry_id}` has invalid "
             f"{field} `{normalized}`"
@@ -796,6 +842,7 @@ def _validate_papers_detail_block(
     block: str,
     entry_id: str,
     heading_line: int,
+    allowed_values_by_field: dict[str, set[str]],
 ) -> dict[str, str] | None:
     property_match = re.search(
         r"- \*\*Type:\*\*\s*(?P<type>[^·\n]+)"
@@ -813,14 +860,26 @@ def _validate_papers_detail_block(
         return None
 
     field_values = {
-        "Type": (property_match.group("type").strip(), PAPERS_TYPE_VALUES),
-        "Status": (property_match.group("status").strip(), PAPERS_STATUS_VALUES),
-        "Priority": (property_match.group("priority").strip(), PAPERS_PRIORITY_VALUES),
-        "Verdict": (property_match.group("verdict").strip(), PAPERS_VERDICT_VALUES),
+        "Type": (
+            _strip_code_ticks(property_match.group("type").strip()),
+            allowed_values_by_field.get("Type", set()),
+        ),
+        "Status": (
+            _strip_code_ticks(property_match.group("status").strip()),
+            allowed_values_by_field.get("Status", set()),
+        ),
+        "Priority": (
+            _strip_code_ticks(property_match.group("priority").strip()),
+            allowed_values_by_field.get("Priority", set()),
+        ),
+        "Verdict": (
+            _strip_code_ticks(property_match.group("verdict").strip()),
+            allowed_values_by_field.get("Verdict", set()),
+        ),
     }
     property_line = heading_line + block[: property_match.start()].count("\n") + 1
     for field, (value, allowed_values) in field_values.items():
-        if value not in allowed_values:
+        if allowed_values and value not in allowed_values:
             failures.append(
                 f"docs/readthedocs/papers.md:{property_line}: `{entry_id}` has "
                 f"invalid {field} `{value}`"
@@ -869,7 +928,7 @@ def _validate_papers_summary_detail_parity(
 
 
 def check_north_star_evidence_freshness(repo_root: Path) -> list[str]:
-    """Report north-star evidence paths newer than the verification marker."""
+    """Report committed evidence paths newer than the verification marker."""
     path = repo_root / "docs" / "ai" / "north-star.md"
     if not path.exists():
         return []
