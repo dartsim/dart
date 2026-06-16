@@ -1059,10 +1059,92 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   precision policy, and labels the existing `RigidBodyStateBatch`,
   `world_batch.hpp`, `BatchedRigidBodyIntegrationStage`, and CUDA rigid-batch
   kernels as canonical-direction or heterogeneous-fallback seeds. Follow-up
-  packets are cut as WP-091.33a (batch semantics tests), WP-091.33b (baked
-  rigid Model/State owner), WP-091.33c (control-sequence rollout shape),
-  WP-091.33d (resident device owner), and WP-091.33e (precision and packet
-  reporting).
+  packets are drafted below as WP-091.33a through WP-091.33e, preserving the
+  design note's implementation order and keeping backend/device vocabulary
+  out of public APIs.
+
+#### WP-091.33a Batch semantics tests
+
+- Objective: the supported rigid-body batch paths are locked to "identical to
+  independent sequential Worlds" before the batch owner is promoted.
+- Scope: parity tests around the current homogeneous rigid-body batch seed
+  and heterogeneous `stepWorldsBatched()` fallback; one-lane equivalence,
+  multi-lane independence, deterministic lane ordering, and lane-indexed
+  validation failure text.
+- Non-goals: new batch storage owners; CUDA residency; public batch APIs.
+- Acceptance evidence: one-lane batch results are bitwise identical to the
+  ordinary sequential `World::step()` reference for the supported path;
+  multi-lane tests match independently stepped Worlds; an injected
+  lane-local validation failure reports the lane index.
+- Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
+- Dependencies: WP-091.33 (accepted design note).
+
+#### WP-091.33b Baked rigid Model/State owner
+
+- Objective: the rigid batch seed has an internal baked owner that separates
+  immutable Model blocks from mutable State blocks and can be reused across
+  rollout segments without rebuilding the Model.
+- Scope: internal `simulation/compute` batch owner types for rigid bodies;
+  extraction/apply call sites; topology/configuration invalidation; reuse
+  diagnostics showing Model blocks are not rebuilt on steady-state rollout.
+- Non-goals: public API promotion; non-rigid domains; device residency.
+- Acceptance evidence: the owner reuses immutable Model storage across at
+  least two rollout segments, invalidates on structural edits, preserves the
+  WP-091.33a parity tests, and records allocation/profile evidence that the
+  steady-state path does not rebuild Model blocks.
+- Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
+- Dependencies: WP-091.21, WP-091.33a.
+
+#### WP-091.33c Control-sequence rollout shape
+
+- Objective: batched rollout control input has a backend-neutral data shape
+  that keeps Python/C++ callbacks outside compute nodes and records the
+  resolved execution shape.
+- Scope: an internal Control sequence layout for rigid batched rollout;
+  lowering from facade-authored forces/commands into per-lane data; diagnostics
+  that report homogeneous batch vs heterogeneous fallback.
+- Non-goals: policy-learning integration; callback execution inside compute
+  nodes; device buffers.
+- Acceptance evidence: a multi-step rollout consumes a per-lane Control
+  sequence without invoking callbacks inside compute nodes, produces the same
+  states as independent Worlds, and records the resolved execution shape in
+  diagnostics.
+- Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
+  `pixi run check-api-boundaries`.
+- Dependencies: WP-091.33b.
+
+#### WP-091.33d Resident device owner
+
+- Objective: the optional sidecar path has an internal residency owner with
+  explicit upload, download, and synchronization boundaries.
+- Scope: CUDA rigid-batch sidecar residency ownership; coherent State
+  upload/download; backend failure fallback only at synchronization
+  boundaries; CPU-only default build remains unaffected.
+- Non-goals: new kernels; public device handles; mandatory CUDA dependency in
+  default builds.
+- Acceptance evidence: a CPU-only build keeps the same public surface; on a
+  CUDA-capable host, a resident batch step avoids per-step host State copies,
+  downloads State only at explicit sync, and rejects mid-step fallback unless
+  the State is coherent.
+- Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; on Linux
+  CUDA hosts with a visible device, `pixi run -e cuda test-all`.
+- Dependencies: WP-091.31, WP-091.33c.
+
+#### WP-091.33e Precision and packet reporting
+
+- Objective: batched benchmark and diagnostic packets report backend,
+  precision, transfer inclusion, lane count, and resolved execution shape.
+- Scope: packet schema/reporting helpers used by batched benchmark rows;
+  precision policy diagnostics; transfer-time accounting; lane-count fields;
+  docs tying claims back to the double-reference policy.
+- Non-goals: claiming new speedups; changing solver precision; exposing
+  backend-specific scalar types in public APIs.
+- Acceptance evidence: a batched packet row records backend, precision,
+  transfer inclusion, lane count, and resolved execution shape; the checker
+  rejects missing fields for new batched rows; docs state whether transfer time
+  is included and what double-reference tolerance applies.
+- Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
+- Dependencies: WP-091.24, WP-091.33a.
 
 #### WP-091.34 Graph granularity policy
 
