@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Format TOML files while keeping backups."""
+"""Format or check TOML files while keeping backups for write mode."""
 
 from __future__ import annotations
 
+import argparse
 import pathlib
 import shutil
 import subprocess
@@ -33,15 +34,32 @@ def backup_files(files: Iterable[pathlib.Path], root: pathlib.Path) -> None:
         shutil.copy2(src, dest)
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check TOML formatting without modifying files.",
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
+    args = parse_args()
     root = pathlib.Path(__file__).resolve().parent.parent
     toml_files = find_toml_files(root)
     if not toml_files:
         return 0
 
-    backup_files(toml_files, root)
+    if not args.check:
+        backup_files(toml_files, root)
+
     taplo_files = [str(root / path) for path in toml_files]
-    subprocess.run(["taplo", "fmt", *taplo_files], check=True)
+    command = ["taplo", "fmt"]
+    if args.check:
+        command.append("--check")
+    command.extend(taplo_files)
+    subprocess.run(command, check=True)
     return 0
 
 
