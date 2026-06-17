@@ -96,6 +96,11 @@ function(dart_configure_compiler_cache)
     return()
   endif()
 
+  set(_dart_cuda_compiler_launcher_preconfigured OFF)
+  if(DEFINED CMAKE_CUDA_COMPILER_LAUNCHER)
+    set(_dart_cuda_compiler_launcher_preconfigured ON)
+  endif()
+
   _dart_collect_compiler_cache_candidates(_dart_cache_candidates)
   foreach(_candidate IN LISTS _dart_cache_candidates)
     unset(_cache_executable CACHE)
@@ -116,7 +121,7 @@ function(dart_configure_compiler_cache)
         "CXX compiler launcher used for caching"
         FORCE
       )
-      if(CMAKE_CUDA_COMPILER)
+      if(CMAKE_CUDA_COMPILER AND NOT _dart_cuda_compiler_launcher_preconfigured)
         set(
           CMAKE_CUDA_COMPILER_LAUNCHER
           "${_cache_executable}"

@@ -925,12 +925,9 @@ DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TEST
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
-  && [ -z "${DART_DISABLE_COMPILER_CACHE:-}" ]; then
-  # sccache can leave nvcc/fatbinary without its generated PTX on local CUDA
-  # builds; disable the compiler cache for CUDA configs (matches 'config').
-  DART_DISABLE_COMPILER_CACHE_VALUE=ON
-fi
+# CUDA configs still leave CMAKE_CUDA_COMPILER_LAUNCHER empty below because
+# sccache can leave nvcc/fatbinary without generated PTX. Keep C/CXX launchers
+# available so CUDA-enabled dartpy rebuilds can cache host C++ translation units.
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -954,11 +951,11 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
-  # Do not automatically reuse the C++ launcher for nvcc (matches 'config').
+  # Do not automatically reuse the C++ launcher for nvcc.
   if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER:STRING=${CMAKE_CUDA_COMPILER_LAUNCHER}"
   else
-    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER:STRING="
   fi
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
