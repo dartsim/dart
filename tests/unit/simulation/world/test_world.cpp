@@ -9667,13 +9667,16 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       61);
 }
 
-TEST(World, BakedSingleIslandBoxedLcpFallbackContactStepsDoNotMallocOnHeap)
+TEST(World, BakedBoxedLcpFallbackContactStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
       "rigid sphere-ground boxed LCP", configureRigidBoxedLcpContactRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody different-DOF fallback",
+      configureCrossMultibodyDifferentDofFallbackScene);
   expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
       "cross multibody stacked-contact fallback",
       configureCrossMultibodyStackedFallbackScene);
@@ -9710,6 +9713,26 @@ TEST(World, BakedSingleIslandBoxedLcpFallbackContactStepsDoNotMallocOnHeap)
       configureCrossMultibodyStressProductionStackFallbackScene,
       true,
       31);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody multi-island mixed fallback",
+      configureCrossMultibodyMultiIslandFallbackScene,
+      true,
+      4);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody production multi-island mixed fallback",
+      configureCrossMultibodyProductionMultiIslandFallbackScene,
+      true,
+      12);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody stress multi-island mixed fallback",
+      configureCrossMultibodyStressMultiIslandFallbackScene,
+      true,
+      30);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody mixed stress stack and multi-island fallback",
+      configureCrossMultibodyMixedStressFallbackScene,
+      true,
+      61);
 #endif
 }
 

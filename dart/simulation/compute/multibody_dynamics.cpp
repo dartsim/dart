@@ -1065,7 +1065,8 @@ bool computeUnconstrainedMultibodyVelocityInto(
     // Factor into a persistent LDLT so warmed steps reuse its storage rather
     // than constructing (and heap-allocating) a fresh decomposition each step.
     scratch.unconstrainedMassLdlt.compute(scratch.massAndBias.massMatrix);
-    scratch.qddot = scratch.unconstrainedMassLdlt.solve(scratch.rhs);
+    scratch.qddot = scratch.rhs;
+    scratch.unconstrainedMassLdlt.solveInPlace(scratch.qddot);
   }
 
   // Unconstrained next generalized velocity (semi-implicit Euler), then apply
@@ -1259,11 +1260,8 @@ void resetMultibodyLinkContactRow(
   row.tangentJacobian1.setZero();
   row.tangentJacobian2.resize(dof);
   row.tangentJacobian2.setZero();
-  row.otherNormalJacobian.resize(dof);
   row.otherNormalJacobian.setZero();
-  row.otherTangentJacobian1.resize(dof);
   row.otherTangentJacobian1.setZero();
-  row.otherTangentJacobian2.resize(dof);
   row.otherTangentJacobian2.setZero();
   row.normal = Eigen::Vector3d::UnitZ();
   row.tangent1.setZero();
@@ -1363,7 +1361,10 @@ bool prepareMultibodyContactDynamicsInto(
   if (dof == 1) {
     problem.inverseMass(0, 0) = 1.0 / scratch.massAndBias.massMatrix(0, 0);
   } else {
-    problem.inverseMass = scratch.massAndBias.massMatrix.inverse();
+    scratch.velocityMassLdlt.compute(scratch.massAndBias.massMatrix);
+    scratch.velocityIdentity.setIdentity(dof, dof);
+    problem.inverseMass = scratch.velocityIdentity;
+    scratch.velocityMassLdlt.solveInPlace(problem.inverseMass);
   }
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
@@ -3465,6 +3466,17 @@ void reserveMultibodyDynamicsRegistryStorage(
           scratch.rneaVelocity,
           scratch.rneaAcceleration,
           scratch.rneaForce);
+      if (dof > 1) {
+        scratch.unconstrainedMassLdlt.compute(scratch.massAndBias.massMatrix);
+        scratch.qddot.setZero(dof);
+        scratch.unconstrainedMassLdlt.solveInPlace(scratch.qddot);
+
+        scratch.velocityMassLdlt.compute(scratch.massAndBias.massMatrix);
+        scratch.velocityIdentity.setIdentity(dof, dof);
+        scratch.velocityMassInverse = scratch.velocityIdentity;
+        scratch.velocityMassLdlt.solveInPlace(scratch.velocityMassInverse);
+        scratch.contactProblem.inverseMass = scratch.velocityMassInverse;
+      }
     }
 
     auto& pendingVelocity
