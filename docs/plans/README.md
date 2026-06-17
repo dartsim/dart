@@ -241,7 +241,12 @@ next bounded task from the dashboard and other tracked evidence.
 5. If editing, update the dashboard for operating state, the active numbered
    initiative file or external owner document for plan rationale, and any index
    links.
-6. Run the matching verification gates from `docs/ai/verification.md`.
+6. When deriving implementation packets or multi-session dev tasks, record the
+   DART specification intake from `docs/ai/orchestration.md`: value, scope,
+   non-goals, assumptions or open decisions, acceptance evidence, gates, and
+   dependencies. Consequential ambiguity belongs in an owner-local
+   `Decision needed` block.
+7. Run the matching verification gates from `docs/ai/verification.md`.
 
 Plan discussions can be exploratory. Plan edits should leave the files in a
 state where the next agent can immediately tell what changed, why it changed,
