@@ -79,8 +79,7 @@ clean-break, north-star). The docs an agent most often needs inline:
 
 ## Verification
 
-Docs-only edits use the docs-only gate set in `docs/ai/verification.md`
-(`pixi run lint`, `pixi run check-docs-policy`, `pixi run docs-build` when the
-Read the Docs site changes). Implementation work that realizes parts of this
-architecture follows the gates in `docs/design/simulation_solver_architecture.md`
-and the packet gates in `docs/plans/091-architecture-hardening.md`.
+Use `docs/ai/verification.md` to select the docs-only or code gate set for the
+change. Implementation work that realizes parts of this architecture also
+follows the gates in `docs/design/simulation_solver_architecture.md` and the
+packet gates in `docs/plans/091-architecture-hardening.md`.

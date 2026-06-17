@@ -62,6 +62,11 @@ Discuss or update DART living plans: $ARGUMENTS
      parking work;
    - keep `docs/plans/dashboard.md` as the single source of truth for priority,
      status, horizon, dimension, next step, and gate.
+   - when deriving packets or dev-task work, include the DART specification
+     intake from `docs/ai/orchestration.md`: value, scope, non-goals,
+     assumptions/open decisions, acceptance evidence, gates, and dependencies.
+     Use owner-local `Decision needed` blocks for consequential ambiguity
+     instead of silent defaults.
 4. For discussion-only requests, present the tradeoff and proposed plan delta;
    do not edit unless the user asks for an edit or the request already implies
    one.
