@@ -12,6 +12,30 @@
     [#3051](https://github.com/dartsim/dart/pull/3051),
     [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
 
+* Performance
+
+  * Speed up the articulated-body forward-dynamics hot path by caching the
+    owning `Skeleton` pointer in `BodyNode` and avoiding fixed-size to dynamic
+    Eigen temporaries in `math::isNan` and `math::isInf`, improving the
+    `BM_Dynamics` benchmark by about 18% while preserving bit-exact results:
+    [#3028](https://github.com/dartsim/dart/pull/3028)
+
+  * Remove per-pivot heap allocations in `ContactConstraint` by evaluating
+    spatial-normal matrix-vector products directly into the solver buffers,
+    reducing contact-heavy `boxes` per-step heap allocations by about 58% and
+    improving wall-clock time by about 6% with bit-exact results:
+    [#3033](https://github.com/dartsim/dart/pull/3033)
+
+  * Avoid heap temporaries in `BodyNode` force-aggregation routines by writing
+    Jacobian-transpose products directly into Skeleton tree-cache segments:
+    [#3037](https://github.com/dartsim/dart/pull/3037)
+
+  * Reduce remaining contact-heavy per-step heap allocations by scanning
+    external disturbances per DOF and storing contact spatial normals inline,
+    cutting `boxes` heap allocations by about 38% on top of the earlier
+    allocation reductions while preserving bit-exact finite-state results:
+    [#3040](https://github.com/dartsim/dart/pull/3040)
+
 * Tests
 
   * Build and run the pinned gz-physics test suite in the DART 6 Gazebo CI gate
