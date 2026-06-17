@@ -6164,6 +6164,15 @@ void reserveProjectedNewtonScratch(
 
   auto& triplets = scratch.projectedNewtonTriplets;
   triplets.clear();
+  const auto addNodeDiagonalPattern = [&](std::size_t node) {
+    if (node >= nodeCount) {
+      return;
+    }
+    for (int axis = 0; axis < 3; ++axis) {
+      const Eigen::Index dof = static_cast<Eigen::Index>(3 * node + axis);
+      triplets.emplace_back(dof, dof, 1.0);
+    }
+  };
   const auto addNodeBlockPattern = [&](std::span<const std::size_t> nodes) {
     for (const std::size_t rowNode : nodes) {
       if (rowNode >= nodeCount) {
@@ -6185,8 +6194,7 @@ void reserveProjectedNewtonScratch(
   };
 
   for (std::size_t node = 0; node < nodeCount; ++node) {
-    const std::array<std::size_t, 1> nodes = {node};
-    addNodeBlockPattern(nodes);
+    addNodeDiagonalPattern(node);
   }
   for (const auto& edge : model.edges) {
     const std::array<std::size_t, 2> nodes = {edge.nodeA, edge.nodeB};
