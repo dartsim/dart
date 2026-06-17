@@ -2508,6 +2508,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["cuda_batch_scale"]["benchmark_filter"] == (
         "BM_LcpCudaJacobiBatch|"
         "BM_LcpCudaPgsBatch|"
+        "BM_LcpCudaRedBlackGaussSeidelBatch|"
         "BM_LcpCudaJacobiGroupedBatch|"
         "BM_LcpCudaPgsGroupedBatch"
     )
