@@ -23,13 +23,13 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: WP-091.20 (Model/State/Control split) is `[done]` via PR #3029,
-  and WP-091.33a (batch semantics tests) is `[done]` via PR #3042. The current
-  branch executes WP-091.21: bake creation-ordered dense per-domain indices and
-  reusable Model artifacts so state vectors and batch validation stop depending
-  on registry iteration order or name-string matching. WP-091.33b remains
-  blocked until WP-091.21 is accepted. The remaining WS0 packet is WP-091.4 legacy
-  freeze, which stays **blocked**: PLAN-042 Decision 5 has no recorded
-  maintainer direction. Packets are orchestrator-authored per
+  WP-091.33a (batch semantics tests) is `[done]` via PR #3042, and WP-091.21
+  (baked dense-index Model artifact) is `[done]` via PR #3044. The current
+  branch executes WP-091.33b: give the rigid batch seed an internal baked
+  Model/State owner that reuses immutable Model storage across rollout
+  segments and invalidates on structural edits. The remaining WS0 packet is
+  WP-091.4 legacy freeze, which stays **blocked**: PLAN-042 Decision 5 has no
+  recorded maintainer direction. Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
   line. The standing rule applies now: new solver-family work routes through

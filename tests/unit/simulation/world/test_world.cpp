@@ -22024,6 +22024,89 @@ TEST(World, RolloutWorldsBatchedMatchesReference)
   EXPECT_EQ(beforePosition, afterPosition);
 }
 
+// Test the internal baked batch owner: immutable Model storage is reused while
+// mutable State is refreshed across rollout-like segments.
+TEST(World, BakedRigidBodyBatchOwnerReusesModelAcrossRolloutSegments)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  for (int i = 0; i < 2; ++i) {
+    sx::RigidBodyOptions options;
+    options.mass = 1.0 + i;
+    options.position = Eigen::Vector3d(0.25 * i, 0.0, 0.0);
+    options.linearVelocity = Eigen::Vector3d(0.1 * i, 0.0, 0.0);
+    world.addRigidBody("owner_body_" + std::to_string(i), options);
+  }
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorld(world);
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 0u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 1u);
+  ASSERT_EQ(owner.model().bodyCount, 2u);
+
+  const std::vector<double> force = {0.2, 0.0, 0.0, -0.1, 0.0, 0.0};
+  compute::integrateRigidBodyStateBatch(
+      owner.mutableState(), owner.model(), force, world.getTimeStep());
+  owner.applyToWorld(world);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 1u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 2u);
+
+  compute::integrateRigidBodyStateBatch(
+      owner.mutableState(), owner.model(), force, world.getTimeStep());
+  owner.applyToWorld(world);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 2u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 3u);
+}
+
+// Test that the baked batch owner invalidates immutable Model storage when the
+// World's topology or rigid-body model parameters change.
+TEST(World, BakedRigidBodyBatchOwnerRefreshesModelAfterStructuralEdit)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  world.addRigidBody("owner_body_0", options);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorld(world);
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 1u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[0], 0.5);
+
+  sx::RigidBodyOptions added;
+  added.mass = 4.0;
+  world.addRigidBody("owner_body_1", added);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 2u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 0u);
+  EXPECT_EQ(owner.model().bodyCount, 2u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 2u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[1], 0.25);
+
+  world.getRigidBody("owner_body_0")->setMass(8.0);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 3u);
+  EXPECT_EQ(owner.model().bodyCount, 2u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 2u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[0], 0.125);
+}
+
 // Test the immutable Model batch: inverse masses are extracted in state order,
 // and the model-based integrator overload matches the explicit-vector overload.
 TEST(World, RigidBodyModelBatchIntegration)

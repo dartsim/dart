@@ -781,7 +781,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   deformable suites). All three slices (20a/20b/20c) of WP-091.20 are now
   landed.
 
-#### WP-091.21 Baked dense-index Model artifact [claimed]
+#### WP-091.21 Baked dense-index Model artifact [done — PR #3044, merged 2026-06-17]
 
 - Objective: `enterSimulationMode` bakes an immutable per-domain dense index
   (body/link/dof offsets, creation-ordered) plus per-multibody model arrays,
@@ -797,13 +797,13 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   path (assert via allocation/profile test); golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
-- Evidence (implementation branch): `detail::BakedWorldModel` now caches
+- Evidence: `detail::BakedWorldModel` now caches
   creation-ordered rigid-body and multibody indices plus rigid-body Model arrays
   in `WorldStorage`; state/control vectors, rigid-body batch extraction, and
   batched integration consume the baked identity instead of rebuilding from
   registry views or comparing names. Local validation: `pixi run lint`,
   `pixi run build`, focused `test_world` dense-index/batch filters, and
-  `pixi run test-unit` (163/163).
+  `pixi run test-unit` (163/163). Accepted by maintainer merge of PR #3044.
 
 #### WP-091.22 Frame arena: wire or delete [claimed]
 
@@ -1092,7 +1092,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_world` gtest filtering plus `pixi run lint`, `pixi run build`, and
   `pixi run test-unit`.
 
-#### WP-091.33b Baked rigid Model/State owner
+#### WP-091.33b Baked rigid Model/State owner [claimed]
 
 - Objective: the rigid batch seed has an internal baked owner that separates
   immutable Model blocks from mutable State blocks and can be reused across
@@ -1107,6 +1107,28 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   steady-state path does not rebuild Model blocks.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.21, WP-091.33a.
+- Evidence (implementation branch): `compute::BakedRigidBodyBatchOwner` now
+  owns the rigid batch seed's immutable `RigidBodyModelBatch` and mutable
+  `RigidBodyStateBatch`, with diagnostics for `modelRefreshCount`,
+  `modelReuseCount`, and `stateCaptureCount`. The multi-world extraction path
+  routes through the owner so homogeneous dense-index validation, Model refresh,
+  and State capture share one implementation. Model storage is refreshed only
+  when the baked dense-index identity changes (topology, static mask, mass, or
+  inertia) and reused while State is captured across rollout-like segments.
+  `docs/design/batched_world_device_residency.md` now names the owner as the
+  current host seed for Model/State blocks, and `CHANGELOG.md` records the
+  internal experimental capability. Tests:
+  `World.BakedRigidBodyBatchOwnerReusesModelAcrossRolloutSegments`,
+  `World.BakedRigidBodyBatchOwnerRefreshesModelAfterStructuralEdit`, plus the
+  WP-091.33a parity and validation filters
+  (`RigidBodyStateBatchMultiWorld`,
+  `MultiWorldBatchUsesDenseIndexModelIdentity`,
+  `BatchValidationFailuresReportLaneIndex`,
+  `RigidBodyStateBatchSingleLaneMatchesWorldStepReference`,
+  `StepWorldsBatchedMatchesIndependentLaneReferences`,
+  `RolloutWorldsBatchedMatchesReference`). Gates: `pixi run build`, focused
+  `test_world` batch/owner filters, `pixi run test-unit` (163/163), and
+  `pixi run lint`.
 
 #### WP-091.33c Control-sequence rollout shape
 

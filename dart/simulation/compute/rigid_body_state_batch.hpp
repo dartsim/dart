@@ -38,6 +38,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation {
 class World;
@@ -94,6 +95,68 @@ struct DART_SIMULATION_API RigidBodyModelBatch
   {
     return worldCount == 0 || bodyCount == 0;
   }
+};
+
+/// Diagnostics for the internal baked rigid-body batch owner.
+///
+/// `modelRefreshCount` increments only when immutable Model storage is rebuilt;
+/// `modelReuseCount` increments when a capture refreshes State while reusing
+/// the existing Model; `stateCaptureCount` increments for every successful
+/// capture from one or more Worlds.
+struct DART_SIMULATION_API BakedRigidBodyBatchOwnerDiagnostics
+{
+  std::uint64_t modelRefreshCount = 0;
+  std::uint64_t modelReuseCount = 0;
+  std::uint64_t stateCaptureCount = 0;
+};
+
+/// Internal owner for the rigid batch seed's immutable Model and mutable State.
+///
+/// The owner is the CPU-side shape that later residency owners mirror: Model
+/// blocks are refreshed only when the homogeneous baked dense-index identity
+/// changes, while State blocks can be captured repeatedly across rollout
+/// segments. This remains an experimental internal compute type; public World
+/// handles stay the user-facing API.
+class DART_SIMULATION_API BakedRigidBodyBatchOwner
+{
+public:
+  void clear();
+
+  /// Capture the current State for @p worlds and refresh the cached Model only
+  /// when the worlds' baked dense-index identity changed. All worlds must be
+  /// homogeneous under the same validation rules as @c
+  /// extractRigidBodyStateBatch.
+  void captureFromWorlds(const std::vector<const World*>& worlds);
+
+  /// Convenience overload for a single World.
+  void captureFromWorld(const World& world);
+
+  /// Apply the owned State to @p worlds using the same validation as
+  /// @c applyRigidBodyStateBatch.
+  void applyToWorlds(const std::vector<World*>& worlds) const;
+
+  /// Convenience overload for a single World.
+  void applyToWorld(World& world) const;
+
+  [[nodiscard]] const RigidBodyModelBatch& model() const noexcept;
+  [[nodiscard]] RigidBodyStateBatch& mutableState() noexcept;
+  [[nodiscard]] const RigidBodyStateBatch& state() const noexcept;
+  [[nodiscard]] const BakedRigidBodyBatchOwnerDiagnostics& diagnostics()
+      const noexcept;
+
+private:
+  [[nodiscard]] bool modelMatches(
+      std::span<const std::uint8_t> dynamicMask,
+      std::span<const double> inverseMass,
+      std::span<const double> inertia,
+      std::size_t worldCount,
+      std::size_t bodyCount) const;
+
+  RigidBodyModelBatch m_model;
+  RigidBodyStateBatch m_state;
+  BakedRigidBodyBatchOwnerDiagnostics m_diagnostics;
+  std::vector<std::uint8_t> m_rigidBodyIsDynamic;
+  bool m_modelValid = false;
 };
 
 /// Extract a single-world (`worldCount == 1`) snapshot of all rigid bodies in

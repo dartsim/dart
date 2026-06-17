@@ -1075,6 +1075,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rigid-body batch extraction/integration through the cached Model, and
     replaced name-based multi-world batch validation with dense-index Model
     identity.
+  - Added an internal baked rigid-body batch owner that keeps immutable Model
+    storage separate from mutable SoA State, reuses Model blocks across
+    rollout segments, and refreshes them when topology or rigid-body model
+    parameters change.
   - Reused experimental differentiable `World` multibody torque collection
     scratch through World-owned free-list storage, passed that scratch into the
     contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`
