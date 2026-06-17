@@ -701,7 +701,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS2 — Physical data architecture
 
-#### WP-091.20 Model/State/Control component split [claimed]
+#### WP-091.20 Model/State/Control component split [done — PR #3029, merged 2026-06-16]
 
 - Objective: the articulated and deformable component fusion is split so
   storage matches the documented Model/State/Control/Contacts contract (the
@@ -781,7 +781,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   deformable suites). All three slices (20a/20b/20c) of WP-091.20 are now
   landed.
 
-#### WP-091.21 Baked dense-index Model artifact
+#### WP-091.21 Baked dense-index Model artifact [claimed]
 
 - Objective: `enterSimulationMode` bakes an immutable per-domain dense index
   (body/link/dof offsets, creation-ordered) plus per-multibody model arrays,
@@ -797,6 +797,13 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   path (assert via allocation/profile test); golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
+- Evidence (implementation branch): `detail::BakedWorldModel` now caches
+  creation-ordered rigid-body and multibody indices plus rigid-body Model arrays
+  in `WorldStorage`; state/control vectors, rigid-body batch extraction, and
+  batched integration consume the baked identity instead of rebuilding from
+  registry views or comparing names. Local validation: `pixi run lint`,
+  `pixi run build`, focused `test_world` dense-index/batch filters, and
+  `pixi run test-unit` (163/163).
 
 #### WP-091.22 Frame arena: wire or delete [claimed]
 
@@ -1063,7 +1070,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   design note's implementation order and keeping backend/device vocabulary
   out of public APIs.
 
-#### WP-091.33a Batch semantics tests [claimed]
+#### WP-091.33a Batch semantics tests [done — PR #3042, merged 2026-06-17]
 
 - Objective: the supported rigid-body batch paths are locked to "identical to
   independent sequential Worlds" before the batch owner is promoted.

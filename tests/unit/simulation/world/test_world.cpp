@@ -4016,7 +4016,7 @@ TEST(World, SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator)
       world.getIgnoredCollisionPairCount());
 }
 
-TEST(World, NumDofsDynamicBodyCollectionUsesWorldAllocator)
+TEST(World, NumDofsBakesDenseIndexWithWorldAllocator)
 {
   namespace sx = dart::simulation;
 
@@ -4043,15 +4043,73 @@ TEST(World, NumDofsDynamicBodyCollectionUsesWorldAllocator)
 
   EXPECT_EQ(dofs, 3u * kDynamicBodyCount);
   EXPECT_EQ(heapCounter.allocationCount(), 0u)
-      << "dynamic-body collection scratch should allocate through the World "
-         "free allocator, not the global heap";
+      << "dense-index bake should allocate through the World free allocator, "
+         "not the global heap";
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
-  EXPECT_EQ(freeList.getAllocatedSize(), liveBytesBeforeQuery)
-      << "getNumDofs should release dynamic-body collection scratch before "
-         "returning";
+  EXPECT_GT(freeList.getAllocatedSize(), liveBytesBeforeQuery)
+      << "getNumDofs should retain the baked dense index for steady-state "
+         "reuse";
   EXPECT_GT(freeList.getPeakAllocatedSize(), peakBytesBeforeQuery)
-      << "getNumDofs should allocate dynamic-body collection scratch through "
-         "the World free allocator";
+      << "getNumDofs should allocate dense-index storage through the World "
+         "free allocator";
+
+  const auto liveBytesAfterBake = freeList.getAllocatedSize();
+  ScopedHeapAllocationCounter secondHeapCounter;
+  const auto secondDofs = world.getNumDofs();
+  secondHeapCounter.stop();
+
+  EXPECT_EQ(secondDofs, dofs);
+  EXPECT_EQ(secondHeapCounter.allocationCount(), 0u);
+  EXPECT_EQ(secondHeapCounter.allocationBytes(), 0u);
+  EXPECT_EQ(freeList.getAllocatedSize(), liveBytesAfterBake)
+      << "A current dense-index artifact should be reused without growing the "
+         "World allocator";
+}
+
+TEST(World, StateAndControlVectorsUseBakedDenseIndexOrder)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::RigidBodyOptions firstOptions;
+  firstOptions.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  firstOptions.linearVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
+  auto first = world.addRigidBody("z_created_first", firstOptions);
+  first.setForce(Eigen::Vector3d(4.0, 5.0, 6.0));
+
+  sx::RigidBodyOptions secondOptions;
+  secondOptions.position = Eigen::Vector3d(7.0, 8.0, 9.0);
+  secondOptions.linearVelocity = Eigen::Vector3d(0.7, 0.8, 0.9);
+  auto second = world.addRigidBody("a_created_second", secondOptions);
+  second.setForce(Eigen::Vector3d(10.0, 11.0, 12.0));
+
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  world.addRigidBody("m_static", staticOptions);
+
+  world.enterSimulationMode();
+  const auto& baked = sx::detail::storageOf(world).bakedModel;
+  ASSERT_TRUE(baked.valid);
+  ASSERT_EQ(baked.dynamicRigidBodyEntities.size(), 2u);
+  EXPECT_EQ(
+      baked.dynamicRigidBodyEntities[0],
+      sx::detail::toRegistryEntity(first.getEntity()));
+  EXPECT_EQ(
+      baked.dynamicRigidBodyEntities[1],
+      sx::detail::toRegistryEntity(second.getEntity()));
+
+  const Eigen::VectorXd state = world.getStateVector();
+  ASSERT_EQ(state.size(), 12);
+  EXPECT_TRUE(state.segment<3>(0).isApprox(firstOptions.position));
+  EXPECT_TRUE(state.segment<3>(3).isApprox(secondOptions.position));
+  EXPECT_TRUE(state.segment<3>(6).isApprox(firstOptions.linearVelocity));
+  EXPECT_TRUE(state.segment<3>(9).isApprox(secondOptions.linearVelocity));
+
+  const Eigen::VectorXd control = world.getControlVector();
+  ASSERT_EQ(control.size(), 6);
+  EXPECT_TRUE(control.segment<3>(0).isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
+  EXPECT_TRUE(
+      control.segment<3>(3).isApprox(Eigen::Vector3d(10.0, 11.0, 12.0)));
 }
 
 #ifdef DART_HAS_DIFF
@@ -4639,13 +4697,47 @@ TEST(World, BatchedRigidBodyIntegrationStageScratchUsesProvidedAllocator)
 
     stage.execute(world, executor);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 15u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 13u)
         << "allocator-aware batched rigid integration scratch should reserve "
-           "state, initial-state, model, force, torque, entity, frame-order, "
-           "and visit-state vectors from the provided free allocator";
+           "state, initial-state, force, torque, entity, frame-order, and "
+           "visit-state vectors from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
+}
+
+TEST(World, BatchedRigidBodyIntegrationStageReusesBakedModel)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  for (int i = 0; i < 3; ++i) {
+    sx::RigidBodyOptions options;
+    options.mass = 1.0 + i;
+    options.position = Eigen::Vector3d(i, 0.0, 0.0);
+    auto body
+        = world.addRigidBody("baked_model_body_" + std::to_string(i), options);
+    body.setForce(Eigen::Vector3d(0.1, 0.2, 0.3));
+  }
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.enterSimulationMode();
+
+  const auto& baked = sx::detail::storageOf(world).bakedModel;
+  ASSERT_TRUE(baked.valid);
+  const auto buildCountAfterBake = baked.rigidBodyModelBuildCount;
+
+  common::MemoryManager memoryManager;
+  sx::compute::SequentialExecutor executor;
+  sx::compute::BatchedRigidBodyIntegrationStage stage(&memoryManager);
+  stage.execute(world, executor);
+  stage.execute(world, executor);
+
+  EXPECT_EQ(
+      sx::detail::storageOf(world).bakedModel.rigidBodyModelBuildCount,
+      buildCountAfterBake)
+      << "steady-state batched integration should consume the baked Model "
+         "instead of rebuilding model arrays per execute";
 }
 
 TEST(World, RigidBodyContactScratchPayloadUsesWorldAllocator)
@@ -21608,44 +21700,59 @@ TEST(World, ApplyRigidBodyStateBatchValidatesBeforeMutating)
   EXPECT_EQ(beforePosition, afterPosition);
 }
 
-// Test that the multi-world batch rejects worlds whose rigid bodies do not
-// share the same ordered identity (same count but different bodies/order),
-// which would otherwise silently permute state between bodies.
-TEST(World, MultiWorldBatchRejectsMismatchedBodyIdentity)
+// Test that the multi-world batch validates the baked dense-index Model
+// identity rather than body names. Names are facade labels; homogeneous batch
+// identity comes from the baked ordered Model.
+TEST(World, MultiWorldBatchUsesDenseIndexModelIdentity)
 {
   namespace sx = dart::simulation;
   namespace compute = dart::simulation::compute;
 
-  auto addTwo = [](sx::World& world, const std::string& prefix) {
+  auto addTwo = [](sx::World& world, const std::string& prefix, double mass0) {
     for (int i = 0; i < 2; ++i) {
       sx::RigidBodyOptions options;
+      options.mass = mass0 + i;
       options.position = Eigen::Vector3d(i, 0.0, 0.0);
       world.addRigidBody(prefix + std::to_string(i), options);
     }
   };
 
-  // Same body count, different names => different ordered identity.
   sx::World named0;
   sx::World named1;
-  addTwo(named0, "a");
-  addTwo(named1, "b");
-  const std::vector<const sx::World*> mixed{&named0, &named1};
+  addTwo(named0, "a", 1.0);
+  addTwo(named1, "b", 1.0);
+  const std::vector<const sx::World*> renamed{&named0, &named1};
+  EXPECT_NO_THROW({ (void)compute::extractRigidBodyStateBatch(renamed); });
+
+  // Same body count but different Model => different dense-index identity.
+  sx::World differentModel;
+  addTwo(differentModel, "a", 10.0);
+  const std::vector<const sx::World*> mixed{&named0, &differentModel};
   EXPECT_THROW(
       { (void)compute::extractRigidBodyStateBatch(mixed); },
+      sx::InvalidArgumentException);
+
+  sx::World differentStaticMask;
+  addTwo(differentStaticMask, "a", 1.0);
+  differentStaticMask.getRigidBody("a1")->setStatic(true);
+  const std::vector<const sx::World*> staticMismatch{
+      &named0, &differentStaticMask};
+  EXPECT_THROW(
+      { (void)compute::extractRigidBodyStateBatch(staticMismatch); },
       sx::InvalidArgumentException);
 
   // A valid batch (consistent identity) applied to targets whose identities
   // disagree is rejected before any mutation.
   sx::World src0;
   sx::World src1;
-  addTwo(src0, "a");
-  addTwo(src1, "a");
+  addTwo(src0, "a", 1.0);
+  addTwo(src1, "a", 1.0);
   const std::vector<const sx::World*> sources{&src0, &src1};
   const auto batch = compute::extractRigidBodyStateBatch(sources);
 
   sx::World target0;
-  addTwo(target0, "a");
-  const std::vector<sx::World*> targets{&target0, &named1};
+  addTwo(target0, "a", 1.0);
+  const std::vector<sx::World*> targets{&target0, &differentModel};
   EXPECT_THROW(
       compute::applyRigidBodyStateBatch(targets, batch),
       sx::InvalidArgumentException);
@@ -21669,9 +21776,10 @@ TEST(World, BatchValidationFailuresReportLaneIndex)
     }
   };
 
-  auto addTwo = [](sx::World& world, const std::string& prefix) {
+  auto addTwo = [](sx::World& world, const std::string& prefix, double mass0) {
     for (int i = 0; i < 2; ++i) {
       sx::RigidBodyOptions options;
+      options.mass = mass0 + i;
       options.position = Eigen::Vector3d(i, 0.0, 0.0);
       world.addRigidBody(prefix + std::to_string(i), options);
     }
@@ -21679,14 +21787,14 @@ TEST(World, BatchValidationFailuresReportLaneIndex)
 
   sx::World source0;
   sx::World source1;
-  addTwo(source0, "body_");
-  addTwo(source1, "body_");
+  addTwo(source0, "body_", 1.0);
+  addTwo(source1, "body_", 1.0);
 
   const std::vector<const sx::World*> validSources{&source0, &source1};
   const auto batch = compute::extractRigidBodyStateBatch(validSources);
 
   sx::World mismatchedIdentity;
-  addTwo(mismatchedIdentity, "other_");
+  addTwo(mismatchedIdentity, "body_", 10.0);
   const std::vector<const sx::World*> mismatchedSources{
       &source0, &mismatchedIdentity};
   expectLaneOne(
@@ -21694,8 +21802,8 @@ TEST(World, BatchValidationFailuresReportLaneIndex)
 
   sx::World target0;
   sx::World target1;
-  addTwo(target0, "body_");
-  addTwo(target1, "other_");
+  addTwo(target0, "body_", 1.0);
+  addTwo(target1, "body_", 10.0);
   const std::vector<sx::World*> mismatchedTargets{&target0, &target1};
   expectLaneOne(
       [&] { compute::applyRigidBodyStateBatch(mismatchedTargets, batch); });
@@ -21778,7 +21886,7 @@ TEST(World, StepWorldsBatchedMatchesIndependentLaneReferences)
     const double seed = static_cast<double>(lane + 1u);
     for (int i = 0; i < 3; ++i) {
       sx::RigidBodyOptions options;
-      options.mass = seed + 0.5 * (i + 1);
+      options.mass = 1.0 + 0.5 * (i + 1);
       options.position
           = Eigen::Vector3d(seed + 0.1 * i, -0.25 * seed + 0.2 * i, 0.05 * i);
       options.linearVelocity = Eigen::Vector3d(
@@ -21790,7 +21898,7 @@ TEST(World, StepWorldsBatchedMatchesIndependentLaneReferences)
           Eigen::Vector3d(0.1 * seed, -0.05 * (i + 1), 0.02 * seed * (i + 1)));
     }
     world.setGravity(Eigen::Vector3d::Zero());
-    world.setTimeStep(0.02 + 0.005 * seed);
+    world.setTimeStep(0.025);
     world.enterSimulationMode();
   };
 
@@ -21936,10 +22044,8 @@ TEST(World, RigidBodyModelBatchIntegration)
   EXPECT_EQ(model.worldCount, 1u);
   EXPECT_EQ(model.bodyCount, 2u);
   ASSERT_EQ(model.inverseMass.size(), 2u);
-  // EnTT view order is not insertion order, so check the set, not positions.
-  EXPECT_TRUE(
-      (model.inverseMass[0] == 0.5 && model.inverseMass[1] == 0.25)
-      || (model.inverseMass[0] == 0.25 && model.inverseMass[1] == 0.5));
+  EXPECT_DOUBLE_EQ(model.inverseMass[0], 0.5);
+  EXPECT_DOUBLE_EQ(model.inverseMass[1], 0.25);
 
   const std::vector<double> force = {0.0, 0.0, 4.0, 0.0, 0.0, 8.0};
   const double dt = 0.5;
@@ -21953,8 +22059,8 @@ TEST(World, RigidBodyModelBatchIntegration)
 
   EXPECT_EQ(viaModel.linearVelocity, viaVector.linearVelocity);
   EXPECT_EQ(viaModel.position, viaVector.position);
-  // Per body, in extraction order: z-velocity == force.z * inverseMass * dt
-  // (initial velocity is zero), independent of the view iteration order.
+  // Per body, in baked dense-index order: z-velocity == force.z * inverseMass
+  // * dt (initial velocity is zero).
   for (std::size_t i = 0; i < model.bodyCount; ++i) {
     EXPECT_DOUBLE_EQ(
         viaModel.linearVelocity[3 * i + 2],

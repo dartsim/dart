@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
+#include <dart/simulation/export.hpp>
 
 #include <dart/common/stl_allocator.hpp>
 
@@ -45,7 +46,65 @@
 #include <utility>
 #include <vector>
 
+#include <cstdint>
+
+namespace dart::simulation {
+class World;
+} // namespace dart::simulation
+
 namespace dart::simulation::detail {
+
+struct BakedMultibodyModel
+{
+  entt::entity entity = entt::null;
+  std::size_t linkOffset = 0;
+  std::size_t linkCount = 0;
+  std::size_t jointOffset = 0;
+  std::size_t jointCount = 0;
+  std::size_t dofOffset = 0;
+  std::size_t dofCount = 0;
+};
+
+/// Immutable dense-index Model artifact baked at the simulation boundary.
+///
+/// Entity vectors define the canonical creation-ordered dense indices used by
+/// state/control facades and batch extraction. Scalar arrays are Model data
+/// aligned with those indices and are rebuilt only when topology or model
+/// parameters change.
+struct BakedWorldModel
+{
+  using EntityAllocator = dart::common::StlAllocator<entt::entity>;
+  using EntityVector = std::vector<entt::entity, EntityAllocator>;
+  using IndexAllocator = dart::common::StlAllocator<std::size_t>;
+  using IndexVector = std::vector<std::size_t, IndexAllocator>;
+  using ScalarAllocator = dart::common::StlAllocator<double>;
+  using ScalarVector = std::vector<double, ScalarAllocator>;
+  using ByteAllocator = dart::common::StlAllocator<std::uint8_t>;
+  using ByteVector = std::vector<std::uint8_t, ByteAllocator>;
+  using MultibodyAllocator = dart::common::StlAllocator<BakedMultibodyModel>;
+  using MultibodyVector = std::vector<BakedMultibodyModel, MultibodyAllocator>;
+
+  explicit BakedWorldModel(dart::common::MemoryAllocator& allocator);
+
+  void clear() noexcept;
+
+  bool valid = false;
+  std::uint64_t rigidBodyModelBuildCount = 0;
+
+  EntityVector rigidBodyEntities;
+  EntityVector dynamicRigidBodyEntities;
+  ByteVector rigidBodyIsDynamic;
+  ScalarVector rigidBodyInverseMass;
+  ScalarVector rigidBodyInertia;
+
+  MultibodyVector multibodies;
+  EntityVector multibodyLinkEntities;
+  EntityVector multibodyJointEntities;
+  IndexVector multibodyLinkDofOffsets;
+  IndexVector multibodyLinkDofs;
+  ScalarVector multibodyLinkMass;
+  ScalarVector multibodyLinkInertia;
+};
 
 /// Opaque, ECS-typed storage owned by `World` via a `std::unique_ptr`.
 ///
@@ -112,6 +171,12 @@ struct WorldStorage
   /// endpoint ordering. This scene-level filter is applied after broad-phase
   /// candidate generation and before narrow-phase contact generation.
   IgnoredCollisionPairSet ignoredCollisionPairs;
+
+  /// Baked dense-index Model artifact for simulation-mode steady-state paths.
+  BakedWorldModel bakedModel;
 };
+
+[[nodiscard]] DART_SIMULATION_API const BakedWorldModel&
+ensureBakedWorldModelCurrent(const World& world);
 
 } // namespace dart::simulation::detail
