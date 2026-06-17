@@ -1,22 +1,21 @@
 # Python SIMBICON Locomotion — Dev Task
 
-## Latest Focus (2026-06-17, Warm-Start Checkpoint Retirement)
+## Latest Focus (2026-06-17, Late State-0 Stance Diagnostics)
 
-Branch: `docs/retire-warm-start-checkpoint`.
+Branch: `main` or a fresh branch from current `main`.
 
 PR [#3043](https://github.com/dartsim/dart/pull/3043) landed the reusable Atlas
 SIMBICON pose-window comparison utility on `main`, including per-foot
 transform translation, trace-vertical position, local z-axis tilt relative to
-the trace vertical axis, and stance/swing aliases. The large
-`feature/dart7-unified-contact-warm-start` branch is now a checkpoint only, not
-a branch to merge or resume from directly.
+the trace vertical axis, and stance/swing aliases. PR
+[#3047](https://github.com/dartsim/dart/pull/3047) landed the retirement audit
+for the old `feature/dart7-unified-contact-warm-start` checkpoint, and the
+local and remote checkpoint branches have been deleted.
 
-Immediate next step: land the retirement audit in
-[`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md), then
-run `scripts/compare_atlas_simbicon_pose_window.py` on the late state-`0` trace
-window from current `main`. Use the stance-foot tilt numbers together with
-support-row counts around steps `3970`, `4000`, `4070`, and `4100` before trying
-another stance-reaction or torso-reaction probe.
+Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py` on the
+late state-`0` trace window from current `main`. Use the stance-foot tilt
+numbers together with support-row counts around steps `3970`, `4000`, `4070`,
+and `4100` before trying another stance-reaction or torso-reaction probe.
 
 ## Current Status
 
@@ -27,6 +26,9 @@ another stance-reaction or torso-reaction probe.
 - [x] Pose-window comparison utility landed (PR #3043): use it from `main` for
       late state-`0` stance-foot pose/tilt comparisons instead of resuming the
       old warm-start checkpoint branch.
+- [x] Warm-start checkpoint retired (PR #3047 + branch deletion): the old
+      `feature/dart7-unified-contact-warm-start` branch is no longer a resume
+      surface.
 - [x] Diagnosed and partly fixed the dominant fall mode (gradual height sink)
       via stance-leg height regulation (`height_kp`); torso control completed as
       a true PD.
@@ -64,14 +66,10 @@ indefinitely under the shared SIMBICON controller — including together in the
 
 ## Immediate Next Steps
 
-1. Finish landing
-   [`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md) so
-   `feature/dart7-unified-contact-warm-start` can be removed after explicit
-   maintainer approval.
-2. Run the pose-window comparison utility on late state-`0` DART 6/DART 7 trace
+1. Run the pose-window comparison utility on late state-`0` DART 6/DART 7 trace
    JSONs for steps `3970`, `4000`, `4070`, and `4100`; compare stance-foot
    tilt, stance pose, support-row counts, and support patch location.
-3. Attack lateral balance structurally rather than by gain tuning — candidate
+2. Attack lateral balance structurally rather than by gain tuning — candidate
    approaches are enumerated in `01-diagnosis.md` ("Restart / next-attempt
    options"). Re-verify with the fall-step harness over ≥3000 steps per robot
    **and** the duo, not a short render.

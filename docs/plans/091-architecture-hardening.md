@@ -783,7 +783,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   deformable suites). All three slices (20a/20b/20c) of WP-091.20 are now
   landed.
 
-#### WP-091.21 Baked dense-index Model artifact [claimed]
+#### WP-091.21 Baked dense-index Model artifact [done — PR #3044, merged 2026-06-17]
 
 - Objective: `enterSimulationMode` bakes an immutable per-domain dense index
   (body/link/dof offsets, creation-ordered) plus per-multibody model arrays,
@@ -799,7 +799,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   path (assert via allocation/profile test); golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
-- Evidence (implementation branch): `detail::BakedWorldModel` now caches
+- Evidence: PR [#3044](https://github.com/dartsim/dart/pull/3044) landed this
+  packet. `detail::BakedWorldModel` now caches
   creation-ordered rigid-body and multibody indices plus rigid-body Model arrays
   in `WorldStorage`; state/control vectors, rigid-body batch extraction, and
   batched integration consume the baked identity instead of rebuilding from
