@@ -277,6 +277,10 @@ lint-lcp-solver-roster = { cmd = [
   "python",
   "scripts/check_lcp_solver_roster.py",
 ] }
+lint-plan122-allocation-matrix = { cmd = [
+  "python",
+  "scripts/check_plan122_allocation_matrix.py",
+] }
 lint-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
 lint-architecture-page = { cmd = [
   "python",
@@ -311,6 +315,7 @@ lint = { depends-on = [
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
   "lint-lcp-solver-roster",
+  "lint-plan122-allocation-matrix",
   "lint-avbd-packets",
   "lint-architecture-page",
   "sync-ai-commands",
@@ -395,6 +400,10 @@ check-lcp-solver-roster = { cmd = [
   "python",
   "scripts/check_lcp_solver_roster.py",
 ] }
+check-plan122-allocation-matrix = { cmd = [
+  "python",
+  "scripts/check_plan122_allocation_matrix.py",
+] }
 check-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
 check-architecture-page = { cmd = [
   "python",
@@ -437,6 +446,7 @@ check-lint = { depends-on = [
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
   "check-lcp-solver-roster",
+  "check-plan122-allocation-matrix",
   "check-avbd-packets",
   "check-architecture-page",
   "check-ai-commands",

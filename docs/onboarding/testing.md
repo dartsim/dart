@@ -399,10 +399,13 @@ step. The final gate should prove all applicable allocation surfaces stay quiet:
 Existing helper patterns live in `tests/unit/simulation/world/test_world.cpp`:
 `expectNoWorldBaseAllocatorActivityDuringBakedSteps`,
 `expectNoGlobalHeapAllocationsDuringBakedSteps`, and
-`expectNoRawHeapAllocationsDuringBakedSteps`. A helper or test that runs
-unmeasured warm-up simulation steps before enabling the counter is a
-steady-state regression guard, not final evidence for the stricter
-no-allocation-after-bake requirement. Track final and steady-state rows in
+`expectNoRawHeapAllocationsDuringFirstPostBakeSteps` start counting on the first
+post-bake step. `expectNoRawHeapAllocationsDuringSteadyStateBakedSteps` is for
+raw-malloc regressions that still need unmeasured warm-up steps before the
+counter starts; those are not final evidence for the stricter
+no-allocation-after-bake requirement. `pixi run
+check-plan122-allocation-matrix` verifies that every `Closed` coverage row cites
+an existing test. Track final and steady-state rows in
 [`../plans/122-simulation-loop-allocation-hardening/coverage-matrix.md`](../plans/122-simulation-loop-allocation-hardening/coverage-matrix.md).
 
 ## Adding New Tests

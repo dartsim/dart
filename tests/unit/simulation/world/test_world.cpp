@@ -74,6 +74,7 @@
 #include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Geometry>
+#include <gtest/gtest-spi.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -579,6 +580,24 @@ public:
   }
 };
 
+class AllocatingWorldStage final
+  : public dart::simulation::compute::WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "allocating";
+  }
+
+  void execute(
+      dart::simulation::World&,
+      dart::simulation::compute::ComputeExecutor&) override
+  {
+    void* pointer = ::operator new(64);
+    ::operator delete(pointer);
+  }
+};
+
 class EmptyProfileExecutor final
   : public dart::simulation::compute::ComputeExecutor
 {
@@ -861,10 +880,10 @@ void expectNoWorldBaseAllocatorActivityDuringBakedSteps(
   sx::World world(worldOptions);
 
   configureScene(world);
-  world.enterSimulationMode();
   if (requireInitialContact) {
     ASSERT_FALSE(world.collide().empty());
   }
+  world.enterSimulationMode();
 
   const auto allocationsAfterBake = allocator.allocationCount;
   const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -898,10 +917,10 @@ void expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
   sx::World world(worldOptions);
 
   configureScene(world);
-  world.enterSimulationMode();
   if (requireInitialContact) {
     ASSERT_GE(world.collide().size(), minInitialContacts);
   }
+  world.enterSimulationMode();
 
   const auto allocationsAfterBake = allocator.allocationCount;
   const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -919,7 +938,7 @@ void expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
 }
 
 template <typename ConfigureScene>
-void expectNoGlobalHeapAllocationsDuringBakedSteps(
+HeapAllocationSnapshot countGlobalHeapAllocationsDuringFirstPostBakeSteps(
     std::string_view scene,
     ConfigureScene&& configureScene,
     bool requireInitialContact = false)
@@ -930,10 +949,10 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
   sx::World world;
 
   configureScene(world);
-  world.enterSimulationMode();
   if (requireInitialContact) {
-    ASSERT_FALSE(world.collide().empty());
+    EXPECT_FALSE(world.collide().empty());
   }
+  world.enterSimulationMode();
 
   ScopedHeapAllocationCounter heapCounter;
   for (int i = 0; i < 4; ++i) {
@@ -941,18 +960,82 @@ void expectNoGlobalHeapAllocationsDuringBakedSteps(
   }
   heapCounter.stop();
 
-  EXPECT_EQ(heapCounter.allocationCount(), 0u)
-      << "global heap bytes allocated during baked steps: "
-      << heapCounter.allocationBytes();
-  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  return {heapCounter.allocationCount(), heapCounter.allocationBytes()};
+}
+
+template <typename ConfigureScene, typename StepWorld>
+HeapAllocationSnapshot countGlobalHeapAllocationsDuringFirstPostBakeCustomSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    StepWorld&& stepWorld,
+    bool requireInitialContact = false)
+{
+  namespace sx = dart::simulation;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
+  if (requireInitialContact) {
+    EXPECT_FALSE(world.collide().empty());
+  }
+  world.enterSimulationMode();
+
+  ScopedHeapAllocationCounter heapCounter;
+  std::forward<StepWorld>(stepWorld)(world);
+  heapCounter.stop();
+
+  return {heapCounter.allocationCount(), heapCounter.allocationBytes()};
+}
+
+template <typename ConfigureScene, typename StepWorld>
+void expectNoGlobalHeapAllocationsDuringFirstPostBakeCustomSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    StepWorld&& stepWorld,
+    bool requireInitialContact = false)
+{
+  SCOPED_TRACE(scene);
+  const auto heapCounter
+      = countGlobalHeapAllocationsDuringFirstPostBakeCustomSteps(
+          scene,
+          std::forward<ConfigureScene>(configureScene),
+          std::forward<StepWorld>(stepWorld),
+          requireInitialContact);
+
+  EXPECT_EQ(heapCounter.allocationCount, 0u)
+      << "global heap bytes allocated during first post-bake steps: "
+      << heapCounter.allocationBytes;
+  if (heapCounter.allocationCount == 0u) {
+    EXPECT_EQ(heapCounter.allocationBytes, 0u);
+  }
+}
+
+template <typename ConfigureScene>
+void expectNoGlobalHeapAllocationsDuringBakedSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
+{
+  SCOPED_TRACE(scene);
+  const auto heapCounter = countGlobalHeapAllocationsDuringFirstPostBakeSteps(
+      scene,
+      std::forward<ConfigureScene>(configureScene),
+      requireInitialContact);
+
+  EXPECT_EQ(heapCounter.allocationCount, 0u)
+      << "global heap bytes allocated during first post-bake steps: "
+      << heapCounter.allocationBytes;
+  if (heapCounter.allocationCount == 0u) {
+    EXPECT_EQ(heapCounter.allocationBytes, 0u);
+  }
 }
 
 // Like expectNoGlobalHeapAllocationsDuringBakedSteps, but counts the raw malloc
 // family (via the interposer above) so it also catches Eigen dynamic-matrix
-// temporaries the operator-new counter cannot see. Used to guard hot paths that
-// previously leaned on per-step Eigen temporaries.
+// temporaries the operator-new counter cannot see.
 template <typename ConfigureScene>
-void expectNoRawHeapAllocationsDuringBakedSteps(
+HeapAllocationSnapshot countRawHeapAllocationsDuringFirstPostBakeSteps(
     std::string_view scene,
     ConfigureScene&& configureScene,
     bool requireInitialContact = false)
@@ -963,17 +1046,104 @@ void expectNoRawHeapAllocationsDuringBakedSteps(
   sx::World world;
 
   configureScene(world);
+  if (requireInitialContact) {
+    EXPECT_FALSE(world.collide().empty());
+  }
   world.enterSimulationMode();
+
+  ScopedRawHeapAllocationCounter rawCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  rawCounter.stop();
+
+  return {rawCounter.allocationCount(), rawCounter.allocationBytes()};
+}
+
+template <typename ConfigureScene>
+void expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
+{
+  SCOPED_TRACE(scene);
+  const auto rawCounter = countRawHeapAllocationsDuringFirstPostBakeSteps(
+      scene,
+      std::forward<ConfigureScene>(configureScene),
+      requireInitialContact);
+
+  EXPECT_EQ(rawCounter.allocationCount, 0u)
+      << "raw heap (malloc) bytes allocated during first post-bake steps: "
+      << rawCounter.allocationBytes;
+}
+
+template <typename ConfigureScene>
+HeapAllocationSnapshot countRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = true,
+    std::size_t minInitialContacts = 1)
+{
+  namespace sx = dart::simulation;
+
+  SCOPED_TRACE(scene);
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+
+  configureScene(world);
+  if (requireInitialContact) {
+    EXPECT_GE(world.collide().size(), minInitialContacts);
+  }
+  world.enterSimulationMode();
+
+  ScopedRawHeapAllocationCounter rawCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  rawCounter.stop();
+
+  return {rawCounter.allocationCount(), rawCounter.allocationBytes()};
+}
+
+template <typename ConfigureScene>
+void expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = true,
+    std::size_t minInitialContacts = 1)
+{
+  SCOPED_TRACE(scene);
+  const auto rawCounter
+      = countRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+          scene,
+          std::forward<ConfigureScene>(configureScene),
+          requireInitialContact,
+          minInitialContacts);
+
+  EXPECT_EQ(rawCounter.allocationCount, 0u)
+      << "raw heap (malloc) bytes allocated during first post-bake boxed-LCP "
+         "steps: "
+      << rawCounter.allocationBytes;
+}
+
+template <typename ConfigureScene>
+void expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+    std::string_view scene,
+    ConfigureScene&& configureScene,
+    bool requireInitialContact = false)
+{
+  namespace sx = dart::simulation;
+
+  SCOPED_TRACE(scene);
+  sx::World world;
+
+  configureScene(world);
   if (requireInitialContact) {
     ASSERT_FALSE(world.collide().empty());
   }
+  world.enterSimulationMode();
 
-  // Unlike the operator-new counter, the malloc counter sees Eigen scratch and
-  // decomposition buffers that are sized lazily on the first few steps (that
-  // sizing is malloc, hence invisible to ::operator new). Per the HMM
-  // definition of "baked" -- a few prewarm steps size every buffer, then steady
-  // steps allocate nothing -- prewarm before measuring so only steady-state
-  // (reused scratch) steps are counted.
   for (int i = 0; i < 8; ++i) {
     world.step();
   }
@@ -985,7 +1155,7 @@ void expectNoRawHeapAllocationsDuringBakedSteps(
   rawCounter.stop();
 
   EXPECT_EQ(rawCounter.allocationCount(), 0u)
-      << "raw heap (malloc) bytes allocated during baked steps: "
+      << "raw heap (malloc) bytes allocated during steady-state baked steps: "
       << rawCounter.allocationBytes();
 }
 
@@ -1004,10 +1174,10 @@ void expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
   sx::World world(options);
 
   configureScene(world);
-  world.enterSimulationMode();
   if (requireInitialContact) {
     ASSERT_GE(world.collide().size(), minInitialContacts);
   }
+  world.enterSimulationMode();
 
   ScopedHeapAllocationCounter heapCounter;
   for (int i = 0; i < 4; ++i) {
@@ -4265,7 +4435,7 @@ TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
          "coordinate, dynamics-term, and inverse-dynamics scratch capacity";
 }
 
-TEST(World, BakedDifferentiableContactFreeStepDoesNotMallocOnHeap)
+TEST(World, BakedDifferentiableContactFreeSteadyStateStepDoesNotMallocOnHeap)
 {
   #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
@@ -7127,23 +7297,25 @@ TEST(World, BakedScriptedDeformableBoundaryStepsDoNotAllocateAfterPrewarm)
       configureScriptedDeformableBoundaryScene);
 }
 
-TEST(World, BakedScriptedDeformableBoundaryStepsDoNotMallocOnHeap)
+TEST(World, BakedScriptedDeformableBoundarySteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "scripted deformable boundary scratch",
       configureScriptedDeformableBoundaryScene);
 #endif
 }
 
-TEST(World, BakedDeformableFemGroundFrictionBlockStepsDoNotMallocOnHeap)
+TEST(
+    World,
+    BakedDeformableFemGroundFrictionBlockSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "deformable FEM ground friction medium direct scratch",
       configureDeformableFemGroundFrictionBlockScene);
 #endif
@@ -8593,75 +8765,77 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
       configureRigidIpcKinematicTurntableScene);
 }
 
-TEST(World, BakedActiveRigidIpcBarrierStepsDoNotMallocOnHeap)
+TEST(World, BakedActiveRigidIpcBarrierSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "active rigid IPC barrier", configureActiveRigidIpcMeshBarrierScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcFixedJointStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcFixedJointSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC fixed-joint equality rows",
       configureRigidIpcFixedJointConstraintScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcRevoluteJointStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcRevoluteJointSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC revolute-joint equality rows",
       configureRigidIpcRevoluteJointConstraintScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcTwoBoxStackStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcTwoBoxStackSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcDeformableSurfaceObstacleStepsDoNotMallocOnHeap)
+TEST(
+    World,
+    BakedRigidIpcDeformableSurfaceObstacleSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC deformable surface obstacle",
       configureRigidIpcDeformableSurfaceObstacleScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcKinematicConveyorStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcKinematicConveyorSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC kinematic conveyor", configureRigidIpcKinematicConveyorScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcKinematicTurntableStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcKinematicTurntableSteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "rigid IPC kinematic turntable",
       configureRigidIpcKinematicTurntableScene);
 #endif
@@ -8772,6 +8946,120 @@ TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)
         world.setTimeStep(0.001);
       },
       true);
+}
+
+TEST(World, BakedDefaultRigidAndArticulatedContactsDoNotGrowWorldBaseAllocator)
+{
+  namespace sx = dart::simulation;
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid body resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.18);
+        auto box = world.addRigidBody("box", boxOptions);
+        box.setMass(1.0);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+        world.setTimeStep(0.001);
+      },
+      true);
+
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "articulated link resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        auto robot = world.addMultibody("leg_robot");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "slider";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto leg = robot.addLink("leg", base, spec);
+        leg.setMass(1.0);
+        leg.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+        leg.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.35));
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+        world.setTimeStep(0.002);
+      },
+      true);
+}
+
+TEST(World, BakedDefaultRigidAndArticulatedContactsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  namespace sx = dart::simulation;
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid body resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+        sx::RigidBodyOptions boxOptions;
+        boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.18);
+        auto box = world.addRigidBody("box", boxOptions);
+        box.setMass(1.0);
+        box.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.2)));
+
+        world.setTimeStep(0.001);
+      },
+      true);
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "articulated link resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        auto robot = world.addMultibody("leg_robot");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "slider";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto leg = robot.addLink("leg", base, spec);
+        leg.setMass(1.0);
+        leg.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+        leg.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.35));
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+        world.setTimeStep(0.002);
+      },
+      true);
+#endif
 }
 
 TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
@@ -9150,14 +9438,14 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
 // test uses the raw-malloc counter to assert the warmed steps are now backed by
 // persistent scratch and perform zero heap allocations. Covers both k == 1
 // (prismatic slider) and k >= 2 (coupled revolute chain) constraint paths.
-TEST(World, BakedVelocityActuatedMultibodyStepsDoNotMallocOnHeap)
+TEST(World, BakedVelocityActuatedMultibodySteadyStateStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   namespace sx = dart::simulation;
 
-  expectNoRawHeapAllocationsDuringBakedSteps(
+  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
       "velocity-actuated multibody (k==1 slider + k>=2 coupled revolute chain)",
       [](sx::World& world) {
         world.setGravity(Eigen::Vector3d::Zero());
@@ -9289,8 +9577,8 @@ TEST(World, BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth)
   sx::World world(options);
   configureRigidBoxedLcpContactRowsScene(world);
 
-  world.enterSimulationMode();
   ASSERT_FALSE(world.collide().empty());
+  world.enterSimulationMode();
 
   const auto afterBake = world.getMemoryDiagnostics();
   EXPECT_EQ(afterBake.frameScratchUsedBytes, 0u);
@@ -9377,6 +9665,52 @@ TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
       configureCrossMultibodyMixedStressFallbackScene,
       true,
       61);
+}
+
+TEST(World, BakedSingleIslandBoxedLcpFallbackContactStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "rigid sphere-ground boxed LCP", configureRigidBoxedLcpContactRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody stacked-contact fallback",
+      configureCrossMultibodyStackedFallbackScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody coupled-row fallback",
+      configureCrossMultibodyCoupledRowsFallbackScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody larger stacked fallback",
+      configureCrossMultibodyLargeStackFallbackScene,
+      true,
+      4);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody extended stacked fallback",
+      configureCrossMultibodyExtendedStackFallbackScene,
+      true,
+      7);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody production stacked fallback",
+      configureCrossMultibodyProductionStackFallbackScene,
+      true,
+      11);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody dense production stacked fallback",
+      configureCrossMultibodyDenseProductionStackFallbackScene,
+      true,
+      15);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody extra-dense production stacked fallback",
+      configureCrossMultibodyExtraDenseProductionStackFallbackScene,
+      true,
+      23);
+  expectNoRawHeapAllocationsDuringFirstPostBakeBoxedLcpSteps(
+      "cross multibody stress production stacked fallback",
+      configureCrossMultibodyStressProductionStackFallbackScene,
+      true,
+      31);
+#endif
 }
 
 TEST(World, SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces)
@@ -9522,6 +9856,26 @@ TEST(World, StepWithCustomStageReusesPreparedSolverStages)
       << "global heap bytes allocated during IPC custom-stage steps: "
       << heapCounter.allocationBytes();
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
+void expectInjectedPostBakeAllocationRejectedByGlobalHeapGate()
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  compute::SequentialExecutor executor;
+  AllocatingWorldStage finalStage;
+  expectNoGlobalHeapAllocationsDuringFirstPostBakeCustomSteps(
+      "injected final-stage allocation",
+      [](sx::World&) {},
+      [&](sx::World& world) { world.step(executor, finalStage); });
+}
+
+TEST(World, FirstPostBakeGlobalHeapGateFailsOnInjectedAllocation)
+{
+  EXPECT_NONFATAL_FAILURE(
+      expectInjectedPostBakeAllocationRejectedByGlobalHeapGate(),
+      "global heap bytes allocated during first post-bake steps");
 }
 
 TEST(World, IpcSemiImplicitMultibodyStepUsesForwardDynamicsStage)
