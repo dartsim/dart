@@ -97,6 +97,12 @@ selection and evidence mapping; `docs/ai/principles.md` owns the manual audit
 questions; `docs/ai/components.md` owns the exact structural checks performed
 by `pixi run check-ai-commands`.
 
+When AI workflow changes derive implementation tasks, verify that the owning
+plan packet or `docs/dev_tasks/<task>/README.md` records the DART
+specification intake from `docs/ai/orchestration.md`: value, scope, non-goals,
+assumptions or open decisions, acceptance evidence, gates, and dependencies.
+Missing or vague acceptance evidence means the task is not ready for execution.
+
 ## Review Safety Evidence
 
 When review feedback comes from an AI bot account:
