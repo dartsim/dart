@@ -16,6 +16,15 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
+- Progress snapshot: 10 of 18 matrix rows are closed with first-post-bake
+  evidence. The remaining implementation-capacity rows are `R-004` (large rigid
+  IPC equality KKT systems), `D-004` (deformable sparse-direct systems above the
+  retained dense cutoff), and `F-001` (differentiable contact-free stepping,
+  currently steady-state only). The remaining promotion-gated rows are `M-004`,
+  `F-002`, `L-001`, and `G-001`; they stay owned by their named plans until the
+  corresponding solver, derivative, loader, or accelerator path is promoted into
+  `World::step()`. No new `docs/dev_tasks/` folder is needed for those rows
+  while this plan and its coverage matrix remain the durable owner.
 
 ## Scope
 

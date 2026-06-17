@@ -49,11 +49,12 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Use the PLAN-122 coverage matrix as the owner for all remaining
-  DART 7 no-allocation-after-bake work. With the WP-122.1 harness row closed,
-  convert the open or steady-state domain rows to first-post-bake evidence
-  through the existing owner plans/dev tasks. Classic DART 6 step paths are
-  excluded unless they are being migrated into the DART 7 `World` pipeline.
+- Next step: Keep closing rows through the PLAN-122 coverage matrix. Current
+  progress is 10/18 rows closed; `R-004`, `D-004`, and `F-001` are the remaining
+  implementation-capacity rows, while `M-004`, `F-002`, `L-001`, and `G-001`
+  are promotion-gated by their owner plans before they can become final
+  allocation claims. Classic DART 6 step paths are excluded unless they are
+  being migrated into the DART 7 `World` pipeline.
 - Gate: A row closes only with cited tests proving same-shape DART 7
   `World::step()` after bake does not grow the World base allocator or allocate
   through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
