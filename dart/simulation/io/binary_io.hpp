@@ -127,7 +127,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   25: World automatic deactivation options serialized after variational
 //      multibody solve budget metadata, plus DeactivationState as a
 //      serializable runtime component.
-constexpr std::uint32_t kBinaryFormatVersion = 25;
+//   26: World compute accelerator policy serialized after deactivation options.
+constexpr std::uint32_t kBinaryFormatVersion = 26;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

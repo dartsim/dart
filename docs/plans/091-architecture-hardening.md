@@ -806,9 +806,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   batched integration consume the baked identity instead of rebuilding from
   registry views or comparing names. Local validation: `pixi run lint`,
   `pixi run build`, focused `test_world` dense-index/batch filters, and
-  `pixi run test-unit` (163/163).
+  `pixi run test-unit` (163/163). Accepted by maintainer merge of PR #3044.
 
-#### WP-091.22 Frame arena: wire or delete [claimed]
+#### WP-091.22 Frame arena: wire or delete [done — PR #3029, merged 2026-06-16]
 
 - Objective: the per-step frame-scratch arena either gains real consumers
   (transient contact rows, facade-query temporaries) with its diagnostics
@@ -823,10 +823,23 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Dependencies: none. Sequencing note: landing WP-091.20 first reduces
   rework, since the component split converts most heap-fragmented payloads
   into slab storage — prefer it when both are available.
-- Evidence: `docs/design/hierarchical_allocator.md` is the durable owner for
-  the completed World memory hierarchy, frame/stack/stage scratch contract,
-  evidence surfaces, and bounded future-work rules after retiring the
-  hierarchical-memory-manager dev task.
+- Evidence: PR [#3029](https://github.com/dartsim/dart/pull/3029) landed this
+  packet. `docs/design/hierarchical_allocator.md` records the decision to
+  keep frame scratch as the per-step transient arena and makes boxed-LCP
+  rigid-contact solve arrays its first production consumer. The boxed-LCP
+  built-in step warms the frame arena at bake, borrows it for dense per-step
+  Delassus/Jacobian/impulse/Dantzig arrays, and keeps diagnostic snapshots and
+  public helper outputs in caller-owned or persistent storage. Regression
+  coverage includes
+  `World.BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth`,
+  `World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator`, and
+  `World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap`, plus frame
+  scratch diagnostics/reset coverage. Accepted by maintainer merge of PR #3029;
+  #3029 validated with `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit` before the docs/comment-only follow-up head. The
+  hierarchical-memory-manager dev task was retired with the durable memory
+  hierarchy, frame/stack/stage scratch contract, evidence surfaces, and bounded
+  future-work rules moved into the allocator design doc.
 
 #### WP-091.23 Stable serialization identity [claimed]
 
@@ -984,7 +997,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS3 — Compute axis reality
 
-#### WP-091.30 Executor primitives and one converted stage per domain [claimed]
+#### WP-091.30 Executor primitives and one converted stage per domain [done — PR #3029, merged 2026-06-16]
 
 - Objective: stages source CPU parallelism from the injected executor through
   two or three primitives (parallel-for over bodies/structures/islands/colors
@@ -1013,9 +1026,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   batch fan-out now uses the layer-neutral `dart/common/parallel_for.hpp`
   helper instead of depending on `simulation/compute`. Validated with
   `pixi run lint`, `pixi run build`, and `pixi run test-unit` (163/163 test
-  binaries).
+  binaries). Accepted by maintainer merge of PR #3029.
 
-#### WP-091.31 Per-World accelerator policy
+#### WP-091.31 Per-World accelerator policy [claimed]
 
 - Objective: the process-global GPU function-pointer seam is replaced by a
   per-World accelerator handle resolved at bake; the registrar only
@@ -1029,6 +1042,27 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; CUDA smoke
   where a device is available.
 - Dependencies: WP-091.30.
+- Evidence (branch `wp-091-33b-baked-rigid-model-state-owner`, folded to avoid
+  another PR): `WorldOptions::computeAcceleratorPolicy` defaults Worlds to CPU
+  PSD projection, while `PreferAccelerated` resolves the registered accelerator
+  projector during bake. `World::step()` scopes the selected projector per
+  World, and the CUDA registrar now only advertises availability plus its
+  projector/release hooks. Coverage includes `test_deformable_psd_backend`
+  cases for no accelerator, unavailable accelerator, legacy process-wide
+  toggle, thread-local scoped override, two Worlds with different policies, and
+  concurrent two-thread stepping. Resolved-configuration notes, binary
+  serialization v26, replay restore/rebake, C++ World options, and dartpy
+  constructor/property/stubs are covered by `test_world`, `test_serialization`,
+  `test_world_resolved_configuration`, and
+  `python/tests/unit/simulation/test_world.py`. Race evidence: Clang TSAN
+  focused build/run of
+  `test_deformable_psd_backend --gtest_filter=DeformablePsdAcceleratorTest.ConcurrentWorldStepsKeepScopedAcceleratorPolicy`
+  passed; GCC TSAN was unavailable on this host because
+  `/usr/lib64/libtsan.so.2.0.0` is missing. Gates: `pixi run lint`,
+  `pixi run build`, `pixi run test-unit`, `pixi run test-py`; CUDA validation:
+  `pixi run -e cuda test-all` passed lint/build/unit stages and exposed a v26
+  serialization-tail regression, then focused default/CUDA serialization cases
+  and `pixi run -e cuda test-simulation-full` passed after the tail fix.
 
 #### WP-091.32 O(n) shared articulated core
 
@@ -1101,7 +1135,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_world` gtest filtering plus `pixi run lint`, `pixi run build`, and
   `pixi run test-unit`.
 
-#### WP-091.33b Baked rigid Model/State owner
+#### WP-091.33b Baked rigid Model/State owner [claimed]
 
 - Objective: the rigid batch seed has an internal baked owner that separates
   immutable Model blocks from mutable State blocks and can be reused across
@@ -1116,8 +1150,30 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   steady-state path does not rebuild Model blocks.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.21, WP-091.33a.
+- Evidence (implementation branch): `compute::BakedRigidBodyBatchOwner` now
+  owns the rigid batch seed's immutable `RigidBodyModelBatch` and mutable
+  `RigidBodyStateBatch`, with diagnostics for `modelRefreshCount`,
+  `modelReuseCount`, and `stateCaptureCount`. The multi-world extraction path
+  routes through the owner so homogeneous dense-index validation, Model refresh,
+  and State capture share one implementation. Model storage is refreshed only
+  when the baked dense-index identity changes (topology, static mask, mass, or
+  inertia) and reused while State is captured across rollout-like segments.
+  `docs/design/batched_world_device_residency.md` now names the owner as the
+  current host seed for Model/State blocks, and `CHANGELOG.md` records the
+  internal experimental capability. Tests:
+  `World.BakedRigidBodyBatchOwnerReusesModelAcrossRolloutSegments`,
+  `World.BakedRigidBodyBatchOwnerRefreshesModelAfterStructuralEdit`, plus the
+  WP-091.33a parity and validation filters
+  (`RigidBodyStateBatchMultiWorld`,
+  `MultiWorldBatchUsesDenseIndexModelIdentity`,
+  `BatchValidationFailuresReportLaneIndex`,
+  `RigidBodyStateBatchSingleLaneMatchesWorldStepReference`,
+  `StepWorldsBatchedMatchesIndependentLaneReferences`,
+  `RolloutWorldsBatchedMatchesReference`). Gates: `pixi run build`, focused
+  `test_world` batch/owner filters, `pixi run test-unit` (163/163), and
+  `pixi run lint`.
 
-#### WP-091.33c Control-sequence rollout shape
+#### WP-091.33c Control-sequence rollout shape [claimed]
 
 - Objective: batched rollout control input has a backend-neutral data shape
   that keeps Python/C++ callbacks outside compute nodes and records the
@@ -1134,6 +1190,20 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run check-api-boundaries`.
 - Dependencies: WP-091.33b.
+- Evidence (combined implementation branch): `RigidBodyControlSequenceBatch`
+  adds a backend-neutral, step-major per-lane force layout for rigid batched
+  rollout. `extractRigidBodyControlSequenceBatch()` lowers current
+  facade-authored rigid-body forces from homogeneous Worlds into that data-only
+  layout before compute rollout, and `rolloutRigidBodyStateBatch()` consumes
+  the sequence without World or callback handles. `RigidBodyBatchRolloutDiagnostics`
+  records whether rollout resolved to the homogeneous SoA batch path or the
+  existing `rolloutWorldsBatched()` heterogeneous fallback. Tests:
+  `World.RigidBodyControlSequenceBatchExtractsFacadeForces`,
+  `World.RigidBodyControlSequenceBatchRolloutMatchesIndependentWorlds`,
+  `World.RigidBodyControlSequenceBatchRejectsMalformedShape`, and
+  `World.RolloutWorldsBatchedMatchesReference`. Gates: focused `test_world`
+  batch/control filters (11/11), `pixi run build`, `pixi run test-unit`
+  (163/163), `pixi run check-api-boundaries`, and `pixi run lint`.
 
 #### WP-091.33d Resident device owner
 

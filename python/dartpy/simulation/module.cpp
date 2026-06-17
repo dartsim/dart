@@ -109,14 +109,11 @@ namespace {
 
 namespace sim = dart::simulation;
 
-// Backend-neutral acceleration control for the deformable solve, exposed to
-// Python as a process-wide toggle. The interactive deformable solver
-// PSD-projects its per-element Hessian blocks through the core PSD backend; an
-// optional accelerator (registered by a device sidecar when one is compiled in,
-// e.g. the experimental CUDA build) can offload that hotspot. These thin
-// wrappers forward to the backend-neutral core control so the binding never
-// names a device technology; with no accelerator registered they are safe
-// no-ops that report acceleration as unavailable and stay on the CPU backend.
+// Backend-neutral acceleration control for direct deformable PSD backend calls.
+// World stepping uses the per-World ComputeAcceleratorPolicy, but these legacy
+// wrappers remain useful for tests and direct backend probes. They never name a
+// device technology; with no accelerator registered they are safe no-ops that
+// report acceleration as unavailable and stay on the CPU backend.
 bool acceleratedDeformableSolveAvailable()
 {
   return sim::compute::isDeformablePsdAccelerationAvailable();
@@ -554,6 +551,11 @@ void defSimulationModule(nb::module_& m)
       .value(
           "PRE_CONTACT_SURROGATE",
           sim::ContactGradientMode::PreContactSurrogate);
+  nb::enum_<sim::ComputeAcceleratorPolicy>(m, "ComputeAcceleratorPolicy")
+      .value("CPU_ONLY", sim::ComputeAcceleratorPolicy::CpuOnly)
+      .value(
+          "PREFER_ACCELERATED",
+          sim::ComputeAcceleratorPolicy::PreferAccelerated);
 
   nb::enum_<sim::PhysicalParameter>(m, "PhysicalParameter")
       .value("MASS", sim::PhysicalParameter::MASS)
@@ -3019,6 +3021,7 @@ void defSimulationModule(nb::module_& m)
              const sim::MultibodyOptions& multibodyOptions,
              sim::ContactSolverMethod contactSolverMethod,
              sim::ContactGradientMode contactGradientMode,
+             sim::ComputeAcceleratorPolicy computeAcceleratorPolicy,
              const sim::DeactivationOptions& deactivationOptions) {
             sim::WorldOptions options;
             options.timeStep = timeStep;
@@ -3030,6 +3033,7 @@ void defSimulationModule(nb::module_& m)
             options.multibodyOptions = multibodyOptions;
             options.contactSolverMethod = contactSolverMethod;
             options.contactGradientMode = contactGradientMode;
+            options.computeAcceleratorPolicy = computeAcceleratorPolicy;
             options.deactivationOptions = deactivationOptions;
             new (self) sim::World(options);
           },
@@ -3043,6 +3047,8 @@ void defSimulationModule(nb::module_& m)
           nb::arg("contact_solver_method")
           = sim::ContactSolverMethod::SequentialImpulse,
           nb::arg("contact_gradient_mode") = sim::ContactGradientMode::Analytic,
+          nb::arg("compute_accelerator_policy")
+          = sim::ComputeAcceleratorPolicy::CpuOnly,
           nb::arg("deactivation_options") = sim::DeactivationOptions{})
       .def(
           "add_free_frame",
@@ -3899,6 +3905,10 @@ void defSimulationModule(nb::module_& m)
           &sim::World::getContactGradientMode,
           &sim::World::setContactGradientMode)
       .def_prop_rw(
+          "compute_accelerator_policy",
+          &sim::World::getComputeAcceleratorPolicy,
+          &sim::World::setComputeAcceleratorPolicy)
+      .def_prop_rw(
           "deactivation_options",
           &sim::World::getDeactivationOptions,
           [](sim::World& self, const sim::DeactivationOptions& options) {
@@ -4011,11 +4021,8 @@ void defSimulationModule(nb::module_& m)
         return format_repr("World", fields);
       });
 
-  // Backend-neutral acceleration control for the deformable solve.
-  // Process-wide: the deformable projected-Newton PSD projection is the one
-  // interactive hotspot an optional device sidecar can offload. With no
-  // accelerator registered these are safe no-ops reporting acceleration as
-  // unavailable.
+  // Backend-neutral acceleration control for direct deformable PSD backend
+  // calls. World stepping uses each World's compute_accelerator_policy.
   m.def(
       "is_accelerated_deformable_solve_available",
       &acceleratedDeformableSolveAvailable,
@@ -4026,14 +4033,15 @@ void defSimulationModule(nb::module_& m)
       &setAcceleratedDeformableSolve,
       nb::arg("enabled"),
       "Enable or disable accelerated (device-offloaded) deformable PSD "
-      "projection, process-wide. Returns the resulting enabled state (False "
+      "projection for direct backend calls. World stepping uses each World's "
+      "compute_accelerator_policy. Returns the resulting enabled state (False "
       "when no accelerator is available, so the call is a safe no-op that "
-      "stays "
-      "on the CPU backend).");
+      "stays on the CPU backend).");
   m.def(
       "is_accelerated_deformable_solve_enabled",
       &acceleratedDeformableSolveEnabled,
-      "Whether the accelerated deformable PSD backend is currently installed.");
+      "Whether the accelerated deformable PSD backend is active in the current "
+      "thread or installed as the direct-call process default.");
 }
 
 } // namespace dart::python_nb

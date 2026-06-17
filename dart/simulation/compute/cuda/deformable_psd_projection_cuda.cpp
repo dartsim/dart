@@ -65,8 +65,8 @@ namespace {
 
 // The resident device buffer reused across GPU projections (a function-local
 // static so it is constructed on first use and torn down at exit). Single-
-// threaded use only (the PSD backend is a process-global function pointer
-// driven by the sequential deformable stage).
+// threaded accelerator use only until the later resident-device-owner packet
+// moves this scratch behind a World-owned handle.
 DeviceBuffer<double>& residentDeviceBuffer()
 {
   static DeviceBuffer<double> buffer;
@@ -244,10 +244,7 @@ struct CudaPsdAcceleratorRegistrar
   {
     setDeformablePsdAccelerator(
         {&isCudaRuntimeAvailable,
-         []() -> bool {
-           installCudaDeformablePsdBackend();
-           return true;
-         },
+         &cudaPsdBackendAdapter,
          &restoreDefaultDeformablePsdBackend});
   }
 };

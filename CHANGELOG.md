@@ -121,11 +121,17 @@ compatibility remains on the active DART 6 LTS branch._
   [#3035](https://github.com/dartsim/dart/pull/3035),
   [#3042](https://github.com/dartsim/dart/pull/3042),
   [#3044](https://github.com/dartsim/dart/pull/3044))
+- Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
+  assembly keeps the active barrier Hessian while adding friction and dynamics
+  terms.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default
   public API.
+- Added a per-World `ComputeAcceleratorPolicy` for the experimental `World` and
+  dartpy surfaces so optional deformable PSD acceleration is resolved at bake
+  time instead of through a process-global step hook.
 - Refactored the LCP solver family under `dart::math::lcp`, added solver-family
   benchmarks/identity counters, and guarded unsupported benchmark rows from
   reporting misleading data. ([#2202](https://github.com/dartsim/dart/pull/2202),

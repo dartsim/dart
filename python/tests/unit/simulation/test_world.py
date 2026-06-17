@@ -6056,16 +6056,28 @@ def test_simulation_multibody_options_selector():
     policy_configured = sx.World(
         contact_solver_method=sx.ContactSolverMethod.BOXED_LCP,
         contact_gradient_mode=sx.ContactGradientMode.PRE_CONTACT_SURROGATE,
+        compute_accelerator_policy=sx.ComputeAcceleratorPolicy.PREFER_ACCELERATED,
     )
     assert policy_configured.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
     assert (
         policy_configured.contact_gradient_mode
         == sx.ContactGradientMode.PRE_CONTACT_SURROGATE
     )
+    assert (
+        policy_configured.compute_accelerator_policy
+        == sx.ComputeAcceleratorPolicy.PREFER_ACCELERATED
+    )
     policy_configured.contact_gradient_mode = sx.ContactGradientMode.ANALYTIC
     assert policy_configured.contact_gradient_mode == sx.ContactGradientMode.ANALYTIC
+    policy_configured.compute_accelerator_policy = sx.ComputeAcceleratorPolicy.CPU_ONLY
+    assert (
+        policy_configured.compute_accelerator_policy
+        == sx.ComputeAcceleratorPolicy.CPU_ONLY
+    )
     with pytest.raises(TypeError):
         policy_configured.contact_gradient_mode = 99
+    with pytest.raises(TypeError):
+        policy_configured.compute_accelerator_policy = 99
 
     with pytest.raises(Exception):
         sx.World(multibody_options=sx.MultibodyOptions(integration_family="nonsense"))

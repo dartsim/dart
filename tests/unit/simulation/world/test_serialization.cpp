@@ -187,10 +187,11 @@ constexpr std::size_t kSolverOptionTailBytes = 4u * sizeof(std::uint8_t);
 constexpr std::size_t kIgnoredCollisionPairTailBytes = sizeof(std::size_t);
 constexpr std::size_t kVariationalOptionTailBytes
     = sizeof(std::size_t) + sizeof(double);
+constexpr std::size_t kComputeAcceleratorPolicyTailBytes = sizeof(std::uint8_t);
 constexpr std::size_t kWorldOptionTailBytes
     = sizeof(std::uint8_t) + kSolverOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
-      + kDeactivationOptionTailBytes;
+      + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes;
 
 RegistryStorageCapacities registryStorageCapacities(
     const dart::simulation::detail::WorldRegistry& registry)
@@ -1012,6 +1013,8 @@ TEST(Serialization, PreservesWorldSolverOptions)
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+  options.computeAcceleratorPolicy
+      = sx::ComputeAcceleratorPolicy::PreferAccelerated;
 
   sx::World world1(options);
 
@@ -1032,6 +1035,9 @@ TEST(Serialization, PreservesWorldSolverOptions)
   EXPECT_EQ(
       world2.getContactGradientMode(),
       sx::ContactGradientMode::PreContactSurrogate);
+  EXPECT_EQ(
+      world2.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::PreferAccelerated);
 }
 
 TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
@@ -1100,9 +1106,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
     EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
   };
 
-  const std::size_t solverSuffixBytes = kIgnoredCollisionPairTailBytes
-                                        + kVariationalOptionTailBytes
-                                        + kDeactivationOptionTailBytes;
+  const std::size_t solverSuffixBytes
+      = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
+        + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
@@ -1119,8 +1125,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
           EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
         };
 
-  const std::size_t deactivationOffset
-      = validRecord.size() - kDeactivationOptionTailBytes;
+  const std::size_t deactivationOffset = validRecord.size()
+                                         - kComputeAcceleratorPolicyTailBytes
+                                         - kDeactivationOptionTailBytes;
   const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
@@ -1129,6 +1136,12 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   const double invalidTolerance = 0.0;
   expectInvalidTailField(
       toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
+
+  const std::size_t computePolicyOffset
+      = validRecord.size() - kComputeAcceleratorPolicyTailBytes;
+  const std::uint8_t invalidComputePolicy = 99u;
+  expectInvalidTailField(
+      computePolicyOffset, &invalidComputePolicy, sizeof(invalidComputePolicy));
 }
 
 // Test loadBinary resets solver-family and policy metadata when reading records
@@ -1151,6 +1164,8 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+  options.computeAcceleratorPolicy
+      = sx::ComputeAcceleratorPolicy::PreferAccelerated;
   sx::World loaded(options);
 
   loaded.loadBinary(legacy);
@@ -1167,6 +1182,9 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
       loaded.getContactSolverMethod(),
       sx::ContactSolverMethod::SequentialImpulse);
   EXPECT_EQ(loaded.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+  EXPECT_EQ(
+      loaded.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::CpuOnly);
 }
 
 // Test that legacy world records without versioned gravity metadata leave
