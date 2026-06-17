@@ -1,41 +1,40 @@
 # Resume: Python SIMBICON Locomotion
 
-## Current Resume Checkpoint (2026-06-17, Warm-Start Checkpoint Retirement)
+## Current Resume Checkpoint (2026-06-17, Late State-0 Stance Diagnostics)
 
-Current branch: `docs/retire-warm-start-checkpoint`.
+Current branch: `main` or a fresh branch from current `main`.
 
 PR [#3043](https://github.com/dartsim/dart/pull/3043) is merged on `main`; the
 small Atlas SIMBICON pose-window comparison utility no longer needs the old
-checkpoint branch. This branch documents the remaining durable evidence from
+checkpoint branch. PR [#3047](https://github.com/dartsim/dart/pull/3047)
+landed the remaining durable evidence from
 `feature/dart7-unified-contact-warm-start` in
-[`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md) so
-that checkpoint can be removed after this note lands and the maintainer
-explicitly approves deleting the local and remote branch.
+[`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md), and
+the local and remote checkpoint branches were deleted on 2026-06-17 after
+maintainer approval.
 
 Validation so far:
 
 - `pixi run python -m pytest python/tests/unit/test_compare_atlas_simbicon_pose_window.py -q`
 - `pixi run lint`
 
-Immediate next step: finish the docs-only retirement PR, then run
-`scripts/compare_atlas_simbicon_pose_window.py` against the late state-`0`
-DART 6/DART 7 trace JSONs from current `main`. Compare stance-foot local z-axis
-tilt with support-row counts around steps `3970`, `4000`, `4070`, and `4100`
-before trying another stance hip-roll or torso-reaction probe. Do not return to
-global native surface tolerance, seed-depth changes, reactive state-2 support
-hold clamps, or blunt swing `hpx`/`hpy` target clamps without new evidence.
+Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py`
+against the late state-`0` DART 6/DART 7 trace JSONs from current `main`.
+Compare stance-foot local z-axis tilt with support-row counts around steps
+`3970`, `4000`, `4070`, and `4100` before trying another stance hip-roll or
+torso-reaction probe. Do not return to global native surface tolerance,
+seed-depth changes, reactive state-2 support-hold clamps, or blunt swing
+`hpx`/`hpy` target clamps without new evidence.
 
 How to resume:
 
 ```bash
-git checkout docs/retire-warm-start-checkpoint
+git checkout main
+git pull --ff-only
 git status --short --branch
-pixi run lint
 ```
 
-Then open a docs-only PR for this retirement note. After that PR lands, ask the
-maintainer before deleting `feature/dart7-unified-contact-warm-start` locally
-and remotely.
+Then run the late state-`0` pose-window comparison from current `main`.
 
 The older resume notes below predate PR #3043 and this retirement audit. Keep
 them as SIMBICON task history, but do not treat their branch instructions as

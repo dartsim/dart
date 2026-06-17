@@ -1,17 +1,22 @@
 # Warm-Start Checkpoint Retirement
 
-This note extracts the durable state from
-`feature/dart7-unified-contact-warm-start` so that branch can be removed after
-the retirement note lands on `main` and the maintainer approves deletion.
+This note extracts the durable state from the retired
+`feature/dart7-unified-contact-warm-start` checkpoint branch. PR
+[#3047](https://github.com/dartsim/dart/pull/3047) landed this audit on `main`,
+and the local and remote checkpoint branches were deleted on 2026-06-17 after
+maintainer approval.
 
 ## Branch Audit
 
-- Local and remote branch: `feature/dart7-unified-contact-warm-start`.
+- Retired local and remote branch:
+  `feature/dart7-unified-contact-warm-start`.
 - Pull request: none found for this branch.
 - Relationship to `origin/main` at audit time: 37 commits behind and 295 commits
   ahead.
 - Diff size at audit time: hundreds of files, including broad DART 7 contact,
   multibody, actuator, solver, SIMBICON diagnostic, and planning edits.
+- Deletion evidence: after deletion, both local and remote ref checks returned
+  no refs for `feature/dart7-unified-contact-warm-start`.
 
 Do not merge or rebase this branch into `main`. Treat it as an old checkpoint,
 not as an integration branch. Any remaining useful code from it should be
@@ -62,13 +67,8 @@ ported wholesale. Use the maintained plans instead:
   and work-packet sequencing.
 - `docs/dev_tasks/rigid_body_dynamics_solver/` for active implementation state.
 
-## Removal Criteria
+## Removal Result
 
-`feature/dart7-unified-contact-warm-start` is removable after:
-
-1. This retirement note and the updated SIMBICON resume pointers land on
-   `main`.
-2. Any active agent handoff points at current `main`, PR #3043, and this note
-   instead of the checkpoint branch.
-3. The maintainer explicitly approves deleting the local and remote checkpoint
-   branch.
+`feature/dart7-unified-contact-warm-start` has been removed locally and from
+`origin`. Current SIMBICON handoff state points at `main`, PR #3043, and this
+note instead of the checkpoint branch.
