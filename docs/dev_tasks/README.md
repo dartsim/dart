@@ -107,9 +107,29 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 <1-2 sentences: what success looks like>
 
+## Specification Intake
+
+- **Value:** <user, maintainer, research, or release value>
+- **Scope:** <files/modules/surfaces expected to change>
+- **Assumptions:** <defaults chosen from current evidence>
+- **Traceability:** <issue, plan, design doc, PR, benchmark packet, or prompt>
+
 ## Non-Goals (for early phases)
 
 - <thing explicitly out of scope>
+
+## Acceptance Evidence
+
+- <test, benchmark, doc update, visual artifact, or command output that proves
+  success>
+
+## Gates
+
+- `pixi run <task>` — <why this covers the objective>
+
+## Open Decisions
+
+- None, or link to an owner-local `Decision needed` block.
 
 ## Key Decisions
 
@@ -142,6 +162,9 @@ find docs/dev_tasks -maxdepth 2 -type d -print
 **Task docs should**:
 
 - ✅ Track **current status** and **next steps**
+- ✅ Record **specification intake** for multi-session/design/API/research work:
+  value, scope, assumptions, traceability, acceptance evidence, gates, and open
+  decisions
 - ✅ Document **key decisions** and **why** (not just what)
 - ✅ Point to **code as source of truth**
 - ❌ Avoid hardcoded lists (file lists, dependency versions) that become outdated
