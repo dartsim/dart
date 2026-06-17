@@ -2080,6 +2080,7 @@ struct WorldStepPipelineStages
     : rigidBodyVelocity(&memoryManager),
       rigidBodyContact(8, &memoryManager),
       rigidIpcContact(compute::RigidIpcContactStageOptions{}, &memoryManager),
+      multibodyVelocity(&memoryManager),
       unifiedConstraint(8, &memoryManager),
       deformableDynamics(&memoryManager),
       kinematics(&memoryManager),
