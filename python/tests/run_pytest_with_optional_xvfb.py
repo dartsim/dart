@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -14,14 +15,22 @@ def _has_linux_display() -> bool:
 
 def _pytest_env() -> dict[str, str]:
     env = os.environ.copy()
+    env.setdefault("PYTHONUNBUFFERED", "1")
     if sys.platform.startswith("linux"):
         env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
         env.setdefault("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
     return env
 
 
+def _pytest_arguments() -> list[str]:
+    extra_args = shlex.split(os.environ.get("DARTPY_PYTEST_ARGS", ""))
+    source_override = os.environ.get("DARTPY_PYTEST_SOURCES")
+    sources = shlex.split(source_override) if source_override else sys.argv[1:]
+    return [*extra_args, *sources]
+
+
 def main() -> int:
-    command = [sys.executable, "-m", "pytest", *sys.argv[1:]]
+    command = [sys.executable, "-m", "pytest", *_pytest_arguments()]
     env = _pytest_env()
 
     if sys.platform.startswith("linux") and not _has_linux_display():
