@@ -735,9 +735,7 @@ bullet-cpp = ">=3.25"
 download-gz = { cmd = """
     rm -rf .deps/gz-physics/ \
     && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
-    """, outputs = [
-    ".deps/gz-physics/README.md",
-] }
+    """ }
 
 config-gz = { cmd = """
     cmake \
@@ -747,20 +745,18 @@ config-gz = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DBUILD_TESTING=OFF
+        -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
+        -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake \
+        -DBUILD_TESTING=ON
 """, depends-on = ["download-gz", "install"] }
 
-build-gz = { cmd = "cmake --build .deps/gz-physics/build -j --target all", depends-on = [
+build-gz = { cmd = "bash scripts/run_gz_physics_task.sh build", depends-on = [
     "config-gz",
 ] }
 
-test-gz = { cmd = """
-    cd .deps/gz-physics/build/lib && \
-    ldd libgz-physics8-dartsim-plugin.so | grep dart && \
-    echo "✓ DART plugin built successfully with DART integration!"
-""", depends-on = [
+test-gz = { cmd = "bash scripts/run_gz_physics_task.sh test", depends-on = [
     "build-gz",
-], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+] }
 
 #==============
 # Features

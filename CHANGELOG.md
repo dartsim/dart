@@ -13,6 +13,11 @@
 
 * Tests
 
+  * Build and run the pinned gz-physics test suite in the DART 6 Gazebo CI gate
+    instead of only checking that the plugin links, and add macOS x64/arm64
+    coverage so downstream Homebrew regressions are caught before release:
+    [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
+
   * Loosen the `Issue1184` resting-accuracy regression tolerance from `1e-3` to
     `2e-3` so it is not flipped by micrometer-scale cross-platform
     floating-point differences in the steady-state contact penetration (~1 mm),
