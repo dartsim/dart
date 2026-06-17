@@ -110,6 +110,8 @@ def test_simulation_api_exposes_python_names_only():
             "getLinkCount",
             "getJointCount",
             "getDOFCount",
+            "isSleeping",
+            "getDeactivationGroupIndex",
             "isValid",
             "get_links",
             "get_joints",
@@ -148,6 +150,8 @@ def test_simulation_api_exposes_python_names_only():
             "clearTorque",
             "applyLinearImpulse",
             "applyAngularImpulse",
+            "isSleeping",
+            "getDeactivationGroupIndex",
         ),
         sx.Joint: (
             "get_name",
@@ -213,6 +217,9 @@ def test_simulation_api_exposes_python_names_only():
             "getLoopClosure",
             "hasLoopClosure",
             "getLoopClosureCount",
+            "setDeactivationOptions",
+            "getDeactivationOptions",
+            "isDeactivationEnabled",
             "get_multibody_count",
             "get_loop_closure_count",
             "get_rigid_body_count",
@@ -318,6 +325,7 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "ComputeExecutionProfile",
         "WorldStepProfile",
         "WorldStepStageProfile",
+        "DeactivationOptions",
         "AllocatorDebugDiagnostics",
         "MemoryManagerDebugDiagnostics",
         "WorldEcsStorageDiagnostics",
@@ -373,6 +381,10 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "num_rigid_body_joints",
         "num_rigid_body_fixed_joints",
         "memory_diagnostics",
+        "deactivation_options",
+        "deactivation_enabled",
+        "is_sleeping",
+        "deactivation_group_index",
         "is_valid",
         "step_profiling_enabled",
         "last_step_profile",
@@ -457,6 +469,34 @@ def test_simulation_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
     assert not hasattr(sx.Link, "is_deformable_ground_barrier")
     assert "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
     assert "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
+
+
+def test_simulation_deactivation_options_and_sleep_state():
+    sx = _simulation()
+
+    options = sx.DeactivationOptions(enabled=True, time_until_sleep=0.02)
+    world = sx.World(
+        time_step=0.01,
+        gravity=(0.0, 0.0, 0.0),
+        deactivation_options=options,
+    )
+    assert world.deactivation_enabled
+    assert world.deactivation_options.enabled
+    assert world.deactivation_options.time_until_sleep == pytest.approx(0.02)
+
+    body = world.add_rigid_body("box")
+    assert not body.is_sleeping
+    assert body.deactivation_group_index == -1
+
+    world.step(3)
+    assert body.is_sleeping
+    assert body.deactivation_group_index >= 0
+
+    options.enabled = False
+    world.deactivation_options = options
+    assert not world.deactivation_enabled
+    assert not body.is_sleeping
+    assert body.deactivation_group_index == -1
 
 
 def test_simulation_state_space_metadata_value_object():

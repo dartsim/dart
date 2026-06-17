@@ -34,11 +34,11 @@
 
 #include "dart/simulation/common/exceptions.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
-#include "dart/simulation/comps/name.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/rigid_body_batch_ops.hpp"
 #include "dart/simulation/compute/rigid_body_integration_kernel.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
+#include "dart/simulation/detail/world_storage.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -46,7 +46,6 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
-#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -69,23 +68,14 @@ bool allFinite(const Eigen::Matrix3d& value)
 }
 
 //==============================================================================
-// Ordered rigid-body names for a world, in the same view order the batch
-// extract/apply uses. The name is the stable per-body identity key: EnTT view
-// iteration order is storage-dependent, so equal body counts alone do not
-// guarantee that two worlds map the same slice index to the same body. A
-// multi-world batch is only well defined when every world yields this same
-// ordered sequence.
-std::vector<std::string> rigidBodyNames(const World& world)
+bool sameRigidBodyModelIdentity(
+    const dart::simulation::detail::BakedWorldModel& lhs,
+    const dart::simulation::detail::BakedWorldModel& rhs)
 {
-  const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-  std::vector<std::string> names;
-  for (const auto entity : view) {
-    const auto* name = registry.try_get<comps::Name>(entity);
-    names.push_back(name ? name->name : std::string{});
-  }
-  return names;
+  return lhs.rigidBodyEntities.size() == rhs.rigidBodyEntities.size()
+         && lhs.rigidBodyIsDynamic == rhs.rigidBodyIsDynamic
+         && lhs.rigidBodyInverseMass == rhs.rigidBodyInverseMass
+         && lhs.rigidBodyInertia == rhs.rigidBodyInertia;
 }
 
 //==============================================================================
@@ -375,16 +365,19 @@ void integrateRigidBodyStateBatch(
 RigidBodyStateBatch extractRigidBodyState(const World& world)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   RigidBodyStateBatch batch;
   batch.worldCount = 1;
-  for (const auto entity : view) {
-    ++batch.bodyCount;
-
-    const auto& transform = view.get<comps::Transform>(entity);
-    const auto& velocity = view.get<comps::Velocity>(entity);
+  batch.bodyCount = model.rigidBodyEntities.size();
+  batch.position.reserve(3 * batch.bodyCount);
+  batch.orientation.reserve(4 * batch.bodyCount);
+  batch.linearVelocity.reserve(3 * batch.bodyCount);
+  batch.angularVelocity.reserve(3 * batch.bodyCount);
+  for (const auto entity : model.rigidBodyEntities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
 
     batch.position.push_back(transform.position.x());
     batch.position.push_back(transform.position.y());
@@ -430,19 +423,19 @@ void applyRigidBodyState(World& world, const RigidBodyStateBatch& state)
       state.bodyCount);
 
   auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   std::size_t index = 0;
-  for (const auto entity : view) {
+  for (const auto entity : model.rigidBodyEntities) {
     DART_SIMULATION_THROW_T_IF(
         index >= state.bodyCount,
         InvalidArgumentException,
         "RigidBodyStateBatch has fewer bodies ({}) than the world",
         state.bodyCount);
 
-    auto& transform = view.get<comps::Transform>(entity);
-    auto& velocity = view.get<comps::Velocity>(entity);
+    auto& transform = registry.get<comps::Transform>(entity);
+    auto& velocity = registry.get<comps::Velocity>(entity);
 
     transform.position = Eigen::Vector3d(
         state.position[3 * index + 0],
@@ -483,33 +476,34 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
     return batch;
   }
 
-  std::vector<std::string> referenceNames;
+  const dart::simulation::detail::BakedWorldModel* referenceModel = nullptr;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_SIMULATION_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
-        "extractRigidBodyStateBatch received a null world at index {}",
+        "extractRigidBodyStateBatch received a null world at lane {}",
         w);
 
     const auto single = extractRigidBodyState(*worlds[w]);
-    auto names = rigidBodyNames(*worlds[w]);
+    const auto& model
+        = dart::simulation::detail::ensureBakedWorldModelCurrent(*worlds[w]);
     if (w == 0) {
       batch.bodyCount = single.bodyCount;
-      referenceNames = std::move(names);
+      referenceModel = &model;
     } else {
       DART_SIMULATION_THROW_T_IF(
           single.bodyCount != batch.bodyCount,
           InvalidArgumentException,
-          "Heterogeneous body counts: world 0 has {}, world {} has {}",
+          "Heterogeneous body counts: lane 0 has {}, lane {} has {}",
           batch.bodyCount,
           w,
           single.bodyCount);
       DART_SIMULATION_THROW_T_IF(
-          names != referenceNames,
+          !sameRigidBodyModelIdentity(model, *referenceModel),
           InvalidArgumentException,
-          "extractRigidBodyStateBatch world {} has a different rigid-body "
-          "ordering or identity than world 0; all worlds must expose the same "
-          "ordered bodies",
+          "extractRigidBodyStateBatch lane {} has a different rigid-body "
+          "dense-index Model identity than lane 0; all worlds must expose the "
+          "same ordered Model",
           w);
     }
 
@@ -565,38 +559,38 @@ void applyRigidBodyStateBatch(
   // (this also makes rolloutWorldsBatched, which applies before stepping, fail
   // atomically on a duplicate world).
   std::unordered_set<const World*> seen;
-  std::vector<std::string> referenceNames;
+  const dart::simulation::detail::BakedWorldModel* referenceModel = nullptr;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_SIMULATION_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch received a null world at index {}",
+        "applyRigidBodyStateBatch received a null world at lane {}",
         w);
     DART_SIMULATION_THROW_T_IF(
         !seen.insert(worlds[w]).second,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch received a duplicate world at index {}; each "
+        "applyRigidBodyStateBatch received a duplicate world at lane {}; each "
         "world slice must target a distinct world",
         w);
 
-    auto names = rigidBodyNames(*worlds[w]);
+    const auto& model
+        = dart::simulation::detail::ensureBakedWorldModelCurrent(*worlds[w]);
     DART_SIMULATION_THROW_T_IF(
-        names.size() != bodyCount,
+        model.rigidBodyEntities.size() != bodyCount,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch world {} has {} rigid bodies, expected {}",
+        "applyRigidBodyStateBatch lane {} has {} rigid bodies, expected {}",
         w,
-        names.size(),
+        model.rigidBodyEntities.size(),
         bodyCount);
     if (w == 0) {
-      referenceNames = std::move(names);
+      referenceModel = &model;
     } else {
       DART_SIMULATION_THROW_T_IF(
-          names != referenceNames,
+          !sameRigidBodyModelIdentity(model, *referenceModel),
           InvalidArgumentException,
-          "applyRigidBodyStateBatch world {} has a different rigid-body "
-          "ordering "
-          "or identity than world 0; all worlds must expose the same ordered "
-          "bodies",
+          "applyRigidBodyStateBatch lane {} has a different rigid-body "
+          "dense-index Model identity than lane 0; all worlds must expose the "
+          "same ordered Model",
           w);
     }
   }
@@ -640,27 +634,17 @@ void integrateRigidBodyStateBatchLinear(
 //==============================================================================
 RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
 {
-  const auto& registry = dart::simulation::detail::registryOf(world);
-  // Use the same view as extractRigidBodyState so the model order matches the
-  // state order body-for-body, then fetch the mass per entity.
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& bakedModel
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   RigidBodyModelBatch model;
   model.worldCount = 1;
-  for (const auto entity : view) {
-    ++model.bodyCount;
-    const auto& mass = registry.get<comps::MassProperties>(entity);
-    const double inverse
-        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-    model.inverseMass.push_back(inverse);
-
-    for (int row = 0; row < 3; ++row) {
-      for (int col = 0; col < 3; ++col) {
-        model.inertia.push_back(mass.inertia(row, col));
-      }
-    }
-  }
+  model.bodyCount = bakedModel.rigidBodyEntities.size();
+  model.inverseMass.assign(
+      bakedModel.rigidBodyInverseMass.begin(),
+      bakedModel.rigidBodyInverseMass.end());
+  model.inertia.assign(
+      bakedModel.rigidBodyInertia.begin(), bakedModel.rigidBodyInertia.end());
 
   return model;
 }

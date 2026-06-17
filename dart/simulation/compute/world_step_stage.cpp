@@ -1559,29 +1559,9 @@ struct BasicRigidBodyStateScratchBatch
   ScalarVector angularVelocity;
 };
 
-template <typename ScalarAllocator>
-struct BasicRigidBodyModelScratchBatch
-{
-  using ScalarVector = std::vector<double, ScalarAllocator>;
-
-  BasicRigidBodyModelScratchBatch() = default;
-
-  explicit BasicRigidBodyModelScratchBatch(const ScalarAllocator& allocator)
-    : inverseMass(allocator), inertia(allocator)
-  {
-  }
-
-  std::size_t worldCount = 1;
-  std::size_t bodyCount = 0;
-  ScalarVector inverseMass;
-  ScalarVector inertia;
-};
-
 using RigidBodyBatchScalarAllocator = common::StlAllocator<double>;
 using AllocatorAwareRigidBodyStateBatch
     = BasicRigidBodyStateScratchBatch<RigidBodyBatchScalarAllocator>;
-using AllocatorAwareRigidBodyModelBatch
-    = BasicRigidBodyModelScratchBatch<RigidBodyBatchScalarAllocator>;
 
 enum class RigidBodyForceAssemblyMode
 {
@@ -1598,13 +1578,13 @@ void assembleRigidBodyForces(
     RigidBodyForceAssemblyMode mode = RigidBodyForceAssemblyMode::AllBodies)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-  batch.clearAndReserve(view.size_hint());
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
+  batch.clearAndReserve(model.rigidBodyEntities.size());
 
   const Eigen::Vector3d gravity
       = includeGravity ? world.getGravity() : Eigen::Vector3d::Zero();
-  for (const auto entity : view) {
+  for (const auto entity : model.rigidBodyEntities) {
     const bool prescribedBody
         = isPrescribedRigidBodyIntegrationBody(registry, entity);
     if (mode == RigidBodyForceAssemblyMode::AdvanceableOnly && prescribedBody) {
@@ -1641,27 +1621,25 @@ template <typename StateBatch>
 void extractRigidBodyStateInto(const World& world, StateBatch& batch)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   batch.worldCount = 1;
-  batch.bodyCount = 0;
+  batch.bodyCount = model.rigidBodyEntities.size();
   batch.position.clear();
   batch.orientation.clear();
   batch.linearVelocity.clear();
   batch.angularVelocity.clear();
 
-  const auto bodyCount = view.size_hint();
+  const auto bodyCount = model.rigidBodyEntities.size();
   batch.position.reserve(3 * bodyCount);
   batch.orientation.reserve(4 * bodyCount);
   batch.linearVelocity.reserve(3 * bodyCount);
   batch.angularVelocity.reserve(3 * bodyCount);
 
-  for (const auto entity : view) {
-    ++batch.bodyCount;
-
-    const auto& transform = view.get<comps::Transform>(entity);
-    const auto& velocity = view.get<comps::Velocity>(entity);
+  for (const auto entity : model.rigidBodyEntities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
 
     batch.position.push_back(transform.position.x());
     batch.position.push_back(transform.position.y());
@@ -1682,40 +1660,6 @@ void extractRigidBodyStateInto(const World& world, StateBatch& batch)
   }
 }
 
-//==============================================================================
-template <typename ModelBatch>
-void extractRigidBodyModelBatchInto(const World& world, ModelBatch& model)
-{
-  const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-
-  model.worldCount = 1;
-  model.bodyCount = 0;
-  model.inverseMass.clear();
-  model.inertia.clear();
-
-  const auto bodyCount = view.size_hint();
-  model.inverseMass.reserve(bodyCount);
-  model.inertia.reserve(9 * bodyCount);
-
-  for (const auto entity : view) {
-    ++model.bodyCount;
-
-    const auto& mass = registry.get<comps::MassProperties>(entity);
-    const double inverse
-        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-    model.inverseMass.push_back(inverse);
-
-    for (int row = 0; row < 3; ++row) {
-      for (int col = 0; col < 3; ++col) {
-        model.inertia.push_back(mass.inertia(row, col));
-      }
-    }
-  }
-}
-
-//==============================================================================
 template <typename SourceStateBatch, typename TargetStateBatch>
 void copyRigidBodyStateBatch(
     const SourceStateBatch& source, TargetStateBatch& target)
@@ -1726,6 +1670,19 @@ void copyRigidBodyStateBatch(
   target.orientation = source.orientation;
   target.linearVelocity = source.linearVelocity;
   target.angularVelocity = source.angularVelocity;
+}
+
+//==============================================================================
+rigid_body_batch_ops::RigidBodyModelBatchView rigidBodyModelBatchView(
+    const dart::simulation::detail::BakedWorldModel& model)
+{
+  return {
+      1,
+      model.rigidBodyEntities.size(),
+      std::span<const double>{
+          model.rigidBodyInverseMass.data(), model.rigidBodyInverseMass.size()},
+      std::span<const double>{
+          model.rigidBodyInertia.data(), model.rigidBodyInertia.size()}};
 }
 
 //==============================================================================
@@ -1775,19 +1732,19 @@ void applyRigidBodyStateFromBatch(World& world, const auto& state)
       state.bodyCount);
 
   auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   std::size_t index = 0;
-  for (const auto entity : view) {
+  for (const auto entity : model.rigidBodyEntities) {
     DART_SIMULATION_THROW_T_IF(
         index >= state.bodyCount,
         InvalidArgumentException,
         "Rigid-body state scratch has fewer bodies ({}) than the world",
         state.bodyCount);
 
-    auto& transform = view.get<comps::Transform>(entity);
-    auto& velocity = view.get<comps::Velocity>(entity);
+    auto& transform = registry.get<comps::Transform>(entity);
+    auto& velocity = registry.get<comps::Velocity>(entity);
 
     transform.position = Eigen::Vector3d(
         state.position[3 * index + 0],
@@ -10313,7 +10270,6 @@ struct BatchedRigidBodyIntegrationStage::Scratch
     : forces(allocator),
       state(RigidBodyBatchScalarAllocator{allocator}),
       initialState(RigidBodyBatchScalarAllocator{allocator}),
-      model(RigidBodyBatchScalarAllocator{allocator}),
       frameUpdateOrder(common::StlAllocator<entt::entity>{allocator}),
       visitState(common::StlAllocator<int>{allocator})
   {
@@ -10322,7 +10278,6 @@ struct BatchedRigidBodyIntegrationStage::Scratch
   AllocatorAwareRigidBodyForceBatch forces;
   AllocatorAwareRigidBodyStateBatch state;
   AllocatorAwareRigidBodyStateBatch initialState;
-  AllocatorAwareRigidBodyModelBatch model;
   std::vector<entt::entity, common::StlAllocator<entt::entity>>
       frameUpdateOrder;
   std::vector<int, common::StlAllocator<int>> visitState;
@@ -10413,6 +10368,11 @@ void RigidBodyVelocityStage::execute(
         || registry.all_of<comps::KinematicBodyTag>(entity)) {
       continue; // Static and kinematic bodies do not accelerate.
     }
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      continue;
+    }
 
     const Eigen::Vector3d force(
         forces.force[3 * i + 0],
@@ -10459,6 +10419,11 @@ void RigidBodyPositionStage::execute(
     if (registry.all_of<comps::StaticBodyTag>(entity)
         || registry.all_of<comps::KinematicBodyTag>(entity)) {
       continue; // Static and kinematic bodies do not move under this stage.
+    }
+    if (world.isDeactivationActiveForStep()
+        && world.isDeactivationEntitySleeping(
+            detail::fromRegistryEntity(entity))) {
+      continue;
     }
     integrateRigidBodyPosition(registry, entity, timeStep);
   }
@@ -10875,9 +10840,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
   const bool mayUseAvbdContactDetails
       = mayHaveRigidAvbdContactConfigs(registry);
-  const auto contacts = world.queryContacts(
+  const auto queriedContacts = world.queryContacts(
       CollisionQueryOptions{},
       /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
+  std::vector<Contact> deactivationContacts;
+  std::span<const Contact> contacts = queriedContacts;
+  if (world.isDeactivationActiveForStep()) {
+    deactivationContacts = world.filterContactsForDeactivation(contacts);
+    contacts = deactivationContacts;
+  }
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;
@@ -12562,12 +12533,13 @@ void BatchedRigidBodyIntegrationStage::execute(
 
   extractRigidBodyStateInto(world, scratch.state);
   copyRigidBodyStateBatch(scratch.state, scratch.initialState);
-  extractRigidBodyModelBatchInto(world, scratch.model);
   const auto timeStep = world.getTimeStep();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   rigid_body_batch_ops::integrateRigidBodyStateBatch(
       rigid_body_batch_ops::mutableStateBatchView(scratch.state),
-      rigid_body_batch_ops::modelBatchView(scratch.model),
+      rigidBodyModelBatchView(model),
       forces.force,
       forces.torque,
       timeStep);

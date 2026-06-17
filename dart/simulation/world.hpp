@@ -79,7 +79,11 @@ struct WorldStorage;
 namespace compute {
 class MultibodyContactStage;
 class MultibodyForwardDynamicsStage;
+class MultibodyPositionStage;
+class MultibodyVelocityStage;
 class RigidBodyContactStage;
+class RigidBodyPositionStage;
+class RigidBodyVelocityStage;
 class RigidIpcContactStage;
 class UnifiedConstraintStage;
 } // namespace compute
@@ -673,6 +677,21 @@ public:
   ///         `ContactGradientMode` enumerator.
   void setContactGradientMode(ContactGradientMode mode);
 
+  /// Set the automatic deactivation ("sleeping") policy.
+  ///
+  /// Deactivation is opt-in and defaults disabled. Disabling it clears any
+  /// existing sleep state immediately so subsequent steps resume normal
+  /// integration. The policy is a solver/domain-level facade: unsupported
+  /// solver paths keep the option value but do not deactivate bodies.
+  void setDeactivationOptions(const DeactivationOptions& options);
+
+  /// Return the current automatic deactivation policy.
+  [[nodiscard]] const DeactivationOptions& getDeactivationOptions()
+      const noexcept;
+
+  /// Return whether automatic deactivation is requested by options.
+  [[nodiscard]] bool isDeactivationEnabled() const noexcept;
+
   /// Get the explicit Jacobian blocks of the most recent step.
   ///
   /// With the default `SequentialImpulse` contact solver this returns the
@@ -763,9 +782,9 @@ public:
   /// state/control interface.
   ///
   /// First slice: the translational rigid-body reduction. `ndof = 3 * (number
-  /// of dynamic, non-static rigid bodies)`, matching the `[q; q̇]` layout of the
-  /// contact-aware step Jacobian. The full state vector therefore has size
-  /// `2 * ndof` and the control vector has size `ndof`.
+  /// of dynamic, non-static rigid bodies)`, using the baked dense rigid-body
+  /// index order created at the simulation boundary. The full state vector
+  /// therefore has size `2 * ndof` and the control vector has size `ndof`.
   [[nodiscard]] std::size_t getNumDofs() const;
 
   /// Number of control (effort) coordinates. Equal to `getNumDofs()`: the
@@ -776,8 +795,8 @@ public:
   /// The current state vector `x = [q; q̇]`, size `2 * getNumDofs()`.
   ///
   /// `q` is the stacked translational position and `q̇` the stacked linear
-  /// velocity of the dynamic (non-static) rigid bodies in registration order,
-  /// matching the layout of `getStepDerivatives()`.
+  /// velocity of the dynamic (non-static) rigid bodies in baked dense-index
+  /// order, matching the layout of `getStepDerivatives()`.
   [[nodiscard]] Eigen::VectorXd getStateVector() const;
 
   /// Overwrite the state vector `x = [q; q̇]` (size `2 * getNumDofs()`).
@@ -787,8 +806,8 @@ public:
   void setStateVector(const Eigen::VectorXd& state);
 
   /// The current control vector `u = τ`, size `getNumEfforts()`: the applied
-  /// force on each dynamic rigid body, three components per body, in
-  /// registration order.
+  /// force on each dynamic rigid body, three components per body, in baked
+  /// dense-index order.
   [[nodiscard]] Eigen::VectorXd getControlVector() const;
 
   /// Overwrite the control vector `u = τ` (size `getNumEfforts()`).
@@ -1023,7 +1042,11 @@ private:
   friend class io::detail::SkeletonLoaderWorldAccess;
   friend class compute::MultibodyContactStage;
   friend class compute::MultibodyForwardDynamicsStage;
+  friend class compute::MultibodyPositionStage;
+  friend class compute::MultibodyVelocityStage;
   friend class compute::RigidBodyContactStage;
+  friend class compute::RigidBodyPositionStage;
+  friend class compute::RigidBodyVelocityStage;
   friend class compute::WorldKinematicsGraph;
   friend class compute::RigidIpcContactStage;
   friend class compute::UnifiedConstraintStage;
@@ -1113,6 +1136,7 @@ private:
       const CollisionQueryOptions& options,
       bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
+  void markModelChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
@@ -1127,6 +1151,15 @@ private:
   void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();
+  [[nodiscard]] bool isDeactivationActiveForStep() const noexcept;
+  [[nodiscard]] bool isDeactivationEntitySleeping(Entity entity) const;
+  [[nodiscard]] int getDeactivationGroupIndex(Entity entity) const;
+  void wakeDeactivationEntity(Entity entity);
+  void clearDeactivationState();
+  void prepareDeactivationForStep();
+  void updateDeactivationAfterStep();
+  [[nodiscard]] std::vector<Contact> filterContactsForDeactivation(
+      std::span<const Contact> contacts);
 
   /// Record the analytic step Jacobians at the current (pre-step) state into
   /// the cached step derivatives. Under `ContactSolverMethod::BoxedLcp` this
@@ -1166,6 +1199,9 @@ private:
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
   bool m_strictSolverResolution{false};
+
+  DeactivationOptions m_deactivationOptions{};
+
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
   WorldMemoryDiagnostics m_memoryDiagnostics{};

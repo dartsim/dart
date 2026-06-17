@@ -313,6 +313,7 @@ void RigidBody::setMass(double mass)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .mass = mass;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -337,6 +338,7 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .inertia = inertia;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -567,6 +569,7 @@ void RigidBody::setStatic(bool isStatic)
   } else {
     registry.remove<comps::StaticBodyTag>(entity);
   }
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -605,6 +608,24 @@ bool RigidBody::isKinematic() const
 
   return dart::simulation::detail::registryOf(*getWorld())
       .all_of<comps::KinematicBodyTag>(detail::toRegistryEntity(getEntity()));
+}
+
+//==============================================================================
+bool RigidBody::isSleeping() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->isDeactivationEntitySleeping(getEntity());
+}
+
+//==============================================================================
+int RigidBody::getDeactivationGroupIndex() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getDeactivationGroupIndex(getEntity());
 }
 
 //==============================================================================

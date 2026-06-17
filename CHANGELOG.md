@@ -891,6 +891,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added opt-in DART 7 body deactivation ("sleeping") for rigid bodies and
+    semi-implicit multibodies, with `DeactivationOptions`, body sleep-state
+    accessors in C++ and dartpy, replay/binary serialization coverage, and a
+    `deactivation_sleeping` Python GUI demo. Contact islands stay awake until
+    their penetration correction converges, so bodies are never frozen
+    mid-interpenetration (parity with the DART 6 resting-scene gate).
   - Added a reusable renderer-neutral `PanelBuilder.timeline(...)` control and
     made the Python demos default to a replay-timeline scene with a
     bottom-docked scrubber. The shared demos GUI now keeps bottom scene panels
@@ -1064,6 +1070,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Routed experimental `World` dynamic rigid-body collection scratch for
     state/control vector helpers through the World free allocator, and added
     no-global-heap plus peak/live coverage through `getNumDofs()`.
+  - Baked experimental `World` dense-index Model artifacts for creation-ordered
+    rigid-body and multibody addressing, routed state/control vectors and
+    rigid-body batch extraction/integration through the cached Model, and
+    replaced name-based multi-world batch validation with dense-index Model
+    identity.
   - Reused experimental differentiable `World` multibody torque collection
     scratch through World-owned free-list storage, passed that scratch into the
     contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`

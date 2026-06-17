@@ -242,6 +242,16 @@ public:
   /// entity, including through World::clear().
   [[nodiscard]] bool isValid() const;
 
+  /// Return whether this multibody is currently asleep under World
+  /// deactivation.
+  ///
+  /// Returns false when deactivation is disabled, unsupported for the active
+  /// world configuration, or the multibody has not entered sleep.
+  [[nodiscard]] bool isSleeping() const;
+
+  /// Return this multibody's current deactivation group index, or -1 when none.
+  [[nodiscard]] int getDeactivationGroupIndex() const;
+
   //--------------------------------------------------------------------------
   /// @name Kinematic Structure (Design-time only)
   //--------------------------------------------------------------------------

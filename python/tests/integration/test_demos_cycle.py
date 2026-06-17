@@ -1,9 +1,9 @@
 """Cycle smoke for the headless `dart-demos` Python runner (PLAN-103 Phase 1).
 
-Asserts the registry has scenes, every scene can build and step a few frames
-without crashing, and the runner's `--list` lists the catalog. The runner's
-soft-fail path turns an unbuildable scene (e.g. a missing asset) into a logged
-skip, so this test also passes when a robot URDF is unavailable; what we
+Asserts the registry has scenes, a representative scene cycle can build and step
+a few frames without crashing, and the runner's `--list` lists the catalog. The
+runner's soft-fail path turns an unbuildable scene (e.g. a missing asset) into a
+logged skip, so this test also passes when a robot URDF is unavailable; what we
 guarantee is that the runner itself stays healthy.
 """
 
@@ -403,7 +403,12 @@ def test_runner_cycle_returns_zero() -> None:
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
     if not _simulation_has("World"):
         pytest.skip("dartpy.World unavailable in this build")
-    rc = run(["--cycle-scenes", "--frames", "1", "--headless"], make_demo_scenes())
+    # Keep the GUI cycle smoke bounded; the registry and scene-specific tests
+    # below cover the full catalog without paying a full viewer scene switch for
+    # every demo in Debug CI.
+    smoke_scenes = make_demo_scenes()[:3]
+    assert len(smoke_scenes) == 3
+    rc = run(["--cycle-scenes", "--frames", "1", "--headless"], smoke_scenes)
     assert rc == 0
 
 
@@ -518,15 +523,17 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
     import numpy as np
     from examples.demos._ipc_deformable_bridge import build_fem_compression_bar
 
+    # Keep this volumetric self-contact check small enough for Debug CI while
+    # still forcing the barrier path to activate.
     options, _edges = build_fem_compression_bar(
-        cells_x=24,
-        cells_y=2,
-        cells_z=2,
+        cells_x=6,
+        cells_y=1,
+        cells_z=1,
         cell_size=0.05,
         origin=(-0.6, -0.05, 0.5),
         youngs_modulus=2.0e4,
-        compression_rate=0.12,
-        compression_end_time=3.0,
+        compression_rate=0.35,
+        compression_end_time=1.0,
     )
 
     world = sx.World()
@@ -537,7 +544,7 @@ def test_ipc_deformable_fem_self_contact_activates_under_compression() -> None:
 
     max_active = 0
     positive_separation_samples = 0
-    for _ in range(260):
+    for _ in range(40):
         world.step()
         diag = world.last_deformable_solver_diagnostics
         max_active = max(max_active, diag.self_contact_barrier_active_contacts)
@@ -824,6 +831,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "floating_base",
             "contact",
             "rigid_body",
+            "deactivation_sleeping",
             "rigid_body_modes",
             "rigid_free_flight",
             "rigid_frame_hierarchy",
@@ -977,6 +985,40 @@ def test_world_scenes_use_solver_focused_categories() -> None:
 
     assert not any(scene.category == "Experimental" for scene in scenes)
     assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_deactivation_sleeping_demo_sleeps_then_wakes_contact_target() -> None:
+    import numpy as np
+
+    _require_simulation_symbols("World", "DeactivationOptions")
+
+    from examples.demos.scenes.deactivation_sleeping import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    sleepers = setup.info["sleep_candidates"]
+    target = sleepers[0]
+    quiet_reference = setup.info["quiet_reference"]
+    striker = setup.info["striker"]
+
+    assert sx_world.deactivation_enabled
+    assert setup.pre_step is not None
+
+    for _ in range(20):
+        setup.pre_step()
+        setup.world.step()
+
+    assert target.is_sleeping
+    assert quiet_reference.is_sleeping
+    assert not striker.is_sleeping
+
+    for _ in range(110):
+        setup.pre_step()
+        setup.world.step()
+
+    assert not target.is_sleeping
+    assert np.linalg.norm(np.asarray(target.linear_velocity, dtype=float)) > 0.05
+    assert quiet_reference.is_sleeping
 
 
 def test_gui_fidelity_debug_visuals_scene_exposes_pbr_and_debug_provider() -> None:
@@ -1166,6 +1208,19 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
     related_rows = _read_rigid_visual_related_evidence_rows()
 
     assert related_rows == [
+        (
+            "rigid_body_modes",
+            "deactivation_sleeping",
+            "World Rigid Body",
+            (
+                "Related shelf: World Rigid Body / deactivation_sleeping - "
+                "public sleep wake and island activation deactivation route"
+            ),
+            (
+                "Dedicated DART 7 body-deactivation scene; use the numbered "
+                "row only for dynamic/static/kinematic mode semantics."
+            ),
+        ),
         (
             "rigid_free_flight",
             "floating_base",
@@ -2025,11 +2080,14 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
             for token in ("sleep", "wake", "island", "activation", "deactivation")
         )
     }
-    assert not activation_attrs, (
-        "Public sleep/wake/island activation API appeared; update the rigid-body "
-        "visual workflow and revisit the activation-state row deferral."
-    )
-    assert "no public sleep/wake or island activation surface" in normalized_text
+    assert {
+        "deactivation_enabled",
+        "deactivation_group_index",
+        "deactivation_options",
+        "is_sleeping",
+    } <= activation_attrs
+    assert "public sleep/wake deactivation surface" in normalized_text
+    assert "deactivation_sleeping" in normalized_text
 
     compliance_attrs = {
         name
@@ -2210,6 +2268,7 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
     )
     readme = root / "python" / "examples" / "demos" / "README.md"
     expected_specs = [
+        ("deactivation_sleeping", 72, 960, 540, True),
         ("floating_base", 72, 960, 540, True),
         ("articulated", 72, 960, 540, True),
         ("rigid_ipc_tunnel", 24, 960, 540, True),

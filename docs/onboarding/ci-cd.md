@@ -53,6 +53,12 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
   - `gh pr checks` may show duplicate entries from older runs or workflows that still use both `push` and `pull_request`; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
+  - Workflow concurrency is per workflow/ref, not per commit. A queued or
+    rerun workflow from an old head can keep the current head's workflow
+    pending, especially for wheel publishing. Compare run `headSha` values for
+    the branch, cancel stale old-head runs only after explicit approval, and use
+    GitHub's force-cancel endpoint only when a normal cancel request leaves a
+    stale queued run blocking the current head.
 - zsh can produce parse errors when jq expressions or backtick characters are not fully quoted; quote `gh ... --jq` programs and use a here-doc or `--body-file` when PR bodies include backticks.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
@@ -84,6 +90,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 ## Common CI Failure Modes
 
 - Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
+- Linux `Release Tests` ASAN compile fails with `No space left on device`:
+  treat this as hosted-runner disk exhaustion, not a failing DART test. The job
+  builds a normal Release tree, dartpy, examples, and then a separate ASAN tree
+  in the same workspace; keep disk cleanup at the start of that job before
+  rerunning the failed check.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Example or test links fail with `cannot find -ldart-<component>`: inspect the
@@ -239,6 +250,9 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
   inspect the generated `build.ninja` edge before assuming pytest started. The
   Debug binding-layer symbol policy is documented in
   [python-bindings.md](python-bindings.md#debug-build-symbols).
+- If the Debug Python step has already entered pytest but stays quiet, use the
+  direct pytest isolation workflow in [testing.md](testing.md#next-time-accelerators)
+  to identify the slow file or test.
 - If a test requires an optional backend, guard it (skip) or ensure the backend toggle is enabled in the build configuration.
 - If editor or IDE context references a path, verify it exists before making edits or writing guidance.
 - Re-run only the failed CI job (via job databaseId) to keep feedback loops short.

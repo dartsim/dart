@@ -128,6 +128,12 @@ signals for pilot-scoped internal Markdown links, conservative owner-index
 discoverability, and north-star evidence freshness while those checks are in
 their report-only rollout.
 
+Report-only checks still need a quiet default run. Before adding a new advisory
+to a mandatory command, scope it to an owned pilot surface, clean the existing
+inventory, or add an explicit baseline so routine verification output remains
+actionable. A report-only signal that always prints legacy debt is not ready to
+be a shared gate.
+
 These checks are structural. The principle audit in `docs/ai/principles.md`
 owns judgment calls such as source-of-truth placement, public path quality, and
 whether a change is simpler than the alternatives. `docs/ai/verification.md`
