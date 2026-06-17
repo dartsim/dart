@@ -811,16 +811,17 @@ void ConstraintSolver::buildConstrainedGroups()
           = mGroupResting[it->second] && skeleton->isSleepCandidate();
     }
 
-    // Pass 2: stamp the island-atomic freeze flag and the island index. A
-    // grouped skeleton freezes iff its whole island rests; an ungrouped
-    // skeleton is never frozen by the solver (isolated bodies are cheap and
-    // handled by World::step directly). The island index is exposed for
-    // visualization/diagnostics (e.g. coloring islands in a viewer).
+    // Pass 2: stamp the island index and keep only already-frozen islands
+    // frozen. A newly eligible island must run one final contact solve before
+    // it freezes so observable force caches (e.g. transmitted wrench queries)
+    // keep the last solved constraint forces instead of an unconstrained
+    // forward-dynamics value.
     for (const auto& skeleton : mSkeletons) {
       const auto root = ConstraintBase::getRootSkeleton(skeleton);
       const auto it = rootToGroup.find(root.get());
       const bool grouped = (it != rootToGroup.end());
-      skeleton->setResting(grouped && mGroupResting[it->second]);
+      const bool groupCanRest = grouped && mGroupResting[it->second];
+      skeleton->setResting(groupCanRest && skeleton->isResting());
       skeleton->setIslandIndex(grouped ? static_cast<int>(it->second) : -1);
     }
   }
@@ -837,13 +838,51 @@ void ConstraintSolver::solveConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
+  static thread_local std::vector<char> groupAlreadyResting;
+  groupAlreadyResting.assign(mConstrainedGroups.size(), 1);
+  static thread_local std::vector<char> groupSolvedToRest;
+  groupSolvedToRest.assign(mConstrainedGroups.size(), 0);
+
+  if (mDeactivationActive) {
+    for (const auto& skeleton : mSkeletons) {
+      const int island = skeleton->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto groupIndex = static_cast<std::size_t>(island);
+      if (groupIndex >= groupAlreadyResting.size())
+        continue;
+
+      if (!skeleton->isResting())
+        groupAlreadyResting[groupIndex] = 0;
+    }
+  }
+
   for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
-    // Skip islands in which every skeleton is resting. With the feature off no
-    // skeleton is resting, so every entry is false and nothing is skipped.
-    if (i < mGroupResting.size() && mGroupResting[i])
+    const bool groupCanRest = i < mGroupResting.size() && mGroupResting[i];
+
+    // Skip only islands that were already frozen at the start of this solve. A
+    // newly eligible island still needs one final solve to refresh the contact
+    // impulse and body-force caches before it is frozen for subsequent steps.
+    if (groupCanRest && groupAlreadyResting[i])
       continue;
 
     solveConstrainedGroup(mConstrainedGroups[i]);
+
+    if (groupCanRest)
+      groupSolvedToRest[i] = 1;
+  }
+
+  for (const auto& skeleton : mSkeletons) {
+    const int island = skeleton->getIslandIndex();
+    if (island < 0)
+      continue;
+
+    const auto groupIndex = static_cast<std::size_t>(island);
+    if (groupIndex < groupSolvedToRest.size()
+        && groupSolvedToRest[groupIndex]) {
+      skeleton->setResting(true);
+    }
   }
 }
 

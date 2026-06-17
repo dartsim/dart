@@ -110,6 +110,36 @@ SkeletonPtr createFreeBox(
 }
 
 //==============================================================================
+// Builds a one-link articulated body with a revolute root joint and a box link
+// whose bottom face rests on the floor. Unlike a single free body, this exposes
+// the solved contact load through BodyNode::getBodyForce(), matching the joint
+// transmitted-wrench path used by downstream adapters.
+SkeletonPtr createPinnedContactArm(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+
+  RevoluteJoint::Properties jointProps;
+  jointProps.mName = name + "_joint";
+  jointProps.mAxis = Eigen::Vector3d::UnitY();
+  jointProps.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0, 0, 0.999999);
+  jointProps.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0, 0, 0.5);
+
+  BodyNode::Properties bodyProps(
+      BodyNode::AspectProperties(std::string(name + "_body")));
+  bodyProps.mInertia.setMass(1.0);
+
+  auto* body = skel->createJointAndBodyNodePair<RevoluteJoint>(
+                       nullptr, jointProps, bodyProps)
+                   .second;
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 1.0));
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+  return skel;
+}
+
+//==============================================================================
 // Steps the world until the predicate is satisfied or maxSteps is exceeded.
 // Returns the number of steps taken (== maxSteps if never satisfied).
 template <typename Predicate>
@@ -173,6 +203,30 @@ TEST(IslandDeactivation, SettlesThenSleeps)
     EXPECT_TRUE(box->getPositions().isApprox(frozenPos, 1e-12))
         << "frozen box drifted at step " << i;
   }
+}
+
+//==============================================================================
+// A skeleton that is put to sleep must preserve the last solved contact wrench
+// in its BodyNode force cache. Downstream adapters expose this through joint
+// transmitted-wrench APIs, so the transition into sleep must not overwrite the
+// value with an unconstrained forward-dynamics pass.
+TEST(IslandDeactivation, SleepingPreservesContactBodyForce)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto arm = createPinnedContactArm("arm");
+  world->addSkeleton(arm);
+
+  const std::size_t stepsToSleep
+      = stepUntil(world.get(), 5000, [&]() { return arm->isResting(); });
+  ASSERT_LT(stepsToSleep, 5000u) << "arm never went to sleep";
+  ASSERT_TRUE(arm->isResting());
+
+  const auto* body = arm->getBodyNode(0);
+  const Eigen::Vector6d bodyForce = body->getBodyForce();
+
+  EXPECT_GT(bodyForce.tail<3>().norm(), 1.0)
+      << "sleep transition discarded the solved contact force";
 }
 
 //==============================================================================

@@ -238,18 +238,28 @@ void World::step(bool _resetCommand)
     if (!skel->isMobile())
       continue;
 
+    bool preservingFinalSleepSolve = false;
+
     // A resting skeleton skips both the impulse-based forward dynamics and the
     // position integration. The only exception is when an impulse was applied
     // to it this step: that means a moving body contacted this island (the
     // solver united them so the group was not all-resting and was solved),
     // delivering an impulse. Such a skeleton must wake and be processed
-    // normally so the impulse is applied and the position is advanced.
+    // normally so the impulse is applied and the position is advanced. A
+    // newly sleep-eligible contact island also receives one final solved
+    // impulse before freezing so transmitted-wrench/body-force queries keep
+    // the last solved contact forces; that path processes the impulse but
+    // preserves the resting state.
     if (deactivationEnabled && skel->isResting()) {
       if (skel->isImpulseApplied()) {
-        skel->setResting(false);
-        skel->setSleepCandidate(false);
-        if (!disturbedThisStep.empty())
-          disturbedThisStep[i] = true;
+        if (skel->isSleepCandidate()) {
+          preservingFinalSleepSolve = true;
+        } else {
+          skel->setResting(false);
+          skel->setSleepCandidate(false);
+          if (!disturbedThisStep.empty())
+            disturbedThisStep[i] = true;
+        }
       } else {
         continue;
       }
@@ -261,6 +271,10 @@ void World::step(bool _resetCommand)
     }
 
     skel->integratePositions(mTimeStep);
+
+    if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
+      skel->setVelocities(
+          Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
 
     if (_resetCommand) {
       skel->clearInternalForces();
