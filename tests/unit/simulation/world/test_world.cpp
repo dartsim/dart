@@ -7491,7 +7491,9 @@ TEST(World, DeformableFemGroundFrictionBlockIsActive)
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 27u);
   EXPECT_GT(projectedNewtonSteps, 0u);
-  EXPECT_GT(maxHessianNonZeros, 0u);
+  // This 81-DOF block is intentionally under the retained dense-direct cutoff,
+  // so it exercises dense scratch without reporting sparse Hessian footprint.
+  EXPECT_EQ(maxHessianNonZeros, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
 }
 

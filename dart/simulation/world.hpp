@@ -137,12 +137,14 @@ struct DeformableSolverDiagnostics
   /// Maximum compressed sparse Hessian matrix footprint assembled by the
   /// projected-Newton solve in this step. This is an Eigen matrix-storage
   /// estimate (values + sparse indices), not a full process peak-memory value.
+  /// Small systems solved with retained dense direct scratch and matrix-free
+  /// solves report zero because they do not assemble an Eigen sparse matrix.
   std::size_t projectedNewtonHessianNonZeros = 0;
   std::size_t projectedNewtonHessianStorageBytes = 0;
   /// Newton iterations whose linear solve took the iterative
-  /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of
-  /// the sparse Cholesky factorization -- either because the mesh exceeds the
-  /// direct-solve node cap or because the body opted in via
+  /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of a
+  /// direct factorization -- either because the mesh exceeds the direct-solve
+  /// node cap or because the body opted in via
   /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
   /// every solve used the direct factorization.
   std::size_t projectedNewtonIterativeSolves = 0;
