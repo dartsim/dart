@@ -48,10 +48,15 @@ separate tracking system. Every packet records:
 
 - **ID** — `WP-<plan>.<n>` (for example `WP-091.3`), stable once published.
 - **Objective** — one sentence; what is true after the packet lands.
+- **Value** — the user, maintainer, research, release, or architecture value
+  that justifies doing this packet now.
 - **Scope** — the files/modules expected to change. An executor finding the
   real scope materially different stops and reports back instead of pushing
   through.
 - **Non-goals** — the adjacent work this packet deliberately does not do.
+- **Assumptions and open decisions** — defaults inferred from current evidence,
+  plus links to any owner-local `Decision needed` block. A packet with a
+  consequential unresolved decision is not executable.
 - **Acceptance evidence** — the concrete artifacts that prove completion:
   named tests, gate commands, doc updates, benchmark packets. "It compiles"
   is not acceptance evidence.
@@ -59,6 +64,32 @@ separate tracking system. Every packet records:
   that must pass, plus packet-specific checks.
 - **Dependencies** — packet IDs or merged-evidence preconditions. A packet
   with unmet dependencies is not available for execution.
+
+## Specification intake and readiness
+
+DART uses the existing plan, dev-task, and packet surfaces as its
+specification-first workflow. Do not add a parallel `.specify/` tree for normal
+DART work. Before implementation starts, the owning surface must answer:
+
+- what value the work delivers;
+- what is in scope and explicitly out of scope;
+- which assumptions are being made from current evidence;
+- which decisions remain open and where they are recorded;
+- what acceptance evidence will prove the objective; and
+- which `pixi run ...` gates cover that evidence.
+
+For numbered plans, this information belongs in the work packet. For
+multi-session implementation tasks, it belongs in
+`docs/dev_tasks/<task>/README.md` and may point back to a plan or design doc.
+For small direct changes, it may be implicit in the issue, prompt, and final
+verification evidence.
+
+If an orchestrator or executor cannot name the acceptance evidence before
+editing, the next step is a planning, clarification, or spike packet, not a
+best-effort implementation. If a choice would materially change public API,
+release compatibility, numerical correctness, benchmark claims, or roadmap
+scope, record an owner-local `Decision needed` block instead of silently
+choosing.
 
 ## Sizing rules
 

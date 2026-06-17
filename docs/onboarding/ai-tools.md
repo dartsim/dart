@@ -123,7 +123,10 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 3. Update `docs/ai/workflows.md` so the command is discoverable from the workflow catalog
 
-4. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
+4. Update `docs/ai/capabilities.json` so the command is represented in the
+   machine-readable capability manifest
+
+5. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
 
 Codex does not use project slash-command files directly. The sync script
 generates a first-class Codex skill from each command, so `/dart-fix-ci`
@@ -153,6 +156,9 @@ becomes `$dart-fix-ci`.
 2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
 
 3. Update `docs/ai/workflows.md` so the skill is discoverable from the workflow catalog
+
+4. Update `docs/ai/capabilities.json` so the skill is represented in the
+   machine-readable capability manifest
 
 ### Skill Design Principles
 
