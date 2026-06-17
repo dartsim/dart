@@ -1,5 +1,23 @@
 # Python SIMBICON Locomotion — Dev Task
 
+## Latest Focus (2026-06-16, Foot Tilt Comparison Utility)
+
+Branch: `feature/simbicon-foot-tilt-metric`.
+
+The fresh follow-up branch starts from current `origin/main` instead of the
+large `feature/dart7-unified-contact-warm-start` checkpoint branch. It ports the
+small Atlas SIMBICON pose-window comparison utility and adds a derived foot-pose
+metric for each sampled trace row: transform translation, trace-vertical
+position, local z-axis tilt relative to the trace vertical axis, and
+stance/swing aliases when the controller state identifies the active limb.
+
+Immediate next step: run
+`scripts/compare_atlas_simbicon_pose_window.py` on the late state-`0` trace
+window once the DART 6/DART 7 trace JSONs are available locally, then use the
+stance-foot tilt numbers together with support-row counts before trying another
+stance-reaction or torso-reaction probe. Do not treat this utility as a gait
+fix; it is evidence plumbing for the remaining lateral/support diagnosis.
+
 ## Current Status
 
 - [x] Robot-agnostic SIMBICON controller landed (PR #2786): FSM, world-frame
