@@ -26,6 +26,17 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -54,6 +65,17 @@ jobs:
     strategy:
       fail-fast: false
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -119,6 +141,17 @@ jobs:
       # dominant CI cost. ctest honors CTEST_PARALLEL_LEVEL natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -178,6 +211,17 @@ jobs:
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -263,6 +307,17 @@ jobs:
       DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE: OFF
       DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE: OFF
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -329,6 +384,17 @@ jobs:
       DART_PARALLEL_JOBS: 8
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -379,6 +445,17 @@ jobs:
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -438,6 +515,17 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -497,6 +585,17 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -525,6 +624,17 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -593,6 +703,17 @@ jobs:
       DART_PARALLEL_JOBS: 2
       LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 

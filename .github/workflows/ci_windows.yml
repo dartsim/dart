@@ -26,6 +26,17 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            else
+              find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            fi
+          fi
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
