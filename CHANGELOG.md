@@ -2,13 +2,14 @@
 
 ## DART 6
 
-### [DART 6.19.1 (TBD)](https://github.com/dartsim/dart/milestone/98?closed=1)
+### [DART 6.19.1 (2026-06-17)](https://github.com/dartsim/dart/milestone/98?closed=1)
 
 * Simulation
 
   * Preserve the last solved contact body-force cache when an island first
     transitions into automatic deactivation, so joint transmitted-wrench
     queries continue to include contact forces while the island is asleep:
+    [#3051](https://github.com/dartsim/dart/pull/3051),
     [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
 
 * Tests
@@ -16,7 +17,13 @@
   * Build and run the pinned gz-physics test suite in the DART 6 Gazebo CI gate
     instead of only checking that the plugin links, and add macOS x64/arm64
     coverage so downstream Homebrew regressions are caught before release:
+    [#3050](https://github.com/dartsim/dart/pull/3050),
     [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
+
+  * Cover the sleep-transition wrench-cache regression paths, including the
+    final contact impulse before sleep, non-candidate wakeup, and stale
+    constraint-island index handling:
+    [#3055](https://github.com/dartsim/dart/pull/3055)
 
   * Loosen the `Issue1184` resting-accuracy regression tolerance from `1e-3` to
     `2e-3` so it is not flipped by micrometer-scale cross-platform
