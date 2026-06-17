@@ -6235,6 +6235,22 @@ TEST(World, EnterSimulationModeReservesRegistryStorageForDeformableSteps)
 constexpr std::size_t kCompliantVariationalContactRobotCount = 6;
 constexpr std::size_t kCompliantVariationalContactPointsPerRobot = 4;
 
+void configureVariationalSliderScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
+  world.setTimeStep(0.01);
+}
+
 void configureVariationalLoopClosureChainScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -9069,19 +9085,7 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   namespace sx = dart::simulation;
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
-      "multibody variational scratch", [](sx::World& world) {
-        auto robot = world.addMultibody("slider");
-        auto base = robot.addLink("base");
-        sx::JointSpec spec;
-        spec.name = "rail";
-        spec.type = sx::JointType::Prismatic;
-        spec.axis = Eigen::Vector3d::UnitZ();
-        auto carriage = robot.addLink("carriage", base, spec);
-        carriage.setMass(3.0);
-        world.setMultibodyOptions(
-            {sx::MultibodyIntegrationFamily::Variational});
-        world.setTimeStep(0.01);
-      });
+      "multibody variational scratch", configureVariationalSliderScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "semi-implicit external-force body Jacobian scratch",
       configureSemiImplicitExternalForceMultibodyScene);
@@ -9423,6 +9427,28 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
               entity, cfg);
         }
       });
+}
+
+TEST(World, BakedVariationalMultibodyStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational scratch", configureVariationalSliderScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational compliant contact scratch",
+      configureCompliantVariationalContactSliderScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational augmented-Lagrangian contact scratch",
+      configureVariationalContactDualStateSliderScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational loop-closure scratch",
+      configureVariationalLoopClosureChainScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational articulated point-joint link-index scratch",
+      configureLongVariationalArticulatedPointJointScene);
+#endif
 }
 
 // Velocity-actuated multibody joints solve a per-step coupled velocity
