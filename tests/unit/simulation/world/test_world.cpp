@@ -5103,6 +5103,8 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+  options.computeAcceleratorPolicy
+      = sx::ComputeAcceleratorPolicy::PreferAccelerated;
 
   sx::World world(options);
   world.clear();
@@ -5116,6 +5118,9 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
       world.getContactSolverMethod(),
       sx::ContactSolverMethod::SequentialImpulse);
   EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+  EXPECT_EQ(
+      world.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::CpuOnly);
 }
 
 TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
@@ -5160,6 +5165,16 @@ TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
         (void)world;
       },
       sx::InvalidArgumentException);
+
+  sx::WorldOptions invalidComputeAccelerator;
+  invalidComputeAccelerator.computeAcceleratorPolicy
+      = static_cast<sx::ComputeAcceleratorPolicy>(99);
+  EXPECT_THROW(
+      {
+        sx::World world(invalidComputeAccelerator);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
 }
 
 TEST(World, SetContactGradientModeRejectsInvalidEnum)
@@ -5171,6 +5186,20 @@ TEST(World, SetContactGradientModeRejectsInvalidEnum)
       world.setContactGradientMode(static_cast<sx::ContactGradientMode>(99)),
       sx::InvalidArgumentException);
   EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+}
+
+TEST(World, SetComputeAcceleratorPolicyRejectsInvalidEnum)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  EXPECT_THROW(
+      world.setComputeAcceleratorPolicy(
+          static_cast<sx::ComputeAcceleratorPolicy>(99)),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(
+      world.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::CpuOnly);
 }
 
 TEST(World, MemoryManagerOptionsConfigureFreeListPolicy)

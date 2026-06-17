@@ -677,6 +677,19 @@ public:
   ///         `ContactGradientMode` enumerator.
   void setContactGradientMode(ContactGradientMode mode);
 
+  /// Select whether this World may use backend-neutral compute accelerators.
+  ///
+  /// `CpuOnly` keeps World stepping on built-in CPU paths. `PreferAccelerated`
+  /// resolves available accelerator handles at bake time and falls back to CPU
+  /// when none is available, recording the decision in
+  /// `getResolvedConfiguration()`. Changing the policy rebakes the cached step
+  /// configuration when the World is already in simulation mode.
+  void setComputeAcceleratorPolicy(ComputeAcceleratorPolicy policy);
+
+  /// Return this World's backend-neutral compute accelerator policy.
+  [[nodiscard]] ComputeAcceleratorPolicy getComputeAcceleratorPolicy()
+      const noexcept;
+
   /// Set the automatic deactivation ("sleeping") policy.
   ///
   /// Deactivation is opt-in and defaults disabled. Disabling it clears any
@@ -1143,6 +1156,7 @@ private:
   void recordResolvedConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
+  void resolveComputeAcceleratorForCurrentConfiguration();
   void prepareCollisionQueryCache(
       const CollisionQueryOptions& options,
       bool includeShapeContactDetails = true);
@@ -1198,9 +1212,16 @@ private:
   ContactSolverMethod m_contactSolverMethod{
       ContactSolverMethod::SequentialImpulse};
   ContactGradientMode m_contactGradientMode{ContactGradientMode::Analytic};
+  ComputeAcceleratorPolicy m_computeAcceleratorPolicy{
+      ComputeAcceleratorPolicy::CpuOnly};
   bool m_strictSolverResolution{false};
 
   DeactivationOptions m_deactivationOptions{};
+
+  using DeformablePsdProjector
+      = void (*)(double* blocks, std::size_t dimension, std::size_t blockCount);
+  DeformablePsdProjector m_deformablePsdProjector{nullptr};
+  bool m_deformablePsdAcceleratedResolved{false};
 
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};

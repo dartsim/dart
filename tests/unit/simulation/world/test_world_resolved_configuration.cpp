@@ -96,6 +96,12 @@ TEST(ResolvedConfiguration, RecordsDefaultFamiliesAtFinalize)
   const auto* multibody = findNote(config, "multibody");
   ASSERT_NE(multibody, nullptr);
   EXPECT_EQ(multibody->resolved, "semi-implicit");
+
+  const auto* accelerator = findNote(config, "deformable-psd");
+  ASSERT_NE(accelerator, nullptr);
+  EXPECT_EQ(accelerator->requested, "cpu");
+  EXPECT_EQ(accelerator->resolved, "cpu");
+  EXPECT_FALSE(accelerator->isSubstitution());
 }
 
 TEST(ResolvedConfiguration, ReflectsRequestedContactMethod)

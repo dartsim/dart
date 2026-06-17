@@ -58,17 +58,41 @@ DART_SIMULATION_API void projectSymmetricBlocksToPsdCpu(
 
 /// Project a batch of symmetric blocks in place via the active backend.
 ///
-/// Defaults to @ref projectSymmetricBlocksToPsdCpu. The optional CUDA sidecar
-/// can install a GPU backend through @ref setDeformablePsdBlockProjector; the
-/// core runtime never links or depends on CUDA. A null @p blocks or a zero
+/// Defaults to @ref projectSymmetricBlocksToPsdCpu. A World may scope a
+/// per-step backend through @ref ScopedDeformablePsdBlockProjector; otherwise
+/// direct callers use the process-default backend set through
+/// @ref setDeformablePsdBlockProjector. A null @p blocks or a zero
 /// @p blockCount is a no-op.
 DART_SIMULATION_API void projectSymmetricBlocksToPsd(
     double* blocks, std::size_t dimension, std::size_t blockCount);
 
-/// Install a batched PSD projection backend (e.g. a GPU implementation) and
-/// return the previously installed one. Passing nullptr restores the built-in
-/// CPU backend. Intended to be set once during setup, not concurrently with a
-/// running solve.
+/// Scope a batched PSD projection backend for the current thread.
+///
+/// Passing nullptr scopes the built-in CPU backend. Nested scopes restore the
+/// previous thread-local backend on destruction. This is the World-step path:
+/// each World resolves its backend at bake time, then installs it only around
+/// that World's pipeline execution so different Worlds in one process do not
+/// race on a global function pointer.
+class DART_SIMULATION_API ScopedDeformablePsdBlockProjector
+{
+public:
+  explicit ScopedDeformablePsdBlockProjector(
+      DeformablePsdBlockProjector projector);
+  ~ScopedDeformablePsdBlockProjector();
+
+  ScopedDeformablePsdBlockProjector(const ScopedDeformablePsdBlockProjector&)
+      = delete;
+  ScopedDeformablePsdBlockProjector& operator=(
+      const ScopedDeformablePsdBlockProjector&) = delete;
+
+private:
+  DeformablePsdBlockProjector m_previous;
+};
+
+/// Install a process-default batched PSD projection backend and return the
+/// previously installed one. Passing nullptr restores the built-in CPU backend.
+/// Intended for direct callers and legacy process-wide control; World stepping
+/// scopes a bake-resolved backend instead.
 DART_SIMULATION_API DeformablePsdBlockProjector
 setDeformablePsdBlockProjector(DeformablePsdBlockProjector projector);
 
@@ -80,17 +104,19 @@ deformablePsdBlockProjector();
 /// A registered acceleration backend for the deformable PSD projection.
 ///
 /// An optional sidecar (compiled only when an accelerated backend is enabled)
-/// may register itself here so the runtime can switch the PSD projection
-/// between the built-in CPU path and the accelerated path. Backend-neutral by
-/// design: the public API names the capability, not the device technology.
+/// may register itself here so Worlds can choose between the built-in CPU path
+/// and the accelerated path at bake time. Backend-neutral by design: the public
+/// API names the capability, not the device technology.
 struct DeformablePsdAccelerator
 {
   /// True when the accelerator reports an available device at runtime.
   bool (*available)() = nullptr;
-  /// Install the accelerated projector; returns whether it became active.
-  bool (*enable)() = nullptr;
-  /// Restore the built-in CPU projector and release accelerator resources.
-  void (*disable)() = nullptr;
+  /// Projector exposed by the accelerator. Registration only advertises this
+  /// handle; Worlds decide whether to use it when they bake their step
+  /// pipeline.
+  DeformablePsdBlockProjector projector = nullptr;
+  /// Release accelerator resources owned by the sidecar, if any.
+  void (*release)() = nullptr;
 };
 
 /// Register (or clear, with a default-constructed value) the optional
@@ -101,6 +127,11 @@ DART_SIMULATION_API void setDeformablePsdAccelerator(
 
 /// Whether a registered accelerator reports an available device at runtime.
 [[nodiscard]] DART_SIMULATION_API bool isDeformablePsdAccelerationAvailable();
+
+/// Return the registered accelerated projector when it is available; otherwise
+/// nullptr. This does not install the projector process-wide.
+[[nodiscard]] DART_SIMULATION_API DeformablePsdBlockProjector
+deformablePsdAcceleratorProjector();
 
 /// Switch the deformable PSD projection to the registered accelerator (when
 /// @p enabled and available) or back to the CPU backend. Process-wide. Returns

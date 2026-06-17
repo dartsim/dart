@@ -1082,6 +1082,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an internal rigid-body Control sequence batch layout plus rollout
     diagnostics that distinguish homogeneous SoA rollout from the existing
     heterogeneous per-World fallback.
+  - Added backend-neutral `ComputeAcceleratorPolicy` on experimental `World`
+    construction and dartpy so the deformable PSD accelerator is resolved per
+    World at bake time instead of by a process-global World-step function
+    pointer.
   - Reused experimental differentiable `World` multibody torque collection
     scratch through World-owned free-list storage, passed that scratch into the
     contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`

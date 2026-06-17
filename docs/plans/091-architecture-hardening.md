@@ -1019,7 +1019,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run lint`, `pixi run build`, and `pixi run test-unit` (163/163 test
   binaries). Accepted by maintainer merge of PR #3029.
 
-#### WP-091.31 Per-World accelerator policy
+#### WP-091.31 Per-World accelerator policy [claimed]
 
 - Objective: the process-global GPU function-pointer seam is replaced by a
   per-World accelerator handle resolved at bake; the registrar only
@@ -1033,6 +1033,27 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; CUDA smoke
   where a device is available.
 - Dependencies: WP-091.30.
+- Evidence (branch `wp-091-33b-baked-rigid-model-state-owner`, folded to avoid
+  another PR): `WorldOptions::computeAcceleratorPolicy` defaults Worlds to CPU
+  PSD projection, while `PreferAccelerated` resolves the registered accelerator
+  projector during bake. `World::step()` scopes the selected projector per
+  World, and the CUDA registrar now only advertises availability plus its
+  projector/release hooks. Coverage includes `test_deformable_psd_backend`
+  cases for no accelerator, unavailable accelerator, legacy process-wide
+  toggle, thread-local scoped override, two Worlds with different policies, and
+  concurrent two-thread stepping. Resolved-configuration notes, binary
+  serialization v26, replay restore/rebake, C++ World options, and dartpy
+  constructor/property/stubs are covered by `test_world`, `test_serialization`,
+  `test_world_resolved_configuration`, and
+  `python/tests/unit/simulation/test_world.py`. Race evidence: Clang TSAN
+  focused build/run of
+  `test_deformable_psd_backend --gtest_filter=DeformablePsdAcceleratorTest.ConcurrentWorldStepsKeepScopedAcceleratorPolicy`
+  passed; GCC TSAN was unavailable on this host because
+  `/usr/lib64/libtsan.so.2.0.0` is missing. Gates: `pixi run lint`,
+  `pixi run build`, `pixi run test-unit`, `pixi run test-py`; CUDA validation:
+  `pixi run -e cuda test-all` passed lint/build/unit stages and exposed a v26
+  serialization-tail regression, then focused default/CUDA serialization cases
+  and `pixi run -e cuda test-simulation-full` passed after the tail fix.
 
 #### WP-091.32 O(n) shared articulated core
 
