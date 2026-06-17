@@ -8763,77 +8763,75 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
       configureRigidIpcKinematicTurntableScene);
 }
 
-TEST(World, BakedActiveRigidIpcBarrierSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedActiveRigidIpcBarrierStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "active rigid IPC barrier", configureActiveRigidIpcMeshBarrierScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcFixedJointSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcFixedJointStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC fixed-joint equality rows",
       configureRigidIpcFixedJointConstraintScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcRevoluteJointSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcRevoluteJointStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC revolute-joint equality rows",
       configureRigidIpcRevoluteJointConstraintScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcTwoBoxStackSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcTwoBoxStackStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
 #endif
 }
 
-TEST(
-    World,
-    BakedRigidIpcDeformableSurfaceObstacleSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcDeformableSurfaceObstacleStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC deformable surface obstacle",
       configureRigidIpcDeformableSurfaceObstacleScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcKinematicConveyorSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcKinematicConveyorStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC kinematic conveyor", configureRigidIpcKinematicConveyorScene);
 #endif
 }
 
-TEST(World, BakedRigidIpcKinematicTurntableSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedRigidIpcKinematicTurntableStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC kinematic turntable",
       configureRigidIpcKinematicTurntableScene);
 #endif

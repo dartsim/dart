@@ -248,6 +248,52 @@ using CandidatePairAllocator = dart::common::StlAllocator<CandidatePair>;
 using BarrierTriplet = Eigen::Triplet<double>;
 using BarrierTripletAllocator = dart::common::StlAllocator<BarrierTriplet>;
 
+void reserveDenseSparsePattern(
+    Eigen::SparseMatrix<double>& matrix,
+    const Eigen::Index rows,
+    const Eigen::Index cols,
+    std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets)
+{
+  matrix.resize(rows, cols);
+  if (rows <= 0 || cols <= 0) {
+    matrix.setZero();
+    matrix.makeCompressed();
+    return;
+  }
+
+  const auto entryCount
+      = static_cast<std::size_t>(rows) * static_cast<std::size_t>(cols);
+  triplets.clear();
+  triplets.reserve(entryCount);
+  for (Eigen::Index col = 0; col < cols; ++col) {
+    for (Eigen::Index row = 0; row < rows; ++row) {
+      triplets.emplace_back(row, col, 1.0);
+    }
+  }
+
+  matrix.setFromTriplets(triplets.begin(), triplets.end());
+  matrix.makeCompressed();
+  std::fill(matrix.valuePtr(), matrix.valuePtr() + matrix.nonZeros(), 0.0);
+}
+
+void reserveRigidIpcAssemblySparsePatterns(
+    RigidIpcBarrierAssembly& assembly,
+    const Eigen::Index dofs,
+    const Eigen::Index equalityRows,
+    std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets)
+{
+  if (assembly.gradient.size() != dofs) {
+    assembly.gradient.resize(dofs);
+  }
+  reserveDenseSparsePattern(assembly.hessian, dofs, dofs, triplets);
+
+  if (assembly.equalityResidual.size() != equalityRows) {
+    assembly.equalityResidual.resize(equalityRows);
+  }
+  reserveDenseSparsePattern(
+      assembly.equalityJacobian, equalityRows, dofs, triplets);
+}
+
 struct RigidIpcSurfacePairScratch
 {
   static constexpr std::size_t kSmallSurfaceEdgeCapacity = 8u;
@@ -3047,6 +3093,66 @@ RigidIpcProjectedNewtonSolveScratch::operator=(
   workspace = std::exchange(other.workspace, nullptr);
   other.memoryAllocator = nullptr;
   return *this;
+}
+
+void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch)
+{
+  Eigen::Index dofs = 0;
+  for (const RigidIpcBarrierSurface& surface : surfaces) {
+    if (surface.dynamic) {
+      dofs += 6;
+    }
+  }
+  const Eigen::Index equalityRows = result.assembly.equalityResidual.size();
+
+  std::vector<BarrierTriplet, BarrierTripletAllocator> localTriplets{
+      BarrierTripletAllocator{allocatorOrDefault(scratch.memoryAllocator)}};
+  auto& triplets = scratch.workspace != nullptr
+                       ? scratch.workspace->assemblyScratch.barrierTriplets
+                       : localTriplets;
+  reserveRigidIpcAssemblySparsePatterns(
+      result.assembly, dofs, equalityRows, triplets);
+
+  if (scratch.workspace == nullptr) {
+    return;
+  }
+
+  auto& workspace = *scratch.workspace;
+  reserveRigidIpcAssemblySparsePatterns(
+      workspace.assemblyScratch.energyAssembly, dofs, equalityRows, triplets);
+  reserveRigidIpcAssemblySparsePatterns(
+      workspace.assemblyScratch.unitBarrierAssembly,
+      dofs,
+      equalityRows,
+      triplets);
+  reserveRigidIpcAssemblySparsePatterns(
+      workspace.assemblyScratch.laggedAssembly, dofs, equalityRows, triplets);
+  reserveRigidIpcAssemblySparsePatterns(
+      workspace.assemblyScratch.candidateAssembly,
+      dofs,
+      equalityRows,
+      triplets);
+
+  workspace.denseHessian.resize(dofs, dofs);
+  workspace.denseHessian.setIdentity();
+  workspace.denseHessianLdlt.compute(workspace.denseHessian);
+  workspace.denseHessian.setZero();
+  workspace.rawStep.resize(dofs);
+
+  if (equalityRows > 0) {
+    workspace.equalityDenseJacobian.resize(equalityRows, dofs);
+    workspace.equalityDenseJacobian.setZero();
+    const Eigen::Index kktSize = dofs + equalityRows;
+    workspace.equalityKktMatrix.resize(kktSize, kktSize);
+    workspace.equalityKktMatrix.setIdentity();
+    workspace.equalityKktRhs.resize(kktSize);
+    workspace.equalityKktSolution.resize(kktSize);
+    workspace.equalityKktQr.compute(workspace.equalityKktMatrix);
+    workspace.equalityKktMatrix.setZero();
+  }
 }
 
 RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(

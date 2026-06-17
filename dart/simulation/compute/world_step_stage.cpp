@@ -11607,6 +11607,8 @@ void RigidIpcContactStage::prepare(World& world)
       warmOptions,
       m_scratch->solveResult,
       m_scratch->solveScratch);
+  sxdetail::reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+      m_scratch->surfaces, m_scratch->solveResult, m_scratch->solveScratch);
   m_scratch->solveDynamicsTerms = std::move(warmOptions.dynamicsTerms);
 }
 
