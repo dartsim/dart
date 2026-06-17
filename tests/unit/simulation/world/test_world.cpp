@@ -21516,6 +21516,57 @@ TEST(World, RigidBodyStateBatchMultiWorld)
       sx::InvalidArgumentException);
 }
 
+// Test the canonical-direction SoA seed for the single-lane contract: one
+// batch lane with the same Model/State/Control inputs matches ordinary
+// sequential World::step() bit-for-bit on the supported rigid-body path.
+TEST(World, RigidBodyStateBatchSingleLaneMatchesWorldStepReference)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  const Eigen::Vector3d force(0.25, -0.1, 0.05);
+  auto buildWorld = [&](sx::World& world) {
+    for (int i = 0; i < 3; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.5 * i;
+      options.position = Eigen::Vector3d(0.2 * i, -0.1 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.05 * i, 0.1, -0.02 * i);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(force);
+    }
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.125);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  sx::World batchedSource;
+  buildWorld(reference);
+  buildWorld(batchedSource);
+
+  reference.step();
+  const auto expected = compute::extractRigidBodyState(reference);
+
+  auto state = compute::extractRigidBodyState(batchedSource);
+  const auto model = compute::extractRigidBodyModelBatch(batchedSource);
+  std::vector<double> forceBatch(3u * state.bodyCount);
+  for (std::size_t i = 0; i < state.bodyCount; ++i) {
+    forceBatch[3 * i + 0] = force.x();
+    forceBatch[3 * i + 1] = force.y();
+    forceBatch[3 * i + 2] = force.z();
+  }
+
+  compute::integrateRigidBodyStateBatch(
+      state, model, forceBatch, batchedSource.getTimeStep());
+
+  EXPECT_EQ(state.worldCount, 1u);
+  EXPECT_EQ(state.bodyCount, expected.bodyCount);
+  EXPECT_EQ(state.position, expected.position);
+  EXPECT_EQ(state.orientation, expected.orientation);
+  EXPECT_EQ(state.linearVelocity, expected.linearVelocity);
+  EXPECT_EQ(state.angularVelocity, expected.angularVelocity);
+}
+
 // Test that applyRigidBodyStateBatch validates every world before mutating any,
 // so an invalid later world leaves the earlier worlds unchanged (atomic
 // failure) rather than partially applying the batch.
@@ -21600,6 +21651,60 @@ TEST(World, MultiWorldBatchRejectsMismatchedBodyIdentity)
       sx::InvalidArgumentException);
 }
 
+// Test that validation failures name the failing batch lane, so callers can
+// diagnose which independently-owned world broke the homogeneous batch
+// contract.
+TEST(World, BatchValidationFailuresReportLaneIndex)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto expectLaneOne = [](auto&& run) {
+    try {
+      run();
+      FAIL() << "Expected InvalidArgumentException";
+    } catch (const sx::InvalidArgumentException& exception) {
+      EXPECT_NE(exception.message().find("lane 1"), std::string::npos)
+          << exception.message();
+    }
+  };
+
+  auto addTwo = [](sx::World& world, const std::string& prefix) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(i, 0.0, 0.0);
+      world.addRigidBody(prefix + std::to_string(i), options);
+    }
+  };
+
+  sx::World source0;
+  sx::World source1;
+  addTwo(source0, "body_");
+  addTwo(source1, "body_");
+
+  const std::vector<const sx::World*> validSources{&source0, &source1};
+  const auto batch = compute::extractRigidBodyStateBatch(validSources);
+
+  sx::World mismatchedIdentity;
+  addTwo(mismatchedIdentity, "other_");
+  const std::vector<const sx::World*> mismatchedSources{
+      &source0, &mismatchedIdentity};
+  expectLaneOne(
+      [&] { (void)compute::extractRigidBodyStateBatch(mismatchedSources); });
+
+  sx::World target0;
+  sx::World target1;
+  addTwo(target0, "body_");
+  addTwo(target1, "other_");
+  const std::vector<sx::World*> mismatchedTargets{&target0, &target1};
+  expectLaneOne(
+      [&] { compute::applyRigidBodyStateBatch(mismatchedTargets, batch); });
+
+  compute::ParallelExecutor executor(1);
+  const std::vector<sx::World*> withNull{&source0, nullptr};
+  expectLaneOne([&] { compute::stepWorldsBatched(withNull, 1, executor); });
+}
+
 // Test the CPU batch executor: N independent homogeneous worlds advanced in
 // parallel match a single sequentially-stepped reference, and null worlds are
 // rejected.
@@ -21659,6 +21764,90 @@ TEST(World, StepWorldsBatchedMatchesSequential)
   EXPECT_THROW(
       compute::stepWorldsBatched(withDuplicate, 1, executor),
       sx::InvalidArgumentException);
+}
+
+// Test that distinct batch lanes are independent: each lane advances exactly
+// like its own sequential reference world, and the extracted SoA batch keeps
+// deterministic world-major lane ordering.
+TEST(World, StepWorldsBatchedMatchesIndependentLaneReferences)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildLane = [](sx::World& world, std::size_t lane) {
+    const double seed = static_cast<double>(lane + 1u);
+    for (int i = 0; i < 3; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = seed + 0.5 * (i + 1);
+      options.position
+          = Eigen::Vector3d(seed + 0.1 * i, -0.25 * seed + 0.2 * i, 0.05 * i);
+      options.linearVelocity = Eigen::Vector3d(
+          0.03 * seed * (i + 1), -0.02 * (i + 1), 0.01 * seed);
+      options.angularVelocity
+          = Eigen::Vector3d(0.01 * i, 0.02 * seed, -0.015 * (i + 1));
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(
+          Eigen::Vector3d(0.1 * seed, -0.05 * (i + 1), 0.02 * seed * (i + 1)));
+    }
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02 + 0.005 * seed);
+    world.enterSimulationMode();
+  };
+
+  constexpr std::size_t kLaneCount = 3u;
+  constexpr std::size_t kStepCount = 4u;
+  std::array<sx::World, kLaneCount> references;
+  std::array<sx::World, kLaneCount> lanes;
+  for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+    buildLane(references[lane], lane);
+    buildLane(lanes[lane], lane);
+  }
+
+  for (auto& reference : references) {
+    reference.step(kStepCount);
+  }
+
+  std::vector<sx::World*> worlds;
+  std::vector<const sx::World*> constWorlds;
+  worlds.reserve(kLaneCount);
+  constWorlds.reserve(kLaneCount);
+  for (auto& world : lanes) {
+    worlds.push_back(&world);
+    constWorlds.push_back(&world);
+  }
+
+  compute::ParallelExecutor executor(kLaneCount);
+  compute::stepWorldsBatched(worlds, kStepCount, executor);
+
+  const auto batch = compute::extractRigidBodyStateBatch(constWorlds);
+  EXPECT_EQ(batch.worldCount, kLaneCount);
+
+  auto expectLaneVector = [](const std::vector<double>& actual,
+                             std::size_t lane,
+                             const std::vector<double>& expected) {
+    const auto stride = expected.size();
+    ASSERT_LE((lane + 1u) * stride, actual.size());
+    for (std::size_t i = 0; i < stride; ++i) {
+      EXPECT_DOUBLE_EQ(actual[lane * stride + i], expected[i]);
+    }
+  };
+
+  for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+    const auto actual = compute::extractRigidBodyState(lanes[lane]);
+    const auto expected = compute::extractRigidBodyState(references[lane]);
+    ASSERT_EQ(actual.bodyCount, expected.bodyCount);
+    EXPECT_EQ(actual.position, expected.position);
+    EXPECT_EQ(actual.orientation, expected.orientation);
+    EXPECT_EQ(actual.linearVelocity, expected.linearVelocity);
+    EXPECT_EQ(actual.angularVelocity, expected.angularVelocity);
+    EXPECT_DOUBLE_EQ(lanes[lane].getTime(), references[lane].getTime());
+    EXPECT_EQ(lanes[lane].getFrame(), references[lane].getFrame());
+
+    expectLaneVector(batch.position, lane, expected.position);
+    expectLaneVector(batch.orientation, lane, expected.orientation);
+    expectLaneVector(batch.linearVelocity, lane, expected.linearVelocity);
+    expectLaneVector(batch.angularVelocity, lane, expected.angularVelocity);
+  }
 }
 
 // Test the batched rollout: applying a shared initial state, advancing, and
