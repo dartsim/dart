@@ -124,6 +124,9 @@ if(DART_SIMULATION_BUILD_TESTS)
     if(TEST test_rigid_ipc_fixture)
       set_tests_properties(test_rigid_ipc_fixture PROPERTIES TIMEOUT 3600)
     endif()
+    if(TARGET test_rigid_ipc_fixture)
+      target_compile_definitions(test_rigid_ipc_fixture PRIVATE DART_CODECOV=1)
+    endif()
     if(TEST test_rigid_ipc_paper_experiments)
       set_tests_properties(
         test_rigid_ipc_paper_experiments

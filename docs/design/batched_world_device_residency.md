@@ -70,11 +70,16 @@ The canonical layout uses immutable Model blocks and mutable State blocks:
 - **Scratch:** per-step temporary buffers. Scratch is neither public State nor
   persistent Model; each backend owns its scratch lifetime.
 
-Existing `RigidBodyStateBatch` / `RigidBodyModelBatch` are the current
-canonical-direction seed: host-owned rigid-body SoA with a leading world
-dimension. Existing `stepWorldsBatched()` is the heterogeneous-fallback seed:
-it schedules independent Worlds through the executor without introducing a
-shared SoA execution representation.
+Existing `RigidBodyStateBatch`, `RigidBodyModelBatch`, and
+`RigidBodyControlSequenceBatch` are the current canonical-direction seed:
+host-owned rigid-body SoA with a leading world dimension and step-major Control
+sequence storage. `BakedRigidBodyBatchOwner` is the current host owner for the
+Model/State blocks: it captures mutable State repeatedly while refreshing
+immutable Model storage only when the baked dense-index identity changes.
+Existing `stepWorldsBatched()` is the heterogeneous-fallback seed: it schedules
+independent Worlds through the executor without introducing a shared SoA
+execution representation. Rollout diagnostics record whether a call resolved to
+the homogeneous SoA path or this heterogeneous fallback.
 
 ## Device Residency
 
@@ -124,7 +129,9 @@ Policy:
 ## Current Seeds
 
 - `dart/simulation/compute/rigid_body_state_batch.hpp`:
-  canonical-direction seed for homogeneous SoA State/Model blocks.
+  canonical-direction seed for homogeneous SoA State/Model/Control blocks,
+  rollout execution-shape diagnostics, and the `BakedRigidBodyBatchOwner` host
+  owner.
 - `dart/simulation/compute/world_batch.hpp`: heterogeneous-fallback seed for
   independent per-World executor scheduling.
 - `dart/simulation/compute/world_step_stage.hpp`

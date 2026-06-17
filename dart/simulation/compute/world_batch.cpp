@@ -85,11 +85,31 @@ RigidBodyStateBatch rolloutWorldsBatched(
     std::size_t stepCount,
     ComputeExecutor& executor)
 {
+  return rolloutWorldsBatched(
+      worlds, initialState, stepCount, executor, nullptr);
+}
+
+//==============================================================================
+RigidBodyStateBatch rolloutWorldsBatched(
+    const std::vector<World*>& worlds,
+    const RigidBodyStateBatch& initialState,
+    std::size_t stepCount,
+    ComputeExecutor& executor,
+    RigidBodyBatchRolloutDiagnostics* diagnostics)
+{
   applyRigidBodyStateBatch(worlds, initialState);
   stepWorldsBatched(worlds, stepCount, executor);
 
   const std::vector<const World*> constWorlds(worlds.begin(), worlds.end());
-  return extractRigidBodyStateBatch(constWorlds);
+  auto result = extractRigidBodyStateBatch(constWorlds);
+  if (diagnostics != nullptr) {
+    *diagnostics = RigidBodyBatchRolloutDiagnostics{
+        RigidBodyBatchExecutionShape::HeterogeneousFallback,
+        stepCount,
+        result.worldCount,
+        result.bodyCount};
+  }
+  return result;
 }
 
 } // namespace dart::simulation::compute

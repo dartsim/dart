@@ -114,11 +114,19 @@ void projectSymmetricBlocksToPsdCpu(
 
 namespace {
 
+DeformablePsdBlockProjector normalizeProjector(
+    DeformablePsdBlockProjector projector)
+{
+  return projector != nullptr ? projector : &projectSymmetricBlocksToPsdCpu;
+}
+
 // The installed batched PSD projection backend. Atomic so installation is
 // visible without a separate lock; backends are expected to be set during
 // setup, not swapped concurrently with a running solve.
 std::atomic<DeformablePsdBlockProjector> g_projector{
     &projectSymmetricBlocksToPsdCpu};
+
+thread_local DeformablePsdBlockProjector t_scopedProjector = nullptr;
 
 } // namespace
 
@@ -126,21 +134,33 @@ std::atomic<DeformablePsdBlockProjector> g_projector{
 void projectSymmetricBlocksToPsd(
     double* blocks, std::size_t dimension, std::size_t blockCount)
 {
-  DeformablePsdBlockProjector projector
-      = g_projector.load(std::memory_order_acquire);
+  DeformablePsdBlockProjector projector = t_scopedProjector;
   if (projector == nullptr) {
-    projector = &projectSymmetricBlocksToPsdCpu;
+    projector = g_projector.load(std::memory_order_acquire);
   }
+  projector = normalizeProjector(projector);
   projector(blocks, dimension, blockCount);
+}
+
+//==============================================================================
+ScopedDeformablePsdBlockProjector::ScopedDeformablePsdBlockProjector(
+    DeformablePsdBlockProjector projector)
+  : m_previous(t_scopedProjector)
+{
+  t_scopedProjector = normalizeProjector(projector);
+}
+
+//==============================================================================
+ScopedDeformablePsdBlockProjector::~ScopedDeformablePsdBlockProjector()
+{
+  t_scopedProjector = m_previous;
 }
 
 //==============================================================================
 DeformablePsdBlockProjector setDeformablePsdBlockProjector(
     DeformablePsdBlockProjector projector)
 {
-  if (projector == nullptr) {
-    projector = &projectSymmetricBlocksToPsdCpu;
-  }
+  projector = normalizeProjector(projector);
   return g_projector.exchange(projector, std::memory_order_acq_rel);
 }
 
@@ -156,7 +176,6 @@ namespace {
 // The core never names or links a concrete backend; an accelerator sidecar
 // registers itself here. Set during setup, not concurrently with a solve.
 DeformablePsdAccelerator g_accelerator{};
-std::atomic<bool> g_accelerated{false};
 
 } // namespace
 
@@ -169,30 +188,45 @@ void setDeformablePsdAccelerator(const DeformablePsdAccelerator& accelerator)
 //==============================================================================
 bool isDeformablePsdAccelerationAvailable()
 {
-  return g_accelerator.available != nullptr && g_accelerator.available();
+  return g_accelerator.available != nullptr && g_accelerator.available()
+         && g_accelerator.projector != nullptr;
+}
+
+//==============================================================================
+DeformablePsdBlockProjector deformablePsdAcceleratorProjector()
+{
+  return isDeformablePsdAccelerationAvailable() ? g_accelerator.projector
+                                                : nullptr;
 }
 
 //==============================================================================
 bool setDeformablePsdAccelerated(bool enabled)
 {
-  if (enabled && g_accelerator.available != nullptr && g_accelerator.available()
-      && g_accelerator.enable != nullptr && g_accelerator.enable()) {
-    g_accelerated.store(true, std::memory_order_release);
-    return true;
+  if (enabled) {
+    const DeformablePsdBlockProjector projector
+        = deformablePsdAcceleratorProjector();
+    if (projector != nullptr) {
+      setDeformablePsdBlockProjector(projector);
+      return true;
+    }
+    return false;
   }
-  if (g_accelerator.disable != nullptr) {
-    g_accelerator.disable();
-  } else {
-    setDeformablePsdBlockProjector(nullptr);
+
+  setDeformablePsdBlockProjector(nullptr);
+  if (g_accelerator.release != nullptr) {
+    g_accelerator.release();
   }
-  g_accelerated.store(false, std::memory_order_release);
   return false;
 }
 
 //==============================================================================
 bool isDeformablePsdAccelerated()
 {
-  return g_accelerated.load(std::memory_order_acquire);
+  DeformablePsdBlockProjector projector = t_scopedProjector;
+  if (projector == nullptr) {
+    projector = g_projector.load(std::memory_order_acquire);
+  }
+  return normalizeProjector(projector) != &projectSymmetricBlocksToPsdCpu;
 }
 
 } // namespace dart::simulation::compute

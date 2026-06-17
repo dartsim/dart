@@ -5452,6 +5452,8 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
+  options.computeAcceleratorPolicy
+      = sx::ComputeAcceleratorPolicy::PreferAccelerated;
 
   sx::World world(options);
   world.clear();
@@ -5465,6 +5467,9 @@ TEST(World, ClearResetsWorldOptionPoliciesToDefaults)
       world.getContactSolverMethod(),
       sx::ContactSolverMethod::SequentialImpulse);
   EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+  EXPECT_EQ(
+      world.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::CpuOnly);
 }
 
 TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
@@ -5509,6 +5514,16 @@ TEST(World, WorldOptionsRejectInvalidDomainSolverFamilies)
         (void)world;
       },
       sx::InvalidArgumentException);
+
+  sx::WorldOptions invalidComputeAccelerator;
+  invalidComputeAccelerator.computeAcceleratorPolicy
+      = static_cast<sx::ComputeAcceleratorPolicy>(99);
+  EXPECT_THROW(
+      {
+        sx::World world(invalidComputeAccelerator);
+        (void)world;
+      },
+      sx::InvalidArgumentException);
 }
 
 TEST(World, SetContactGradientModeRejectsInvalidEnum)
@@ -5520,6 +5535,20 @@ TEST(World, SetContactGradientModeRejectsInvalidEnum)
       world.setContactGradientMode(static_cast<sx::ContactGradientMode>(99)),
       sx::InvalidArgumentException);
   EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
+}
+
+TEST(World, SetComputeAcceleratorPolicyRejectsInvalidEnum)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  EXPECT_THROW(
+      world.setComputeAcceleratorPolicy(
+          static_cast<sx::ComputeAcceleratorPolicy>(99)),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(
+      world.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::CpuOnly);
 }
 
 TEST(World, MemoryManagerOptionsConfigureFreeListPolicy)
@@ -7614,6 +7643,13 @@ TEST(World, BakedBasicDeformableRowsDoNotMallocOnHeap)
 
 TEST(World, BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The dynamic rigid IPC no-growth allocator gate is too slow under "
+         "coverage; normal Release/Debug CI runs the full allocator "
+         "regression.";
+#endif
+
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "dynamic rigid IPC solve graph", configureDynamicRigidIpcMeshSolveScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -9065,6 +9101,13 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
 
 TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The dynamic rigid IPC no-heap allocator gate is too slow under "
+         "coverage; normal Release/Debug CI runs the full allocator "
+         "regression.";
+#endif
+
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC solve graph", configureDynamicRigidIpcMeshSolveScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
@@ -9094,7 +9137,11 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
 
 TEST(World, BakedActiveRigidIpcBarrierStepsDoNotMallocOnHeap)
 {
-#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The rigid IPC raw-malloc allocator gate is too slow under coverage; "
+         "normal Release/Debug CI runs the full allocator regression.";
+#elif !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
@@ -9136,7 +9183,11 @@ TEST(World, BakedRigidIpcRevoluteJointStepsDoNotMallocOnHeap)
 
 TEST(World, BakedRigidIpcTwoBoxStackStepsDoNotMallocOnHeap)
 {
-#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The rigid IPC two-box allocation gate is too slow under coverage; "
+         "normal Release/Debug CI runs the full allocator regression.";
+#elif !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
@@ -9146,7 +9197,12 @@ TEST(World, BakedRigidIpcTwoBoxStackStepsDoNotMallocOnHeap)
 
 TEST(World, BakedRigidIpcDeformableSurfaceObstacleStepsDoNotMallocOnHeap)
 {
-#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The rigid IPC deformable-obstacle allocation gate is too slow under "
+         "coverage; normal Release/Debug CI runs the full allocator "
+         "regression.";
+#elif !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
@@ -9157,7 +9213,11 @@ TEST(World, BakedRigidIpcDeformableSurfaceObstacleStepsDoNotMallocOnHeap)
 
 TEST(World, BakedRigidIpcKinematicConveyorStepsDoNotMallocOnHeap)
 {
-#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The rigid IPC conveyor allocation gate is too slow under coverage; "
+         "normal Release/Debug CI runs the full allocator regression.";
+#elif !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
@@ -9167,7 +9227,11 @@ TEST(World, BakedRigidIpcKinematicConveyorStepsDoNotMallocOnHeap)
 
 TEST(World, BakedRigidIpcKinematicTurntableStepsDoNotMallocOnHeap)
 {
-#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The rigid IPC turntable allocation gate is too slow under coverage; "
+         "normal Release/Debug CI runs the full allocator regression.";
+#elif !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
@@ -19736,6 +19800,13 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
 // the ground or freezing.
 TEST(World, RigidIpcContactStageSlidingContactDoesNotFreeze)
 {
+#ifdef DART_CODECOV
+  GTEST_SKIP()
+      << "The multi-step rigid IPC sliding-contact gate is too slow and "
+         "condition-sensitive under coverage; normal CI runs the full "
+         "regression.";
+#endif
+
   namespace sx = dart::simulation;
 
   sx::World world;
@@ -19770,13 +19841,15 @@ TEST(World, RigidIpcContactStageSlidingContactDoesNotFreeze)
     const auto& stats = ipcStage.getLastStats();
 
     // Never freezes: every step is applied and avoids the old
-    // LineSearchBlocked rejection path. Some hosts can spend the full Newton
-    // budget on the first in-band contact while still making safe progress, so
-    // convergence itself is not the freeze-regression signal.
+    // LineSearchBlocked / non-converged skipped-result path. Some hosts can
+    // spend the full Newton budget on the first in-band contact while still
+    // making safe progress, so convergence itself is not the freeze-regression
+    // signal.
     EXPECT_NE(stats.status, sx::compute::RigidIpcSolveStatus::LineSearchBlocked)
         << "step " << step;
     EXPECT_FALSE(stats.failed) << "step " << step;
     EXPECT_TRUE(stats.resultApplied) << "step " << step;
+    EXPECT_FALSE(stats.nonConvergedResultSkipped) << "step " << step;
     EXPECT_GT(stats.acceptedSteps, 0u) << "step " << step;
     EXPECT_EQ(stats.lineSearchZeroStepCount, 0u) << "step " << step;
     // Adaptive stiffness raised kappa well above the old fixed value of 1.
@@ -22933,8 +23006,15 @@ TEST(World, RolloutWorldsBatchedMatchesReference)
   w1.step(7);
 
   compute::ParallelExecutor executor(2);
-  const auto result
-      = compute::rolloutWorldsBatched(worlds, initial, 5, executor);
+  compute::RigidBodyBatchRolloutDiagnostics diagnostics;
+  const auto result = compute::rolloutWorldsBatched(
+      worlds, initial, 5, executor, &diagnostics);
+  EXPECT_EQ(
+      diagnostics.executionShape,
+      compute::RigidBodyBatchExecutionShape::HeterogeneousFallback);
+  EXPECT_EQ(diagnostics.stepCount, 5u);
+  EXPECT_EQ(diagnostics.worldCount, 2u);
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
 
   // Reference: a single world built identically (so its state equals one slice
   // of the initial batch) and stepped the same number of times.
@@ -22963,6 +23043,357 @@ TEST(World, RolloutWorldsBatchedMatchesReference)
       sx::InvalidArgumentException);
   const auto afterPosition = compute::extractRigidBodyState(w0).position;
   EXPECT_EQ(beforePosition, afterPosition);
+}
+
+// Test that facade-authored rigid-body forces lower into a data-only,
+// step-major Control sequence before rollout compute nodes run.
+TEST(World, RigidBodyControlSequenceBatchExtractsFacadeForces)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world, const std::string& prefix) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      auto body = world.addRigidBody(prefix + std::to_string(i), options);
+      body.setForce(
+          Eigen::Vector3d(1.0 + i, 2.0 + static_cast<double>(i), 3.0 + i));
+    }
+  };
+
+  sx::World w0;
+  sx::World w1;
+  buildWorld(w0, "a");
+  buildWorld(w1, "b");
+  w1.getRigidBody("b0")->setForce(Eigen::Vector3d(-1.0, -2.0, -3.0));
+  w1.getRigidBody("b1")->setForce(Eigen::Vector3d(-4.0, -5.0, -6.0));
+
+  const std::vector<const sx::World*> worlds{&w0, &w1};
+  const auto controls
+      = compute::extractRigidBodyControlSequenceBatch(worlds, 2);
+  EXPECT_EQ(controls.stepCount, 2u);
+  EXPECT_EQ(controls.worldCount, 2u);
+  EXPECT_EQ(controls.bodyCount, 2u);
+
+  const auto step0 = compute::rigidBodyControlForcesAtStep(controls, 0);
+  const auto step1 = compute::rigidBodyControlForcesAtStep(controls, 1);
+  ASSERT_EQ(step0.size(), 12u);
+  EXPECT_TRUE(std::equal(step0.begin(), step0.end(), step1.begin()));
+
+  const std::array<double, 12> expected{
+      1.0, 2.0, 3.0, 2.0, 3.0, 4.0, -1.0, -2.0, -3.0, -4.0, -5.0, -6.0};
+  EXPECT_TRUE(std::equal(step0.begin(), step0.end(), expected.begin()));
+}
+
+// Test that a multi-step, per-lane Control sequence rolls out through the
+// homogeneous Model/State path and matches independently stepped Worlds.
+TEST(World, RigidBodyControlSequenceBatchRolloutMatchesIndependentWorlds)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  constexpr std::size_t kLaneCount = 2u;
+  constexpr std::size_t kBodyCount = 2u;
+  constexpr std::size_t kStepCount = 3u;
+  constexpr double kDt = 0.025;
+
+  auto buildLane = [](sx::World& world, std::size_t lane) {
+    const double seed = static_cast<double>(lane + 1u);
+    for (std::size_t bodyIndex = 0; bodyIndex < kBodyCount; ++bodyIndex) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.5 * static_cast<double>(bodyIndex);
+      options.position = Eigen::Vector3d(
+          seed + 0.1 * bodyIndex, -0.2 * seed, 0.05 * bodyIndex);
+      options.linearVelocity = Eigen::Vector3d(
+          0.03 * seed, -0.01 * static_cast<double>(bodyIndex + 1u), 0.02);
+      options.angularVelocity = Eigen::Vector3d(
+          0.01 * static_cast<double>(bodyIndex), 0.02 * seed, -0.015);
+      world.addRigidBody("body_" + std::to_string(bodyIndex), options);
+    }
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(kDt);
+    world.enterSimulationMode();
+  };
+
+  std::array<sx::World, kLaneCount> references;
+  std::array<sx::World, kLaneCount> lanes;
+  for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+    buildLane(references[lane], lane);
+    buildLane(lanes[lane], lane);
+  }
+
+  compute::RigidBodyControlSequenceBatch controls;
+  controls.stepCount = kStepCount;
+  controls.worldCount = kLaneCount;
+  controls.bodyCount = kBodyCount;
+  controls.force.resize(3 * kStepCount * kLaneCount * kBodyCount);
+  auto setForce = [&](std::size_t step,
+                      std::size_t lane,
+                      std::size_t bodyIndex,
+                      const Eigen::Vector3d& force) {
+    const auto base = 3 * ((step * kLaneCount + lane) * kBodyCount + bodyIndex);
+    controls.force[base + 0] = force.x();
+    controls.force[base + 1] = force.y();
+    controls.force[base + 2] = force.z();
+  };
+
+  for (std::size_t step = 0; step < kStepCount; ++step) {
+    for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+      for (std::size_t bodyIndex = 0; bodyIndex < kBodyCount; ++bodyIndex) {
+        setForce(
+            step,
+            lane,
+            bodyIndex,
+            Eigen::Vector3d(
+                0.1 * static_cast<double>((step + 1u) * (lane + 1u)),
+                -0.05 * static_cast<double>(bodyIndex + 1u),
+                0.025 * static_cast<double>(step + bodyIndex + 1u)));
+      }
+    }
+  }
+
+  auto applyStepForces
+      = [&](sx::World& world, std::size_t step, std::size_t lane) {
+          const auto forceStep
+              = compute::rigidBodyControlForcesAtStep(controls, step);
+          for (std::size_t bodyIndex = 0; bodyIndex < kBodyCount; ++bodyIndex) {
+            const auto base = 3 * (lane * kBodyCount + bodyIndex);
+            world.getRigidBody("body_" + std::to_string(bodyIndex))
+                ->setForce(
+                    Eigen::Vector3d(
+                        forceStep[base + 0],
+                        forceStep[base + 1],
+                        forceStep[base + 2]));
+          }
+        };
+
+  for (std::size_t step = 0; step < kStepCount; ++step) {
+    for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+      applyStepForces(references[lane], step, lane);
+      references[lane].step();
+    }
+  }
+
+  std::vector<const sx::World*> constLanes;
+  constLanes.reserve(kLaneCount);
+  for (const auto& lane : lanes) {
+    constLanes.push_back(&lane);
+  }
+
+  compute::BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorlds(constLanes);
+  compute::RigidBodyBatchRolloutDiagnostics diagnostics;
+  const auto result = compute::rolloutRigidBodyStateBatch(
+      owner.state(), owner.model(), controls, kDt, &diagnostics);
+
+  EXPECT_EQ(
+      diagnostics.executionShape,
+      compute::RigidBodyBatchExecutionShape::HomogeneousBatch);
+  EXPECT_EQ(diagnostics.stepCount, kStepCount);
+  EXPECT_EQ(diagnostics.worldCount, kLaneCount);
+  EXPECT_EQ(diagnostics.bodyCount, kBodyCount);
+
+  auto expectLaneVector = [](const std::vector<double>& actual,
+                             std::size_t lane,
+                             const std::vector<double>& expected) {
+    const auto stride = expected.size();
+    ASSERT_LE((lane + 1u) * stride, actual.size());
+    for (std::size_t i = 0; i < stride; ++i) {
+      EXPECT_NEAR(actual[lane * stride + i], expected[i], 1e-15);
+    }
+  };
+
+  for (std::size_t lane = 0; lane < kLaneCount; ++lane) {
+    const auto expected = compute::extractRigidBodyState(references[lane]);
+    expectLaneVector(result.position, lane, expected.position);
+    expectLaneVector(result.orientation, lane, expected.orientation);
+    expectLaneVector(result.linearVelocity, lane, expected.linearVelocity);
+    expectLaneVector(result.angularVelocity, lane, expected.angularVelocity);
+  }
+}
+
+// Test that malformed Control sequences fail before rollout indexes storage.
+TEST(World, RigidBodyControlSequenceBatchRejectsMalformedShape)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto emptyControls = compute::extractRigidBodyControlSequenceBatch({}, 2);
+  EXPECT_EQ(emptyControls.stepCount, 2u);
+  EXPECT_EQ(emptyControls.worldCount, 0u);
+  EXPECT_EQ(emptyControls.bodyCount, 0u);
+  EXPECT_TRUE(compute::rigidBodyControlForcesAtStep(emptyControls, 0).empty());
+  const auto& constEmptyControls = emptyControls;
+  EXPECT_TRUE(
+      compute::rigidBodyControlForcesAtStep(constEmptyControls, 0).empty());
+
+  sx::World world;
+  world.addRigidBody("body", sx::RigidBodyOptions{});
+  const auto state = compute::extractRigidBodyState(world);
+  const auto model = compute::extractRigidBodyModelBatch(world);
+
+  compute::RigidBodyControlSequenceBatch controls;
+  controls.stepCount = 2;
+  controls.worldCount = 1;
+  controls.bodyCount = 1;
+  controls.force = {1.0, 0.0, 0.0};
+
+  EXPECT_THROW(
+      {
+        (void)compute::rolloutRigidBodyStateBatch(
+            state, model, controls, world.getTimeStep(), nullptr);
+      },
+      sx::InvalidArgumentException);
+
+  controls.force.resize(6);
+  EXPECT_THROW(
+      { (void)compute::rigidBodyControlForcesAtStep(controls, 2); },
+      sx::InvalidArgumentException);
+}
+
+// Test the internal baked batch owner: immutable Model storage is reused while
+// mutable State is refreshed across rollout-like segments.
+TEST(World, BakedRigidBodyBatchOwnerReusesModelAcrossRolloutSegments)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  for (int i = 0; i < 2; ++i) {
+    sx::RigidBodyOptions options;
+    options.mass = 1.0 + i;
+    options.position = Eigen::Vector3d(0.25 * i, 0.0, 0.0);
+    options.linearVelocity = Eigen::Vector3d(0.1 * i, 0.0, 0.0);
+    world.addRigidBody("owner_body_" + std::to_string(i), options);
+  }
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorld(world);
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 0u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 1u);
+  ASSERT_EQ(owner.model().bodyCount, 2u);
+
+  const std::vector<double> force = {0.2, 0.0, 0.0, -0.1, 0.0, 0.0};
+  compute::integrateRigidBodyStateBatch(
+      owner.mutableState(), owner.model(), force, world.getTimeStep());
+  owner.applyToWorld(world);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 1u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 2u);
+
+  compute::integrateRigidBodyStateBatch(
+      owner.mutableState(), owner.model(), force, world.getTimeStep());
+  owner.applyToWorld(world);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 2u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 3u);
+}
+
+// Test that the baked batch owner invalidates immutable Model storage when the
+// World's topology or rigid-body model parameters change.
+TEST(World, BakedRigidBodyBatchOwnerRefreshesModelAfterStructuralEdit)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  world.addRigidBody("owner_body_0", options);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorld(world);
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 1u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 1u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[0], 0.5);
+
+  sx::RigidBodyOptions added;
+  added.mass = 4.0;
+  world.addRigidBody("owner_body_1", added);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 2u);
+  EXPECT_EQ(owner.diagnostics().modelReuseCount, 0u);
+  EXPECT_EQ(owner.model().bodyCount, 2u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 2u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[1], 0.25);
+
+  world.getRigidBody("owner_body_0")->setMass(8.0);
+  owner.captureFromWorld(world);
+
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 3u);
+  EXPECT_EQ(owner.model().bodyCount, 2u);
+  ASSERT_EQ(owner.model().inverseMass.size(), 2u);
+  EXPECT_DOUBLE_EQ(owner.model().inverseMass[0], 0.125);
+}
+
+// Test owner reset and multi-world application paths that rollout reuses when
+// recycling baked Model storage across batches.
+TEST(World, BakedRigidBodyBatchOwnerClearsAndAppliesMultiWorldState)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world) {
+    sx::RigidBodyOptions options;
+    options.mass = 2.0;
+    options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+    options.linearVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
+    world.addRigidBody("owner_body", options);
+  };
+
+  sx::World w0;
+  sx::World w1;
+  buildWorld(w0);
+  buildWorld(w1);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  const std::vector<const sx::World*> constWorlds{&w0, &w1};
+  owner.captureFromWorlds(constWorlds);
+  ASSERT_EQ(owner.state().worldCount, 2u);
+  ASSERT_EQ(owner.state().bodyCount, 1u);
+  const auto captured = owner.state();
+
+  auto moveBody = [](sx::World& world, const Eigen::Vector3d& translation) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = translation;
+    world.getRigidBody("owner_body")->setTransform(transform);
+  };
+  moveBody(w0, Eigen::Vector3d::Zero());
+  moveBody(w1, Eigen::Vector3d::Ones());
+
+  const std::vector<sx::World*> mutableWorlds{&w0, &w1};
+  owner.applyToWorlds(mutableWorlds);
+
+  const auto restored0 = compute::extractRigidBodyState(w0);
+  const auto restored1 = compute::extractRigidBodyState(w1);
+  EXPECT_EQ(
+      restored0.position,
+      std::vector<double>(
+          captured.position.begin(), captured.position.begin() + 3));
+  EXPECT_EQ(
+      restored1.position,
+      std::vector<double>(
+          captured.position.begin() + 3, captured.position.begin() + 6));
+
+  owner.clear();
+  EXPECT_TRUE(owner.model().isEmpty());
+  EXPECT_TRUE(owner.state().isEmpty());
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 0u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 0u);
+
+  owner.captureFromWorlds({});
+  EXPECT_EQ(owner.state().worldCount, 0u);
+  EXPECT_EQ(owner.state().bodyCount, 0u);
+  EXPECT_TRUE(owner.model().isEmpty());
 }
 
 // Test the immutable Model batch: inverse masses are extracted in state order,
@@ -23016,6 +23447,11 @@ TEST(World, RigidBodyModelBatchIntegration)
   EXPECT_THROW(
       compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
       sx::InvalidArgumentException);
+
+  EXPECT_DOUBLE_EQ(
+      compute::totalKineticEnergy(
+          compute::RigidBodyStateBatch{}, compute::RigidBodyModelBatch{}),
+      0.0);
 }
 
 // Test opt-in replay recording and in-place restore of rigid-body runtime

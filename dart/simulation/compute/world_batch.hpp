@@ -79,4 +79,13 @@ DART_SIMULATION_API void stepWorldsBatched(
     std::size_t stepCount,
     ComputeExecutor& executor);
 
+/// Overload of @c rolloutWorldsBatched that records the resolved
+/// heterogeneous-fallback execution shape in @p diagnostics on success.
+[[nodiscard]] DART_SIMULATION_API RigidBodyStateBatch rolloutWorldsBatched(
+    const std::vector<World*>& worlds,
+    const RigidBodyStateBatch& initialState,
+    std::size_t stepCount,
+    ComputeExecutor& executor,
+    RigidBodyBatchRolloutDiagnostics* diagnostics);
+
 } // namespace dart::simulation::compute

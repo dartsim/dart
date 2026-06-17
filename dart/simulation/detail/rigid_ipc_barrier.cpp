@@ -377,6 +377,7 @@ struct RigidIpcAssemblyScratch
       dart::common::MemoryAllocator* allocator = nullptr)
     : pairs(allocator),
       barrierTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
+      objectiveTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
       articulationResiduals(
           SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
       articulationJacobianTriplets(
@@ -390,6 +391,7 @@ struct RigidIpcAssemblyScratch
 
   RigidIpcSurfacePairScratch pairs;
   std::vector<BarrierTriplet, BarrierTripletAllocator> barrierTriplets;
+  std::vector<BarrierTriplet, BarrierTripletAllocator> objectiveTriplets;
   std::vector<double, SurfaceMarginAllocator> articulationResiduals;
   std::vector<BarrierTriplet, BarrierTripletAllocator>
       articulationJacobianTriplets;
@@ -2665,6 +2667,10 @@ static void assembleRigidIpcObjectiveSystemWithScratchInto(
       hasArticulationConstraints);
   assert(dynamicsTerms.size() <= surfaces.size());
 
+  auto& triplets = scratch.objectiveTriplets;
+  triplets.assign(
+      scratch.barrierTriplets.begin(), scratch.barrierTriplets.end());
+
   const bool useLaggedFriction
       = laggedSurfaces.size() == surfaces.size()
         && frictionOptions.coefficient > 0.0
@@ -2678,7 +2684,6 @@ static void assembleRigidIpcObjectiveSystemWithScratchInto(
   }
 
   const std::size_t termCount = std::min(dynamicsTerms.size(), surfaces.size());
-  auto& triplets = scratch.barrierTriplets;
   triplets.reserve(triplets.size() + 6 * termCount);
   if (useLaggedFriction) {
     addLaggedFrictionTerms(
