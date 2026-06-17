@@ -1028,7 +1028,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run lint`, `pixi run build`, and `pixi run test-unit` (163/163 test
   binaries). Accepted by maintainer merge of PR #3029.
 
-#### WP-091.31 Per-World accelerator policy [claimed]
+#### WP-091.31 Per-World accelerator policy [done — PR #3052, merged 2026-06-17]
 
 - Objective: the process-global GPU function-pointer seam is replaced by a
   per-World accelerator handle resolved at bake; the registrar only
@@ -1042,8 +1042,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; CUDA smoke
   where a device is available.
 - Dependencies: WP-091.30.
-- Evidence (branch `wp-091-33b-baked-rigid-model-state-owner`, folded to avoid
-  another PR): `WorldOptions::computeAcceleratorPolicy` defaults Worlds to CPU
+- Evidence: PR #3052 folded this packet into
+  `wp-091-33b-baked-rigid-model-state-owner` to avoid another PR:
+  `WorldOptions::computeAcceleratorPolicy` defaults Worlds to CPU
   PSD projection, while `PreferAccelerated` resolves the registered accelerator
   projector during bake. `World::step()` scopes the selected projector per
   World, and the CUDA registrar now only advertises availability plus its
@@ -1063,6 +1064,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run -e cuda test-all` passed lint/build/unit stages and exposed a v26
   serialization-tail regression, then focused default/CUDA serialization cases
   and `pixi run -e cuda test-simulation-full` passed after the tail fix.
+  Accepted by maintainer merge of PR #3052.
 
 #### WP-091.32 O(n) shared articulated core
 
@@ -1135,7 +1137,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_world` gtest filtering plus `pixi run lint`, `pixi run build`, and
   `pixi run test-unit`.
 
-#### WP-091.33b Baked rigid Model/State owner [claimed]
+#### WP-091.33b Baked rigid Model/State owner [done — PR #3052, merged 2026-06-17]
 
 - Objective: the rigid batch seed has an internal baked owner that separates
   immutable Model blocks from mutable State blocks and can be reused across
@@ -1150,8 +1152,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   steady-state path does not rebuild Model blocks.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.21, WP-091.33a.
-- Evidence (implementation branch): `compute::BakedRigidBodyBatchOwner` now
-  owns the rigid batch seed's immutable `RigidBodyModelBatch` and mutable
+- Evidence: PR #3052 added `compute::BakedRigidBodyBatchOwner`, which now owns
+  the rigid batch seed's immutable `RigidBodyModelBatch` and mutable
   `RigidBodyStateBatch`, with diagnostics for `modelRefreshCount`,
   `modelReuseCount`, and `stateCaptureCount`. The multi-world extraction path
   routes through the owner so homogeneous dense-index validation, Model refresh,
@@ -1172,8 +1174,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `RolloutWorldsBatchedMatchesReference`). Gates: `pixi run build`, focused
   `test_world` batch/owner filters, `pixi run test-unit` (163/163), and
   `pixi run lint`.
+  Accepted by maintainer merge of PR #3052.
 
-#### WP-091.33c Control-sequence rollout shape [claimed]
+#### WP-091.33c Control-sequence rollout shape [done — PR #3052, merged 2026-06-17]
 
 - Objective: batched rollout control input has a backend-neutral data shape
   that keeps Python/C++ callbacks outside compute nodes and records the
@@ -1190,9 +1193,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run check-api-boundaries`.
 - Dependencies: WP-091.33b.
-- Evidence (combined implementation branch): `RigidBodyControlSequenceBatch`
-  adds a backend-neutral, step-major per-lane force layout for rigid batched
-  rollout. `extractRigidBodyControlSequenceBatch()` lowers current
+- Evidence: PR #3052 added `RigidBodyControlSequenceBatch`, a backend-neutral,
+  step-major per-lane force layout for rigid batched rollout.
+  `extractRigidBodyControlSequenceBatch()` lowers current
   facade-authored rigid-body forces from homogeneous Worlds into that data-only
   layout before compute rollout, and `rolloutRigidBodyStateBatch()` consumes
   the sequence without World or callback handles. `RigidBodyBatchRolloutDiagnostics`
@@ -1204,6 +1207,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `World.RolloutWorldsBatchedMatchesReference`. Gates: focused `test_world`
   batch/control filters (11/11), `pixi run build`, `pixi run test-unit`
   (163/163), `pixi run check-api-boundaries`, and `pixi run lint`.
+  Accepted by maintainer merge of PR #3052.
 
 #### WP-091.33d Resident device owner
 
