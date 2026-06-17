@@ -18,7 +18,10 @@ and replay metadata.
         diagnostic) + `pixi run -e cuda py-demos-smoke` + an in-process pytest
         `python/tests/integration/test_demos_full_catalog_smoke.py` (every-PR
         guard) + unit tests for the smoke orchestrator. All green.
-  - [ ] Tier-2: `ScenePanel.build` coverage with a fake builder.
+  - [x] Tier-2: `ScenePanel.build` coverage via a faithful fake builder
+        (`python/examples/demos/_smoke_support.py`), wired into both the smoke
+        script and the pytest guard. 155/155 green; verified genuine (153/155
+        scenes have panels; panel code demonstrably calls the builder).
   - [ ] Tier-3: full-catalog headless *render* pass (real Filament viewer).
   - [ ] Scalable-contract lint (duplicate/unregistered scene guard) — confirm
         `test_registry_has_scenes` coverage and extend if needed.

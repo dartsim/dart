@@ -17,6 +17,7 @@ if str(_PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(_PYTHON_DIR))
 
 import pytest
+from examples.demos._smoke_support import exercise_panels  # noqa: E402
 from examples.demos.registry import make_demo_scenes  # noqa: E402
 
 from examples.demos import runner  # noqa: E402
@@ -53,6 +54,8 @@ def test_all_registered_scenes_build_step_and_render() -> None:
                 provider()
             if callable(setup.debug_provider):
                 setup.debug_provider()
+
+            exercise_panels(setup)
         except Exception as exc:
             failures.append((scene.id, repr(exc)))
 

@@ -43,6 +43,7 @@ def _smoke_one_scene(scene_id: str, frames: int, gpu_pref: bool | None) -> int:
     """Build, step, and exercise providers for one scene. Returns steps taken."""
 
     import dartpy as dart  # noqa: F401  (import side effects; configures backend)
+    from examples.demos._smoke_support import exercise_panels
     from examples.demos.registry import make_demo_scenes
     from examples.demos.runner import _configure_gpu_compute, _step
 
@@ -67,6 +68,10 @@ def _smoke_one_scene(scene_id: str, frames: int, gpu_pref: bool | None) -> int:
         provider()
     if callable(setup.debug_provider):
         setup.debug_provider()
+
+    # Exercise scene-owned panels (a live-viewer crash source) with a faithful
+    # fake builder/context, without opening the real viewer.
+    exercise_panels(setup)
 
     return frames
 
