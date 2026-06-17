@@ -200,6 +200,42 @@ Ranking takeaways:
 - SIMD has the broadest reach across kinematics, spatial algebra, and batch
   narrow phase, and it is already partially in place.
 
+## LCP Solver CUDA Expansion Criteria
+
+DART's current direct LCP CUDA execution is intentionally narrow:
+`dart/simulation/compute/cuda/lcp_jacobi_batch_cuda.*` owns fixed-iteration
+projected Jacobi, red-black Gauss-Seidel, and PGS kernels over dense standard,
+boxed, and friction-index packets, plus grouped host-side wrappers for
+variable-size world-contact batches on the Jacobi/PGS paths. Those rows are
+direct CUDA LCP execution only for the Jacobi, red-black GS, and PGS packet
+paths. CUDA-enabled `BM_LCP_COMPARE` rows for Dantzig, Lemke, Baraff, Newton,
+MPRGP, Interior Point, ADMM, SAP, and other manifest solvers are CPU solver rows
+emitted from a CUDA-enabled build tree; they prove build and runtime
+compatibility, not device execution of those solver algorithms.
+
+An all-solver or broader-direct-CUDA LCP claim needs a separate design slice
+before implementation. The minimum acceptance bar is:
+
+- a backend-neutral execution contract that records solver identity, problem
+  form, fixed iteration or convergence policy, and whether the row executed
+  device kernels;
+- CPU-vs-device parity tests for every promoted solver/problem-form pair,
+  including standard, boxed, and friction-index cases where the solver natively
+  supports them;
+- deterministic reduction and update-order rules for any solver that is not
+  already row- or problem-parallel by construction;
+- benchmark counters that distinguish CUDA build-state rows from direct device
+  LCP execution rows;
+- default no-GPU build, packaging, and public API boundary checks staying clean;
+- `pixi run -e cuda test-cuda` for the focused smoke path and
+  `pixi run -e cuda test-all` on Linux CUDA hosts before claiming runtime
+  coverage.
+
+This keeps broader LCP CUDA work under Pattern B: useful, high-risk
+single-scene contact acceleration. It should not be inferred from the current
+Jacobi/PGS/red-black GS batch kernels, and it should not expose backend, stream,
+kernel, or device-resource types through DART's public LCP API.
+
 ## Multi-Core CPU Options
 
 | Option                 | Maturity / requirement                                          | Packaging                                                     | Verdict for DART                                                                                                                        |

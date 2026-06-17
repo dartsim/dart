@@ -49,8 +49,8 @@ namespace dart::simulation::compute::cuda {
 ///
 /// This is a DART 7 experimental CUDA execution packet, not a general-purpose
 /// replacement for @c dart::math::LcpSolver yet. It covers standard, boxed, and
-/// friction-index moving bounds for fixed-iteration projected Jacobi and PGS
-/// batch kernels.
+/// friction-index moving bounds for fixed-iteration projected Jacobi,
+/// red-black Gauss-Seidel, and PGS batch kernels.
 struct LcpBatchCudaProblem
 {
   std::size_t problemSize{0};
@@ -69,6 +69,7 @@ struct LcpBatchCudaProblem
 
 using LcpJacobiBatchCudaProblem = LcpBatchCudaProblem;
 using LcpPgsBatchCudaProblem = LcpBatchCudaProblem;
+using LcpRedBlackGaussSeidelBatchCudaProblem = LcpBatchCudaProblem;
 
 /// Solve a homogeneous dense standard/boxed/friction-index LCP batch using CUDA
 /// Jacobi.
@@ -77,6 +78,15 @@ using LcpPgsBatchCudaProblem = LcpBatchCudaProblem;
 /// copies one batch packet to the device, launches one row-parallel Jacobi
 /// update kernel per iteration, and copies the final @ref x vector back.
 void solveBoxedLcpJacobiBatchCuda(LcpBatchCudaProblem& problem);
+
+/// Solve a homogeneous dense standard/boxed/friction-index LCP batch using CUDA
+/// red-black Gauss-Seidel.
+///
+/// The packet is validated before any CUDA runtime access. The implementation
+/// copies one batch packet to the device, then launches one row-parallel red
+/// pass and one row-parallel black pass per iteration. Red rows read the
+/// previous iterate; black rows read red updates and previous black values.
+void solveBoxedLcpRedBlackGaussSeidelBatchCuda(LcpBatchCudaProblem& problem);
 
 /// Solve a homogeneous dense standard/boxed/friction-index LCP batch using CUDA
 /// PGS.
@@ -94,6 +104,13 @@ void solveBoxedLcpPgsBatchCuda(LcpBatchCudaProblem& problem);
 /// executes on the same CUDA Jacobi kernel used by @ref
 /// solveBoxedLcpJacobiBatchCuda.
 void solveBoxedLcpJacobiGroupedBatchCuda(
+    std::vector<LcpBatchCudaProblem>& problemGroups);
+
+/// Solve a grouped dense boxed-LCP batch using CUDA red-black Gauss-Seidel.
+///
+/// Each entry is one homogeneous CUDA packet. This covers variable-size batches
+/// by executing one CUDA red-black Gauss-Seidel packet per row-count group.
+void solveBoxedLcpRedBlackGaussSeidelGroupedBatchCuda(
     std::vector<LcpBatchCudaProblem>& problemGroups);
 
 /// Solve a grouped dense boxed-LCP batch using CUDA PGS.

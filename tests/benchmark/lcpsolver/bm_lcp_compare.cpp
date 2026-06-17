@@ -2748,6 +2748,135 @@ CheckWorldCartesianArticulatedGroundStepInvariants(
   return check;
 }
 
+std::unique_ptr<sx::World> MakeWorldRevoluteArmGroundStepBenchmarkWorld(
+    int armCount, std::string& errorMessage)
+{
+  if (armCount <= 0) {
+    errorMessage = "revolute arm count must be positive";
+    return nullptr;
+  }
+
+  sx::WorldOptions options;
+  options.timeStep = 0.002;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  auto world = std::make_unique<sx::World>(options);
+
+  constexpr double kSpacing = 1.5;
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto ground = world->addRigidBody("ground", groundOptions);
+  const double groundHalfExtent
+      = MakePositiveGridGroundHalfExtent(armCount, kSpacing, 24.0);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
+
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(armCount))));
+  for (const int i : std::views::iota(0, armCount)) {
+    const int row = i / columns;
+    const int col = i - row * columns;
+    auto robot = world->addMultibody("revolute_arm_" + std::to_string(i));
+    auto base = robot.addLink("base");
+
+    sx::JointSpec shoulderSpec;
+    shoulderSpec.name = "shoulder";
+    shoulderSpec.type = sx::JointType::Revolute;
+    shoulderSpec.axis = Eigen::Vector3d::UnitY();
+    shoulderSpec.transformFromParent = Eigen::Isometry3d::Identity();
+    shoulderSpec.transformFromParent.translation() = Eigen::Vector3d(
+        kSpacing * static_cast<double>(col),
+        kSpacing * static_cast<double>(row),
+        0.0);
+    auto upperArm = robot.addLink("upper_arm", base, shoulderSpec);
+    upperArm.setMass(0.4);
+    upperArm.setInertia(0.04 * Eigen::Matrix3d::Identity());
+    upperArm.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, 0.02));
+
+    sx::JointSpec elbowSpec;
+    elbowSpec.name = "elbow";
+    elbowSpec.type = sx::JointType::Revolute;
+    elbowSpec.axis = Eigen::Vector3d::UnitY();
+    elbowSpec.transformFromParent.translation()
+        = Eigen::Vector3d(0.35, 0.0, -0.15);
+    auto forearm = robot.addLink("forearm", upperArm, elbowSpec);
+    forearm.setMass(0.35);
+    forearm.setInertia(0.035 * Eigen::Matrix3d::Identity());
+    forearm.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, -0.015));
+
+    sx::JointSpec wristSpec;
+    wristSpec.name = "wrist";
+    wristSpec.type = sx::JointType::Revolute;
+    wristSpec.axis = Eigen::Vector3d::UnitY();
+    wristSpec.transformFromParent.translation()
+        = Eigen::Vector3d(0.25, 0.0, -0.15);
+    auto tip = robot.addLink("tip", forearm, wristSpec);
+    tip.setMass(0.2);
+    tip.setInertia(0.02 * Eigen::Matrix3d::Identity());
+    tip.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    tip.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, -0.04));
+  }
+
+  world->enterSimulationMode();
+  const std::vector<sx::Contact> contacts = world->collide();
+  if (contacts.size() != static_cast<std::size_t>(armCount)) {
+    errorMessage = "World::collide returned " + std::to_string(contacts.size())
+                   + " revolute-arm contacts, expected "
+                   + std::to_string(armCount);
+    return nullptr;
+  }
+
+  return world;
+}
+
+struct WorldRevoluteArmGroundStepCheck
+{
+  bool ok{true};
+  double maxTipHeightError{0.0};
+  double maxAbsJointVelocity{0.0};
+};
+
+WorldRevoluteArmGroundStepCheck CheckWorldRevoluteArmGroundStepInvariants(
+    sx::World& world, int armCount)
+{
+  WorldRevoluteArmGroundStepCheck check;
+  for (const int i : std::views::iota(0, armCount)) {
+    auto robot = world.getMultibody("revolute_arm_" + std::to_string(i));
+    if (!robot.has_value()) {
+      check.ok = false;
+      return check;
+    }
+    auto upperArm = robot->getLink("upper_arm");
+    auto forearm = robot->getLink("forearm");
+    auto tip = robot->getLink("tip");
+    if (!upperArm.has_value() || !forearm.has_value() || !tip.has_value()) {
+      check.ok = false;
+      return check;
+    }
+
+    const double shoulderVelocity = upperArm->getParentJoint().getVelocity()[0];
+    const double elbowVelocity = forearm->getParentJoint().getVelocity()[0];
+    const double wristVelocity = tip->getParentJoint().getVelocity()[0];
+    const double tipZ = tip->getWorldTransform().translation().z();
+    const double heightError = std::abs(tipZ + 0.3);
+    check.maxTipHeightError = std::max(check.maxTipHeightError, heightError);
+    check.maxAbsJointVelocity = std::max(
+        check.maxAbsJointVelocity,
+        std::max(
+            {std::abs(shoulderVelocity),
+             std::abs(elbowVelocity),
+             std::abs(wristVelocity)}));
+    check.ok = check.ok && std::isfinite(shoulderVelocity)
+               && std::isfinite(elbowVelocity) && std::isfinite(wristVelocity)
+               && std::isfinite(tipZ) && tipZ >= -0.34 && heightError <= 4e-2
+               && check.maxAbsJointVelocity < 6.0;
+  }
+
+  return check;
+}
+
 std::unique_ptr<sx::World> MakeWorldStackStepBenchmarkWorld(
     int sphereCount, std::string& errorMessage)
 {
@@ -10585,6 +10714,49 @@ static void BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp(
   state.SetItemsProcessed(state.iterations() * stepCount * chainCount);
   state.SetLabel("BoxedLcpContact/WorldArticulatedCartesianGroundStep");
 }
+
+static void BM_LcpWorldArticulatedRevoluteArmGroundStep_BoxedLcp(
+    benchmark::State& state)
+{
+  const int armCount = static_cast<int>(state.range(0));
+  const int stepCount = static_cast<int>(state.range(1));
+  std::string errorMessage;
+
+  WorldRevoluteArmGroundStepCheck check;
+  for (auto _ : state) {
+    auto world
+        = MakeWorldRevoluteArmGroundStepBenchmarkWorld(armCount, errorMessage);
+    if (world == nullptr) {
+      state.SkipWithError(errorMessage.c_str());
+      return;
+    }
+    world->step(stepCount);
+    check = CheckWorldRevoluteArmGroundStepInvariants(*world, armCount);
+    benchmark::DoNotOptimize(check.ok);
+  }
+
+  auto world
+      = MakeWorldRevoluteArmGroundStepBenchmarkWorld(armCount, errorMessage);
+  if (world == nullptr) {
+    state.SkipWithError(errorMessage.c_str());
+    return;
+  }
+  world->step(stepCount);
+  check = CheckWorldRevoluteArmGroundStepInvariants(*world, armCount);
+
+  state.counters["revolute_arm_count"] = static_cast<double>(armCount);
+  state.counters["articulated_dof_count"] = static_cast<double>(3 * armCount);
+  state.counters["multibody_count"] = static_cast<double>(armCount);
+  state.counters["contact_count"] = static_cast<double>(armCount);
+  state.counters["step_count"] = static_cast<double>(stepCount);
+  state.counters["serial_revolute_arm"] = 1.0;
+  state.counters["max_tip_height_error"] = check.maxTipHeightError;
+  state.counters["max_abs_joint_velocity"] = check.maxAbsJointVelocity;
+  state.counters["invariant_ok"] = check.ok ? 1.0 : 0.0;
+  AddBackendBuildCounters(state);
+  state.SetItemsProcessed(state.iterations() * stepCount * armCount);
+  state.SetLabel("BoxedLcpContact/WorldArticulatedRevoluteArmGroundStep");
+}
 #endif
 
 #if DART_BM_LCP_COMPARE_HAS_SIMULATION
@@ -10746,6 +10918,49 @@ void RunCudaPgsBatchBenchmark(
       static_cast<int>(problems.front().b.size()),
       batchSize,
       MakeLabel("PgsCuda", std::string(getProblemFamilyName(family))));
+  state.counters["cuda_lcp_execution"] = 1.0;
+  state.counters["cuda_batch_execution"] = 1.0;
+  state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
+  if (family == BenchmarkProblemFamily::FrictionIndex) {
+    state.counters["contact_count"] = problemArg;
+  }
+}
+
+void RunCudaRedBlackGaussSeidelBatchBenchmark(
+    benchmark::State& state, BenchmarkProblemFamily family)
+{
+  if (!cuda_compute::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const int problemArg = static_cast<int>(state.range(0));
+  const int batchSize = static_cast<int>(state.range(1));
+  const auto problems
+      = MakeBenchmarkProblemBatch(family, problemArg, batchSize);
+
+  constexpr std::size_t iterations = 100;
+  auto basePacket = MakeCudaBatchProblem(problems, iterations);
+  const auto options = MakeBenchmarkOptions(static_cast<int>(iterations));
+
+  BatchBenchmarkCounters counters;
+  for (auto _ : state) {
+    auto packet = basePacket;
+    cuda_compute::solveBoxedLcpRedBlackGaussSeidelBatchCuda(packet);
+    benchmark::DoNotOptimize(packet.x.data());
+  }
+
+  auto packet = basePacket;
+  cuda_compute::solveBoxedLcpRedBlackGaussSeidelBatchCuda(packet);
+  counters = CheckCudaBatchResult(problems, packet.x, options, iterations);
+  AddBatchBenchmarkCounters(
+      state,
+      counters,
+      static_cast<int>(problems.front().b.size()),
+      batchSize,
+      MakeLabel(
+          "RedBlackGaussSeidelCuda",
+          std::string(getProblemFamilyName(family))));
   state.counters["cuda_lcp_execution"] = 1.0;
   state.counters["cuda_batch_execution"] = 1.0;
   state.counters["cuda_fixed_iterations"] = static_cast<double>(iterations);
@@ -13839,6 +14054,25 @@ static void BM_LcpCudaPgsBatch_FrictionIndex(benchmark::State& state)
   RunCudaPgsBatchBenchmark(state, BenchmarkProblemFamily::FrictionIndex);
 }
 
+static void BM_LcpCudaRedBlackGaussSeidelBatch_Standard(benchmark::State& state)
+{
+  RunCudaRedBlackGaussSeidelBatchBenchmark(
+      state, BenchmarkProblemFamily::Standard);
+}
+
+static void BM_LcpCudaRedBlackGaussSeidelBatch_Boxed(benchmark::State& state)
+{
+  RunCudaRedBlackGaussSeidelBatchBenchmark(
+      state, BenchmarkProblemFamily::Boxed);
+}
+
+static void BM_LcpCudaRedBlackGaussSeidelBatch_FrictionIndex(
+    benchmark::State& state)
+{
+  RunCudaRedBlackGaussSeidelBatchBenchmark(
+      state, BenchmarkProblemFamily::FrictionIndex);
+}
+
 static void BM_LcpCudaJacobiGroupedBatch_Standard(benchmark::State& state)
 {
   RunCudaGroupedBatchBenchmark(state, BenchmarkProblemFamily::Standard, false);
@@ -14130,6 +14364,27 @@ BENCHMARK(BM_LcpCudaPgsBatch_FrictionIndex)
     ->Args({48, 4})
     ->Args({64, 4})
     ->Args({96, 4});
+BENCHMARK(BM_LcpCudaRedBlackGaussSeidelBatch_Standard)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4})
+    ->Args({128, 4})
+    ->Args({192, 4})
+    ->Args({256, 4});
+BENCHMARK(BM_LcpCudaRedBlackGaussSeidelBatch_Boxed)
+    ->Args({24, 4})
+    ->Args({48, 4})
+    ->Args({96, 4})
+    ->Args({128, 4})
+    ->Args({192, 4})
+    ->Args({256, 4});
+BENCHMARK(BM_LcpCudaRedBlackGaussSeidelBatch_FrictionIndex)
+    ->Args({8, 4})
+    ->Args({16, 4})
+    ->Args({32, 4})
+    ->Args({48, 4})
+    ->Args({64, 4})
+    ->Args({96, 4});
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Standard)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_Boxed)->Arg(2)->Arg(3);
 BENCHMARK(BM_LcpCudaJacobiGroupedBatch_FrictionIndex)->Arg(2)->Arg(3);
@@ -14405,6 +14660,11 @@ BENCHMARK(BM_LcpWorldArticulatedCartesianGroundStep_BoxedLcp)
     ->Args({1024, 200})
     ->Args({1536, 200})
     ->Args({2048, 200});
+BENCHMARK(BM_LcpWorldArticulatedRevoluteArmGroundStep_BoxedLcp)
+    ->Args({1, 200})
+    ->Args({4, 200})
+    ->Args({8, 200})
+    ->Args({1, 1000});
 #endif
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);

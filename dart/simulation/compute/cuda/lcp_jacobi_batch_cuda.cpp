@@ -75,6 +75,20 @@ cudaError_t launchBoxedLcpPgsBatchKernel(
     double relaxation,
     double epsilonForDivision);
 
+cudaError_t launchBoxedLcpRedBlackGaussSeidelBatchKernel(
+    const double* A,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    double* x,
+    const double* xPrevious,
+    std::size_t problemSize,
+    std::size_t problemCount,
+    int color,
+    double relaxation,
+    double epsilonForDivision);
+
 } // namespace detail
 namespace {
 
@@ -259,6 +273,72 @@ void solveBoxedLcpJacobiBatchCuda(LcpBatchCudaProblem& problem)
 }
 
 //==============================================================================
+void solveBoxedLcpRedBlackGaussSeidelBatchCuda(LcpBatchCudaProblem& problem)
+{
+  validateProblem(problem, "solveBoxedLcpRedBlackGaussSeidelBatchCuda");
+
+  const std::size_t vectorSize = problem.problemSize * problem.problemCount;
+  if (vectorSize == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<double> deviceA(problem.A);
+  DeviceBuffer<double> deviceB(problem.b);
+  DeviceBuffer<double> deviceLo(problem.lo);
+  DeviceBuffer<double> deviceHi(problem.hi);
+  DeviceBuffer<int> deviceFindex(problem.findex);
+  DeviceBuffer<double> deviceX(problem.x);
+  DeviceBuffer<double> deviceXPrevious(vectorSize);
+
+  const std::size_t bytes = vectorSize * sizeof(double);
+  for (std::size_t iter = 0; iter < problem.iterations; ++iter) {
+    throwIfCudaError(
+        cudaMemcpy(
+            deviceXPrevious.data(),
+            deviceX.data(),
+            bytes,
+            cudaMemcpyDeviceToDevice),
+        "boxed LCP red-black Gauss-Seidel previous iterate copy");
+    throwIfCudaError(
+        detail::launchBoxedLcpRedBlackGaussSeidelBatchKernel(
+            deviceA.data(),
+            deviceB.data(),
+            deviceLo.data(),
+            deviceHi.data(),
+            deviceFindex.data(),
+            deviceX.data(),
+            deviceXPrevious.data(),
+            problem.problemSize,
+            problem.problemCount,
+            0,
+            problem.relaxation,
+            problem.epsilonForDivision),
+        "boxed LCP red-black Gauss-Seidel red kernel");
+    throwIfCudaError(
+        detail::launchBoxedLcpRedBlackGaussSeidelBatchKernel(
+            deviceA.data(),
+            deviceB.data(),
+            deviceLo.data(),
+            deviceHi.data(),
+            deviceFindex.data(),
+            deviceX.data(),
+            deviceXPrevious.data(),
+            problem.problemSize,
+            problem.problemCount,
+            1,
+            problem.relaxation,
+            problem.epsilonForDivision),
+        "boxed LCP red-black Gauss-Seidel black kernel");
+  }
+
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "boxed LCP red-black Gauss-Seidel synchronize");
+  deviceX.copyFromDevice(problem.x, "LCP solution copy from device");
+}
+
+//==============================================================================
 void solveBoxedLcpPgsBatchCuda(LcpBatchCudaProblem& problem)
 {
   validateProblem(problem, "solveBoxedLcpPgsBatchCuda");
@@ -302,6 +382,15 @@ void solveBoxedLcpJacobiGroupedBatchCuda(
 {
   for (auto& problem : problemGroups) {
     solveBoxedLcpJacobiBatchCuda(problem);
+  }
+}
+
+//==============================================================================
+void solveBoxedLcpRedBlackGaussSeidelGroupedBatchCuda(
+    std::vector<LcpBatchCudaProblem>& problemGroups)
+{
+  for (auto& problem : problemGroups) {
+    solveBoxedLcpRedBlackGaussSeidelBatchCuda(problem);
   }
 }
 

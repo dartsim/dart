@@ -130,6 +130,10 @@ compatibility remains on the active DART 6 LTS branch._
   benchmarks/identity counters, and guarded unsupported benchmark rows from
   reporting misleading data. ([#2202](https://github.com/dartsim/dart/pull/2202),
   [#3030](https://github.com/dartsim/dart/pull/3030))
+- Expanded LCP evidence coverage with advanced-solver conditioning grids,
+  revolute-arm boxed-LCP contact regressions, direct CUDA red-black
+  Gauss-Seidel batch coverage, and `lcp_physics` metadata that points reviewers
+  at the new correctness and benchmark contracts.
 
 #### Collision and Geometry
 

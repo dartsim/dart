@@ -405,6 +405,12 @@ near-singular SPD standard-LCP fixtures while toggling the positive-definite
 factorization check. Focused default, SIMD-enabled, and CUDA-enabled build-tree
 runs reported 9 rows with `contract_ok=1`; the CUDA-enabled rows are CPU solver
 rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+Generated contract coverage also includes a scoped standard-SPD conditioning
+grid shared with Interior Point: 96- and 128-row mildly ill-conditioned rows
+plus a 16-row near-singular row. That grid is intentionally solver-specific and
+asserts the LCP contract instead of the generated selected solution, so larger
+conditioning evidence does not force every manifest solver to choose the same
+valid solution.
 `BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
 for MPRGP by extracting only the normal rows from DART 7 separated
 sphere-ground, coupled vertical-stack, and articulated unified-contact

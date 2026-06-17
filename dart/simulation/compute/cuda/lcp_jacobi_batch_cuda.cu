@@ -158,6 +158,91 @@ __global__ void solveBoxedLcpPgsBatchKernel(
   }
 }
 
+__device__ double readRedBlackValue(
+    const double* x,
+    const double* xPrevious,
+    std::size_t vectorBase,
+    std::size_t col,
+    int color)
+{
+  const std::size_t index = vectorBase + col;
+  if (color == 0) {
+    return xPrevious[index];
+  }
+
+  return (col % 2u == 0u) ? x[index] : xPrevious[index];
+}
+
+__global__ void solveBoxedLcpRedBlackGaussSeidelBatchKernel(
+    const double* A,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    double* x,
+    const double* xPrevious,
+    std::size_t problemSize,
+    std::size_t problemCount,
+    int color,
+    double relaxation,
+    double epsilonForDivision)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t totalRows = problemSize * problemCount;
+  if (index >= totalRows) {
+    return;
+  }
+
+  const std::size_t problem = index / problemSize;
+  const std::size_t row = index - problem * problemSize;
+  if (static_cast<int>(row % 2u) != color) {
+    return;
+  }
+
+  const std::size_t vectorBase = problem * problemSize;
+  const std::size_t matrixBase = problem * problemSize * problemSize;
+
+  double Ax = 0.0;
+  for (std::size_t col = 0; col < problemSize; ++col) {
+    Ax += A[matrixBase + row * problemSize + col]
+          * readRedBlackValue(x, xPrevious, vectorBase, col, color);
+  }
+
+  const double previous
+      = readRedBlackValue(x, xPrevious, vectorBase, row, color);
+  double value = previous;
+  const double diag = A[matrixBase + row * problemSize + row];
+  if (fabs(diag) >= epsilonForDivision) {
+    const double w = Ax - b[index];
+    const double step = previous - w / diag;
+    value += relaxation * (step - previous);
+  } else {
+    value = 0.0;
+  }
+
+  double lower = lo[index];
+  double upper = hi[index];
+  const int ref = findex[index];
+  if (ref >= 0) {
+    const auto refIndex = static_cast<std::size_t>(ref);
+    const double mu = fabs(hi[index]);
+    const double bound
+        = mu
+          * fabs(readRedBlackValue(x, xPrevious, vectorBase, refIndex, color));
+    lower = -bound;
+    upper = bound;
+  }
+
+  if (value < lower) {
+    value = lower;
+  }
+  if (value > upper) {
+    value = upper;
+  }
+  x[index] = value;
+}
+
 } // namespace
 
 //==============================================================================
@@ -192,6 +277,46 @@ cudaError_t launchBoxedLcpJacobiBatchKernel(
       xNext,
       problemSize,
       problemCount,
+      relaxation,
+      epsilonForDivision);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchBoxedLcpRedBlackGaussSeidelBatchKernel(
+    const double* A,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    double* x,
+    const double* xPrevious,
+    std::size_t problemSize,
+    std::size_t problemCount,
+    int color,
+    double relaxation,
+    double epsilonForDivision)
+{
+  const std::size_t totalRows = problemSize * problemCount;
+  if (totalRows == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(totalRows, blockSize);
+
+  solveBoxedLcpRedBlackGaussSeidelBatchKernel<<<gridSize, blockSize>>>(
+      A,
+      b,
+      lo,
+      hi,
+      findex,
+      x,
+      xPrevious,
+      problemSize,
+      problemCount,
+      color,
       relaxation,
       epsilonForDivision);
 
