@@ -4,6 +4,13 @@
 
 ### [DART 6.19.1 (TBD)](https://github.com/dartsim/dart/milestone/98?closed=1)
 
+* Simulation
+
+  * Preserve the last solved contact body-force cache when an island first
+    transitions into automatic deactivation, so joint transmitted-wrench
+    queries continue to include contact forces while the island is asleep:
+    [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
+
 * Tests
 
   * Build and run the pinned gz-physics test suite in the DART 6 Gazebo CI gate
