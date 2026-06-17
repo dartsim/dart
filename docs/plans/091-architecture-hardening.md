@@ -805,7 +805,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run build`, focused `test_world` dense-index/batch filters, and
   `pixi run test-unit` (163/163). Accepted by maintainer merge of PR #3044.
 
-#### WP-091.22 Frame arena: wire or delete [claimed]
+#### WP-091.22 Frame arena: wire or delete [done — PR #3029, merged 2026-06-16]
 
 - Objective: the per-step frame-scratch arena either gains real consumers
   (transient contact rows, facade-query temporaries) with its diagnostics
@@ -820,6 +820,19 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Dependencies: none. Sequencing note: landing WP-091.20 first reduces
   rework, since the component split converts most heap-fragmented payloads
   into slab storage — prefer it when both are available.
+- Evidence: `docs/design/hierarchical_allocator.md` records the decision to
+  keep frame scratch as the per-step transient arena and makes boxed-LCP
+  rigid-contact solve arrays its first production consumer. The boxed-LCP
+  built-in step warms the frame arena at bake, borrows it for dense per-step
+  Delassus/Jacobian/impulse/Dantzig arrays, and keeps diagnostic snapshots and
+  public helper outputs in caller-owned or persistent storage. Regression
+  coverage includes
+  `World.BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth`,
+  `World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator`, and
+  `World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap`, plus frame
+  scratch diagnostics/reset coverage. Accepted by maintainer merge of PR #3029;
+  #3029 validated with `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit` before the docs/comment-only follow-up head.
 
 #### WP-091.23 Stable serialization identity [claimed]
 
@@ -975,7 +988,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS3 — Compute axis reality
 
-#### WP-091.30 Executor primitives and one converted stage per domain [claimed]
+#### WP-091.30 Executor primitives and one converted stage per domain [done — PR #3029, merged 2026-06-16]
 
 - Objective: stages source CPU parallelism from the injected executor through
   two or three primitives (parallel-for over bodies/structures/islands/colors
@@ -1004,7 +1017,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   batch fan-out now uses the layer-neutral `dart/common/parallel_for.hpp`
   helper instead of depending on `simulation/compute`. Validated with
   `pixi run lint`, `pixi run build`, and `pixi run test-unit` (163/163 test
-  binaries).
+  binaries). Accepted by maintainer merge of PR #3029.
 
 #### WP-091.31 Per-World accelerator policy
 
