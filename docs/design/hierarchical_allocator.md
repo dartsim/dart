@@ -12,10 +12,10 @@ This note describes the DART 7 experimental simulation stack. The classic
 migrated by this design note, and they should not be treated as evidence for the
 DART 7 no-allocation simulation-loop contract.
 
-During active HMM work, detailed coverage and remaining gaps live in
-`docs/dev_tasks/hierarchical_memory_manager/README.md`. When that dev task is
-completed, the durable evidence summary should move to testing/onboarding docs
-before the task folder is deleted.
+The hierarchical-memory-manager dev task is complete. This design note is the
+durable owner for the World memory hierarchy, its no-allocation simulation-loop
+contract, the current evidence surfaces, and the bounded rules for any future
+allocator follow-up work.
 
 ## Architecture
 
@@ -142,6 +142,28 @@ Tests should measure allocator-call counters, storage capacities, and global
 heap guards directly. Benchmark timing alone is not enough evidence for the
 no-allocation contract.
 
+## Completion Evidence
+
+The completed HMM work wires the DART 7 `World` registry, built-in stage
+storage, solver scratch, diagnostics, replay buffers, compute-graph storage,
+and representative rigid/deformable/multibody/differentiable hot paths through
+the World-owned memory hierarchy. The closing raw-malloc slice added or
+revalidated focused baked-step gates for:
+
+- rigid IPC active barriers, stacked boxes, deformable surface obstacles,
+  kinematic conveyor/turntable scenes, and small fixed/revolute articulation
+  rows;
+- multibody velocity-actuated steps;
+- scripted deformable boundary steps and an 81-DOF FEM ground-friction block;
+- differentiable contact-free derivative capture when `DART_BUILD_DIFF=ON`;
+- existing dynamic rigid IPC world-base no-growth and global-heap guards.
+
+The durable rule from those gates is narrower than "all code never allocates":
+same-shape baked `World::step()` paths should reuse World-owned, frame, stack,
+or stage-owned scratch after prepare/bake. Public return-by-value diagnostics,
+standalone helper overloads, and third-party internals may allocate unless a
+caller-owned or stage-owned reuse path is part of the built-in World loop.
+
 ## Evidence Surfaces
 
 The current implementation is exercised by focused allocator tests, comparative
@@ -156,8 +178,8 @@ verifiers over large copied scene inventories in this design doc:
   `dart/simulation/world.cpp`;
 - registry/no-growth gates and boxed-LCP frame-scratch production coverage:
   `tests/unit/simulation/world/test_world.cpp`;
-- active phase status while HMM remains open:
-  `docs/dev_tasks/hierarchical_memory_manager/README.md`.
+- differentiable smooth-Jacobian allocation and correctness coverage:
+  `tests/unit/simulation/diff/test_diff_smooth_jacobian.cpp`.
 
 Before claiming a broader zero-allocation result, the evidence must show that
 the relevant built-in stage paths have both world-base no-growth and global-heap
@@ -177,6 +199,10 @@ no-allocation gates after bake.
   budget should make runtime growth a hard failure.
 - Do not route GPU memory management or third-party internal allocations through
   this CPU hierarchy without a separate design.
+- Future allocator work starts only from a fresh failing gate or benchmark
+  policy change. Known non-claims include deformable sparse-direct systems
+  above the retained dense cutoff, large rigid-IPC equality KKT systems above
+  the stack-solve cap, and public return-by-value diagnostics.
 
 ## Non-Goals
 

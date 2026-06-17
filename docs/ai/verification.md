@@ -19,7 +19,11 @@ Before finalizing substantial AI-assisted work:
 4. Identify missing, weakly verified, or blocked requirements.
 5. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
    promoted and the completed task folder was removed.
-6. Continue working until all required items are satisfied or a real blocker
+6. If remaining dev-task work is blocked by a substantial maintainer decision,
+   external dependency, or intentionally out-of-session scope boundary, verify
+   that the human was asked when needed and that the parked work has a durable
+   owner in `docs/plans/`, `docs/design/`, or `docs/onboarding/`.
+7. Continue working until all required items are satisfied or a real blocker
    remains.
 
 ## Research Paper Implementation Evidence

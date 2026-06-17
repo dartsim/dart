@@ -609,6 +609,9 @@ public:
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  std::vector<entt::entity> m_multibodyEntities;
 };
 
 /// The built-in semi-implicit `World::step()` schedule uses

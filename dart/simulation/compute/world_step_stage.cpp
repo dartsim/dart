@@ -2230,6 +2230,8 @@ struct DeformableContactSolverScratch
 
   Eigen::VectorXd projectedNewtonRhs;
   Eigen::VectorXd projectedNewtonSolution;
+  Eigen::MatrixXd projectedNewtonDenseHessian;
+  Eigen::LDLT<Eigen::MatrixXd> projectedNewtonDenseLdlt;
   Eigen::SparseMatrix<double> projectedNewtonHessian;
   ProjectedNewtonTripletVector projectedNewtonTriplets;
   ProjectedNewtonScalarVector projectedNewtonEdgeBlocks;
@@ -2251,6 +2253,62 @@ struct DeformableContactSolverScratch
   ProjectedNewtonVector3Vector groundFrictionNormalDirection;
   ProjectedNewtonFrictionContactVector selfContactFrictionContacts;
 };
+
+//==============================================================================
+bool tryAssembleProjectedNewtonHessianFromCachedPattern(
+    DeformableContactSolverScratch& scratch, Eigen::Index dim)
+{
+  auto& hessian = scratch.projectedNewtonHessian;
+  const auto& triplets = scratch.projectedNewtonTriplets;
+  const auto& cachedOuter = scratch.newtonPatternOuter;
+  const auto& cachedInner = scratch.newtonPatternInner;
+  if (!scratch.newtonPatternValid || hessian.rows() != dim
+      || hessian.cols() != dim || !hessian.isCompressed()
+      || cachedOuter.size() != static_cast<std::size_t>(dim + 1)
+      || hessian.nonZeros() != static_cast<Eigen::Index>(cachedInner.size())) {
+    return false;
+  }
+
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using StorageIndex = SparseMatrix::StorageIndex;
+  const StorageIndex* outer = hessian.outerIndexPtr();
+  const StorageIndex* inner = hessian.innerIndexPtr();
+  double* values = hessian.valuePtr();
+  if (outer == nullptr || inner == nullptr || values == nullptr) {
+    return false;
+  }
+
+  for (Eigen::Index col = 0; col <= dim; ++col) {
+    if (outer[col] != cachedOuter[static_cast<std::size_t>(col)]) {
+      return false;
+    }
+  }
+  for (Eigen::Index entry = 0; entry < hessian.nonZeros(); ++entry) {
+    if (inner[entry] != cachedInner[static_cast<std::size_t>(entry)]) {
+      return false;
+    }
+  }
+
+  std::fill(values, values + hessian.nonZeros(), 0.0);
+  for (const auto& triplet : triplets) {
+    const Eigen::Index row = triplet.row();
+    const Eigen::Index col = triplet.col();
+    if (row < 0 || row >= dim || col < 0 || col >= dim) {
+      return false;
+    }
+    const auto begin = outer[col];
+    const auto end = outer[col + 1];
+    const StorageIndex rowIndex = static_cast<StorageIndex>(row);
+    const StorageIndex* it
+        = std::lower_bound(inner + begin, inner + end, rowIndex);
+    if (it == inner + end || *it != rowIndex) {
+      return false;
+    }
+    values[it - inner] += triplet.value();
+  }
+
+  return true;
+}
 
 //==============================================================================
 struct ProjectedNewtonMatrixFreeHessian
@@ -6072,6 +6130,7 @@ void reserveProjectedNewtonScratch(
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
   scratch.projectedNewtonRhs.resize(dim);
   scratch.projectedNewtonSolution.resize(dim);
+  scratch.projectedNewtonDenseHessian.resize(dim, dim);
 
   // Reserve DART-owned barrier buffers for the baked candidate capacity, not
   // only the contacts active at bake.
@@ -7445,6 +7504,12 @@ bool computeProjectedNewtonDirection(
   const bool solveMatrixFree = useMatrixFreeSolver;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
+  // Keep medium direct systems on retained dense LDLT scratch. Eigen's sparse
+  // direct factorizer owns malloc-backed numeric storage, so it is reserved for
+  // larger systems where dense factorization is not appropriate.
+  constexpr Eigen::Index kSmallDenseDirectDofs = 128;
+  const bool solveDenseDirect
+      = !solveIteratively && dim <= kSmallDenseDirectDofs;
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
   // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
@@ -7940,12 +8005,14 @@ bool computeProjectedNewtonDirection(
   }
 
   Eigen::SparseMatrix<double>& hessian = solverCache.projectedNewtonHessian;
-  if (!solveMatrixFree) {
-    hessian.resize(dim, dim);
-    hessian.setZero();
-    hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
-    hessian.setFromTriplets(triplets.begin(), triplets.end());
-    hessian.makeCompressed();
+  if (!solveMatrixFree && !solveDenseDirect) {
+    if (!tryAssembleProjectedNewtonHessianFromCachedPattern(solverCache, dim)) {
+      hessian.resize(dim, dim);
+      hessian.setZero();
+      hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
+      hessian.setFromTriplets(triplets.begin(), triplets.end());
+      hessian.makeCompressed();
+    }
     const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
     const auto hessianCols = static_cast<std::size_t>(hessian.cols());
     using SparseStorageIndex = Eigen::SparseMatrix<double>::StorageIndex;
@@ -8016,6 +8083,28 @@ bool computeProjectedNewtonDirection(
     // The cached direct-solver symbolic pattern was not refreshed this step, so
     // invalidate it: a later step that drops back to the direct path must
     // re-analyze rather than trust a stale ordering.
+    solverCache.newtonPatternValid = false;
+  } else if (solveDenseDirect) {
+    auto& denseHessian = solverCache.projectedNewtonDenseHessian;
+    denseHessian.resize(dim, dim);
+    denseHessian.setZero();
+    for (const auto& triplet : triplets) {
+      denseHessian(triplet.row(), triplet.col()) += triplet.value();
+    }
+
+    auto& ldlt = solverCache.projectedNewtonDenseLdlt;
+    ldlt.compute(denseHessian);
+    if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
+    solution.resize(dim);
+    solution = rhs;
+    ldlt.solveInPlace(solution);
+    if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
     solverCache.newtonPatternValid = false;
   } else {
     // Reuse the fill-reducing symbolic factorization when the sparsity pattern

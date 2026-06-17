@@ -4206,6 +4206,60 @@ TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
       << "same-shape contact-free derivative evaluation should reuse retained "
          "coordinate, dynamics-term, and inverse-dynamics scratch capacity";
 }
+
+TEST(World, BakedDifferentiableContactFreeStepDoesNotMallocOnHeap)
+{
+  #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+  #endif
+
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("diff_raw_malloc_chain");
+  auto parent = robot.addLink("diff_raw_malloc_base");
+  constexpr std::size_t kJointCount = 32u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.02, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.01));
+    joint.setForce(Eigen::VectorXd::Constant(1, 0.25));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+  for (int i = 0; i < 8; ++i) {
+    world.step();
+  }
+
+  ScopedRawHeapAllocationCounter rawCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  rawCounter.stop();
+
+  EXPECT_EQ(rawCounter.allocationCount(), 0u)
+      << "raw heap (malloc) bytes allocated during baked differentiable "
+         "contact-free steps: "
+      << rawCounter.allocationBytes();
+}
 #endif
 
 TEST(World, VariationalContactPointForceIntoReusesOutputStorage)
@@ -6981,6 +7035,28 @@ TEST(World, BakedScriptedDeformableBoundaryStepsDoNotAllocateAfterPrewarm)
       configureScriptedDeformableBoundaryScene);
 }
 
+TEST(World, BakedScriptedDeformableBoundaryStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "scripted deformable boundary scratch",
+      configureScriptedDeformableBoundaryScene);
+#endif
+}
+
+TEST(World, BakedDeformableFemGroundFrictionBlockStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "deformable FEM ground friction medium direct scratch",
+      configureDeformableFemGroundFrictionBlockScene);
+#endif
+}
+
 TEST(World, BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator)
 {
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -8421,6 +8497,80 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC kinematic turntable contact",
       configureRigidIpcKinematicTurntableScene);
+}
+
+TEST(World, BakedActiveRigidIpcBarrierStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "active rigid IPC barrier", configureActiveRigidIpcMeshBarrierScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcFixedJointStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC fixed-joint equality rows",
+      configureRigidIpcFixedJointConstraintScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcRevoluteJointStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC revolute-joint equality rows",
+      configureRigidIpcRevoluteJointConstraintScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcTwoBoxStackStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcDeformableSurfaceObstacleStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC deformable surface obstacle",
+      configureRigidIpcDeformableSurfaceObstacleScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcKinematicConveyorStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC kinematic conveyor", configureRigidIpcKinematicConveyorScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcKinematicTurntableStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringBakedSteps(
+      "rigid IPC kinematic turntable",
+      configureRigidIpcKinematicTurntableScene);
+#endif
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

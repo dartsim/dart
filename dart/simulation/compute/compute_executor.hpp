@@ -35,7 +35,8 @@
 #include <dart/simulation/compute/execution_profile.hpp>
 #include <dart/simulation/export.hpp>
 
-#include <functional>
+#include <memory>
+#include <type_traits>
 
 #include <cstddef>
 
@@ -62,8 +63,42 @@ class ComputeGraph;
 class DART_SIMULATION_API ComputeExecutor
 {
 public:
-  using ParallelForRange
-      = std::function<void(std::size_t begin, std::size_t end)>;
+  /// Non-owning callback reference for parallel range bodies.
+  ///
+  /// `parallelFor()` is a synchronous call, so storing a stack reference to the
+  /// caller's lambda is enough and avoids the warm-step heap allocation that a
+  /// large `std::function` target can trigger.
+  class ParallelForRange
+  {
+  public:
+    ParallelForRange() = default;
+
+    template <
+        typename Function,
+        typename = std::enable_if_t<
+            !std::is_same_v<std::remove_cvref_t<Function>, ParallelForRange>>>
+    ParallelForRange(Function&& function) noexcept
+      : m_context(
+            const_cast<void*>(
+                static_cast<const void*>(std::addressof(function)))),
+        m_call([](void* context, std::size_t begin, std::size_t end) {
+          using Callable = std::remove_reference_t<Function>;
+          (*static_cast<Callable*>(context))(begin, end);
+        })
+    {
+    }
+
+    void operator()(std::size_t begin, std::size_t end) const
+    {
+      m_call(m_context, begin, end);
+    }
+
+  private:
+    using Call = void (*)(void*, std::size_t, std::size_t);
+
+    void* m_context = nullptr;
+    Call m_call = nullptr;
+  };
 
   virtual ~ComputeExecutor() = default;
 
