@@ -202,14 +202,13 @@ struct DeformableMaterial
   bool useAdaptiveBarrierStiffness = false;
   // Opt in to the iterative (conjugate-gradient) projected-Newton linear solve
   // for this body. The CG solve never factorizes, so its memory stays near
-  // O(nnz) and it scales to large meshes; off by default uses the sparse
-  // Cholesky direct solve (faster for small/medium meshes). Large meshes above
-  // the direct-solve node cap always use CG regardless of this flag.
+  // O(nnz) and it scales to large meshes. Off by default uses retained dense
+  // direct scratch below the dense cap and CG above it.
   bool useIterativeLinearSolver = false;
   // Opt in to the matrix-free CG path. This implies an iterative solve but
   // bypasses sparse Hessian assembly, using block Hessian-vector products and a
-  // block-Jacobi preconditioner. Off by default keeps the existing sparse
-  // Cholesky / sparse IC-CG behavior unchanged.
+  // block-Jacobi preconditioner. Off by default keeps the assembled sparse CG
+  // path for above-cap systems.
   bool useMatrixFreeLinearSolver = false;
 };
 

@@ -2089,6 +2089,15 @@ using ProjectedNewtonFrictionContactVector = std::vector<
 constexpr Eigen::Index kProjectedNewtonDenseDirectDofCap = 128;
 
 //==============================================================================
+bool usesProjectedNewtonSparseIterativePath(
+    Eigen::Index dim, const comps::DeformableMaterial& material)
+{
+  return dim > 0 && !material.useMatrixFreeLinearSolver
+         && (material.useIterativeLinearSolver
+             || dim > kProjectedNewtonDenseDirectDofCap);
+}
+
+//==============================================================================
 struct DeformableContactSolverScratch
 {
   using SurfaceTriangleVector = std::vector<
@@ -2171,15 +2180,12 @@ struct DeformableContactSolverScratch
   SweepItemVector interBodyObstacleEdgeItems;
   SweepLinkVector interBodySweepLinks;
 
-  // Persistent projected-Newton sparse Hessian storage and Cholesky symbolic
-  // state. The cached column/row index arrays describe the assembled Hessian
-  // pattern; the factorization flag is separate because iterative-CG rows reuse
-  // the sparse matrix storage without analyzing a Cholesky pattern.
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> newtonSolver;
+  // Persistent projected-Newton sparse Hessian storage. The cached column/row
+  // index arrays describe the assembled Hessian pattern so sparse iterative
+  // rows can refill values after bake without rebuilding Eigen storage.
   ProjectedNewtonIntVector newtonPatternOuter;
   ProjectedNewtonIntVector newtonPatternInner;
   bool hessianPatternValid = false;
-  bool newtonFactorizationPatternValid = false;
 
   // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
   // volume). The rest configuration never changes, so these are computed once
@@ -2283,14 +2289,12 @@ void cacheProjectedNewtonHessianPattern(DeformableContactSolverScratch& scratch)
   const int* inner = hessian.innerIndexPtr();
   if (outer == nullptr || inner == nullptr || cols < 0 || nnz < 0) {
     scratch.hessianPatternValid = false;
-    scratch.newtonFactorizationPatternValid = false;
     return;
   }
 
   scratch.newtonPatternOuter.assign(outer, outer + cols + 1);
   scratch.newtonPatternInner.assign(inner, inner + nnz);
   scratch.hessianPatternValid = true;
-  scratch.newtonFactorizationPatternValid = false;
 }
 
 //==============================================================================
@@ -6157,8 +6161,9 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonMatrixFreeHessianDirection.resize(dim);
   scratch.projectedNewtonIterativeInverseDiagonal.resize(dim);
 
-  if (material == nullptr || !material->useIterativeLinearSolver
-      || material->useMatrixFreeLinearSolver || nodeCount == 0u) {
+  if (material == nullptr
+      || !usesProjectedNewtonSparseIterativePath(dim, *material)
+      || nodeCount == 0u) {
     return;
   }
 
@@ -7523,14 +7528,15 @@ void runVbdDeformableSolve(
 }
 
 //==============================================================================
-// Assemble the sparse per-step Hessian (inertia + spring + self-contact barrier
-// + static ground barrier) with per-element PSD projection and solve
-// H d = -gradient for the projected-Newton search direction via a sparse
-// Cholesky (LDL^T) factorization. Returns false so the caller falls back to
-// mass-scaled steepest descent when the body is too large for the solve or the
-// factorization is not positive definite. The per-element barrier/spring
-// eigen-decompositions and the triplet assembly are data-parallel GPU
-// candidates.
+// Assemble the projected-Newton Hessian (inertia + spring + self-contact
+// barrier + static ground barrier) with per-element PSD projection and solve
+// H d = -gradient for the search direction. Built-in DART 7 World steps use
+// retained dense LDLT scratch below the dense cap and sparse CG above it; Eigen
+// sparse direct factorization is intentionally kept out of the simulation loop
+// because its numeric storage uses malloc-family allocation. Returns false so
+// the caller falls back to mass-scaled steepest descent when the linear solve
+// does not produce a finite descent candidate. The per-element barrier/spring
+// eigen-decompositions and sparse assembly are data-parallel GPU candidates.
 bool computeProjectedNewtonDirection(
     const comps::DeformableNodeModel& nodeModel,
     const comps::DeformableSpringModel& model,
@@ -7554,27 +7560,22 @@ bool computeProjectedNewtonDirection(
     bool useMatrixFreeSolver = false)
 {
   const std::size_t nodeCount = positions.size();
-  // The sparse direct (Cholesky) solve is fastest for small/medium meshes but
-  // its fill-in grows super-linearly, so it is capped. Above the direct cap (or
-  // when iterative solving is opted in) a sparse IC-CG solve is used instead.
+  // The retained dense direct solve is used only below the DART-owned dense
+  // scratch cap. Above that cap, the default path is sparse CG over retained
+  // sparse Hessian storage so the first post-bake step remains allocation-free.
   // The explicit matrix-free opt-in goes one step further and bypasses sparse
   // Hessian assembly, using local block Hessian-vector products. The hard cap
   // is a runaway bound only.
-  constexpr std::size_t kMaxDirectNodes = 20000;
   constexpr std::size_t kMaxIterativeNodes = 1000000;
   if (nodeCount == 0 || nodeCount > kMaxIterativeNodes) {
     return false;
   }
-  const bool solveIteratively = useIterativeSolver || useMatrixFreeSolver
-                                || nodeCount > kMaxDirectNodes;
-  const bool solveMatrixFree = useMatrixFreeSolver;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
-  // Keep medium direct systems on retained dense LDLT scratch. Eigen's sparse
-  // direct factorizer owns malloc-backed numeric storage, so it is reserved for
-  // larger systems where dense factorization is not appropriate.
-  const bool solveDenseDirect
-      = !solveIteratively && dim <= kProjectedNewtonDenseDirectDofCap;
+  const bool solveMatrixFree = useMatrixFreeSolver;
+  const bool solveDenseDirect = !solveMatrixFree && !useIterativeSolver
+                                && dim <= kProjectedNewtonDenseDirectDofCap;
+  const bool solveIteratively = !solveMatrixFree && !solveDenseDirect;
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
   // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
@@ -8107,7 +8108,6 @@ bool computeProjectedNewtonDirection(
             cgError)
         || !solution.allFinite()) {
       solverCache.hessianPatternValid = false;
-      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
@@ -8118,7 +8118,6 @@ bool computeProjectedNewtonDirection(
           = std::max(stats.projectedNewtonIterativeMaxError, cgError);
     }
     solverCache.hessianPatternValid = false;
-    solverCache.newtonFactorizationPatternValid = false;
   } else if (solveIteratively) {
     // Iterative sparse path: use a Jacobi-preconditioned CG loop over the
     // assembled Hessian while reusing the projected-Newton scratch vectors.
@@ -8139,7 +8138,6 @@ bool computeProjectedNewtonDirection(
             cgIterations,
             cgError)
         || !solution.allFinite()) {
-      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
@@ -8148,10 +8146,6 @@ bool computeProjectedNewtonDirection(
       stats.projectedNewtonIterativeMaxError
           = std::max(stats.projectedNewtonIterativeMaxError, cgError);
     }
-    // The cached direct-solver symbolic pattern was not refreshed this step, so
-    // invalidate only that state. Keep the sparse Hessian storage pattern for
-    // the next iterative step.
-    solverCache.newtonFactorizationPatternValid = false;
   } else if (solveDenseDirect) {
     auto& denseHessian = solverCache.projectedNewtonDenseHessian;
     denseHessian.resize(dim, dim);
@@ -8164,7 +8158,6 @@ bool computeProjectedNewtonDirection(
     ldlt.compute(denseHessian);
     if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
       solverCache.hessianPatternValid = false;
-      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     solution.resize(dim);
@@ -8172,75 +8165,9 @@ bool computeProjectedNewtonDirection(
     ldlt.solveInPlace(solution);
     if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
       solverCache.hessianPatternValid = false;
-      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     solverCache.hessianPatternValid = false;
-    solverCache.newtonFactorizationPatternValid = false;
-  } else {
-    // Reuse the fill-reducing symbolic factorization when the sparsity pattern
-    // is unchanged from the last analyzed matrix (same column/row index
-    // arrays); the expensive ordering then runs once and only the numeric
-    // factorization repeats. This is behavior-preserving (analyzePattern +
-    // factorize gives the same result as compute()); any structural mismatch
-    // re-analyzes, so it is safe by construction.
-    auto& ldlt = solverCache.newtonSolver;
-    const auto cols = hessian.cols();
-    const auto nnz = hessian.nonZeros();
-    const int* outer = hessian.outerIndexPtr();
-    const int* inner = hessian.innerIndexPtr();
-    bool patternMatches
-        = solverCache.newtonFactorizationPatternValid
-          && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
-                 == cols + 1
-          && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
-                 == nnz;
-    if (patternMatches) {
-      for (Eigen::Index i = 0; i <= cols && patternMatches; ++i) {
-        patternMatches = solverCache.newtonPatternOuter[i] == outer[i];
-      }
-      for (Eigen::Index i = 0; i < nnz && patternMatches; ++i) {
-        patternMatches = solverCache.newtonPatternInner[i] == inner[i];
-      }
-    }
-
-    if (patternMatches) {
-      ldlt.factorize(hessian);
-      ++stats.projectedNewtonNumericFactorizations;
-    } else {
-      ldlt.analyzePattern(hessian);
-      ldlt.factorize(hessian);
-      solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
-      solverCache.newtonPatternInner.assign(inner, inner + nnz);
-      solverCache.hessianPatternValid = true;
-      solverCache.newtonFactorizationPatternValid = true;
-      ++stats.projectedNewtonSymbolicFactorizations;
-      ++stats.projectedNewtonNumericFactorizations;
-    }
-
-    // The inertia term (m/dt^2 on every free DOF, with positive node masses
-    // enforced at construction) keeps the Hessian positive definite once the
-    // spring/barrier blocks are PSD-projected, so no diagonal regularization is
-    // needed (it would perturb the otherwise-exact solve). SimplicialLDLT's
-    // info() only flags a structural failure / exact-zero pivot, so the
-    // strictly-positive-D check is the actual positive-definiteness test (a
-    // negative pivot would otherwise factorize silently). This has the same
-    // intent as the dense LDLT isPositive() guard the rest of the module uses;
-    // the two verdicts can only differ for near-singular matrices, which the
-    // m/dt^2 inertia floor precludes here. Either failure falls back to
-    // steepest descent below.
-    if (ldlt.info() != Eigen::Success
-        || (ldlt.vectorD().array() <= 0.0).any()) {
-      // Force a fresh analysis next time after a failed/indefinite
-      // factorization.
-      solverCache.newtonFactorizationPatternValid = false;
-      return false;
-    }
-    solution = ldlt.solve(rhs);
-    if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
-      solverCache.newtonFactorizationPatternValid = false;
-      return false;
-    }
   }
 
   direction.resize(nodeCount);
@@ -8320,9 +8247,9 @@ void advanceDeformableBody(
   }
 
   // Opt this body into the iterative (conjugate-gradient) Newton linear solve.
-  // Large meshes above the direct-solve node cap always take the iterative path
-  // regardless of this flag; the flag forces it for any size so callers can
-  // trade direct-solve speed for the factorization-free memory profile.
+  // Systems above the retained dense-direct cap take the iterative path by
+  // default; the flag forces it for any size so callers can trade direct-solve
+  // speed for the factorization-free memory profile.
   const bool useIterativeSolver = material.useIterativeLinearSolver;
   const bool useMatrixFreeSolver = material.useMatrixFreeLinearSolver;
 

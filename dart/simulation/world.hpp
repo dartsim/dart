@@ -142,11 +142,11 @@ struct DeformableSolverDiagnostics
   std::size_t projectedNewtonHessianNonZeros = 0;
   std::size_t projectedNewtonHessianStorageBytes = 0;
   /// Newton iterations whose linear solve took the iterative
-  /// (incomplete-Cholesky preconditioned conjugate-gradient) path instead of a
-  /// direct factorization -- either because the mesh exceeds the direct-solve
-  /// node cap or because the body opted in via
+  /// conjugate-gradient path instead of a direct factorization -- either
+  /// because the system exceeds the retained dense-direct cap or because the
+  /// body opted in via
   /// ``DeformableMaterialProperties.useIterativeLinearSolver``. Zero means
-  /// every solve used the direct factorization.
+  /// every solve used retained dense direct scratch.
   std::size_t projectedNewtonIterativeSolves = 0;
   /// Iterative solves that used matrix-free Hessian-vector products instead of
   /// an assembled sparse Hessian. This is a subset of

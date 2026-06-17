@@ -50,9 +50,9 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Keep closing rows through the PLAN-122 coverage matrix. Current
-  progress is 12/18 rows closed; `D-004` is the remaining
-  implementation-capacity row and needs a solver-direction decision for
-  sparse-direct raw malloc, while `M-004`, `F-002`, `L-001`, and `G-001` are
+  progress is 13/18 rows closed; there are no remaining
+  implementation-capacity rows for currently selectable DART 7 CPU
+  `World::step()` paths. `M-004`, `F-002`, `L-001`, and `G-001` are
   promotion-gated by their owner plans before they can become final allocation
   claims. Classic DART 6 step paths are excluded unless they are being migrated
   into the DART 7 `World` pipeline.

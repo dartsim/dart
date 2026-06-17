@@ -1962,6 +1962,31 @@ void configureDeformableIterativeFemGroundFrictionBlockScene(
       true);
 }
 
+void configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("default_sparse_fem_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  addDeformableFemGroundFrictionBlock(
+      world,
+      "default_sparse_iterative_fem_ground_friction_block",
+      Eigen::Vector3d::Zero(),
+      3,
+      false,
+      false);
+}
+
 void configureMixedDefaultDeformableFemProductionStorageScene(
     dart::simulation::World& world)
 {
@@ -7435,6 +7460,31 @@ TEST(World, BakedDeformableFemGroundFrictionBlockStepsDoNotMallocOnHeap)
 #endif
 }
 
+TEST(World, BakedDeformableSparseIterativeStepsDoNotGrowWorldBaseAllocator)
+{
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "default sparse iterative FEM ground friction block",
+      configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene);
+}
+
+TEST(World, BakedDeformableSparseIterativeStepsDoNotAllocateGlobalHeap)
+{
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "default sparse iterative FEM ground friction block",
+      configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene);
+}
+
+TEST(World, BakedDeformableSparseIterativeStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "default sparse iterative FEM ground friction block",
+      configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene);
+#endif
+}
+
 TEST(World, BakedBasicDeformableRowsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
@@ -7937,6 +7987,36 @@ TEST(World, DeformableIterativeFemGroundFrictionBlockIsActive)
   const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
   EXPECT_EQ(diagnostics.bodyCount, 1u);
   EXPECT_EQ(diagnostics.nodeCount, 27u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_GT(iterativeSolves, 0u);
+  EXPECT_GT(iterativeIterations, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableDefaultSparseIterativeFemGroundFrictionBlockIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene(world);
+  world.enterSimulationMode();
+
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t iterativeSolves = 0;
+  std::size_t iterativeIterations = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    iterativeSolves += diagnostics.projectedNewtonIterativeSolves;
+    iterativeIterations += diagnostics.projectedNewtonIterativeIterations;
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 64u);
   EXPECT_GT(projectedNewtonSteps, 0u);
   EXPECT_GT(iterativeSolves, 0u);
   EXPECT_GT(iterativeIterations, 0u);

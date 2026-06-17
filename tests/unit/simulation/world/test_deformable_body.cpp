@@ -986,12 +986,11 @@ TEST(DeformableBody, SparseInertiaAssemblyOmitsExplicitZeroEntries)
 
 //==============================================================================
 // The public solver diagnostics expose which linear-solve path each Newton
-// iteration took: the default direct solve never reports an iterative solve,
-// while a body opting in to the iterative
-// (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero solve count,
-// CG iteration count, and finite residual estimate. These are the public-API
-// mirrors of the internal iterative-solver stats, so Python callers can observe
-// and tune the solver path.
+// iteration took: the default small direct solve never reports an iterative
+// solve, while a body opting in to the iterative CG solve surfaces a nonzero
+// solve count, CG iteration count, and finite residual estimate. These are the
+// public-API mirrors of the internal iterative-solver stats, so Python callers
+// can observe and tune the solver path.
 TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
 {
   struct IterativeDiagnostics
@@ -3694,11 +3693,10 @@ TEST(DeformableBody, ProjectedNewtonSolvesSpringStepInFewIterations)
 }
 
 //==============================================================================
-// Sparse projected Newton scales past the former dense 256-node cap: a 300-node
-// spring chain (well beyond the old limit) is solved on the Newton path. The
-// previous dense solver returned false for any body over 256 nodes, so this
-// whole body would have fallen back to steepest descent for every iteration;
-// the sparse Cholesky assembly now keeps it on the Newton path.
+// Sparse projected Newton scales past the retained dense-direct cap: a 300-node
+// spring chain is solved on the Newton path. Above the dense cap the default
+// path is sparse CG, so DART avoids Eigen sparse-direct factorization inside
+// the baked simulation loop.
 TEST(DeformableBody, SparseProjectedNewtonScalesBeyondDenseCap)
 {
   sx::World world;
@@ -3734,6 +3732,8 @@ TEST(DeformableBody, SparseProjectedNewtonScalesBeyondDenseCap)
   // solver would have reported projectedNewtonSteps == 0 (all fallback).
   EXPECT_GT(stats.projectedNewtonSteps, 0u);
   EXPECT_GT(stats.projectedNewtonSteps, stats.projectedNewtonFallbacks);
+  EXPECT_GT(stats.projectedNewtonIterativeSolves, 0u);
+  EXPECT_EQ(stats.projectedNewtonNumericFactorizations, 0u);
 
   // The solve stays finite, keeps the anchor pinned, and lets gravity sag the
   // free end downward.
@@ -3746,9 +3746,10 @@ TEST(DeformableBody, SparseProjectedNewtonScalesBeyondDenseCap)
 
 //==============================================================================
 // Sparse projected Newton scales past the dense cap WITH active contact: a
-// 320-node grid (> the former 256-node cap) pressed onto a static ground
-// barrier is solved on the Newton path, so the sparse assembly's ground-barrier
-// Hessian scatter runs above the old cap. The barrier holds it non-penetrating.
+// 320-node grid pressed onto a static ground barrier is solved on the Newton
+// path, so the sparse assembly's ground-barrier Hessian scatter runs above the
+// dense cap without sparse-direct factorization. The barrier holds it
+// non-penetrating.
 TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
 {
   sx::World world;
@@ -3816,6 +3817,8 @@ TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
   // barrier configured, so the sparse assembly's ground-barrier Hessian scatter
   // runs above the former dense cap.
   EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonIterativeSolves, 0u);
+  EXPECT_EQ(stats.projectedNewtonNumericFactorizations, 0u);
   EXPECT_EQ(stats.staticGroundBarrierCount, 1u);
 
   // Gravity presses the grid onto the barrier, which holds every node above the
@@ -4029,12 +4032,10 @@ TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
 }
 
 //==============================================================================
-// A fixed-topology spring body (no contact) has an unchanging Hessian sparsity
-// pattern, so the projected-Newton solve reuses its fill-reducing symbolic
-// factorization: the first step analyzes the pattern, and a later step performs
-// numeric factorizations with zero new symbolic analyses. Behavior is
-// unchanged -- this only asserts the analysis is amortized.
-TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
+// A default fixed-topology body above the retained dense-direct cap uses sparse
+// CG instead of Eigen sparse-direct factorization. This is the allocation-safe
+// default path for medium/large built-in World steps.
+TEST(DeformableBody, ProjectedNewtonAboveDenseCapUsesIterativeSolverByDefault)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -4060,15 +4061,16 @@ TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(stage);
 
-  world.step(executor, pipeline); // first step analyzes the sparsity pattern
-  EXPECT_GE(stage.getLastStats().projectedNewtonSymbolicFactorizations, 1u);
-
-  world.step(executor, pipeline); // pattern unchanged -> symbolic reused
+  world.step(executor, pipeline);
   const auto& stats = stage.getLastStats();
-  EXPECT_GT(stats.projectedNewtonNumericFactorizations, 0u);
+  EXPECT_GT(stats.projectedNewtonSteps, 0u);
+  EXPECT_GT(stats.projectedNewtonIterativeSolves, 0u);
+  EXPECT_GT(stats.projectedNewtonIterativeIterations, 0u);
+  EXPECT_EQ(stats.projectedNewtonNumericFactorizations, 0u);
   EXPECT_EQ(stats.projectedNewtonSymbolicFactorizations, 0u);
+  EXPECT_GT(stats.projectedNewtonHessianNonZeros, 0u);
 
-  // The reused factorization still produces a finite, sane solve.
+  // The allocation-safe default sparse path still produces a finite solve.
   EXPECT_TRUE(body.getPosition(kNodeCount - 1).allFinite());
 }
 
@@ -4213,7 +4215,7 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesDefaultDirectSolve)
 
 //==============================================================================
 // Ground contact adds a stiff barrier block to the projected-Newton Hessian.
-// This compares the small retained-dense direct path, sparse IC-CG, and
+// This compares the small retained-dense direct path, assembled sparse CG, and
 // matrix-free CG on the same contacting FEM cube. The matrix-free path must
 // stay on Hessian-vector products while reaching the same contact equilibrium
 // as the assembled and dense direct solvers.
@@ -4317,16 +4319,11 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSolversOnGroundContact)
 }
 
 //==============================================================================
-// Stiff barrier contact produces an ill-conditioned Hessian; a weak diagonal
-// (Jacobi) CG preconditioner stalls there and forces the iterative solver to
-// fall back to steepest descent. The incomplete-Cholesky preconditioner
-// collapses the CG iteration count so the iterative path carries the solve.
-// This drops a stiff FEM cube onto a ground barrier with the iterative solver
-// and checks it settles intersection-free through the CG path (never
-// factorizing), that accepted CG steps dominate the fallbacks (the
-// preconditioner is strong enough that CG -- not steepest descent -- does the
-// work), and that it reaches the same equilibrium as the direct solver on the
-// identical stiff scene.
+// Stiff barrier contact produces an ill-conditioned Hessian. This drops a stiff
+// FEM cube onto a ground barrier with the iterative solver and checks it
+// settles intersection-free through the CG path (never factorizing), that
+// accepted CG steps dominate the fallbacks, and that it reaches the same
+// equilibrium as the retained dense direct solver on the identical small scene.
 TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
 {
   struct StiffRun
@@ -4352,7 +4349,7 @@ TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
     ground.setDeformableGroundBarrier(true); // top face at z = 0
 
     // A stiffer cube (E = 1e6) than the soft-contact equivalence test, so the
-    // contact Hessian is ill-conditioned enough to exercise the preconditioner.
+    // contact Hessian is ill-conditioned enough to exercise the CG path.
     auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.0e6);
     options.material.useIterativeLinearSolver = iterative;
     auto body = world.addDeformableBody("stiff_cube", options);
@@ -4388,10 +4385,8 @@ TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
   EXPECT_GE(direct.minZ, -1e-3);
   EXPECT_GE(iterative.minZ, -1e-3);
 
-  // The incomplete-Cholesky CG carries the solve on this stiff contact:
-  // accepted CG steps strictly dominate the fallbacks. A diagonal
-  // preconditioner would stall on the ill-conditioned contact Hessian and let
-  // fallbacks pile up.
+  // CG carries the solve on this stiff contact: accepted CG steps strictly
+  // dominate the fallbacks.
   EXPECT_GT(iterative.cgSolves, iterative.fallbacks);
 
   // Same physics: the iterative solver reaches the same stiff-contact
@@ -4405,14 +4400,12 @@ TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
 
 //==============================================================================
 // A chunky 3D FEM cube (solid N^3 cells, wide Hessian bandwidth) is exactly the
-// regime the iterative solver targets: the sparse Cholesky direct solve suffers
-// super-linear 3D fill-in there while the conjugate gradient stays near O(nnz).
+// regime where DART routes the default built-in path to sparse CG: sparse
+// Cholesky direct factorization suffers super-linear 3D fill-in and owns
+// malloc-backed numeric storage, while conjugate gradient stays near O(nnz).
 // This pins such a cube at its x == 0 face, lets it sag under gravity, and
-// confirms the iterative solver reaches the same equilibrium as the direct
-// solve on the wide-bandwidth mesh (the correctness guarantee behind the
-// BM_DeformableCube3d* scaling benchmarks), through the CG path (no
-// factorization).
-TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
+// confirms the default above-cap path matches an explicit iterative request.
+TEST(DeformableBody, DefaultAboveDenseCapMatchesIterativeOnChunky3dMesh)
 {
   constexpr int kCells = 3; // 4^3 = 64 nodes, a solid 3D block
   constexpr double h = 0.1;
@@ -4494,22 +4487,24 @@ TEST(DeformableBody, IterativeSolverMatchesDirectOnChunky3dMesh)
         positions, cgSolves, cgIterations, numericFactorizations);
   };
 
-  const auto [directPos, directCg, directCgIters, directFact] = runCube(false);
+  const auto [defaultPos, defaultCg, defaultCgIters, defaultFact]
+      = runCube(false);
   const auto [iterPos, iterCg, iterCgIters, iterFact] = runCube(true);
 
-  // Mutually exclusive solve paths, as on the smaller meshes.
-  EXPECT_EQ(directCg, 0u);
-  EXPECT_EQ(directCgIters, 0u);
-  EXPECT_GT(directFact, 0u);
+  // Above the retained dense cap, the default and explicit iterative paths both
+  // use CG and never factorize.
+  EXPECT_GT(defaultCg, 0u);
+  EXPECT_GT(defaultCgIters, 0u);
+  EXPECT_EQ(defaultFact, 0u);
   EXPECT_GT(iterCg, 0u);
   EXPECT_GT(iterCgIters, 0u);
   EXPECT_EQ(iterFact, 0u);
 
   // Same sagged equilibrium on the wide-bandwidth 3D mesh.
-  ASSERT_EQ(directPos.size(), iterPos.size());
-  for (std::size_t i = 0; i < directPos.size(); ++i) {
+  ASSERT_EQ(defaultPos.size(), iterPos.size());
+  for (std::size_t i = 0; i < defaultPos.size(); ++i) {
     ASSERT_TRUE(iterPos[i].allFinite());
-    expectVectorNear(iterPos[i], directPos[i], 1e-4);
+    expectVectorNear(iterPos[i], defaultPos[i], 1e-4);
   }
 }
 

@@ -16,16 +16,16 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 12 of 18 matrix rows are closed with first-post-bake
-  evidence. The remaining implementation-capacity row is `D-004` (deformable
-  sparse-direct systems above the retained dense cutoff), which now needs a
-  solver-direction decision because Eigen's sparse numeric factorization owns
-  raw malloc-family storage during measured steps. The remaining promotion-gated
-  rows are `M-004`, `F-002`, `L-001`, and `G-001`; they stay owned by their
-  named plans until the corresponding solver, derivative, loader, or accelerator
-  path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
-  needed for those rows while this plan and its coverage matrix remain the
-  durable owner.
+- Progress snapshot: 13 of 18 matrix rows are closed with first-post-bake
+  evidence. There are no remaining implementation-capacity rows for currently
+  selectable DART 7 CPU `World::step()` paths: `D-004` is closed by routing
+  systems above the retained dense-direct cutoff to the sparse iterative path
+  instead of Eigen sparse-direct numeric factorization. The remaining open rows
+  are promotion-gated rows `M-004`, `F-002`, `L-001`, and `G-001`; they stay
+  owned by their named plans until the corresponding solver, derivative,
+  loader, or accelerator path is promoted into `World::step()`. No new
+  `docs/dev_tasks/` folder is needed for those rows while this plan and its
+  coverage matrix remain the durable owner.
 
 ## Scope
 
@@ -128,7 +128,8 @@ post-bake step.
   `World::step()` have post-bake world-base, global-heap, and raw-malloc gates;
   larger sparse-direct paths either replace Eigen sparse numeric factorization
   with allocation-free retained storage or have a documented bake-time capacity
-  cap that routes them to iterative/matrix-free solves.
+  cap that routes them to iterative/matrix-free solves. `D-004` is closed by
+  the retained dense-direct cap plus default sparse iterative routing above it.
 - Gates: `pixi run lint`, focused `test_world` deformable allocation filters,
   and PLAN-081 focused solver tests.
 - Dependencies: PLAN-081 and `docs/dev_tasks/ipc_deformable_solver/`.
