@@ -7335,6 +7335,133 @@ TEST(World, BakedDeformableFemGroundFrictionBlockStepsDoNotMallocOnHeap)
 #endif
 }
 
+TEST(World, BakedBasicDeformableRowsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  namespace sx = dart::simulation;
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "single deformable particle", [](sx::World& world) {
+        sx::DeformableBodyOptions options;
+        options.positions = {Eigen::Vector3d(0.0, 0.0, 1.0)};
+        options.masses = {1.0};
+        options.edgeStiffness = 0.0;
+        world.addDeformableBody("particle", options);
+        world.setTimeStep(0.01);
+      });
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable spring projected Newton scratch", [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        sx::DeformableBodyOptions options;
+        options.positions
+            = {Eigen::Vector3d::Zero(), Eigen::Vector3d(1.2, 0.0, 0.0)};
+        options.masses = {1.0, 1.0};
+        options.fixedNodes = {0};
+        options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+        options.edgeStiffness = 1000.0;
+        world.addDeformableBody("spring", options);
+        world.setTimeStep(0.01);
+      });
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable FEM projected Newton scratch", [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        sx::DeformableBodyOptions options;
+        options.positions
+            = {Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::UnitX(),
+               Eigen::Vector3d::UnitY(),
+               Eigen::Vector3d::UnitZ()};
+        options.velocities
+            = {Eigen::Vector3d::Zero(),
+               Eigen::Vector3d(5.0, 0.0, 0.0),
+               Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::Zero()};
+        options.masses = {1.0, 1.0, 1.0, 1.0};
+        options.fixedNodes = {0};
+        options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+        options.material.useFiniteElementElasticity = true;
+        options.material.youngsModulus = 1.0e4;
+        world.addDeformableBody("tet", options);
+        world.setTimeStep(0.01);
+      });
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable self-contact projected Newton scratch", [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        world.setTimeStep(0.1);
+        sx::DeformableBodyOptions options;
+        options.positions
+            = {Eigen::Vector3d(0.0, 0.0, 0.0),
+               Eigen::Vector3d(1.0, 0.0, 0.0),
+               Eigen::Vector3d(0.0, 1.0, 0.0),
+               Eigen::Vector3d(0.0, 0.0, 0.015),
+               Eigen::Vector3d(1.0, 0.0, 0.015),
+               Eigen::Vector3d(0.0, 1.0, 0.015)};
+        options.velocities
+            = {Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::Zero(),
+               Eigen::Vector3d(0.0, 0.0, -0.2),
+               Eigen::Vector3d(0.0, 0.0, -0.2),
+               Eigen::Vector3d(0.0, 0.0, -0.2)};
+        options.masses = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+        options.fixedNodes = {0, 1, 2};
+        options.edgeStiffness = 0.0;
+        options.surfaceTriangles
+            = {sx::DeformableSurfaceTriangle{0, 1, 2},
+               sx::DeformableSurfaceTriangle{3, 4, 5}};
+        world.addDeformableBody("facing_triangles", options);
+      });
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable self-contact friction patch",
+      configureDeformableSelfContactFrictionPatchScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable iterative FEM ground friction block",
+      configureDeformableIterativeFemGroundFrictionBlockScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable matrix-free self-contact production grid",
+      configureDeformableSelfContactFrictionLargerMatrixFreeProductionGridScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable static obstacle barriers",
+      configureDeformableStaticObstacleBarrierScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable static obstacle friction matrix-free production patch",
+      configureDeformableStaticObstacleFrictionMatrixFreeProductionScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "small mixed deformable storage paths", [](sx::World& world) {
+        configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+            world,
+            3,
+            4,
+            "small_mixed_direct_grid",
+            0.012,
+            Eigen::Vector3d(0.35, 0.1, -0.08),
+            false,
+            Eigen::Vector3d(-3.0, 0.0, 0.0));
+        configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+            world,
+            4,
+            5,
+            "small_mixed_matrix_free_grid",
+            0.012,
+            Eigen::Vector3d(0.35, 0.1, -0.08),
+            true,
+            Eigen::Vector3d(3.0, 0.0, 0.0));
+      });
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable moving rigid surface CCD crossing",
+      configureDeformableMovingRigidSurfaceCcdCrossingScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable inter-body surface CCD crossing",
+      configureDeformableInterBodySurfaceCcdCrossingScene);
+#endif
+}
+
 TEST(World, BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator)
 {
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(

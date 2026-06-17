@@ -2171,15 +2171,15 @@ struct DeformableContactSolverScratch
   SweepItemVector interBodyObstacleEdgeItems;
   SweepLinkVector interBodySweepLinks;
 
-  // Persistent projected-Newton sparse Cholesky. The fill-reducing symbolic
-  // factorization is reused across iterations and steps whenever the assembled
-  // Hessian sparsity pattern (cached column/row index arrays) is unchanged, so
-  // only the numeric factorization repeats. Behavior-preserving: a structure
-  // mismatch (or a failed factorization) re-runs analyzePattern.
+  // Persistent projected-Newton sparse Hessian storage and Cholesky symbolic
+  // state. The cached column/row index arrays describe the assembled Hessian
+  // pattern; the factorization flag is separate because iterative-CG rows reuse
+  // the sparse matrix storage without analyzing a Cholesky pattern.
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> newtonSolver;
   ProjectedNewtonIntVector newtonPatternOuter;
   ProjectedNewtonIntVector newtonPatternInner;
-  bool newtonPatternValid = false;
+  bool hessianPatternValid = false;
+  bool newtonFactorizationPatternValid = false;
 
   // Cached per-tetrahedron FEM rest shapes (inverse rest edge matrix + rest
   // volume). The rest configuration never changes, so these are computed once
@@ -2221,7 +2221,7 @@ bool tryAssembleProjectedNewtonHessianFromCachedPattern(
   const auto& triplets = scratch.projectedNewtonTriplets;
   const auto& cachedOuter = scratch.newtonPatternOuter;
   const auto& cachedInner = scratch.newtonPatternInner;
-  if (!scratch.newtonPatternValid || hessian.rows() != dim
+  if (!scratch.hessianPatternValid || hessian.rows() != dim
       || hessian.cols() != dim || !hessian.isCompressed()
       || cachedOuter.size() != static_cast<std::size_t>(dim + 1)
       || hessian.nonZeros() != static_cast<Eigen::Index>(cachedInner.size())) {
@@ -2267,6 +2267,30 @@ bool tryAssembleProjectedNewtonHessianFromCachedPattern(
   }
 
   return true;
+}
+
+//==============================================================================
+void cacheProjectedNewtonHessianPattern(DeformableContactSolverScratch& scratch)
+{
+  auto& hessian = scratch.projectedNewtonHessian;
+  if (!hessian.isCompressed()) {
+    hessian.makeCompressed();
+  }
+
+  const auto cols = hessian.cols();
+  const auto nnz = hessian.nonZeros();
+  const int* outer = hessian.outerIndexPtr();
+  const int* inner = hessian.innerIndexPtr();
+  if (outer == nullptr || inner == nullptr || cols < 0 || nnz < 0) {
+    scratch.hessianPatternValid = false;
+    scratch.newtonFactorizationPatternValid = false;
+    return;
+  }
+
+  scratch.newtonPatternOuter.assign(outer, outer + cols + 1);
+  scratch.newtonPatternInner.assign(inner, inner + nnz);
+  scratch.hessianPatternValid = true;
+  scratch.newtonFactorizationPatternValid = false;
 }
 
 //==============================================================================
@@ -6084,6 +6108,7 @@ void reserveProjectedNewtonScratch(
     std::size_t nodeCount,
     const comps::DeformableSpringModel& model,
     const comps::DeformableMeshTopology& topology,
+    const comps::DeformableMaterial* material,
     DeformableContactSolverScratch& scratch)
 {
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
@@ -6131,6 +6156,74 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonMatrixFreeDirection.resize(dim);
   scratch.projectedNewtonMatrixFreeHessianDirection.resize(dim);
   scratch.projectedNewtonIterativeInverseDiagonal.resize(dim);
+
+  if (material == nullptr || !material->useIterativeLinearSolver
+      || material->useMatrixFreeLinearSolver || nodeCount == 0u) {
+    return;
+  }
+
+  auto& triplets = scratch.projectedNewtonTriplets;
+  triplets.clear();
+  const auto addNodeBlockPattern = [&](std::span<const std::size_t> nodes) {
+    for (const std::size_t rowNode : nodes) {
+      if (rowNode >= nodeCount) {
+        continue;
+      }
+      for (const std::size_t colNode : nodes) {
+        if (colNode >= nodeCount) {
+          continue;
+        }
+        for (int r = 0; r < 3; ++r) {
+          for (int c = 0; c < 3; ++c) {
+            const Eigen::Index row = static_cast<Eigen::Index>(3 * rowNode + r);
+            const Eigen::Index col = static_cast<Eigen::Index>(3 * colNode + c);
+            triplets.emplace_back(row, col, row == col ? 1.0 : 0.0);
+          }
+        }
+      }
+    }
+  };
+
+  for (std::size_t node = 0; node < nodeCount; ++node) {
+    const std::array<std::size_t, 1> nodes = {node};
+    addNodeBlockPattern(nodes);
+  }
+  for (const auto& edge : model.edges) {
+    const std::array<std::size_t, 2> nodes = {edge.nodeA, edge.nodeB};
+    addNodeBlockPattern(nodes);
+  }
+  for (const auto& tet : topology.tetrahedra) {
+    const std::array<std::size_t, 4> nodes
+        = {tet.nodeA, tet.nodeB, tet.nodeC, tet.nodeD};
+    addNodeBlockPattern(nodes);
+  }
+  for (const auto& candidate :
+       scratch.barrierCandidates.pointTriangleCandidates) {
+    if (candidate.triangle >= topology.surfaceTriangles.size()) {
+      continue;
+    }
+    const auto& triangle = topology.surfaceTriangles[candidate.triangle];
+    const std::array<std::size_t, 4> nodes
+        = {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    addNodeBlockPattern(nodes);
+  }
+  for (const auto& candidate : scratch.barrierCandidates.edgeEdgeCandidates) {
+    if (candidate.edgeA >= scratch.barrierCandidates.surfaceEdges.size()
+        || candidate.edgeB >= scratch.barrierCandidates.surfaceEdges.size()) {
+      continue;
+    }
+    const auto& edgeA = scratch.barrierCandidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = scratch.barrierCandidates.surfaceEdges[candidate.edgeB];
+    const std::array<std::size_t, 4> nodes
+        = {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB};
+    addNodeBlockPattern(nodes);
+  }
+
+  scratch.projectedNewtonHessian.resize(dim, dim);
+  scratch.projectedNewtonHessian.setFromTriplets(
+      triplets.begin(), triplets.end());
+  scratch.projectedNewtonHessian.makeCompressed();
+  cacheProjectedNewtonHessianPattern(scratch);
 }
 
 //==============================================================================
@@ -7976,6 +8069,7 @@ bool computeProjectedNewtonDirection(
       hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
       hessian.setFromTriplets(triplets.begin(), triplets.end());
       hessian.makeCompressed();
+      cacheProjectedNewtonHessianPattern(solverCache);
     }
     const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
     const auto hessianCols = static_cast<std::size_t>(hessian.cols());
@@ -8004,7 +8098,8 @@ bool computeProjectedNewtonDirection(
             cgIterations,
             cgError)
         || !solution.allFinite()) {
-      solverCache.newtonPatternValid = false;
+      solverCache.hessianPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
@@ -8014,7 +8109,8 @@ bool computeProjectedNewtonDirection(
       stats.projectedNewtonIterativeMaxError
           = std::max(stats.projectedNewtonIterativeMaxError, cgError);
     }
-    solverCache.newtonPatternValid = false;
+    solverCache.hessianPatternValid = false;
+    solverCache.newtonFactorizationPatternValid = false;
   } else if (solveIteratively) {
     // Iterative sparse path: use a Jacobi-preconditioned CG loop over the
     // assembled Hessian while reusing the projected-Newton scratch vectors.
@@ -8035,7 +8131,7 @@ bool computeProjectedNewtonDirection(
             cgIterations,
             cgError)
         || !solution.allFinite()) {
-      solverCache.newtonPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
@@ -8045,9 +8141,9 @@ bool computeProjectedNewtonDirection(
           = std::max(stats.projectedNewtonIterativeMaxError, cgError);
     }
     // The cached direct-solver symbolic pattern was not refreshed this step, so
-    // invalidate it: a later step that drops back to the direct path must
-    // re-analyze rather than trust a stale ordering.
-    solverCache.newtonPatternValid = false;
+    // invalidate only that state. Keep the sparse Hessian storage pattern for
+    // the next iterative step.
+    solverCache.newtonFactorizationPatternValid = false;
   } else if (solveDenseDirect) {
     auto& denseHessian = solverCache.projectedNewtonDenseHessian;
     denseHessian.resize(dim, dim);
@@ -8059,17 +8155,20 @@ bool computeProjectedNewtonDirection(
     auto& ldlt = solverCache.projectedNewtonDenseLdlt;
     ldlt.compute(denseHessian);
     if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
-      solverCache.newtonPatternValid = false;
+      solverCache.hessianPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     solution.resize(dim);
     solution = rhs;
     ldlt.solveInPlace(solution);
     if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
-      solverCache.newtonPatternValid = false;
+      solverCache.hessianPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
-    solverCache.newtonPatternValid = false;
+    solverCache.hessianPatternValid = false;
+    solverCache.newtonFactorizationPatternValid = false;
   } else {
     // Reuse the fill-reducing symbolic factorization when the sparsity pattern
     // is unchanged from the last analyzed matrix (same column/row index
@@ -8083,7 +8182,7 @@ bool computeProjectedNewtonDirection(
     const int* outer = hessian.outerIndexPtr();
     const int* inner = hessian.innerIndexPtr();
     bool patternMatches
-        = solverCache.newtonPatternValid
+        = solverCache.newtonFactorizationPatternValid
           && static_cast<Eigen::Index>(solverCache.newtonPatternOuter.size())
                  == cols + 1
           && static_cast<Eigen::Index>(solverCache.newtonPatternInner.size())
@@ -8105,7 +8204,8 @@ bool computeProjectedNewtonDirection(
       ldlt.factorize(hessian);
       solverCache.newtonPatternOuter.assign(outer, outer + cols + 1);
       solverCache.newtonPatternInner.assign(inner, inner + nnz);
-      solverCache.newtonPatternValid = true;
+      solverCache.hessianPatternValid = true;
+      solverCache.newtonFactorizationPatternValid = true;
       ++stats.projectedNewtonSymbolicFactorizations;
       ++stats.projectedNewtonNumericFactorizations;
     }
@@ -8125,12 +8225,12 @@ bool computeProjectedNewtonDirection(
         || (ldlt.vectorD().array() <= 0.0).any()) {
       // Force a fresh analysis next time after a failed/indefinite
       // factorization.
-      solverCache.newtonPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
     solution = ldlt.solve(rhs);
     if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
-      solverCache.newtonPatternValid = false;
+      solverCache.newtonFactorizationPatternValid = false;
       return false;
     }
   }
@@ -12161,13 +12261,13 @@ void DeformableDynamicsStage::prepare(World& world)
         contactScratch);
     primeSurfaceContactCandidateScratch(state, contactScratch);
     reserveDeformableFrictionScratch(state.positions.size(), contactScratch);
+    const auto* material = registry.try_get<comps::DeformableMaterial>(entity);
     if (const auto* model
         = registry.try_get<comps::DeformableSpringModel>(entity)) {
       reserveProjectedNewtonScratch(
-          state.positions.size(), *model, topology, contactScratch);
+          state.positions.size(), *model, topology, material, contactScratch);
     }
-    if (const auto* material
-        = registry.try_get<comps::DeformableMaterial>(entity)) {
+    if (material != nullptr) {
       syncFemRestShapeScratch(
           state.positions.size(), topology, *material, contactScratch);
     }
