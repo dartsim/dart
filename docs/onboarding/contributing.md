@@ -56,16 +56,21 @@ git checkout -b feature/my-awesome-feature
 
 ### Bug Fix Workflow (Two PRs Required)
 
-**Bug fixes must be applied to both `release-6.17` AND `main` branches** to ensure fixes are available in both DART 6 and DART 7.
+**Bug fixes must be applied to both the active DART 6 LTS branch AND `main`**
+to ensure fixes are available in both DART 6 and DART 7. Use the highest
+maintained `release-6.*` branch advertised by the upstream remote; this checkout
+currently sees `release-6.19`.
 
 1. **Fix on release branch first**:
 
    ```bash
-   git checkout release-6.17
-   git pull upstream release-6.17
-   git checkout -b fix/issue-XXXX-description-6.17
+   git fetch upstream 'refs/heads/release-6*:refs/remotes/upstream/release-6*'
+   DART6_LTS_BRANCH=$(git branch -r --list 'upstream/release-6.*' | sed 's|.*/||' | sort -V | tail -1)
+   git checkout "$DART6_LTS_BRANCH"
+   git pull upstream "$DART6_LTS_BRANCH"
+   git checkout -b "fix/issue-XXXX-description-${DART6_LTS_BRANCH#release-}"
    # Make your fix, commit, and push
-   # Create PR targeting release-6.17 with title: "Fix: description (DART 6.17)"
+   # Create PR targeting $DART6_LTS_BRANCH with title: "Fix: description (DART 6 LTS)"
    ```
 
 2. **Cherry-pick to main** (or reapply if conflicts):
@@ -77,7 +82,8 @@ git checkout -b feature/my-awesome-feature
    # Push and create PR targeting main with title: "Fix: description (DART 7)"
    ```
 
-**PR Title Convention**: Use version numbers ("DART 6.17", "DART 7") rather than branch names for clarity.
+**PR Title Convention**: Use version numbers or release-line labels ("DART 6
+LTS", "DART 7") rather than raw branch names for clarity.
 
 ### 3. Make Your Changes
 
@@ -85,6 +91,8 @@ git checkout -b feature/my-awesome-feature
 - Keep legacy files in `dart/` and `python/dartpy/` using PascalCase names, but use snake_case for DART 7 simulation work in `dart/simulation/` and its related test/example directories (including `tests/unit/simulation/` and `tests/benchmark/simulation/`)
 - Add tests for new functionality
 - Update documentation if needed
+- Update `CHANGELOG.md` when the change is notable under
+  [changelog.md](changelog.md), or record why no entry is needed in the PR
 - If you use `docs/dev_tasks/<TASK>/` for tracking, keep it updated during work and remove the folder once the task is complete (after adding a brief note to the most relevant `docs/onboarding/*.md`)
 - Commit with clear, descriptive messages
 
@@ -120,7 +128,8 @@ git push origin feature/my-awesome-feature
 Use the PR template in `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone for the target branch:
 
 - `main`: `DART 7.0` (or the next major milestone)
-- `release-6.17`: `DART 6.17.1` (current patch target)
+- Active DART 6 LTS branch, currently `release-6.19`: branch-matching DART 6.x
+  patch milestone
 
 ## Testing Requirements
 
@@ -301,11 +310,11 @@ Before submitting your pull request, verify:
 - [ ] PR description includes summary, motivation, and testing notes
 - [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
-      `DART 6.17.1` for `release-6.17`)
-- [ ] `CHANGELOG.md` is updated when required, or the PR records why no entry is
-      needed
-- [ ] Bug fixes that apply to the release line have a `release-6.17` PR first,
-      then a `main` PR
+      branch-matching DART 6.x patch milestone for the active DART 6 LTS branch)
+- [ ] `CHANGELOG.md` is updated according to [changelog.md](changelog.md), or
+      the PR records why no entry is needed
+- [ ] Bug fixes that apply to the release line have an active-DART-6-LTS PR
+      first, then a `main` PR
 - [ ] Any `docs/dev_tasks/<task>/` folder used for tracking is removed after
       durable notes move to developer docs
 

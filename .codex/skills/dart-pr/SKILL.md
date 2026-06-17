@@ -32,6 +32,7 @@ $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/ai-tools.md
+@docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
 
 ## Recent PR Patterns
@@ -118,13 +119,13 @@ Use these practices:
 2. Exclude unrelated dirty files unless the user explicitly includes them.
 3. Choose the target branch and milestone:
 
-   | Target         | Milestone     |
-   | -------------- | ------------- |
-   | `main`         | `DART 7.0`    |
-   | `release-6.17` | `DART 6.17.1` |
+   | Target                          | Milestone                      |
+   | ------------------------------- | ------------------------------ |
+   | `main`                          | `DART 7.0`                     |
+   | Active DART 6 LTS `release-6.*` | Branch-matching DART 6.x patch |
 
-4. For bug fixes, use the dual-PR flow: fix `release-6.17` first, then
-   cherry-pick or reapply to `main`.
+4. For bug fixes, use the dual-PR flow: fix the active DART 6 LTS branch first,
+   then cherry-pick or reapply to `main`.
 5. Before every commit, run:
    ```bash
    pixi run lint
@@ -169,7 +170,8 @@ Use these practices:
     branch by default because it invalidates existing CI runs and makes PR
     review/comment history harder to follow. Rebase or force-push only when the
     maintainer explicitly requests it.
-11. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
+11. Use `docs/onboarding/changelog.md` for the changelog decision. If
+    `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
     local until explicit maintainer/user approval is given for the additional
     push or PR update.
 12. Monitor CI:
