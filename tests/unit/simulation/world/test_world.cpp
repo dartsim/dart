@@ -9435,17 +9435,17 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
 // the k x k constraint matrix, the residual, and the LDLT solve), plus the
 // unconstrained semi-implicit solve's own per-step LDLT. Those allocate through
 // std::malloc, so the ::operator new no-heap gate above is blind to them; this
-// test uses the raw-malloc counter to assert the warmed steps are now backed by
-// persistent scratch and perform zero heap allocations. Covers both k == 1
-// (prismatic slider) and k >= 2 (coupled revolute chain) constraint paths.
-TEST(World, BakedVelocityActuatedMultibodySteadyStateStepsDoNotMallocOnHeap)
+// test uses the raw-malloc counter to assert the first post-bake steps are
+// backed by persistent scratch and perform zero heap allocations. Covers both k
+// == 1 (prismatic slider) and k >= 2 (coupled revolute chain) constraint paths.
+TEST(World, BakedVelocityActuatedMultibodyStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
   namespace sx = dart::simulation;
 
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "velocity-actuated multibody (k==1 slider + k>=2 coupled revolute chain)",
       [](sx::World& world) {
         world.setGravity(Eigen::Vector3d::Zero());
@@ -9498,6 +9498,35 @@ TEST(World, BakedVelocityActuatedMultibodySteadyStateStepsDoNotMallocOnHeap)
         link2.getParentJoint().setCommandVelocity(
             Eigen::VectorXd::Constant(1, -0.4));
       });
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "velocity-actuated articulated link resting contact",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+
+        auto robot = world.addMultibody("leg_robot");
+        auto base = robot.addLink("base");
+        sx::JointSpec spec;
+        spec.name = "slider";
+        spec.type = sx::JointType::Prismatic;
+        spec.axis = Eigen::Vector3d::UnitZ();
+        auto leg = robot.addLink("leg", base, spec);
+        leg.setMass(1.0);
+        leg.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+        auto joint = leg.getParentJoint();
+        joint.setPosition(Eigen::VectorXd::Constant(1, -0.35));
+        joint.setActuatorType(sx::ActuatorType::Velocity);
+        joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.0));
+
+        sx::RigidBodyOptions groundOptions;
+        groundOptions.isStatic = true;
+        groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto ground = world.addRigidBody("ground", groundOptions);
+        ground.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+        world.setTimeStep(0.002);
+      },
+      true);
 #endif
 }
 
