@@ -30,8 +30,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 
@@ -155,6 +157,138 @@ def _run_worker(
     return SceneResult(scene_id, status, elapsed, detail)
 
 
+def _apply_stable_linux_render_env() -> None:
+    if not sys.platform.startswith("linux"):
+        return
+    os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+    os.environ.setdefault("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+    egl_vendor = pathlib.Path("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+    if egl_vendor.is_file():
+        os.environ.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES", str(egl_vendor))
+
+
+def _ppm_is_nonblank(path: os.PathLike[str] | str) -> bool:
+    data = pathlib.Path(path).read_bytes()
+    tokens: list[bytes] = []
+    index = 0
+
+    while len(tokens) < 4:
+        while index < len(data):
+            byte = data[index]
+            if byte == ord("#"):
+                newline = data.find(b"\n", index)
+                if newline < 0:
+                    return False
+                index = newline + 1
+                continue
+            if byte not in b" \t\r\n":
+                break
+            index += 1
+        if index >= len(data):
+            return False
+
+        start = index
+        while index < len(data) and data[index] not in b" \t\r\n":
+            index += 1
+        tokens.append(data[start:index])
+
+    if tokens[0] != b"P6" or tokens[3] != b"255":
+        return False
+    try:
+        width = int(tokens[1])
+        height = int(tokens[2])
+    except ValueError:
+        return False
+
+    if data[index : index + 2] == b"\r\n":
+        pixel_start = index + 2
+    elif index < len(data) and data[index] in b" \t\r\n":
+        pixel_start = index + 1
+    else:
+        pixel_start = index
+
+    if width <= 0 or height <= 0:
+        return False
+
+    expected = width * height * 3
+    pixels = data[pixel_start : pixel_start + expected]
+    if len(pixels) < expected:
+        return False
+
+    first = pixels[0]
+    return any(byte != first for byte in pixels[1:])
+
+
+def _run_render_worker(
+    scene_id: str, frames: int, timeout: float, width: int, height: int
+) -> SceneResult:
+    with tempfile.NamedTemporaryFile(
+        prefix=f"dart_py_demo_{scene_id}_", suffix=".ppm", delete=False
+    ) as tmp:
+        screenshot_path = tmp.name
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "examples.demos",
+        "--scene",
+        scene_id,
+        "--headless",
+        "--screenshot",
+        screenshot_path,
+        "--frames",
+        str(frames),
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+    ]
+
+    start = time.monotonic()
+    try:
+        proc = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+            text=True,
+        )
+    except subprocess.TimeoutExpired:
+        try:
+            os.unlink(screenshot_path)
+        except FileNotFoundError:
+            pass
+        return SceneResult(
+            scene_id, "timeout", time.monotonic() - start, f"exceeded {timeout:.0f}s"
+        )
+    elapsed = time.monotonic() - start
+
+    try:
+        if proc.returncode == 0:
+            if not os.path.isfile(screenshot_path):
+                return SceneResult(
+                    scene_id, "fail", elapsed, "render completed without a screenshot"
+                )
+            if not _ppm_is_nonblank(screenshot_path):
+                return SceneResult(
+                    scene_id,
+                    "fail",
+                    elapsed,
+                    "render screenshot is missing, invalid, or blank",
+                )
+            return SceneResult(scene_id, "ok", elapsed)
+
+        status = "crash" if proc.returncode < 0 else "fail"
+        tail = "\n".join((proc.stdout or "").strip().splitlines()[-25:])
+        detail = f"exit={proc.returncode}\n{tail}"
+        return SceneResult(scene_id, status, elapsed, detail)
+    finally:
+        try:
+            os.unlink(screenshot_path)
+        except FileNotFoundError:
+            pass
+
+
 def _orchestrate(args: argparse.Namespace) -> int:
     try:
         scene_ids = _select_scene_ids(_list_scene_ids(), args.only)
@@ -162,15 +296,28 @@ def _orchestrate(args: argparse.Namespace) -> int:
         print(f"py-demos smoke: {exc}", file=sys.stderr)
         return 2
 
-    print(
-        f"py-demos smoke: {len(scene_ids)} scenes, {args.frames} frames each, "
-        f"timeout {args.timeout:.0f}s, gpu={args.gpu_pref_label}"
-    )
+    if args.render:
+        _apply_stable_linux_render_env()
+        print(
+            f"py-demos smoke: {len(scene_ids)} scenes, {args.frames} frames each, "
+            f"timeout {args.timeout:.0f}s, mode=render, "
+            f"resolution={args.width}x{args.height}"
+        )
+    else:
+        print(
+            f"py-demos smoke: {len(scene_ids)} scenes, {args.frames} frames each, "
+            f"timeout {args.timeout:.0f}s, gpu={args.gpu_pref_label}"
+        )
     print("-" * 72)
 
     results: list[SceneResult] = []
     for i, scene_id in enumerate(scene_ids, 1):
-        res = _run_worker(scene_id, args.frames, args.gpu, args.timeout)
+        if args.render:
+            res = _run_render_worker(
+                scene_id, args.frames, args.timeout, args.width, args.height
+            )
+        else:
+            res = _run_worker(scene_id, args.frames, args.gpu, args.timeout)
         results.append(res)
         mark = {"ok": "ok  ", "fail": "FAIL", "timeout": "TIME", "crash": "CRSH"}[
             res.status
@@ -204,13 +351,16 @@ def main(argv: list[str]) -> int:
         "--scene", default=None, help="worker mode: smoke one scene in-process"
     )
     parser.add_argument(
-        "--frames", type=int, default=3, help="steps per scene (default 3)"
+        "--frames",
+        type=int,
+        default=None,
+        help="steps/frames per scene (default 3, render default 2)",
     )
     parser.add_argument(
         "--timeout",
         type=float,
-        default=60.0,
-        help="per-scene subprocess timeout seconds (default 60)",
+        default=None,
+        help="per-scene subprocess timeout seconds (default 60, render default 120)",
     )
     parser.add_argument(
         "--only",
@@ -223,7 +373,14 @@ def main(argv: list[str]) -> int:
     )
     parser.add_argument("--gpu", dest="gpu", action="store_true", default=None)
     parser.add_argument("--no-gpu", dest="gpu", action="store_false")
+    parser.add_argument("--render", action="store_true", help="use the real viewer")
+    parser.add_argument("--width", type=int, default=480, help="render width")
+    parser.add_argument("--height", type=int, default=320, help="render height")
     args = parser.parse_args(argv)
+    if args.frames is None:
+        args.frames = 2 if args.render else 3
+    if args.timeout is None:
+        args.timeout = 120.0 if args.render else 60.0
     args.gpu_pref_label = {True: "on", False: "off", None: "auto"}[args.gpu]
 
     if args.scene is not None:

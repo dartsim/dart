@@ -17,20 +17,23 @@ docs + `scripts/py_demos_smoke.py` (full-catalog no-crash smoke harness).
 
 ## Immediate Next Step
 
-The cuda dartpy binding is building in the background (`/tmp/dart_cuda_build.log`,
-`-e cuda`, `DART_PARALLEL_JOBS=8`, incremental auto-retry). It is slow only
-because sibling worktrees (`task_1/6/7`) share the CPU via the cooperative `-l`
-load-aware ninja scheduler — not a conflict. **As soon as `_dartpy*.so` exists in
-`build/cuda/cpp/Release-docking/python/dartpy/`, run:**
+**M0 is complete** (no-crash + panels + scalable contract + real render, all
+155/155, CI-guarded; commits on `py-demos-framework`). The cuda binding is built
+at `build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so`.
 
+Next is **M1**: the AVBD flagship + DART 6 LCP/SI baseline rigid showcase. First
+design decision to resolve (see `01-milestones.md` "M1 architecture reality"):
+how to present the AVBD solver *track* next to the in-`World` SI/IPC/BoxedLcp
+baseline — side-by-side scenes vs a unified comparison scene. The flagship
+`rigid_body` scene currently exposes only the in-`World` `SequentialImpulse`/`Ipc`
+dropdown.
+
+Re-run any M0 guard:
 ```bash
-PYTHONPATH=build/cuda/cpp/Release-docking/python:python \
-  .pixi/envs/cuda/bin/python scripts/py_demos_smoke.py --json-out /tmp/py_demos_smoke.json
+PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/python \
+  scripts/py_demos_smoke.py            # logic (build/step/providers/panels)
+  # add --render for the real-viewer render sweep
 ```
-
-That produces the M0 ground-truth baseline (ok / fail / timeout / crash per
-scene). Then triage per the **quarantine-to-green** policy and delegate the
-fix-now bugs to Codex.
 
 ## Decisions locked this session
 

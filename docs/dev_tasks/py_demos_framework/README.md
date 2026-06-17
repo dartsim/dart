@@ -12,7 +12,8 @@ and replay metadata.
 
 ## Current Status
 
-- [~] **M0 — Establish the framework**: stable, no-crash, scalable, modern.
+- [x] **M0 — Establish the framework**: stable, no-crash, scalable, modern. **Done** —
+      full catalog green across build/step/providers, panels, and real render.
   - [x] Full-catalog no-crash baseline: **155/155** (`02-m0-baseline.md`).
   - [x] No-crash guard locked into CI: `scripts/py_demos_smoke.py` (isolated
         diagnostic) + `pixi run -e cuda py-demos-smoke` + an in-process pytest
@@ -25,7 +26,10 @@ and replay metadata.
   - [x] Scalable-contract guard: `test_every_scene_module_is_registered`
         (no orphan `scenes/*.py`) complements `test_registry_has_scenes`
         (unique ids + field contract). Adding a scene is now drift-safe.
-  - [ ] Tier-3: full-catalog headless *render* pass (real Filament viewer).
+  - [x] Tier-3: full-catalog headless *render* pass through the real Filament
+        viewer (`py-demos-smoke --render`, `pixi run -e cuda py-demos-render-smoke`,
+        `test_demos_render_smoke.py`). **155/155** render non-blank; blank-detector
+        verified (rejects a uniform frame). Software-Mesa env applied for dev hosts.
 - [ ] **M1 — Best domain + solver**: pick the flagship domain (rigid body) and
       solver, and make that path excellent end-to-end (visual + panels + replay
       + capture + docs).
