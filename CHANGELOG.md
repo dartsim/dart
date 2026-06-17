@@ -222,9 +222,10 @@ compatibility remains on the active DART 6 LTS branch._
   humans. ([#2446](https://github.com/dartsim/dart/pull/2446),
   [#2649](https://github.com/dartsim/dart/pull/2649),
   [#3041](https://github.com/dartsim/dart/pull/3041))
-- Tightened AI-native task intake with a DART-specific Spec Kit assessment,
-  clearer spec-to-packet fields, dev-task acceptance evidence, and generated
-  command guidance that keeps workflow decisions in DART-owned docs.
+- Clarified DART's AI task-intake guidance to treat Spec Kit as reference
+  material rather than an installed workflow, keeping agent plans, packets,
+  dev-task acceptance evidence, and gates in DART-owned docs.
+  ([#3054](https://github.com/dartsim/dart/pull/3054))
 
 #### Tests, Benchmarks, and Quality Gates
 
