@@ -1082,6 +1082,16 @@ std::vector<GeneratedCase> makeRobustNearSingularCases()
           256, ConditioningClass::NearSingular, 16256, true, 1.0, 0.08, 1e3)};
 }
 
+std::vector<GeneratedCase> makeStandardSpdConditioningGridCases()
+{
+  return {
+      makeStandardCase(
+          96, ConditioningClass::MildlyIllConditioned, true, 33096),
+      makeStandardCase(
+          128, ConditioningClass::MildlyIllConditioned, true, 33128),
+      makeStandardCase(16, ConditioningClass::NearSingular, true, 34016)};
+}
+
 std::vector<GeneratedCase> makeSingularDegenerateCases()
 {
   return {
@@ -1436,6 +1446,27 @@ void expectSolverPassesGeneratedCase(
       << dart::test::DescribeReport(report);
 }
 
+void expectSolverSatisfiesGeneratedCaseContract(
+    const LcpSolverManifestEntry& solverEntry, const GeneratedCase& testCase)
+{
+  auto solver = solverEntry.create();
+  SolverRunConfig config(solverEntry.name, testCase);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(testCase.problem.b.size());
+  const auto report
+      = dart::test::SolveAndCheck(*solver, testCase.problem, x, config.options);
+
+  const bool statusOk
+      = report.result.succeeded()
+        || (config.allowMaxIterations
+            && report.result.status == LcpSolverStatus::MaxIterations
+            && report.check.ok);
+
+  EXPECT_TRUE(statusOk) << solverEntry.name << " on " << testCase.name << ": "
+                        << dart::test::DescribeReport(report);
+  EXPECT_TRUE(report.check.ok) << solverEntry.name << " on " << testCase.name
+                               << ": " << dart::test::DescribeReport(report);
+}
+
 void runGeneratedCasesForSupportingSolvers(
     const std::vector<GeneratedCase>& cases)
 {
@@ -1497,6 +1528,22 @@ const LcpSolverManifestEntry* findSolver(const std::string_view name)
   }
 
   return nullptr;
+}
+
+void runGeneratedCaseContractsForNamedSolvers(
+    const std::vector<GeneratedCase>& cases,
+    const std::vector<std::string_view>& solverNames)
+{
+  for (const auto solverName : solverNames) {
+    const auto* solver = findSolver(solverName);
+    ASSERT_NE(solver, nullptr) << solverName;
+    for (const auto& testCase : cases) {
+      if (!solverShouldRun(*solver, testCase)) {
+        continue;
+      }
+      expectSolverSatisfiesGeneratedCaseContract(*solver, testCase);
+    }
+  }
 }
 
 } // namespace
@@ -1687,6 +1734,13 @@ TEST(LcpGeneratedCoverage, NearSingularKnownSolutionsForRobustSolverSlice)
       expectSolverPassesGeneratedCase(solver, testCase);
     }
   }
+}
+
+//==============================================================================
+TEST(LcpGeneratedCoverage, StandardSpdConditioningGridContractsForScopedSolvers)
+{
+  runGeneratedCaseContractsForNamedSolvers(
+      makeStandardSpdConditioningGridCases(), {"InteriorPoint", "MPRGP"});
 }
 
 //==============================================================================

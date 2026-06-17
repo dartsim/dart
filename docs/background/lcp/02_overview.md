@@ -503,14 +503,22 @@ LCP solvers can be categorized into several main families:
 
 ## Quick Selection Guide
 
-| Use Case             | Recommended Method                   | Reason                                                                                                                                                                                                                     |
-| -------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Real-time simulation | PGS, PSOR, BGS                       | Fast O(n) iterations                                                                                                                                                                                                       |
-| High accuracy        | Newton, Pivoting                     | Superlinear convergence                                                                                                                                                                                                    |
-| Large-scale          | NNCG, PGS                            | Scalable, matrix-free                                                                                                                                                                                                      |
-| Poorly conditioned   | Pivoting, Interior Point             | Numerically robust                                                                                                                                                                                                         |
-| Contact mechanics    | BGS, Baraff, Dantzig, Staggering     | Natural block structure                                                                                                                                                                                                    |
-| Parallel computing   | Jacobi, Blocked Jacobi, Red-Black GS | Parallel update structure; current DART 7 evidence covers CPU Jacobi worker-thread correctness and fixed-iteration CUDA Jacobi/PGS batch slices, including grouped variable-size separated and stack world-contact packets |
+| Use Case             | Recommended Method                   | Reason                                                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Real-time simulation | PGS, PSOR, BGS                       | Fast O(n) iterations                                                                                                                                                                                                                                                                   |
+| High accuracy        | Newton, Pivoting                     | Superlinear convergence                                                                                                                                                                                                                                                                |
+| Large-scale          | NNCG, PGS                            | Scalable, matrix-free                                                                                                                                                                                                                                                                  |
+| Poorly conditioned   | Pivoting, Interior Point             | Numerically robust                                                                                                                                                                                                                                                                     |
+| Contact mechanics    | BGS, Baraff, Dantzig, Staggering     | Natural block structure                                                                                                                                                                                                                                                                |
+| Parallel computing   | Jacobi, Blocked Jacobi, Red-Black GS | Parallel update structure; current DART 7 evidence covers CPU Jacobi worker-thread correctness, fixed-iteration CUDA Jacobi/PGS batch slices including grouped variable-size separated and stack world-contact packets, and fixed-iteration CUDA red-black GS homogeneous batch slices |
+
+DART 7 public-step contact evidence includes separated and stacked rigid
+contacts, dense box patches, prismatic articulated packets, cross-multibody
+articulated impact packets, Cartesian prismatic chains, and serial revolute-arm
+ground-contact packets, including a 1000-step single-arm benchmark row. The
+revolute-arm rows are intentionally small robot-like coverage for
+hinge-coordinate contact behavior; larger robot benchmarks should still be added
+only when they have a clear fixture and runtime budget.
 
 See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 

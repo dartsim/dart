@@ -3463,6 +3463,7 @@ detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
         detail::ContactFreeStepCoordinateAllocator{allocator}),
     differentiableInverseDynamicsScratch(allocator),
     differentiableDynamicsTermsScratch(allocator),
+    differentiableDerivativeScratch(),
     ignoredCollisionPairs(
         std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator}),
     bakedModel(allocator)
@@ -6744,15 +6745,20 @@ void World::captureStepDerivatives()
     const Eigen::Map<const Eigen::VectorXd> tau(
         torques.data(), static_cast<Eigen::Index>(torques.size()));
 
-    m_storage->stepDerivatives = detail::contactFreeStepDerivatives(
+    if (!m_storage->stepDerivatives.has_value()) {
+      m_storage->stepDerivatives.emplace();
+    }
+    detail::contactFreeStepDerivativesInto(
         m_storage->registry,
         structure,
         m_gravity,
         m_timeStep,
         tau,
+        *m_storage->stepDerivatives,
         &m_storage->differentiableCoordinateScratch,
         &m_storage->differentiableInverseDynamicsScratch,
-        &m_storage->differentiableDynamicsTermsScratch);
+        &m_storage->differentiableDynamicsTermsScratch,
+        &m_storage->differentiableDerivativeScratch);
     return; // WS1: one multibody.
   }
 #endif

@@ -1921,6 +1921,86 @@ TEST(CudaLcpJacobiBatch, MixedContactGroupedBatchSatisfiesLcpContract)
 }
 
 //==============================================================================
+TEST(CudaLcpRedBlackGaussSeidelBatch, StandardBatchMatchesKnownSolutions)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::vector<double> expected;
+  auto packet = makeStandardBatch(expected);
+  cuda::solveBoxedLcpRedBlackGaussSeidelBatchCuda(packet);
+
+  expectNearExpectedSolution(packet, expected, 1e-8);
+}
+
+//==============================================================================
+TEST(CudaLcpRedBlackGaussSeidelBatch, FrictionIndexBatchMatchesKnownSolutions)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::vector<double> expected;
+  auto packet = makeFrictionIndexBatch(expected);
+  cuda::solveBoxedLcpRedBlackGaussSeidelBatchCuda(packet);
+
+  expectNearExpectedSolution(packet, expected, 1e-8);
+}
+
+//==============================================================================
+TEST(CudaLcpRedBlackGaussSeidelBatch, BoxedBatchMatchesKnownSolutions)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::vector<double> expected;
+  auto packet = makeBoxedBatch(expected);
+  cuda::solveBoxedLcpRedBlackGaussSeidelBatchCuda(packet);
+
+  expectNearExpectedSolution(packet, expected, 1e-8);
+}
+
+//==============================================================================
+TEST(
+    CudaLcpRedBlackGaussSeidelBatch,
+    VariableSizeSyntheticBatchesSatisfyLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  for (const SyntheticCudaFamily family :
+       {SyntheticCudaFamily::Standard,
+        SyntheticCudaFamily::Boxed,
+        SyntheticCudaFamily::FrictionIndex}) {
+    SCOPED_TRACE(std::string("family=") + getSyntheticCudaFamilyName(family));
+    auto fixture = makeSyntheticGroupedBatch(family, 2, 256);
+
+    cuda::solveBoxedLcpRedBlackGaussSeidelGroupedBatchCuda(fixture.packets);
+
+    expectGroupedBatchSatisfiesLcpContract(fixture);
+  }
+}
+
+//==============================================================================
+TEST(CudaLcpRedBlackGaussSeidelBatch, WorldContactBatchSatisfiesLcpContract)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::string errorMessage;
+  auto fixture = makeWorldContactBatch(4, 4, 256, errorMessage);
+  ASSERT_TRUE(fixture.has_value()) << errorMessage;
+
+  cuda::solveBoxedLcpRedBlackGaussSeidelBatchCuda(fixture->packet);
+
+  expectBatchSatisfiesLcpContract(fixture->packet, fixture->problems);
+}
+
+//==============================================================================
 TEST(CudaLcpPgsBatch, StandardBatchMatchesKnownSolutions)
 {
   if (!cuda::isCudaRuntimeAvailable()) {

@@ -49,6 +49,7 @@
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entity/entity.hpp>
@@ -94,6 +95,39 @@ struct ContactFreeStepDynamicsTermsScratch
   compute::MultibodyDynamicsTerms baseTerms;
   compute::MultibodyDynamicsTerms plusTerms;
   compute::MultibodyDynamicsTerms minusTerms;
+};
+
+/// Reusable Eigen storage for contact-free differentiable Jacobians.
+///
+/// Eigen's dynamic matrices allocate through the raw malloc family, so they are
+/// invisible to DART's allocator hooks. This scratch keeps same-shape
+/// derivative intermediates and decompositions live across warmed
+/// differentiable steps.
+struct ContactFreeStepDerivativeScratch
+{
+  Eigen::VectorXd biasForces;
+  Eigen::VectorXd qdot;
+  Eigen::VectorXd rhs;
+  Eigen::VectorXd qddot;
+  Eigen::VectorXd nextVelocity;
+  Eigen::VectorXd dBias;
+  Eigen::VectorXd tempVector;
+  Eigen::VectorXd tempVector2;
+
+  Eigen::MatrixXd inverseMass;
+  Eigen::MatrixXd dVelNext_dq;
+  Eigen::MatrixXd dVelNext_dqdot;
+  Eigen::MatrixXd dVelNext_dtau;
+  Eigen::MatrixXd posPartialPos;
+  Eigen::MatrixXd posPartialVel;
+  Eigen::MatrixXd dPosNext_dq;
+  Eigen::MatrixXd dPosNext_dqdot;
+  Eigen::MatrixXd dPosNext_dtau;
+  Eigen::MatrixXd tempMatrix;
+  Eigen::MatrixXd tempMatrix2;
+
+  Eigen::LDLT<Eigen::MatrixXd> massMatrixLdlt;
+  compute::InverseDynamicsDerivatives inverseDynamicsDerivatives;
 };
 
 /// Analytic contact-free single-step Jacobian for ONE multibody, evaluated at
@@ -153,6 +187,24 @@ struct ContactFreeStepDynamicsTermsScratch
     const Eigen::Ref<const Eigen::VectorXd>& tau,
     ContactFreeStepCoordinateScratch* coordinateScratch = nullptr,
     compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch = nullptr,
-    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch = nullptr);
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch = nullptr,
+    ContactFreeStepDerivativeScratch* derivativeScratch = nullptr);
+
+/// Compute contact-free single-step Jacobians into caller-owned output storage.
+///
+/// `derivatives` is resized and overwritten. Same-shape callers that retain
+/// `derivatives` and `derivativeScratch` avoid raw malloc traffic from Eigen
+/// dynamic temporaries on warmed differentiable steps.
+DART_SIMULATION_API void contactFreeStepDerivativesInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    const Eigen::Ref<const Eigen::VectorXd>& tau,
+    StepDerivatives& derivatives,
+    ContactFreeStepCoordinateScratch* coordinateScratch = nullptr,
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch = nullptr,
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch = nullptr,
+    ContactFreeStepDerivativeScratch* derivativeScratch = nullptr);
 
 } // namespace dart::simulation::detail

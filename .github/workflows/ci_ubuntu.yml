@@ -169,9 +169,9 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Release Tests
     runs-on: ubuntu-latest
-    # This job is build-bound (Release build + dartpy + examples + a full ASAN
-    # build/test + install) and runs ~150-180min; cap above that but well below
-    # the ~6h default so a genuine hang still fails fast.
+    # This job is build-bound (Release build + dartpy + examples + install +
+    # a full ASAN build/test) and runs ~150-180min; cap above that but well
+    # below the ~6h default so a genuine hang still fails fast.
     timeout-minutes: 210
     env:
       DART_PARALLEL_JOBS: 8
@@ -226,6 +226,19 @@ jobs:
           BUILD_TYPE=Release \
           pixi run build-examples ON Release
 
+      - name: Install
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          pixi run install
+
+      - name: Free Release build before ASAN
+        run: |
+          set -x
+          df -h /
+          rm -rf build/default/cpp/Release
+          df -h /
+
       - name: Test with AddressSanitizer
         run: |
           # ASAN builds use materially more memory than the normal Release
@@ -233,12 +246,6 @@ jobs:
           DART_VERBOSE=ON \
           DART_PARALLEL_JOBS=4 \
           pixi run test-asan
-
-      - name: Install
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Release \
-          pixi run install
 
   native-collision-no-legacy:
     needs: changes
