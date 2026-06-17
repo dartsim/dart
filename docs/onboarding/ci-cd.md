@@ -429,7 +429,10 @@ to wire anything up manually. If either `sccache` or `ccache` is on your PATH,
 DART will automatically set `CMAKE_*_COMPILER_LAUNCHER` when you run `cmake`
 directly or via `pixi`. pixi still forwards `CMAKE_*_COMPILER_LAUNCHER` to any
 external CMake projects it drives (e.g., gz-physics) so nested builds benefit
-from the same cache.
+from the same cache. CUDA-enabled dartpy Pixi builds keep
+`CMAKE_CUDA_COMPILER_LAUNCHER` empty by default because of nvcc/fatbinary PTX
+issues, but still allow C/CXX launchers unless
+`DART_DISABLE_COMPILER_CACHE=ON` is set.
 
 #### CI reliability notes
 

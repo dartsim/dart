@@ -27,6 +27,7 @@ def test_linux_pytest_env_defaults_to_software_gl(monkeypatch):
 
     assert env["LIBGL_ALWAYS_SOFTWARE"] == "1"
     assert env["MESA_LOADER_DRIVER_OVERRIDE"] == "llvmpipe"
+    assert env["PYTHONUNBUFFERED"] == "1"
 
 
 def test_linux_pytest_env_preserves_gl_overrides(monkeypatch):
@@ -41,6 +42,32 @@ def test_linux_pytest_env_preserves_gl_overrides(monkeypatch):
     assert env["MESA_LOADER_DRIVER_OVERRIDE"] == "zinc"
 
 
+def test_pytest_arguments_use_argv_by_default(monkeypatch):
+    runner = _load_runner()
+    monkeypatch.setattr(runner.sys, "argv", ["runner", "test_file.py", "-v"])
+    monkeypatch.delenv("DARTPY_PYTEST_ARGS", raising=False)
+    monkeypatch.delenv("DARTPY_PYTEST_SOURCES", raising=False)
+
+    assert runner._pytest_arguments() == ["test_file.py", "-v"]
+
+
+def test_pytest_arguments_allow_ci_overrides(monkeypatch):
+    runner = _load_runner()
+    monkeypatch.setattr(runner.sys, "argv", ["runner", "ignored.py"])
+    monkeypatch.setenv("DARTPY_PYTEST_ARGS", "-vv --tb=short")
+    monkeypatch.setenv(
+        "DARTPY_PYTEST_SOURCES",
+        "unit/common/test_string.py unit/math/test_lcp.py",
+    )
+
+    assert runner._pytest_arguments() == [
+        "-vv",
+        "--tb=short",
+        "unit/common/test_string.py",
+        "unit/math/test_lcp.py",
+    ]
+
+
 def test_main_uses_xvfb_without_linux_display(monkeypatch):
     runner = _load_runner()
     calls = []
@@ -51,6 +78,8 @@ def test_main_uses_xvfb_without_linux_display(monkeypatch):
 
     monkeypatch.setattr(runner.sys, "platform", "linux")
     monkeypatch.setattr(runner.sys, "argv", ["runner", "test_file.py"])
+    monkeypatch.delenv("DARTPY_PYTEST_ARGS", raising=False)
+    monkeypatch.delenv("DARTPY_PYTEST_SOURCES", raising=False)
     monkeypatch.delenv("DISPLAY", raising=False)
     monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
     monkeypatch.setattr(runner.shutil, "which", lambda name: "/usr/bin/xvfb-run")
