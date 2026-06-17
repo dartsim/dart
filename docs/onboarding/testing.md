@@ -383,6 +383,28 @@ policy work until the production registry allocator path consistently beats the
 selected baselines. Use `--only-entt-registry` for focused registry allocator
 optimization loops without rerunning the broader allocator benchmark set.
 
+### DART 7 Simulation-Loop Allocation Gates
+
+For DART 7 `World::step()` work, the no-allocation contract is "after bake":
+`World::enterSimulationMode()` and stage `prepare()` may reserve memory for the
+current shape, but the measured simulation loop starts on the first post-bake
+step. The final gate should prove all applicable allocation surfaces stay quiet:
+
+- World base allocator counters do not grow across same-shape steps.
+- Global `operator new` counters report zero allocations.
+- Raw malloc-family counters report zero allocations on supported hosts when the
+  path uses Eigen dynamic matrices, decompositions, sparse factorizations, or
+  other malloc-backed scratch.
+
+Existing helper patterns live in `tests/unit/simulation/world/test_world.cpp`:
+`expectNoWorldBaseAllocatorActivityDuringBakedSteps`,
+`expectNoGlobalHeapAllocationsDuringBakedSteps`, and
+`expectNoRawHeapAllocationsDuringBakedSteps`. A helper or test that runs
+unmeasured warm-up simulation steps before enabling the counter is a
+steady-state regression guard, not final evidence for the stricter
+no-allocation-after-bake requirement. Track final and steady-state rows in
+[`../plans/122-simulation-loop-allocation-hardening/coverage-matrix.md`](../plans/122-simulation-loop-allocation-hardening/coverage-matrix.md).
+
 ## Adding New Tests
 
 ### Naming Conventions

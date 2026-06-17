@@ -74,6 +74,20 @@ the broader CPU/GPU, demo, benchmark, and performance requirements.
 
 Before any commit, run `pixi run lint` as required by `AGENTS.md`.
 
+## DART 7 Simulation Allocation Evidence
+
+Changes that add, migrate, or materially alter a DART 7 `World::step()` domain,
+solver, stage, or hot-path scratch owner must update
+`docs/plans/122-simulation-loop-allocation-hardening/coverage-matrix.md` and
+add or extend the focused allocation gate in the same change. The final evidence
+starts measuring on the first `World::step()` after bake; unmeasured warm-up
+simulation steps before the counter starts are steady-state evidence only.
+
+The required gate checks the relevant combination of World base allocator
+growth, global heap allocation, and raw malloc-family allocation on supported
+hosts. Classic DART 6 paths are excluded unless the change is migrating that
+path into the DART 7 `World` pipeline.
+
 ## AI Infrastructure Evidence
 
 For substantial changes to AI-facing docs, commands, skills, generated

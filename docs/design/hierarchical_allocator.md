@@ -15,7 +15,10 @@ DART 7 no-allocation simulation-loop contract.
 The hierarchical-memory-manager dev task is complete. This design note is the
 durable owner for the World memory hierarchy, its no-allocation simulation-loop
 contract, the current evidence surfaces, and the bounded rules for any future
-allocator follow-up work.
+allocator follow-up work. Remaining DART 7 closure work is tracked by
+[`../plans/122-simulation-loop-allocation-hardening.md`](../plans/122-simulation-loop-allocation-hardening.md)
+and its coverage matrix; do not reopen the completed dev-task folder for those
+follow-ups.
 
 ## Architecture
 
@@ -134,7 +137,12 @@ The north-star invariant is:
    allocator.
 3. Representative baked loops should also pass global heap no-allocation guards
    once third-party and public convenience API boundaries are excluded.
-4. Public return-by-value helper APIs may remain allocation-boundary
+4. Final closure evidence for a DART 7 path starts measurement on the first
+   `World::step()` after bake. A test that runs unmeasured warm-up simulation
+   steps before enabling the allocation counter is useful steady-state evidence,
+   but it is not enough to close the path under the no-allocation-after-bake
+   requirement.
+5. Public return-by-value helper APIs may remain allocation-boundary
    conveniences, but built-in `World` stages must use caller-owned or
    stage-owned reusable scratch.
 
@@ -148,7 +156,7 @@ The completed HMM work wires the DART 7 `World` registry, built-in stage
 storage, solver scratch, diagnostics, replay buffers, compute-graph storage,
 and representative rigid/deformable/multibody/differentiable hot paths through
 the World-owned memory hierarchy. The closing raw-malloc slice added or
-revalidated focused baked-step gates for:
+revalidated focused baked-step and steady-state gates for:
 
 - rigid IPC active barriers, stacked boxes, deformable surface obstacles,
   kinematic conveyor/turntable scenes, and small fixed/revolute articulation
@@ -182,8 +190,10 @@ verifiers over large copied scene inventories in this design doc:
   `tests/unit/simulation/diff/test_diff_smooth_jacobian.cpp`.
 
 Before claiming a broader zero-allocation result, the evidence must show that
-the relevant built-in stage paths have both world-base no-growth and global-heap
-no-allocation gates after bake.
+the relevant built-in stage paths have world-base no-growth, global-heap
+no-allocation, and raw malloc-family no-allocation gates after bake. The
+PLAN-122 coverage matrix owns row-by-row closure and marks prewarm-dependent
+raw-malloc tests as steady-state evidence until bake sizes the needed scratch.
 
 ## Remaining Design Constraints
 
@@ -199,10 +209,11 @@ no-allocation gates after bake.
   budget should make runtime growth a hard failure.
 - Do not route GPU memory management or third-party internal allocations through
   this CPU hierarchy without a separate design.
-- Future allocator work starts only from a fresh failing gate or benchmark
-  policy change. Known non-claims include deformable sparse-direct systems
-  above the retained dense cutoff, large rigid-IPC equality KKT systems above
-  the stack-solve cap, and public return-by-value diagnostics.
+- Future allocator work starts from the PLAN-122 coverage matrix, a fresh
+  failing gate, or a benchmark policy change. Known non-claims include
+  deformable sparse-direct systems above the retained dense cutoff, large
+  rigid-IPC equality KKT systems above the stack-solve cap, raw-malloc gates
+  that rely on unmeasured prewarm steps, and public return-by-value diagnostics.
 
 ## Non-Goals
 
