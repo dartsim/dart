@@ -215,10 +215,11 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "benchmark_filter": (
             "BM_LcpCudaJacobiBatch|"
             "BM_LcpCudaPgsBatch|"
+            "BM_LcpCudaRedBlackGaussSeidelBatch|"
             "BM_LcpCudaJacobiGroupedBatch|"
             "BM_LcpCudaPgsGroupedBatch"
         ),
-        "coverage": "CUDA Jacobi/PGS batch and grouped-batch solves",
+        "coverage": "CUDA Jacobi/PGS/red-black batch and grouped-batch solves",
     },
     {
         "packet": "solver_parameter_sweeps",

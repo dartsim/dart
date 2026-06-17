@@ -2158,6 +2158,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `lcp_physics` panel, tying billiards invariants, mass-ratio stacks, card
     piles, scalability smoke, and friction coupling to their live packets,
     benchmark packets, and tracked metrics.
+  - Expanded LCP evidence coverage with scoped InteriorPoint/MPRGP conditioning
+    grids, serial revolute-arm boxed-LCP contact tests and benchmarks, and a
+    direct CUDA red-black Gauss-Seidel batch path with standard, boxed, and
+    friction-index contract coverage.
   - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
     Jacobian solve before falling back to regularized least squares, and kept
     friction-index moving-bound updates local to accepted line-search trials.
