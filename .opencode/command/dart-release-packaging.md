@@ -14,6 +14,7 @@ Create release packaging PR after explicit maintainer/user approval: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/release-management.md
 @docs/onboarding/contributing.md
+@docs/onboarding/changelog.md
 
 ## Workflow
 
@@ -26,13 +27,14 @@ Create release packaging PR after explicit maintainer/user approval: $ARGUMENTS
    ```
 4. Bump versions in `package.xml` and `pixi.toml`.
 5. Update version requirements in examples/tutorials if needed.
-6. Add the `CHANGELOG.md` release section with the release date and milestone link.
+6. Add or finalize the `CHANGELOG.md` release section with the release date,
+   milestone link, release summary, and audit from `docs/onboarding/changelog.md`.
 7. Run `pixi run lint` and relevant packaging checks.
 8. Commit as `Packaging <NEW_VERSION>`.
 9. Ask for explicit maintainer/user approval before pushing, creating the PR,
    or setting milestones.
 10. After approval, create the PR against the release branch with the release
-    milestone, for example `DART 6.17.1` or the specific version milestone if
+    milestone for that branch, for example the specific version milestone if
     available.
 
 ## Output

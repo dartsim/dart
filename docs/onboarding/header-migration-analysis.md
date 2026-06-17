@@ -145,7 +145,8 @@ If a component already has a concrete header named `<component>.hpp` (snake_case
 - **Checked-in PascalCase wrappers**: Avoids CMake generation but adds long-term maintenance burden and risks divergence from the canonical headers.
 - **Compiler include maps/module maps**: Not portable across toolchains and adds extra build-system complexity.
 - **Drop compat immediately**: Maximum churn for downstreams and breaks
-  `gz-physics` users unless those users stay on the DART 6.17 support lane.
+  `gz-physics` users unless those users stay on the active DART 6 LTS support
+  lane.
 
 ## 6. Recommended Migration Strategy
 
@@ -155,7 +156,7 @@ If a component already has a concrete header named `<component>.hpp` (snake_case
 - Generate PascalCase wrappers with deprecation warnings while clean-break gates
   are being closed.
 - Validate gz-physics compatibility with `pixi run -e gazebo test-gz` on the
-  DART 6.17 support lane when compatibility patches are backported.
+  active DART 6 LTS support lane when compatibility patches are backported.
 
 ### DART 7 Clean Break
 

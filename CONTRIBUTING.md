@@ -41,13 +41,14 @@ All source files should include a copyright header. We use the year of first pub
 - [ ] Tests pass: `pixi run test` or a more focused `pixi run ...` test task
 - [ ] Code is formatted: `pixi run lint`
 - [ ] Documentation is updated if needed
-- [ ] Bug fixes that apply to the release line have a `release-6.17` PR first,
-      then a `main` PR
+- [ ] Bug fixes that apply to the release line have an active-DART-6-LTS PR
+      first, then a `main` PR
 - [ ] PR uses `.github/PULL_REQUEST_TEMPLATE.md`
-- [ ] Target milestone is set (`DART 7.0` for `main`, `DART 6.17.1` for
-      `release-6.17`)
-- [ ] `CHANGELOG.md` is updated or the PR explains why no changelog entry is
-      needed
+- [ ] Target milestone is set (`DART 7.0` for `main`, branch-matching DART 6.x
+      patch milestone for the active DART 6 LTS branch)
+- [ ] `CHANGELOG.md` is updated according to
+      [the changelog guide](docs/onboarding/changelog.md), or the PR explains
+      why no changelog entry is needed
 - [ ] Any used `docs/dev_tasks/<task>/` folder is removed in this PR after
       durable notes move into onboarding docs
 

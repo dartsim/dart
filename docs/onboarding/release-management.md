@@ -15,15 +15,17 @@ commands. OpenCode receives the same commands through `.opencode/command/`.
 
 ## Branches and Milestones
 
-| Target Branch / Scope        | Milestone                         |
-| ---------------------------- | --------------------------------- |
-| `main`                       | `DART 7.0`                        |
-| `release-6.17`               | `DART 6.17.1` or later 6.17 patch |
-| Next DART 6 feature planning | `DART 6.18`                       |
+| Target Branch / Scope                              | Milestone                      |
+| -------------------------------------------------- | ------------------------------ |
+| `main`                                             | `DART 7.0`                     |
+| Active DART 6 LTS branch, currently `release-6.19` | Branch-matching DART 6.x patch |
 
 Bug fixes that apply to released users need two PRs: one for the active release
-branch and one for `main`. Prefer fixing or verifying on `main`, then backport
-with `git cherry-pick -x` so the release commit records its source.
+branch and one for `main`. For DART 6 LTS fixes, target the active
+`release-6.*` branch (the highest maintained DART 6 release branch on the
+remote; currently `release-6.19`) rather than an older minor line. If the fix
+already exists on `main`, backport with `git cherry-pick -x` so the release
+commit records its source.
 
 ## Backport Checks
 
@@ -68,7 +70,9 @@ git log origin/main --oneline --grep="<ERROR_KEYWORD>" -10
 
 ## Release Packaging
 
-Release packaging PRs bump version metadata and prepare the changelog.
+Release packaging PRs bump version metadata and prepare the changelog. Use
+[changelog.md](changelog.md) for entry structure, release-summary cleanup, and
+the release audit.
 
 Derive values from the new version:
 
