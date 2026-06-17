@@ -124,11 +124,34 @@ Implication for the locked decision: the "DART 6 LCP baseline" is the
 `World` rigid path with `ContactSolverMethod::BoxedLcp` (and/or the default
 `SequentialImpulse`), and the "AVBD flagship" is the separate AVBD track shown
 alongside it. The flagship visual comparison therefore spans two solver
-*tracks*, not two values of one enum. The existing flagship `rigid_body` scene
-only exposes the in-`World` `SequentialImpulse`/`Ipc` dropdown today; M1 work
-includes deciding how to present the AVBD track next to the `World` baseline
-(side-by-side scenes vs a unified comparison scene). **Open M1 design point —
-revisit after M0.**
+*tracks*, not two values of one enum.
+
+### M1 engagement mechanism (verified post-M0)
+
+Investigated against the built binding. AVBD and LCP are **complementary, not
+head-to-head** on a single scenario:
+
+- **Contact solve** (bodies touching): `world.rigid_body_solver` ∈
+  {`SEQUENTIAL_IMPULSE`, `IPC`} and `world.contact_solver_method` ∈
+  {`SEQUENTIAL_IMPULSE`, `BOXED_LCP`}. **`BOXED_LCP` is the DART 6 baseline.**
+- **Rigid constraints** (joints, motors, breakable joints): **AVBD**, engaged
+  implicitly by using the `world.add_rigid_body_*_joint(...)` API — there is no
+  AVBD enum. The `avbd_*` scenes are this track.
+- Both tracks use the **same `sx.World` + `WorldRenderBridge` + `SceneSetup`**
+  pattern (verified: `avbd_rigid_revolute_motor.py` vs `rigid_body.py`), so a
+  unified flagship scene is feasible at the construction level.
+
+So the M1 flagship is **two complementary showcases**, both reference-grade:
+1. **Contact-solver comparison** — SI / IPC / BoxedLcp on a contact-rich rigid
+   scene (BoxedLcp = the DART 6 trust baseline). Concrete first increment:
+   extend the flagship `rigid_body` scene to expose `contact_solver_method`
+   alongside its existing `rigid_body_solver` (SI/IPC) dropdown.
+2. **AVBD constraint showcase** — joints / motors / breakable constraints solved
+   by AVBD (the modern differentiator), curated from the `avbd_*` scenes.
+
+**Open M1 scoping point for the task owner:** which to build first, and whether
+the contact comparison should be a new unified scene or an enhancement of the
+existing `rigid_body` / `rigid_solver_compare` scenes.
 
 ---
 
