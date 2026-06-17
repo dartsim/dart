@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the DART 7 clean-break and DART 6.17 Gazebo support policy."""
+"""Check the DART 7 clean-break and DART 6 LTS Gazebo support policy."""
 
 from __future__ import annotations
 
@@ -111,8 +111,9 @@ def check_release_roadmap(path: Path, pinned_branch: str | None) -> list[Violati
         return [Violation(f"Could not read {path}")]
 
     required_snippets = [
-        "DART 6.17: Compatibility Line",
-        "`release-6.17` is the maintained branch",
+        "DART 6 LTS: Compatibility Line",
+        "active DART 6 LTS branch",
+        "highest maintained `release-6.*` branch",
         "Gazebo/gz-physics compatibility fixes",
         "main-branch Gazebo workflow is a migration canary",
         "sunset date or sunset trigger",
