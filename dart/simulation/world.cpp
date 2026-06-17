@@ -3464,9 +3464,46 @@ detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
     differentiableInverseDynamicsScratch(allocator),
     differentiableDynamicsTermsScratch(allocator),
     ignoredCollisionPairs(
-        std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator})
+        std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator}),
+    bakedModel(allocator)
 {
   // Empty.
+}
+
+//==============================================================================
+detail::BakedWorldModel::BakedWorldModel(common::MemoryAllocator& allocator)
+  : rigidBodyEntities(EntityAllocator{allocator}),
+    dynamicRigidBodyEntities(EntityAllocator{allocator}),
+    rigidBodyIsDynamic(ByteAllocator{allocator}),
+    rigidBodyInverseMass(ScalarAllocator{allocator}),
+    rigidBodyInertia(ScalarAllocator{allocator}),
+    multibodies(MultibodyAllocator{allocator}),
+    multibodyLinkEntities(EntityAllocator{allocator}),
+    multibodyJointEntities(EntityAllocator{allocator}),
+    multibodyLinkDofOffsets(IndexAllocator{allocator}),
+    multibodyLinkDofs(IndexAllocator{allocator}),
+    multibodyLinkMass(ScalarAllocator{allocator}),
+    multibodyLinkInertia(ScalarAllocator{allocator})
+{
+  // Empty.
+}
+
+//==============================================================================
+void detail::BakedWorldModel::clear() noexcept
+{
+  valid = false;
+  rigidBodyEntities.clear();
+  dynamicRigidBodyEntities.clear();
+  rigidBodyIsDynamic.clear();
+  rigidBodyInverseMass.clear();
+  rigidBodyInertia.clear();
+  multibodies.clear();
+  multibodyLinkEntities.clear();
+  multibodyJointEntities.clear();
+  multibodyLinkDofOffsets.clear();
+  multibodyLinkDofs.clear();
+  multibodyLinkMass.clear();
+  multibodyLinkInertia.clear();
 }
 
 //==============================================================================
@@ -3491,6 +3528,112 @@ detail::WorldRegistry& detail::registryOf(World& world)
 const detail::WorldRegistry& detail::registryOf(const World& world)
 {
   return detail::storageOf(world).registry;
+}
+
+//==============================================================================
+const detail::BakedWorldModel& detail::ensureBakedWorldModelCurrent(
+    const World& world)
+{
+  auto& storage = const_cast<detail::WorldStorage&>(detail::storageOf(world));
+  auto& model = storage.bakedModel;
+  if (model.valid) {
+    return model;
+  }
+
+  auto& registry = storage.registry;
+  model.clear();
+
+  auto rigidBodyView = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force>();
+  model.rigidBodyEntities.reserve(rigidBodyView.size_hint());
+  model.dynamicRigidBodyEntities.reserve(rigidBodyView.size_hint());
+  model.rigidBodyIsDynamic.reserve(rigidBodyView.size_hint());
+  model.rigidBodyInverseMass.reserve(rigidBodyView.size_hint());
+  model.rigidBodyInertia.reserve(9 * rigidBodyView.size_hint());
+  for (const auto entity : rigidBodyView) {
+    model.rigidBodyEntities.push_back(entity);
+  }
+  std::ranges::sort(model.rigidBodyEntities, [](auto lhs, auto rhs) {
+    return entt::to_integral(lhs) < entt::to_integral(rhs);
+  });
+  for (const auto entity : model.rigidBodyEntities) {
+    const bool dynamic = !registry.all_of<comps::StaticBodyTag>(entity);
+    model.rigidBodyIsDynamic.push_back(dynamic ? 1u : 0u);
+    if (dynamic) {
+      model.dynamicRigidBodyEntities.push_back(entity);
+    }
+
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const double inverse
+        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
+    model.rigidBodyInverseMass.push_back(inverse);
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        model.rigidBodyInertia.push_back(mass.inertia(row, col));
+      }
+    }
+  }
+
+  auto multibodyView = registry.view<comps::MultibodyStructure>();
+  std::vector<entt::entity, detail::BakedWorldModel::EntityAllocator>
+      multibodyEntities(model.rigidBodyEntities.get_allocator());
+  for (const auto entity : multibodyView) {
+    multibodyEntities.push_back(entity);
+  }
+  std::ranges::sort(multibodyEntities, [](auto lhs, auto rhs) {
+    return entt::to_integral(lhs) < entt::to_integral(rhs);
+  });
+
+  std::size_t multibodyDofOffset = 0;
+  for (const auto entity : multibodyEntities) {
+    const auto& structure = registry.get<comps::MultibodyStructure>(entity);
+    detail::BakedMultibodyModel baked;
+    baked.entity = entity;
+    baked.linkOffset = model.multibodyLinkEntities.size();
+    baked.linkCount = structure.links.size();
+    baked.jointOffset = model.multibodyJointEntities.size();
+    baked.jointCount = structure.joints.size();
+    baked.dofOffset = multibodyDofOffset;
+
+    model.multibodyLinkEntities.insert(
+        model.multibodyLinkEntities.end(),
+        structure.links.begin(),
+        structure.links.end());
+    model.multibodyJointEntities.insert(
+        model.multibodyJointEntities.end(),
+        structure.joints.begin(),
+        structure.joints.end());
+
+    std::size_t localDofOffset = 0;
+    for (const auto linkEntity : structure.links) {
+      const auto& link = registry.get<comps::LinkModel>(linkEntity);
+      std::size_t linkDofs = 0;
+      if (link.parentJoint != entt::null) {
+        linkDofs = registry.get<comps::JointModel>(link.parentJoint).getDOF();
+      }
+      model.multibodyLinkDofOffsets.push_back(localDofOffset);
+      model.multibodyLinkDofs.push_back(linkDofs);
+      localDofOffset += linkDofs;
+
+      model.multibodyLinkMass.push_back(link.mass.mass);
+      for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 3; ++col) {
+          model.multibodyLinkInertia.push_back(link.mass.inertia(row, col));
+        }
+      }
+    }
+    baked.dofCount = localDofOffset;
+    multibodyDofOffset += baked.dofCount;
+    model.multibodies.push_back(baked);
+  }
+
+  ++model.rigidBodyModelBuildCount;
+  model.valid = true;
+  return model;
 }
 
 //==============================================================================
@@ -3580,6 +3723,17 @@ void World::ensureDesignMode() const
 void World::markFrameTopologyChanged() noexcept
 {
   ++m_frameTopologyRevision;
+  if (m_storage != nullptr) {
+    m_storage->bakedModel.valid = false;
+  }
+}
+
+//==============================================================================
+void World::markModelChanged() noexcept
+{
+  if (m_storage != nullptr) {
+    m_storage->bakedModel.valid = false;
+  }
 }
 
 //==============================================================================
@@ -3702,6 +3856,7 @@ void World::reserveRegistryStorageForSimulation()
 void World::prepareStepPipelineCacheForCurrentConfiguration()
 {
   reserveRegistryStorageForSimulation();
+  (void)detail::ensureBakedWorldModelCurrent(*this);
   auto& cache = *m_stepPipelineCache;
   cache.hasAdvanceableRigidBodies = hasAdvanceableRigidBodyStructures(*this);
   cache.hasMultibodyStructure = hasMultibodyStructures(*this);
@@ -5996,50 +6151,12 @@ std::size_t World::getNumDifferentiableParameters() const noexcept
   return m_storage->differentiableParameters.size();
 }
 
-namespace {
-
-using DynamicRigidBodyEntityAllocator = common::StlAllocator<entt::entity>;
-using DynamicRigidBodyEntityVector
-    = std::vector<entt::entity, DynamicRigidBodyEntityAllocator>;
-
-DynamicRigidBodyEntityAllocator makeDynamicRigidBodyEntityAllocator(
-    const detail::WorldStorage& storage)
-{
-  return DynamicRigidBodyEntityAllocator{storage.memoryAllocator};
-}
-
-// Collect dynamic (non-static) rigid bodies in registry iteration order. This
-// is the same view and order the translational contact Jacobian uses, so the
-// state/control vectors line up with getStepDerivatives()'s [q; q̇] layout.
-DynamicRigidBodyEntityVector collectDynamicRigidBodies(
-    const auto& registry, DynamicRigidBodyEntityAllocator allocator)
-{
-  DynamicRigidBodyEntityVector bodies{allocator};
-  auto view = registry.template view<
-      comps::RigidBodyTag,
-      comps::Transform,
-      comps::Velocity,
-      comps::MassProperties,
-      comps::Force>();
-  for (const auto entity : view) {
-    if (registry.template all_of<comps::StaticBodyTag>(entity)) {
-      continue;
-    }
-    bodies.push_back(entity);
-  }
-  return bodies;
-}
-
-} // namespace
-
 //==============================================================================
 std::size_t World::getNumDofs() const
 {
   return 3
-         * collectDynamicRigidBodies(
-               m_storage->registry,
-               makeDynamicRigidBodyEntityAllocator(*m_storage))
-               .size();
+         * detail::ensureBakedWorldModelCurrent(*this)
+               .dynamicRigidBodyEntities.size();
 }
 
 //==============================================================================
@@ -6051,8 +6168,8 @@ std::size_t World::getNumEfforts() const
 //==============================================================================
 Eigen::VectorXd World::getStateVector() const
 {
-  const auto bodies = collectDynamicRigidBodies(
-      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
+  const auto& bodies
+      = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd state(2 * dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
@@ -6069,8 +6186,8 @@ Eigen::VectorXd World::getStateVector() const
 //==============================================================================
 void World::setStateVector(const Eigen::VectorXd& state)
 {
-  const auto bodies = collectDynamicRigidBodies(
-      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
+  const auto& bodies
+      = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_SIMULATION_THROW_T_IF(
       state.size() != 2 * dofs,
@@ -6090,8 +6207,8 @@ void World::setStateVector(const Eigen::VectorXd& state)
 //==============================================================================
 Eigen::VectorXd World::getControlVector() const
 {
-  const auto bodies = collectDynamicRigidBodies(
-      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
+  const auto& bodies
+      = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd control(dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
@@ -6105,8 +6222,8 @@ Eigen::VectorXd World::getControlVector() const
 //==============================================================================
 void World::setControlVector(const Eigen::VectorXd& control)
 {
-  const auto bodies = collectDynamicRigidBodies(
-      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
+  const auto& bodies
+      = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_SIMULATION_THROW_T_IF(
       control.size() != dofs,
@@ -7973,6 +8090,7 @@ void World::loadBinary(std::istream& input)
   }
 
   resetCountersFromRegistry();
+  m_storage->bakedModel.valid = false;
 
   if (m_simulationMode) {
     updateKinematics();

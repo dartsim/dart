@@ -313,6 +313,7 @@ void RigidBody::setMass(double mass)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .mass = mass;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -337,6 +338,7 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
       .inertia = inertia;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -567,6 +569,7 @@ void RigidBody::setStatic(bool isStatic)
   } else {
     registry.remove<comps::StaticBodyTag>(entity);
   }
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================

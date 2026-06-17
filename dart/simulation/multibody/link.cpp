@@ -201,6 +201,7 @@ void Link::setMass(double mass)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.mass = mass;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -222,6 +223,7 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.inertia = inertia;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -243,6 +245,7 @@ void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
   dart::simulation::detail::registryOf(*getWorld())
       .get<comps::LinkModel>(detail::toRegistryEntity(getEntity()))
       .mass.localCenterOfMass = centerOfMass;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================

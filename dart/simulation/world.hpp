@@ -782,9 +782,9 @@ public:
   /// state/control interface.
   ///
   /// First slice: the translational rigid-body reduction. `ndof = 3 * (number
-  /// of dynamic, non-static rigid bodies)`, matching the `[q; q̇]` layout of the
-  /// contact-aware step Jacobian. The full state vector therefore has size
-  /// `2 * ndof` and the control vector has size `ndof`.
+  /// of dynamic, non-static rigid bodies)`, using the baked dense rigid-body
+  /// index order created at the simulation boundary. The full state vector
+  /// therefore has size `2 * ndof` and the control vector has size `ndof`.
   [[nodiscard]] std::size_t getNumDofs() const;
 
   /// Number of control (effort) coordinates. Equal to `getNumDofs()`: the
@@ -795,8 +795,8 @@ public:
   /// The current state vector `x = [q; q̇]`, size `2 * getNumDofs()`.
   ///
   /// `q` is the stacked translational position and `q̇` the stacked linear
-  /// velocity of the dynamic (non-static) rigid bodies in registration order,
-  /// matching the layout of `getStepDerivatives()`.
+  /// velocity of the dynamic (non-static) rigid bodies in baked dense-index
+  /// order, matching the layout of `getStepDerivatives()`.
   [[nodiscard]] Eigen::VectorXd getStateVector() const;
 
   /// Overwrite the state vector `x = [q; q̇]` (size `2 * getNumDofs()`).
@@ -806,8 +806,8 @@ public:
   void setStateVector(const Eigen::VectorXd& state);
 
   /// The current control vector `u = τ`, size `getNumEfforts()`: the applied
-  /// force on each dynamic rigid body, three components per body, in
-  /// registration order.
+  /// force on each dynamic rigid body, three components per body, in baked
+  /// dense-index order.
   [[nodiscard]] Eigen::VectorXd getControlVector() const;
 
   /// Overwrite the control vector `u = τ` (size `getNumEfforts()`).
@@ -1136,6 +1136,7 @@ private:
       const CollisionQueryOptions& options,
       bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
+  void markModelChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
