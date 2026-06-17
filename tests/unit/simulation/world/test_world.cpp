@@ -22386,12 +22386,14 @@ TEST(World, RigidBodyControlSequenceBatchRejectsMalformedShape)
   namespace sx = dart::simulation;
   namespace compute = dart::simulation::compute;
 
-  const auto emptyControls
-      = compute::extractRigidBodyControlSequenceBatch({}, 2);
+  auto emptyControls = compute::extractRigidBodyControlSequenceBatch({}, 2);
   EXPECT_EQ(emptyControls.stepCount, 2u);
   EXPECT_EQ(emptyControls.worldCount, 0u);
   EXPECT_EQ(emptyControls.bodyCount, 0u);
   EXPECT_TRUE(compute::rigidBodyControlForcesAtStep(emptyControls, 0).empty());
+  const auto& constEmptyControls = emptyControls;
+  EXPECT_TRUE(
+      compute::rigidBodyControlForcesAtStep(constEmptyControls, 0).empty());
 
   sx::World world;
   world.addRigidBody("body", sx::RigidBodyOptions{});
@@ -22500,6 +22502,67 @@ TEST(World, BakedRigidBodyBatchOwnerRefreshesModelAfterStructuralEdit)
   EXPECT_DOUBLE_EQ(owner.model().inverseMass[0], 0.125);
 }
 
+// Test owner reset and multi-world application paths that rollout reuses when
+// recycling baked Model storage across batches.
+TEST(World, BakedRigidBodyBatchOwnerClearsAndAppliesMultiWorldState)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world) {
+    sx::RigidBodyOptions options;
+    options.mass = 2.0;
+    options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+    options.linearVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
+    world.addRigidBody("owner_body", options);
+  };
+
+  sx::World w0;
+  sx::World w1;
+  buildWorld(w0);
+  buildWorld(w1);
+
+  compute::BakedRigidBodyBatchOwner owner;
+  const std::vector<const sx::World*> constWorlds{&w0, &w1};
+  owner.captureFromWorlds(constWorlds);
+  ASSERT_EQ(owner.state().worldCount, 2u);
+  ASSERT_EQ(owner.state().bodyCount, 1u);
+  const auto captured = owner.state();
+
+  auto moveBody = [](sx::World& world, const Eigen::Vector3d& translation) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = translation;
+    world.getRigidBody("owner_body")->setTransform(transform);
+  };
+  moveBody(w0, Eigen::Vector3d::Zero());
+  moveBody(w1, Eigen::Vector3d::Ones());
+
+  const std::vector<sx::World*> mutableWorlds{&w0, &w1};
+  owner.applyToWorlds(mutableWorlds);
+
+  const auto restored0 = compute::extractRigidBodyState(w0);
+  const auto restored1 = compute::extractRigidBodyState(w1);
+  EXPECT_EQ(
+      restored0.position,
+      std::vector<double>(
+          captured.position.begin(), captured.position.begin() + 3));
+  EXPECT_EQ(
+      restored1.position,
+      std::vector<double>(
+          captured.position.begin() + 3, captured.position.begin() + 6));
+
+  owner.clear();
+  EXPECT_TRUE(owner.model().isEmpty());
+  EXPECT_TRUE(owner.state().isEmpty());
+  EXPECT_EQ(owner.diagnostics().modelRefreshCount, 0u);
+  EXPECT_EQ(owner.diagnostics().stateCaptureCount, 0u);
+
+  owner.captureFromWorlds({});
+  EXPECT_EQ(owner.state().worldCount, 0u);
+  EXPECT_EQ(owner.state().bodyCount, 0u);
+  EXPECT_TRUE(owner.model().isEmpty());
+}
+
 // Test the immutable Model batch: inverse masses are extracted in state order,
 // and the model-based integrator overload matches the explicit-vector overload.
 TEST(World, RigidBodyModelBatchIntegration)
@@ -22551,6 +22614,11 @@ TEST(World, RigidBodyModelBatchIntegration)
   EXPECT_THROW(
       compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
       sx::InvalidArgumentException);
+
+  EXPECT_DOUBLE_EQ(
+      compute::totalKineticEnergy(
+          compute::RigidBodyStateBatch{}, compute::RigidBodyModelBatch{}),
+      0.0);
 }
 
 // Test opt-in replay recording and in-place restore of rigid-body runtime
