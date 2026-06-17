@@ -889,8 +889,10 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_GE(after.solverIterations, 1u);
   EXPECT_GE(after.objectiveEvaluations, 1u);
   EXPECT_GE(after.projectedNewtonSteps + after.projectedNewtonFallbacks, 1u);
-  EXPECT_GT(after.projectedNewtonHessianNonZeros, 0u);
-  EXPECT_GT(after.projectedNewtonHessianStorageBytes, 0u);
+  // Small direct systems use retained dense LDLT scratch. Sparse Hessian
+  // footprint diagnostics only describe sparse/iterative assemblies.
+  EXPECT_EQ(after.projectedNewtonHessianNonZeros, 0u);
+  EXPECT_EQ(after.projectedNewtonHessianStorageBytes, 0u);
   // No contacts for a single free-hanging tetrahedron.
   EXPECT_EQ(after.selfContactBarrierActiveContacts, 0u);
   EXPECT_EQ(after.convergedActiveContactCount, 0u);
@@ -970,6 +972,7 @@ TEST(DeformableBody, SparseInertiaAssemblyOmitsExplicitZeroEntries)
          Eigen::Vector3d::Zero()};
   options.masses = {1.0, 2.0, 3.0};
   options.edges = {sx::DeformableEdge{0, 1}};
+  options.material.useIterativeLinearSolver = true;
   world.addDeformableBody("spring_with_isolated_node", options);
 
   world.step(1);
@@ -983,8 +986,8 @@ TEST(DeformableBody, SparseInertiaAssemblyOmitsExplicitZeroEntries)
 
 //==============================================================================
 // The public solver diagnostics expose which linear-solve path each Newton
-// iteration took: the default direct (sparse Cholesky) solve never reports an
-// iterative solve, while a body opting in to the iterative
+// iteration took: the default direct solve never reports an iterative solve,
+// while a body opting in to the iterative
 // (incomplete-Cholesky-preconditioned CG) solve surfaces a nonzero solve count,
 // CG iteration count, and finite residual estimate. These are the public-API
 // mirrors of the internal iterative-solver stats, so Python callers can observe
@@ -1030,12 +1033,13 @@ TEST(DeformableBody, DiagnosticsExposeIterativeSolveCount)
   const auto direct = run(false);
   const auto iterative = run(true);
 
-  // The default direct solve never takes the iterative path...
+  // The default small direct solve never takes the iterative path, and it uses
+  // retained dense LDLT scratch rather than assembling sparse Hessian storage.
   EXPECT_EQ(direct.solves, 0u);
   EXPECT_EQ(direct.matrixFreeSolves, 0u);
   EXPECT_EQ(direct.iterations, 0u);
-  EXPECT_GT(direct.hessianNonZeros, 0u);
-  EXPECT_GT(direct.hessianStorageBytes, 0u);
+  EXPECT_EQ(direct.hessianNonZeros, 0u);
+  EXPECT_EQ(direct.hessianStorageBytes, 0u);
   EXPECT_EQ(direct.maxError, 0.0);
   // ...while the opt-in iterative solve surfaces through the public diagnostics
   // with CG effort, sparse-Hessian footprint, and a finite residual estimate.
@@ -4036,7 +4040,7 @@ TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
   world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world.setTimeStep(0.01);
 
-  constexpr std::size_t kNodeCount = 8;
+  constexpr std::size_t kNodeCount = 44;
   constexpr double spacing = 0.1;
   sx::DeformableBodyOptions options;
   for (std::size_t i = 0; i < kNodeCount; ++i) {
@@ -4070,13 +4074,9 @@ TEST(DeformableBody, SparseProjectedNewtonReusesSymbolicFactorization)
 
 //==============================================================================
 // The iterative (conjugate-gradient) projected-Newton linear solve is a
-// matrix-light alternative to the sparse Cholesky factorization: it never
-// factorizes, so its memory stays near O(nnz) and it scales to far larger
-// meshes. On a small mesh it must reach the same equilibrium as the direct
-// solve. This drops an identical FEM cube onto a ground barrier with each
-// solver and checks (a) the runs took mutually exclusive solve paths -- the
-// direct run only factorized, the iterative run only ran CG and never
-// factorized -- and (b) they settle to the same configuration.
+// matrix-light alternative to the direct factorization path. On a small mesh it
+// must reach the same equilibrium as the default direct solve, which uses
+// retained dense LDLT scratch instead of Eigen's sparse factorizer.
 TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
 {
   struct CubeRun
@@ -4126,11 +4126,11 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
   const CubeRun direct = runCube(false);
   const CubeRun iterative = runCube(true);
 
-  // The direct run factorized and never took the CG path; the iterative run is
-  // its mirror image -- all CG, no factorization (neither numeric nor
+  // The default small direct run never took the CG path; the iterative run is
+  // its mirror image -- all CG, no sparse factorization (neither numeric nor
   // symbolic).
   EXPECT_EQ(direct.cgSolves, 0u);
-  EXPECT_GT(direct.numericFactorizations, 0u);
+  EXPECT_EQ(direct.numericFactorizations, 0u);
   EXPECT_GT(iterative.cgSolves, 0u);
   EXPECT_EQ(iterative.numericFactorizations, 0u);
   EXPECT_EQ(iterative.symbolicFactorizations, 0u);
@@ -4146,10 +4146,10 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
 //==============================================================================
 // The matrix-free projected-Newton path evaluates Hessian-vector products from
 // local blocks instead of first assembling an Eigen SparseMatrix. It is kept as
-// an explicit opt-in so the existing sparse direct and sparse IC-CG paths
-// remain unchanged, but on a contact-free FEM cube it should produce the same
-// settled configuration while reporting zero sparse Hessian footprint.
-TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
+// an explicit opt-in, but on a contact-free small FEM cube it should produce
+// the same settled configuration as the retained dense direct path while both
+// report zero sparse Hessian footprint.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesDefaultDirectSolve)
 {
   struct CubeRun
   {
@@ -4196,8 +4196,8 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
 
   EXPECT_EQ(direct.cgSolves, 0u);
   EXPECT_EQ(direct.matrixFreeSolves, 0u);
-  EXPECT_GT(direct.numericFactorizations, 0u);
-  EXPECT_GT(direct.hessianNonZeros, 0u);
+  EXPECT_EQ(direct.numericFactorizations, 0u);
+  EXPECT_EQ(direct.hessianNonZeros, 0u);
 
   EXPECT_GT(matrixFree.cgSolves, 0u);
   EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
@@ -4213,11 +4213,11 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseDirectSolve)
 
 //==============================================================================
 // Ground contact adds a stiff barrier block to the projected-Newton Hessian.
-// This compares all three solve paths on the same contacting FEM cube: sparse
-// direct, sparse IC-CG, and matrix-free CG. The matrix-free path must stay on
-// Hessian-vector products (zero sparse footprint) while reaching the same
-// contact equilibrium as the assembled sparse solvers.
-TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact)
+// This compares the small retained-dense direct path, sparse IC-CG, and
+// matrix-free CG on the same contacting FEM cube. The matrix-free path must
+// stay on Hessian-vector products while reaching the same contact equilibrium
+// as the assembled and dense direct solvers.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSolversOnGroundContact)
 {
   enum class SolveMode
   {
@@ -4286,9 +4286,9 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseSolversOnGroundContact)
 
   EXPECT_EQ(direct.cgSolves, 0u);
   EXPECT_EQ(direct.matrixFreeSolves, 0u);
-  EXPECT_GT(direct.numericFactorizations, 0u);
-  EXPECT_GT(direct.hessianNonZeros, 0u);
-  EXPECT_GT(direct.hessianStorageBytes, 0u);
+  EXPECT_EQ(direct.numericFactorizations, 0u);
+  EXPECT_EQ(direct.hessianNonZeros, 0u);
+  EXPECT_EQ(direct.hessianStorageBytes, 0u);
 
   EXPECT_GT(sparseCg.cgSolves, 0u);
   EXPECT_EQ(sparseCg.matrixFreeSolves, 0u);

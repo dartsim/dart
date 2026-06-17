@@ -19,7 +19,11 @@ Before finalizing substantial AI-assisted work:
 4. Identify missing, weakly verified, or blocked requirements.
 5. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
    promoted and the completed task folder was removed.
-6. Continue working until all required items are satisfied or a real blocker
+6. If remaining dev-task work is blocked by a substantial maintainer decision,
+   external dependency, or intentionally out-of-session scope boundary, verify
+   that the human was asked when needed and that the parked work has a durable
+   owner in `docs/plans/`, `docs/design/`, or `docs/onboarding/`.
+7. Continue working until all required items are satisfied or a real blocker
    remains.
 
 ## Research Paper Implementation Evidence
@@ -69,6 +73,20 @@ the broader CPU/GPU, demo, benchmark, and performance requirements.
 | Release work        | release-management docs, changelog/version checks, target branch gates                                                                                             |
 
 Before any commit, run `pixi run lint` as required by `AGENTS.md`.
+
+## DART 7 Simulation Allocation Evidence
+
+Changes that add, migrate, or materially alter a DART 7 `World::step()` domain,
+solver, stage, or hot-path scratch owner must update
+`docs/plans/122-simulation-loop-allocation-hardening/coverage-matrix.md` and
+add or extend the focused allocation gate in the same change. The final evidence
+starts measuring on the first `World::step()` after bake; unmeasured warm-up
+simulation steps before the counter starts are steady-state evidence only.
+
+The required gate checks the relevant combination of World base allocator
+growth, global heap allocation, and raw malloc-family allocation on supported
+hosts. Classic DART 6 paths are excluded unless the change is migrating that
+path into the DART 7 `World` pipeline.
 
 ## AI Infrastructure Evidence
 
