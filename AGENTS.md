@@ -54,6 +54,7 @@ portable source of truth.
 | Planning                              | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md` |
 | PR reviews                            | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                           |
 | Release work                          | `docs/onboarding/release-management.md`                                                                                                                            |
+| Changelog work                        | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`                                                      |
 | Dev tasks                             | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                         |
 
 ## AI Workflows And Skills
@@ -70,13 +71,13 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 
 ## Key Rules
 
-- **Bug fixes**: Require PRs to BOTH `release-6.17` AND `main` branches. See `docs/onboarding/contributing.md`.
+- **Bug fixes**: Require PRs to BOTH the active DART 6 LTS branch (highest maintained `release-6.*`, currently `release-6.19`) AND `main`. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. Promote durable artifacts before completion and delete the task folder in the completing PR. Relocate any deferred or hard-blocked remaining work to a durable home (design/plan/dashboard) and ask the human before retiring if it can't be completed. See `docs/dev_tasks/README.md` for criteria and cleanup rules.
 - **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
-- **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.17.1` for `release-6.17`).
+- **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, branch-matching DART 6.x patch milestone for the active DART 6 LTS branch).
 - **PR pushes**: Before every push to a PR branch, first merge the latest base branch (usually `main`) into it — merge, never rebase a published PR branch. The local merge is routine; the push still needs approval. See `docs/onboarding/ai-tools.md`.
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
@@ -87,7 +88,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 - [ ] **`pixi run lint`** — ALWAYS run, even for docs-only changes. CI WILL fail without this.
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
-- [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
+- [ ] **CHANGELOG.md** — Update according to `docs/onboarding/changelog.md` if adding features, fixing bugs, or making breaking changes
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, promote durable artifacts and remove the folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.

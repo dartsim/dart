@@ -1559,29 +1559,9 @@ struct BasicRigidBodyStateScratchBatch
   ScalarVector angularVelocity;
 };
 
-template <typename ScalarAllocator>
-struct BasicRigidBodyModelScratchBatch
-{
-  using ScalarVector = std::vector<double, ScalarAllocator>;
-
-  BasicRigidBodyModelScratchBatch() = default;
-
-  explicit BasicRigidBodyModelScratchBatch(const ScalarAllocator& allocator)
-    : inverseMass(allocator), inertia(allocator)
-  {
-  }
-
-  std::size_t worldCount = 1;
-  std::size_t bodyCount = 0;
-  ScalarVector inverseMass;
-  ScalarVector inertia;
-};
-
 using RigidBodyBatchScalarAllocator = common::StlAllocator<double>;
 using AllocatorAwareRigidBodyStateBatch
     = BasicRigidBodyStateScratchBatch<RigidBodyBatchScalarAllocator>;
-using AllocatorAwareRigidBodyModelBatch
-    = BasicRigidBodyModelScratchBatch<RigidBodyBatchScalarAllocator>;
 
 enum class RigidBodyForceAssemblyMode
 {
@@ -1598,13 +1578,13 @@ void assembleRigidBodyForces(
     RigidBodyForceAssemblyMode mode = RigidBodyForceAssemblyMode::AllBodies)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-  batch.clearAndReserve(view.size_hint());
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
+  batch.clearAndReserve(model.rigidBodyEntities.size());
 
   const Eigen::Vector3d gravity
       = includeGravity ? world.getGravity() : Eigen::Vector3d::Zero();
-  for (const auto entity : view) {
+  for (const auto entity : model.rigidBodyEntities) {
     const bool prescribedBody
         = isPrescribedRigidBodyIntegrationBody(registry, entity);
     if (mode == RigidBodyForceAssemblyMode::AdvanceableOnly && prescribedBody) {
@@ -1641,27 +1621,25 @@ template <typename StateBatch>
 void extractRigidBodyStateInto(const World& world, StateBatch& batch)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   batch.worldCount = 1;
-  batch.bodyCount = 0;
+  batch.bodyCount = model.rigidBodyEntities.size();
   batch.position.clear();
   batch.orientation.clear();
   batch.linearVelocity.clear();
   batch.angularVelocity.clear();
 
-  const auto bodyCount = view.size_hint();
+  const auto bodyCount = model.rigidBodyEntities.size();
   batch.position.reserve(3 * bodyCount);
   batch.orientation.reserve(4 * bodyCount);
   batch.linearVelocity.reserve(3 * bodyCount);
   batch.angularVelocity.reserve(3 * bodyCount);
 
-  for (const auto entity : view) {
-    ++batch.bodyCount;
-
-    const auto& transform = view.get<comps::Transform>(entity);
-    const auto& velocity = view.get<comps::Velocity>(entity);
+  for (const auto entity : model.rigidBodyEntities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
 
     batch.position.push_back(transform.position.x());
     batch.position.push_back(transform.position.y());
@@ -1682,40 +1660,6 @@ void extractRigidBodyStateInto(const World& world, StateBatch& batch)
   }
 }
 
-//==============================================================================
-template <typename ModelBatch>
-void extractRigidBodyModelBatchInto(const World& world, ModelBatch& model)
-{
-  const auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-
-  model.worldCount = 1;
-  model.bodyCount = 0;
-  model.inverseMass.clear();
-  model.inertia.clear();
-
-  const auto bodyCount = view.size_hint();
-  model.inverseMass.reserve(bodyCount);
-  model.inertia.reserve(9 * bodyCount);
-
-  for (const auto entity : view) {
-    ++model.bodyCount;
-
-    const auto& mass = registry.get<comps::MassProperties>(entity);
-    const double inverse
-        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-    model.inverseMass.push_back(inverse);
-
-    for (int row = 0; row < 3; ++row) {
-      for (int col = 0; col < 3; ++col) {
-        model.inertia.push_back(mass.inertia(row, col));
-      }
-    }
-  }
-}
-
-//==============================================================================
 template <typename SourceStateBatch, typename TargetStateBatch>
 void copyRigidBodyStateBatch(
     const SourceStateBatch& source, TargetStateBatch& target)
@@ -1726,6 +1670,19 @@ void copyRigidBodyStateBatch(
   target.orientation = source.orientation;
   target.linearVelocity = source.linearVelocity;
   target.angularVelocity = source.angularVelocity;
+}
+
+//==============================================================================
+rigid_body_batch_ops::RigidBodyModelBatchView rigidBodyModelBatchView(
+    const dart::simulation::detail::BakedWorldModel& model)
+{
+  return {
+      1,
+      model.rigidBodyEntities.size(),
+      std::span<const double>{
+          model.rigidBodyInverseMass.data(), model.rigidBodyInverseMass.size()},
+      std::span<const double>{
+          model.rigidBodyInertia.data(), model.rigidBodyInertia.size()}};
 }
 
 //==============================================================================
@@ -1775,19 +1732,19 @@ void applyRigidBodyStateFromBatch(World& world, const auto& state)
       state.bodyCount);
 
   auto& registry = dart::simulation::detail::registryOf(world);
-  auto view
-      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   std::size_t index = 0;
-  for (const auto entity : view) {
+  for (const auto entity : model.rigidBodyEntities) {
     DART_SIMULATION_THROW_T_IF(
         index >= state.bodyCount,
         InvalidArgumentException,
         "Rigid-body state scratch has fewer bodies ({}) than the world",
         state.bodyCount);
 
-    auto& transform = view.get<comps::Transform>(entity);
-    auto& velocity = view.get<comps::Velocity>(entity);
+    auto& transform = registry.get<comps::Transform>(entity);
+    auto& velocity = registry.get<comps::Velocity>(entity);
 
     transform.position = Eigen::Vector3d(
         state.position[3 * index + 0],
@@ -2230,6 +2187,8 @@ struct DeformableContactSolverScratch
 
   Eigen::VectorXd projectedNewtonRhs;
   Eigen::VectorXd projectedNewtonSolution;
+  Eigen::MatrixXd projectedNewtonDenseHessian;
+  Eigen::LDLT<Eigen::MatrixXd> projectedNewtonDenseLdlt;
   Eigen::SparseMatrix<double> projectedNewtonHessian;
   ProjectedNewtonTripletVector projectedNewtonTriplets;
   ProjectedNewtonScalarVector projectedNewtonEdgeBlocks;
@@ -2251,6 +2210,62 @@ struct DeformableContactSolverScratch
   ProjectedNewtonVector3Vector groundFrictionNormalDirection;
   ProjectedNewtonFrictionContactVector selfContactFrictionContacts;
 };
+
+//==============================================================================
+bool tryAssembleProjectedNewtonHessianFromCachedPattern(
+    DeformableContactSolverScratch& scratch, Eigen::Index dim)
+{
+  auto& hessian = scratch.projectedNewtonHessian;
+  const auto& triplets = scratch.projectedNewtonTriplets;
+  const auto& cachedOuter = scratch.newtonPatternOuter;
+  const auto& cachedInner = scratch.newtonPatternInner;
+  if (!scratch.newtonPatternValid || hessian.rows() != dim
+      || hessian.cols() != dim || !hessian.isCompressed()
+      || cachedOuter.size() != static_cast<std::size_t>(dim + 1)
+      || hessian.nonZeros() != static_cast<Eigen::Index>(cachedInner.size())) {
+    return false;
+  }
+
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using StorageIndex = SparseMatrix::StorageIndex;
+  const StorageIndex* outer = hessian.outerIndexPtr();
+  const StorageIndex* inner = hessian.innerIndexPtr();
+  double* values = hessian.valuePtr();
+  if (outer == nullptr || inner == nullptr || values == nullptr) {
+    return false;
+  }
+
+  for (Eigen::Index col = 0; col <= dim; ++col) {
+    if (outer[col] != cachedOuter[static_cast<std::size_t>(col)]) {
+      return false;
+    }
+  }
+  for (Eigen::Index entry = 0; entry < hessian.nonZeros(); ++entry) {
+    if (inner[entry] != cachedInner[static_cast<std::size_t>(entry)]) {
+      return false;
+    }
+  }
+
+  std::fill(values, values + hessian.nonZeros(), 0.0);
+  for (const auto& triplet : triplets) {
+    const Eigen::Index row = triplet.row();
+    const Eigen::Index col = triplet.col();
+    if (row < 0 || row >= dim || col < 0 || col >= dim) {
+      return false;
+    }
+    const auto begin = outer[col];
+    const auto end = outer[col + 1];
+    const StorageIndex rowIndex = static_cast<StorageIndex>(row);
+    const StorageIndex* it
+        = std::lower_bound(inner + begin, inner + end, rowIndex);
+    if (it == inner + end || *it != rowIndex) {
+      return false;
+    }
+    values[it - inner] += triplet.value();
+  }
+
+  return true;
+}
 
 //==============================================================================
 struct ProjectedNewtonMatrixFreeHessian
@@ -6072,6 +6087,7 @@ void reserveProjectedNewtonScratch(
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
   scratch.projectedNewtonRhs.resize(dim);
   scratch.projectedNewtonSolution.resize(dim);
+  scratch.projectedNewtonDenseHessian.resize(dim, dim);
 
   // Reserve DART-owned barrier buffers for the baked candidate capacity, not
   // only the contacts active at bake.
@@ -7445,6 +7461,12 @@ bool computeProjectedNewtonDirection(
   const bool solveMatrixFree = useMatrixFreeSolver;
 
   const auto dim = static_cast<Eigen::Index>(3 * nodeCount);
+  // Keep medium direct systems on retained dense LDLT scratch. Eigen's sparse
+  // direct factorizer owns malloc-backed numeric storage, so it is reserved for
+  // larger systems where dense factorization is not appropriate.
+  constexpr Eigen::Index kSmallDenseDirectDofs = 128;
+  const bool solveDenseDirect
+      = !solveIteratively && dim <= kSmallDenseDirectDofs;
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
   // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
@@ -7940,12 +7962,14 @@ bool computeProjectedNewtonDirection(
   }
 
   Eigen::SparseMatrix<double>& hessian = solverCache.projectedNewtonHessian;
-  if (!solveMatrixFree) {
-    hessian.resize(dim, dim);
-    hessian.setZero();
-    hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
-    hessian.setFromTriplets(triplets.begin(), triplets.end());
-    hessian.makeCompressed();
+  if (!solveMatrixFree && !solveDenseDirect) {
+    if (!tryAssembleProjectedNewtonHessianFromCachedPattern(solverCache, dim)) {
+      hessian.resize(dim, dim);
+      hessian.setZero();
+      hessian.reserve(static_cast<Eigen::Index>(triplets.size()));
+      hessian.setFromTriplets(triplets.begin(), triplets.end());
+      hessian.makeCompressed();
+    }
     const auto hessianNonZeros = static_cast<std::size_t>(hessian.nonZeros());
     const auto hessianCols = static_cast<std::size_t>(hessian.cols());
     using SparseStorageIndex = Eigen::SparseMatrix<double>::StorageIndex;
@@ -8016,6 +8040,28 @@ bool computeProjectedNewtonDirection(
     // The cached direct-solver symbolic pattern was not refreshed this step, so
     // invalidate it: a later step that drops back to the direct path must
     // re-analyze rather than trust a stale ordering.
+    solverCache.newtonPatternValid = false;
+  } else if (solveDenseDirect) {
+    auto& denseHessian = solverCache.projectedNewtonDenseHessian;
+    denseHessian.resize(dim, dim);
+    denseHessian.setZero();
+    for (const auto& triplet : triplets) {
+      denseHessian(triplet.row(), triplet.col()) += triplet.value();
+    }
+
+    auto& ldlt = solverCache.projectedNewtonDenseLdlt;
+    ldlt.compute(denseHessian);
+    if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
+    solution.resize(dim);
+    solution = rhs;
+    ldlt.solveInPlace(solution);
+    if (ldlt.info() != Eigen::Success || !solution.allFinite()) {
+      solverCache.newtonPatternValid = false;
+      return false;
+    }
     solverCache.newtonPatternValid = false;
   } else {
     // Reuse the fill-reducing symbolic factorization when the sparsity pattern
@@ -10224,7 +10270,6 @@ struct BatchedRigidBodyIntegrationStage::Scratch
     : forces(allocator),
       state(RigidBodyBatchScalarAllocator{allocator}),
       initialState(RigidBodyBatchScalarAllocator{allocator}),
-      model(RigidBodyBatchScalarAllocator{allocator}),
       frameUpdateOrder(common::StlAllocator<entt::entity>{allocator}),
       visitState(common::StlAllocator<int>{allocator})
   {
@@ -10233,7 +10278,6 @@ struct BatchedRigidBodyIntegrationStage::Scratch
   AllocatorAwareRigidBodyForceBatch forces;
   AllocatorAwareRigidBodyStateBatch state;
   AllocatorAwareRigidBodyStateBatch initialState;
-  AllocatorAwareRigidBodyModelBatch model;
   std::vector<entt::entity, common::StlAllocator<entt::entity>>
       frameUpdateOrder;
   std::vector<int, common::StlAllocator<int>> visitState;
@@ -12489,12 +12533,13 @@ void BatchedRigidBodyIntegrationStage::execute(
 
   extractRigidBodyStateInto(world, scratch.state);
   copyRigidBodyStateBatch(scratch.state, scratch.initialState);
-  extractRigidBodyModelBatchInto(world, scratch.model);
   const auto timeStep = world.getTimeStep();
+  const auto& model
+      = dart::simulation::detail::ensureBakedWorldModelCurrent(world);
 
   rigid_body_batch_ops::integrateRigidBodyStateBatch(
       rigid_body_batch_ops::mutableStateBatchView(scratch.state),
-      rigid_body_batch_ops::modelBatchView(scratch.model),
+      rigidBodyModelBatchView(model),
       forces.force,
       forces.torque,
       timeStep);

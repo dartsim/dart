@@ -2201,7 +2201,7 @@ void resetSpatialVectorScratch(SpatialVectorScratch& scratch, std::size_t count)
 // unit-twist joints (see treeSupportsAnalyticDerivatives). [angular; linear]
 // spatial convention; crm = motionCross, crf = forceCross; ∂X_i/∂q_i =
 // -crm(S_i) X_i. O(dof²): a down/up sweep per source coordinate.
-InverseDynamicsDerivatives rneaDerivatives(
+void rneaDerivativesInto(
     std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
@@ -2215,7 +2215,8 @@ InverseDynamicsDerivatives rneaDerivatives(
     SpatialVectorScratch& deltaVelocity,
     SpatialVectorScratch& deltaAcceleration,
     SpatialVectorScratch& deltaForce,
-    SpatialVectorScratch& accumulatedForce)
+    SpatialVectorScratch& accumulatedForce,
+    InverseDynamicsDerivatives& out)
 {
   const auto count = links.size();
   const auto n = static_cast<Eigen::Index>(dofCount);
@@ -2257,9 +2258,10 @@ InverseDynamicsDerivatives rneaDerivatives(
     }
   }
 
-  InverseDynamicsDerivatives out;
-  out.dTau_dq = Eigen::MatrixXd::Zero(n, n);
-  out.dTau_dqdot = Eigen::MatrixXd::Zero(n, n);
+  out.dTau_dq.resize(n, n);
+  out.dTau_dq.setZero();
+  out.dTau_dqdot.resize(n, n);
+  out.dTau_dqdot.setZero();
   out.valid = true;
 
   for (std::size_t m = 0; m < count; ++m) {
@@ -2353,8 +2355,6 @@ InverseDynamicsDerivatives rneaDerivatives(
       }
     }
   }
-
-  return out;
 }
 
 } // namespace
@@ -2872,8 +2872,10 @@ void computeMultibodyInverseDynamicsDerivativesInto(
     const Eigen::VectorXd& generalizedAcceleration,
     InverseDynamicsDerivatives& result)
 {
-  result = InverseDynamicsDerivatives{};
+  result.valid = false;
   if (structure.links.empty()) {
+    result.dTau_dq.resize(0, 0);
+    result.dTau_dqdot.resize(0, 0);
     return;
   }
 
@@ -2900,6 +2902,8 @@ void computeMultibodyInverseDynamicsDerivativesInto(
       || generalizedAcceleration.size()
              != static_cast<Eigen::Index>(storage.tree.dofCount)
       || !treeSupportsAnalyticDerivatives(registry, storage.tree)) {
+    result.dTau_dq.resize(0, 0);
+    result.dTau_dqdot.resize(0, 0);
     return; // valid == false: caller falls back to finite differencing
   }
 
@@ -2908,7 +2912,7 @@ void computeMultibodyInverseDynamicsDerivativesInto(
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
 
-  result = rneaDerivatives(
+  rneaDerivativesInto(
       linkSpan(storage.tree),
       baseAcceleration,
       storage.tree.dofCount,
@@ -2922,7 +2926,8 @@ void computeMultibodyInverseDynamicsDerivativesInto(
       storage.rneaDerivativeDeltaVelocity,
       storage.rneaDerivativeDeltaAcceleration,
       storage.rneaDerivativeDeltaForce,
-      storage.rneaDerivativeAccumulatedForce);
+      storage.rneaDerivativeAccumulatedForce,
+      result);
 }
 
 //==============================================================================
@@ -3098,6 +3103,71 @@ ComputeStageMetadata MultibodyVelocityStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+struct MultibodyVelocityStage::Scratch
+{
+  using EntityAllocator = common::StlAllocator<entt::entity>;
+
+  struct WorkItem
+  {
+    const comps::MultibodyStructure* structure = nullptr;
+    MultibodyDynamicsScratch* scratch = nullptr;
+    PendingMultibodyVelocity* pendingVelocity = nullptr;
+  };
+
+  using WorkItemAllocator = common::StlAllocator<WorkItem>;
+
+  Scratch() = default;
+
+  explicit Scratch(common::MemoryAllocator& allocator)
+    : entities(EntityAllocator{allocator}),
+      workItems(WorkItemAllocator{allocator})
+  {
+  }
+
+  std::vector<entt::entity, EntityAllocator> entities;
+  std::vector<WorkItem, WorkItemAllocator> workItems;
+};
+
+//==============================================================================
+MultibodyVelocityStage::MultibodyVelocityStage(
+    common::MemoryManager* memoryManager)
+  : m_scratch(
+        memoryManager != nullptr
+            ? constructStageOwnedScratch<Scratch>(
+                  memoryManager, memoryManager->getFreeAllocator())
+            : constructStageOwnedScratch<Scratch>(nullptr),
+        ScratchDeleter{memoryManager})
+{
+}
+
+//==============================================================================
+MultibodyVelocityStage::~MultibodyVelocityStage() = default;
+
+//==============================================================================
+void MultibodyVelocityStage::ScratchDeleter::operator()(
+    Scratch* scratch) const noexcept
+{
+  destroyStageOwnedScratch(memoryManager, scratch);
+}
+
+//==============================================================================
+void MultibodyVelocityStage::prepare(World& world)
+{
+  auto& registry = dart::simulation::detail::registryOf(world);
+  std::size_t multibodyCount = 0;
+  for (auto entity : registry.view<comps::MultibodyStructure>()) {
+    (void)entity;
+    ++multibodyCount;
+  }
+
+  auto& scratch = *m_scratch;
+  scratch.entities.clear();
+  scratch.entities.reserve(multibodyCount);
+  scratch.workItems.clear();
+  scratch.workItems.reserve(multibodyCount);
+}
+
+//==============================================================================
 void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
@@ -3105,13 +3175,8 @@ void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
   const double timeStep = world.getTimeStep();
 
   auto view = registry.view<comps::MultibodyStructure>();
-  struct WorkItem
-  {
-    const comps::MultibodyStructure* structure = nullptr;
-    MultibodyDynamicsScratch* scratch = nullptr;
-    PendingMultibodyVelocity* pendingVelocity = nullptr;
-  };
-  std::vector<entt::entity> entities;
+  auto& scratch = *m_scratch;
+  scratch.entities.clear();
   for (auto entity : view) {
     if (world.isDeactivationActiveForStep()
         && world.isDeactivationEntitySleeping(
@@ -3123,37 +3188,61 @@ void MultibodyVelocityStage::execute(World& world, ComputeExecutor& executor)
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
     (void)pendingVelocity;
-    entities.push_back(entity);
+    scratch.entities.push_back(entity);
   }
 
-  std::vector<WorkItem> workItems;
-  workItems.reserve(entities.size());
-  for (auto entity : entities) {
+  scratch.workItems.clear();
+  for (auto entity : scratch.entities) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get<MultibodyDynamicsScratch>(entity);
+    auto& dynamicsScratch = registry.get<MultibodyDynamicsScratch>(entity);
     auto& pendingVelocity = registry.get<PendingMultibodyVelocity>(entity);
-    workItems.push_back({&structure, &scratch, &pendingVelocity});
+    scratch.workItems.push_back(
+        {&structure, &dynamicsScratch, &pendingVelocity});
+  }
+
+  struct RangeContext
+  {
+    detail::WorldRegistry* registry = nullptr;
+    const Eigen::Vector3d* gravity = nullptr;
+    double timeStep = 0.0;
+    Scratch* scratch = nullptr;
+  };
+  struct RangeRunner
+  {
+    static void run(RangeContext& context, std::size_t begin, std::size_t end)
+    {
+      auto& registry = *context.registry;
+      auto& workItems = context.scratch->workItems;
+      for (std::size_t i = begin; i < end; ++i) {
+        auto& item = workItems[i];
+        auto& pendingVelocity = *item.pendingVelocity;
+        if (!computeUnconstrainedMultibodyVelocityInto(
+                registry,
+                *item.structure,
+                *context.gravity,
+                context.timeStep,
+                *item.scratch)) {
+          pendingVelocity.active = false;
+        } else {
+          pendingVelocity.velocity = item.scratch->nextVelocity;
+          pendingVelocity.active = true;
+        }
+
+        clearMultibodyExternalForces(registry, *item.structure);
+      }
+    }
+  };
+
+  RangeContext context{&registry, &gravity, timeStep, &scratch};
+  const auto workItemCount = scratch.workItems.size();
+  if (executor.getWorkerCount() <= 1u || workItemCount <= 1u) {
+    RangeRunner::run(context, 0u, workItemCount);
+    return;
   }
 
   executor.parallelFor(
-      workItems.size(), 1u, [&](std::size_t begin, std::size_t end) {
-        for (std::size_t i = begin; i < end; ++i) {
-          auto& item = workItems[i];
-          auto& pendingVelocity = *item.pendingVelocity;
-          if (!computeUnconstrainedMultibodyVelocityInto(
-                  registry,
-                  *item.structure,
-                  gravity,
-                  timeStep,
-                  *item.scratch)) {
-            pendingVelocity.active = false;
-          } else {
-            pendingVelocity.velocity = item.scratch->nextVelocity;
-            pendingVelocity.active = true;
-          }
-
-          clearMultibodyExternalForces(registry, *item.structure);
-        }
+      workItemCount, 1u, [&context](std::size_t begin, std::size_t end) {
+        RangeRunner::run(context, begin, end);
       });
 }
 

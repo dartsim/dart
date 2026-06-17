@@ -114,12 +114,12 @@ private:
 
   friend DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
       MultibodyDynamicsTermsScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure);
 
   friend DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
       MultibodyDynamicsTermsScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       const Eigen::Vector3d& gravity,
       MultibodyDynamicsTerms& result);
@@ -138,14 +138,14 @@ struct InverseDynamicsDerivatives;
 /// degrees of freedom the returned matrix and vectors are empty.
 [[nodiscard]] DART_SIMULATION_API MultibodyDynamicsTerms
 computeMultibodyDynamicsTerms(
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
 /// Reserve dynamics-terms scratch for the current multibody shape.
 DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
     MultibodyDynamicsTermsScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure);
 
 /// Compute joint-space dynamics terms into reusable caller-owned storage.
@@ -154,7 +154,7 @@ DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
 /// degrees of freedom, the matrix and vectors are empty.
 DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
     MultibodyDynamicsTermsScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     MultibodyDynamicsTerms& result);
@@ -170,7 +170,7 @@ DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
 /// multibody with no movable degrees of freedom the result is empty.
 [[nodiscard]] DART_SIMULATION_API Eigen::VectorXd
 computeMultibodyInverseDynamics(
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
@@ -214,12 +214,12 @@ private:
 
   friend DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
       MultibodyInverseDynamicsScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure);
 
   friend DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
       MultibodyInverseDynamicsScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       const Eigen::Vector3d& gravity,
       const Eigen::VectorXd& desiredAcceleration,
@@ -228,7 +228,7 @@ private:
   friend DART_SIMULATION_API void
   computeMultibodyInverseDynamicsDerivativesInto(
       MultibodyInverseDynamicsScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       const Eigen::Vector3d& gravity,
       const Eigen::VectorXd& generalizedAcceleration,
@@ -238,7 +238,7 @@ private:
 /// Reserve inverse-dynamics scratch for the current multibody shape.
 DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
     MultibodyInverseDynamicsScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure);
 
 /// Compute inverse dynamics into reusable caller-owned storage.
@@ -247,7 +247,7 @@ DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
 /// multibody with no movable degrees of freedom, `result` is empty.
 DART_SIMULATION_API void computeMultibodyInverseDynamicsInto(
     MultibodyInverseDynamicsScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration,
@@ -275,7 +275,7 @@ struct InverseDynamicsDerivatives
 /// differencing. `generalizedAcceleration` must match the movable DOF count.
 [[nodiscard]] DART_SIMULATION_API InverseDynamicsDerivatives
 computeMultibodyInverseDynamicsDerivatives(
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration);
@@ -286,7 +286,7 @@ computeMultibodyInverseDynamicsDerivatives(
 /// false and the matrices are empty, matching the return-by-value wrapper.
 DART_SIMULATION_API void computeMultibodyInverseDynamicsDerivativesInto(
     MultibodyInverseDynamicsScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration,
@@ -302,7 +302,7 @@ DART_SIMULATION_API void computeMultibodyInverseDynamicsDerivativesInto(
 ///
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_SIMULATION_API Eigen::MatrixXd computeMultibodyLinkJacobian(
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
@@ -343,19 +343,19 @@ private:
 
   friend DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
       MultibodyLinkJacobianScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure);
 
   friend DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
       MultibodyLinkJacobianScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       entt::entity linkEntity,
       Eigen::MatrixXd& result);
 
   friend DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
       MultibodyLinkJacobianScratch& scratch,
-      detail::WorldRegistry& registry,
+      dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       entt::entity linkEntity,
       Eigen::MatrixXd& result);
@@ -364,13 +364,13 @@ private:
 /// Reserve link-Jacobian scratch for the current multibody shape.
 DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
     MultibodyLinkJacobianScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure);
 
 /// Compute a body-frame link Jacobian into reusable caller-owned storage.
 DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
     MultibodyLinkJacobianScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity,
     Eigen::MatrixXd& result);
@@ -386,14 +386,14 @@ DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_SIMULATION_API Eigen::MatrixXd
 computeMultibodyLinkWorldJacobian(
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
 /// Compute a world-frame link Jacobian into reusable caller-owned storage.
 DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
     MultibodyLinkJacobianScratch& scratch,
-    detail::WorldRegistry& registry,
+    dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity,
     Eigen::MatrixXd& result);
@@ -523,7 +523,7 @@ private:
 
   friend DART_SIMULATION_API bool assembleMultibodyLinkContactProblemInto(
       MultibodyLinkContactAssemblyScratch& scratch,
-      const detail::WorldRegistry& registry,
+      const dart::simulation::detail::WorldRegistry& registry,
       const comps::MultibodyStructure& structure,
       const Eigen::VectorXd& nextVelocity,
       double timeStep,
@@ -550,7 +550,7 @@ private:
 ///         multibody's movable degree-of-freedom count.
 [[nodiscard]] DART_SIMULATION_API MultibodyLinkContactProblem
 assembleMultibodyLinkContactProblem(
-    const detail::WorldRegistry& registry,
+    const dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep,
@@ -563,7 +563,7 @@ assembleMultibodyLinkContactProblem(
 /// `scratch.getProblem()` even when no active rows remain.
 DART_SIMULATION_API bool assembleMultibodyLinkContactProblemInto(
     MultibodyLinkContactAssemblyScratch& scratch,
-    const detail::WorldRegistry& registry,
+    const dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& nextVelocity,
     double timeStep,
@@ -606,9 +606,24 @@ public:
 class DART_SIMULATION_API MultibodyVelocityStage final : public WorldStepStage
 {
 public:
+  explicit MultibodyVelocityStage(
+      common::MemoryManager* memoryManager = nullptr);
+  ~MultibodyVelocityStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  std::unique_ptr<Scratch, ScratchDeleter> m_scratch;
 };
 
 /// The built-in semi-implicit `World::step()` schedule uses

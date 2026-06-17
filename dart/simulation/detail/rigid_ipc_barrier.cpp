@@ -154,6 +154,88 @@ dart::common::MemoryAllocator& allocatorOrDefault(
   return allocator ? *allocator : dart::common::MemoryAllocator::GetDefault();
 }
 
+template <typename SurfaceVector, typename SourceSurfaces>
+void assignSurfacesPreservingStorage(
+    SurfaceVector& target,
+    const SourceSurfaces& source,
+    dart::common::MemoryAllocator* allocator)
+{
+  const std::size_t size = source.size();
+  if (target.size() > size) {
+    target.resize(size);
+  }
+  while (target.size() < size) {
+    if (allocator != nullptr) {
+      target.emplace_back(*allocator);
+    } else {
+      target.emplace_back();
+    }
+  }
+  for (std::size_t i = 0; i < size; ++i) {
+    target[i] = source[i];
+  }
+}
+
+template <typename TripletVector>
+bool tryAssembleSparseFromExistingPattern(
+    Eigen::SparseMatrix<double>& matrix,
+    Eigen::Index rows,
+    Eigen::Index cols,
+    const TripletVector& triplets)
+{
+  if (matrix.rows() != rows || matrix.cols() != cols
+      || !matrix.isCompressed()) {
+    return false;
+  }
+
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using StorageIndex = SparseMatrix::StorageIndex;
+  const StorageIndex* outer = matrix.outerIndexPtr();
+  const StorageIndex* inner = matrix.innerIndexPtr();
+  double* values = matrix.valuePtr();
+  if (outer == nullptr || inner == nullptr || values == nullptr) {
+    return triplets.empty() && matrix.nonZeros() == 0;
+  }
+
+  std::fill(values, values + matrix.nonZeros(), 0.0);
+  for (const auto& triplet : triplets) {
+    const Eigen::Index row = triplet.row();
+    const Eigen::Index col = triplet.col();
+    if (row < 0 || row >= rows || col < 0 || col >= cols) {
+      return false;
+    }
+    const auto begin = outer[col];
+    const auto end = outer[col + 1];
+    const StorageIndex rowIndex = static_cast<StorageIndex>(row);
+    const StorageIndex* it
+        = std::lower_bound(inner + begin, inner + end, rowIndex);
+    if (it == inner + end || *it != rowIndex) {
+      return false;
+    }
+    values[it - inner] += triplet.value();
+  }
+
+  return true;
+}
+
+template <typename TripletVector>
+void assembleSparseFromTripletsReusingPattern(
+    Eigen::SparseMatrix<double>& matrix,
+    Eigen::Index rows,
+    Eigen::Index cols,
+    const TripletVector& triplets)
+{
+  if (tryAssembleSparseFromExistingPattern(matrix, rows, cols, triplets)) {
+    return;
+  }
+
+  matrix.resize(rows, cols);
+  matrix.setZero();
+  matrix.reserve(static_cast<Eigen::Index>(triplets.size()));
+  matrix.setFromTriplets(triplets.begin(), triplets.end());
+  matrix.makeCompressed();
+}
+
 using SurfaceEdgeAllocator = dart::common::StlAllocator<SurfaceEdge>;
 using SurfaceEdgeVector = std::vector<SurfaceEdge, SurfaceEdgeAllocator>;
 using SurfaceEdgeVectorAllocator
@@ -249,20 +331,27 @@ struct RigidIpcAssemblyScratch
       dart::common::MemoryAllocator* allocator = nullptr)
     : pairs(allocator),
       barrierTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
-      objectiveTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
       articulationResiduals(
           SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
       articulationJacobianTriplets(
-          BarrierTripletAllocator{allocatorOrDefault(allocator)})
+          BarrierTripletAllocator{allocatorOrDefault(allocator)}),
+      energyAssembly(allocatorOrDefault(allocator)),
+      unitBarrierAssembly(allocatorOrDefault(allocator)),
+      laggedAssembly(allocatorOrDefault(allocator)),
+      candidateAssembly(allocatorOrDefault(allocator))
   {
   }
 
   RigidIpcSurfacePairScratch pairs;
   std::vector<BarrierTriplet, BarrierTripletAllocator> barrierTriplets;
-  std::vector<BarrierTriplet, BarrierTripletAllocator> objectiveTriplets;
   std::vector<double, SurfaceMarginAllocator> articulationResiduals;
   std::vector<BarrierTriplet, BarrierTripletAllocator>
       articulationJacobianTriplets;
+  RigidIpcBarrierAssembly energyAssembly;
+  RigidIpcBarrierAssembly unitBarrierAssembly;
+  RigidIpcBarrierAssembly laggedAssembly;
+  RigidIpcBarrierAssembly candidateAssembly;
+  Eigen::VectorXd gradBarrier;
 };
 
 struct RigidIpcLineSearchScratch
@@ -288,6 +377,14 @@ struct RigidIpcProjectedNewtonSolveScratchWorkspace
 
   RigidIpcAssemblyScratch assemblyScratch;
   RigidIpcLineSearchScratch lineSearchScratch;
+  Eigen::MatrixXd denseHessian;
+  Eigen::VectorXd rawStep;
+  Eigen::LDLT<Eigen::MatrixXd> denseHessianLdlt;
+  Eigen::MatrixXd equalityDenseJacobian;
+  Eigen::MatrixXd equalityKktMatrix;
+  Eigen::VectorXd equalityKktRhs;
+  Eigen::VectorXd equalityKktSolution;
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> equalityKktQr;
 };
 
 namespace {
@@ -581,8 +678,15 @@ RigidIpcReducedBarrierResult chainPrimitiveBarrierToReducedCoordinates(
 
 void initializeGlobalAssembly(
     std::span<const RigidIpcBarrierSurface> surfaces,
-    RigidIpcBarrierAssembly& assembly)
+    RigidIpcBarrierAssembly& assembly,
+    bool preserveEqualityStorage = false)
 {
+  assembly.value = 0.0;
+  assembly.activeConstraints.clear();
+  assembly.activeFrictionConstraints.clear();
+  assembly.activeArticulationConstraints.clear();
+  assembly.activeDynamicsTerms = 0u;
+
   std::size_t dofCount = 0;
   assembly.bodyDofOffsets.assign(
       surfaces.size(), RigidIpcBarrierAssembly::npos);
@@ -596,10 +700,16 @@ void initializeGlobalAssembly(
 
   assembly.gradient
       = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dofCount));
-  assembly.hessian.resize(
-      static_cast<Eigen::Index>(dofCount), static_cast<Eigen::Index>(dofCount));
-  assembly.equalityResidual.resize(0);
-  assembly.equalityJacobian.resize(0, static_cast<Eigen::Index>(dofCount));
+  const auto dofs = static_cast<Eigen::Index>(dofCount);
+  if (assembly.hessian.rows() != dofs || assembly.hessian.cols() != dofs) {
+    assembly.hessian.resize(dofs, dofs);
+  }
+  if (!preserveEqualityStorage) {
+    assembly.equalityResidual.resize(0);
+  }
+  if (assembly.equalityJacobian.cols() != dofs) {
+    assembly.equalityJacobian.resize(0, dofs);
+  }
 }
 
 template <typename TripletVector>
@@ -1099,16 +1209,16 @@ void addArticulationConstraintRows(
         assembly, residuals, jacobianTriplets, surfaces, constraint);
   }
 
-  assembly.equalityResidual
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(residuals.size()));
+  assembly.equalityResidual.resize(static_cast<Eigen::Index>(residuals.size()));
+  assembly.equalityResidual.setZero();
   for (std::size_t row = 0; row < residuals.size(); ++row) {
     assembly.equalityResidual[static_cast<Eigen::Index>(row)] = residuals[row];
   }
-  assembly.equalityJacobian.resize(
-      assembly.equalityResidual.size(), assembly.gradient.size());
-  assembly.equalityJacobian.setFromTriplets(
-      jacobianTriplets.begin(), jacobianTriplets.end());
-  assembly.equalityJacobian.makeCompressed();
+  assembleSparseFromTripletsReusingPattern(
+      assembly.equalityJacobian,
+      assembly.equalityResidual.size(),
+      assembly.gradient.size(),
+      jacobianTriplets);
 }
 
 void assertMatchingSurfaceTopology(
@@ -1180,12 +1290,147 @@ void recordLineSearchCandidate(
   }
 }
 
+template <int MaxSize>
+bool solveStackLinearSystemInPlace(
+    Eigen::Matrix<double, MaxSize, MaxSize>& matrix,
+    Eigen::Matrix<double, MaxSize, 1>& rhs,
+    const Eigen::Index size,
+    Eigen::Matrix<double, MaxSize, 1>& solution)
+{
+  constexpr double kPivotTolerance = 1e-12;
+  for (Eigen::Index col = 0; col < size; ++col) {
+    Eigen::Index pivot = col;
+    double pivotAbs = std::abs(matrix(col, col));
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double candidate = std::abs(matrix(row, col));
+      if (candidate > pivotAbs) {
+        pivotAbs = candidate;
+        pivot = row;
+      }
+    }
+    if (!(pivotAbs > kPivotTolerance) || !std::isfinite(pivotAbs)) {
+      return false;
+    }
+    if (pivot != col) {
+      matrix.row(col).swap(matrix.row(pivot));
+      std::swap(rhs[col], rhs[pivot]);
+    }
+
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double factor = matrix(row, col) / matrix(col, col);
+      matrix(row, col) = 0.0;
+      for (Eigen::Index c = col + 1; c < size; ++c) {
+        matrix(row, c) -= factor * matrix(col, c);
+      }
+      rhs[row] -= factor * rhs[col];
+    }
+  }
+
+  solution.setZero();
+  for (Eigen::Index row = size; row-- > 0;) {
+    double value = rhs[row];
+    for (Eigen::Index col = row + 1; col < size; ++col) {
+      value -= matrix(row, col) * solution[col];
+    }
+    const double diagonal = matrix(row, row);
+    if (!(std::abs(diagonal) > kPivotTolerance) || !std::isfinite(diagonal)) {
+      return false;
+    }
+    solution[row] = value / diagonal;
+  }
+  return solution.head(size).allFinite();
+}
+
+bool solveEqualityConstrainedKktInto(
+    const RigidIpcBarrierAssembly& assembly,
+    const Eigen::MatrixXd& denseHessian,
+    RigidIpcProjectedNewtonSolveScratchWorkspace& workspace,
+    Eigen::VectorXd& rawStep)
+{
+  const Eigen::Index dofs = assembly.gradient.size();
+  const Eigen::Index equalityRows = assembly.equalityResidual.size();
+  const Eigen::Index kktSize = dofs + equalityRows;
+  constexpr Eigen::Index kMaxStackKktSize = 24;
+  if (kktSize <= kMaxStackKktSize) {
+    Eigen::Matrix<double, kMaxStackKktSize, kMaxStackKktSize> kktMatrix;
+    Eigen::Matrix<double, kMaxStackKktSize, 1> kktRhs;
+    kktMatrix.setIdentity();
+    kktMatrix.topLeftCorner(kktSize, kktSize).setZero();
+    kktMatrix.topLeftCorner(dofs, dofs) = denseHessian;
+
+    const auto& sparseJacobian = assembly.equalityJacobian;
+    for (int outer = 0; outer < sparseJacobian.outerSize(); ++outer) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(sparseJacobian, outer);
+           it;
+           ++it) {
+        kktMatrix(it.col(), dofs + it.row()) = it.value();
+        kktMatrix(dofs + it.row(), it.col()) = it.value();
+      }
+    }
+
+    kktRhs.setZero();
+    kktRhs.head(dofs) = -assembly.gradient;
+    kktRhs.segment(dofs, equalityRows) = -assembly.equalityResidual;
+
+    Eigen::Matrix<double, kMaxStackKktSize, 1> kktSolution;
+    if (!solveStackLinearSystemInPlace(
+            kktMatrix, kktRhs, kktSize, kktSolution)) {
+      return false;
+    }
+    rawStep.resize(dofs);
+    rawStep = kktSolution.head(dofs);
+    return true;
+  }
+
+  auto& denseJacobian = workspace.equalityDenseJacobian;
+  denseJacobian.resize(equalityRows, dofs);
+  denseJacobian.setZero();
+  const auto& sparseJacobian = assembly.equalityJacobian;
+  for (int outer = 0; outer < sparseJacobian.outerSize(); ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(sparseJacobian, outer);
+         it;
+         ++it) {
+      denseJacobian(it.row(), it.col()) = it.value();
+    }
+  }
+
+  auto& kktMatrix = workspace.equalityKktMatrix;
+  kktMatrix.resize(kktSize, kktSize);
+  kktMatrix.setZero();
+  kktMatrix.topLeftCorner(dofs, dofs) = denseHessian;
+  kktMatrix.topRightCorner(dofs, equalityRows) = denseJacobian.transpose();
+  kktMatrix.bottomLeftCorner(equalityRows, dofs) = denseJacobian;
+
+  auto& kktRhs = workspace.equalityKktRhs;
+  kktRhs.resize(kktSize);
+  kktRhs.head(dofs) = -assembly.gradient;
+  kktRhs.tail(equalityRows) = -assembly.equalityResidual;
+
+  auto& kktQr = workspace.equalityKktQr;
+  kktQr.compute(kktMatrix);
+  if (kktQr.info() != Eigen::Success) {
+    return false;
+  }
+
+  auto& kktSolution = workspace.equalityKktSolution;
+  kktSolution.resize(kktSize);
+  kktSolution = kktQr.solve(kktRhs);
+  if (!kktSolution.allFinite()) {
+    return false;
+  }
+
+  rawStep.resize(dofs);
+  rawStep = kktSolution.head(dofs);
+  return true;
+}
+
 RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
     const RigidIpcBarrierAssembly& assembly,
     const RigidIpcLineSearchResult* lineSearch,
     const RigidIpcProjectedNewtonOptions& options,
     RigidIpcProjectedNewtonStep& result,
-    dart::common::MemoryAllocator* allocator = nullptr)
+    dart::common::MemoryAllocator* allocator = nullptr,
+    RigidIpcProjectedNewtonSolveScratchWorkspace* workspace = nullptr)
 {
   assert(assembly.hessian.rows() == assembly.gradient.size());
   assert(assembly.hessian.cols() == assembly.gradient.size());
@@ -1231,15 +1476,32 @@ RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
   const double regularization = std::max(0.0, options.hessianRegularization);
   result.stats.hessianRegularization = regularization;
 
-  Eigen::MatrixXd denseHessian(assembly.hessian);
-  denseHessian += regularization * Eigen::MatrixXd::Identity(dofs, dofs).eval();
+  Eigen::MatrixXd localDenseHessian;
+  Eigen::VectorXd localRawStep;
+  Eigen::LDLT<Eigen::MatrixXd> localDenseHessianLdlt;
+  Eigen::MatrixXd& denseHessian
+      = workspace != nullptr ? workspace->denseHessian : localDenseHessian;
+  Eigen::VectorXd& rawStep
+      = workspace != nullptr ? workspace->rawStep : localRawStep;
+  Eigen::LDLT<Eigen::MatrixXd>& denseHessianLdlt
+      = workspace != nullptr ? workspace->denseHessianLdlt
+                             : localDenseHessianLdlt;
+
+  denseHessian.resize(dofs, dofs);
+  denseHessian = assembly.hessian;
+  denseHessian.diagonal().array() += regularization;
   if (!denseHessian.allFinite()) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
     return result;
   }
 
-  Eigen::VectorXd rawStep;
-  if (hasEqualityRows) {
+  if (hasEqualityRows && workspace != nullptr) {
+    if (!solveEqualityConstrainedKktInto(
+            assembly, denseHessian, *workspace, rawStep)) {
+      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+      return result;
+    }
+  } else if (hasEqualityRows) {
     dart::common::MemoryAllocator& changeOfVariableAllocator
         = allocator ? *allocator : dart::common::MemoryAllocator::GetDefault();
     const auto changeOfVariable = newton_barrier::makeEqualityChangeOfVariable(
@@ -1258,14 +1520,17 @@ RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
       return result;
     }
   } else {
-    Eigen::LDLT<Eigen::MatrixXd> solver(denseHessian);
-    if (solver.info() != Eigen::Success || !solver.isPositive()) {
+    denseHessianLdlt.compute(denseHessian);
+    if (denseHessianLdlt.info() != Eigen::Success
+        || !denseHessianLdlt.isPositive()) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
     }
 
-    rawStep = solver.solve(-assembly.gradient);
-    if (solver.info() != Eigen::Success) {
+    rawStep.resize(dofs);
+    rawStep = -assembly.gradient;
+    denseHessianLdlt.solveInPlace(rawStep);
+    if (denseHessianLdlt.info() != Eigen::Success) {
       result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
       return result;
     }
@@ -1413,6 +1678,14 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
     const RigidIpcBarrierOptions& options,
     RigidIpcAssemblyScratch& scratch);
 
+static void assembleRigidIpcBarrierSystemWithScratchInto(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcBarrierOptions& options,
+    RigidIpcAssemblyScratch& scratch,
+    RigidIpcBarrierAssembly& assembly,
+    bool finalizeHessian = true,
+    bool preserveEqualityStorage = false);
+
 static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     std::span<const RigidIpcBarrierSurface> surfaces,
     std::span<const RigidIpcBarrierSurface> laggedSurfaces,
@@ -1422,6 +1695,17 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     const RigidIpcBarrierOptions& barrierOptions,
     const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcAssemblyScratch& scratch);
+
+static void assembleRigidIpcObjectiveSystemWithScratchInto(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions,
+    RigidIpcAssemblyScratch& scratch,
+    RigidIpcBarrierAssembly& assembly);
 
 static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
     std::span<const RigidIpcBarrierSurface> startSurfaces,
@@ -1984,8 +2268,22 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
     const RigidIpcBarrierOptions& options,
     RigidIpcAssemblyScratch& scratch)
 {
-  RigidIpcBarrierAssembly assembly;
-  initializeGlobalAssembly(surfaces, assembly);
+  RigidIpcBarrierAssembly assembly(
+      allocatorOrDefault(scratch.pairs.memoryAllocator));
+  assembleRigidIpcBarrierSystemWithScratchInto(
+      surfaces, options, scratch, assembly);
+  return assembly;
+}
+
+static void assembleRigidIpcBarrierSystemWithScratchInto(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcBarrierOptions& options,
+    RigidIpcAssemblyScratch& scratch,
+    RigidIpcBarrierAssembly& assembly,
+    bool finalizeHessian,
+    bool preserveEqualityStorage)
+{
+  initializeGlobalAssembly(surfaces, assembly, preserveEqualityStorage);
 
   scratch.pairs.resizeSurfaceEdges(surfaces.size());
   auto& surfaceAabbs = scratch.pairs.surfaceAabbs;
@@ -2170,9 +2468,13 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
     }
   }
 
-  assembly.hessian.setFromTriplets(triplets.begin(), triplets.end());
-  assembly.hessian.makeCompressed();
-  return assembly;
+  if (finalizeHessian) {
+    assembleSparseFromTripletsReusingPattern(
+        assembly.hessian,
+        assembly.hessian.rows(),
+        assembly.hessian.cols(),
+        triplets);
+  }
 }
 
 RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
@@ -2239,8 +2541,39 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcAssemblyScratch& scratch)
 {
-  RigidIpcBarrierAssembly assembly = assembleRigidIpcBarrierSystemWithScratch(
-      surfaces, barrierOptions, scratch);
+  RigidIpcBarrierAssembly assembly(
+      allocatorOrDefault(scratch.pairs.memoryAllocator));
+  assembleRigidIpcObjectiveSystemWithScratchInto(
+      surfaces,
+      laggedSurfaces,
+      dynamicsTerms,
+      articulationConstraints,
+      barrierOptions,
+      frictionOptions,
+      scratch,
+      assembly);
+  return assembly;
+}
+
+static void assembleRigidIpcObjectiveSystemWithScratchInto(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions,
+    RigidIpcAssemblyScratch& scratch,
+    RigidIpcBarrierAssembly& assembly)
+{
+  const bool hasArticulationConstraints = !articulationConstraints.empty();
+  assembleRigidIpcBarrierSystemWithScratchInto(
+      surfaces,
+      barrierOptions,
+      scratch,
+      assembly,
+      false,
+      hasArticulationConstraints);
   assert(dynamicsTerms.size() <= surfaces.size());
 
   const bool useLaggedFriction
@@ -2249,16 +2582,15 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
         && std::isfinite(frictionOptions.coefficient)
         && frictionOptions.staticFrictionDisplacement > 0.0
         && std::isfinite(frictionOptions.staticFrictionDisplacement);
-  RigidIpcBarrierAssembly laggedAssembly;
+  auto& laggedAssembly = scratch.laggedAssembly;
   if (useLaggedFriction) {
-    laggedAssembly = assembleRigidIpcBarrierSystemWithScratch(
-        laggedSurfaces, barrierOptions, scratch);
+    assembleRigidIpcBarrierSystemWithScratchInto(
+        laggedSurfaces, barrierOptions, scratch, laggedAssembly);
   }
 
   const std::size_t termCount = std::min(dynamicsTerms.size(), surfaces.size());
-  auto& triplets = scratch.objectiveTriplets;
-  triplets.clear();
-  triplets.reserve(6 * termCount);
+  auto& triplets = scratch.barrierTriplets;
+  triplets.reserve(triplets.size() + 6 * termCount);
   if (useLaggedFriction) {
     addLaggedFrictionTerms(
         assembly,
@@ -2279,16 +2611,11 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
       scratch.articulationResiduals,
       scratch.articulationJacobianTriplets);
 
-  if (!triplets.empty()) {
-    Eigen::SparseMatrix<double> dynamicsHessian(
-        assembly.hessian.rows(), assembly.hessian.cols());
-    dynamicsHessian.setFromTriplets(triplets.begin(), triplets.end());
-    dynamicsHessian.makeCompressed();
-    assembly.hessian += dynamicsHessian;
-    assembly.hessian.makeCompressed();
-  }
-
-  return assembly;
+  assembleSparseFromTripletsReusingPattern(
+      assembly.hessian,
+      assembly.hessian.rows(),
+      assembly.hessian.cols(),
+      triplets);
 }
 
 RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
@@ -2741,7 +3068,11 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
   result.converged = false;
   result.failed = false;
-  result.assembly = RigidIpcBarrierAssembly{};
+  result.assembly.value = 0.0;
+  result.assembly.activeDynamicsTerms = 0u;
+  result.assembly.activeConstraints.clear();
+  result.assembly.activeFrictionConstraints.clear();
+  result.assembly.activeArticulationConstraints.clear();
   result.lineSearch = RigidIpcLineSearchResult{};
   result.lastStep.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
   result.lastStep.success = false;
@@ -2749,26 +3080,32 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   result.lastStep.lineSearchBlocked = false;
   result.lastStep.stats = RigidIpcProjectedNewtonStats{};
   result.stats = RigidIpcProjectedNewtonSolveStats{};
-  result.surfaces.assign(surfaces.begin(), surfaces.end());
+  assignSurfacesPreservingStorage(
+      result.surfaces, surfaces, scratch.memoryAllocator);
 
   auto& laggedSurfaces = scratch.laggedSurfaces;
   auto& lineSearchStartSurfaces = scratch.lineSearchStartSurfaces;
   auto& candidateSurfaces = scratch.candidateSurfaces;
   auto& acceptedSurfaces = scratch.acceptedSurfaces;
   auto& bestDecreasingSurfaces = scratch.bestDecreasingSurfaces;
-  laggedSurfaces.assign(surfaces.begin(), surfaces.end());
+  assignSurfacesPreservingStorage(
+      laggedSurfaces, surfaces, scratch.memoryAllocator);
   lineSearchStartSurfaces.reserve(surfaces.size());
   candidateSurfaces.reserve(surfaces.size());
   acceptedSurfaces.reserve(surfaces.size());
   bestDecreasingSurfaces.reserve(surfaces.size());
-  RigidIpcAssemblyScratch localAssemblyScratch(scratch.memoryAllocator);
-  RigidIpcLineSearchScratch localLineSearchScratch(scratch.memoryAllocator);
+  std::optional<RigidIpcAssemblyScratch> localAssemblyScratch;
+  std::optional<RigidIpcLineSearchScratch> localLineSearchScratch;
+  if (scratch.workspace == nullptr) {
+    localAssemblyScratch.emplace(scratch.memoryAllocator);
+    localLineSearchScratch.emplace(scratch.memoryAllocator);
+  }
   RigidIpcAssemblyScratch& assemblyScratch
       = scratch.workspace != nullptr ? scratch.workspace->assemblyScratch
-                                     : localAssemblyScratch;
+                                     : *localAssemblyScratch;
   RigidIpcLineSearchScratch& lineSearchScratch
       = scratch.workspace != nullptr ? scratch.workspace->lineSearchScratch
-                                     : localLineSearchScratch;
+                                     : *localLineSearchScratch;
 
   // Kinematic (prescribed-motion) obstacles advance from their start pose to
   // their end pose over the step. `result.surfaces`/`laggedSurfaces` hold the
@@ -2830,25 +3167,29 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
     RigidIpcBarrierOptions unitBarrier = options.barrier;
     unitBarrier.stiffness = 1.0;
     const RigidIpcFrictionOptions noFriction;
-    const RigidIpcBarrierAssembly energyAssembly
-        = assembleRigidIpcObjectiveSystemWithScratch(
-            result.surfaces,
-            laggedSurfaces,
-            options.dynamicsTerms,
-            options.articulationConstraints,
-            energyOnly,
-            noFriction,
-            assemblyScratch);
-    const RigidIpcBarrierAssembly unitBarrierAssembly
-        = assembleRigidIpcObjectiveSystemWithScratch(
-            result.surfaces,
-            laggedSurfaces,
-            options.dynamicsTerms,
-            options.articulationConstraints,
-            unitBarrier,
-            noFriction,
-            assemblyScratch);
-    Eigen::VectorXd gradBarrier = unitBarrierAssembly.gradient;
+    auto& energyAssembly = assemblyScratch.energyAssembly;
+    assembleRigidIpcObjectiveSystemWithScratchInto(
+        result.surfaces,
+        laggedSurfaces,
+        options.dynamicsTerms,
+        options.articulationConstraints,
+        energyOnly,
+        noFriction,
+        assemblyScratch,
+        energyAssembly);
+    auto& unitBarrierAssembly = assemblyScratch.unitBarrierAssembly;
+    assembleRigidIpcObjectiveSystemWithScratchInto(
+        result.surfaces,
+        laggedSurfaces,
+        options.dynamicsTerms,
+        options.articulationConstraints,
+        unitBarrier,
+        noFriction,
+        assemblyScratch,
+        unitBarrierAssembly);
+    auto& gradBarrier = assemblyScratch.gradBarrier;
+    gradBarrier.resize(unitBarrierAssembly.gradient.size());
+    gradBarrier = unitBarrierAssembly.gradient;
     if (gradBarrier.size() == energyAssembly.gradient.size()) {
       gradBarrier -= energyAssembly.gradient;
     }
@@ -2874,8 +3215,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
 
   const auto makeKinematicLineSearchStart = [&]() {
-    lineSearchStartSurfaces.assign(
-        result.surfaces.begin(), result.surfaces.end());
+    assignSurfacesPreservingStorage(
+        lineSearchStartSurfaces, result.surfaces, scratch.memoryAllocator);
     for (std::size_t i = 0; i < lineSearchStartSurfaces.size(); ++i) {
       if (surfaces[i].kinematic) {
         lineSearchStartSurfaces[i].pose = surfaces[i].kinematicStartPose;
@@ -2938,14 +3279,15 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
 
     for (std::size_t iteration = 0; iteration <= options.maxIterations;
          ++iteration) {
-      result.assembly = assembleRigidIpcObjectiveSystemWithScratch(
+      assembleRigidIpcObjectiveSystemWithScratchInto(
           result.surfaces,
           laggedSurfaces,
           options.dynamicsTerms,
           options.articulationConstraints,
           barrierOptions,
           frictionOptions,
-          assemblyScratch);
+          assemblyScratch,
+          result.assembly);
       if (adaptive.enabled) {
         // Post-(previous-)step adaptive kappa update. The current assembly
         // reflects the surfaces produced by the prior accepted step, so its
@@ -2964,14 +3306,15 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           barrierOptions.stiffness = updatedStiffness;
           result.stats.barrierStiffness = updatedStiffness;
           ++result.stats.barrierStiffnessIncreases;
-          result.assembly = assembleRigidIpcObjectiveSystemWithScratch(
+          assembleRigidIpcObjectiveSystemWithScratchInto(
               result.surfaces,
               laggedSurfaces,
               options.dynamicsTerms,
               options.articulationConstraints,
               barrierOptions,
               frictionOptions,
-              assemblyScratch);
+              assemblyScratch,
+              result.assembly);
         }
       }
       recordSolveAssemblyStats(
@@ -2990,7 +3333,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
               nullptr,
               newtonOptions,
               scratch.step,
-              scratch.memoryAllocator);
+              scratch.memoryAllocator,
+              scratch.workspace);
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
@@ -3020,8 +3364,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       if (options.useLineSearch) {
-        candidateSurfaces.assign(
-            result.surfaces.begin(), result.surfaces.end());
+        assignSurfacesPreservingStorage(
+            candidateSurfaces, result.surfaces, scratch.memoryAllocator);
         applyRigidIpcNewtonDelta(
             candidateSurfaces, result.assembly, step.delta.asEigen());
         // The Newton delta only moves dynamic surfaces, so candidateSurfaces
@@ -3058,7 +3402,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             &result.lineSearch,
             newtonOptions,
             step,
-            scratch.memoryAllocator);
+            scratch.memoryAllocator,
+            scratch.workspace);
         result.lastStep = step;
         if (step.lineSearchBlocked) {
           if (adaptive.enabled && iteration < options.maxIterations
@@ -3116,8 +3461,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
         for (std::size_t backtrack = 0;
              backtrack <= newtonOptions.maxBacktrackingIterations;
              ++backtrack) {
-          candidateSurfaces.assign(
-              result.surfaces.begin(), result.surfaces.end());
+          assignSurfacesPreservingStorage(
+              candidateSurfaces, result.surfaces, scratch.memoryAllocator);
           applyRigidIpcNewtonDelta(
               candidateSurfaces,
               result.assembly,
@@ -3131,22 +3476,26 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             ++result.stats.sufficientDecreaseBacktracks;
             continue;
           }
-          const RigidIpcBarrierAssembly candidateAssembly
-              = assembleRigidIpcObjectiveSystemWithScratch(
-                  candidateSurfaces,
-                  laggedSurfaces,
-                  options.dynamicsTerms,
-                  options.articulationConstraints,
-                  barrierOptions,
-                  frictionOptions,
-                  assemblyScratch);
+          auto& candidateAssembly = assemblyScratch.candidateAssembly;
+          assembleRigidIpcObjectiveSystemWithScratchInto(
+              candidateSurfaces,
+              laggedSurfaces,
+              options.dynamicsTerms,
+              options.articulationConstraints,
+              barrierOptions,
+              frictionOptions,
+              assemblyScratch,
+              candidateAssembly);
           ++result.stats.sufficientDecreaseChecks;
 
           if (std::isfinite(candidateAssembly.value)
               && candidateAssembly.value < bestDecreasingValue) {
             bestDecreasingValue = candidateAssembly.value;
             bestDecreasingScale = trialScale;
-            bestDecreasingSurfaces = candidateSurfaces;
+            assignSurfacesPreservingStorage(
+                bestDecreasingSurfaces,
+                candidateSurfaces,
+                scratch.memoryAllocator);
             hasDecreasingCandidate = true;
           }
           if (newton_barrier::satisfiesSufficientDecrease(
@@ -3154,7 +3503,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                   candidateAssembly.value,
                   trialScale * directionalDerivative,
                   sufficientDecreaseFactor)) {
-            acceptedSurfaces = std::move(candidateSurfaces);
+            assignSurfacesPreservingStorage(
+                acceptedSurfaces, candidateSurfaces, scratch.memoryAllocator);
             acceptedCandidate = true;
             break;
           }
@@ -3173,7 +3523,10 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             // assembled objective. Keep that progress instead of reporting a
             // line-search failure; per-candidate CCD already filtered unsafe
             // kinematic backtracking states.
-            acceptedSurfaces = bestDecreasingSurfaces;
+            assignSurfacesPreservingStorage(
+                acceptedSurfaces,
+                bestDecreasingSurfaces,
+                scratch.memoryAllocator);
             trialScale = bestDecreasingScale;
             acceptedCandidate = true;
           } else if (hasUnsafeKinematicCandidate) {
@@ -3191,8 +3544,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           scaleRigidIpcNewtonStep(step, trialScale);
           result.lastStep = step;
         }
-        result.surfaces.assign(
-            acceptedSurfaces.begin(), acceptedSurfaces.end());
+        assignSurfacesPreservingStorage(
+            result.surfaces, acceptedSurfaces, scratch.memoryAllocator);
       }
 
       if (!acceptedCandidate) {
@@ -3203,14 +3556,15 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       ++result.stats.iterations;
       result.stats.lastStepNorm = step.stats.stepNorm;
       if (step.stats.stepNorm <= stepTolerance) {
-        result.assembly = assembleRigidIpcObjectiveSystemWithScratch(
+        assembleRigidIpcObjectiveSystemWithScratchInto(
             result.surfaces,
             laggedSurfaces,
             options.dynamicsTerms,
             options.articulationConstraints,
             barrierOptions,
             frictionOptions,
-            assemblyScratch);
+            assemblyScratch,
+            result.assembly);
         recordSolveAssemblyStats(result, false);
         if (result.assembly.equalityResidual.size() > 0
             && result.assembly.equalityResidual.norm()
@@ -3228,18 +3582,20 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       return;
     }
 
-    laggedSurfaces.assign(result.surfaces.begin(), result.surfaces.end());
+    assignSurfacesPreservingStorage(
+        laggedSurfaces, result.surfaces, scratch.memoryAllocator);
     if (hasKinematic) {
       applyKinematicLag(laggedSurfaces);
     }
-    result.assembly = assembleRigidIpcObjectiveSystemWithScratch(
+    assembleRigidIpcObjectiveSystemWithScratchInto(
         result.surfaces,
         laggedSurfaces,
         options.dynamicsTerms,
         options.articulationConstraints,
         barrierOptions,
         frictionOptions,
-        assemblyScratch);
+        assemblyScratch,
+        result.assembly);
     recordSolveAssemblyStats(result, false);
     if (result.assembly.activeFrictionConstraints.empty()) {
       result.status = RigidIpcProjectedNewtonSolveStatus::Converged;

@@ -42,16 +42,17 @@ Read these files first:
 2. **Assess scope** - Multi-phase or multi-session? Create `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria)
 3. **Setup** - Choose the target branch before creating a topic branch:
    - features/docs/non-bugfix refactors: branch from `origin/main`
-   - bug fixes that apply to the current release line: branch from
-     `origin/release-6.17` first, then cherry-pick or reapply to `main`
+   - bug fixes that apply to the current release line: branch from the active
+     DART 6 LTS `origin/release-6.*` branch first, then cherry-pick or reapply
+     to `main`
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then
    `pixi run test-all`; on Linux hosts with a visible NVIDIA CUDA runtime, also
    run `pixi run -e cuda test-all`
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
-   (`DART 7.0` for `main`, `DART 6.17.1` for `release-6.17`); follow
-   `.github/PULL_REQUEST_TEMPLATE.md`
+   (`DART 7.0` for `main`, branch-matching DART 6.x patch milestone for the
+   active DART 6 LTS branch); follow `.github/PULL_REQUEST_TEMPLATE.md`
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
    maps, or long-lived decisions into `docs/plans/` or `docs/onboarding/`.
@@ -60,7 +61,7 @@ Read these files first:
 
 ## Type-Specific
 
-- **Bugfix**: Requires PRs to BOTH `release-6.17` AND `main`
+- **Bugfix**: Requires PRs to BOTH the active DART 6 LTS branch AND `main`
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
 - **New solver/paper implementation**: Before any implementation starts,

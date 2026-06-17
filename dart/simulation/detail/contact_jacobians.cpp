@@ -50,6 +50,7 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <algorithm>
 #include <limits>
 #include <span>
 #include <unordered_map>
@@ -318,6 +319,30 @@ ContactScene buildScene(
     }
   };
 
+  // Match World's baked dense rigid-body index order. Contact-touching bodies
+  // no longer lead the state layout; every dynamic body is registered by
+  // creation-order index first, then contacts only reference those columns.
+  ContactEntityVector dynamicEntities(ContactEntityAllocator{allocator});
+  auto dynamicView = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force>();
+  dynamicEntities.reserve(dynamicView.size_hint());
+  for (const auto entity : dynamicView) {
+    dynamicEntities.push_back(entity);
+  }
+  std::ranges::sort(dynamicEntities, [](auto lhs, auto rhs) {
+    return entt::to_integral(lhs) < entt::to_integral(rhs);
+  });
+  for (const auto entity : dynamicEntities) {
+    if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
+      continue;
+    }
+    registerBody(entity, false);
+  }
+
   for (const auto& contact : contacts) {
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
     const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
@@ -356,24 +381,6 @@ ContactScene buildScene(
     registerBody(entityA, prescribedA);
     registerBody(entityB, prescribedB);
     scene.contacts.push_back(frozen);
-  }
-
-  // Also bring every dynamic rigid body with dynamics into scope (appended
-  // after the contact-touching bodies, preserving their order). This keeps the
-  // body in the state vector when it is separated (no active contact), so the
-  // result reduces to the contact-free free-fall Jacobian rather than an empty
-  // matrix.
-  auto dynamicView = registry.view<
-      comps::RigidBodyTag,
-      comps::Transform,
-      comps::Velocity,
-      comps::MassProperties,
-      comps::Force>();
-  for (const auto entity : dynamicView) {
-    if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
-      continue;
-    }
-    registerBody(entity, false);
   }
 
   scene.inverseMass.resize(scene.dynamicBodies.size());

@@ -22,39 +22,42 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: WP-091.1 (solver-identity recording and AVBD relabel) is
-  `[done]` (PR #2990, merged 2026-06-13) — the AVBD packet family has a shared
-  schema contract that machine-records resolved solver identity at schema
-  version 2, enforced for new packet files by `pixi run check-avbd-packets` in
-  both the `lint` and `check-lint` aggregates, and the six mirrored
-  contact-scene claim sites are relabeled; writer-script migration to emit the
-  new field is a recorded follow-up (see the packet Evidence bullet).
-  WP-091.2 (golden trajectories) is `[done]` (PR #2994, merged 2026-06-14) —
-  `test_world_default_step_golden` locks the default `World::step` over a
-  three-scene matrix with a two-oracle design (analytical closed-form/physical
-  invariants plus the committed-snapshot behavior lock), so the refactor-heavy
-  WS1+ packets now have behavior-lock evidence to diff against. WP-091.3
-  architecture-claim lint (PR #2999) cites a DART-owned test for every
-  ✅-available architecture-page claim and adds `check-architecture-page` to
-  enforce it. WP-091.5 plan-ID renumber resolved the collisions: the
-  Linear-Time Variational Integrator is now `PLAN-084` and the Performance
-  Dashboard `PLAN-092`, guarded by a `check_plan_id_uniqueness` docs-policy
-  check. The remaining WS0 packet is WP-091.4 legacy freeze, which stays
-  **blocked**: PLAN-042 Decision 5 (which DART 6 surfaces are
-  removed/quarantined/wrapped/promoted) has no recorded maintainer direction
-  yet, so it needs a maintainer decision before it can be executed. With WS0
-  otherwise closed, open WS1 with WP-091.10 (virtual finalize/prepare on the
-  stage contract). Packets are
-  orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
-  and picked up via `dart-execute-packet`; availability follows each packet's
-  own Dependencies line. The standing rule applies now: new solver-family
-  work routes through [`solver-family-intake.md`](solver-family-intake.md)
-  and does not bypass the contracts this plan is landing.
+- Next step: WP-091.20 (Model/State/Control split) is `[done]` via PR #3029,
+  and WP-091.33a (batch semantics tests) is `[done]` via PR #3042. The current
+  branch executes WP-091.21: bake creation-ordered dense per-domain indices and
+  reusable Model artifacts so state vectors and batch validation stop depending
+  on registry iteration order or name-string matching. WP-091.33b remains
+  blocked until WP-091.21 is accepted. The remaining WS0 packet is WP-091.4 legacy
+  freeze, which stays **blocked**: PLAN-042 Decision 5 has no recorded
+  maintainer direction. Packets are orchestrator-authored per
+  [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
+  `dart-execute-packet`; availability follows each packet's own Dependencies
+  line. The standing rule applies now: new solver-family work routes through
+  [`solver-family-intake.md`](solver-family-intake.md) and does not bypass the
+  contracts this plan is landing.
 - Gate: A packet is done only when its named acceptance evidence exists and
   its listed `pixi run ...` gates pass, with availability governed by the
   per-packet Dependencies lines; plan completion follows the acceptance
   criteria in the owner doc, including one new solver-family intake exercised
   through the strengthened checklist without bypass.
+
+### PLAN-122: DART 7 Simulation-Loop Allocation Hardening
+
+- Owner doc:
+  [`122-simulation-loop-allocation-hardening.md`](122-simulation-loop-allocation-hardening.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Use the PLAN-122 coverage matrix as the owner for all remaining
+  DART 7 no-allocation-after-bake work. First close WP-122.1 by making the
+  no-allocation harness distinguish final first-post-bake evidence from
+  steady-state prewarm evidence, then execute the domain rows through the
+  existing owner plans/dev tasks. Classic DART 6 step paths are excluded unless
+  they are being migrated into the DART 7 `World` pipeline.
+- Gate: A row closes only with cited tests proving same-shape DART 7
+  `World::step()` after bake does not grow the World base allocator or allocate
+  through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
+  must add the gate before promotion.
 
 ### PLAN-001: Living Plan System
 

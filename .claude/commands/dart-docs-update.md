@@ -11,6 +11,7 @@ Update documentation: $ARGUMENTS
 @docs/README.md
 @docs/ai/principles.md
 @docs/onboarding/ai-tools.md
+@docs/onboarding/changelog.md
 
 ## Workflow
 
@@ -21,7 +22,7 @@ Update documentation: $ARGUMENTS
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
 4. Update indexes and cross-references that point to changed docs
 5. Run `pixi run lint` before committing
-6. Record the CHANGELOG decision for the docs/tooling change.
+6. Record the `CHANGELOG.md` decision using `docs/onboarding/changelog.md`.
 7. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, use `.github/PULL_REQUEST_TEMPLATE.md` and the proper
    milestone.

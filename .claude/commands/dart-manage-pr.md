@@ -57,7 +57,7 @@ gh pr checks <PR_NUMBER>
 
 1. Confirm scope and policy:
    - Check that the base branch, milestone, title, and PR template are correct.
-   - For bug fixes, verify the required `release-6.17` and `main` dual-PR flow.
+   - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Confirm the PR body is readable and follows template order: Summary,

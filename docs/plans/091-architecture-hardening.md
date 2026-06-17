@@ -558,9 +558,11 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   the enum (`test_serialization` 57/57). Gates: `pixi run lint` and
   `check-api-boundaries` clean; the default-step golden trajectories stay 3/3
   bit-identical (behavior-preserving — the resolved family is unchanged);
-  `test_world` 371/372 (the lone failure,
-  `BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, is the known
-  pre-existing post-#2996 rigid-IPC allocator issue, orthogonal to this change);
+  `test_world` 371/372 at claim time (the lone failure,
+  `BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, was the known
+  pre-existing post-#2996 rigid-IPC allocator issue, orthogonal to this change;
+  that allocator gap is now closed by the completed hierarchical allocator
+  work recorded in `docs/design/hierarchical_allocator.md`);
   `test_variational_integration` 178/178; cross-family + corpus green;
   `pixi run test-py` green (1382 passed, 11 skipped).
 
@@ -701,7 +703,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS2 — Physical data architecture
 
-#### WP-091.20 Model/State/Control component split [claimed]
+#### WP-091.20 Model/State/Control component split [done — PR #3029, merged 2026-06-16]
 
 - Objective: the articulated and deformable component fusion is split so
   storage matches the documented Model/State/Control/Contacts contract (the
@@ -781,7 +783,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   deformable suites). All three slices (20a/20b/20c) of WP-091.20 are now
   landed.
 
-#### WP-091.21 Baked dense-index Model artifact
+#### WP-091.21 Baked dense-index Model artifact [claimed]
 
 - Objective: `enterSimulationMode` bakes an immutable per-domain dense index
   (body/link/dof offsets, creation-ordered) plus per-multibody model arrays,
@@ -797,6 +799,13 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   path (assert via allocation/profile test); golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
+- Evidence (implementation branch): `detail::BakedWorldModel` now caches
+  creation-ordered rigid-body and multibody indices plus rigid-body Model arrays
+  in `WorldStorage`; state/control vectors, rigid-body batch extraction, and
+  batched integration consume the baked identity instead of rebuilding from
+  registry views or comparing names. Local validation: `pixi run lint`,
+  `pixi run build`, focused `test_world` dense-index/batch filters, and
+  `pixi run test-unit` (163/163).
 
 #### WP-091.22 Frame arena: wire or delete [claimed]
 
@@ -813,6 +822,10 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Dependencies: none. Sequencing note: landing WP-091.20 first reduces
   rework, since the component split converts most heap-fragmented payloads
   into slab storage — prefer it when both are available.
+- Evidence: `docs/design/hierarchical_allocator.md` is the durable owner for
+  the completed World memory hierarchy, frame/stack/stage scratch contract,
+  evidence surfaces, and bounded future-work rules after retiring the
+  hierarchical-memory-manager dev task.
 
 #### WP-091.23 Stable serialization identity [claimed]
 
@@ -964,7 +977,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   rigid-IPC allocation-counter off-by-one) introduced by the merged main
   #2996/#3005 allocator-modernization + C++23 raise — verified pre-existing by
   stashing this slice and reproducing it on the clean WP-091.23 tree; tracked
-  for separate triage.
+  for separate triage. Current status: the completed hierarchical allocator
+  work closed the corresponding rigid-IPC no-growth/raw-malloc gates; see
+  `docs/design/hierarchical_allocator.md` for the durable evidence summary.
 
 ### WS3 — Compute axis reality
 
@@ -1034,7 +1049,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   benchmark delta.
 - Dependencies: WP-091.2, WP-091.21.
 
-#### WP-091.33 Batched-World and device-residency design notes [claimed]
+#### WP-091.33 Batched-World and device-residency design notes [done — PR #3029, merged 2026-06-16]
 
 - Objective: the batching endgame has an owner and a contract — a design
   note pinning batched stepping semantics to "identical to n independent
@@ -1063,7 +1078,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   design note's implementation order and keeping backend/device vocabulary
   out of public APIs.
 
-#### WP-091.33a Batch semantics tests
+#### WP-091.33a Batch semantics tests [done — PR #3042, merged 2026-06-17]
 
 - Objective: the supported rigid-body batch paths are locked to "identical to
   independent sequential Worlds" before the batch owner is promoted.
@@ -1078,6 +1093,12 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   lane-local validation failure reports the lane index.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.33 (accepted design note).
+- Evidence: added
+  `World.RigidBodyStateBatchSingleLaneMatchesWorldStepReference`,
+  `World.StepWorldsBatchedMatchesIndependentLaneReferences`, and
+  `World.BatchValidationFailuresReportLaneIndex`; verified with focused
+  `test_world` gtest filtering plus `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit`.
 
 #### WP-091.33b Baked rigid Model/State owner
 
