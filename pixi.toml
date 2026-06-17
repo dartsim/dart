@@ -1002,6 +1002,13 @@ py-demos = { cmd = [
   "build-py-dev-docking",
 ], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
+py-demos-smoke = { cmd = [
+  "python",
+  "scripts/py_demos_smoke.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+
 # Capture a Python demo through the real Filament viewer and convert the PPM
 # outputs to PNG (and MP4 with --video when ffmpeg is available).
 py-demo-capture = { cmd = [
