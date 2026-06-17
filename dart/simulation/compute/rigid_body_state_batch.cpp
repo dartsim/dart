@@ -488,7 +488,7 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
     DART_SIMULATION_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
-        "extractRigidBodyStateBatch received a null world at index {}",
+        "extractRigidBodyStateBatch received a null world at lane {}",
         w);
 
     const auto single = extractRigidBodyState(*worlds[w]);
@@ -500,15 +500,15 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
       DART_SIMULATION_THROW_T_IF(
           single.bodyCount != batch.bodyCount,
           InvalidArgumentException,
-          "Heterogeneous body counts: world 0 has {}, world {} has {}",
+          "Heterogeneous body counts: lane 0 has {}, lane {} has {}",
           batch.bodyCount,
           w,
           single.bodyCount);
       DART_SIMULATION_THROW_T_IF(
           names != referenceNames,
           InvalidArgumentException,
-          "extractRigidBodyStateBatch world {} has a different rigid-body "
-          "ordering or identity than world 0; all worlds must expose the same "
+          "extractRigidBodyStateBatch lane {} has a different rigid-body "
+          "ordering or identity than lane 0; all worlds must expose the same "
           "ordered bodies",
           w);
     }
@@ -570,12 +570,12 @@ void applyRigidBodyStateBatch(
     DART_SIMULATION_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch received a null world at index {}",
+        "applyRigidBodyStateBatch received a null world at lane {}",
         w);
     DART_SIMULATION_THROW_T_IF(
         !seen.insert(worlds[w]).second,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch received a duplicate world at index {}; each "
+        "applyRigidBodyStateBatch received a duplicate world at lane {}; each "
         "world slice must target a distinct world",
         w);
 
@@ -583,7 +583,7 @@ void applyRigidBodyStateBatch(
     DART_SIMULATION_THROW_T_IF(
         names.size() != bodyCount,
         InvalidArgumentException,
-        "applyRigidBodyStateBatch world {} has {} rigid bodies, expected {}",
+        "applyRigidBodyStateBatch lane {} has {} rigid bodies, expected {}",
         w,
         names.size(),
         bodyCount);
@@ -593,9 +593,9 @@ void applyRigidBodyStateBatch(
       DART_SIMULATION_THROW_T_IF(
           names != referenceNames,
           InvalidArgumentException,
-          "applyRigidBodyStateBatch world {} has a different rigid-body "
+          "applyRigidBodyStateBatch lane {} has a different rigid-body "
           "ordering "
-          "or identity than world 0; all worlds must expose the same ordered "
+          "or identity than lane 0; all worlds must expose the same ordered "
           "bodies",
           w);
     }

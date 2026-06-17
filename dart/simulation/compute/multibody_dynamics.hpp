@@ -606,9 +606,24 @@ public:
 class DART_SIMULATION_API MultibodyVelocityStage final : public WorldStepStage
 {
 public:
+  explicit MultibodyVelocityStage(
+      common::MemoryManager* memoryManager = nullptr);
+  ~MultibodyVelocityStage() override;
+
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  struct Scratch;
+  struct ScratchDeleter
+  {
+    common::MemoryManager* memoryManager = nullptr;
+    void operator()(Scratch* scratch) const noexcept;
+  };
+
+  std::unique_ptr<Scratch, ScratchDeleter> m_scratch;
 };
 
 /// The built-in semi-implicit `World::step()` schedule uses

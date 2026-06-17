@@ -1034,7 +1034,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   benchmark delta.
 - Dependencies: WP-091.2, WP-091.21.
 
-#### WP-091.33 Batched-World and device-residency design notes [claimed]
+#### WP-091.33 Batched-World and device-residency design notes [done — PR #3029, merged 2026-06-16]
 
 - Objective: the batching endgame has an owner and a contract — a design
   note pinning batched stepping semantics to "identical to n independent
@@ -1063,7 +1063,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   design note's implementation order and keeping backend/device vocabulary
   out of public APIs.
 
-#### WP-091.33a Batch semantics tests
+#### WP-091.33a Batch semantics tests [claimed]
 
 - Objective: the supported rigid-body batch paths are locked to "identical to
   independent sequential Worlds" before the batch owner is promoted.
@@ -1078,6 +1078,12 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   lane-local validation failure reports the lane index.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.33 (accepted design note).
+- Evidence: added
+  `World.RigidBodyStateBatchSingleLaneMatchesWorldStepReference`,
+  `World.StepWorldsBatchedMatchesIndependentLaneReferences`, and
+  `World.BatchValidationFailuresReportLaneIndex`; verified with focused
+  `test_world` gtest filtering plus `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit`.
 
 #### WP-091.33b Baked rigid Model/State owner
 
