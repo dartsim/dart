@@ -1079,6 +1079,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     storage separate from mutable SoA State, reuses Model blocks across
     rollout segments, and refreshes them when topology or rigid-body model
     parameters change.
+  - Added an internal rigid-body Control sequence batch layout plus rollout
+    diagnostics that distinguish homogeneous SoA rollout from the existing
+    heterogeneous per-World fallback.
   - Reused experimental differentiable `World` multibody torque collection
     scratch through World-owned free-list storage, passed that scratch into the
     contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`

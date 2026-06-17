@@ -97,6 +97,42 @@ struct DART_SIMULATION_API RigidBodyModelBatch
   }
 };
 
+/// Backend-neutral rigid-body Control sequence for batched rollout.
+///
+/// The force array is step-major, then world-major, then body-major:
+/// `3 * stepCount * worldCount * bodyCount` doubles. It is deliberately a
+/// data-only layout so authored facade commands are lowered before compute
+/// nodes run; no callback, World, or backend handle is needed during rollout.
+struct DART_SIMULATION_API RigidBodyControlSequenceBatch
+{
+  std::size_t stepCount = 0;
+  std::size_t worldCount = 1;
+  std::size_t bodyCount = 0;
+  std::vector<double> force; ///< step-major force, 3 components per body
+
+  [[nodiscard]] bool isEmpty() const noexcept
+  {
+    return stepCount == 0 || worldCount == 0 || bodyCount == 0;
+  }
+};
+
+/// Resolved execution shape for an internal rigid-body batch rollout.
+enum class RigidBodyBatchExecutionShape
+{
+  HomogeneousBatch,
+  HeterogeneousFallback,
+};
+
+/// Diagnostics recorded after resolving a rigid-body batch rollout path.
+struct DART_SIMULATION_API RigidBodyBatchRolloutDiagnostics
+{
+  RigidBodyBatchExecutionShape executionShape
+      = RigidBodyBatchExecutionShape::HomogeneousBatch;
+  std::size_t stepCount = 0;
+  std::size_t worldCount = 0;
+  std::size_t bodyCount = 0;
+};
+
 /// Diagnostics for the internal baked rigid-body batch owner.
 ///
 /// `modelRefreshCount` increments only when immutable Model storage is rebuilt;
@@ -202,6 +238,30 @@ DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
 [[nodiscard]] DART_SIMULATION_API RigidBodyModelBatch
 extractRigidBodyModelBatch(const World& world);
 
+/// Extract current facade-authored rigid-body forces from @p worlds into a
+/// backend-neutral Control sequence, repeating the current per-lane force slice
+/// for @p stepCount rollout steps.
+///
+/// All worlds must be homogeneous under the same baked dense-index Model
+/// identity rules as @c extractRigidBodyStateBatch. The resulting force layout
+/// matches @c RigidBodyControlSequenceBatch and contains one force vector for
+/// every rigid body, including static bodies whose Model inverse mass is zero.
+[[nodiscard]] DART_SIMULATION_API RigidBodyControlSequenceBatch
+extractRigidBodyControlSequenceBatch(
+    const std::vector<const World*>& worlds, std::size_t stepCount);
+
+/// Return the force slice for one step of a Control sequence. Throws if the
+/// sequence's shape metadata and backing storage are inconsistent or @p step
+/// is out of range.
+[[nodiscard]] DART_SIMULATION_API std::span<double>
+rigidBodyControlForcesAtStep(
+    RigidBodyControlSequenceBatch& controlSequence, std::size_t step);
+
+/// Const overload of @c rigidBodyControlForcesAtStep.
+[[nodiscard]] DART_SIMULATION_API std::span<const double>
+rigidBodyControlForcesAtStep(
+    const RigidBodyControlSequenceBatch& controlSequence, std::size_t step);
+
 /// Integrate a state batch one semi-implicit Euler linear step using an
 /// explicit model. @p state and @p model must have matching world and body
 /// counts and
@@ -254,6 +314,17 @@ rolloutRigidBodyStateBatch(
     const RigidBodyModelBatch& model,
     const std::vector<std::vector<double>>& controlSequence,
     double timeStep);
+
+/// Roll out a state batch over a backend-neutral Control sequence and record
+/// the resolved homogeneous batch execution shape in @p diagnostics when
+/// supplied.
+[[nodiscard]] DART_SIMULATION_API RigidBodyStateBatch
+rolloutRigidBodyStateBatch(
+    const RigidBodyStateBatch& initialState,
+    const RigidBodyModelBatch& model,
+    const RigidBodyControlSequenceBatch& controlSequence,
+    double timeStep,
+    RigidBodyBatchRolloutDiagnostics* diagnostics);
 
 /// Total translational kinetic energy of a state batch: the sum over all bodies
 /// of `0.5 * mass * |linearVelocity|^2`, with `mass = 1 / inverseMass` (bodies

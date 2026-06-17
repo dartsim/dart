@@ -1130,7 +1130,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_world` batch/owner filters, `pixi run test-unit` (163/163), and
   `pixi run lint`.
 
-#### WP-091.33c Control-sequence rollout shape
+#### WP-091.33c Control-sequence rollout shape [claimed]
 
 - Objective: batched rollout control input has a backend-neutral data shape
   that keeps Python/C++ callbacks outside compute nodes and records the
@@ -1147,6 +1147,20 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run check-api-boundaries`.
 - Dependencies: WP-091.33b.
+- Evidence (combined implementation branch): `RigidBodyControlSequenceBatch`
+  adds a backend-neutral, step-major per-lane force layout for rigid batched
+  rollout. `extractRigidBodyControlSequenceBatch()` lowers current
+  facade-authored rigid-body forces from homogeneous Worlds into that data-only
+  layout before compute rollout, and `rolloutRigidBodyStateBatch()` consumes
+  the sequence without World or callback handles. `RigidBodyBatchRolloutDiagnostics`
+  records whether rollout resolved to the homogeneous SoA batch path or the
+  existing `rolloutWorldsBatched()` heterogeneous fallback. Tests:
+  `World.RigidBodyControlSequenceBatchExtractsFacadeForces`,
+  `World.RigidBodyControlSequenceBatchRolloutMatchesIndependentWorlds`,
+  `World.RigidBodyControlSequenceBatchRejectsMalformedShape`, and
+  `World.RolloutWorldsBatchedMatchesReference`. Gates: focused `test_world`
+  batch/control filters (11/11), `pixi run build`, `pixi run test-unit`
+  (163/163), `pixi run check-api-boundaries`, and `pixi run lint`.
 
 #### WP-091.33d Resident device owner
 
