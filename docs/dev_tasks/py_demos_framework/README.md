@@ -22,9 +22,10 @@ and replay metadata.
         (`python/examples/demos/_smoke_support.py`), wired into both the smoke
         script and the pytest guard. 155/155 green; verified genuine (153/155
         scenes have panels; panel code demonstrably calls the builder).
+  - [x] Scalable-contract guard: `test_every_scene_module_is_registered`
+        (no orphan `scenes/*.py`) complements `test_registry_has_scenes`
+        (unique ids + field contract). Adding a scene is now drift-safe.
   - [ ] Tier-3: full-catalog headless *render* pass (real Filament viewer).
-  - [ ] Scalable-contract lint (duplicate/unregistered scene guard) — confirm
-        `test_registry_has_scenes` coverage and extend if needed.
 - [ ] **M1 — Best domain + solver**: pick the flagship domain (rigid body) and
       solver, and make that path excellent end-to-end (visual + panels + replay
       + capture + docs).

@@ -9,6 +9,7 @@ pytest guard keeps the same contract visible in CI.
 from __future__ import annotations
 
 import pathlib
+import re
 import sys
 
 # Put python/ on sys.path so the demos package is importable.
@@ -61,3 +62,23 @@ def test_all_registered_scenes_build_step_and_render() -> None:
 
     details = "\n".join(f"{scene_id}: {error}" for scene_id, error in failures)
     assert not failures, f"demo scene smoke failures:\n{details}"
+
+
+def test_every_scene_module_is_registered() -> None:
+    """No orphan scene modules: every ``scenes/*.py`` is imported by the registry.
+
+    Guards the scalable-contract criterion: a new scene file that is never wired
+    into ``registry.py`` would otherwise silently escape all catalog coverage.
+    Pure file parsing, so it runs even without a GUI/dartpy build.
+    """
+
+    demos_dir = _PYTHON_DIR / "examples" / "demos"
+    modules = {
+        path.stem
+        for path in (demos_dir / "scenes").glob("*.py")
+        if not path.stem.startswith("_") and path.stem != "__init__"
+    }
+    registry_src = (demos_dir / "registry.py").read_text(encoding="utf-8")
+    imported = set(re.findall(r"from \.scenes\.(\w+) import", registry_src))
+    orphans = sorted(modules - imported)
+    assert not orphans, f"scene modules not imported by registry.py: {orphans}"
