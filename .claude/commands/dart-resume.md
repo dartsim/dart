@@ -37,10 +37,21 @@ and ask.
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.
-- If the task is being completed, promote any durable dashboard, evidence
-  matrix, API inventory, migration map, or long-lived decision out of
-  `docs/dev_tasks/<task>/` into `docs/plans/` or `docs/onboarding/`, then
-  remove the dev-task folder completely in the completing change.
+- If the task is being completed, run a completion audit before finalizing:
+  identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
+  plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
+  inventory, migration map, long-lived decision, or deferred-but-real work into
+  `docs/plans/`, `docs/design/`, or `docs/onboarding/`, update dashboard/plan
+  progress when the task changes roadmap state, then remove the dev-task folder
+  completely in the completing change.
+- If remaining work is real but blocked by a substantial design decision,
+  maintainer direction, external dependency, or scope boundary that should not
+  be resolved in the current session, ask the human before retiring the folder
+  unless prior maintainer direction is already recorded. Record the parked or
+  blocked work in the durable owner doc before deletion.
+- Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
+  If implementation is done but the folder remains, the remaining work is the
+  durable-doc promotion plus folder cleanup.
 - Run `pixi run lint` before committing.
 - Run relevant tests; use `pixi run test-all` before done when feasible, and
   also `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA

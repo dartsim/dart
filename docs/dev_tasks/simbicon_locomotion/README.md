@@ -1,22 +1,21 @@
 # Python SIMBICON Locomotion — Dev Task
 
-## Latest Focus (2026-06-16, Foot Tilt Comparison Utility)
+## Latest Focus (2026-06-17, Late State-0 Stance Diagnostics)
 
-Branch: `feature/simbicon-foot-tilt-metric`.
+Branch: `main` or a fresh branch from current `main`.
 
-The fresh follow-up branch starts from current `origin/main` instead of the
-large `feature/dart7-unified-contact-warm-start` checkpoint branch. It ports the
-small Atlas SIMBICON pose-window comparison utility and adds a derived foot-pose
-metric for each sampled trace row: transform translation, trace-vertical
-position, local z-axis tilt relative to the trace vertical axis, and
-stance/swing aliases when the controller state identifies the active limb.
+PR [#3043](https://github.com/dartsim/dart/pull/3043) landed the reusable Atlas
+SIMBICON pose-window comparison utility on `main`, including per-foot
+transform translation, trace-vertical position, local z-axis tilt relative to
+the trace vertical axis, and stance/swing aliases. PR
+[#3047](https://github.com/dartsim/dart/pull/3047) landed the retirement audit
+for the old `feature/dart7-unified-contact-warm-start` checkpoint, and the
+local and remote checkpoint branches have been deleted.
 
-Immediate next step: run
-`scripts/compare_atlas_simbicon_pose_window.py` on the late state-`0` trace
-window once the DART 6/DART 7 trace JSONs are available locally, then use the
-stance-foot tilt numbers together with support-row counts before trying another
-stance-reaction or torso-reaction probe. Do not treat this utility as a gait
-fix; it is evidence plumbing for the remaining lateral/support diagnosis.
+Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py` on the
+late state-`0` trace window from current `main`. Use the stance-foot tilt
+numbers together with support-row counts around steps `3970`, `4000`, `4070`,
+and `4100` before trying another stance-reaction or torso-reaction probe.
 
 ## Current Status
 
@@ -24,6 +23,12 @@ fix; it is evidence plumbing for the remaining lateral/support diagnosis.
       torso/swing-hip control, `theta_d = theta_d0 + c_d*d + c_v*v` balance
       feedback, per-robot configs for Atlas + Unitree G1, and three py-demos
       scenes (`atlas_simbicon`, `g1_simbicon`, `simbicon_duo`).
+- [x] Pose-window comparison utility landed (PR #3043): use it from `main` for
+      late state-`0` stance-foot pose/tilt comparisons instead of resuming the
+      old warm-start checkpoint branch.
+- [x] Warm-start checkpoint retired (PR #3047 + branch deletion): the old
+      `feature/dart7-unified-contact-warm-start` branch is no longer a resume
+      surface.
 - [x] Diagnosed and partly fixed the dominant fall mode (gradual height sink)
       via stance-leg height regulation (`height_kp`); torso control completed as
       a true PD.
@@ -61,15 +66,13 @@ indefinitely under the shared SIMBICON controller — including together in the
 
 ## Immediate Next Steps
 
-1. Reproduce the duo failure with the long-horizon trace harnesses
-   (`01-diagnosis.md` has exact single-robot and duo scripts) and determine
-   whether the two robots fail independently or interact (collision/contact
-   coupling in the shared world).
+1. Run the pose-window comparison utility on late state-`0` DART 6/DART 7 trace
+   JSONs for steps `3970`, `4000`, `4070`, and `4100`; compare stance-foot
+   tilt, stance pose, support-row counts, and support patch location.
 2. Attack lateral balance structurally rather than by gain tuning — candidate
    approaches are enumerated in `01-diagnosis.md` ("Restart / next-attempt
-   options").
-3. Re-verify with the fall-step harness over ≥3000 steps per robot **and** the
-   duo, not a short render (short renders look upright and hide the topple).
+   options"). Re-verify with the fall-step harness over ≥3000 steps per robot
+   **and** the duo, not a short render.
 
 ## References
 
@@ -79,3 +82,6 @@ indefinitely under the shared SIMBICON controller — including together in the
   `python/examples/demos/scenes/_simbicon_robots.py` (configs + loaders),
   `python/examples/demos/scenes/{atlas_simbicon,g1_simbicon,simbicon_duo}.py`.
 - Landed in PR #2786.
+- Pose-window comparison utility landed in PR #3043.
+- Warm-start checkpoint retirement:
+  [`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md).

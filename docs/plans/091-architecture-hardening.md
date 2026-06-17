@@ -558,9 +558,11 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   the enum (`test_serialization` 57/57). Gates: `pixi run lint` and
   `check-api-boundaries` clean; the default-step golden trajectories stay 3/3
   bit-identical (behavior-preserving — the resolved family is unchanged);
-  `test_world` 371/372 (the lone failure,
-  `BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, is the known
-  pre-existing post-#2996 rigid-IPC allocator issue, orthogonal to this change);
+  `test_world` 371/372 at claim time (the lone failure,
+  `BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, was the known
+  pre-existing post-#2996 rigid-IPC allocator issue, orthogonal to this change;
+  that allocator gap is now closed by the completed hierarchical allocator
+  work recorded in `docs/design/hierarchical_allocator.md`);
   `test_variational_integration` 178/178; cross-family + corpus green;
   `pixi run test-py` green (1382 passed, 11 skipped).
 
@@ -797,7 +799,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   path (assert via allocation/profile test); golden trajectories unchanged.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.20.
-- Evidence: `detail::BakedWorldModel` now caches
+- Evidence: PR [#3044](https://github.com/dartsim/dart/pull/3044) landed this
+  packet. `detail::BakedWorldModel` now caches
   creation-ordered rigid-body and multibody indices plus rigid-body Model arrays
   in `WorldStorage`; state/control vectors, rigid-body batch extraction, and
   batched integration consume the baked identity instead of rebuilding from
@@ -820,7 +823,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Dependencies: none. Sequencing note: landing WP-091.20 first reduces
   rework, since the component split converts most heap-fragmented payloads
   into slab storage — prefer it when both are available.
-- Evidence: `docs/design/hierarchical_allocator.md` records the decision to
+- Evidence: PR [#3029](https://github.com/dartsim/dart/pull/3029) landed this
+  packet. `docs/design/hierarchical_allocator.md` records the decision to
   keep frame scratch as the per-step transient arena and makes boxed-LCP
   rigid-contact solve arrays its first production consumer. The boxed-LCP
   built-in step warms the frame arena at bake, borrows it for dense per-step
@@ -832,7 +836,10 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap`, plus frame
   scratch diagnostics/reset coverage. Accepted by maintainer merge of PR #3029;
   #3029 validated with `pixi run lint`, `pixi run build`, and
-  `pixi run test-unit` before the docs/comment-only follow-up head.
+  `pixi run test-unit` before the docs/comment-only follow-up head. The
+  hierarchical-memory-manager dev task was retired with the durable memory
+  hierarchy, frame/stack/stage scratch contract, evidence surfaces, and bounded
+  future-work rules moved into the allocator design doc.
 
 #### WP-091.23 Stable serialization identity [claimed]
 
@@ -984,7 +991,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   rigid-IPC allocation-counter off-by-one) introduced by the merged main
   #2996/#3005 allocator-modernization + C++23 raise — verified pre-existing by
   stashing this slice and reproducing it on the clean WP-091.23 tree; tracked
-  for separate triage.
+  for separate triage. Current status: the completed hierarchical allocator
+  work closed the corresponding rigid-IPC no-growth/raw-malloc gates; see
+  `docs/design/hierarchical_allocator.md` for the durable evidence summary.
 
 ### WS3 — Compute axis reality
 

@@ -26,8 +26,9 @@ For code style: `docs/onboarding/code-style.md`
 # Features, docs, and non-bugfix refactors start from main
 git checkout -b <type>/<topic> origin/main
 
-# Bug fixes that apply to the current release line start from release-6.17
-git checkout -b fix/<topic>-6.17 origin/release-6.17
+# Bug fixes that apply to the current release line start from the active DART 6 LTS branch
+DART6_LTS_BRANCH=$(git branch -r --list 'origin/release-6.*' | sed 's|.*/||' | sort -V | tail -1)
+git checkout -b "fix/<topic>-${DART6_LTS_BRANCH#release-}" "origin/$DART6_LTS_BRANCH"
 
 # Make changes, then
 pixi run lint
@@ -40,8 +41,8 @@ git push -u origin HEAD
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
-Use `--base main --milestone "DART 7.0"` for main PRs and
-`--base release-6.17 --milestone "DART 6.17.1"` for release-line PRs.
+Use `--base main --milestone "DART 7.0"` for main PRs and the
+branch-matching DART 6.x patch milestone for active DART 6 LTS PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
@@ -65,10 +66,10 @@ follow. Rebase or force-push only when the maintainer explicitly requests it.
 Always set a milestone when creating PRs after explicit maintainer/user
 approval:
 
-| Target Branch  | Milestone                     |
-| -------------- | ----------------------------- |
-| `main`         | `DART 7.0` (or next major)    |
-| `release-6.17` | `DART 6.17.1` (current patch) |
+| Target Branch                          | Milestone                      |
+| -------------------------------------- | ------------------------------ |
+| `main`                                 | `DART 7.0` (or next major)     |
+| Active DART 6 LTS `release-6.*` branch | Branch-matching DART 6.x patch |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
@@ -80,20 +81,21 @@ gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 
 ## CRITICAL: Bug Fix Dual-PR
 
-Bug fixes require PRs to **BOTH** branches:
+Bug fixes require PRs to **BOTH** release lines:
 
-1. **`release-6.17`** - Current release
+1. **Active DART 6 LTS `release-6.*` branch** - Current DART 6 maintenance line
 2. **`main`** - Next release
 
 Steps:
 
-1. Fix on `release-6.17` first
+1. Fix on the active DART 6 LTS branch first
 2. Cherry-pick to `main`
 3. After explicit maintainer/user approval, create separate PRs for each
 
 ## CHANGELOG (After Approved PR Exists)
 
-After the approved PR exists, check if CHANGELOG.md needs updating:
+Use `docs/onboarding/changelog.md` as the source of truth. After the approved PR
+exists, check if `CHANGELOG.md` needs updating:
 
 | Change Type                      | Update CHANGELOG?                    |
 | -------------------------------- | ------------------------------------ |
@@ -106,7 +108,12 @@ After the approved PR exists, check if CHANGELOG.md needs updating:
 | Dependency bumps                 | ⚠️ Maybe (if user-facing)            |
 | Typo fixes                       | ❌ No                                |
 
-Format: `- Description. ([#PR](https://github.com/dartsim/dart/pull/PR))`
+Format: `- Reader-visible outcome. ([#PR](https://github.com/dartsim/dart/pull/PR))`
+
+Keep entries concise. If details need more than a few wrapped lines, move the
+details to the owner doc, plan, or migration note and link that document.
+Do not add one bullet per PR when several PRs ship one reader-visible outcome;
+merge them into one human-readable release-note entry.
 
 ```bash
 # Example entry in CHANGELOG.md under appropriate section:

@@ -5,6 +5,7 @@
 - Building DART? → [building.md](building.md)
 - Running tests? → [testing.md](testing.md)
 - Contributing code? → [contributing.md](contributing.md) + [code-style.md](code-style.md)
+- Updating release notes? → [changelog.md](changelog.md)
 - Understanding core architecture? → [architecture.md](architecture.md)
 - Gazebo integration? → [build-system.md](build-system.md#gazebo-integration-feature)
 - Key command: `pixi run test-all` (lint + build + all default-environment
@@ -36,7 +37,8 @@ Filament-backed 3D visualization with GLFW3 windowing and Dear ImGui overlays.
 ### Release & Branch Strategy
 
 - `main`: active development targeting DART 7 (Python-first API).
-- `release-6.17`: maintenance branch for DART 6 (critical fixes only).
+- Active DART 6 LTS `release-6.*` branch: maintenance branch for DART 6
+  (critical fixes only; currently `release-6.19` in this checkout).
 
 See [release-roadmap.md](release-roadmap.md) for the detailed roadmap, compatibility, and deprecation policy.
 
@@ -66,6 +68,7 @@ This onboarding guide is organized into several focused documents:
 - **[README.md](README.md)** (this file) - Architecture overview and common workflows
 - **[building.md](building.md)** - Step-by-step build instructions for all platforms
 - **[contributing.md](contributing.md)** - Comprehensive contribution workflow and guidelines
+- **[changelog.md](changelog.md)** - Human-readable changelog and release-note entry rules
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization

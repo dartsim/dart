@@ -140,9 +140,41 @@ StepDerivatives contactFreeStepDerivatives(
     const Eigen::Ref<const Eigen::VectorXd>& tau,
     ContactFreeStepCoordinateScratch* coordinateScratch,
     compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch,
-    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch)
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch,
+    ContactFreeStepDerivativeScratch* derivativeScratch)
 {
   StepDerivatives derivatives;
+  contactFreeStepDerivativesInto(
+      registry,
+      structure,
+      gravity,
+      timeStep,
+      tau,
+      derivatives,
+      coordinateScratch,
+      inverseDynamicsScratch,
+      dynamicsTermsScratch,
+      derivativeScratch);
+  return derivatives;
+}
+
+//==============================================================================
+void contactFreeStepDerivativesInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    const Eigen::Ref<const Eigen::VectorXd>& tau,
+    StepDerivatives& derivatives,
+    ContactFreeStepCoordinateScratch* coordinateScratch,
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch,
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch,
+    ContactFreeStepDerivativeScratch* derivativeScratch)
+{
+  ContactFreeStepDerivativeScratch localDerivativeScratch;
+  auto& scratch = derivativeScratch != nullptr ? *derivativeScratch
+                                               : localDerivativeScratch;
+  derivatives.parameterJacobian.resize(0, 0);
 
   ContactFreeStepCoordinateScratch localCoordinates;
   auto& coordinates
@@ -150,7 +182,9 @@ StepDerivatives contactFreeStepDerivatives(
   collectCoordinatesInto(registry, structure, coordinates);
   const auto ndof = static_cast<Eigen::Index>(coordinates.size());
   if (ndof == 0) {
-    return derivatives;
+    derivatives.stateJacobian.resize(0, 0);
+    derivatives.controlJacobian.resize(0, 0);
+    return;
   }
 
   // Base-point dynamics terms and current generalized velocity.
@@ -174,18 +208,27 @@ StepDerivatives contactFreeStepDerivatives(
   compute::computeMultibodyDynamicsTermsInto(
       dynamicsScratch, registry, structure, gravity, baseTerms);
   const Eigen::MatrixXd& massMatrix = baseTerms.massMatrix;
-  const Eigen::VectorXd biasForces
-      = baseTerms.coriolisForces + baseTerms.gravityForces; // c = C q̇ + g
+  scratch.biasForces.resize(ndof);
+  scratch.biasForces = baseTerms.coriolisForces;
+  scratch.biasForces += baseTerms.gravityForces; // c = C q̇ + g
 
-  Eigen::VectorXd qdot = Eigen::VectorXd::Zero(ndof);
+  scratch.qdot.resize(ndof);
+  scratch.qdot.setZero();
   for (Eigen::Index k = 0; k < ndof; ++k) {
     const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
     const auto& jointState = registry.get<comps::JointState>(coordinate.joint);
-    qdot[k] = jointState.velocity[coordinate.local];
+    scratch.qdot[k] = jointState.velocity[coordinate.local];
   }
 
-  const Eigen::MatrixXd inverseMass = massMatrix.inverse();
-  const Eigen::VectorXd qddot = inverseMass * (tau - biasForces);
+  scratch.massMatrixLdlt.compute(massMatrix);
+  scratch.inverseMass.resize(ndof, ndof);
+  scratch.inverseMass.setIdentity();
+  scratch.massMatrixLdlt.solveInPlace(scratch.inverseMass);
+  scratch.rhs.resize(ndof);
+  scratch.rhs = tau;
+  scratch.rhs -= scratch.biasForces;
+  scratch.qddot = scratch.rhs;
+  scratch.massMatrixLdlt.solveInPlace(scratch.qddot);
 
   // Central finite differencing of the dynamics terms. The relative step keeps
   // the perturbation well scaled regardless of the coordinate magnitude.
@@ -205,28 +248,36 @@ StepDerivatives contactFreeStepDerivatives(
   // (constant unit-twist joints: revolute/prismatic/screw/fixed); otherwise the
   // code falls back to O(dof³) central finite differencing of the dynamics
   // terms (manifold / configuration-dependent joints), the original path.
-  Eigen::MatrixXd dVelNext_dq = Eigen::MatrixXd::Zero(ndof, ndof);
-  Eigen::MatrixXd dVelNext_dqdot = Eigen::MatrixXd::Identity(ndof, ndof);
+  scratch.dVelNext_dq.resize(ndof, ndof);
+  scratch.dVelNext_dq.setZero();
+  scratch.dVelNext_dqdot.resize(ndof, ndof);
+  scratch.dVelNext_dqdot.setIdentity();
 
-  compute::InverseDynamicsDerivatives idDerivatives;
+  compute::InverseDynamicsDerivatives localIdDerivatives;
+  auto& idDerivatives = derivativeScratch != nullptr
+                            ? scratch.inverseDynamicsDerivatives
+                            : localIdDerivatives;
   if (inverseDynamicsScratch != nullptr) {
     compute::computeMultibodyInverseDynamicsDerivativesInto(
         *inverseDynamicsScratch,
         registry,
         structure,
         gravity,
-        qddot,
+        scratch.qddot,
         idDerivatives);
   } else {
     idDerivatives = compute::computeMultibodyInverseDynamicsDerivatives(
-        registry, structure, gravity, qddot);
+        registry, structure, gravity, scratch.qddot);
   }
 
   if (idDerivatives.valid) {
-    dVelNext_dq.noalias() = -timeStep * (inverseMass * idDerivatives.dTau_dq);
-    dVelNext_dqdot.noalias()
-        = Eigen::MatrixXd::Identity(ndof, ndof)
-          - timeStep * (inverseMass * idDerivatives.dTau_dqdot);
+    scratch.tempMatrix.resize(ndof, ndof);
+    scratch.tempMatrix.noalias() = scratch.inverseMass * idDerivatives.dTau_dq;
+    scratch.dVelNext_dq.noalias() = -timeStep * scratch.tempMatrix;
+    scratch.tempMatrix.noalias()
+        = scratch.inverseMass * idDerivatives.dTau_dqdot;
+    scratch.dVelNext_dqdot.setIdentity();
+    scratch.dVelNext_dqdot.noalias() -= timeStep * scratch.tempMatrix;
   } else {
     for (Eigen::Index k = 0; k < ndof; ++k) {
       const auto& coordinate = coordinates[static_cast<std::size_t>(k)];
@@ -243,16 +294,25 @@ StepDerivatives contactFreeStepDerivatives(
         const auto& minus = evalTermsInto(minusTerms);
         jointState.position[coordinate.local] = original; // restore exactly
 
-        const Eigen::MatrixXd dMass
-            = (plus.massMatrix - minus.massMatrix) / (2.0 * h);
-        Eigen::VectorXd dBias = plus.coriolisForces;
-        dBias += plus.gravityForces;
-        dBias -= minus.coriolisForces;
-        dBias -= minus.gravityForces;
-        dBias /= 2.0 * h;
+        scratch.tempMatrix.resize(ndof, ndof);
+        scratch.tempMatrix = plus.massMatrix;
+        scratch.tempMatrix -= minus.massMatrix;
+        scratch.tempMatrix /= 2.0 * h;
 
-        dVelNext_dq.col(k)
-            = timeStep * (-inverseMass * (dMass * qddot) - inverseMass * dBias);
+        scratch.dBias.resize(ndof);
+        scratch.dBias = plus.coriolisForces;
+        scratch.dBias += plus.gravityForces;
+        scratch.dBias -= minus.coriolisForces;
+        scratch.dBias -= minus.gravityForces;
+        scratch.dBias /= 2.0 * h;
+
+        scratch.tempVector.resize(ndof);
+        scratch.tempVector.noalias() = scratch.tempMatrix * scratch.qddot;
+        scratch.tempVector += scratch.dBias;
+        scratch.tempVector2.resize(ndof);
+        scratch.tempVector2.noalias()
+            = scratch.inverseMass * scratch.tempVector;
+        scratch.dVelNext_dq.col(k).noalias() = -timeStep * scratch.tempVector2;
       }
 
       // --- Velocity perturbation: dc/dq̇_k (the Coriolis velocity derivative).
@@ -267,19 +327,24 @@ StepDerivatives contactFreeStepDerivatives(
         const auto& minus = evalTermsInto(minusTerms);
         jointState.velocity[coordinate.local] = original; // restore exactly
 
-        Eigen::VectorXd dBias = plus.coriolisForces;
-        dBias += plus.gravityForces;
-        dBias -= minus.coriolisForces;
-        dBias -= minus.gravityForces;
-        dBias /= 2.0 * h;
+        scratch.dBias.resize(ndof);
+        scratch.dBias = plus.coriolisForces;
+        scratch.dBias += plus.gravityForces;
+        scratch.dBias -= minus.coriolisForces;
+        scratch.dBias -= minus.gravityForces;
+        scratch.dBias /= 2.0 * h;
 
-        dVelNext_dqdot.col(k) += timeStep * (-inverseMass * dBias);
+        scratch.tempVector.resize(ndof);
+        scratch.tempVector.noalias() = scratch.inverseMass * scratch.dBias;
+        scratch.dVelNext_dqdot.col(k).noalias()
+            -= timeStep * scratch.tempVector;
       }
     }
   }
 
   // ∂q̇'/∂τ = Δt * Minv.
-  const Eigen::MatrixXd dVelNext_dtau = timeStep * inverseMass;
+  scratch.dVelNext_dtau.resize(ndof, ndof);
+  scratch.dVelNext_dtau.noalias() = timeStep * scratch.inverseMass;
 
   // Joint-type-keyed position map q' = Φ(q, q̇'). The next velocity q̇' is the
   // semi-implicit-Euler result already assembled above, so by the chain rule
@@ -292,12 +357,15 @@ StepDerivatives contactFreeStepDerivatives(
   // the right/left exponential-map Jacobians (dexp/dlog) and, for free joints,
   // a translation-vs-orientation coupling block. These differentiate the EXACT
   // manifold integration in `simulateMultibody` (multibody_dynamics.cpp).
-  Eigen::MatrixXd posPartialPos = Eigen::MatrixXd::Identity(ndof, ndof);
-  Eigen::MatrixXd posPartialVel
-      = timeStep * Eigen::MatrixXd::Identity(ndof, ndof);
+  scratch.posPartialPos.resize(ndof, ndof);
+  scratch.posPartialPos.setIdentity();
+  scratch.posPartialVel.resize(ndof, ndof);
+  scratch.posPartialVel.setZero();
+  scratch.posPartialVel.diagonal().setConstant(timeStep);
 
   // The next generalized velocity at the base point, ordered by global DOF.
-  const Eigen::VectorXd nextVelocity = qdot + timeStep * qddot;
+  scratch.nextVelocity = scratch.qdot;
+  scratch.nextVelocity.noalias() += timeStep * scratch.qddot;
 
   // Walk joints in DOF order, filling the manifold blocks for ball/free joints
   // and leaving the Euclidean default in place for the rest.
@@ -313,15 +381,15 @@ StepDerivatives contactFreeStepDerivatives(
     if (jointModel.type == comps::JointType::Spherical) {
       // q_local is the rotation vector; q̇'_local is the body angular velocity.
       const Eigen::Vector3d phi = jointState.position.head<3>();
-      const Eigen::Vector3d omegaNext = nextVelocity.segment<3>(offset);
+      const Eigen::Vector3d omegaNext = scratch.nextVelocity.segment<3>(offset);
       const Eigen::Vector3d twist = omegaNext * timeStep;
       const Eigen::Vector3d phiNext
           = rotationLog(rotationExp(phi) * rotationExp(twist));
 
       const Eigen::Matrix3d jrInvNext = rotationRightJacobianInverse(phiNext);
-      posPartialPos.block<3, 3>(offset, offset)
+      scratch.posPartialPos.block<3, 3>(offset, offset)
           = jrInvNext * rotationExp(-twist) * rotationRightJacobian(phi);
-      posPartialVel.block<3, 3>(offset, offset)
+      scratch.posPartialVel.block<3, 3>(offset, offset)
           = jrInvNext * rotationRightJacobian(twist) * timeStep;
     } else if (jointModel.type == comps::JointType::Floating) {
       // q_local = [translation; rotation vector]; q̇'_local = [linear; angular]
@@ -329,8 +397,10 @@ StepDerivatives contactFreeStepDerivatives(
       // integrates on SO(3).
       const Eigen::Vector3d theta = jointState.position.tail<3>();
       const Eigen::Matrix3d rotation = rotationExp(theta);
-      const Eigen::Vector3d linearNext = nextVelocity.segment<3>(offset);
-      const Eigen::Vector3d angularNext = nextVelocity.segment<3>(offset + 3);
+      const Eigen::Vector3d linearNext
+          = scratch.nextVelocity.segment<3>(offset);
+      const Eigen::Vector3d angularNext
+          = scratch.nextVelocity.segment<3>(offset + 3);
       const Eigen::Vector3d twist = angularNext * timeStep;
       const Eigen::Vector3d thetaNext
           = rotationLog(rotation * rotationExp(twist));
@@ -340,42 +410,49 @@ StepDerivatives contactFreeStepDerivatives(
 
       // ∂Φ/∂q: translation rows depend on translation (I) and on orientation
       // (the coupling block); orientation rows are the SO(3) dexp/dlog block.
-      posPartialPos.block<3, 3>(offset, offset).setIdentity();
-      posPartialPos.block<3, 3>(offset, offset + 3)
+      scratch.posPartialPos.block<3, 3>(offset, offset).setIdentity();
+      scratch.posPartialPos.block<3, 3>(offset, offset + 3)
           = -rotation * skew(linearNext) * jrTheta * timeStep;
-      posPartialPos.block<3, 3>(offset + 3, offset).setZero();
-      posPartialPos.block<3, 3>(offset + 3, offset + 3)
+      scratch.posPartialPos.block<3, 3>(offset + 3, offset).setZero();
+      scratch.posPartialPos.block<3, 3>(offset + 3, offset + 3)
           = jrInvNext * rotationExp(-twist) * jrTheta;
 
       // ∂Φ/∂q̇': translation advances by R·Δt; orientation by the SO(3) block.
-      posPartialVel.block<3, 3>(offset, offset) = rotation * timeStep;
-      posPartialVel.block<3, 3>(offset, offset + 3).setZero();
-      posPartialVel.block<3, 3>(offset + 3, offset).setZero();
-      posPartialVel.block<3, 3>(offset + 3, offset + 3)
+      scratch.posPartialVel.block<3, 3>(offset, offset) = rotation * timeStep;
+      scratch.posPartialVel.block<3, 3>(offset, offset + 3).setZero();
+      scratch.posPartialVel.block<3, 3>(offset + 3, offset).setZero();
+      scratch.posPartialVel.block<3, 3>(offset + 3, offset + 3)
           = jrInvNext * rotationRightJacobian(twist) * timeStep;
     }
 
     offset += jointDof;
   }
 
-  const Eigen::MatrixXd dPosNext_dq
-      = posPartialPos + posPartialVel * dVelNext_dq;
-  const Eigen::MatrixXd dPosNext_dqdot = posPartialVel * dVelNext_dqdot;
-  const Eigen::MatrixXd dPosNext_dtau = posPartialVel * dVelNext_dtau;
+  scratch.tempMatrix.resize(ndof, ndof);
+  scratch.tempMatrix.noalias() = scratch.posPartialVel * scratch.dVelNext_dq;
+  scratch.dPosNext_dq.resize(ndof, ndof);
+  scratch.dPosNext_dq = scratch.posPartialPos;
+  scratch.dPosNext_dq += scratch.tempMatrix;
+  scratch.dPosNext_dqdot.resize(ndof, ndof);
+  scratch.dPosNext_dqdot.noalias()
+      = scratch.posPartialVel * scratch.dVelNext_dqdot;
+  scratch.dPosNext_dtau.resize(ndof, ndof);
+  scratch.dPosNext_dtau.noalias()
+      = scratch.posPartialVel * scratch.dVelNext_dtau;
 
   // Assemble the state Jacobian [[∂q'/∂q, ∂q'/∂q̇], [∂q̇'/∂q, ∂q̇'/∂q̇]].
-  derivatives.stateJacobian = Eigen::MatrixXd::Zero(2 * ndof, 2 * ndof);
-  derivatives.stateJacobian.topLeftCorner(ndof, ndof) = dPosNext_dq;
-  derivatives.stateJacobian.topRightCorner(ndof, ndof) = dPosNext_dqdot;
-  derivatives.stateJacobian.bottomLeftCorner(ndof, ndof) = dVelNext_dq;
-  derivatives.stateJacobian.bottomRightCorner(ndof, ndof) = dVelNext_dqdot;
+  derivatives.stateJacobian.resize(2 * ndof, 2 * ndof);
+  derivatives.stateJacobian.setZero();
+  derivatives.stateJacobian.topLeftCorner(ndof, ndof) = scratch.dPosNext_dq;
+  derivatives.stateJacobian.topRightCorner(ndof, ndof) = scratch.dPosNext_dqdot;
+  derivatives.stateJacobian.bottomLeftCorner(ndof, ndof) = scratch.dVelNext_dq;
+  derivatives.stateJacobian.bottomRightCorner(ndof, ndof)
+      = scratch.dVelNext_dqdot;
 
   // Assemble the control Jacobian [[∂q'/∂τ], [∂q̇'/∂τ]].
-  derivatives.controlJacobian = Eigen::MatrixXd::Zero(2 * ndof, ndof);
-  derivatives.controlJacobian.topRows(ndof) = dPosNext_dtau;
-  derivatives.controlJacobian.bottomRows(ndof) = dVelNext_dtau;
-
-  return derivatives;
+  derivatives.controlJacobian.resize(2 * ndof, ndof);
+  derivatives.controlJacobian.topRows(ndof) = scratch.dPosNext_dtau;
+  derivatives.controlJacobian.bottomRows(ndof) = scratch.dVelNext_dtau;
 }
 
 } // namespace dart::simulation::detail

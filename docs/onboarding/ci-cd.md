@@ -93,8 +93,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Linux `Release Tests` ASAN compile fails with `No space left on device`:
   treat this as hosted-runner disk exhaustion, not a failing DART test. The job
   builds a normal Release tree, dartpy, examples, and then a separate ASAN tree
-  in the same workspace; keep disk cleanup at the start of that job before
-  rerunning the failed check.
+  in the same workspace; keep disk cleanup at the start of that job and free
+  the already-installed Release build tree before the ASAN phase, then rerun the
+  failed check.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Example or test links fail with `cannot find -ldart-<component>`: inspect the
@@ -284,7 +285,7 @@ project's continuous validation surface.
 | Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                                  |
 | Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                      |
 | Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                        |
-| Release support PR        | Yes on release lines  | gz-physics compatibility on `release-6.17` PRs                                                     |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                  |
 | Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags               |
 | Scheduled/manual coverage | No                    | FreeBSD VM, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
 

@@ -8282,9 +8282,12 @@ def test_simulation_world_exposes_deformable_solver_diagnostics():
     assert after.solver_iterations >= 1
     assert after.objective_evaluations >= 1
     assert after.projected_newton_steps + after.projected_newton_fallbacks >= 1
-    assert after.projected_newton_hessian_nonzeros > 0
-    assert after.projected_newton_hessian_storage_bytes > 0
-    # This body uses the default direct (sparse Cholesky) solve, so the iterative
+    # Small direct systems use retained dense LDLT scratch. Sparse Hessian
+    # footprint diagnostics only describe sparse/iterative assemblies, so they
+    # stay zero here even though the direct solve ran.
+    assert after.projected_newton_hessian_nonzeros == 0
+    assert after.projected_newton_hessian_storage_bytes == 0
+    # This body uses the default direct solve, so the iterative
     # (conjugate-gradient) path is never taken.
     assert after.projected_newton_iterative_solves == 0
     assert after.projected_newton_matrix_free_solves == 0
@@ -8315,7 +8318,7 @@ def test_simulation_world_iterative_solver_diagnostic():
     options.material.youngs_modulus = 1.0e4
     options.material.use_finite_element_elasticity = True
     # Opt in to the iterative (incomplete-Cholesky-preconditioned CG) linear
-    # solve instead of the sparse Cholesky factorization.
+    # solve instead of direct factorization.
     options.material.use_iterative_linear_solver = True
     options.fixed_nodes = [0]
     world.add_deformable_body("tet", options)
@@ -8444,7 +8447,10 @@ def test_simulation_world_matrix_free_solver_matches_direct_ground_contact():
 
     assert direct_solves == 0
     assert direct_matrix_free == 0
-    assert direct_hessian_nonzeros > 0
+    # The one-node direct solve stays under the retained dense cutoff; sparse
+    # Hessian footprint remains zero and the solve path is distinguished from
+    # matrix-free CG by the iterative-solve counters.
+    assert direct_hessian_nonzeros == 0
 
     assert matrix_solves > 0
     assert matrix_solves == matrix_free_solves

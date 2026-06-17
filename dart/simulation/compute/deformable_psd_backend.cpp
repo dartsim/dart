@@ -38,14 +38,35 @@
 
 namespace dart::simulation::compute {
 
-//==============================================================================
-void projectSymmetricBlocksToPsdCpu(
+namespace {
+
+template <int Size>
+void projectFixedSymmetricBlocksToPsd(double* blocks, std::size_t blockCount)
+{
+  using Matrix = Eigen::Matrix<double, Size, Size>;
+  using RowMajorMatrix = Eigen::Matrix<double, Size, Size, Eigen::RowMajor>;
+  using Vector = Eigen::Matrix<double, Size, 1>;
+
+  constexpr std::size_t stride = Size * Size;
+  for (std::size_t k = 0; k < blockCount; ++k) {
+    double* base = blocks + k * stride;
+    Eigen::Map<RowMajorMatrix> block(base);
+    Matrix symmetric = block;
+    symmetric = 0.5 * (symmetric + symmetric.transpose()).eval();
+    const Eigen::SelfAdjointEigenSolver<Matrix> solver(symmetric);
+    if (solver.info() != Eigen::Success) {
+      block.setZero();
+      continue;
+    }
+    const Vector eigenvalues = solver.eigenvalues().cwiseMax(0.0);
+    block = solver.eigenvectors() * eigenvalues.asDiagonal()
+            * solver.eigenvectors().transpose();
+  }
+}
+
+void projectDynamicSymmetricBlocksToPsd(
     double* blocks, std::size_t dimension, std::size_t blockCount)
 {
-  if (blocks == nullptr || dimension == 0 || blockCount == 0) {
-    return;
-  }
-
   const auto dim = static_cast<Eigen::Index>(dimension);
   const std::size_t stride = dimension * dimension;
   for (std::size_t k = 0; k < blockCount; ++k) {
@@ -65,6 +86,29 @@ void projectSymmetricBlocksToPsdCpu(
     const Eigen::VectorXd eigenvalues = solver.eigenvalues().cwiseMax(0.0);
     block = solver.eigenvectors() * eigenvalues.asDiagonal()
             * solver.eigenvectors().transpose();
+  }
+}
+
+} // namespace
+
+//==============================================================================
+void projectSymmetricBlocksToPsdCpu(
+    double* blocks, std::size_t dimension, std::size_t blockCount)
+{
+  if (blocks == nullptr || dimension == 0 || blockCount == 0) {
+    return;
+  }
+
+  switch (dimension) {
+    case 6:
+      projectFixedSymmetricBlocksToPsd<6>(blocks, blockCount);
+      return;
+    case 12:
+      projectFixedSymmetricBlocksToPsd<12>(blocks, blockCount);
+      return;
+    default:
+      projectDynamicSymmetricBlocksToPsd(blocks, dimension, blockCount);
+      return;
   }
 }
 

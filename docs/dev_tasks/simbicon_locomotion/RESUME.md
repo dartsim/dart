@@ -1,38 +1,44 @@
 # Resume: Python SIMBICON Locomotion
 
-## Current Resume Checkpoint (2026-06-16, Foot Tilt Comparison Utility)
+## Current Resume Checkpoint (2026-06-17, Late State-0 Stance Diagnostics)
 
-Current branch: `feature/simbicon-foot-tilt-metric`.
+Current branch: `main` or a fresh branch from current `main`.
 
-This branch starts from current `origin/main` and keeps the large
-`feature/dart7-unified-contact-warm-start` branch as a checkpoint only. It ports
-the small Atlas SIMBICON pose-window comparison utility and adds per-foot pose
-metrics: transform translation, trace-vertical position, local z-axis tilt
-relative to the trace vertical axis, and stance/swing aliases when the trace
-state identifies the active limb.
+PR [#3043](https://github.com/dartsim/dart/pull/3043) is merged on `main`; the
+small Atlas SIMBICON pose-window comparison utility no longer needs the old
+checkpoint branch. PR [#3047](https://github.com/dartsim/dart/pull/3047)
+landed the remaining durable evidence from
+`feature/dart7-unified-contact-warm-start` in
+[`02-warm-start-branch-retirement.md`](02-warm-start-branch-retirement.md), and
+the local and remote checkpoint branches were deleted on 2026-06-17 after
+maintainer approval.
 
 Validation so far:
 
 - `pixi run python -m pytest python/tests/unit/test_compare_atlas_simbicon_pose_window.py -q`
 - `pixi run lint`
 
-Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py` against
-the late state-`0` DART 6/DART 7 trace JSONs once those artifacts are present
-locally, then compare stance-foot local z-axis tilt with support-row counts
-around steps `3970`, `4000`, `4070`, and `4100` before trying another stance
-hip-roll or torso-reaction probe. Do not return to global native surface
-tolerance or blunt swing `hpx`/`hpy` target clamps without new evidence.
+Immediate next step: run `scripts/compare_atlas_simbicon_pose_window.py`
+against the late state-`0` DART 6/DART 7 trace JSONs from current `main`.
+Compare stance-foot local z-axis tilt with support-row counts around steps
+`3970`, `4000`, `4070`, and `4100` before trying another stance hip-roll or
+torso-reaction probe. Do not return to global native surface tolerance,
+seed-depth changes, reactive state-2 support-hold clamps, or blunt swing
+`hpx`/`hpy` target clamps without new evidence.
 
 How to resume:
 
 ```bash
-git checkout feature/simbicon-foot-tilt-metric
+git checkout main
+git pull --ff-only
 git status --short --branch
-pixi run python -m pytest python/tests/unit/test_compare_atlas_simbicon_pose_window.py -q
 ```
 
-Then run the compare script with appropriate `--dart6-json`, `--dart7-json`,
-`--mesh-dir`, and `--steps 3970,4000,4070,4100` arguments.
+Then run the late state-`0` pose-window comparison from current `main`.
+
+The older resume notes below predate PR #3043 and this retirement audit. Keep
+them as SIMBICON task history, but do not treat their branch instructions as
+current.
 
 ## Last Session Summary
 
@@ -43,12 +49,12 @@ sink) with stance-leg height regulation. Both robots still topple over long
 horizons via a lateral (coronal) instability, so `simbicon_duo` does not hold
 up; this folder captures the diagnosis so the lateral-balance work can resume.
 
-## Current Branch
+## Historical Baseline Branch
 
 `main` — clean. PR #2786 is merged; the controller code is on `main`. There is
 **no** in-progress feature branch for the remaining lateral-balance work yet.
 
-## Immediate Next Step
+## Original SIMBICON Next Step
 
 Reproduce the duo failure and characterize it: run the long-horizon
 single-robot harness in `01-diagnosis.md` for `g1` and `atlas` (≥3000 steps),

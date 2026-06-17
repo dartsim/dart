@@ -829,8 +829,8 @@ change skips this gate, state the deferral reason in the PR description.
     Bullet/ODE backends are part of the core `dart` component;
     `collision-bullet` / `collision-ode` exist only as deprecated compatibility
     components while clean-break gates are being closed. Prefer to update
-    downstream to depend on `dart`; keep this workflow passing on the DART 6.17
-    support lane for existing consumers.
+    downstream to depend on `dart`; keep this workflow passing on the active
+    DART 6 LTS support lane for existing consumers.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py`
   limited to validating the DART version requirement; otherwise this workflow
   stops catching real compatibility breaks.

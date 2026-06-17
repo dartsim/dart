@@ -7836,6 +7836,80 @@ std::unique_ptr<sx::World> buildCartesianArticulatedGroundScene(
   return world;
 }
 
+std::unique_ptr<sx::World> buildRevoluteArmGroundScene(
+    sx::ContactSolverMethod method, int armCount = 1)
+{
+  if (armCount <= 0) {
+    return nullptr;
+  }
+
+  sx::WorldOptions options;
+  options.timeStep = 0.002;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.contactSolverMethod = method;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto ground = world->addRigidBody("ground", groundOptions);
+  constexpr double kSpacing = 1.5;
+  const double groundHalfExtent
+      = makePositiveGridGroundHalfExtent(armCount, kSpacing, 24.0);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          Eigen::Vector3d(groundHalfExtent, groundHalfExtent, 0.5)));
+
+  const int columns
+      = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(armCount))));
+  for (int i = 0; i < armCount; ++i) {
+    const int row = i / columns;
+    const int col = i - row * columns;
+    auto robot = world->addMultibody(
+        armCount == 1 ? "revolute_arm" : "revolute_arm_" + std::to_string(i));
+    auto base = robot.addLink("base");
+
+    sx::JointSpec shoulderSpec;
+    shoulderSpec.name = "shoulder";
+    shoulderSpec.type = sx::JointType::Revolute;
+    shoulderSpec.axis = Eigen::Vector3d::UnitY();
+    shoulderSpec.transformFromParent = Eigen::Isometry3d::Identity();
+    shoulderSpec.transformFromParent.translation() = Eigen::Vector3d(
+        kSpacing * static_cast<double>(col),
+        kSpacing * static_cast<double>(row),
+        0.0);
+    auto upperArm = robot.addLink("upper_arm", base, shoulderSpec);
+    upperArm.setMass(0.4);
+    upperArm.setInertia(0.04 * Eigen::Matrix3d::Identity());
+    upperArm.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, 0.02));
+
+    sx::JointSpec elbowSpec;
+    elbowSpec.name = "elbow";
+    elbowSpec.type = sx::JointType::Revolute;
+    elbowSpec.axis = Eigen::Vector3d::UnitY();
+    elbowSpec.transformFromParent.translation()
+        = Eigen::Vector3d(0.35, 0.0, -0.15);
+    auto forearm = robot.addLink("forearm", upperArm, elbowSpec);
+    forearm.setMass(0.35);
+    forearm.setInertia(0.035 * Eigen::Matrix3d::Identity());
+    forearm.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, -0.015));
+
+    sx::JointSpec wristSpec;
+    wristSpec.name = "wrist";
+    wristSpec.type = sx::JointType::Revolute;
+    wristSpec.axis = Eigen::Vector3d::UnitY();
+    wristSpec.transformFromParent.translation()
+        = Eigen::Vector3d(0.25, 0.0, -0.15);
+    auto tip = robot.addLink("tip", forearm, wristSpec);
+    tip.setMass(0.2);
+    tip.setInertia(0.02 * Eigen::Matrix3d::Identity());
+    tip.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+    tip.getParentJoint().setVelocity(Eigen::VectorXd::Constant(1, -0.04));
+  }
+
+  return world;
+}
+
 std::unique_ptr<sx::World> buildSphereStackScene(
     int sphereCount, double friction, bool snapshotVelocities)
 {
@@ -7951,6 +8025,16 @@ struct CartesianArticulatedGroundStepResult
   double maxHeightError{0.0};
   double maxAbsJointVelocity{0.0};
   double maxPlanarJointSpeed{0.0};
+  std::size_t contactCount{0};
+  std::size_t linkContactCount{0};
+  std::size_t dofCount{0};
+  bool allFinite{true};
+};
+
+struct RevoluteArmGroundStepResult
+{
+  double maxTipHeightError{0.0};
+  double maxAbsJointVelocity{0.0};
   std::size_t contactCount{0};
   std::size_t linkContactCount{0};
   std::size_t dofCount{0};
@@ -8193,6 +8277,99 @@ void expectCartesianPrismaticChainsGroundStepMaintainsInvariants(int chainCount)
   EXPECT_NEAR(reference.maxHeightError, lcp.maxHeightError, 2e-2);
   EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.12);
   EXPECT_NEAR(reference.maxPlanarJointSpeed, lcp.maxPlanarJointSpeed, 0.08);
+}
+
+RevoluteArmGroundStepResult runRevoluteArmGroundStep(
+    sx::ContactSolverMethod method, int armCount)
+{
+  auto world = buildRevoluteArmGroundScene(method, armCount);
+  EXPECT_TRUE(world != nullptr);
+  if (world == nullptr) {
+    return {};
+  }
+  world->enterSimulationMode();
+
+  const auto contacts = world->collide();
+  auto& registry = dart::simulation::detail::registryOf(*world);
+  std::size_t linkContactCount = 0;
+  for (const auto& contact : contacts) {
+    const entt::entity entityA
+        = sx::detail::toRegistryEntity(contact.bodyA.getEntity());
+    const entt::entity entityB
+        = sx::detail::toRegistryEntity(contact.bodyB.getEntity());
+    if (registry.all_of<sx::comps::LinkModel>(entityA)
+        || registry.all_of<sx::comps::LinkModel>(entityB)) {
+      ++linkContactCount;
+    }
+  }
+
+  world->step(200);
+
+  RevoluteArmGroundStepResult result;
+  result.contactCount = contacts.size();
+  result.linkContactCount = linkContactCount;
+  for (int i = 0; i < armCount; ++i) {
+    auto robot = world->getMultibody(
+        armCount == 1 ? "revolute_arm" : "revolute_arm_" + std::to_string(i));
+    EXPECT_TRUE(robot.has_value());
+    if (!robot.has_value()) {
+      result.allFinite = false;
+      continue;
+    }
+    auto upperArm = robot->getLink("upper_arm");
+    auto forearm = robot->getLink("forearm");
+    auto tip = robot->getLink("tip");
+    EXPECT_TRUE(upperArm.has_value());
+    EXPECT_TRUE(forearm.has_value());
+    EXPECT_TRUE(tip.has_value());
+    if (!upperArm.has_value() || !forearm.has_value() || !tip.has_value()) {
+      result.allFinite = false;
+      continue;
+    }
+
+    const double shoulderVelocity = upperArm->getParentJoint().getVelocity()[0];
+    const double elbowVelocity = forearm->getParentJoint().getVelocity()[0];
+    const double wristVelocity = tip->getParentJoint().getVelocity()[0];
+    const double tipZ = tip->getWorldTransform().translation().z();
+    result.dofCount += 3u;
+    result.allFinite = result.allFinite && std::isfinite(shoulderVelocity)
+                       && std::isfinite(elbowVelocity)
+                       && std::isfinite(wristVelocity) && std::isfinite(tipZ);
+    result.maxTipHeightError
+        = std::max(result.maxTipHeightError, std::abs(tipZ + 0.3));
+    result.maxAbsJointVelocity = std::max(
+        result.maxAbsJointVelocity,
+        std::max(
+            {std::abs(shoulderVelocity),
+             std::abs(elbowVelocity),
+             std::abs(wristVelocity)}));
+  }
+
+  return result;
+}
+
+void expectRevoluteArmsGroundStepMaintainsInvariants(int armCount)
+{
+  const std::size_t dofCount = 3u * static_cast<std::size_t>(armCount);
+
+  const RevoluteArmGroundStepResult reference = runRevoluteArmGroundStep(
+      sx::ContactSolverMethod::SequentialImpulse, armCount);
+  const RevoluteArmGroundStepResult lcp
+      = runRevoluteArmGroundStep(sx::ContactSolverMethod::BoxedLcp, armCount);
+
+  ASSERT_EQ(lcp.contactCount, static_cast<std::size_t>(armCount));
+  EXPECT_EQ(lcp.linkContactCount, static_cast<std::size_t>(armCount));
+  EXPECT_EQ(lcp.dofCount, dofCount);
+  EXPECT_TRUE(lcp.allFinite);
+  EXPECT_LE(lcp.maxTipHeightError, 4e-2);
+  EXPECT_LT(lcp.maxAbsJointVelocity, 6.0);
+
+  ASSERT_EQ(reference.contactCount, lcp.contactCount);
+  EXPECT_EQ(reference.linkContactCount, lcp.linkContactCount);
+  EXPECT_EQ(reference.dofCount, lcp.dofCount);
+  EXPECT_TRUE(reference.allFinite);
+  EXPECT_NEAR(reference.maxTipHeightError, lcp.maxTipHeightError, 4e-2);
+  EXPECT_NEAR(reference.maxAbsJointVelocity, lcp.maxAbsJointVelocity, 0.2);
 }
 
 ArticulatedRigidImpactResult runArticulatedRigidImpactStep(
@@ -10242,6 +10419,27 @@ TEST(
 {
   constexpr int kChainCount = 16;
   expectCartesianPrismaticChainsGroundStepMaintainsInvariants(kChainCount);
+}
+
+//==============================================================================
+// Robot-like articulated DART 7 World stepping: a fixed-base serial revolute
+// arm starts with its end-effector link in light ground contact. This extends
+// the prismatic-chain packet to hinge coordinates while keeping the contact
+// invariant directly interpretable.
+TEST(BoxedLcpContact, RevoluteArmGroundStepMaintainsInvariants)
+{
+  constexpr int kArmCount = 1;
+  expectRevoluteArmsGroundStepMaintainsInvariants(kArmCount);
+}
+
+//==============================================================================
+// Four independent serial revolute arms keep the robot-like contact packet
+// small enough for routine CI while exercising multiple simultaneous hinge-link
+// contacts through the public BoxedLcp path.
+TEST(BoxedLcpContact, FourRevoluteArmsGroundStepMaintainsInvariants)
+{
+  constexpr int kArmCount = 4;
+  expectRevoluteArmsGroundStepMaintainsInvariants(kArmCount);
 }
 
   #if DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS

@@ -2201,7 +2201,7 @@ void resetSpatialVectorScratch(SpatialVectorScratch& scratch, std::size_t count)
 // unit-twist joints (see treeSupportsAnalyticDerivatives). [angular; linear]
 // spatial convention; crm = motionCross, crf = forceCross; ∂X_i/∂q_i =
 // -crm(S_i) X_i. O(dof²): a down/up sweep per source coordinate.
-InverseDynamicsDerivatives rneaDerivatives(
+void rneaDerivativesInto(
     std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
@@ -2215,7 +2215,8 @@ InverseDynamicsDerivatives rneaDerivatives(
     SpatialVectorScratch& deltaVelocity,
     SpatialVectorScratch& deltaAcceleration,
     SpatialVectorScratch& deltaForce,
-    SpatialVectorScratch& accumulatedForce)
+    SpatialVectorScratch& accumulatedForce,
+    InverseDynamicsDerivatives& out)
 {
   const auto count = links.size();
   const auto n = static_cast<Eigen::Index>(dofCount);
@@ -2257,9 +2258,10 @@ InverseDynamicsDerivatives rneaDerivatives(
     }
   }
 
-  InverseDynamicsDerivatives out;
-  out.dTau_dq = Eigen::MatrixXd::Zero(n, n);
-  out.dTau_dqdot = Eigen::MatrixXd::Zero(n, n);
+  out.dTau_dq.resize(n, n);
+  out.dTau_dq.setZero();
+  out.dTau_dqdot.resize(n, n);
+  out.dTau_dqdot.setZero();
   out.valid = true;
 
   for (std::size_t m = 0; m < count; ++m) {
@@ -2353,8 +2355,6 @@ InverseDynamicsDerivatives rneaDerivatives(
       }
     }
   }
-
-  return out;
 }
 
 } // namespace
@@ -2872,8 +2872,10 @@ void computeMultibodyInverseDynamicsDerivativesInto(
     const Eigen::VectorXd& generalizedAcceleration,
     InverseDynamicsDerivatives& result)
 {
-  result = InverseDynamicsDerivatives{};
+  result.valid = false;
   if (structure.links.empty()) {
+    result.dTau_dq.resize(0, 0);
+    result.dTau_dqdot.resize(0, 0);
     return;
   }
 
@@ -2900,6 +2902,8 @@ void computeMultibodyInverseDynamicsDerivativesInto(
       || generalizedAcceleration.size()
              != static_cast<Eigen::Index>(storage.tree.dofCount)
       || !treeSupportsAnalyticDerivatives(registry, storage.tree)) {
+    result.dTau_dq.resize(0, 0);
+    result.dTau_dqdot.resize(0, 0);
     return; // valid == false: caller falls back to finite differencing
   }
 
@@ -2908,7 +2912,7 @@ void computeMultibodyInverseDynamicsDerivativesInto(
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
 
-  result = rneaDerivatives(
+  rneaDerivativesInto(
       linkSpan(storage.tree),
       baseAcceleration,
       storage.tree.dofCount,
@@ -2922,7 +2926,8 @@ void computeMultibodyInverseDynamicsDerivativesInto(
       storage.rneaDerivativeDeltaVelocity,
       storage.rneaDerivativeDeltaAcceleration,
       storage.rneaDerivativeDeltaForce,
-      storage.rneaDerivativeAccumulatedForce);
+      storage.rneaDerivativeAccumulatedForce,
+      result);
 }
 
 //==============================================================================

@@ -31,10 +31,9 @@ its own line so status updates remain git-history friendly.
   accelerator policy to avoid another PR: give the rigid batch seed an internal
   baked Model/State owner, a backend-neutral Control sequence layout, rollout
   diagnostics that distinguish homogeneous batch from heterogeneous fallback,
-  and a World-baked deformable PSD accelerator choice.
-  The remaining WS0 packet is WP-091.4 legacy freeze, which stays **blocked**:
-  PLAN-042 Decision 5 has no recorded maintainer direction. Packets are
-  orchestrator-authored per
+  and a World-baked deformable PSD accelerator choice. The remaining WS0 packet
+  is WP-091.4 legacy freeze, which stays **blocked**: PLAN-042 Decision 5 has
+  no recorded maintainer direction. Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
   line. The standing rule applies now: new solver-family work routes through
@@ -45,6 +44,24 @@ its own line so status updates remain git-history friendly.
   per-packet Dependencies lines; plan completion follows the acceptance
   criteria in the owner doc, including one new solver-family intake exercised
   through the strengthened checklist without bypass.
+
+### PLAN-122: DART 7 Simulation-Loop Allocation Hardening
+
+- Owner doc:
+  [`122-simulation-loop-allocation-hardening.md`](122-simulation-loop-allocation-hardening.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Use the PLAN-122 coverage matrix as the owner for all remaining
+  DART 7 no-allocation-after-bake work. First close WP-122.1 by making the
+  no-allocation harness distinguish final first-post-bake evidence from
+  steady-state prewarm evidence, then execute the domain rows through the
+  existing owner plans/dev tasks. Classic DART 6 step paths are excluded unless
+  they are being migrated into the DART 7 `World` pipeline.
+- Gate: A row closes only with cited tests proving same-shape DART 7
+  `World::step()` after bake does not grow the World base allocator or allocate
+  through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
+  must add the gate before promotion.
 
 ### PLAN-001: Living Plan System
 

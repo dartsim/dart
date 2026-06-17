@@ -49,6 +49,11 @@ When a dev task completes:
 5. Run the verification gates listed in `docs/ai/verification.md`.
 6. Include the cleanup in the completion PR.
 
+A dev task is not complete while its `docs/dev_tasks/<task>/` folder remains in
+the worktree. If the implementation is done but the folder still exists, treat
+folder deletion plus durable-doc promotion as remaining work, not as optional
+post-completion cleanup.
+
 Never treat a dashboard or matrix under `docs/dev_tasks/` as durable. If users
 or future agents will need it after the implementation lands, promote it before
 the dev-task folder is removed.

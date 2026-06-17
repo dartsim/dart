@@ -186,10 +186,17 @@ Red-Black GS
 
 - Embarrassingly parallel updates
 - GPU-suitable update pattern; DART 7 evidence currently covers CPU Jacobi
-  worker-thread correctness/comparison and fixed-iteration CUDA Jacobi and PGS
+  worker-thread correctness/comparison, fixed-iteration CUDA Jacobi and PGS
   batch slices for standard, boxed, friction-index, and grouped variable-size
-  separated and stack world-contact packets, not general CUDA solver execution
-  across the full solver manifest
+  separated and stack world-contact packets, and fixed-iteration CUDA red-black
+  GS homogeneous batch slices for standard, boxed, and friction-index packets.
+  These rows are not general CUDA solver execution across the full solver
+  manifest
+- General direct CUDA execution beyond those Jacobi/PGS/red-black GS packet
+  paths is a
+  separate Pattern-B contact-acceleration problem; the acceptance criteria live
+  in
+  [`compute_backend_research.md`](../../design/compute_backend_research.md#lcp-solver-cuda-expansion-criteria)
 - No data dependencies
 
 **Future Configuration**:

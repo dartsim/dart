@@ -152,15 +152,17 @@ struct DeformableSolverStats
   // projected-Newton linear solve in this step. These are matrix-storage
   // diagnostics (not full process peak memory): nonzeros counts Eigen's
   // compressed sparse entries, and storage bytes estimates the value, inner
-  // index, and outer pointer arrays for that matrix.
+  // index, and outer pointer arrays for that matrix. Small systems solved with
+  // retained dense direct scratch and matrix-free solves report zero because
+  // they do not assemble an Eigen sparse matrix.
   std::size_t projectedNewtonHessianNonZeros = 0;
   std::size_t projectedNewtonHessianStorageBytes = 0;
   // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
-  // took the matrix-light CG path instead of the sparse Cholesky factorization
-  // -- either because the mesh exceeds the direct-solve node cap or because the
-  // body opted in via DeformableMaterial.useIterativeLinearSolver. CG never
+  // took the matrix-light CG path instead of direct factorization -- either
+  // because the mesh exceeds the direct-solve node cap or because the body
+  // opted in via DeformableMaterial.useIterativeLinearSolver. CG never
   // factorizes, so it scales to far larger meshes; a nonzero value here with
-  // zero numeric factorizations means the whole solve ran iteratively.
+  // zero sparse numeric factorizations means the whole solve ran iteratively.
   std::size_t projectedNewtonIterativeSolves = 0;
   // Iterative solves that used the matrix-free Hessian-vector product path
   // instead of an assembled sparse Hessian. This is a subset of
