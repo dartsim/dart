@@ -56,6 +56,18 @@ using namespace dart::simulation;
 
 namespace {
 
+class ExposedConstraintSolver final : public constraint::ConstraintSolver
+{
+public:
+  void solveGroupsForTest()
+  {
+    solveConstrainedGroups();
+  }
+
+protected:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override {}
+};
+
 //==============================================================================
 // Builds a thin static floor (immobile) centered so its top surface sits at
 // z = 0.
@@ -227,6 +239,79 @@ TEST(IslandDeactivation, SleepingPreservesContactBodyForce)
 
   EXPECT_GT(bodyForce.tail<3>().norm(), 1.0)
       << "sleep transition discarded the solved contact force";
+}
+
+//==============================================================================
+// A contact island that is already resting but carries the final solved impulse
+// must process that impulse without waking. This covers the path that preserves
+// the contact-force cache for transmitted-wrench queries while freezing the
+// island for subsequent steps.
+TEST(IslandDeactivation, FinalSleepImpulseKeepsBodyFrozen)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto arm = createPinnedContactArm("arm");
+  world->addSkeleton(arm);
+
+  // Establish the contact island, then force the exact post-solver state used
+  // for the final sleep solve: resting, sleep-candidate, and carrying an
+  // impulse.
+  world->step();
+  arm->setSleepCandidate(true);
+  arm->setResting(true);
+  arm->setImpulseApplied(true);
+  arm->setVelocities(
+      Eigen::VectorXd::Ones(static_cast<int>(arm->getNumDofs())));
+
+  world->step();
+
+  EXPECT_TRUE(arm->isResting());
+  EXPECT_TRUE(arm->isSleepCandidate());
+  EXPECT_FALSE(arm->isImpulseApplied());
+  EXPECT_TRUE(arm->getVelocities().isZero(1e-12));
+}
+
+//==============================================================================
+// If a resting body receives an impulse while it is not still a sleep
+// candidate, it must wake and process the impulse normally.
+TEST(IslandDeactivation, NonCandidateImpulseWakesRestingBody)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
+  world->addSkeleton(box);
+
+  box->setResting(true);
+  box->setSleepCandidate(false);
+  box->setImpulseApplied(true);
+
+  world->step();
+
+  EXPECT_FALSE(box->isResting());
+  EXPECT_FALSE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isImpulseApplied());
+}
+
+//==============================================================================
+// The solver may see stale diagnostic island indices when
+// solveConstrainedGroups is exercised directly without rebuilding groups. It
+// should ignore them instead of indexing into an empty group vector.
+TEST(IslandDeactivation, SolverIgnoresStaleIslandIndexWithoutGroups)
+{
+  ExposedConstraintSolver solver;
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
+
+  solver.addSkeleton(box);
+  solver.setDeactivationActive(true);
+  box->setIslandIndex(0);
+  box->setResting(true);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_TRUE(box->isResting());
 }
 
 //==============================================================================
