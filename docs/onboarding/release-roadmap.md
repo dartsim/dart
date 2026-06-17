@@ -3,8 +3,9 @@
 DART is moving toward an easier-start research experience with a clean DART 7
 API. Python-first APIs are a major part of that direction, layered on a
 refreshed C++23 core. Compatibility for the established DART 6 API lives on the
-`release-6.17` maintenance line instead of blocking the main-branch DART 7
-design.
+active DART 6 LTS maintenance branch instead of blocking the main-branch DART 7
+design. Use the highest maintained `release-6.*` branch advertised by the
+remote; this checkout currently sees `release-6.19`.
 
 ## Compatibility & Deprecation Policy
 
@@ -13,15 +14,16 @@ design.
   add new DART 6 compatibility shims on main unless a maintainer explicitly
   scopes the work as migration support.
 - DART 6 compatibility work, including Gazebo/gz-physics compatibility fixes,
-  belongs on the DART 6.17 support lane by default.
+  belongs on the active DART 6 LTS support lane by default.
 - Required gz-physics compatibility evidence is validated with
-  `pixi run -e gazebo test-gz` on `release-6.17` or release branches. The
-  main-branch Gazebo workflow is a migration canary, not a DART 7 API design
-  constraint.
+  `pixi run -e gazebo test-gz` on the active DART 6 LTS branch or affected
+  release branch. The main-branch Gazebo workflow is a migration canary, not a
+  DART 7 API design constraint.
 
-## DART 6.17: Compatibility Line
+## DART 6 LTS: Compatibility Line
 
-- `release-6.17` is the maintained branch for the established DART 6 API.
+- The active DART 6 LTS branch is the newest maintained `release-6.*` branch;
+  at the time this roadmap was updated, that branch is `release-6.19`.
 - The pinned gz-physics branch for the current support lane is
   `gz-physics9_9.0.0`, matching the `pixi.toml` Gazebo integration task.
 - Backport critical bug fixes, build fixes, security fixes, and
@@ -30,23 +32,23 @@ design.
 - Publish the Gazebo support window, branch/version matrix, and sunset date or
   sunset trigger before DART 7 removes legacy API surfaces from main.
 
-### DART 6.17 Support Packet
+### DART 6 LTS Support Packet
 
-This packet is the published support window for the DART 6.17 compatibility
+This packet is the published support window for the DART 6 LTS compatibility
 line. It exists so downstream users — primarily Gazebo via `gz-physics` — know
 which branch to track, what fixes to expect, and when the line will close. The
-companion CI lane split (keeping required gz-physics validation on
-`release-6.17` while main's gz-physics workflow stays a manual migration canary)
-is a separate maintainer-gated branch-protection change and is **not** in scope
-for this document update.
+companion CI lane split (keeping required gz-physics validation on the active
+DART 6 LTS branch while main's gz-physics workflow stays a manual migration
+canary) is a separate maintainer-gated branch-protection change and is **not**
+in scope for this document update.
 
 **Gazebo support window**
 
 - Pinned gz-physics branch: `gz-physics9_9.0.0` (the branch cloned by the
   `pixi.toml` Gazebo integration task; see `feature.gazebo.tasks` `download-gz`).
-- Validation command: `pixi run -e gazebo test-gz`, run on `release-6.17` or a
-  release branch when compatibility surfaces change. Main-branch runs are
-  migration canaries, not a DART 7 API design constraint.
+- Validation command: `pixi run -e gazebo test-gz`, run on the active DART 6
+  LTS branch or affected release branch when compatibility surfaces change.
+  Main-branch runs are migration canaries, not a DART 7 API design constraint.
 - DART version compatibility floor for the pinned gz-physics checkout: DART
   6.10+ (`scripts/patch_gz_physics.py` `MIN_COMPATIBLE_VERSION = (6, 10)`,
   `MAX_COMPATIBLE_VERSION = (7, 0)`), so DART 7's generated
@@ -55,12 +57,12 @@ for this document update.
 
 **Branch / version matrix**
 
-| Branch         | DART line       | Public API target      | gz-physics pin                         | Backport policy                                              |
-| -------------- | --------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
-| `release-6.17` | DART 6 (6.17.x) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
-| `main`         | DART 7 (7.0.0)  | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
+| Branch                                         | DART line        | Public API target      | gz-physics pin                         | Backport policy                                              |
+| ---------------------------------------------- | ---------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| Active `release-6.*`, currently `release-6.19` | DART 6 (6.x LTS) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
+| `main`                                         | DART 7 (7.0.0)   | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
 
-**Backport scope (release-6.17)**
+**Backport scope (DART 6 LTS)**
 
 Backport only:
 
@@ -75,31 +77,32 @@ a compatibility surface, or note why gz-physics is unaffected.
 
 **Sunset condition (trigger-based)**
 
-The DART 6.17 support line sunsets on a trigger, not a fixed calendar date:
+The DART 6 LTS support line sunsets on a trigger, not a fixed calendar date:
 
 - **Trigger:** DART 7.0.0 is published to package managers **and** a maintainer
-  decision sets a support tail. After DART 7.0.0 is published, DART 6.17 enters
+  decision sets a support tail. After DART 7.0.0 is published, DART 6 LTS enters
   a maintenance-only tail of **N months** (security/critical-only), after which
   the line is closed.
 - **N is a maintainer decision** and is intentionally left unset here. A typical
   starting point for discussion is 6–12 months after DART 7.0.0 publication, but
   the concrete value, and whether the tail is security-only or also build/compat,
   **requires maintainer sign-off** before it is treated as policy.
-- Until DART 7.0.0 is published and N is decided, `release-6.17` remains the
-  active compatibility line and the sunset clock has not started.
+- Until DART 7.0.0 is published and N is decided, the active DART 6 LTS branch
+  remains the compatibility line and the sunset clock has not started.
 
 > Maintainer sign-off needed: (1) the value of **N** (support-tail length after
 > DART 7.0.0 publication) and the tail's fix scope; (2) the Gazebo CI lane split
-> (required gz-physics validation pinned to `release-6.17`; main's gz-physics
-> workflow demoted to a manual canary), which is a separate branch-protection
-> change outside this PR.
+> (required gz-physics validation pinned to the active DART 6 LTS branch; main's
+> gz-physics workflow demoted to a manual canary), which is a separate
+> branch-protection change outside this PR.
 
 ## DART 7: Clean-Break Release
 
 - `main` targets DART 7.0.0 as a clean break from the DART 6 public API, with a
   Python-first API layered on the refreshed C++ architecture.
 - The classic Skeleton-backed DART 6 API is not a DART 7 compatibility promise.
-  Support for users that still need that API remains on `release-6.17`.
+  Support for users that still need that API remains on the active DART 6 LTS
+  branch.
 - The ECS-backed world is the DART 7 public API target, but complete promotion
   is gated by core robotics parity evidence plus package/API-boundary evidence.
   Python has already moved the common path to `dartpy.simulation.World` and
@@ -114,7 +117,7 @@ The DART 6.17 support line sunsets on a trigger, not a fixed calendar date:
 
 1. **Policy alignment**: update the release roadmap, plan dashboard,
    north-star, API-boundary, CI, release-management, README, and changelog docs
-   so DART 7 is the clean break and DART 6.17 is the compatibility line.
+   so DART 7 is the clean break and DART 6 LTS is the compatibility line.
 2. **Gazebo lane split**: keep required gz-physics validation on
    `release-6.*`; keep main's gz-physics workflow as a manual migration
    canary. Coordinate branch-protection changes with maintainers before relying
@@ -149,7 +152,7 @@ The DART 6.17 support line sunsets on a trigger, not a fixed calendar date:
 | Core build and tests         | Lint, C++ build, Python build, and focused or full test suites pass for the changed release scope.                                   | `pixi run lint`, `pixi run build`, `pixi run test-unit`, `pixi run test-py`, `pixi run test-all`, and on Linux CUDA hosts `pixi run -e cuda test-all`.          |
 | LCP/contact baseline         | Solver contract and benchmark smoke evidence are recorded before algorithm or compute-scaling promises.                              | `ctest --test-dir build/default/cpp/Release -R UNIT_math_lcp_math_lcp_all_solvers_smoke`; `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`. |
 | GUI transition               | Any GUI promotion stays aligned with the Filament migration gates and keeps backend details hidden.                                  | Filament gates in the GUI plan/design docs.                                                                                                                     |
-| DART 6.17 support policy     | Gazebo branch/version matrix, backport scope, and sunset date or sunset trigger are published.                                       | `pixi run -e gazebo test-gz` on `release-6.17` or release branches when compatibility surfaces change.                                                          |
+| DART 6 LTS support policy    | Gazebo branch/version matrix, backport scope, and sunset date or sunset trigger are published.                                       | `pixi run -e gazebo test-gz` on the active DART 6 LTS branch or affected release branch when compatibility surfaces change.                                     |
 | Release metadata and package | Version metadata, changelog, CMake package exports, and package-manager instructions match the release.                              | `pixi run lint`; package-project configure/build commands from PLAN-010; release packaging checklist below.                                                     |
 | AI workflow/documentation    | AI-facing workflow adapters and plan docs stay synchronized when release workflows change.                                           | `pixi run sync-ai-commands`, `pixi run check-ai-commands`, and docs gates from `docs/ai/verification.md`.                                                       |
 
@@ -160,14 +163,15 @@ changed scope before opening the PR:
 
 - Version metadata: `package.xml`, `pixi.toml`, generated package metadata, and
   example `find_package(DART ...)` requirements agree on the release version.
-- Changelog: `CHANGELOG.md` has the release section, date, milestone link, and
+- Changelog: `CHANGELOG.md` follows [changelog.md](changelog.md), has the
+  release section, date, milestone link, release summary, migration notes, and
   entries for user-visible fixes or changes.
 - Package exports: any changed CMake components configure, install, and work
   from a temporary prefix with `pixi run test-cpp-quickstart -- --prefix
 <installed-dart-prefix>`.
 - First-success paths: README Python, C++ package-project, and Pixi source
   commands either pass or name the current package-artifact blocker.
-- Compatibility: changes touching the DART 6.17 compatibility lane run
+- Compatibility: changes touching the DART 6 LTS compatibility lane run
   `pixi run -e gazebo test-gz` on the affected release branch or record why
   gz-physics is not affected. Main-branch runs are migration canaries.
 - AI/docs: release workflow or plan changes run the AI docs/adapters gates from
@@ -180,8 +184,8 @@ changed scope before opening the PR:
   default; those are DART 7 clean-break tasks once the parity gates pass.
 - DART 8 may remove APIs newly deprecated during the DART 7 line, but it is not
   the active cleanup target for the DART 6 to DART 7 transition.
-- Users who still need the DART 6 surface should remain on DART 6.17.x until
-  they migrate or the published support window ends.
+- Users who still need the DART 6 surface should remain on the active DART 6
+  LTS release line until they migrate or the published support window ends.
 
 ### DART 7 Compatibility-Debt Inventory
 
@@ -189,7 +193,7 @@ Track these before DART 7 ships so clean-break removals are deliberate:
 
 | Debt area                         | DART 7 handling                                                                                                                                                        | Clean-break gate                                                                                                                  |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Legacy DART 6 API surface         | Remove from main unless explicitly needed for a bounded migration adapter; keep released support on DART 6.17.                                                         | Removal list has migration notes, changelog entries, package status, and DART 6.17 support status.                                |
+| Legacy DART 6 API surface         | Remove from main unless explicitly needed for a bounded migration adapter; keep released support on the active DART 6 LTS branch.                                      | Removal list has migration notes, changelog entries, package status, and DART 6 LTS support status.                               |
 | Legacy dartpy 6 API surface       | Remove from the DART 7 public contract rather than carrying a compatibility layer.                                                                                     | Replacement import/API path is documented and covered by tests/stubs.                                                             |
 | Classic Skeleton-backed `World`   | Treat as the deletion target once the promoted world has parity evidence.                                                                                              | ECS-backed world has stable wrappers, migration notes, focused tests, and parity evidence.                                        |
 | DART 7 world bindings             | Python is promoted to `dartpy.simulation` / `dartpy.World`; C++ remains under `dart::simulation` and `dart-simulation` until PLAN-041 completes the final transaction. | C++ promoted as the official DART 7 API with documented migration path, package smokes, and no stale Python `simulation` surface. |
@@ -198,7 +202,7 @@ Track these before DART 7 ships so clean-break removals are deliberate:
 | GUI backend exposure              | Keep Filament and other backend details behind migration gates.                                                                                                        | Public GUI API is backend-hidden and old backend-specific entry points have a migration/removal path.                             |
 
 Each release packaging pass should update this inventory when a deprecated API
-is added, promoted, moved to the DART 6.17 support lane, or removed from the
+is added, promoted, moved to the DART 6 LTS support lane, or removed from the
 DART 7 target.
 
 Compatibility cleanup reviews should record:
@@ -208,7 +212,7 @@ Compatibility cleanup reviews should record:
   guidance;
 - package/export status for affected CMake components, headers, examples, or
   package-manager instructions;
-- DART 6.17/gz-physics compatibility evidence when the surface affects released
+- DART 6 LTS/gz-physics compatibility evidence when the surface affects released
   downstream users on that support lane;
 - API-boundary classification for any public-looking surface that remains past
   DART 7.
@@ -216,6 +220,6 @@ Compatibility cleanup reviews should record:
 ## Contributing During the Transition
 
 - Prioritize work that advances or hardens the easy-start research API, including Python-first workflows where they are the best user path.
-- When updating DART 6.17 compatibility code, validate gz-physics compatibility
+- When updating DART 6 LTS compatibility code, validate gz-physics compatibility
   as described above.
 - Share feedback through issues or pull requests if the roadmap overlooks critical scenarios.

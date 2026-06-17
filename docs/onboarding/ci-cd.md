@@ -284,7 +284,7 @@ project's continuous validation surface.
 | Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                                  |
 | Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                      |
 | Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                        |
-| Release support PR        | Yes on release lines  | gz-physics compatibility on `release-6.17` PRs                                                     |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                  |
 | Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags               |
 | Scheduled/manual coverage | No                    | FreeBSD VM, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
 

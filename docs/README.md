@@ -32,6 +32,7 @@ Markdown and owns end-user navigation.
 - **New to DART development?** → [onboarding/README.md](onboarding/README.md)
 - **Building from source?** → [onboarding/building.md](onboarding/building.md)
 - **Contributing code?** → [onboarding/contributing.md](onboarding/contributing.md) + [onboarding/code-style.md](onboarding/code-style.md)
+- **Writing release notes?** → [onboarding/changelog.md](onboarding/changelog.md) + [onboarding/release-management.md](onboarding/release-management.md)
 - **Understanding architecture?** → [onboarding/architecture.md](onboarding/architecture.md)
 - **Writing durable design rationale?** → [design/README.md](design/README.md) + [onboarding/api-boundaries.md](onboarding/api-boundaries.md)
 - **Understanding theory?** → [background/README.md](background/README.md)
