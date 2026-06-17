@@ -7297,25 +7297,23 @@ TEST(World, BakedScriptedDeformableBoundaryStepsDoNotAllocateAfterPrewarm)
       configureScriptedDeformableBoundaryScene);
 }
 
-TEST(World, BakedScriptedDeformableBoundarySteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedScriptedDeformableBoundaryStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "scripted deformable boundary scratch",
       configureScriptedDeformableBoundaryScene);
 #endif
 }
 
-TEST(
-    World,
-    BakedDeformableFemGroundFrictionBlockSteadyStateStepsDoNotMallocOnHeap)
+TEST(World, BakedDeformableFemGroundFrictionBlockStepsDoNotMallocOnHeap)
 {
 #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
 #else
-  expectNoRawHeapAllocationsDuringSteadyStateBakedSteps(
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "deformable FEM ground friction medium direct scratch",
       configureDeformableFemGroundFrictionBlockScene);
 #endif

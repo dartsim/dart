@@ -2086,6 +2086,8 @@ using ProjectedNewtonFrictionContactVector = std::vector<
     SelfContactFrictionContact,
     common::StlAllocator<SelfContactFrictionContact>>;
 
+constexpr Eigen::Index kProjectedNewtonDenseDirectDofCap = 128;
+
 //==============================================================================
 struct DeformableContactSolverScratch
 {
@@ -6088,6 +6090,12 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonRhs.resize(dim);
   scratch.projectedNewtonSolution.resize(dim);
   scratch.projectedNewtonDenseHessian.resize(dim, dim);
+  if (dim > 0 && dim <= kProjectedNewtonDenseDirectDofCap) {
+    scratch.projectedNewtonDenseHessian.setIdentity();
+    scratch.projectedNewtonDenseLdlt.compute(
+        scratch.projectedNewtonDenseHessian);
+    scratch.projectedNewtonDenseHessian.setZero();
+  }
 
   // Reserve DART-owned barrier buffers for the baked candidate capacity, not
   // only the contacts active at bake.
@@ -7464,9 +7472,8 @@ bool computeProjectedNewtonDirection(
   // Keep medium direct systems on retained dense LDLT scratch. Eigen's sparse
   // direct factorizer owns malloc-backed numeric storage, so it is reserved for
   // larger systems where dense factorization is not appropriate.
-  constexpr Eigen::Index kSmallDenseDirectDofs = 128;
   const bool solveDenseDirect
-      = !solveIteratively && dim <= kSmallDenseDirectDofs;
+      = !solveIteratively && dim <= kProjectedNewtonDenseDirectDofCap;
   const double invDt2 = 1.0 / (timeStep * timeStep);
 
   // Right-hand side: -gradient on free DOFs, zero on pinned (fixed) DOFs.
