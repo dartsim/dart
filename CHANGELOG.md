@@ -1070,6 +1070,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Routed experimental `World` dynamic rigid-body collection scratch for
     state/control vector helpers through the World free allocator, and added
     no-global-heap plus peak/live coverage through `getNumDofs()`.
+  - Baked experimental `World` dense-index Model artifacts for creation-ordered
+    rigid-body and multibody addressing, routed state/control vectors and
+    rigid-body batch extraction/integration through the cached Model, and
+    replaced name-based multi-world batch validation with dense-index Model
+    identity.
   - Reused experimental differentiable `World` multibody torque collection
     scratch through World-owned free-list storage, passed that scratch into the
     contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`

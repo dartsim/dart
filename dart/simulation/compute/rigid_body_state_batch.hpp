@@ -97,13 +97,13 @@ struct DART_SIMULATION_API RigidBodyModelBatch
 };
 
 /// Extract a single-world (`worldCount == 1`) snapshot of all rigid bodies in
-/// the world's rigid-body iteration order.
+/// the World's baked dense rigid-body index order.
 [[nodiscard]] DART_SIMULATION_API RigidBodyStateBatch
 extractRigidBodyState(const World& world);
 
-/// Apply a single-world snapshot back to the world's rigid bodies, matched by
-/// iteration order. Throws if @p state is not single-world or its body count
-/// does not match the world's rigid-body count.
+/// Apply a single-world snapshot back to the World's rigid bodies, matched by
+/// baked dense index. Throws if @p state is not single-world or its body count
+/// does not match the World's rigid-body count.
 DART_SIMULATION_API void applyRigidBodyState(
     World& world, const RigidBodyStateBatch& state);
 
@@ -133,9 +133,9 @@ DART_SIMULATION_API void integrateRigidBodyStateBatchLinear(
     std::span<const double> inverseMass,
     double timeStep);
 
-/// Extract immutable model parameters (per-body inverse mass) from a single
-/// world, in rigid-body iteration order. A non-positive or non-finite mass maps
-/// to zero inverse mass (a static body).
+/// Extract immutable model parameters from a single World in baked dense index
+/// order. A non-positive or non-finite mass maps to zero inverse mass (a static
+/// body).
 [[nodiscard]] DART_SIMULATION_API RigidBodyModelBatch
 extractRigidBodyModelBatch(const World& world);
 
