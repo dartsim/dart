@@ -16,15 +16,16 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 10 of 18 matrix rows are closed with first-post-bake
-  evidence. The remaining implementation-capacity rows are `R-004` (large rigid
-  IPC equality KKT systems), `D-004` (deformable sparse-direct systems above the
-  retained dense cutoff), and `F-001` (differentiable contact-free stepping,
-  currently steady-state only). The remaining promotion-gated rows are `M-004`,
-  `F-002`, `L-001`, and `G-001`; they stay owned by their named plans until the
-  corresponding solver, derivative, loader, or accelerator path is promoted into
-  `World::step()`. No new `docs/dev_tasks/` folder is needed for those rows
-  while this plan and its coverage matrix remain the durable owner.
+- Progress snapshot: 12 of 18 matrix rows are closed with first-post-bake
+  evidence. The remaining implementation-capacity row is `D-004` (deformable
+  sparse-direct systems above the retained dense cutoff), which now needs a
+  solver-direction decision because Eigen's sparse numeric factorization owns
+  raw malloc-family storage during measured steps. The remaining promotion-gated
+  rows are `M-004`, `F-002`, `L-001`, and `G-001`; they stay owned by their
+  named plans until the corresponding solver, derivative, loader, or accelerator
+  path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
+  needed for those rows while this plan and its coverage matrix remain the
+  durable owner.
 
 ## Scope
 
@@ -107,7 +108,8 @@ post-bake step.
 - Non-goals: classic DART 6 constraint solver paths.
 - Acceptance evidence: every in-scope rigid IPC matrix row has world-base,
   global-heap, and raw-malloc post-bake gates, or an explicit maintainer-approved
-  size cap recorded in the matrix.
+  size cap recorded in the matrix. `R-004` is closed for large equality KKT
+  systems above the stack solve cap.
 - Gates: `pixi run lint`, focused `test_world` rigid IPC allocation filters,
   and `test_rigid_ipc_barrier`.
 - Dependencies: coordinate with PLAN-082 and
@@ -124,8 +126,9 @@ post-bake step.
   PLAN-081 and its dev task.
 - Acceptance evidence: deformable rows that are selectable in DART 7
   `World::step()` have post-bake world-base, global-heap, and raw-malloc gates;
-  larger sparse-direct paths either reuse retained symbolic/numeric scratch or
-  have a documented bake-time capacity cap.
+  larger sparse-direct paths either replace Eigen sparse numeric factorization
+  with allocation-free retained storage or have a documented bake-time capacity
+  cap that routes them to iterative/matrix-free solves.
 - Gates: `pixi run lint`, focused `test_world` deformable allocation filters,
   and PLAN-081 focused solver tests.
 - Dependencies: PLAN-081 and `docs/dev_tasks/ipc_deformable_solver/`.

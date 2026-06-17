@@ -1142,6 +1142,7 @@ private:
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
+  void prepareDifferentiableContactFreeScratchForCurrentConfiguration();
   void recordResolvedConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
@@ -1150,6 +1151,7 @@ private:
       bool includeShapeContactDetails = true);
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+  [[nodiscard]] bool captureContactFreeStepDerivativesForFirstMultibody();
   void recordReplayFrame();
   void resetFrameScratchForStep();
   void refreshMemoryDiagnostics();

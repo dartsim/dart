@@ -3875,7 +3875,23 @@ void World::prepareStepPipelineCacheForCurrentConfiguration()
       cache.hasAdvanceableRigidBodies,
       cache.hasMultibodyStructure,
       cache.hasDeformableBodies);
+  prepareDifferentiableContactFreeScratchForCurrentConfiguration();
   recordResolvedConfiguration();
+}
+
+//==============================================================================
+void World::prepareDifferentiableContactFreeScratchForCurrentConfiguration()
+{
+#ifdef DART_HAS_DIFF
+  if (!m_differentiable) {
+    return;
+  }
+
+  const bool prepared = captureContactFreeStepDerivativesForFirstMultibody();
+  if (prepared) {
+    m_storage->stepDerivativesValid = false;
+  }
+#endif
 }
 
 //==============================================================================
@@ -6055,7 +6071,8 @@ StepDerivatives World::getStepDerivatives() const
 
 #ifdef DART_HAS_DIFF
   DART_SIMULATION_THROW_T_IF(
-      !m_storage->stepDerivatives.has_value(),
+      !m_storage->stepDerivatives.has_value()
+          || !m_storage->stepDerivativesValid,
       InvalidOperationException,
       "World::getStepDerivatives() has no derivatives yet; call step() first");
   return *m_storage->stepDerivatives;
@@ -6646,6 +6663,8 @@ void World::stepPipelineOnce(
 //==============================================================================
 void World::captureStepDerivatives()
 {
+  m_storage->stepDerivativesValid = false;
+
 #ifdef DART_HAS_DIFF
   // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
   // selected, the differentiable step Jacobian must include the analytic
@@ -6712,6 +6731,7 @@ void World::captureStepDerivatives()
     // pure multibody scene under BoxedLcp), fall through to the WS1 path below.
     if (contactDerivatives.stateJacobian.size() != 0) {
       m_storage->stepDerivatives = std::move(contactDerivatives);
+      m_storage->stepDerivativesValid = true;
       return;
     }
   }
@@ -6721,13 +6741,33 @@ void World::captureStepDerivatives()
   // prismatic, screw, universal, planar, ball (Spherical), and free (Floating)
   // joints. Assemble tau from the joint efforts in construction (DOF) order and
   // compute the analytic Jacobian at the current (pre-step) state.
+  if (captureContactFreeStepDerivativesForFirstMultibody()) {
+    m_storage->stepDerivativesValid = true;
+  }
+#endif
+}
+
+//==============================================================================
+bool World::captureContactFreeStepDerivativesForFirstMultibody()
+{
+#ifdef DART_HAS_DIFF
   auto view = m_storage->registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
 
     auto& torques = m_storage->differentiableTorqueScratch;
     torques.clear();
-    torques.reserve(structure.links.size());
+    std::size_t dofCount = 0u;
+    for (const auto linkEntity : structure.links) {
+      const auto& link = m_storage->registry.get<comps::LinkModel>(linkEntity);
+      if (link.parentJoint == entt::null) {
+        continue;
+      }
+      const auto& jointActuation
+          = m_storage->registry.get<comps::JointActuation>(link.parentJoint);
+      dofCount += static_cast<std::size_t>(jointActuation.torque.size());
+    }
+    torques.reserve(dofCount);
     for (const auto linkEntity : structure.links) {
       const auto& link = m_storage->registry.get<comps::LinkModel>(linkEntity);
       if (link.parentJoint == entt::null) {
@@ -6759,9 +6799,11 @@ void World::captureStepDerivatives()
         &m_storage->differentiableInverseDynamicsScratch,
         &m_storage->differentiableDynamicsTermsScratch,
         &m_storage->differentiableDerivativeScratch);
-    return; // WS1: one multibody.
+    return true; // WS1: one multibody.
   }
 #endif
+
+  return false;
 }
 
 //==============================================================================

@@ -2813,6 +2813,40 @@ void configureRigidIpcFixedJointConstraintScene(dart::simulation::World& world)
   (void)world.addRigidBodyFixedJoint("ipc_fixed_joint", parent, child);
 }
 
+void configureRigidIpcLargeEqualityKktScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setTimeStep(0.01);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions anchorOptions;
+  anchorOptions.isStatic = true;
+  auto previous = world.addRigidBody("ipc_large_kkt_anchor", anchorOptions);
+  previous.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  constexpr std::size_t kBodyCount = 5u;
+  for (std::size_t i = 0; i < kBodyCount; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position
+        = Eigen::Vector3d(0.25 * static_cast<double>(i + 1u), 0.0, 0.0);
+    bodyOptions.mass = 1.0 + 0.1 * static_cast<double>(i);
+    auto body = world.addRigidBody(
+        std::format("ipc_large_kkt_body_{:02}", i), bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeBox({0.08, 0.08, 0.08}));
+    body.setLinearVelocity(
+        Eigen::Vector3d(0.01 * static_cast<double>(i + 1u), 0.0, 0.0));
+    body.setAngularVelocity(
+        Eigen::Vector3d(0.0, 0.02 * static_cast<double>(i + 1u), 0.01));
+    body.setForce(Eigen::Vector3d(0.05, 0.01 * static_cast<double>(i), 0.0));
+
+    (void)world.addRigidBodyFixedJoint(
+        std::format("ipc_large_kkt_fixed_{:02}", i), previous, body);
+    previous = body;
+  }
+}
+
 void configureRigidIpcRevoluteJointConstraintScene(
     dart::simulation::World& world)
 {
@@ -4283,6 +4317,38 @@ TEST(World, StateAndControlVectorsUseBakedDenseIndexOrder)
 }
 
 #ifdef DART_HAS_DIFF
+void configureDifferentiableContactFreeChainScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("diff_contact_free_chain");
+  auto parent = robot.addLink("diff_contact_free_base");
+  constexpr std::size_t kJointCount = 32u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.02, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.01));
+    joint.setForce(Eigen::VectorXd::Constant(1, 0.25));
+    parent = link;
+  }
+}
+
 TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
 {
   namespace sx = dart::simulation;
@@ -4316,10 +4382,20 @@ TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
     parent = link;
   }
 
-  world.enterSimulationMode();
-
   auto& freeList = world.getMemoryManager().getFreeListAllocator();
-  const auto liveBytesBeforeStep = freeList.getAllocatedSize();
+  const auto liveBytesBeforeBake = freeList.getAllocatedSize();
+
+  world.enterSimulationMode();
+  const auto liveBytesAfterBake = freeList.getAllocatedSize();
+
+  EXPECT_GT(liveBytesAfterBake, liveBytesBeforeBake)
+      << "differentiable multibody scratch should grow reusable World-owned "
+         "storage at the bake boundary";
+  EXPECT_THROW(
+      static_cast<void>(world.getStepDerivatives()),
+      sx::InvalidOperationException)
+      << "bake-time scratch preparation must not publish a derivative "
+         "snapshot before step()";
 
   world.step();
   const auto derivatives = world.getStepDerivatives();
@@ -4328,9 +4404,9 @@ TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
   EXPECT_EQ(
       derivatives.controlJacobian.cols(),
       static_cast<Eigen::Index>(kJointCount));
-  EXPECT_GT(liveBytesAfterFirstStep, liveBytesBeforeStep)
-      << "differentiable multibody torque scratch should grow reusable "
-         "World-owned storage on the first differentiable step";
+  EXPECT_EQ(liveBytesAfterFirstStep, liveBytesAfterBake)
+      << "first post-bake differentiable step should reuse bake-time "
+         "World-owned derivative scratch";
 
   const auto liveBytesBeforeSecondStep = freeList.getAllocatedSize();
   const auto peakBytesBeforeSecondStep = freeList.getPeakAllocatedSize();
@@ -4435,7 +4511,58 @@ TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
          "coordinate, dynamics-term, and inverse-dynamics scratch capacity";
 }
 
-TEST(World, BakedDifferentiableContactFreeSteadyStateStepDoesNotMallocOnHeap)
+TEST(World, BakedDifferentiableContactFreeStepsDoNotGrowWorldBaseAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.differentiable = true;
+  sx::World world(options);
+  configureDifferentiableContactFreeChainScene(world);
+
+  world.enterSimulationMode();
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
+TEST(World, BakedDifferentiableContactFreeStepsDoNotAllocateGlobalHeap)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  configureDifferentiableContactFreeChainScene(world);
+
+  world.enterSimulationMode();
+
+  ScopedHeapAllocationCounter heapCounter;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+  }
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during first post-bake differentiable "
+         "contact-free steps: "
+      << heapCounter.allocationBytes();
+}
+
+TEST(World, BakedDifferentiableContactFreeStepsDoNotMallocOnHeap)
 {
   #if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
   GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
@@ -4446,36 +4573,9 @@ TEST(World, BakedDifferentiableContactFreeSteadyStateStepDoesNotMallocOnHeap)
   sx::WorldOptions options;
   options.differentiable = true;
   sx::World world(options);
-  world.setGravity(Eigen::Vector3d::Zero());
-  world.setTimeStep(0.001);
-
-  auto robot = world.addMultibody("diff_raw_malloc_chain");
-  auto parent = robot.addLink("diff_raw_malloc_base");
-  constexpr std::size_t kJointCount = 32u;
-  for (std::size_t i = 0; i < kJointCount; ++i) {
-    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
-    offset.translation() = Eigen::Vector3d(0.02, 0.0, 0.0);
-
-    sx::JointSpec spec;
-    spec.name = std::format("hinge_{:02}", i);
-    spec.type = sx::JointType::Revolute;
-    spec.axis = Eigen::Vector3d::UnitY();
-    spec.transformFromParent = offset;
-    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
-    link.setMass(1.0);
-    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
-
-    auto joint = link.getParentJoint();
-    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
-    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.01));
-    joint.setForce(Eigen::VectorXd::Constant(1, 0.25));
-    parent = link;
-  }
+  configureDifferentiableContactFreeChainScene(world);
 
   world.enterSimulationMode();
-  for (int i = 0; i < 8; ++i) {
-    world.step();
-  }
 
   ScopedRawHeapAllocationCounter rawCounter;
   for (int i = 0; i < 4; ++i) {
@@ -7473,6 +7573,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator)
       "dynamic rigid IPC fixed joint",
       configureRigidIpcFixedJointConstraintScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC large equality KKT",
+      configureRigidIpcLargeEqualityKktScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "dynamic rigid IPC revolute joint",
       configureRigidIpcRevoluteJointConstraintScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -8891,6 +8994,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
       "dynamic rigid IPC fixed joint",
       configureRigidIpcFixedJointConstraintScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC large equality KKT",
+      configureRigidIpcLargeEqualityKktScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC revolute joint",
       configureRigidIpcRevoluteJointConstraintScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
@@ -8924,6 +9030,16 @@ TEST(World, BakedRigidIpcFixedJointStepsDoNotMallocOnHeap)
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid IPC fixed-joint equality rows",
       configureRigidIpcFixedJointConstraintScene);
+#endif
+}
+
+TEST(World, BakedRigidIpcLargeEqualityKktStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid IPC large equality KKT", configureRigidIpcLargeEqualityKktScene);
 #endif
 }
 

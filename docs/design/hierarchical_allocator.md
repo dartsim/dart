@@ -156,11 +156,11 @@ The completed HMM work wires the DART 7 `World` registry, built-in stage
 storage, solver scratch, diagnostics, replay buffers, compute-graph storage,
 and representative rigid/deformable/multibody/differentiable hot paths through
 the World-owned memory hierarchy. The closing raw-malloc slice added or
-revalidated focused baked-step and steady-state gates for:
+revalidated focused baked-step gates for:
 
 - rigid IPC active barriers, stacked boxes, deformable surface obstacles,
-  kinematic conveyor/turntable scenes, and small fixed/revolute articulation
-  rows;
+  kinematic conveyor/turntable scenes, small fixed/revolute articulation rows,
+  and large equality KKT rows above the stack solve cap;
 - multibody velocity-actuated steps;
 - scripted deformable boundary steps and an 81-DOF FEM ground-friction block;
 - differentiable contact-free derivative capture when `DART_BUILD_DIFF=ON`;
@@ -211,9 +211,8 @@ raw-malloc tests as steady-state evidence until bake sizes the needed scratch.
   this CPU hierarchy without a separate design.
 - Future allocator work starts from the PLAN-122 coverage matrix, a fresh
   failing gate, or a benchmark policy change. Known non-claims include
-  deformable sparse-direct systems above the retained dense cutoff, large
-  rigid-IPC equality KKT systems above the stack-solve cap, raw-malloc gates
-  that rely on unmeasured prewarm steps, and public return-by-value diagnostics.
+  deformable sparse-direct systems above the retained dense cutoff and public
+  return-by-value diagnostics.
 
 ## Non-Goals
 

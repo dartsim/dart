@@ -430,7 +430,6 @@ struct RigidIpcProjectedNewtonSolveScratchWorkspace
   Eigen::MatrixXd equalityKktMatrix;
   Eigen::VectorXd equalityKktRhs;
   Eigen::VectorXd equalityKktSolution;
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> equalityKktQr;
 };
 
 namespace {
@@ -1387,6 +1386,57 @@ bool solveStackLinearSystemInPlace(
   return solution.head(size).allFinite();
 }
 
+bool solveDynamicLinearSystemInPlace(
+    Eigen::MatrixXd& matrix,
+    Eigen::VectorXd& rhs,
+    const Eigen::Index size,
+    Eigen::VectorXd& solution)
+{
+  constexpr double kPivotTolerance = 1e-12;
+  for (Eigen::Index col = 0; col < size; ++col) {
+    Eigen::Index pivot = col;
+    double pivotAbs = std::abs(matrix(col, col));
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double candidate = std::abs(matrix(row, col));
+      if (candidate > pivotAbs) {
+        pivotAbs = candidate;
+        pivot = row;
+      }
+    }
+    if (!(pivotAbs > kPivotTolerance) || !std::isfinite(pivotAbs)) {
+      return false;
+    }
+    if (pivot != col) {
+      matrix.row(col).swap(matrix.row(pivot));
+      std::swap(rhs[col], rhs[pivot]);
+    }
+
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double factor = matrix(row, col) / matrix(col, col);
+      matrix(row, col) = 0.0;
+      for (Eigen::Index c = col + 1; c < size; ++c) {
+        matrix(row, c) -= factor * matrix(col, c);
+      }
+      rhs[row] -= factor * rhs[col];
+    }
+  }
+
+  solution.resize(size);
+  solution.setZero();
+  for (Eigen::Index row = size; row-- > 0;) {
+    double value = rhs[row];
+    for (Eigen::Index col = row + 1; col < size; ++col) {
+      value -= matrix(row, col) * solution[col];
+    }
+    const double diagonal = matrix(row, row);
+    if (!(std::abs(diagonal) > kPivotTolerance) || !std::isfinite(diagonal)) {
+      return false;
+    }
+    solution[row] = value / diagonal;
+  }
+  return solution.head(size).allFinite();
+}
+
 bool solveEqualityConstrainedKktInto(
     const RigidIpcBarrierAssembly& assembly,
     const Eigen::MatrixXd& denseHessian,
@@ -1452,16 +1502,9 @@ bool solveEqualityConstrainedKktInto(
   kktRhs.head(dofs) = -assembly.gradient;
   kktRhs.tail(equalityRows) = -assembly.equalityResidual;
 
-  auto& kktQr = workspace.equalityKktQr;
-  kktQr.compute(kktMatrix);
-  if (kktQr.info() != Eigen::Success) {
-    return false;
-  }
-
   auto& kktSolution = workspace.equalityKktSolution;
-  kktSolution.resize(kktSize);
-  kktSolution = kktQr.solve(kktRhs);
-  if (!kktSolution.allFinite()) {
+  if (!solveDynamicLinearSystemInPlace(
+          kktMatrix, kktRhs, kktSize, kktSolution)) {
     return false;
   }
 
@@ -3150,7 +3193,6 @@ void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
     workspace.equalityKktMatrix.setIdentity();
     workspace.equalityKktRhs.resize(kktSize);
     workspace.equalityKktSolution.resize(kktSize);
-    workspace.equalityKktQr.compute(workspace.equalityKktMatrix);
     workspace.equalityKktMatrix.setZero();
   }
 }
