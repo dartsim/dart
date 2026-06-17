@@ -9451,6 +9451,42 @@ TEST(World, BakedVariationalMultibodyStepsDoNotMallocOnHeap)
 #endif
 }
 
+TEST(World, BakedAvbdVbdRowsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid AVBD revolute motor rows",
+      configureRigidAvbdRevoluteMotorRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid AVBD prismatic motor rows",
+      configureRigidAvbdPrismaticMotorRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "rigid AVBD distance-spring rows",
+      configureRigidAvbdDistanceSpringRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable AVBD self-contact friction rows",
+      configureAvbdSelfContactFrictionRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable AVBD self-contact friction grid rows",
+      configureAvbdSelfContactFrictionGridRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable AVBD self-contact friction production grid rows",
+      configureAvbdSelfContactFrictionProductionGridRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable VBD Chebyshev self-contact grid",
+      configureVbdChebyshevSelfContactGridScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable AVBD ground friction rows",
+      configureAvbdGroundFrictionRowsScene);
+#endif
+}
+
 // Velocity-actuated multibody joints solve a per-step coupled velocity
 // constraint (lambda = (J M^-1 J^T)^-1 (target - J v)). This used to allocate
 // Eigen dynamic temporaries every warmed step (the full mass-matrix inverse,
