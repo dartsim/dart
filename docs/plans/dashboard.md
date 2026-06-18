@@ -32,8 +32,9 @@ its own line so status updates remain git-history friendly.
   direction. Current PLAN-091 work is to finish the partial WP-091.13 and
   WP-091.24 slices or start WP-091.15 now that its Dependencies line is
   satisfied. WP-091.33e waits on WP-091.24, WP-091.40 waits on maintainer
-  sign-off on naming, and WP-091.41 through WP-091.44 wait on their recorded
-  Dependencies lines.
+  sign-off on naming, and WP-091.43 waits on WP-091.15; WP-091.41, WP-091.42,
+  and WP-091.44 are dependency-satisfied WS4 follow-ups once earlier selected
+  work is no longer preferred.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
