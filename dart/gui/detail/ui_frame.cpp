@@ -413,6 +413,29 @@ ImGuiID findDockTargetForPreviousSide(
   return 0;
 }
 
+bool containsDockSide(
+    const std::vector<std::string>& signature, dart::gui::DockSide side)
+{
+  return std::ranges::any_of(signature, [side](const std::string& entry) {
+    return dockSideFromSignature(entry) == side;
+  });
+}
+
+std::vector<std::string> mergeDockLayoutSideHistory(
+    const std::vector<std::string>& currentSignature,
+    const std::vector<std::string>& previousHistory)
+{
+  std::vector<std::string> history = currentSignature;
+  for (const std::string& entry : previousHistory) {
+    const auto side = dockSideFromSignature(entry);
+    if (!side.has_value() || containsDockSide(history, *side)) {
+      continue;
+    }
+    history.push_back(entry);
+  }
+  return history;
+}
+
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
@@ -576,7 +599,8 @@ ImGuiID findExistingDockTargetForSide(
 std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
     ImGuiID dockId,
     const std::vector<dart::gui::Panel>& panels,
-    const std::vector<std::string>& previousSignature)
+    const std::vector<std::string>& previousSignature,
+    const std::vector<std::string>& sideHistory)
 {
   std::vector<std::string_view> focusedTitles;
   for (const auto& panel : panels) {
@@ -591,7 +615,11 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
                                        ? target
                                        : findDockTargetForPreviousSide(
                                              previousSignature, panel.dockSide);
-    if (previousTarget == 0) {
+    const ImGuiID historicalTarget
+        = previousTarget != 0
+              ? previousTarget
+              : findDockTargetForPreviousSide(sideHistory, panel.dockSide);
+    if (historicalTarget == 0) {
       // A new side appeared and there is no existing dock node to join. Fall
       // back to the default builder so the new panel is still docked instead of
       // floating over the viewport.
@@ -599,7 +627,7 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
       return initialFocusPanelsForDefaultDockLayout(panels);
     }
 
-    ImGui::DockBuilderDockWindow(panel.title.c_str(), previousTarget);
+    ImGui::DockBuilderDockWindow(panel.title.c_str(), historicalTarget);
     focusedTitles.push_back(panel.title);
   }
   return focusedTitles;
@@ -704,6 +732,7 @@ void updateFrameUi(
     if (resetDockLayout || !lifecycle.dockLayoutInitialized) {
       lifecycle.dockLayoutInitialized = true;
       lifecycle.dockedPanelLayoutSignature = dockSignature;
+      lifecycle.dockedPanelLayoutSideHistory = dockSignature;
       initialFocusPanelTitles = initialFocusPanelsForDefaultDockLayout(panels);
       // Apply the default layout deterministically on startup. The py-demos
       // workspace is an examples browser first; a stale imgui.ini layout should
@@ -711,8 +740,13 @@ void updateFrameUi(
       buildDefaultDockLayout(dockId, panels);
     } else if (dockSignature != lifecycle.dockedPanelLayoutSignature) {
       initialFocusPanelTitles = dockPanelsIntroducedBySceneSwitch(
-          dockId, panels, lifecycle.dockedPanelLayoutSignature);
+          dockId,
+          panels,
+          lifecycle.dockedPanelLayoutSignature,
+          lifecycle.dockedPanelLayoutSideHistory);
       lifecycle.dockedPanelLayoutSignature = dockSignature;
+      lifecycle.dockedPanelLayoutSideHistory = mergeDockLayoutSideHistory(
+          dockSignature, lifecycle.dockedPanelLayoutSideHistory);
     }
     ImGui::DockSpaceOverViewport(
         dockId,
