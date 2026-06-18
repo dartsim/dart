@@ -96,13 +96,15 @@ struct polymorphic_type_caster : type_caster_base_tag {
 
   operator Type&()
   {
-    raise_next_overload_if_null(value_);
+    if (value_ == nullptr)
+      throw nanobind::next_overload();
     return *value_;
   }
 
   operator Type&&()
   {
-    raise_next_overload_if_null(value_);
+    if (value_ == nullptr)
+      throw nanobind::next_overload();
     return static_cast<Type&&>(*value_);
   }
 
