@@ -10,6 +10,8 @@
 
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/exceptions.hpp>
+#include <dart/simulation/comps/joint.hpp>
+#include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
@@ -279,6 +281,36 @@ TEST(MultibodyLinkContact, AssemblesOneSidedLinkContactRowDeterministically)
   ASSERT_EQ(repeated.rows.size(), problem.rows.size());
   expectRowsExactlyEqual(problem.rows[0], repeated.rows[0]);
   EXPECT_EQ(problem.inverseMass, repeated.inverseMass);
+}
+
+//==============================================================================
+TEST(MultibodyLinkContact, InverseMassColumnsIncludeJointArmature)
+{
+  PrismaticLegWorld scene;
+  auto& registry = dart::simulation::detail::registryOf(scene.world);
+  const auto joint = registry.get<sx::comps::LinkModel>(scene.link).parentJoint;
+  registry.get<sx::comps::JointModel>(joint).armature
+      = Eigen::VectorXd::Constant(1, 3.0);
+
+  sx::compute::LinkContact contact;
+  contact.link = scene.link;
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.point = Eigen::Vector3d::Zero();
+  contact.friction = 0.5;
+
+  Eigen::VectorXd nextVelocity(1);
+  nextVelocity << -0.5;
+
+  const std::vector<sx::compute::LinkContact> contacts{contact};
+  const auto problem = sx::compute::assembleMultibodyLinkContactProblem(
+      registry, scene.structure(), nextVelocity, 0.01, contacts);
+
+  ASSERT_EQ(problem.inverseMass.rows(), 1);
+  ASSERT_EQ(problem.inverseMass.cols(), 1);
+  ASSERT_EQ(problem.rows.size(), 1u);
+  EXPECT_TRUE(problem.rows[0].active);
+  EXPECT_NEAR(problem.inverseMass(0, 0), 0.25, 1e-12);
+  EXPECT_NEAR(problem.rows[0].normalDenominator, 0.25, 1e-12);
 }
 
 //==============================================================================

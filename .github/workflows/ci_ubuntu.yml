@@ -501,7 +501,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.1
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb mold
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
 
       - name: Configure environment for compiler cache
@@ -517,9 +517,10 @@ jobs:
         run: |
           # This step builds the dartpy nanobind extension. In Debug each
           # binding TU is large, so keep parallelism below the 16 GB hosted
-          # runner's memory limit. Use mold for the final Debug module link and
-          # keep this as a Debug dartpy smoke path; Release and wheel jobs run
-          # the full Python suite.
+          # runner's memory limit. Request mold for the final Debug module link
+          # when it is present; CMake falls back to the default linker if the
+          # runner image does not provide it. Keep this as a Debug dartpy smoke
+          # path; Release and wheel jobs run the full Python suite.
           DART_USE_MOLD_OVERRIDE=ON \
           DARTPY_PYTEST_ARGS="-vv --tb=short" \
           DARTPY_PYTEST_SOURCES="unit/common/test_string.py unit/math/test_lcp.py unit/test_lifetime.py" \

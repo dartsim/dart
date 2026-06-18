@@ -114,7 +114,7 @@ public:
 
   /// Set the link's mass.
   ///
-  /// Must be positive and finite. Used by articulated-body forward dynamics.
+  /// Must be positive and finite. Used by multibody integration.
   void setMass(double mass);
 
   /// Get the link's body-frame inertia tensor about its center of mass.
