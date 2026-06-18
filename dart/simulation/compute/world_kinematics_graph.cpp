@@ -44,7 +44,9 @@
 
 #include <algorithm>
 #include <charconv>
+#include <string>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace dart::simulation::compute {
@@ -158,23 +160,87 @@ Eigen::Isometry3d getLocalTransform(
 }
 
 //==============================================================================
-ComputeResourceString makeFrameCacheResource(
-    entt::entity entity, dart::common::MemoryAllocator& allocator)
+struct FrameRecord
+{
+  entt::entity entity = entt::null;
+  std::size_t level = 0;
+};
+
+//==============================================================================
+void appendNumber(
+    ComputeResourceString& text,
+    std::size_t value,
+    std::string_view failureMessage)
+{
+  char buffer[24];
+  const auto [end, error]
+      = std::to_chars(std::begin(buffer), std::end(buffer), value);
+  DART_SIMULATION_THROW_T_IF(
+      error != std::errc{}, InvalidOperationException, "{}", failureMessage);
+  text.append(buffer, end);
+}
+
+//==============================================================================
+ComputeResourceString makeFrameCacheChunkResource(
+    std::size_t level,
+    std::size_t chunk,
+    dart::common::MemoryAllocator& allocator)
 {
   ComputeResourceString resource{dart::common::StlAllocator<char>{allocator}};
-  resource.reserve(32);
-  resource.append("comps::FrameCache#");
-
-  char buffer[16];
-  const auto id = static_cast<std::uint32_t>(entity);
-  const auto [end, error]
-      = std::to_chars(std::begin(buffer), std::end(buffer), id);
-  DART_SIMULATION_THROW_T_IF(
-      error != std::errc{},
-      InvalidOperationException,
-      "Failed to format FrameCache resource id");
-  resource.append(buffer, end);
+  resource.reserve(40);
+  resource.append("comps::FrameCacheLevel#");
+  appendNumber(resource, level, "Failed to format FrameCache level id");
+  resource.append(":chunk#");
+  appendNumber(resource, chunk, "Failed to format FrameCache chunk id");
   return resource;
+}
+
+//==============================================================================
+std::size_t findFrameRecordIndex(
+    const auto& records, const entt::entity entity) noexcept
+{
+  const auto it = std::ranges::find_if(records, [entity](const auto& record) {
+    return record.entity == entity;
+  });
+  if (it == records.end()) {
+    return records.size();
+  }
+  return static_cast<std::size_t>(std::distance(records.begin(), it));
+}
+
+//==============================================================================
+std::size_t computeFrameLevel(
+    const detail::WorldRegistry& registry,
+    auto& records,
+    auto& visitState,
+    const std::size_t index)
+{
+  if (visitState[index] == 2) {
+    return records[index].level;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      visitState[index] == 1,
+      InvalidOperationException,
+      "Frame topology contains a parent cycle");
+
+  visitState[index] = 1;
+
+  const auto& frameState
+      = registry.get<comps::FrameState>(records[index].entity);
+  std::size_t level = 0;
+  if (frameState.parentFrame != entt::null) {
+    const auto parentIndex
+        = findFrameRecordIndex(records, frameState.parentFrame);
+    if (parentIndex != records.size()) {
+      level
+          = computeFrameLevel(registry, records, visitState, parentIndex) + 1u;
+    }
+  }
+
+  records[index].level = level;
+  visitState[index] = 2;
+  return level;
 }
 
 //==============================================================================
@@ -203,7 +269,8 @@ WorldKinematicsGraph::WorldKinematicsGraph(
   : m_world(world),
     m_allocator(&allocator),
     m_graph(allocator),
-    m_entityNodes(EntityNodeAllocator{allocator})
+    m_frameEntities(EntityAllocator{allocator}),
+    m_frameLevels(FrameLevelAllocator{allocator})
 {
   rebuild();
 }
@@ -211,68 +278,125 @@ WorldKinematicsGraph::WorldKinematicsGraph(
 //==============================================================================
 void WorldKinematicsGraph::rebuild()
 {
+  rebuildForWorkerCount(m_loweredWorkerCount);
+}
+
+//==============================================================================
+void WorldKinematicsGraph::rebuildForWorkerCount(std::size_t workerCount)
+{
+  workerCount = std::max<std::size_t>(1u, workerCount);
   m_graph.clear();
-  m_entityNodes.clear();
+  m_frameEntities.clear();
+  m_frameLevels.clear();
+  m_loweredWorkerCount = workerCount;
 
   auto* registry = &dart::simulation::detail::registryOf(m_world);
   auto frameView
       = registry->view<comps::FrameTag, comps::FrameState, comps::FrameCache>();
 
+  using FrameRecordAllocator = dart::common::StlAllocator<FrameRecord>;
+  std::vector<FrameRecord, FrameRecordAllocator> frameRecords{
+      FrameRecordAllocator{*m_allocator}};
+  frameRecords.reserve(frameView.size_hint());
   for (auto entity : frameView) {
-    const auto name = std::string("frame_")
-                      + std::to_string(static_cast<std::uint32_t>(entity));
-
-    ComputeStageMetadata metadata{
-        ComputeStageDomain::Kinematics,
-        ComputeStageAcceleration::TaskParallel
-            | ComputeStageAcceleration::DataLocality,
-        *m_allocator};
-    metadata.resources.reserve(2);
-    metadata.resources.push_back(
-        {makeFrameCacheResource(entity, *m_allocator),
-         ComputeAccessMode::Write});
-    const auto buildParentFrame
-        = registry->get<comps::FrameState>(entity).parentFrame;
-    if (buildParentFrame != entt::null) {
-      metadata.resources.push_back(
-          {makeFrameCacheResource(buildParentFrame, *m_allocator),
-           ComputeAccessMode::Read});
-    }
-
-    auto& node = m_graph.addNode(
-        name,
-        [registry, entity]() {
-          const auto& frameState = registry->get<comps::FrameState>(entity);
-          auto& cache = registry->get<comps::FrameCache>(entity);
-
-          const auto localTransform = getLocalTransform(*registry, entity);
-          if (frameState.parentFrame == entt::null) {
-            cache.worldTransform = localTransform;
-          } else {
-            const auto* parentCache
-                = registry->try_get<comps::FrameCache>(frameState.parentFrame);
-            DART_SIMULATION_THROW_T_IF(
-                !parentCache,
-                InvalidOperationException,
-                "Frame parent is missing a FrameCache component");
-
-            cache.worldTransform = parentCache->worldTransform * localTransform;
-          }
-
-          cache.needTransformUpdate = false;
-        },
-        metadata);
-
-    m_entityNodes.push_back({entity, &node});
+    frameRecords.push_back({entity, 0u});
   }
 
-  for (const auto& entityNode : m_entityNodes) {
-    const auto& frameState
-        = registry->get<comps::FrameState>(entityNode.entity);
-    auto* parentNode = findNode(frameState.parentFrame);
-    if (parentNode) {
-      m_graph.addDependency(*parentNode, *entityNode.node);
+  std::vector<std::uint8_t, dart::common::StlAllocator<std::uint8_t>>
+      visitState{dart::common::StlAllocator<std::uint8_t>{*m_allocator}};
+  visitState.assign(frameRecords.size(), 0u);
+
+  std::size_t maxLevel = 0;
+  for (std::size_t i = 0; i < frameRecords.size(); ++i) {
+    maxLevel = std::max(
+        maxLevel, computeFrameLevel(*registry, frameRecords, visitState, i));
+  }
+
+  m_frameLevels.reserve(maxLevel + 1u);
+  m_frameEntities.reserve(frameRecords.size());
+  for (std::size_t level = 0; level <= maxLevel && !frameRecords.empty();
+       ++level) {
+    const std::size_t begin = m_frameEntities.size();
+    for (const auto& record : frameRecords) {
+      if (record.level == level) {
+        m_frameEntities.push_back(record.entity);
+      }
     }
+    m_frameLevels.push_back({begin, m_frameEntities.size()});
+  }
+
+  std::vector<ComputeNode*, dart::common::StlAllocator<ComputeNode*>>
+      previousLevelNodes{
+          dart::common::StlAllocator<ComputeNode*>{*m_allocator}};
+  std::vector<ComputeNode*, dart::common::StlAllocator<ComputeNode*>>
+      currentLevelNodes{dart::common::StlAllocator<ComputeNode*>{*m_allocator}};
+
+  for (std::size_t level = 0; level < m_frameLevels.size(); ++level) {
+    const auto [levelBegin, levelEnd] = m_frameLevels[level];
+    const std::size_t levelSize = levelEnd - levelBegin;
+    if (levelSize == 0u) {
+      continue;
+    }
+
+    const std::size_t chunkCount = std::min(workerCount, levelSize);
+    const std::size_t chunkSize = (levelSize + chunkCount - 1u) / chunkCount;
+    currentLevelNodes.clear();
+    currentLevelNodes.reserve(chunkCount);
+
+    for (std::size_t chunk = 0; chunk < chunkCount; ++chunk) {
+      const std::size_t begin = levelBegin + chunk * chunkSize;
+      const std::size_t end = std::min(begin + chunkSize, levelEnd);
+      if (begin == end) {
+        continue;
+      }
+
+      ComputeStageMetadata metadata{
+          ComputeStageDomain::Kinematics,
+          ComputeStageAcceleration::TaskParallel
+              | ComputeStageAcceleration::DataLocality,
+          *m_allocator};
+      metadata.resources.reserve(1);
+      metadata.resources.push_back(
+          {makeFrameCacheChunkResource(level, chunk, *m_allocator),
+           ComputeAccessMode::Write});
+
+      auto& node = m_graph.addNode(
+          "kinematics_level_" + std::to_string(level) + "_chunk_"
+              + std::to_string(chunk),
+          [registry, entityList = &m_frameEntities, begin, end]() {
+            for (std::size_t i = begin; i < end; ++i) {
+              const auto entity = (*entityList)[i];
+              const auto& frameState = registry->get<comps::FrameState>(entity);
+              auto& cache = registry->get<comps::FrameCache>(entity);
+
+              const auto localTransform = getLocalTransform(*registry, entity);
+              if (frameState.parentFrame == entt::null) {
+                cache.worldTransform = localTransform;
+              } else {
+                const auto* parentCache = registry->try_get<comps::FrameCache>(
+                    frameState.parentFrame);
+                DART_SIMULATION_THROW_T_IF(
+                    !parentCache,
+                    InvalidOperationException,
+                    "Frame parent is missing a FrameCache component");
+
+                cache.worldTransform
+                    = parentCache->worldTransform * localTransform;
+              }
+
+              cache.needTransformUpdate = false;
+            }
+          },
+          metadata);
+      currentLevelNodes.push_back(&node);
+    }
+
+    for (auto* parentNode : previousLevelNodes) {
+      for (auto* childNode : currentLevelNodes) {
+        m_graph.addDependency(*parentNode, *childNode);
+      }
+    }
+    previousLevelNodes.swap(currentLevelNodes);
   }
 
   (void)m_graph.getTopologicalOrderView();
@@ -292,20 +416,11 @@ void WorldKinematicsGraph::execute(ComputeExecutor& executor)
       && !hasDirtyFrameCaches(dart::simulation::detail::registryOf(m_world))) {
     return;
   }
-  executor.execute(m_graph);
-}
-
-//==============================================================================
-ComputeNode* WorldKinematicsGraph::findNode(entt::entity entity) const
-{
-  const auto it = std::ranges::find_if(
-      m_entityNodes, [&](const auto& entry) { return entry.entity == entity; });
-
-  if (it == m_entityNodes.end()) {
-    return nullptr;
+  const auto workerCount = std::max<std::size_t>(1u, executor.getWorkerCount());
+  if (!isTopologyCurrent() || m_loweredWorkerCount != workerCount) {
+    rebuildForWorkerCount(workerCount);
   }
-
-  return it->node;
+  executor.execute(m_graph);
 }
 
 } // namespace dart::simulation::compute

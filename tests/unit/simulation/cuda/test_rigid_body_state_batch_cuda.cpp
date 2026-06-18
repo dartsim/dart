@@ -266,6 +266,54 @@ TEST(CudaRigidBodyStateBatch, RolloutRejectsInvalidSizesBeforeCudaRuntime)
 }
 
 //==============================================================================
+TEST(CudaRigidBodyStateBatch, ResidentOwnerRejectsInvalidModelBeforeCudaRuntime)
+{
+  cuda::ResidentRigidBodyBatchCuda resident;
+  auto model = makeModelBatch();
+  model.inverseMass.pop_back();
+
+  EXPECT_THROW(resident.uploadModel(model), sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, ResidentOwnerRequiresModelBeforeStateOrControl)
+{
+  cuda::ResidentRigidBodyBatchCuda resident;
+
+  EXPECT_THROW(
+      resident.uploadState(makeStateBatch()), sx::InvalidOperationException);
+  EXPECT_THROW(
+      resident.uploadControl(makeForceBatch()), sx::InvalidOperationException);
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, ResidentOwnerReuploadInvalidatesResidentState)
+{
+  cuda::ResidentRigidBodyBatchCuda resident;
+  compute::RigidBodyModelBatch model;
+  compute::RigidBodyStateBatch state;
+  const std::vector<double> force;
+
+  resident.uploadModel(model);
+  resident.uploadState(state);
+  resident.uploadControl(force);
+  EXPECT_TRUE(resident.diagnostics().deviceStateValid);
+  EXPECT_TRUE(resident.canFallbackToHost());
+
+  resident.uploadModel(model);
+
+  const auto diagnostics = resident.diagnostics();
+  EXPECT_EQ(diagnostics.modelUploadCount, 2u);
+  EXPECT_EQ(diagnostics.stateUploadCount, 1u);
+  EXPECT_EQ(diagnostics.controlUploadCount, 1u);
+  EXPECT_FALSE(diagnostics.deviceStateValid);
+  EXPECT_FALSE(diagnostics.hostStateCoherent);
+  EXPECT_FALSE(resident.canFallbackToHost());
+  EXPECT_THROW(resident.step(0.01), sx::InvalidOperationException);
+  EXPECT_THROW(resident.downloadState(state), sx::InvalidOperationException);
+}
+
+//==============================================================================
 TEST(CudaRigidBodyStateBatch, MatchesCpuFullIntegration)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -283,6 +331,76 @@ TEST(CudaRigidBodyStateBatch, MatchesCpuFullIntegration)
     compute::integrateRigidBodyStateBatch(cpuState, model, force, dt);
   }
   cuda::rolloutRigidBodyStateBatchCuda(cudaState, model, force, dt, steps);
+
+  ASSERT_EQ(cudaState.position.size(), cpuState.position.size());
+  ASSERT_EQ(cudaState.linearVelocity.size(), cpuState.linearVelocity.size());
+  ASSERT_EQ(cudaState.orientation.size(), cpuState.orientation.size());
+
+  for (std::size_t i = 0; i < cpuState.position.size(); ++i) {
+    EXPECT_NEAR(cudaState.position[i], cpuState.position[i], 1e-12) << i;
+    EXPECT_NEAR(cudaState.linearVelocity[i], cpuState.linearVelocity[i], 1e-12)
+        << i;
+  }
+  for (std::size_t i = 0; i < cpuState.orientation.size(); ++i) {
+    EXPECT_NEAR(cudaState.orientation[i], cpuState.orientation[i], 1e-12) << i;
+  }
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, ResidentOwnerDownloadsOnlyAtExplicitSync)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  cuda::ResidentRigidBodyBatchCuda resident;
+  auto cudaState = makeStateBatch();
+  auto cpuState = cudaState;
+  const auto model = makeModelBatch();
+  const auto force = makeForceBatch();
+  constexpr double dt = 0.125;
+  constexpr std::size_t steps = 4;
+
+  resident.uploadModel(model);
+  resident.uploadState(cudaState);
+  resident.uploadControl(force);
+
+  auto diagnostics = resident.diagnostics();
+  EXPECT_EQ(diagnostics.modelUploadCount, 1u);
+  EXPECT_EQ(diagnostics.stateUploadCount, 1u);
+  EXPECT_EQ(diagnostics.controlUploadCount, 1u);
+  EXPECT_EQ(diagnostics.stateDownloadCount, 0u);
+  EXPECT_TRUE(diagnostics.deviceStateValid);
+  EXPECT_TRUE(diagnostics.hostStateCoherent);
+  EXPECT_TRUE(resident.canFallbackToHost());
+  EXPECT_NO_THROW(
+      resident.requireCoherentStateForHostFallback("initial fallback"));
+
+  for (std::size_t step = 0; step < steps; ++step) {
+    compute::integrateRigidBodyStateBatch(cpuState, model, force, dt);
+    resident.step(dt);
+  }
+
+  diagnostics = resident.diagnostics();
+  EXPECT_EQ(diagnostics.modelUploadCount, 1u);
+  EXPECT_EQ(diagnostics.stateUploadCount, 1u);
+  EXPECT_EQ(diagnostics.controlUploadCount, 1u);
+  EXPECT_EQ(diagnostics.stateDownloadCount, 0u);
+  EXPECT_EQ(diagnostics.stepCount, steps);
+  EXPECT_TRUE(diagnostics.deviceStateValid);
+  EXPECT_FALSE(diagnostics.hostStateCoherent);
+  EXPECT_FALSE(resident.canFallbackToHost());
+  EXPECT_THROW(
+      resident.requireCoherentStateForHostFallback("mid-step fallback"),
+      sx::InvalidOperationException);
+
+  resident.downloadState(cudaState);
+  diagnostics = resident.diagnostics();
+  EXPECT_EQ(diagnostics.stateDownloadCount, 1u);
+  EXPECT_TRUE(diagnostics.hostStateCoherent);
+  EXPECT_TRUE(resident.canFallbackToHost());
+  EXPECT_NO_THROW(
+      resident.requireCoherentStateForHostFallback("post-sync fallback"));
 
   ASSERT_EQ(cudaState.position.size(), cpuState.position.size());
   ASSERT_EQ(cudaState.linearVelocity.size(), cpuState.linearVelocity.size());

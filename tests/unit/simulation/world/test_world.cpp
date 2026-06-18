@@ -689,6 +689,11 @@ class RecordingExecutor final
   : public dart::simulation::compute::ComputeExecutor
 {
 public:
+  explicit RecordingExecutor(std::size_t workerCount = 1)
+    : workerCount(workerCount)
+  {
+  }
+
   void execute(const dart::simulation::compute::ComputeGraph& graph) override
   {
     record(graph);
@@ -705,9 +710,10 @@ public:
 
   [[nodiscard]] std::size_t getWorkerCount() const override
   {
-    return sequential.getWorkerCount();
+    return workerCount;
   }
 
+  std::size_t workerCount{1};
   std::size_t nodeCount{0};
   std::size_t edgeCount{0};
   std::size_t executeCount{0};
@@ -5401,7 +5407,7 @@ TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
 }
 
-TEST(World, WorldKinematicsGraphEntityNodesUseWorldAllocator)
+TEST(World, WorldKinematicsGraphChunkStorageUsesWorldAllocator)
 {
   namespace sx = dart::simulation;
 
@@ -5417,11 +5423,68 @@ TEST(World, WorldKinematicsGraphEntityNodesUseWorldAllocator)
         world, memoryManager.getFreeAllocator());
     EXPECT_GT(graph.getGraph().getNodeCount(), 0u);
     EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeGraph)
-        << "allocator-aware kinematics graph should reserve entity-node "
-           "cache storage from the World free allocator";
+        << "allocator-aware kinematics graph should reserve chunked topology "
+           "storage from the World free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
+}
+
+TEST(World, WorldKinematicsGraphLowersFramesIntoWorkerChunks)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto root = world.addFreeFrame("kinematics_chunk_root");
+  for (int i = 0; i < 9; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translate(Eigen::Vector3d(0.0, static_cast<double>(i + 1), 0.0));
+    (void)world.addFixedFrame(
+        "kinematics_chunk_child_" + std::to_string(i), root, offset);
+  }
+
+  sx::compute::WorldKinematicsGraph graph(
+      world, world.getMemoryManager().getFreeAllocator());
+  RecordingExecutor executor(3);
+  graph.execute(executor);
+
+  EXPECT_EQ(executor.executeCount, 1u);
+  EXPECT_EQ(graph.getLoweredWorkerCount(), 3u);
+  EXPECT_EQ(executor.nodeCount, 4u);
+  EXPECT_EQ(executor.edgeCount, 3u);
+}
+
+TEST(World, UpdateKinematicsReusesCachedGraphForStableTopology)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto parent = world.addFreeFrame("cached_kinematics_parent");
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
+  auto child
+      = world.addFixedFrame("cached_kinematics_child", parent, childOffset);
+
+  world.enterSimulationMode();
+  sx::compute::SequentialExecutor executor;
+  world.updateKinematics(executor);
+
+  Eigen::Isometry3d firstParentTransform = Eigen::Isometry3d::Identity();
+  firstParentTransform.translate(Eigen::Vector3d(1.0, 0.0, 0.0));
+  parent.setLocalTransform(firstParentTransform);
+  world.updateKinematics(executor);
+
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeWarmSync = freeList.getAllocationCount();
+
+  Eigen::Isometry3d secondParentTransform = Eigen::Isometry3d::Identity();
+  secondParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
+  parent.setLocalTransform(secondParentTransform);
+  world.updateKinematics(executor);
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeWarmSync);
+  EXPECT_TRUE(
+      child.getTransform().isApprox(secondParentTransform * childOffset));
 }
 
 TEST(World, WorldOptionsConfigureDomainSolverFamilies)
@@ -21914,6 +21977,67 @@ TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
     compute::RigidBodyIntegrationStage stage(1);
     for (int s = 0; s < 5; ++s) {
       stage.execute(world, executor);
+    }
+
+    for (std::size_t i = 0; i < referenceBodies.size(); ++i) {
+      EXPECT_TRUE((referenceBodies[i].getTransform().matrix().array()
+                   == bodies[i].getTransform().matrix().array())
+                      .all())
+          << "workers=" << workers << " body=" << i << " transform not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getLinearVelocity().array()
+                   == bodies[i].getLinearVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " linear velocity not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getAngularVelocity().array()
+                   == bodies[i].getAngularVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " angular velocity not bitwise";
+    }
+  }
+}
+
+TEST(World, DefaultRigidBodyStepIsBitwiseDeterministicAcrossWorkers)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < 8; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.2 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.25, 1.5).asDiagonal();
+      options.position = Eigen::Vector3d(0.25 * i, -0.1 * i, 0.05 * i);
+      options.linearVelocity = Eigen::Vector3d(0.3, 0.02 * i, -0.04 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, -0.015 * i, 0.02 * i);
+      auto body
+          = world.addRigidBody("default_body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.05 * i, -0.1, 0.2));
+      body.setTorque(Eigen::Vector3d(0.03, 0.01 * i, -0.02));
+      bodies.push_back(body);
+    }
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  std::vector<sx::RigidBody> referenceBodies;
+  buildWorld(reference, referenceBodies);
+  compute::SequentialExecutor sequential;
+  for (int s = 0; s < 5; ++s) {
+    reference.step(sequential);
+  }
+
+  for (const std::size_t workers : {std::size_t{2}, std::size_t{4}}) {
+    sx::World world;
+    std::vector<sx::RigidBody> bodies;
+    buildWorld(world, bodies);
+
+    compute::ParallelExecutor executor(workers);
+    for (int s = 0; s < 5; ++s) {
+      world.step(executor);
     }
 
     for (std::size_t i = 0; i < referenceBodies.size(); ++i) {

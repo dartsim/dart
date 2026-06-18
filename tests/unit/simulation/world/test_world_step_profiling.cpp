@@ -39,6 +39,8 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
+#include <dart/simulation/frame/fixed_frame.hpp>
+#include <dart/simulation/frame/free_frame.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <gtest/gtest.h>
@@ -522,9 +524,13 @@ TEST(WorldStepProfileIntegration, WarmedCustomPipelineProfileDoesNotAllocate)
 TEST(WorldStepProfileIntegration, WarmedNestedGraphProfileDoesNotAllocate)
 {
   sx::World world;
-  sx::RigidBodyOptions options;
-  options.isStatic = true;
-  world.addRigidBody("profiled_kinematics_node", options);
+  auto root = world.addFreeFrame("profiled_kinematics_root");
+  for (int i = 0; i < 8; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translate(Eigen::Vector3d(0.0, static_cast<double>(i + 1), 0.0));
+    (void)world.addFixedFrame(
+        "profiled_kinematics_child_" + std::to_string(i), root, offset);
+  }
 
   sx::compute::ParallelExecutor executor(2);
 
@@ -536,6 +542,7 @@ TEST(WorldStepProfileIntegration, WarmedNestedGraphProfileDoesNotAllocate)
   ASSERT_NE(kinematics, nullptr);
   ASSERT_FALSE(kinematics->graphProfiles.empty());
   ASSERT_FALSE(kinematics->graphProfiles.front().nodes.empty());
+  EXPECT_LT(kinematics->graphProfiles.front().nodes.size(), 9u);
   const std::size_t stageCapacity
       = world.getLastStepProfile().stages.capacity();
   const std::size_t graphProfileCapacity = kinematics->graphProfiles.capacity();

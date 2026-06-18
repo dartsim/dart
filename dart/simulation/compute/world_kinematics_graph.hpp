@@ -42,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace dart::simulation {
@@ -68,21 +69,29 @@ public:
     return m_graph;
   }
 
-private:
-  struct EntityNode
+  [[nodiscard]] std::size_t getLoweredWorkerCount() const noexcept
   {
-    entt::entity entity;
-    ComputeNode* node;
-  };
-  using EntityNodeAllocator = dart::common::StlAllocator<EntityNode>;
+    return m_loweredWorkerCount;
+  }
 
-  [[nodiscard]] ComputeNode* findNode(entt::entity entity) const;
+private:
+  struct FrameLevel
+  {
+    std::size_t begin = 0;
+    std::size_t end = 0;
+  };
+  using EntityAllocator = dart::common::StlAllocator<entt::entity>;
+  using FrameLevelAllocator = dart::common::StlAllocator<FrameLevel>;
+
+  void rebuildForWorkerCount(std::size_t workerCount);
 
   World& m_world;
   dart::common::MemoryAllocator* m_allocator = nullptr;
   ComputeGraph m_graph;
-  std::vector<EntityNode, EntityNodeAllocator> m_entityNodes;
+  std::vector<entt::entity, EntityAllocator> m_frameEntities;
+  std::vector<FrameLevel, FrameLevelAllocator> m_frameLevels;
   std::uint64_t m_frameTopologyRevision = 0;
+  std::size_t m_loweredWorkerCount = 1;
 };
 
 } // namespace dart::simulation::compute

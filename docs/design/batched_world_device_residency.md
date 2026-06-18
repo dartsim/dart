@@ -1,7 +1,7 @@
 # Batched World And Device Residency
 
 This note is the PLAN-091 WP-091.33 contract for replicated batched worlds and
-future device residency. It narrows the batching target to semantics first:
+device residency. It narrows the batching target to semantics first:
 batched execution must be observationally equivalent to stepping `n`
 independent sequential `World` instances, while leaving room for CPU, SIMD, and
 device implementations behind the same internal Model/State split.
@@ -13,8 +13,8 @@ DART should support two batch execution shapes:
 1. **Canonical homogeneous batch.** A baked immutable Model is shared across
    batch lanes, mutable State/Control/Contacts blocks carry a leading
    `worldCount` dimension, and each lane evolves independently. This is the
-   direction used for replicated environments, rollout benchmarks, and future
-   resident device execution.
+   direction used for replicated environments, rollout benchmarks, and resident
+   device execution.
 2. **Heterogeneous fallback.** Existing `World` objects remain independent and
    are scheduled as separate executor nodes. This preserves exact semantics for
    mixed topologies and dynamic scene-authoring workflows, but it is not the
@@ -83,9 +83,12 @@ the homogeneous SoA path or this heterogeneous fallback.
 
 ## Device Residency
 
-A future resident backend should treat the device State buffer as the source of
-truth while a batch is resident. Host `World` objects and handles are
+Resident backends should treat the device State buffer as the source of truth
+while a batch is resident. Host `World` objects and handles are
 authoring/synchronization views at explicit boundaries, not per-step mirrors.
+The current optional CUDA sidecar implements the first rigid-batch resident
+owner behind this contract; future backends should follow the same ownership
+rules.
 
 Residency rules:
 
@@ -138,7 +141,8 @@ Policy:
   `BatchedRigidBodyIntegrationStage`: live-World extraction/apply seed for a
   single rigid-body stage.
 - `dart/simulation/compute/cuda/rigid_body_state_batch_cuda.*`: optional
-  sidecar seed for resident batch rollout kernels.
+  sidecar seed for resident batch rollout kernels and the internal
+  rigid-batch resident owner.
 
 ## Follow-Up Packets
 
