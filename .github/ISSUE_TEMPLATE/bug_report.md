@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: ""
-labels: "type: bug"
+type: Bug
 assignees: ""
 ---
 
@@ -20,7 +20,9 @@ assignees: ""
 - Installation: [e.g., pixi, conda, apt, homebrew, vcpkg, source]
 - Compiler (if source): [e.g., GCC 13.2.0, Clang 18.0.0, MSVC 2026]
 
-> **Note:** Bug fixes are only accepted for `main` and `release-6.17`. If using 6.16 or older, please upgrade to 6.17.x first and verify the issue still exists.
+> **Note:** Bug fixes are only accepted for `main` and the latest maintained
+> DART 6 LTS release branch. If using an older DART 6 minor line, please
+> upgrade to the latest 6.x first and verify the issue still exists.
 
 **Expected vs Current Behavior:**
 Describe what you expected and what actually happens.
