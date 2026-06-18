@@ -8,9 +8,9 @@ from tests.util import get_asset_path
 
 
 def test_parse_skeleton_non_existing_path_returns_null():
-    assert os.path.isfile(get_asset_path("skel/cubes.skel")) is True
+    assert os.path.isfile(get_asset_path("urdf/test/primitive_geometry.urdf")) is True
     parser = DartLoader()
-    assert parser.parse_skeleton(get_asset_path("skel/test/does_not_exist.urdf")) is None
+    assert parser.parse_skeleton(get_asset_path("urdf/test/does_not_exist.urdf")) is None
 
 
 def test_parse_skeleton_invalid_urdf_returns_null():

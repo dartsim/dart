@@ -120,7 +120,7 @@ DART addresses the need for:
 - **ImGui Integration**: Private Dear ImGui overlays for controls and diagnostics
 - **Python Bindings**: Complete API coverage via nanobind with NumPy integration
 - **Optimization Helpers**: Core repo ships gradient-descent + IK primitives; the heavy-duty solver suite (IPOPT, NLopt, pagmo, SNOPT) now lives in [dart-optimization](https://github.com/dartsim/dart-optimization)
-- **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading (SKEL is legacy XML-only; prefer URDF/SDF/MJCF for new work)
+- **File Format Support**: URDF, SDF, and MJCF for robot model loading
 - **Cross-Platform**: Linux, macOS (Intel/ARM), Windows
 
 > Related projects: motion-planning helpers now reside in [dart-planning](https://github.com/dartsim/dart-planning) and the advanced optimizer suite lives in [dart-optimization](https://github.com/dartsim/dart-optimization). This repository focuses on the simulation core plus lightweight gradient-descent utilities.
@@ -490,7 +490,7 @@ drawing expressed as DART values instead of renderer types.
 **Key Modules**:
 
 - `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
-- `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
+- `dartpy.io` - File parsers (URDF, SDF, MJCF) [alias for legacy `utils`]
 - `dartpy.gui` - Filament-backed GUI descriptors and helpers
 - Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable while DART 7 clean-break gates are being closed, but emit `DeprecationWarning` and should not be part of the DART 7 public contract.
 
@@ -1096,12 +1096,11 @@ world->addSkeleton(robot);
 
 // SDF
 auto model = dart::io::readSkeleton("path/to/model.sdf");
-
-// SKEL (DART native format)
-auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 ```
 
-> **Note:** SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
+> **Note:** DART 7 is removing legacy SKEL support instead of redesigning it as
+> YAML. Migrate existing SKEL assets to URDF, SDF, or MJCF; use a `release-6.*`
+> branch when compatibility with old SKEL assets is required.
 
 ### Pattern 6: Debug Draws And Capture
 
@@ -1163,7 +1162,7 @@ with:
 ✅ **Interactive 3D visualization** through the Filament + GLFW3 + Dear ImGui GUI
 ✅ **Multiple collision backends** (FCL, Bullet, ODE)
 ✅ **Python integration** for ML/research workflows
-✅ **Extensive file format support** (URDF, SDF, MJCF, SKEL)
+✅ **Extensive file format support** (URDF, SDF, MJCF)
 ✅ **Cross-platform** with reproducible builds via pixi
 
 The codebase demonstrates clear layering, design patterns, and extensibility.

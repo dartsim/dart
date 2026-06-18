@@ -34,14 +34,21 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <string_view>
+
 using namespace dart;
 
 //==============================================================================
-TEST(Read, AutoDetectsSkelSkeleton)
+TEST(Read, AutoDetectsConvertedSinglePendulumSdfSkeleton)
 {
   const auto skeleton
-      = io::readSkeleton("dart://sample/skel/test/single_pendulum.skel");
+      = io::readSkeleton("dart://sample/sdf/test/single_pendulum.sdf");
+#if DART_HAS_SDFORMAT
   EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
 }
 
 //==============================================================================
@@ -57,6 +64,31 @@ TEST(Read, AutoDetectsSdfSkeleton)
 }
 
 //==============================================================================
+TEST(Read, ConvertedSkelFixturesLoadAsSdf)
+{
+#if DART_HAS_SDFORMAT
+  struct Fixture
+  {
+    std::string_view uri;
+    std::string_view expectedName;
+  };
+
+  constexpr std::array fixtures = {
+      Fixture{"dart://sample/sdf/test/single_pendulum.sdf", "single_pendulum"},
+      Fixture{"dart://sample/sdf/test/cube.sdf", "box skeleton"},
+      Fixture{"dart://sample/sdf/test/shapes.sdf", "box skeleton"},
+      Fixture{"dart://sample/sdf/test/test_shapes.sdf", "ground skeleton"},
+  };
+
+  for (const auto& fixture : fixtures) {
+    const auto skeleton = io::readSkeleton(fixture.uri);
+    ASSERT_NE(skeleton, nullptr) << fixture.uri;
+    EXPECT_EQ(skeleton->getName(), fixture.expectedName) << fixture.uri;
+  }
+#endif
+}
+
+//==============================================================================
 TEST(Read, MjcfDoesNotExposeDirectSkeletonLoading)
 {
   const auto skeleton = io::readSkeleton("dart://sample/mjcf/openai/ant.xml");
@@ -67,10 +99,14 @@ TEST(Read, MjcfDoesNotExposeDirectSkeletonLoading)
 TEST(Read, ExplicitFormatOverridesAuto)
 {
   io::ReadOptions options;
-  options.format = io::ModelFormat::Skel;
-  const auto skeleton = io::readSkeleton(
-      "dart://sample/skel/test/single_pendulum.skel", options);
+  options.format = io::ModelFormat::Sdf;
+  const auto skeleton
+      = io::readSkeleton("dart://sample/sdf/test/single_pendulum.sdf", options);
+#if DART_HAS_SDFORMAT
   EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
 }
 
 //==============================================================================

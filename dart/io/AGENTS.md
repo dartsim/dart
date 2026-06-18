@@ -4,22 +4,23 @@ Agent guidelines for the IO/parsing module.
 
 ## Overview
 
-Unified model loading API for URDF, SDF, MJCF, and SKEL formats.
+Unified model loading API for URDF, SDF, and MJCF formats.
 
 ## Supported Formats
 
-| Format | Function                   | Notes             |
-| ------ | -------------------------- | ----------------- |
-| URDF   | `dart::io::readSkeleton()` | ROS standard      |
-| SDF    | `dart::io::readSkeleton()` | Gazebo format     |
-| MJCF   | `dart::io::readSkeleton()` | MuJoCo format     |
-| SKEL   | `dart::io::readSkeleton()` | DART legacy (XML) |
+| Format | Function                   | Notes         |
+| ------ | -------------------------- | ------------- |
+| URDF   | `dart::io::readSkeleton()` | ROS standard  |
+| SDF    | `dart::io::readSkeleton()` | Gazebo format |
+| MJCF   | `dart::io::readSkeleton()` | MuJoCo format |
 
 ## Key Concepts
 
 - **Unified API**: `dart::io::readSkeleton(path, options)` auto-detects format
 - **ReadOptions**: Package directories, resource retrieval callbacks
 - **Package resolution**: `package://` URIs for ROS compatibility
+- **SKEL removal**: DART 7 is removing legacy SKEL support; use `release-6.*`
+  when parity evidence requires old SKEL behavior.
 
 ## Code Patterns
 
@@ -36,7 +37,6 @@ Located in `dart/utils/`:
 - `urdf/UrdfParser.hpp` - URDF parsing
 - `sdf/SdfParser.hpp` - SDF parsing
 - `mjcf/MjcfParser.hpp` - MJCF parsing
-- `skel/SkelParser.hpp` - SKEL parsing
 
 ## Testing
 

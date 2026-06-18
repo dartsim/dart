@@ -36,7 +36,6 @@ pixi run test-py       # Python tests only
 - `data/urdf/` - Sample URDF models
 - `data/sdf/` - Sample SDF models
 - `data/mjcf/` - Sample MJCF models
-- `data/skel/` - Sample SKEL models
 
 ## See Also
 

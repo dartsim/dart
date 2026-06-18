@@ -35,7 +35,7 @@ Articulated Body Algorithm for accurate, stable motion dynamics.
 - **Research-grade dynamics** — Featherstone algorithms, generalized coordinates, and direct access to dynamics quantities
 - **Easy to start** — Python and C++ packages through common package managers, plus reproducible source builds with pixi
 - **Extensible foundations** — Math, native collision, constraints, model loading, benchmarks, and tests that support new algorithms and baseline comparisons
-- **Unified model loading** — Load URDF, SDF, MJCF, and SKEL models through a single API
+- **Unified model loading** — Load URDF, SDF, and MJCF models through a single API
 - **Scalable compute roadmap** — Cross-platform CPU support today, with roadmap work for multi-core, SIMD, and accelerator backends
 - **Battle-tested ecosystem** — Powers [Gazebo](https://gazebosim.org), research labs, and production systems worldwide, with best-effort support for production use
 

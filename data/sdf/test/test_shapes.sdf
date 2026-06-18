@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="ground skeleton">
+    <static>true</static>
+    <link name="ground">
+      <pose>0 -0.375 0 0 0 0</pose>
+      <visual name="visual 1">
+        <pose>0 -0.005 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>10 0.01 10</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="collision 1">
+        <pose>0 -0.005 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>10 0.01 10</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

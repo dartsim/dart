@@ -575,7 +575,7 @@ TEST(SkeletonLoader, LoadsSkeletonFromUri)
 
   const sx::Multibody multibody = sx::io::addSkeleton(
       world,
-      dart::common::Uri("dart://sample/skel/test/single_pendulum.skel"),
+      dart::common::Uri("dart://sample/sdf/test/single_pendulum.sdf"),
       options);
 
   EXPECT_EQ(multibody.getName(), "single_pendulum");
@@ -683,10 +683,10 @@ TEST(SkeletonLoader, RejectsInvalidBodyInertiaBeforeCreatingMultibody)
 
 TEST(SkeletonLoader, LoadsUriWithReadOptions)
 {
-  const dart::common::Uri uri("dart://sample/skel/test/single_pendulum.skel");
+  const dart::common::Uri uri("dart://sample/sdf/test/single_pendulum.sdf");
 
   dart::io::ReadOptions readOptions;
-  readOptions.format = dart::io::ModelFormat::Skel;
+  readOptions.format = dart::io::ModelFormat::Sdf;
 
   sx::io::SkeletonLoadOptions loadOptions;
   loadOptions.rootAnchorPrefix = "read_options_anchor_";
@@ -698,7 +698,7 @@ TEST(SkeletonLoader, LoadsUriWithReadOptions)
   EXPECT_TRUE(multibody.getLink("read_options_anchor_link 1").has_value());
 
   dart::io::ReadOptions wrongFormat;
-  wrongFormat.format = dart::io::ModelFormat::Sdf;
+  wrongFormat.format = dart::io::ModelFormat::Urdf;
 
   sx::World rejectedWorld;
   EXPECT_THROW(
@@ -764,7 +764,8 @@ TEST(SkeletonLoader, RejectsUnreadableUri)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(
-          world, dart::common::Uri("dart://sample/skel/does_not_exist.skel")),
+          world,
+          dart::common::Uri("dart://sample/sdf/test/does_not_exist.sdf")),
       sx::InvalidArgumentException);
 }
 

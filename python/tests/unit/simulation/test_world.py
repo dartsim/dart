@@ -5682,7 +5682,7 @@ def test_simulation_add_skeleton_loads_uri():
 
     world = sx.World()
     multibody = sx.add_skeleton(
-        world, "dart://sample/skel/test/single_pendulum.skel", options
+        world, "dart://sample/sdf/test/single_pendulum.sdf", options
     )
 
     assert multibody.name == "single_pendulum"
@@ -5710,7 +5710,7 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     read_options = sx.ReadOptions()
     assert read_options.format == sx.ModelFormat.AUTO
     assert read_options.sdf_default_root_joint_type == sx.RootJointType.FLOATING
-    read_options.format = sx.ModelFormat.SKEL
+    read_options.format = sx.ModelFormat.SDF
     read_options.sdf_default_root_joint_type = sx.RootJointType.FIXED
     read_options.add_package_directory("unused", "/tmp")
 
@@ -5720,7 +5720,7 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     world = sx.World()
     multibody = sx.add_skeleton(
         world,
-        "dart://sample/skel/test/single_pendulum.skel",
+        "dart://sample/sdf/test/single_pendulum.sdf",
         read_options,
         load_options,
     )
@@ -5729,11 +5729,11 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     assert multibody.get_link("py_read_options_anchor_link 1") is not None
 
     wrong_format = sx.ReadOptions()
-    wrong_format.format = sx.ModelFormat.SDF
+    wrong_format.format = sx.ModelFormat.URDF
     with pytest.raises(Exception, match="Failed to read Skeleton"):
         sx.add_skeleton(
             sx.World(),
-            "dart://sample/skel/test/single_pendulum.skel",
+            "dart://sample/sdf/test/single_pendulum.sdf",
             wrong_format,
         )
 
