@@ -1744,6 +1744,55 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
 }
 
 //==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonScratchReserveKeepsSparseAssemblyPattern)
+{
+  namespace common = dart::common;
+
+  constexpr std::size_t kSurfaceCount = 16u;
+  common::MemoryAllocatorDebugger<common::FreeListAllocator> allocator;
+  std::vector<expdetail::RigidIpcBarrierSurface> surfaces;
+  surfaces.reserve(kSurfaceCount);
+  for (std::size_t i = 0; i < kSurfaceCount; ++i) {
+    const double z
+        = i == 0u ? 0.0 : (i == 1u ? 0.25 : 20.0 + static_cast<double>(i));
+    expdetail::RigidIpcBarrierSurface surface = makeTriangleSurface(z);
+    surface.dynamic = true;
+    surfaces.push_back(surface);
+  }
+
+  expdetail::RigidIpcProjectedNewtonSolveOptions options(allocator);
+  options.barrier.squaredActivationDistance = 1.0;
+  options.maxIterations = 0u;
+  options.dynamicsTerms.reserve(kSurfaceCount);
+  for (std::size_t i = 0; i < kSurfaceCount; ++i) {
+    auto& dynamics = options.dynamicsTerms.emplace_back();
+    dynamics.active = true;
+    dynamics.diagonalWeights.setConstant(1e-3);
+  }
+
+  expdetail::RigidIpcProjectedNewtonSolveResult result(allocator);
+  expdetail::RigidIpcProjectedNewtonSolveScratch scratch(allocator);
+  expdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+      surfaces, options, result, scratch);
+
+  const Eigen::Index dofs = static_cast<Eigen::Index>(6u * kSurfaceCount);
+  ASSERT_EQ(result.assembly.hessian.rows(), dofs);
+  ASSERT_EQ(result.assembly.hessian.cols(), dofs);
+  const Eigen::Index nonZerosBeforeReserve = result.assembly.hessian.nonZeros();
+  ASSERT_GT(nonZerosBeforeReserve, 0);
+  ASSERT_LT(nonZerosBeforeReserve, dofs * dofs / 4)
+      << "warm-solve assembly should stay sparse before scratch reserve";
+
+  expdetail::reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+      surfaces, result, scratch);
+
+  EXPECT_GE(result.assembly.hessian.nonZeros(), nonZerosBeforeReserve);
+  EXPECT_LT(result.assembly.hessian.nonZeros(), dofs * dofs / 4)
+      << "scratch reserve must mirror the warm sparse pattern instead of "
+         "materializing a dense dof-by-dof pattern";
+}
+
+//==============================================================================
 TEST(RigidIpcBarrier, ProjectedNewtonSolveBacktracksForSufficientDecrease)
 {
   expdetail::RigidIpcBarrierSurface surface;
