@@ -287,6 +287,33 @@ TEST(CudaRigidBodyStateBatch, ResidentOwnerRequiresModelBeforeStateOrControl)
 }
 
 //==============================================================================
+TEST(CudaRigidBodyStateBatch, ResidentOwnerReuploadInvalidatesResidentState)
+{
+  cuda::ResidentRigidBodyBatchCuda resident;
+  compute::RigidBodyModelBatch model;
+  compute::RigidBodyStateBatch state;
+  const std::vector<double> force;
+
+  resident.uploadModel(model);
+  resident.uploadState(state);
+  resident.uploadControl(force);
+  EXPECT_TRUE(resident.diagnostics().deviceStateValid);
+  EXPECT_TRUE(resident.canFallbackToHost());
+
+  resident.uploadModel(model);
+
+  const auto diagnostics = resident.diagnostics();
+  EXPECT_EQ(diagnostics.modelUploadCount, 2u);
+  EXPECT_EQ(diagnostics.stateUploadCount, 1u);
+  EXPECT_EQ(diagnostics.controlUploadCount, 1u);
+  EXPECT_FALSE(diagnostics.deviceStateValid);
+  EXPECT_FALSE(diagnostics.hostStateCoherent);
+  EXPECT_FALSE(resident.canFallbackToHost());
+  EXPECT_THROW(resident.step(0.01), sx::InvalidOperationException);
+  EXPECT_THROW(resident.downloadState(state), sx::InvalidOperationException);
+}
+
+//==============================================================================
 TEST(CudaRigidBodyStateBatch, MatchesCpuFullIntegration)
 {
   if (!cuda::isCudaRuntimeAvailable()) {

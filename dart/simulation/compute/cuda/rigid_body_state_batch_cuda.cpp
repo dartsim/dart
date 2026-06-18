@@ -275,15 +275,16 @@ void ResidentRigidBodyBatchCuda::uploadModel(const RigidBodyModelBatch& model)
     throwIfCudaRuntimeUnavailable();
   }
 
+  m_impl->modelUploaded = false;
+  m_impl->stateUploaded = false;
+  m_impl->controlUploaded = false;
+  m_impl->diagnostics.deviceStateValid = false;
+  m_impl->diagnostics.hostStateCoherent = false;
   m_impl->deviceInverseMass.ensure(model.inverseMass.size());
   m_impl->deviceInverseMass.copyToDevice(
       model.inverseMass, "resident rigid-body inverse mass upload");
   m_impl->model = model;
   m_impl->modelUploaded = true;
-  m_impl->stateUploaded = false;
-  m_impl->controlUploaded = false;
-  m_impl->diagnostics.deviceStateValid = false;
-  m_impl->diagnostics.hostStateCoherent = false;
   ++m_impl->diagnostics.modelUploadCount;
 }
 
@@ -361,6 +362,7 @@ void ResidentRigidBodyBatchCuda::step(double timeStep)
 
   throwIfCudaRuntimeUnavailable();
   m_impl->diagnostics.hostStateCoherent = false;
+  m_impl->diagnostics.deviceStateValid = false;
   throwIfCudaError(
       detail::launchRigidBodyStateBatchKernel(
           m_impl->devicePosition.data(),
@@ -374,6 +376,7 @@ void ResidentRigidBodyBatchCuda::step(double timeStep)
       "resident rigid-body full kernel");
   throwIfCudaError(
       cudaDeviceSynchronize(), "resident rigid-body full synchronize");
+  m_impl->diagnostics.deviceStateValid = true;
   ++m_impl->diagnostics.stepCount;
 }
 
