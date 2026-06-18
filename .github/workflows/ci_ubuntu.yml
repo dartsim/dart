@@ -518,7 +518,8 @@ jobs:
           # This step builds the dartpy nanobind extension. In Debug each
           # binding TU is large, so keep parallelism below the 16 GB hosted
           # runner's memory limit. Request mold for the final Debug module link
-          # when the runner provides it, and keep this as a Debug dartpy smoke
+          # when it is present; CMake falls back to the default linker if the
+          # runner image does not provide it. Keep this as a Debug dartpy smoke
           # path; Release and wheel jobs run the full Python suite.
           DART_USE_MOLD_OVERRIDE=ON \
           DARTPY_PYTEST_ARGS="-vv --tb=short" \

@@ -265,8 +265,8 @@ public:
   ///
   /// Each lower bound must be less than or equal to the matching upper bound.
   /// Use +/- infinity for an unbounded coordinate (the default). The
-  /// articulated-body integration clamps positions to these limits and arrests
-  /// the velocity driving a coordinate past a limit.
+  /// semi-implicit multibody integration clamps positions to these limits and
+  /// arrests the velocity driving a coordinate past a limit.
   ///
   /// @param lower Lower bounds, size getDOFCount().
   /// @param upper Upper bounds, size getDOFCount().
@@ -283,8 +283,8 @@ public:
   ///
   /// Each lower bound must be less than or equal to the matching upper bound.
   /// Use +/- infinity for an unbounded coordinate (the default). The
-  /// articulated-body integration clamps generalized velocities to these limits
-  /// each step.
+  /// semi-implicit multibody integration clamps generalized velocities to these
+  /// limits each step.
   ///
   /// @param lower Lower bounds, size getDOFCount().
   /// @param upper Upper bounds, size getDOFCount().
@@ -301,7 +301,7 @@ public:
   ///
   /// Each lower bound must be less than or equal to the matching upper bound.
   /// Use +/- infinity for an unbounded coordinate (the default). The
-  /// articulated-body forward dynamics clamps the commanded joint effort (set
+  /// semi-implicit multibody integration clamps the commanded joint effort (set
   /// via setForce) to these limits before solving; passive spring and damping
   /// forces are not subject to the effort limits.
   ///
