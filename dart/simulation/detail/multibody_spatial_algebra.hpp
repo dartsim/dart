@@ -16,7 +16,7 @@
 #include <Eigen/Geometry>
 
 /// Shared 6D spatial-algebra primitives for the rigid-body multibody compute
-/// stages. The articulated-body forward dynamics (`compute/multibody_dynamics`)
+/// stages. The semi-implicit joint-space path (`compute/multibody_dynamics`)
 /// and the linear-time variational integrator
 /// (`compute/variational_integration`) both build their per-link
 /// inertia/subspace data from the same kernels, so the byte-identical helpers

@@ -526,6 +526,9 @@ TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
   l1.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.4));
   l2.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, -0.7));
   l3.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.2));
+  l1.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.05));
+  l2.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.08));
+  l3.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.03));
   world.updateKinematics();
 
   auto& registry = dart::simulation::detail::registryOf(world);

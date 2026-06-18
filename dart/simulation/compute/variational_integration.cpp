@@ -20,6 +20,7 @@
 #include "dart/simulation/comps/variational_contact.hpp"
 #include "dart/simulation/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/compute/multibody_dynamics.hpp"
+#include "dart/simulation/detail/articulated_inverse_mass.hpp"
 #include "dart/simulation/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/variational/discrete_mechanics_math.hpp"
@@ -332,6 +333,7 @@ struct VarTree
   VarLinkVector links;
   dart::common::MemoryAllocator* allocator = nullptr;
   std::size_t dofCount = 0;
+  Eigen::VectorXd armature;
 };
 
 LinkIndexMap makeLinkIndexMap(dart::common::MemoryAllocator& allocator)
@@ -494,6 +496,18 @@ void buildVarTreeInto(
           * link.currentRelative;
     tree.links[static_cast<std::size_t>(link.parent)].children.push_back(
         static_cast<int>(i));
+  }
+
+  tree.armature.resize(static_cast<Eigen::Index>(tree.dofCount));
+  tree.armature.setZero();
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
+    if (jointModel.armature.size() == static_cast<Eigen::Index>(link.dof)) {
+      tree.armature.segment(link.dofOffset, link.dof) = jointModel.armature;
+    }
   }
 }
 
@@ -1780,80 +1794,25 @@ void applyArticulatedInverseMassInto(
     VariationalLinearSolveScratch& scratch,
     Eigen::VectorXd& qddot)
 {
-  const std::size_t n = tree.links.size();
-  reserveVariationalLinearSolveScratch(tree, scratch);
-  qddot.resize(static_cast<Eigen::Index>(tree.dofCount));
-  qddot.setZero();
-  for (std::size_t i = 0; i < n; ++i) {
-    scratch.articulated[i] = tree.links[i].inertia;
-    scratch.bias[i].setZero();
-    scratch.motionToChild[i].setIdentity();
-    scratch.spatial[i].setZero();
-  }
-
-  // Backward sweep: accumulate articulated inertia and bias toward the root.
-  for (std::size_t reverse = 0; reverse < n; ++reverse) {
-    const std::size_t i = n - 1 - reverse;
+  const auto linkAt = [&](std::size_t i) {
     const VarLink& link = tree.links[i];
-    if (link.dof > 0) {
-      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
-      const auto dof = static_cast<Eigen::Index>(link.dof);
-      scratch.forceProjector[i].noalias()
-          = scratch.articulated[i] * link.subspace;
-      scratch.jointMatrix[i].noalias()
-          = link.subspace.transpose() * scratch.forceProjector[i];
-      scratch.jointMatrixInverse[i] = scratch.jointMatrix[i].inverse();
-      scratch.jointRhs[i] = b.segment(seg, dof);
-      scratch.jointWork.head(dof).noalias()
-          = link.subspace.transpose() * scratch.bias[i];
-      scratch.jointRhs[i] -= scratch.jointWork.head(dof);
-    }
-    if (link.parent >= 0) {
-      Matrix6 ia = scratch.articulated[i];
-      Vector6 pa = scratch.bias[i];
-      if (link.dof > 0) {
-        const auto dof = static_cast<Eigen::Index>(link.dof);
-        ia.noalias() -= scratch.forceProjector[i]
-                        * scratch.jointMatrixInverse[i]
-                        * scratch.forceProjector[i].transpose();
-        scratch.jointWork.head(dof).noalias()
-            = scratch.jointMatrixInverse[i] * scratch.jointRhs[i];
-        pa.noalias() += scratch.forceProjector[i] * scratch.jointWork.head(dof);
-      }
-      scratch.motionToChild[i] = adjoint(link.currentRelative.inverse());
-      const Matrix6 forceToParent = scratch.motionToChild[i].transpose();
-      const auto p = static_cast<std::size_t>(link.parent);
-      scratch.articulated[p].noalias()
-          += forceToParent * ia * scratch.motionToChild[i];
-      scratch.bias[p].noalias() += forceToParent * pa;
-    }
-  }
-
-  // Forward sweep: propagate spatial accelerations and read joint
-  // accelerations.
-  for (std::size_t i = 0; i < n; ++i) {
-    const VarLink& link = tree.links[i];
-    if (link.parent < 0) {
-      scratch.spatial[i].setZero();
-      continue;
-    }
-    scratch.spatial[i].noalias()
-        = scratch.motionToChild[i]
-          * scratch.spatial[static_cast<std::size_t>(link.parent)];
-    if (link.dof > 0) {
-      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
-      const auto dof = static_cast<Eigen::Index>(link.dof);
-      scratch.jointWork.head(dof) = scratch.jointRhs[i];
-      scratch.jointSolveWork.head(dof).noalias()
-          = scratch.forceProjector[i].transpose() * scratch.spatial[i];
-      scratch.jointWork.head(dof) -= scratch.jointSolveWork.head(dof);
-      scratch.jointSolveWork.head(dof).noalias()
-          = scratch.jointMatrixInverse[i] * scratch.jointWork.head(dof);
-      qddot.segment(seg, dof) = scratch.jointSolveWork.head(dof);
-      scratch.spatial[i].noalias()
-          += link.subspace * scratch.jointSolveWork.head(dof);
-    }
-  }
+    return detail::ArticulatedInverseMassLink{
+        link.parent,
+        link.dof,
+        link.dofOffset,
+        &link.inertia,
+        &link.subspace,
+        link.parent >= 0 ? adjoint(link.currentRelative.inverse())
+                         : Matrix6::Identity()};
+  };
+  detail::applyArticulatedInverseMassInto(
+      tree.links.size(),
+      tree.dofCount,
+      tree.armature,
+      b,
+      linkAt,
+      scratch,
+      qddot);
 }
 
 Eigen::VectorXd applyArticulatedInverseMass(

@@ -24,8 +24,7 @@ namespace dart::simulation {
 /// carries no parsing cost.
 enum class MultibodyIntegrationFamily
 {
-  /// Semi-implicit (articulated-body forward dynamics) integration. The
-  /// long-standing default.
+  /// Semi-implicit joint-space integration. The long-standing default.
   SemiImplicit,
 
   /// The linear-time discrete-mechanics (variational) integrator.
@@ -45,8 +44,8 @@ enum class MultibodyIntegrationFamily
 struct MultibodyOptions
 {
   /// Integration family used for multibody dynamics on the default `step()`
-  /// path. Defaults to `SemiImplicit` (articulated-body forward dynamics); the
-  /// other documented value is `Variational` (the linear-time discrete-
+  /// path. Defaults to `SemiImplicit` (semi-implicit joint-space integration);
+  /// the other documented value is `Variational` (the linear-time discrete-
   /// mechanics integrator).
   MultibodyIntegrationFamily integrationFamily
       = MultibodyIntegrationFamily::SemiImplicit;
