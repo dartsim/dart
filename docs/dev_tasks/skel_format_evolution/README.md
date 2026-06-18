@@ -11,7 +11,9 @@
       loads.
 - [ ] Phase 2: Remove SKEL from DART 7 `main`: parser implementation,
       `dart::io` format inference and dispatch, bindings/stubs, parser-specific
-      tests, `data/skel`, and user-facing DART 7 docs.
+      tests, `.skel` sample fixtures, and user-facing DART 7 docs. Preserve or
+      relocate non-SKEL mesh assets such as `data/skel/kima/*.dae` before
+      deleting any parent directory.
 - [ ] Phase 3: Optional YAML model/scene format. Decide whether YAML should be
       a new DART-owned scene format or a front-end over URDF/SDF semantics; do
       not implement SKEL syntax in YAML.
@@ -89,7 +91,9 @@ phase up.
 1. Finish this Phase 1 conversion branch: run the focused IO/simulation/resource
    tests, docs policy, and lint.
 2. Start Phase 2 on a follow-up branch: remove `SkelParser`, `.skel`
-   inference/dispatch, parser-specific tests, bindings/stubs, and `data/skel`.
+   inference/dispatch, parser-specific tests, bindings/stubs, and `.skel`
+   sample fixtures. Preserve or move non-SKEL mesh assets such as
+   `data/skel/kima/*.dae` before deleting any parent directory.
 3. After SKEL removal is mechanically under control, decide whether Phase 3 is
    a YAML front-end over existing formats or a new DART-owned scene format.
 4. Keep Phase 4 USD work coordinated with
@@ -104,7 +108,9 @@ phase up.
   `pixi run lint`.
 - Phase 2: focused tests proving `.skel` no longer dispatches through
   `dart::io`, parser-specific SKEL tests are removed, and the source tree no
-  longer ships DART 7 sample SKEL assets.
+  longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests that
+  load `data/skel/kima/*.dae` must keep passing, either from their current path
+  or after an explicit fixture relocation.
 - Phase 3: focused parser tests for any accepted YAML design, including parity
   with the canonical format it maps to or explicit tests for a new DART-owned
   schema.

@@ -38,7 +38,10 @@ Run the remaining Phase 1 gates if they have not already passed in the current
 session: focused IO read tests, `UNIT_simulation_world_SkeletonLoader`, resource
 retriever tests, `pixi run check-docs-policy`, and `pixi run lint`. After this
 conversion branch lands, pick Phase 2: remove `SkelParser`, `.skel`
-inference/dispatch, SKEL tests, bindings/stubs, and `data/skel`.
+inference/dispatch, SKEL tests, bindings/stubs, and `.skel` sample fixtures.
+Do not delete the whole `data/skel` tree without first preserving or relocating
+non-SKEL mesh assets such as `data/skel/kima/*.dae`, which are still loaded by
+live mesh tests.
 
 ## Context That Would Be Lost
 
