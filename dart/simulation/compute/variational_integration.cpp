@@ -597,6 +597,54 @@ void reserveVariationalLinearSolveScratch(
   scratch.result.resize(dofCount);
 }
 
+void invertJointMatrixInto(
+    const Eigen::MatrixXd& matrix, Eigen::MatrixXd& inverse)
+{
+  if (matrix.rows() == 1 && matrix.cols() == 1) {
+    inverse.resize(1, 1);
+    inverse(0, 0) = 1.0 / matrix(0, 0);
+    return;
+  }
+
+  inverse = matrix.inverse();
+}
+
+void subtractProjectedInertiaInto(
+    Matrix6& inertia,
+    const Eigen::MatrixXd& forceProjector,
+    const Eigen::MatrixXd& inverseJointMatrix,
+    const Eigen::MatrixXd& motionProjector)
+{
+  if (forceProjector.cols() == 1 && inverseJointMatrix.rows() == 1
+      && inverseJointMatrix.cols() == 1 && motionProjector.cols() == 1) {
+    const double inv = inverseJointMatrix(0, 0);
+    for (Eigen::Index r = 0; r < 6; ++r) {
+      for (Eigen::Index c = 0; c < 6; ++c) {
+        inertia(r, c) -= inv * forceProjector(r, 0) * motionProjector(c, 0);
+      }
+    }
+    return;
+  }
+
+  inertia.noalias()
+      -= forceProjector * inverseJointMatrix * motionProjector.transpose();
+}
+
+void addProjectedForceInto(
+    Vector6& force,
+    const Eigen::MatrixXd& forceProjector,
+    const Eigen::Ref<const Eigen::VectorXd>& jointForce)
+{
+  if (forceProjector.cols() == 1 && jointForce.size() == 1) {
+    for (Eigen::Index r = 0; r < 6; ++r) {
+      force[r] += forceProjector(r, 0) * jointForce[0];
+    }
+    return;
+  }
+
+  force.noalias() += forceProjector * jointForce;
+}
+
 void reserveVariationalStepScratch(
     const VarTree& tree, VariationalStepScratch& scratch)
 {
@@ -1569,7 +1617,8 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     if (groundContact == nullptr) {
       return 0.0;
     }
-    if (groundContactDuals.size() != groundContact->points.size()) {
+    const bool useDuals = !groundContactDuals.empty();
+    if (useDuals && groundContactDuals.size() != groundContact->points.size()) {
       return std::numeric_limits<double>::quiet_NaN();
     }
 
@@ -1589,7 +1638,7 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
       const Eigen::Vector3d worldPoint = childWorld * point.localPoint;
       const double signedDistance = groundContact->planeNormal.dot(
           worldPoint - groundContact->planePoint);
-      double rawNormal = groundContactDuals[i]
+      double rawNormal = (useDuals ? groundContactDuals[i] : 0.0)
                          + groundContact->stiffness * (-signedDistance);
       if (timeStep > 0.0) {
         rawNormal -= groundContact->dampingCoefficient * normalVelocity;
@@ -1761,8 +1810,13 @@ void computeResidualInto(
     if (link.dof > 0) {
       const auto seg = static_cast<Eigen::Index>(link.dofOffset);
       const auto n = static_cast<Eigen::Index>(link.dof);
-      residual.segment(seg, n) = link.subspace.transpose() * force
-                                 - timeStep * appliedForce.segment(seg, n);
+      if (n == 1) {
+        residual[seg]
+            = link.subspace.col(0).dot(force) - timeStep * appliedForce[seg];
+      } else {
+        residual.segment(seg, n) = link.subspace.transpose() * force
+                                   - timeStep * appliedForce.segment(seg, n);
+      }
     }
   }
 }
@@ -1781,29 +1835,84 @@ void applyArticulatedInverseMassInto(
     VariationalLinearSolveScratch& scratch,
     Eigen::VectorXd& qddot)
 {
-  const auto linkAt = [&](std::size_t i) {
+  const std::size_t n = tree.links.size();
+  reserveVariationalLinearSolveScratch(tree, scratch);
+  qddot.resize(static_cast<Eigen::Index>(tree.dofCount));
+  qddot.setZero();
+  for (std::size_t i = 0; i < n; ++i) {
+    scratch.articulated[i] = tree.links[i].inertia;
+    scratch.bias[i].setZero();
+    scratch.motionToChild[i].setIdentity();
+    scratch.spatial[i].setZero();
+  }
+
+  // Backward sweep: accumulate articulated inertia and bias toward the root.
+  for (std::size_t reverse = 0; reverse < n; ++reverse) {
+    const std::size_t i = n - 1 - reverse;
     const VarLink& link = tree.links[i];
-    return detail::ArticulatedInverseMassLink{
-        link.parent,
-        link.dof,
-        link.dofOffset,
-        &link.inertia,
-        &link.subspace,
-        link.parent >= 0 ? adjoint(link.currentRelative.inverse())
-                         : Matrix6::Identity()};
-  };
-  // The forced-DEL residual/Jacobian currently model link spatial inertia only.
-  // Keep this variational preconditioner/projection helper armature-free until
-  // the residual carries matching joint-armature terms.
-  static const Eigen::VectorXd emptyArmature;
-  detail::applyArticulatedInverseMassInto(
-      tree.links.size(),
-      tree.dofCount,
-      emptyArmature,
-      b,
-      linkAt,
-      scratch,
-      qddot);
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      scratch.forceProjector[i].noalias()
+          = scratch.articulated[i] * link.subspace;
+      scratch.jointMatrix[i].noalias()
+          = link.subspace.transpose() * scratch.forceProjector[i];
+      invertJointMatrixInto(
+          scratch.jointMatrix[i], scratch.jointMatrixInverse[i]);
+      scratch.jointRhs[i] = b.segment(seg, dof);
+      scratch.jointWork.head(dof).noalias()
+          = link.subspace.transpose() * scratch.bias[i];
+      scratch.jointRhs[i] -= scratch.jointWork.head(dof);
+    }
+    if (link.parent >= 0) {
+      Matrix6 ia = scratch.articulated[i];
+      Vector6 pa = scratch.bias[i];
+      if (link.dof > 0) {
+        const auto dof = static_cast<Eigen::Index>(link.dof);
+        subtractProjectedInertiaInto(
+            ia,
+            scratch.forceProjector[i],
+            scratch.jointMatrixInverse[i],
+            scratch.forceProjector[i]);
+        scratch.jointWork.head(dof).noalias()
+            = scratch.jointMatrixInverse[i] * scratch.jointRhs[i];
+        addProjectedForceInto(
+            pa, scratch.forceProjector[i], scratch.jointWork.head(dof));
+      }
+      scratch.motionToChild[i] = adjoint(link.currentRelative.inverse());
+      const Matrix6 forceToParent = scratch.motionToChild[i].transpose();
+      const auto p = static_cast<std::size_t>(link.parent);
+      scratch.articulated[p].noalias()
+          += forceToParent * ia * scratch.motionToChild[i];
+      scratch.bias[p].noalias() += forceToParent * pa;
+    }
+  }
+
+  // Forward sweep: propagate spatial accelerations and read joint
+  // accelerations.
+  for (std::size_t i = 0; i < n; ++i) {
+    const VarLink& link = tree.links[i];
+    if (link.parent < 0) {
+      scratch.spatial[i].setZero();
+      continue;
+    }
+    scratch.spatial[i].noalias()
+        = scratch.motionToChild[i]
+          * scratch.spatial[static_cast<std::size_t>(link.parent)];
+    if (link.dof > 0) {
+      const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+      const auto dof = static_cast<Eigen::Index>(link.dof);
+      scratch.jointWork.head(dof) = scratch.jointRhs[i];
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.forceProjector[i].transpose() * scratch.spatial[i];
+      scratch.jointWork.head(dof) -= scratch.jointSolveWork.head(dof);
+      scratch.jointSolveWork.head(dof).noalias()
+          = scratch.jointMatrixInverse[i] * scratch.jointWork.head(dof);
+      qddot.segment(seg, dof) = scratch.jointSolveWork.head(dof);
+      scratch.spatial[i].noalias()
+          += link.subspace * scratch.jointSolveWork.head(dof);
+    }
+  }
 }
 
 Eigen::VectorXd applyArticulatedInverseMass(
@@ -1918,7 +2027,8 @@ void applyExactNewtonStepInto(
           = scratch.articulated[i].transpose() * link.subspace; // 6 x dof
       scratch.jointMatrix[i].noalias()
           = link.subspace.transpose() * scratch.forceProjector[i];
-      scratch.jointMatrixInverse[i] = scratch.jointMatrix[i].inverse();
+      invertJointMatrixInto(
+          scratch.jointMatrix[i], scratch.jointMatrixInverse[i]);
       scratch.jointRhs[i] = b.segment(seg, dof);
       scratch.jointWork.head(dof).noalias()
           = link.subspace.transpose() * scratch.bias[i];
@@ -1933,12 +2043,15 @@ void applyExactNewtonStepInto(
         // the motion-side row S_i^T Pi_i (= motionProjector_i^T). For the
         // symmetric mass-matrix limit (D_i -> G_i) this reduces to the standard
         // U D^{-1} U^T of `applyArticulatedInverseMass`.
-        ia.noalias() -= scratch.forceProjector[i]
-                        * scratch.jointMatrixInverse[i]
-                        * (scratch.motionProjector[i].transpose());
+        subtractProjectedInertiaInto(
+            ia,
+            scratch.forceProjector[i],
+            scratch.jointMatrixInverse[i],
+            scratch.motionProjector[i]);
         scratch.jointWork.head(dof).noalias()
             = scratch.jointMatrixInverse[i] * scratch.jointRhs[i];
-        pa.noalias() += scratch.forceProjector[i] * scratch.jointWork.head(dof);
+        addProjectedForceInto(
+            pa, scratch.forceProjector[i], scratch.jointWork.head(dof));
       }
       // Distinct transports: motion parent->child uses the q^{k+1} relative;
       // force child->parent uses the q^k relative (the constant force transport
@@ -2030,6 +2143,11 @@ void reserveConstraintProjectionScratch(
   scratch.constraintMass.resize(rows, rows);
   if (scratch.constraintFactorization.rows() != rows) {
     scratch.constraintFactorization = Eigen::LDLT<Eigen::MatrixXd>(rows);
+    if (rows > 0) {
+      scratch.constraintMass.setIdentity();
+      scratch.constraintFactorization.compute(scratch.constraintMass);
+      scratch.constraintMass.setZero();
+    }
   }
   scratch.lambdaRhs.resize(rows);
   scratch.lambda.resize(rows);
@@ -2041,6 +2159,11 @@ void reserveConstraintProjectionScratch(
   scratch.hardConstraintMass.resize(rows, rows);
   if (scratch.hardConstraintFactorization.rows() != rows) {
     scratch.hardConstraintFactorization = Eigen::LDLT<Eigen::MatrixXd>(rows);
+    if (rows > 0) {
+      scratch.hardConstraintMass.setIdentity();
+      scratch.hardConstraintFactorization.compute(scratch.hardConstraintMass);
+      scratch.hardConstraintMass.setZero();
+    }
   }
   scratch.hardConstraintRhs.resize(rows);
   scratch.hardConstraintLambda.resize(rows);

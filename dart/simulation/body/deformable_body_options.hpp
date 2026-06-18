@@ -111,15 +111,16 @@ struct DeformableMaterialProperties
 
   /// Opt in to the iterative (conjugate-gradient) projected-Newton linear
   /// solve. CG never factorizes the Hessian, so its memory footprint stays near
-  /// O(nnz) and it scales to large meshes; off (the default) uses the sparse
-  /// Cholesky direct solve, which is faster for small/medium meshes. Meshes
-  /// above the direct-solve node cap always use CG regardless of this flag.
+  /// O(nnz) and it scales to large meshes. Off (the default) uses retained
+  /// dense LDLT scratch only below the dense-direct cap; larger systems use CG
+  /// automatically so baked DART 7 step loops avoid sparse-direct heap traffic.
   bool useIterativeLinearSolver = false;
 
   /// Opt in to the matrix-free conjugate-gradient projected-Newton linear
   /// solve. This bypasses sparse Hessian assembly and factorization for the
   /// iterative solve, using Hessian-vector products over the assembled local
-  /// blocks. Off (the default) keeps the existing direct / sparse IC-CG paths.
+  /// blocks. Off (the default) keeps the retained dense direct or assembled
+  /// sparse CG paths.
   bool useMatrixFreeLinearSolver = false;
 };
 

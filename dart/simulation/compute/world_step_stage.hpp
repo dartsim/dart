@@ -142,10 +142,10 @@ struct DeformableSolverStats
   std::size_t selfContactBarrierActiveContacts = 0;
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
-  // Sparse-solve factorization accounting. The symbolic factorization
-  // (fill-reducing ordering) is reused whenever the Hessian sparsity pattern is
-  // unchanged across iterations/steps, so only the numeric factorization
-  // repeats; symbolic < numeric indicates the analysis was amortized.
+  // Sparse-direct factorization accounting retained for diagnostics
+  // compatibility. Built-in DART 7 World steps route systems above the retained
+  // dense-direct cap to iterative CG, so these counters stay zero for the
+  // allocation-safe default path.
   std::size_t projectedNewtonSymbolicFactorizations = 0;
   std::size_t projectedNewtonNumericFactorizations = 0;
   // Maximum compressed sparse Hessian footprint assembled for a
@@ -159,10 +159,10 @@ struct DeformableSolverStats
   std::size_t projectedNewtonHessianStorageBytes = 0;
   // Iterative (conjugate-gradient) linear solves. Counts Newton iterations that
   // took the matrix-light CG path instead of direct factorization -- either
-  // because the mesh exceeds the direct-solve node cap or because the body
-  // opted in via DeformableMaterial.useIterativeLinearSolver. CG never
-  // factorizes, so it scales to far larger meshes; a nonzero value here with
-  // zero sparse numeric factorizations means the whole solve ran iteratively.
+  // because the system exceeds the retained dense-direct cap or because the
+  // body opted in via DeformableMaterial.useIterativeLinearSolver. CG never
+  // factorizes, so a nonzero value here with zero sparse numeric factorizations
+  // means the whole solve ran iteratively.
   std::size_t projectedNewtonIterativeSolves = 0;
   // Iterative solves that used the matrix-free Hessian-vector product path
   // instead of an assembled sparse Hessian. This is a subset of

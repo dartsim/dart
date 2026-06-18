@@ -359,18 +359,42 @@ void computeRowIslandsInto(
 }
 
 //==============================================================================
+void ensureSizeAtLeast(Eigen::VectorXd& vector, Eigen::Index size)
+{
+  if (vector.size() < size) {
+    vector.resize(size);
+  }
+}
+
+//==============================================================================
+void ensureSizeAtLeast(Eigen::VectorXi& vector, Eigen::Index size)
+{
+  if (vector.size() < size) {
+    vector.resize(size);
+  }
+}
+
+//==============================================================================
+void ensureSizeAtLeast(
+    Eigen::MatrixXd& matrix, Eigen::Index rows, Eigen::Index cols)
+{
+  if (matrix.rows() < rows || matrix.cols() < cols) {
+    matrix.resize(std::max(matrix.rows(), rows), std::max(matrix.cols(), cols));
+  }
+}
+
+//==============================================================================
 bool solveBoxedLcpInto(
-    const Eigen::MatrixXd& delassus,
-    const Eigen::VectorXd& rhs,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
-    Eigen::VectorXd& lambda,
+    const Eigen::Ref<const Eigen::MatrixXd>& delassus,
+    const Eigen::Ref<const Eigen::VectorXd>& rhs,
+    const Eigen::Ref<const Eigen::VectorXd>& lo,
+    const Eigen::Ref<const Eigen::VectorXd>& hi,
+    const Eigen::Ref<const Eigen::VectorXi>& findex,
+    Eigen::Ref<Eigen::VectorXd> lambda,
     UnifiedConstraintSolveScratch& scratch)
 {
   const Eigen::Index size = rhs.size();
   if (size == 0) {
-    lambda.resize(0);
     return true;
   }
 
@@ -399,16 +423,23 @@ bool solveUnifiedConstraintIslandInto(
     scratch.localIndex[static_cast<std::size_t>(islandRows[local])] = local;
   }
 
-  scratch.islandDelassus.resize(islandSize, islandSize);
-  scratch.islandRhs.resize(islandSize);
-  scratch.islandLo.resize(islandSize);
-  scratch.islandHi.resize(islandSize);
-  scratch.islandFindex.setConstant(islandSize, -1);
+  ensureSizeAtLeast(scratch.islandDelassus, islandSize, islandSize);
+  ensureSizeAtLeast(scratch.islandRhs, islandSize);
+  ensureSizeAtLeast(scratch.islandLo, islandSize);
+  ensureSizeAtLeast(scratch.islandHi, islandSize);
+  ensureSizeAtLeast(scratch.islandFindex, islandSize);
+  auto islandDelassus
+      = scratch.islandDelassus.topLeftCorner(islandSize, islandSize);
+  auto islandRhs = scratch.islandRhs.head(islandSize);
+  auto islandLo = scratch.islandLo.head(islandSize);
+  auto islandHi = scratch.islandHi.head(islandSize);
+  auto islandFindex = scratch.islandFindex.head(islandSize);
+  islandFindex.setConstant(-1);
   for (Eigen::Index row = 0; row < islandSize; ++row) {
     const Eigen::Index globalRow = islandRows[row];
-    scratch.islandRhs[row] = problem.rhs[globalRow];
-    scratch.islandLo[row] = problem.lo[globalRow];
-    scratch.islandHi[row] = problem.hi[globalRow];
+    islandRhs[row] = problem.rhs[globalRow];
+    islandLo[row] = problem.lo[globalRow];
+    islandHi[row] = problem.hi[globalRow];
     const Eigen::Index globalFindex = problem.findex[globalRow];
     if (globalFindex >= 0) {
       if (globalFindex >= size) {
@@ -419,46 +450,50 @@ bool solveUnifiedConstraintIslandInto(
       if (remapped < 0) {
         return false;
       }
-      scratch.islandFindex[row] = static_cast<int>(remapped);
+      islandFindex[row] = static_cast<int>(remapped);
     }
     for (Eigen::Index col = 0; col < islandSize; ++col) {
-      scratch.islandDelassus(row, col)
-          = problem.delassus(globalRow, islandRows[col]);
+      islandDelassus(row, col) = problem.delassus(globalRow, islandRows[col]);
     }
   }
 
+  ensureSizeAtLeast(scratch.islandLambda, islandSize);
+  auto islandLambda = scratch.islandLambda.head(islandSize);
   const bool islandSucceeded = solveBoxedLcpInto(
-      scratch.islandDelassus,
-      scratch.islandRhs,
-      scratch.islandLo,
-      scratch.islandHi,
-      scratch.islandFindex,
-      scratch.islandLambda,
+      islandDelassus,
+      islandRhs,
+      islandLo,
+      islandHi,
+      islandFindex,
+      islandLambda,
       scratch);
   if (!islandSucceeded) {
     return false;
   }
   for (Eigen::Index local = 0; local < islandSize; ++local) {
-    globalLambda[islandRows[local]] = scratch.islandLambda[local];
+    globalLambda[islandRows[local]] = islandLambda[local];
   }
   return true;
 }
 
 //==============================================================================
-void setScaledVector(
+Eigen::Index setScaledVector(
     Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
 {
-  target.resize(source.size());
+  if (target.size() < source.size()) {
+    target.resize(source.size());
+  }
   for (Eigen::Index i = 0; i < source.size(); ++i) {
     target[i] = scale * source[i];
   }
+  return source.size();
 }
 
 //==============================================================================
 void addScaledVector(
     Eigen::VectorXd& target, const Eigen::VectorXd& source, double scale)
 {
-  DART_ASSERT(target.size() == source.size());
+  DART_ASSERT(target.size() >= source.size());
   for (Eigen::Index i = 0; i < source.size(); ++i) {
     target[i] += scale * source[i];
   }
@@ -468,22 +503,28 @@ void addScaledVector(
 void addJointSpaceImpulse(
     const Eigen::MatrixXd& inverseMass,
     const Eigen::VectorXd& generalizedImpulse,
+    Eigen::Index generalizedImpulseSize,
     Eigen::VectorXd& velocity,
     UnifiedConstraintSolveScratch& scratch,
     double sign)
 {
   DART_ASSERT(inverseMass.rows() == velocity.size());
-  DART_ASSERT(inverseMass.cols() == generalizedImpulse.size());
+  DART_ASSERT(inverseMass.cols() == generalizedImpulseSize);
+  DART_ASSERT(generalizedImpulse.size() >= generalizedImpulseSize);
 
-  scratch.velocityDelta.resize(inverseMass.rows());
-  scratch.velocityDelta.noalias() = inverseMass * generalizedImpulse;
+  if (scratch.velocityDelta.size() < inverseMass.rows()) {
+    scratch.velocityDelta.resize(inverseMass.rows());
+  }
+  auto velocityDelta = scratch.velocityDelta.head(inverseMass.rows());
+  velocityDelta.noalias()
+      = inverseMass * generalizedImpulse.head(generalizedImpulseSize);
   for (Eigen::Index i = 0; i < velocity.size(); ++i) {
-    velocity[i] += sign * scratch.velocityDelta[i];
+    velocity[i] += sign * velocityDelta[i];
   }
 }
 
 //==============================================================================
-void setContactImpulse(
+Eigen::Index setContactImpulse(
     UnifiedConstraintSolveScratch& scratch,
     const Eigen::VectorXd& normalJacobian,
     double normalImpulse,
@@ -492,11 +533,13 @@ void setContactImpulse(
     const Eigen::VectorXd& tangentJacobian2,
     double tangentImpulse2)
 {
-  setScaledVector(scratch.generalizedImpulse, normalJacobian, normalImpulse);
+  const Eigen::Index activeSize = setScaledVector(
+      scratch.generalizedImpulse, normalJacobian, normalImpulse);
   addScaledVector(
       scratch.generalizedImpulse, tangentJacobian1, tangentImpulse1);
   addScaledVector(
       scratch.generalizedImpulse, tangentJacobian2, tangentImpulse2);
+  return activeSize;
 }
 
 } // namespace
@@ -816,7 +859,7 @@ UnifiedConstraintSolution solveUnifiedConstraintProblem(
   UnifiedConstraintSolveScratch scratch;
   UnifiedConstraintSolution solution;
   solution.succeeded = solveUnifiedConstraintProblemInto(problem, scratch);
-  solution.lambda = std::move(scratch.lambda);
+  solution.lambda = scratch.lambda.head(problem.rhs.size());
   return solution;
 }
 
@@ -863,17 +906,20 @@ bool solveUnifiedConstraintProblemInto(
       && static_cast<Eigen::Index>(
              scratch.islandOffsets[1] - scratch.islandOffsets[0])
              == size) {
+    ensureSizeAtLeast(scratch.lambda, size);
+    auto lambda = scratch.lambda.head(size);
     return solveBoxedLcpInto(
         problem.delassus,
         problem.rhs,
         problem.lo,
         problem.hi,
         problem.findex,
-        scratch.lambda,
+        lambda,
         scratch);
   }
 
-  scratch.lambda.setZero(size);
+  ensureSizeAtLeast(scratch.lambda, size);
+  scratch.lambda.head(size).setZero();
   if (executor != nullptr && executor->getWorkerCount() > 1u
       && islandCount > 1u) {
     std::vector<char> islandSucceeded(islandCount, 1);
@@ -928,7 +974,7 @@ bool solveUnifiedConstraintProblemInto(
     UnifiedConstraintSolveScratch& scratch)
 {
   solution.succeeded = solveUnifiedConstraintProblemInto(problem, scratch);
-  solution.lambda = scratch.lambda;
+  solution.lambda = scratch.lambda.head(problem.rhs.size());
   return solution.succeeded;
 }
 
@@ -990,7 +1036,7 @@ void applyUnifiedConstraintImpulses(
       const double tangentImpulse1 = lambda[normalRow + 1];
       const double tangentImpulse2 = lambda[normalRow + 2];
 
-      setContactImpulse(
+      const Eigen::Index impulseSize = setContactImpulse(
           scratch,
           row.normalJacobian,
           normalImpulse,
@@ -1001,6 +1047,7 @@ void applyUnifiedConstraintImpulses(
       addJointSpaceImpulse(
           block.inverseMass,
           scratch.generalizedImpulse,
+          impulseSize,
           velocity,
           scratch,
           1.0);
@@ -1012,7 +1059,7 @@ void applyUnifiedConstraintImpulses(
         Eigen::VectorXd& otherVelocity
             = multibodyVelocities[static_cast<std::size_t>(
                 row.otherMultibodyIndex)];
-        setContactImpulse(
+        const Eigen::Index otherImpulseSize = setContactImpulse(
             scratch,
             row.otherNormalJacobian,
             normalImpulse,
@@ -1023,6 +1070,7 @@ void applyUnifiedConstraintImpulses(
         addJointSpaceImpulse(
             otherBlock.inverseMass,
             scratch.generalizedImpulse,
+            otherImpulseSize,
             otherVelocity,
             scratch,
             -1.0);
@@ -1064,48 +1112,56 @@ void primeUnifiedConstraintFallbackScratch(
   }
   const auto normalCount = static_cast<Eigen::Index>(normalRows.size());
 
-  scratch.normalLambda.setZero(normalCount);
+  ensureSizeAtLeast(scratch.normalLambda, normalCount);
+  auto normalLambda = scratch.normalLambda.head(normalCount);
+  normalLambda.setZero();
   if (normalCount > 0) {
-    scratch.normalA.resize(normalCount, normalCount);
-    scratch.normalB.resize(normalCount);
+    ensureSizeAtLeast(scratch.normalA, normalCount, normalCount);
+    ensureSizeAtLeast(scratch.normalB, normalCount);
+    ensureSizeAtLeast(scratch.normalLo, normalCount);
+    ensureSizeAtLeast(scratch.normalHi, normalCount);
+    ensureSizeAtLeast(scratch.normalFindex, normalCount);
+    auto normalA = scratch.normalA.topLeftCorner(normalCount, normalCount);
+    auto normalB = scratch.normalB.head(normalCount);
+    auto normalLo = scratch.normalLo.head(normalCount);
+    auto normalHi = scratch.normalHi.head(normalCount);
+    auto normalFindex = scratch.normalFindex.head(normalCount);
     for (Eigen::Index a = 0; a < normalCount; ++a) {
-      scratch.normalB[a] = problem.rhs[normalRows[static_cast<std::size_t>(a)]];
+      normalB[a] = problem.rhs[normalRows[static_cast<std::size_t>(a)]];
       for (Eigen::Index b = 0; b < normalCount; ++b) {
-        scratch.normalA(a, b) = problem.delassus(
+        normalA(a, b) = problem.delassus(
             normalRows[static_cast<std::size_t>(a)],
             normalRows[static_cast<std::size_t>(b)]);
       }
     }
-    scratch.normalLo.setZero(normalCount);
-    scratch.normalHi.setConstant(
-        normalCount, std::numeric_limits<double>::infinity());
-    scratch.normalFindex.setConstant(normalCount, -1);
+    normalLo.setZero();
+    normalHi.setConstant(std::numeric_limits<double>::infinity());
+    normalFindex.setConstant(-1);
     math::LcpOptions options = scratch.solver.getDefaultOptions();
     options.earlyTermination = true;
     const auto result = scratch.solver.solve(
-        scratch.normalA,
-        scratch.normalB,
-        scratch.normalLo,
-        scratch.normalHi,
-        scratch.normalFindex,
-        scratch.normalLambda,
+        normalA,
+        normalB,
+        normalLo,
+        normalHi,
+        normalFindex,
+        normalLambda,
         scratch.dantzig,
         options);
-    if (!result.succeeded() || scratch.normalLambda.size() != normalCount) {
-      scratch.normalLambda.resize(normalCount);
+    if (!result.succeeded() || normalLambda.size() != normalCount) {
       for (Eigen::Index a = 0; a < normalCount; ++a) {
-        const double diagonal = scratch.normalA(a, a);
-        scratch.normalLambda[a]
-            = diagonal > 0.0 ? std::max(0.0, scratch.normalB[a] / diagonal)
-                             : 0.0;
+        const double diagonal = normalA(a, a);
+        normalLambda[a]
+            = diagonal > 0.0 ? std::max(0.0, normalB[a] / diagonal) : 0.0;
       }
     }
   }
 
-  scratch.lambda.setZero(size);
+  ensureSizeAtLeast(scratch.lambda, size);
+  scratch.lambda.head(size).setZero();
   for (Eigen::Index a = 0; a < normalCount; ++a) {
     scratch.lambda[normalRows[static_cast<std::size_t>(a)]]
-        = std::max(0.0, scratch.normalLambda[a]);
+        = std::max(0.0, normalLambda[a]);
   }
 
   const auto rigidContactCount = problem.rigidConstraints.size();
@@ -1124,8 +1180,8 @@ void primeUnifiedConstraintFallbackScratch(
   scratch.linkTangentOffsets[problem.multibodyBlocks.size()] = totalLinkRows;
   scratch.linkTangent1.assign(totalLinkRows, 0.0);
   scratch.linkTangent2.assign(totalLinkRows, 0.0);
-  scratch.generalizedImpulse.resize(maxJointDofs);
-  scratch.velocityDelta.resize(maxJointDofs);
+  ensureSizeAtLeast(scratch.generalizedImpulse, maxJointDofs);
+  ensureSizeAtLeast(scratch.velocityDelta, maxJointDofs);
 }
 
 //==============================================================================
@@ -1158,7 +1214,7 @@ void applyUnifiedConstraintFallback(
 
   // 1. Apply the solved normal impulses to both domains (friction rows zero).
   applyUnifiedConstraintImpulses(
-      registry, problem, scratch.lambda, multibodyVelocities);
+      registry, problem, scratch.lambda, multibodyVelocities, scratch);
 
   // 2. Sequential Coulomb friction sweep bounded by each contact's solved
   // normal impulse, over rigid contacts then link contacts (ascending global
@@ -1217,19 +1273,27 @@ void applyUnifiedConstraintFallback(
         accumulated - tangentVelocity / tangentDenominator, -limit, limit);
     const double delta = newImpulse - accumulated;
     accumulated = newImpulse;
-    setScaledVector(scratch.generalizedImpulse, tangentJacobian, delta);
+    const Eigen::Index impulseSize
+        = setScaledVector(scratch.generalizedImpulse, tangentJacobian, delta);
     addJointSpaceImpulse(
-        block.inverseMass, scratch.generalizedImpulse, velocity, scratch, 1.0);
+        block.inverseMass,
+        scratch.generalizedImpulse,
+        impulseSize,
+        velocity,
+        scratch,
+        1.0);
     if (row.otherMultibodyIndex >= 0) {
       const auto& otherBlock = problem.multibodyBlocks[static_cast<std::size_t>(
           row.otherMultibodyIndex)];
       Eigen::VectorXd& otherVelocity
           = multibodyVelocities[static_cast<std::size_t>(
               row.otherMultibodyIndex)];
-      setScaledVector(scratch.generalizedImpulse, otherTangentJacobian, delta);
+      const Eigen::Index otherImpulseSize = setScaledVector(
+          scratch.generalizedImpulse, otherTangentJacobian, delta);
       addJointSpaceImpulse(
           otherBlock.inverseMass,
           scratch.generalizedImpulse,
+          otherImpulseSize,
           otherVelocity,
           scratch,
           -1.0);
