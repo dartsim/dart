@@ -333,7 +333,6 @@ struct VarTree
   VarLinkVector links;
   dart::common::MemoryAllocator* allocator = nullptr;
   std::size_t dofCount = 0;
-  Eigen::VectorXd armature;
 };
 
 LinkIndexMap makeLinkIndexMap(dart::common::MemoryAllocator& allocator)
@@ -496,18 +495,6 @@ void buildVarTreeInto(
           * link.currentRelative;
     tree.links[static_cast<std::size_t>(link.parent)].children.push_back(
         static_cast<int>(i));
-  }
-
-  tree.armature.resize(static_cast<Eigen::Index>(tree.dofCount));
-  tree.armature.setZero();
-  for (const auto& link : tree.links) {
-    if (link.dof == 0) {
-      continue;
-    }
-    const auto& jointModel = registry.get<comps::JointModel>(link.joint);
-    if (jointModel.armature.size() == static_cast<Eigen::Index>(link.dof)) {
-      tree.armature.segment(link.dofOffset, link.dof) = jointModel.armature;
-    }
   }
 }
 
@@ -1805,10 +1792,14 @@ void applyArticulatedInverseMassInto(
         link.parent >= 0 ? adjoint(link.currentRelative.inverse())
                          : Matrix6::Identity()};
   };
+  // The forced-DEL residual/Jacobian currently model link spatial inertia only.
+  // Keep this variational preconditioner/projection helper armature-free until
+  // the residual carries matching joint-armature terms.
+  static const Eigen::VectorXd emptyArmature;
   detail::applyArticulatedInverseMassInto(
       tree.links.size(),
       tree.dofCount,
-      tree.armature,
+      emptyArmature,
       b,
       linkAt,
       scratch,

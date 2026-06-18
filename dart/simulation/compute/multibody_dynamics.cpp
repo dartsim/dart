@@ -1487,19 +1487,6 @@ bool prepareMultibodyContactDynamicsInto(
     return true;
   }
 
-  computeMassAndBiasInto(
-      linkSpan(scratch.tree),
-      scratch.tree.dofCount,
-      Eigen::Vector3d::Zero(),
-      nextVelocity,
-      scratch.tree.armature,
-      scratch.massAndBias,
-      scratch.zero,
-      scratch.unitAcceleration,
-      scratch.rneaResponse,
-      scratch.rneaVelocity,
-      scratch.rneaAcceleration,
-      scratch.rneaForce);
   inverseMassMatrixColumnsInto(scratch.tree, scratch, problem.inverseMass);
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
