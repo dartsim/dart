@@ -1429,14 +1429,6 @@ WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
 }
 
 //==============================================================================
-void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
-{
-  compute::WorldKinematicsGraph graph(
-      world, world.getMemoryManager().getFreeAllocator());
-  graph.execute(executor);
-}
-
-//==============================================================================
 bool isValidWorldSyncStage(WorldSyncStage stage)
 {
   switch (stage) {
@@ -6441,7 +6433,7 @@ void World::sync(WorldSyncStage stage, compute::ComputeExecutor& executor)
   switch (stage) {
     case WorldSyncStage::Kinematics:
       validateLoopClosureKinematicsPolicySupport(*this);
-      executeKinematicsGraph(*this, executor);
+      m_stepPipelineCache->stages.kinematics.execute(*this, executor);
       return;
   }
 }

@@ -37,6 +37,7 @@
 #include <dart/simulation/compute/cuda/device_buffer.cuh>
 #include <dart/simulation/compute/cuda/rigid_body_state_batch_cuda.cuh>
 
+#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -135,7 +136,309 @@ void throwIfCudaRuntimeUnavailable()
       "CUDA runtime has no available device");
 }
 
+std::size_t validateModelInputs(
+    const RigidBodyModelBatch& model, std::string_view operation)
+{
+  const auto bodies = model.worldCount * model.bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      model.inverseMass.size() != bodies,
+      sx::InvalidArgumentException,
+      "{} inverse-mass array has size {}, expected {} "
+      "(worldCount {}, bodyCount {})",
+      operation,
+      model.inverseMass.size(),
+      bodies,
+      model.worldCount,
+      model.bodyCount);
+  return bodies;
+}
+
+std::size_t validateStateInputs(
+    const RigidBodyStateBatch& state, std::string_view operation)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      state.position.size() != kLinearComponents * bodies
+          || state.linearVelocity.size() != kLinearComponents * bodies
+          || state.orientation.size() != kOrientationComponents * bodies
+          || state.angularVelocity.size() != kLinearComponents * bodies,
+      sx::InvalidArgumentException,
+      "{} arrays are inconsistent with worldCount {} and bodyCount {}",
+      operation,
+      state.worldCount,
+      state.bodyCount);
+  return bodies;
+}
+
+void validateResidentShapeMatches(
+    const RigidBodyModelBatch& model,
+    std::size_t worldCount,
+    std::size_t bodyCount,
+    std::string_view operation)
+{
+  DART_SIMULATION_THROW_T_IF(
+      model.worldCount != worldCount || model.bodyCount != bodyCount,
+      sx::InvalidArgumentException,
+      "{} shape ({}x{}) does not match resident Model shape ({}x{})",
+      operation,
+      worldCount,
+      bodyCount,
+      model.worldCount,
+      model.bodyCount);
+}
+
+void validateControlInputs(
+    const std::vector<double>& force,
+    std::size_t worldCount,
+    std::size_t bodyCount,
+    std::string_view operation)
+{
+  const auto bodies = worldCount * bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      force.size() != kLinearComponents * bodies,
+      sx::InvalidArgumentException,
+      "{} force array has size {}, expected {} "
+      "(worldCount {}, bodyCount {})",
+      operation,
+      force.size(),
+      kLinearComponents * bodies,
+      worldCount,
+      bodyCount);
+}
+
 } // namespace
+
+struct ResidentRigidBodyBatchCuda::Impl
+{
+  void clear() noexcept
+  {
+    devicePosition.release();
+    deviceLinearVelocity.release();
+    deviceOrientation.release();
+    deviceAngularVelocity.release();
+    deviceForce.release();
+    deviceInverseMass.release();
+    model = RigidBodyModelBatch{};
+    diagnostics = ResidentRigidBodyBatchCudaDiagnostics{};
+    modelUploaded = false;
+    stateUploaded = false;
+    controlUploaded = false;
+  }
+
+  [[nodiscard]] std::size_t bodies() const noexcept
+  {
+    return model.worldCount * model.bodyCount;
+  }
+
+  RigidBodyModelBatch model;
+  DeviceBuffer<double> devicePosition;
+  DeviceBuffer<double> deviceLinearVelocity;
+  DeviceBuffer<double> deviceOrientation;
+  DeviceBuffer<double> deviceAngularVelocity;
+  DeviceBuffer<double> deviceForce;
+  DeviceBuffer<double> deviceInverseMass;
+  ResidentRigidBodyBatchCudaDiagnostics diagnostics;
+  bool modelUploaded = false;
+  bool stateUploaded = false;
+  bool controlUploaded = false;
+};
+
+//==============================================================================
+ResidentRigidBodyBatchCuda::ResidentRigidBodyBatchCuda()
+  : m_impl(std::make_unique<Impl>())
+{
+  // Default construction intentionally leaves all residency boundaries empty.
+}
+
+//==============================================================================
+ResidentRigidBodyBatchCuda::~ResidentRigidBodyBatchCuda() = default;
+
+//==============================================================================
+ResidentRigidBodyBatchCuda::ResidentRigidBodyBatchCuda(
+    ResidentRigidBodyBatchCuda&&) noexcept = default;
+
+//==============================================================================
+ResidentRigidBodyBatchCuda& ResidentRigidBodyBatchCuda::operator=(
+    ResidentRigidBodyBatchCuda&&) noexcept = default;
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::clear()
+{
+  m_impl->clear();
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::uploadModel(const RigidBodyModelBatch& model)
+{
+  const auto bodies = validateModelInputs(model, "ResidentRigidBodyBatchCuda");
+  if (bodies > 0) {
+    throwIfCudaRuntimeUnavailable();
+  }
+
+  m_impl->modelUploaded = false;
+  m_impl->stateUploaded = false;
+  m_impl->controlUploaded = false;
+  m_impl->diagnostics.deviceStateValid = false;
+  m_impl->diagnostics.hostStateCoherent = false;
+  m_impl->deviceInverseMass.ensure(model.inverseMass.size());
+  m_impl->deviceInverseMass.copyToDevice(
+      model.inverseMass, "resident rigid-body inverse mass upload");
+  m_impl->model = model;
+  m_impl->modelUploaded = true;
+  ++m_impl->diagnostics.modelUploadCount;
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::uploadState(const RigidBodyStateBatch& state)
+{
+  const auto bodies = validateStateInputs(state, "ResidentRigidBodyBatchCuda");
+  DART_SIMULATION_THROW_T_IF(
+      !m_impl->modelUploaded,
+      sx::InvalidOperationException,
+      "ResidentRigidBodyBatchCuda requires uploadModel() before uploadState()");
+  validateResidentShapeMatches(
+      m_impl->model,
+      state.worldCount,
+      state.bodyCount,
+      "ResidentRigidBodyBatchCuda state upload");
+  if (bodies > 0) {
+    throwIfCudaRuntimeUnavailable();
+  }
+
+  m_impl->stateUploaded = false;
+  m_impl->diagnostics.deviceStateValid = false;
+  m_impl->diagnostics.hostStateCoherent = false;
+  m_impl->devicePosition.ensure(state.position.size());
+  m_impl->deviceLinearVelocity.ensure(state.linearVelocity.size());
+  m_impl->deviceOrientation.ensure(state.orientation.size());
+  m_impl->deviceAngularVelocity.ensure(state.angularVelocity.size());
+  m_impl->devicePosition.copyToDevice(
+      state.position, "resident rigid-body position upload");
+  m_impl->deviceLinearVelocity.copyToDevice(
+      state.linearVelocity, "resident rigid-body linear velocity upload");
+  m_impl->deviceOrientation.copyToDevice(
+      state.orientation, "resident rigid-body orientation upload");
+  m_impl->deviceAngularVelocity.copyToDevice(
+      state.angularVelocity, "resident rigid-body angular velocity upload");
+  m_impl->stateUploaded = true;
+  m_impl->diagnostics.deviceStateValid = true;
+  m_impl->diagnostics.hostStateCoherent = true;
+  ++m_impl->diagnostics.stateUploadCount;
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::uploadControl(const std::vector<double>& force)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_impl->modelUploaded,
+      sx::InvalidOperationException,
+      "ResidentRigidBodyBatchCuda requires uploadModel() before "
+      "uploadControl()");
+  validateControlInputs(
+      force,
+      m_impl->model.worldCount,
+      m_impl->model.bodyCount,
+      "ResidentRigidBodyBatchCuda control upload");
+  if (!force.empty()) {
+    throwIfCudaRuntimeUnavailable();
+  }
+
+  m_impl->controlUploaded = false;
+  m_impl->deviceForce.ensure(force.size());
+  m_impl->deviceForce.copyToDevice(force, "resident rigid-body force upload");
+  m_impl->controlUploaded = true;
+  ++m_impl->diagnostics.controlUploadCount;
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::step(double timeStep)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_impl->modelUploaded || !m_impl->stateUploaded
+          || !m_impl->controlUploaded,
+      sx::InvalidOperationException,
+      "ResidentRigidBodyBatchCuda requires uploaded Model, State, and Control "
+      "before step()");
+  const auto bodies = m_impl->bodies();
+  if (bodies == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+  m_impl->diagnostics.hostStateCoherent = false;
+  m_impl->diagnostics.deviceStateValid = false;
+  throwIfCudaError(
+      detail::launchRigidBodyStateBatchKernel(
+          m_impl->devicePosition.data(),
+          m_impl->deviceLinearVelocity.data(),
+          m_impl->deviceOrientation.data(),
+          m_impl->deviceAngularVelocity.data(),
+          m_impl->deviceForce.data(),
+          m_impl->deviceInverseMass.data(),
+          timeStep,
+          bodies),
+      "resident rigid-body full kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "resident rigid-body full synchronize");
+  m_impl->diagnostics.deviceStateValid = true;
+  ++m_impl->diagnostics.stepCount;
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::downloadState(RigidBodyStateBatch& state)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !m_impl->stateUploaded || !m_impl->diagnostics.deviceStateValid,
+      sx::InvalidOperationException,
+      "ResidentRigidBodyBatchCuda has no resident State to download");
+  const auto bodies = m_impl->bodies();
+  if (bodies > 0) {
+    throwIfCudaRuntimeUnavailable();
+  }
+
+  state.worldCount = m_impl->model.worldCount;
+  state.bodyCount = m_impl->model.bodyCount;
+  state.position.resize(kLinearComponents * bodies);
+  state.linearVelocity.resize(kLinearComponents * bodies);
+  state.orientation.resize(kOrientationComponents * bodies);
+  state.angularVelocity.resize(kLinearComponents * bodies);
+  m_impl->devicePosition.copyFromDevice(
+      state.position, "resident rigid-body position download");
+  m_impl->deviceLinearVelocity.copyFromDevice(
+      state.linearVelocity, "resident rigid-body linear velocity download");
+  m_impl->deviceOrientation.copyFromDevice(
+      state.orientation, "resident rigid-body orientation download");
+  m_impl->deviceAngularVelocity.copyFromDevice(
+      state.angularVelocity, "resident rigid-body angular velocity download");
+  m_impl->diagnostics.hostStateCoherent = true;
+  ++m_impl->diagnostics.stateDownloadCount;
+}
+
+//==============================================================================
+void ResidentRigidBodyBatchCuda::requireCoherentStateForHostFallback(
+    std::string_view operation) const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !canFallbackToHost(),
+      sx::InvalidOperationException,
+      "{} requires host-coherent rigid-batch State; call downloadState() at an "
+      "explicit synchronization boundary before falling back to the host",
+      operation);
+}
+
+//==============================================================================
+bool ResidentRigidBodyBatchCuda::canFallbackToHost() const noexcept
+{
+  return m_impl->diagnostics.deviceStateValid
+         && m_impl->diagnostics.hostStateCoherent;
+}
+
+//==============================================================================
+ResidentRigidBodyBatchCudaDiagnostics ResidentRigidBodyBatchCuda::diagnostics()
+    const noexcept
+{
+  return m_impl->diagnostics;
+}
 
 //==============================================================================
 void integrateRigidBodyStateBatchLinearCuda(

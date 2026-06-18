@@ -28,12 +28,12 @@ its own line so status updates remain git-history friendly.
   via PR #3042; and WP-091.21 (baked dense-index Model artifact) is `[done]`
   via PR #3044; WP-091.31 (per-World accelerator policy), WP-091.33b (baked
   rigid Model/State owner), and WP-091.33c (Control-sequence rollout shape) are
-  `[done]` via PR #3052. The remaining WS0 packet is WP-091.4 legacy freeze,
+  `[done]` via PR #3052; and WP-091.32 (O(n) shared articulated core) is
+  `[done]` via PR #3058. The remaining WS0 packet is WP-091.4 legacy freeze,
   which stays **blocked**: PLAN-042 Decision 5 has no recorded maintainer
-  direction. The next unblocked PLAN-091 work is the available WS2/WS3 packet
-  set, with WP-091.32 (O(n) shared articulated core) first in document order
-  and WP-091.33d (resident device owner) available after the accepted
-  WP-091.31/WP-091.33c dependency chain. Packets are orchestrator-authored per
+  direction. The current in-progress PLAN-091 work is WP-091.34 (graph
+  granularity policy), available after WP-091.30.
+  Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
   line. The standing rule applies now: new solver-family work routes through
