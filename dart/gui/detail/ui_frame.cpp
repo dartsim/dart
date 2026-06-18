@@ -57,6 +57,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <optional>
 #include <span>
 #include <string>
@@ -71,6 +72,9 @@ namespace {
 
 constexpr std::size_t kMaxDebugLabels = 96u;
 constexpr double kPi = 3.14159265358979323846;
+#ifdef IMGUI_HAS_DOCK
+constexpr char kDockSignatureSeparator = '\x1f';
+#endif
 
 std::optional<ImVec2> projectDebugLabel(
     const FrameViewport& viewport, const Eigen::Vector3d& position)
@@ -324,7 +328,7 @@ bool hasDefaultDockSide(const dart::gui::Panel& panel)
 std::string defaultDockSignature(const dart::gui::Panel& panel)
 {
   std::string signature = panel.title;
-  signature.push_back('\x1f');
+  signature.push_back(kDockSignatureSeparator);
   signature += std::to_string(static_cast<int>(panel.dockSide));
   return signature;
 }
@@ -347,6 +351,66 @@ bool containsSignature(
     const std::vector<std::string>& signatures, const std::string& value)
 {
   return std::binary_search(signatures.begin(), signatures.end(), value);
+}
+
+std::string_view dockTitleFromSignature(const std::string& signature)
+{
+  const std::size_t separator = signature.rfind(kDockSignatureSeparator);
+  if (separator == std::string::npos) {
+    return {};
+  }
+  return std::string_view(signature.data(), separator);
+}
+
+std::optional<dart::gui::DockSide> dockSideFromSignature(
+    const std::string& signature)
+{
+  const std::size_t separator = signature.rfind(kDockSignatureSeparator);
+  if (separator == std::string::npos || separator + 1u >= signature.size()) {
+    return std::nullopt;
+  }
+
+  int value = 0;
+  const char* const begin = signature.data() + separator + 1u;
+  const char* const end = signature.data() + signature.size();
+  const auto [cursor, error] = std::from_chars(begin, end, value);
+  if (error != std::errc{} || cursor != end) {
+    return std::nullopt;
+  }
+
+  const auto side = static_cast<dart::gui::DockSide>(value);
+  switch (side) {
+    case dart::gui::DockSide::None:
+    case dart::gui::DockSide::Left:
+    case dart::gui::DockSide::Right:
+    case dart::gui::DockSide::Top:
+    case dart::gui::DockSide::Bottom:
+    case dart::gui::DockSide::Center:
+      return side;
+  }
+  return std::nullopt;
+}
+
+ImGuiID findDockTargetForPreviousSide(
+    const std::vector<std::string>& previousSignature, dart::gui::DockSide side)
+{
+  for (const auto& signature : previousSignature) {
+    if (dockSideFromSignature(signature) != side) {
+      continue;
+    }
+
+    const std::string_view title = dockTitleFromSignature(signature);
+    if (title.empty()) {
+      continue;
+    }
+
+    const std::string titleValue(title);
+    ImGuiWindow* window = ImGui::FindWindowByName(titleValue.c_str());
+    if (window != nullptr && window->DockNode != nullptr) {
+      return window->DockNode->ID;
+    }
+  }
+  return 0;
 }
 
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
@@ -523,7 +587,11 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
 
     const ImGuiID target
         = findExistingDockTargetForSide(panels, panel.dockSide, panel.title);
-    if (target == 0) {
+    const ImGuiID previousTarget = target != 0
+                                       ? target
+                                       : findDockTargetForPreviousSide(
+                                             previousSignature, panel.dockSide);
+    if (previousTarget == 0) {
       // A new side appeared and there is no existing dock node to join. Fall
       // back to the default builder so the new panel is still docked instead of
       // floating over the viewport.
@@ -531,7 +599,7 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
       return initialFocusPanelsForDefaultDockLayout(panels);
     }
 
-    ImGui::DockBuilderDockWindow(panel.title.c_str(), target);
+    ImGui::DockBuilderDockWindow(panel.title.c_str(), previousTarget);
     focusedTitles.push_back(panel.title);
   }
   return focusedTitles;
