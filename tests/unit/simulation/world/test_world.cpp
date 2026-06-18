@@ -10370,9 +10370,15 @@ void expectInjectedPostBakeAllocationRejectedByGlobalHeapGate()
 
 TEST(World, FirstPostBakeGlobalHeapGateFailsOnInjectedAllocation)
 {
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The injected allocation gate depends on the global heap counter, "
+         "which is disabled under coverage instrumentation.";
+#else
   EXPECT_NONFATAL_FAILURE(
       expectInjectedPostBakeAllocationRejectedByGlobalHeapGate(),
       "global heap bytes allocated during first post-bake steps");
+#endif
 }
 
 TEST(World, IpcSemiImplicitMultibodyStepUsesForwardDynamicsStage)
