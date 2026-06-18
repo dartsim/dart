@@ -145,6 +145,7 @@ compatibility remains on the active DART 6 LTS branch._
   boxed-LCP contact baseline at runtime, while realtime py-demos workflow rows
   stay on the Sequential Impulse rigid-body path and route SI-vs-IPC inspection
   to the dedicated solver-comparison scenes.
+  ([#3063](https://github.com/dartsim/dart/pull/3063))
 
 #### Collision and Geometry
 
