@@ -142,10 +142,11 @@ head-to-head** on a single scenario:
 
 So the M1 flagship is **two complementary showcases**, both reference-grade:
 
-1. **Contact-solver comparison** — SI / IPC / BoxedLcp on a contact-rich rigid
-   scene (BoxedLcp = the DART 6 trust baseline). First increment: the flagship
-   `rigid_body` scene exposes `contact_solver_method` alongside its existing
-   `rigid_body_solver` (SI/IPC) dropdown.
+1. **Contact-solver comparison** — SI / IPC / BoxedLcp on contact-rich rigid
+   scenes (BoxedLcp = the DART 6 trust baseline). First increment: the flagship
+   `rigid_body` scene exposes `contact_solver_method` while keeping its
+   rigid-body solver fixed to the realtime Sequential Impulse path; the
+   dedicated `rigid_solver_compare` scene owns SI-vs-IPC visual inspection.
 2. **AVBD constraint showcase** — joints / motors / breakable constraints solved
    by AVBD (the modern differentiator), curated from the `avbd_*` scenes.
 

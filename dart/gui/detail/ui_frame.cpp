@@ -316,6 +316,39 @@ void clearDockNodeResizeLocks(ImGuiID dockId)
   }
 }
 
+bool hasDefaultDockSide(const dart::gui::Panel& panel)
+{
+  return !panel.title.empty() && panel.dockSide != dart::gui::DockSide::None;
+}
+
+std::string defaultDockSignature(const dart::gui::Panel& panel)
+{
+  std::string signature = panel.title;
+  signature.push_back('\x1f');
+  signature += std::to_string(static_cast<int>(panel.dockSide));
+  return signature;
+}
+
+std::vector<std::string> defaultDockLayoutSignature(
+    const std::vector<dart::gui::Panel>& panels)
+{
+  std::vector<std::string> signature;
+  signature.reserve(panels.size());
+  for (const auto& panel : panels) {
+    if (hasDefaultDockSide(panel)) {
+      signature.push_back(defaultDockSignature(panel));
+    }
+  }
+  std::sort(signature.begin(), signature.end());
+  return signature;
+}
+
+bool containsSignature(
+    const std::vector<std::string>& signatures, const std::string& value)
+{
+  return std::binary_search(signatures.begin(), signatures.end(), value);
+}
+
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
@@ -455,6 +488,56 @@ void buildDefaultDockLayout(
 }
 
 std::vector<std::string_view> initialFocusPanelsForDefaultDockLayout(
+    const std::vector<dart::gui::Panel>& panels);
+
+ImGuiID findExistingDockTargetForSide(
+    const std::vector<dart::gui::Panel>& panels,
+    dart::gui::DockSide side,
+    std::string_view excludedTitle)
+{
+  for (const auto& panel : panels) {
+    if (panel.title.empty() || std::string_view(panel.title) == excludedTitle
+        || panel.dockSide != side) {
+      continue;
+    }
+
+    ImGuiWindow* window = ImGui::FindWindowByName(panel.title.c_str());
+    if (window != nullptr && window->DockNode != nullptr) {
+      return window->DockNode->ID;
+    }
+  }
+  return 0;
+}
+
+std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
+    ImGuiID dockId,
+    const std::vector<dart::gui::Panel>& panels,
+    const std::vector<std::string>& previousSignature)
+{
+  std::vector<std::string_view> focusedTitles;
+  for (const auto& panel : panels) {
+    if (!hasDefaultDockSide(panel)
+        || containsSignature(previousSignature, defaultDockSignature(panel))) {
+      continue;
+    }
+
+    const ImGuiID target
+        = findExistingDockTargetForSide(panels, panel.dockSide, panel.title);
+    if (target == 0) {
+      // A new side appeared and there is no existing dock node to join. Fall
+      // back to the default builder so the new panel is still docked instead of
+      // floating over the viewport.
+      buildDefaultDockLayout(dockId, panels);
+      return initialFocusPanelsForDefaultDockLayout(panels);
+    }
+
+    ImGui::DockBuilderDockWindow(panel.title.c_str(), target);
+    focusedTitles.push_back(panel.title);
+  }
+  return focusedTitles;
+}
+
+std::vector<std::string_view> initialFocusPanelsForDefaultDockLayout(
     const std::vector<dart::gui::Panel>& panels)
 {
   bool useBottom = false;
@@ -547,15 +630,21 @@ void updateFrameUi(
   std::vector<std::string_view> initialFocusPanelTitles;
   if (dartScene.dockingEnabled) {
     const ImGuiID dockId = ImHashStr("DARTMainDockSpace");
+    const auto dockSignature = defaultDockLayoutSignature(panels);
     const bool resetDockLayout
         = dart::gui::consumeDockLayoutResetRequest(lifecycle);
     if (resetDockLayout || !lifecycle.dockLayoutInitialized) {
       lifecycle.dockLayoutInitialized = true;
+      lifecycle.dockedPanelLayoutSignature = dockSignature;
       initialFocusPanelTitles = initialFocusPanelsForDefaultDockLayout(panels);
       // Apply the default layout deterministically on startup. The py-demos
       // workspace is an examples browser first; a stale imgui.ini layout should
       // not make its first frame look broken or obscure the viewport.
       buildDefaultDockLayout(dockId, panels);
+    } else if (dockSignature != lifecycle.dockedPanelLayoutSignature) {
+      initialFocusPanelTitles = dockPanelsIntroducedBySceneSwitch(
+          dockId, panels, lifecycle.dockedPanelLayoutSignature);
+      lifecycle.dockedPanelLayoutSignature = dockSignature;
     }
     ImGui::DockSpaceOverViewport(
         dockId,

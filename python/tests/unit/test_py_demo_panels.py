@@ -3235,9 +3235,15 @@ def test_rigid_body_panel_edits_contact_solver_method() -> None:
     builder = _ScriptedPanelBuilder(select_values={"Contact solver": target_method})
     setup.panels[0].build(builder, object())
 
+    assert builder.events[0] == "select:Solver:0:Sequential impulse"
     assert any(event.startswith("select:Contact solver:") for event in builder.events)
     assert controller.contact_method_index == target_method
     assert world.time == pytest.approx(0.0)
+    assert world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
+    assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+
+    setup.pre_step()
+    assert world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
     assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()

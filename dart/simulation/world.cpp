@@ -5535,6 +5535,10 @@ void World::setRigidBodySolver(RigidBodySolver solver)
       InvalidArgumentException,
       "Rigid-body solver is invalid");
 
+  if (m_rigidBodySolver == solver) {
+    return;
+  }
+
   validateRigidBodyJointPipelineSupport(*this, solver);
   m_rigidBodySolver = solver;
   if (m_simulationMode) {
@@ -5584,6 +5588,10 @@ void World::setContactSolverMethod(ContactSolverMethod method)
       !isValidContactSolverMethod(method),
       InvalidArgumentException,
       "Contact solver method is invalid");
+
+  if (m_contactSolverMethod == method) {
+    return;
+  }
 
   m_contactSolverMethod = method;
   if (m_simulationMode) {

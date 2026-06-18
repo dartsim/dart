@@ -35,7 +35,9 @@ and replay metadata.
   - [x] First contact-baseline increment: the flagship `rigid_body` scene
         exposes `contact_solver_method` in its panel, replay state, and capture
         metadata so Sequential Impulse and the DART 6-style boxed-LCP contact
-        path can be inspected from the live demo.
+        path can be inspected from the live demo while keeping the rigid-body
+        solver fixed to the realtime Sequential Impulse path. Use
+        `rigid_solver_compare` for SI-vs-IPC visual inspection.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 

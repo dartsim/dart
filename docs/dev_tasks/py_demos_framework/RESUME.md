@@ -10,7 +10,9 @@ flagship domain, with AVBD as the modern solver track and boxed-LCP as the DART
 
 The first M1 contact-baseline increment makes `World.contact_solver_method`
 writable after construction and exposes that choice in the flagship
-`rigid_body` Python demo panel, replay state, and capture metadata.
+`rigid_body` Python demo panel, replay state, and capture metadata. Manual
+testing found the baseline should stay on the realtime Sequential Impulse
+rigid-body solver; SI-vs-IPC inspection belongs in `rigid_solver_compare`.
 
 ## Immediate Next Step
 

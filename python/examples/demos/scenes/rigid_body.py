@@ -28,9 +28,10 @@ _GROUND_HALF = np.array([1.5, 1.5, 0.04])
 _BOX_HALF = np.array([0.1, 0.12, 0.08])
 _DEFAULT_FRICTION = 0.85
 _DEFAULT_RESTITUTION = 0.15
+# Keep this baseline on the realtime SI rigid-body path; the dedicated
+# rigid_solver_compare scene owns SI-vs-IPC visual inspection.
 _SOLVERS: tuple[tuple[str, sx.RigidBodySolver], ...] = (
     ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
-    ("IPC barrier", sx.RigidBodySolver.IPC),
 )
 _CONTACT_METHODS: tuple[tuple[str, sx.ContactSolverMethod], ...] = (
     ("Sequential impulse", sx.ContactSolverMethod.SEQUENTIAL_IMPULSE),
