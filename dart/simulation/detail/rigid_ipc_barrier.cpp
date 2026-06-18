@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <array>
+#include <initializer_list>
 #include <limits>
 #include <optional>
 #include <tuple>
@@ -248,30 +249,79 @@ using CandidatePairAllocator = dart::common::StlAllocator<CandidatePair>;
 using BarrierTriplet = Eigen::Triplet<double>;
 using BarrierTripletAllocator = dart::common::StlAllocator<BarrierTriplet>;
 
-void reserveDenseSparsePattern(
-    Eigen::SparseMatrix<double>& matrix,
+void appendSparsePatternTriplets(
+    const Eigen::SparseMatrix<double>& matrix,
     const Eigen::Index rows,
     const Eigen::Index cols,
     std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets)
 {
-  matrix.resize(rows, cols);
+  if (matrix.rows() != rows || matrix.cols() != cols) {
+    return;
+  }
+
+  for (Eigen::Index outer = 0; outer < matrix.outerSize(); ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(matrix, outer); it;
+         ++it) {
+      triplets.emplace_back(it.row(), it.col(), 1.0);
+    }
+  }
+}
+
+void appendDiagonalSparsePatternTriplets(
+    const Eigen::Index rows,
+    const Eigen::Index cols,
+    std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets)
+{
+  const Eigen::Index diagonalEntries = std::min(rows, cols);
+  for (Eigen::Index entry = 0; entry < diagonalEntries; ++entry) {
+    triplets.emplace_back(entry, entry, 1.0);
+  }
+}
+
+void reserveSparsePatternUnion(
+    Eigen::SparseMatrix<double>& matrix,
+    const Eigen::Index rows,
+    const Eigen::Index cols,
+    std::initializer_list<const Eigen::SparseMatrix<double>*> sources,
+    std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets,
+    const bool includeDiagonal)
+{
   if (rows <= 0 || cols <= 0) {
+    matrix.resize(rows, cols);
     matrix.setZero();
     matrix.makeCompressed();
     return;
   }
 
-  const auto entryCount
-      = static_cast<std::size_t>(rows) * static_cast<std::size_t>(cols);
   triplets.clear();
+  std::size_t entryCount
+      = includeDiagonal ? static_cast<std::size_t>(std::min(rows, cols)) : 0u;
+  for (const Eigen::SparseMatrix<double>* source : sources) {
+    if (source != nullptr && source->rows() == rows && source->cols() == cols
+        && source->nonZeros() > 0) {
+      entryCount += static_cast<std::size_t>(source->nonZeros());
+    }
+  }
   triplets.reserve(entryCount);
-  for (Eigen::Index col = 0; col < cols; ++col) {
-    for (Eigen::Index row = 0; row < rows; ++row) {
-      triplets.emplace_back(row, col, 1.0);
+  if (includeDiagonal) {
+    appendDiagonalSparsePatternTriplets(rows, cols, triplets);
+  }
+  for (const Eigen::SparseMatrix<double>* source : sources) {
+    if (source != nullptr) {
+      appendSparsePatternTriplets(*source, rows, cols, triplets);
     }
   }
 
-  matrix.setFromTriplets(triplets.begin(), triplets.end());
+  matrix.resize(rows, cols);
+  if (triplets.empty()) {
+    matrix.setZero();
+    matrix.makeCompressed();
+    return;
+  }
+  matrix.setFromTriplets(
+      triplets.begin(), triplets.end(), [](const double&, const double&) {
+        return 1.0;
+      });
   matrix.makeCompressed();
   std::fill(matrix.valuePtr(), matrix.valuePtr() + matrix.nonZeros(), 0.0);
 }
@@ -280,18 +330,27 @@ void reserveRigidIpcAssemblySparsePatterns(
     RigidIpcBarrierAssembly& assembly,
     const Eigen::Index dofs,
     const Eigen::Index equalityRows,
+    std::initializer_list<const Eigen::SparseMatrix<double>*> hessianSources,
+    std::initializer_list<const Eigen::SparseMatrix<double>*>
+        equalityJacobianSources,
     std::vector<BarrierTriplet, BarrierTripletAllocator>& triplets)
 {
   if (assembly.gradient.size() != dofs) {
     assembly.gradient.resize(dofs);
   }
-  reserveDenseSparsePattern(assembly.hessian, dofs, dofs, triplets);
+  reserveSparsePatternUnion(
+      assembly.hessian, dofs, dofs, hessianSources, triplets, true);
 
   if (assembly.equalityResidual.size() != equalityRows) {
     assembly.equalityResidual.resize(equalityRows);
   }
-  reserveDenseSparsePattern(
-      assembly.equalityJacobian, equalityRows, dofs, triplets);
+  reserveSparsePatternUnion(
+      assembly.equalityJacobian,
+      equalityRows,
+      dofs,
+      equalityJacobianSources,
+      triplets,
+      false);
 }
 
 struct RigidIpcSurfacePairScratch
@@ -3161,28 +3220,42 @@ void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
   auto& triplets = scratch.workspace != nullptr
                        ? scratch.workspace->assemblyScratch.barrierTriplets
                        : localTriplets;
-  reserveRigidIpcAssemblySparsePatterns(
-      result.assembly, dofs, equalityRows, triplets);
 
   if (scratch.workspace == nullptr) {
+    reserveRigidIpcAssemblySparsePatterns(
+        result.assembly,
+        dofs,
+        equalityRows,
+        {&result.assembly.hessian},
+        {&result.assembly.equalityJacobian},
+        triplets);
     return;
   }
 
   auto& workspace = *scratch.workspace;
-  reserveRigidIpcAssemblySparsePatterns(
-      workspace.assemblyScratch.energyAssembly, dofs, equalityRows, triplets);
-  reserveRigidIpcAssemblySparsePatterns(
-      workspace.assemblyScratch.unitBarrierAssembly,
-      dofs,
-      equalityRows,
-      triplets);
-  reserveRigidIpcAssemblySparsePatterns(
-      workspace.assemblyScratch.laggedAssembly, dofs, equalityRows, triplets);
-  reserveRigidIpcAssemblySparsePatterns(
-      workspace.assemblyScratch.candidateAssembly,
-      dofs,
-      equalityRows,
-      triplets);
+  auto& assemblyScratch = workspace.assemblyScratch;
+  auto reserveAssembly = [&](RigidIpcBarrierAssembly& assembly) {
+    reserveRigidIpcAssemblySparsePatterns(
+        assembly,
+        dofs,
+        equalityRows,
+        {&result.assembly.hessian,
+         &assemblyScratch.energyAssembly.hessian,
+         &assemblyScratch.unitBarrierAssembly.hessian,
+         &assemblyScratch.laggedAssembly.hessian,
+         &assemblyScratch.candidateAssembly.hessian},
+        {&result.assembly.equalityJacobian,
+         &assemblyScratch.energyAssembly.equalityJacobian,
+         &assemblyScratch.unitBarrierAssembly.equalityJacobian,
+         &assemblyScratch.laggedAssembly.equalityJacobian,
+         &assemblyScratch.candidateAssembly.equalityJacobian},
+        triplets);
+  };
+  reserveAssembly(result.assembly);
+  reserveAssembly(assemblyScratch.energyAssembly);
+  reserveAssembly(assemblyScratch.unitBarrierAssembly);
+  reserveAssembly(assemblyScratch.laggedAssembly);
+  reserveAssembly(assemblyScratch.candidateAssembly);
 
   workspace.denseHessian.resize(dofs, dofs);
   workspace.denseHessian.setIdentity();

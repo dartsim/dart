@@ -1744,6 +1744,58 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
 }
 
 //==============================================================================
+TEST(RigidIpcBarrier, ReserveSameShapeScratchKeepsSparsePatternsSparse)
+{
+  constexpr int kDynamicBodies = 16;
+  constexpr Eigen::Index kDofs = 6 * kDynamicBodies;
+  constexpr Eigen::Index kEqualityRows = 3;
+
+  std::vector<expdetail::RigidIpcBarrierSurface> surfaces(kDynamicBodies);
+  for (auto& surface : surfaces) {
+    surface.dynamic = true;
+  }
+
+  expdetail::RigidIpcProjectedNewtonSolveResult result;
+  result.assembly.gradient = Eigen::VectorXd::Zero(kDofs);
+  result.assembly.equalityResidual = Eigen::VectorXd::Zero(kEqualityRows);
+
+  const std::vector<Eigen::Triplet<double>> hessianTriplets{
+      {0, 6, 1.0}, {6, 0, 1.0}};
+  result.assembly.hessian.resize(kDofs, kDofs);
+  result.assembly.hessian.setFromTriplets(
+      hessianTriplets.begin(), hessianTriplets.end());
+
+  const std::vector<Eigen::Triplet<double>> equalityTriplets{
+      {0, 0, 1.0}, {1, 6, 1.0}, {2, 7, 1.0}};
+  result.assembly.equalityJacobian.resize(kEqualityRows, kDofs);
+  result.assembly.equalityJacobian.setFromTriplets(
+      equalityTriplets.begin(), equalityTriplets.end());
+
+  expdetail::RigidIpcProjectedNewtonSolveScratch scratch;
+  expdetail::reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+      surfaces, result, scratch);
+
+  EXPECT_EQ(result.assembly.hessian.rows(), kDofs);
+  EXPECT_EQ(result.assembly.hessian.cols(), kDofs);
+  EXPECT_EQ(result.assembly.hessian.nonZeros(), kDofs + 2);
+  EXPECT_LT(result.assembly.hessian.nonZeros(), kDofs * kDofs);
+  EXPECT_EQ(result.assembly.equalityJacobian.rows(), kEqualityRows);
+  EXPECT_EQ(result.assembly.equalityJacobian.cols(), kDofs);
+  EXPECT_EQ(result.assembly.equalityJacobian.nonZeros(), 3);
+  EXPECT_LT(result.assembly.equalityJacobian.nonZeros(), kEqualityRows * kDofs);
+
+  for (Eigen::Index outer = 0; outer < result.assembly.hessian.outerSize();
+       ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(
+             result.assembly.hessian, outer);
+         it;
+         ++it) {
+      EXPECT_EQ(it.value(), 0.0);
+    }
+  }
+}
+
+//==============================================================================
 TEST(RigidIpcBarrier, ProjectedNewtonSolveBacktracksForSufficientDecrease)
 {
   expdetail::RigidIpcBarrierSurface surface;
