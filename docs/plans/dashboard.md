@@ -29,12 +29,14 @@ its own line so status updates remain git-history friendly.
   WP-091.33c via PR #3052; WP-091.32 via PR #3058; and WP-091.33d plus
   WP-091.34 via PR #3061. The remaining WS0 packet is WP-091.4 legacy freeze,
   which stays **blocked**: PLAN-042 Decision 5 has no recorded maintainer
-  direction. Current PLAN-091 work is to finish the partial WP-091.13 and
-  WP-091.24 slices or start WP-091.15 now that its Dependencies line is
-  satisfied. WP-091.33e waits on WP-091.24, WP-091.40 waits on maintainer
-  sign-off on naming, and WP-091.43 waits on WP-091.15; WP-091.41, WP-091.42,
-  and WP-091.44 are dependency-satisfied WS4 follow-ups once earlier selected
-  work is no longer preferred.
+  direction. The next executor-selectable PLAN-091 packet is WP-091.15 now that
+  its Dependencies line is satisfied. WP-091.13 and WP-091.24 still have
+  partial landed evidence under `[claimed]` headings, so they require
+  orchestrator release or split follow-up packets before executor pickup.
+  WP-091.33e waits on WP-091.24, WP-091.40 waits on maintainer sign-off on
+  naming, and WP-091.43 waits on WP-091.15; WP-091.41, WP-091.42, and
+  WP-091.44 are dependency-satisfied WS4 follow-ups once earlier selected work
+  is no longer preferred.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
