@@ -257,6 +257,7 @@ def _run_render_worker(
         try:
             os.unlink(screenshot_path)
         except FileNotFoundError:
+            # The worker may exit before writing the screenshot; cleanup is best-effort.
             pass
         return SceneResult(
             scene_id, "timeout", time.monotonic() - start, f"exceeded {timeout:.0f}s"
@@ -286,6 +287,7 @@ def _run_render_worker(
         try:
             os.unlink(screenshot_path)
         except FileNotFoundError:
+            # The screenshot may already be gone after a timeout or failed render.
             pass
 
 
