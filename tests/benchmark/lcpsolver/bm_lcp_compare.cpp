@@ -38,8 +38,8 @@
   #include <dart/simulation/compute/multibody_dynamics.hpp>
   #include <dart/simulation/compute/parallel_executor.hpp>
   #include <dart/simulation/compute/unified_constraint.hpp>
-  #include <dart/simulation/detail/boxed_lcp_contact.hpp>
   #include <dart/simulation/detail/entity_conversion.hpp>
+  #include <dart/simulation/detail/rigid_contact/boxed_lcp_contact.hpp>
   #include <dart/simulation/detail/world_registry_access.hpp>
   #include <dart/simulation/multibody/joint.hpp>
   #include <dart/simulation/multibody/link.hpp>

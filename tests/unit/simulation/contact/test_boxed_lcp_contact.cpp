@@ -50,9 +50,9 @@
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/name.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
-#include <dart/simulation/detail/boxed_lcp_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
+#include <dart/simulation/detail/rigid_contact/boxed_lcp_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/multibody/link.hpp>

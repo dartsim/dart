@@ -36,7 +36,7 @@
 #include "dart/simulation/comps/frame_types.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
-#include "dart/simulation/detail/rigid_contact_assembly.hpp"
+#include "dart/simulation/detail/rigid_contact/rigid_contact_assembly.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>

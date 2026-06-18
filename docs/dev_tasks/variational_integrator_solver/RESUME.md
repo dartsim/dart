@@ -64,7 +64,7 @@ All four are the task's **own explicit deferrals**, now backed by concrete facts
 1. **Arbitrary-geometry link-vs-link contact — PLAN-scale (~2–3 weeks).** A
    2026-05-30 stack audit: `detail/deformable_contact/primitive_distance.hpp`
    already gives reusable analytic `(d, ∂d/∂q)` kernels (separable from the IPC
-   log-barrier), and `detail/rigid_ipc_ccd.*` gives CCD for a line-search bound.
+   log-barrier), and `detail/rigid_ipc/rigid_ipc_ccd.*` gives CCD for a line-search bound.
    The **dominant missing piece is rigid/articulated candidate generation** —
    `candidate_set.hpp` is mesh-vertex specific; there is no warm-started "refit
    link AABBs at the trial config, re-check the active set" query object. That

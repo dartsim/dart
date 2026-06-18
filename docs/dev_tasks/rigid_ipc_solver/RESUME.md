@@ -1799,7 +1799,7 @@ remain open fallback slices.
 - Direct CCD rows currently cover the upstream `ee`, `ev`, and `fv` schemas as
   data records and can be replayed through the internal subdivision-backed
   curved CCD dispatcher. The first rigid curved-trajectory query lives in
-  `dart/simulation/detail/rigid_ipc_ccd.*` and is intentionally
+  `dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.*` and is intentionally
   internal.
 - The first root direct CCD rows from the audited upstream corpus are covered as
   parser/topology and full-step miss regressions. Do not mark them complete in
@@ -1814,7 +1814,7 @@ remain open fallback slices.
   point-edge cases where endpoint-linear primitive CCD sees unchanged endpoints,
   but the rigid curved trajectory hits within the step.
 - The first rigid barrier scaffold lives in
-  `dart/simulation/detail/rigid_ipc_barrier.*` and is covered by
+  `dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.*` and is covered by
   `tests/unit/simulation/contact/test_rigid_ipc_barrier.cpp`. It
   returns world-primitive barrier derivatives after rigid pose interpolation and
   now has local two-body reduced-coordinate derivatives for face-vertex and

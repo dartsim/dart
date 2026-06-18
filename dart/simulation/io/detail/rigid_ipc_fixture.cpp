@@ -37,7 +37,7 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
-#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/io/detail/rigid_ipc_fixture.hpp>
 #include <dart/simulation/world.hpp>

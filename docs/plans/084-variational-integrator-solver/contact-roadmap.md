@@ -181,7 +181,7 @@ separately and stays open until run.
 (`#2777`).** PLAN-082-rigid-implicit-barrier-contact landed a DART-owned
 rigid-body contact stack — `detail/contact_jacobians.{hpp,cpp}` (rigid contact
 Jacobians, the Cartesian half of the reduced-coordinate glue),
-`detail/rigid_ipc_ccd.*` (curved-trajectory CCD), and the shared
+`detail/rigid_ipc/rigid_ipc_ccd.*` (curved-trajectory CCD), and the shared
 `detail/deformable_contact/` geometry (`candidate_set.hpp`,
 `continuous_collision_step.*`, `tangent_stencil.hpp`, `primitive_distance.hpp`).
 That is the candidate-generation + distance/CCD infrastructure gate 1 was scoped
@@ -348,7 +348,7 @@ overshoots before the body can move). Verified
   - **Reusable today** — `detail/deformable_contact/primitive_distance.hpp` has
     the analytic squared-distance + gradient (+ Hessian) kernels for all primitive
     pairs (`pointTriangle`/`pointEdge`/`edgeEdge`/`pointPoint`), coordinate-
-    agnostic in world space; `detail/rigid_ipc_ccd.*` gives the curved-trajectory
+    agnostic in world space; `detail/rigid_ipc/rigid_ipc_ccd.*` gives the curved-trajectory
     CCD usable as a RIQN line-search step bound. Distance/gradient is **separable**
     from the IPC log-barrier (`barrier_kernel.hpp`), so the VI can feed its own
     C1–C3 force law instead. Extracting signed `d` and `∂d/∂q` from the

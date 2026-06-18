@@ -713,7 +713,7 @@ DART-owned implementation.
   Corpus-scale evaluator parity remains open until rigorous interval arithmetic
   and reference corpus semantics land.
 - The first curved-trajectory CCD code lives under
-  `dart/simulation/detail/rigid_ipc_ccd.*`. It is an internal
+  `dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.*`. It is an internal
   DART-owned ACCD query for 3D face-vertex, edge-edge, and point-edge cases over
   linearly interpolated rotation vectors, including the first `minSeparation`
   regressions needed by IPC barriers. It now also exposes internal residual
@@ -722,7 +722,7 @@ DART-owned implementation.
   rigorous interval arithmetic, accepted corpus tolerances, or scene-level broad
   phase.
 - The first rigid barrier scaffold lives under
-  `dart/simulation/detail/rigid_ipc_barrier.*`. It evaluates
+  `dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.*`. It evaluates
   face-vertex and edge-edge barrier terms by transforming local rigid
   primitives along the linearly interpolated rigid trajectory and then reusing
   the current DART IPC C2 clamped-log world-primitive kernel. Focused tests

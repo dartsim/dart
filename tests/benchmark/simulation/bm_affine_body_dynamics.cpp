@@ -34,7 +34,7 @@
 // they are not paper-scale performance claims.
 
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
