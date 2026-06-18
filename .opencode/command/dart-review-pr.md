@@ -49,6 +49,11 @@ by default because it invalidates existing CI runs and makes PR review/comment
 history harder to follow. Rebase or force-push only when the maintainer
 explicitly requests it.
 
+If the push is rejected because the remote PR head moved, fetch and compare the
+remote head before retrying. If it already contains an equivalent review fix,
+validate that head and follow `docs/onboarding/ai-tools.md` instead of pushing a
+duplicate commit.
+
 ## Automated Reviews (Codex, Code Quality, Copilot, etc.)
 
 When a draft PR is first published, request the first Codex review with a

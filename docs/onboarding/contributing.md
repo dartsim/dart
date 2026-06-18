@@ -131,6 +131,24 @@ Use the PR template in `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone 
 - Active DART 6 LTS branch, currently `release-6.19`: branch-matching DART 6.x
   patch milestone
 
+### Repository Metadata Maintenance
+
+When cleaning up GitHub issue or PR labels, treat repository metadata as a
+shared source of truth:
+
+- Prefer built-in GitHub issue types over parallel `type:*` labels, and update
+  issue templates before deleting any label they still apply.
+- Use issue fields for maintainer-only scheduling data such as priority or
+  effort, but check field visibility before replacing public labels. Removing a
+  public label can make that signal private if the field is organization-only.
+- Keep automation labels that workflows or bots still apply, such as lockfile
+  update, dependency, or GitHub Actions labels, unless the automation is updated
+  in the same change.
+- Before deleting a label, verify open issue/PR usage and remember that deleting
+  a label also removes it from closed historical issues and PRs.
+- Label, milestone, branch, and PR metadata mutations on GitHub require
+  explicit maintainer/user approval.
+
 ## Testing Requirements
 
 All contributions must include appropriate tests:
