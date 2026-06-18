@@ -22,17 +22,18 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: WP-091.20 (Model/State/Control split), WP-091.22 (frame arena),
-  WP-091.30 (executor primitives), and WP-091.33 (batch/device design notes)
-  are `[done]` via PR #3029; WP-091.33a (batch semantics tests) is `[done]`
-  via PR #3042; and WP-091.21 (baked dense-index Model artifact) is `[done]`
-  via PR #3044; WP-091.31 (per-World accelerator policy), WP-091.33b (baked
-  rigid Model/State owner), and WP-091.33c (Control-sequence rollout shape) are
-  `[done]` via PR #3052; and WP-091.32 (O(n) shared articulated core) is
-  `[done]` via PR #3058. The remaining WS0 packet is WP-091.4 legacy freeze,
+- Next step: Completed packets include WP-091.3 via PR #2999; WP-091.5,
+  WP-091.10, WP-091.11, WP-091.14, and WP-091.23 via PR #3003; WP-091.12 via
+  PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR #3029;
+  WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31, WP-091.33b, and
+  WP-091.33c via PR #3052; WP-091.32 via PR #3058; and WP-091.33d plus
+  WP-091.34 via PR #3061. The remaining WS0 packet is WP-091.4 legacy freeze,
   which stays **blocked**: PLAN-042 Decision 5 has no recorded maintainer
-  direction. The current in-progress PLAN-091 work is WP-091.34 (graph
-  granularity policy), available after WP-091.30.
+  direction. Current PLAN-091 work is to finish the partial WP-091.13 and
+  WP-091.24 slices or start WP-091.15 now that its Dependencies line is
+  satisfied. WP-091.33e waits on WP-091.24, WP-091.40 waits on maintainer
+  sign-off on naming, and WP-091.41 through WP-091.44 wait on their recorded
+  Dependencies lines.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
