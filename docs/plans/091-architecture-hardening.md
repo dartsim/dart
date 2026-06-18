@@ -1066,7 +1066,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   and `pixi run -e cuda test-simulation-full` passed after the tail fix.
   Accepted by maintainer merge of PR #3052.
 
-#### WP-091.32 O(n) shared articulated core [claimed]
+#### WP-091.32 O(n) shared articulated core [done — PR #3058, merged 2026-06-18]
 
 - Objective: the semi-implicit multibody family consumes a shared O(n)
   articulated inverse-mass apply (promoted from the variational family, with
@@ -1103,6 +1103,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   benchmark wrapper `bm_variational_integration --benchmark_filter=BM_ArticulatedInverseMass --benchmark_min_time=0.05s --benchmark_repetitions=1`
   reported
   `BM_ArticulatedInverseMass_BigO = 1289.74 N` CPU with 13% RMS.
+  Accepted by maintainer merge of PR #3058.
 
 #### WP-091.33 Batched-World and device-residency design notes [done — PR #3029, merged 2026-06-16]
 
@@ -1227,7 +1228,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   (163/163), `pixi run check-api-boundaries`, and `pixi run lint`.
   Accepted by maintainer merge of PR #3052.
 
-#### WP-091.33d Resident device owner
+#### WP-091.33d Resident device owner [claimed]
 
 - Objective: the optional sidecar path has an internal residency owner with
   explicit upload, download, and synchronization boundaries.
@@ -1243,6 +1244,18 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; on Linux
   CUDA hosts with a visible device, `pixi run -e cuda test-all`.
 - Dependencies: WP-091.31, WP-091.33c.
+- Evidence: local branch `wp-091-33d-resident-device-owner` adds the internal
+  `ResidentRigidBodyBatchCuda` sidecar owner with explicit Model, State, and
+  Control uploads, resident CUDA stepping without per-step State downloads,
+  explicit State download, coherence diagnostics, and host fallback rejection
+  while the host State is stale. Tests:
+  `ResidentOwnerRejectsInvalidModelBeforeCudaRuntime`,
+  `ResidentOwnerRequiresModelBeforeStateOrControl`, and
+  `ResidentOwnerDownloadsOnlyAtExplicitSync`. Gates: `pixi run lint`,
+  `pixi run build`, `pixi run test-unit` (163/163), and
+  `pixi run -e cuda test-all` (full CUDA suite, including
+  `test_rigid_body_state_batch_cuda` and the resident rollout benchmark smoke
+  row `BM_CudaResidentRigidBodyStateBatchLinearRollout/4/256/1`) passed.
 
 #### WP-091.33e Precision and packet reporting
 
