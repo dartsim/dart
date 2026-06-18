@@ -994,6 +994,10 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd velocityConstraintResidual;          // k
   Eigen::LDLT<Eigen::MatrixXd> velocityConstraintLdlt; // k x k
   Eigen::VectorXd velocityConstraintLambda;            // k
+  Eigen::MatrixXd symmetricFactor;                     // reusable lower factor
+  Eigen::VectorXd symmetricForwardWork;                // reusable solve work
+  Eigen::VectorXd symmetricUnitRhs;                    // reusable inverse RHS
+  Eigen::VectorXd symmetricSolution; // reusable inverse column
 };
 
 MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
@@ -1058,6 +1062,23 @@ void inverseMassMatrixColumnsInto(
     inverseMass.col(column) = scratch.contactWork;
   }
 }
+
+//==============================================================================
+bool solveSpdSystemInto(
+    const Eigen::MatrixXd& matrix,
+    const Eigen::VectorXd& rhs,
+    Eigen::VectorXd& solution,
+    Eigen::MatrixXd& lowerFactor,
+    Eigen::VectorXd& forwardWork);
+
+//==============================================================================
+bool invertSpdMatrixInto(
+    const Eigen::MatrixXd& matrix,
+    Eigen::MatrixXd& inverse,
+    Eigen::MatrixXd& lowerFactor,
+    Eigen::VectorXd& forwardWork,
+    Eigen::VectorXd& unitRhs,
+    Eigen::VectorXd& solution);
 
 //==============================================================================
 void gatherMultibodyVelocityInto(
@@ -1299,9 +1320,14 @@ bool computeUnconstrainedMultibodyVelocityInto(
             scratch.constrainedDof[static_cast<std::size_t>(a)], b);
       }
     }
-    scratch.velocityConstraintLdlt.compute(scratch.velocityConstraintMatrix);
-    scratch.velocityConstraintLambda = scratch.velocityConstraintLdlt.solve(
-        scratch.velocityConstraintResidual);
+    if (!solveSpdSystemInto(
+            scratch.velocityConstraintMatrix,
+            scratch.velocityConstraintResidual,
+            scratch.velocityConstraintLambda,
+            scratch.symmetricFactor,
+            scratch.symmetricForwardWork)) {
+      return false;
+    }
     for (Eigen::Index a = 0; a < k; ++a) {
       scratch.nextVelocity.noalias() += scratch.velocityMassInverse.col(a)
                                         * scratch.velocityConstraintLambda[a];
@@ -1392,6 +1418,153 @@ double jointSpaceDenominator(
 }
 
 //==============================================================================
+bool factorSpdLowerInto(
+    const Eigen::MatrixXd& matrix, Eigen::MatrixXd& lowerFactor)
+{
+  const Eigen::Index n = matrix.rows();
+  if (matrix.cols() != n) {
+    return false;
+  }
+
+  if (lowerFactor.rows() < n || lowerFactor.cols() < n) {
+    lowerFactor.resize(
+        std::max(lowerFactor.rows(), n), std::max(lowerFactor.cols(), n));
+  }
+  lowerFactor.topLeftCorner(n, n).setZero();
+  for (Eigen::Index i = 0; i < n; ++i) {
+    for (Eigen::Index j = 0; j <= i; ++j) {
+      double sum = matrix(i, j);
+      for (Eigen::Index k = 0; k < j; ++k) {
+        sum -= lowerFactor(i, k) * lowerFactor(j, k);
+      }
+      if (i == j) {
+        if (sum <= 0.0 || !std::isfinite(sum)) {
+          return false;
+        }
+        lowerFactor(i, j) = std::sqrt(sum);
+      } else {
+        const double diagonal = lowerFactor(j, j);
+        if (diagonal == 0.0) {
+          return false;
+        }
+        lowerFactor(i, j) = sum / diagonal;
+      }
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+bool solveSpdSystemInto(
+    const Eigen::MatrixXd& matrix,
+    const Eigen::VectorXd& rhs,
+    Eigen::VectorXd& solution,
+    Eigen::MatrixXd& lowerFactor,
+    Eigen::VectorXd& forwardWork)
+{
+  const Eigen::Index n = matrix.rows();
+  if (matrix.cols() != n || rhs.size() != n) {
+    return false;
+  }
+  solution.resize(n);
+  if (n == 0) {
+    return true;
+  }
+  if (n == 1) {
+    const double diagonal = matrix(0, 0);
+    if (diagonal == 0.0) {
+      return false;
+    }
+    solution[0] = rhs[0] / diagonal;
+    return true;
+  }
+
+  if (!factorSpdLowerInto(matrix, lowerFactor)) {
+    return false;
+  }
+
+  if (forwardWork.size() < n) {
+    forwardWork.resize(n);
+  }
+  for (Eigen::Index i = 0; i < n; ++i) {
+    double sum = rhs[i];
+    for (Eigen::Index j = 0; j < i; ++j) {
+      sum -= lowerFactor(i, j) * forwardWork[j];
+    }
+    forwardWork[i] = sum / lowerFactor(i, i);
+  }
+  for (Eigen::Index i = n; i-- > 0;) {
+    double sum = forwardWork[i];
+    for (Eigen::Index j = i + 1; j < n; ++j) {
+      sum -= lowerFactor(j, i) * solution[j];
+    }
+    solution[i] = sum / lowerFactor(i, i);
+  }
+  return true;
+}
+
+//==============================================================================
+bool invertSpdMatrixInto(
+    const Eigen::MatrixXd& matrix,
+    Eigen::MatrixXd& inverse,
+    Eigen::MatrixXd& lowerFactor,
+    Eigen::VectorXd& forwardWork,
+    Eigen::VectorXd& unitRhs,
+    Eigen::VectorXd& solution)
+{
+  const Eigen::Index n = matrix.rows();
+  if (matrix.cols() != n) {
+    return false;
+  }
+  inverse.resize(n, n);
+  if (n == 0) {
+    return true;
+  }
+  if (n == 1) {
+    const double diagonal = matrix(0, 0);
+    if (diagonal == 0.0) {
+      return false;
+    }
+    inverse(0, 0) = 1.0 / diagonal;
+    return true;
+  }
+
+  if (!factorSpdLowerInto(matrix, lowerFactor)) {
+    return false;
+  }
+
+  if (unitRhs.size() < n) {
+    unitRhs.resize(n);
+  }
+  if (solution.size() < n) {
+    solution.resize(n);
+  }
+  if (forwardWork.size() < n) {
+    forwardWork.resize(n);
+  }
+  for (Eigen::Index column = 0; column < n; ++column) {
+    unitRhs.head(n).setZero();
+    unitRhs[column] = 1.0;
+    for (Eigen::Index i = 0; i < n; ++i) {
+      double sum = unitRhs[i];
+      for (Eigen::Index j = 0; j < i; ++j) {
+        sum -= lowerFactor(i, j) * forwardWork[j];
+      }
+      forwardWork[i] = sum / lowerFactor(i, i);
+    }
+    for (Eigen::Index i = n; i-- > 0;) {
+      double sum = forwardWork[i];
+      for (Eigen::Index j = i + 1; j < n; ++j) {
+        sum -= lowerFactor(j, i) * solution[j];
+      }
+      solution[i] = sum / lowerFactor(i, i);
+    }
+    inverse.col(column) = solution.head(n);
+  }
+  return true;
+}
+
+//==============================================================================
 void resetMultibodyLinkContactRow(
     MultibodyLinkContactRow& row, Eigen::Index dof)
 {
@@ -1401,11 +1574,8 @@ void resetMultibodyLinkContactRow(
   row.tangentJacobian1.setZero();
   row.tangentJacobian2.resize(dof);
   row.tangentJacobian2.setZero();
-  row.otherNormalJacobian.resize(dof);
   row.otherNormalJacobian.setZero();
-  row.otherTangentJacobian1.resize(dof);
   row.otherTangentJacobian1.setZero();
-  row.otherTangentJacobian2.resize(dof);
   row.otherTangentJacobian2.setZero();
   row.normal = Eigen::Vector3d::UnitZ();
   row.tangent1.setZero();
@@ -3599,6 +3769,48 @@ void reserveMultibodyDynamicsRegistryStorage(
           scratch.rneaVelocity,
           scratch.rneaAcceleration,
           scratch.rneaForce);
+      if (dof > 1) {
+        scratch.qddot.setZero(dof);
+        (void)solveSpdSystemInto(
+            scratch.massAndBias.massMatrix,
+            scratch.qddot,
+            scratch.symmetricSolution,
+            scratch.symmetricFactor,
+            scratch.symmetricForwardWork);
+      }
+      (void)invertSpdMatrixInto(
+          scratch.massAndBias.massMatrix,
+          scratch.velocityMassInverse,
+          scratch.symmetricFactor,
+          scratch.symmetricForwardWork,
+          scratch.symmetricUnitRhs,
+          scratch.symmetricSolution);
+      scratch.contactProblem.inverseMass = scratch.velocityMassInverse;
+
+      Eigen::Index velocityConstraintDofs = 0;
+      for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
+        const auto dof = scratch.tree.links[i].dof;
+        if (dof == 0) {
+          continue;
+        }
+        const auto& jointActuation
+            = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
+        if (jointActuation.actuatorType == comps::ActuatorType::Velocity) {
+          velocityConstraintDofs += static_cast<Eigen::Index>(dof);
+        }
+      }
+      if (velocityConstraintDofs > 0) {
+        scratch.velocityConstraintMatrix.setIdentity(
+            velocityConstraintDofs, velocityConstraintDofs);
+        scratch.velocityConstraintResidual.setZero(velocityConstraintDofs);
+        scratch.velocityConstraintLambda.setZero(velocityConstraintDofs);
+        (void)solveSpdSystemInto(
+            scratch.velocityConstraintMatrix,
+            scratch.velocityConstraintResidual,
+            scratch.velocityConstraintLambda,
+            scratch.symmetricFactor,
+            scratch.symmetricForwardWork);
+      }
     }
 
     auto& pendingVelocity

@@ -1035,6 +1035,16 @@ DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
     RigidIpcProjectedNewtonSolveResult& result,
     RigidIpcProjectedNewtonSolveScratch& scratch);
 
+/// Prime retained solve scratch for future solves with the same active shape.
+///
+/// This helper may allocate; call it during bake/preparation, after a warm
+/// solve has established sparse active patterns, equality-row counts, and
+/// active-vector capacities.
+DART_SIMULATION_API void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch);
+
 /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
 ///
 /// Ports `ipc::initial_barrier_stiffness` (with `dmin = 0`) using DART's

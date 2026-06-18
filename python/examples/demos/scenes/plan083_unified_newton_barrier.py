@@ -162,6 +162,7 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
             f"plan083_bridge_board_{index}",
             position=(float(x), 0.0, 0.50),
         )
+        board.is_static = True
         board.mass = 0.25
         board.friction = 0.7
         board.set_collision_shape(dart.CollisionShape.box(_BRIDGE_BOARD_HALF_EXTENTS))
@@ -176,8 +177,9 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
     traveler = world.add_rigid_body(
         "plan083_bridge_traveler",
         position=(-0.60, 0.0, 0.82),
-        linear_velocity=(0.35, 0.0, -0.05),
+        linear_velocity=(0.35, 0.0, -0.35),
     )
+    traveler.is_kinematic = True
     traveler.mass = 0.12
     traveler.friction = 0.4
     traveler.set_collision_shape(dart.CollisionShape.box(_BRIDGE_TRAVELER_HALF_EXTENTS))
@@ -1010,6 +1012,7 @@ def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
         position=(0.0, 0.0, 0.17),
         linear_velocity=(0.12, 0.0, 0.0),
     )
+    chassis.is_kinematic = True
     chassis.mass = 0.45
     chassis.friction = 0.7
     chassis.set_collision_shape(dart.CollisionShape.box(_TERRAIN_CHASSIS_HALF_EXTENTS))
@@ -1020,8 +1023,10 @@ def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
         wheel = world.add_rigid_body(
             f"plan083_vehicle_passive_wheel_{index}",
             position=tuple(chassis_position + offset),
+            linear_velocity=(0.12, 0.0, 0.0),
             angular_velocity=(0.0, 3.0, 0.0),
         )
+        wheel.is_kinematic = True
         wheel.mass = 0.08
         wheel.friction = 0.9
         wheel.set_collision_shape(dart.CollisionShape.sphere(_TERRAIN_WHEEL_RADIUS))

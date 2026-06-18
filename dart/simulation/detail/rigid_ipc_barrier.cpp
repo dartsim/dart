@@ -248,6 +248,156 @@ using CandidatePairAllocator = dart::common::StlAllocator<CandidatePair>;
 using BarrierTriplet = Eigen::Triplet<double>;
 using BarrierTripletAllocator = dart::common::StlAllocator<BarrierTriplet>;
 
+void zeroSparseValues(Eigen::SparseMatrix<double>& matrix)
+{
+  if (matrix.nonZeros() > 0) {
+    std::fill(matrix.valuePtr(), matrix.valuePtr() + matrix.nonZeros(), 0.0);
+  }
+}
+
+void restoreSparseValuesFromMatchingPattern(
+    Eigen::SparseMatrix<double>& target,
+    const Eigen::SparseMatrix<double>& source)
+{
+  if (source.nonZeros() == 0) {
+    return;
+  }
+
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using StorageIndex = SparseMatrix::StorageIndex;
+  const StorageIndex* outer = target.outerIndexPtr();
+  const StorageIndex* inner = target.innerIndexPtr();
+  double* values = target.valuePtr();
+  if (outer == nullptr || inner == nullptr || values == nullptr) {
+    return;
+  }
+
+  for (Eigen::Index sourceOuter = 0; sourceOuter < source.outerSize();
+       ++sourceOuter) {
+    for (SparseMatrix::InnerIterator it(source, sourceOuter); it; ++it) {
+      const Eigen::Index row = it.row();
+      const Eigen::Index col = it.col();
+      if (row < 0 || row >= target.rows() || col < 0 || col >= target.cols()) {
+        continue;
+      }
+      const auto begin = outer[col];
+      const auto end = outer[col + 1];
+      const StorageIndex rowIndex = static_cast<StorageIndex>(row);
+      const StorageIndex* targetIt
+          = std::lower_bound(inner + begin, inner + end, rowIndex);
+      if (targetIt != inner + end && *targetIt == rowIndex) {
+        values[targetIt - inner] = it.value();
+      }
+    }
+  }
+}
+
+bool sparsePatternsMatch(
+    const Eigen::SparseMatrix<double>& target,
+    const Eigen::SparseMatrix<double>& source)
+{
+  if (target.rows() != source.rows() || target.cols() != source.cols()
+      || target.nonZeros() != source.nonZeros() || !target.isCompressed()) {
+    return false;
+  }
+
+  if (source.nonZeros() == 0) {
+    return true;
+  }
+
+  if (!source.isCompressed()) {
+    return false;
+  }
+
+  if (target.outerIndexPtr() == nullptr || source.outerIndexPtr() == nullptr
+      || target.innerIndexPtr() == nullptr
+      || source.innerIndexPtr() == nullptr) {
+    return false;
+  }
+
+  const auto outerCount = static_cast<std::size_t>(source.outerSize() + 1);
+  return std::equal(
+             source.outerIndexPtr(),
+             source.outerIndexPtr() + outerCount,
+             target.outerIndexPtr())
+         && std::equal(
+             source.innerIndexPtr(),
+             source.innerIndexPtr() + source.nonZeros(),
+             target.innerIndexPtr());
+}
+
+void reserveSparsePatternLike(
+    Eigen::SparseMatrix<double>& target,
+    const Eigen::SparseMatrix<double>& source,
+    const bool preserveExistingValues = false)
+{
+  std::optional<Eigen::SparseMatrix<double>> preservedValues;
+  if (preserveExistingValues) {
+    preservedValues.emplace(target);
+    preservedValues->makeCompressed();
+  }
+
+  if (!sparsePatternsMatch(target, source)) {
+    target = source;
+    target.makeCompressed();
+  }
+  if (preservedValues.has_value()) {
+    restoreSparseValuesFromMatchingPattern(target, *preservedValues);
+  } else {
+    zeroSparseValues(target);
+  }
+}
+
+template <typename TripletVector>
+void appendSparsePatternTriplets(
+    const Eigen::SparseMatrix<double>& source, TripletVector& triplets)
+{
+  for (int outer = 0; outer < source.outerSize(); ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(source, outer); it;
+         ++it) {
+      triplets.emplace_back(it.row(), it.col(), 1.0);
+    }
+  }
+}
+
+template <typename TripletVector>
+void appendRigidIpcHessianBlockPattern(
+    const RigidIpcBarrierAssembly& assembly,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    TripletVector& triplets)
+{
+  const std::array<std::size_t, 2> bodies{bodyA, bodyB};
+  for (const std::size_t rowBody : bodies) {
+    if (rowBody >= assembly.bodyDofOffsets.size()) {
+      continue;
+    }
+    const std::size_t rowOffset = assembly.bodyDofOffsets[rowBody];
+    if (rowOffset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+
+    for (const std::size_t colBody : bodies) {
+      if (colBody >= assembly.bodyDofOffsets.size()) {
+        continue;
+      }
+      const std::size_t colOffset = assembly.bodyDofOffsets[colBody];
+      if (colOffset == RigidIpcBarrierAssembly::npos) {
+        continue;
+      }
+
+      for (Eigen::Index col = 0; col < 6; ++col) {
+        for (Eigen::Index row = 0; row < 6; ++row) {
+          triplets.emplace_back(
+              static_cast<Eigen::Index>(rowOffset) + row,
+              static_cast<Eigen::Index>(colOffset) + col,
+              1.0);
+        }
+      }
+    }
+  }
+}
+
 struct RigidIpcSurfacePairScratch
 {
   static constexpr std::size_t kSmallSurfaceEdgeCapacity = 8u;
@@ -386,7 +536,6 @@ struct RigidIpcProjectedNewtonSolveScratchWorkspace
   Eigen::MatrixXd equalityKktMatrix;
   Eigen::VectorXd equalityKktRhs;
   Eigen::VectorXd equalityKktSolution;
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> equalityKktQr;
 };
 
 namespace {
@@ -476,6 +625,142 @@ void collectCandidateSurfacePairs(
   pairs.clear();
   dcd::visitSelfSweepPairs(
       items, [&](std::size_t a, std::size_t b) { pairs.emplace_back(a, b); });
+}
+
+template <typename TripletVector>
+std::size_t reserveBlockSparseHessianPatternLike(
+    Eigen::SparseMatrix<double>& target,
+    const RigidIpcBarrierAssembly& source,
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcSurfacePairScratch* pairScratch,
+    TripletVector& triplets,
+    const bool preserveExistingValues = false)
+{
+  std::optional<Eigen::SparseMatrix<double>> preservedValues;
+  if (preserveExistingValues) {
+    preservedValues.emplace(target);
+    preservedValues->makeCompressed();
+  }
+
+  double activationDistance = 0.0;
+  for (const auto& constraint : source.activeConstraints) {
+    activationDistance = std::max(
+        activationDistance,
+        std::sqrt(
+            std::max(
+                0.0, constraint.reduced.primitive.squaredActivationDistance)));
+  }
+
+  triplets.clear();
+  triplets.reserve(
+      static_cast<std::size_t>(source.hessian.nonZeros())
+      + 36u * source.bodyDofOffsets.size()
+      + 144u
+            * (source.activeConstraints.size()
+               + source.activeFrictionConstraints.size()));
+  appendSparsePatternTriplets(source.hessian, triplets);
+  for (std::size_t body = 0; body < source.bodyDofOffsets.size(); ++body) {
+    appendRigidIpcHessianBlockPattern(source, body, body, triplets);
+  }
+  for (const auto& constraint : source.activeConstraints) {
+    appendRigidIpcHessianBlockPattern(
+        source, constraint.bodyA, constraint.bodyB, triplets);
+  }
+  for (const auto& constraint : source.activeFrictionConstraints) {
+    appendRigidIpcHessianBlockPattern(
+        source, constraint.bodyA, constraint.bodyB, triplets);
+  }
+  std::size_t candidatePrimitiveCapacity = 0u;
+  if (pairScratch != nullptr && activationDistance > 0.0) {
+    pairScratch->resizeSurfaceEdges(surfaces.size());
+    auto& surfaceAabbs = pairScratch->surfaceAabbs;
+    surfaceAabbs.clear();
+    surfaceAabbs.reserve(surfaces.size());
+    for (std::size_t body = 0; body < surfaces.size(); ++body) {
+      buildSurfaceEdges(surfaces[body], pairScratch->surfaceEdgesAt(body));
+      surfaceAabbs.push_back(computeSurfaceWorldAabb(surfaces[body]));
+    }
+
+    auto& surfaceMargins = pairScratch->surfaceMargins;
+    surfaceMargins.assign(surfaces.size(), 0.5 * activationDistance);
+    collectCandidateSurfacePairs(
+        surfaceAabbs,
+        surfaceMargins,
+        pairScratch->sweepItems,
+        pairScratch->candidatePairs);
+    for (const auto& candidatePair : pairScratch->candidatePairs) {
+      appendRigidIpcHessianBlockPattern(
+          source, candidatePair.first, candidatePair.second, triplets);
+      const RigidIpcBarrierSurface& a = surfaces[candidatePair.first];
+      const RigidIpcBarrierSurface& b = surfaces[candidatePair.second];
+      const std::size_t edgeCountA
+          = pairScratch->surfaceEdgesAt(candidatePair.first).size();
+      const std::size_t edgeCountB
+          = pairScratch->surfaceEdgesAt(candidatePair.second).size();
+      candidatePrimitiveCapacity += a.vertices.size() * b.vertices.size();
+      candidatePrimitiveCapacity += a.vertices.size() * edgeCountB;
+      candidatePrimitiveCapacity += b.vertices.size() * edgeCountA;
+      candidatePrimitiveCapacity += edgeCountA * edgeCountB;
+      candidatePrimitiveCapacity += a.vertices.size() * b.triangles.size();
+      candidatePrimitiveCapacity += b.vertices.size() * a.triangles.size();
+    }
+  }
+
+  if (!preserveExistingValues
+      && tryAssembleSparseFromExistingPattern(
+          target, source.hessian.rows(), source.hessian.cols(), triplets)) {
+    return candidatePrimitiveCapacity;
+  }
+
+  target.resize(source.hessian.rows(), source.hessian.cols());
+  target.setZero();
+  target.reserve(static_cast<Eigen::Index>(triplets.size()));
+  target.setFromTriplets(triplets.begin(), triplets.end());
+  target.makeCompressed();
+  zeroSparseValues(target);
+  if (preservedValues.has_value()) {
+    restoreSparseValuesFromMatchingPattern(target, *preservedValues);
+  }
+  return candidatePrimitiveCapacity;
+}
+
+template <typename TripletVector>
+void reserveRigidIpcAssemblySparsePatternsLike(
+    RigidIpcBarrierAssembly& target,
+    const RigidIpcBarrierAssembly& source,
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcSurfacePairScratch* pairScratch,
+    TripletVector& triplets,
+    const bool preserveExistingValues = false)
+{
+  if (target.gradient.size() != source.gradient.size()) {
+    target.gradient.resize(source.gradient.size());
+  }
+  const std::size_t candidatePrimitiveCapacity
+      = reserveBlockSparseHessianPatternLike(
+          target.hessian,
+          source,
+          surfaces,
+          pairScratch,
+          triplets,
+          preserveExistingValues);
+
+  if (target.equalityResidual.size() != source.equalityResidual.size()) {
+    target.equalityResidual.resize(source.equalityResidual.size());
+  }
+  reserveSparsePatternLike(
+      target.equalityJacobian, source.equalityJacobian, preserveExistingValues);
+
+  target.bodyDofOffsets.reserve(source.bodyDofOffsets.size());
+  const std::size_t activeConstraintCapacity = std::max(
+      candidatePrimitiveCapacity,
+      std::max(
+          source.activeConstraints.size(),
+          source.activeFrictionConstraints.size()));
+  target.activeConstraints.reserve(activeConstraintCapacity);
+  target.activeFrictionConstraints.reserve(activeConstraintCapacity);
+  target.activeArticulationConstraints.reserve(
+      source.activeArticulationConstraints.size());
 }
 
 PointTransformDerivatives pointTransformDerivatives(
@@ -1343,6 +1628,57 @@ bool solveStackLinearSystemInPlace(
   return solution.head(size).allFinite();
 }
 
+bool solveDynamicLinearSystemInPlace(
+    Eigen::MatrixXd& matrix,
+    Eigen::VectorXd& rhs,
+    const Eigen::Index size,
+    Eigen::VectorXd& solution)
+{
+  constexpr double kPivotTolerance = 1e-12;
+  for (Eigen::Index col = 0; col < size; ++col) {
+    Eigen::Index pivot = col;
+    double pivotAbs = std::abs(matrix(col, col));
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double candidate = std::abs(matrix(row, col));
+      if (candidate > pivotAbs) {
+        pivotAbs = candidate;
+        pivot = row;
+      }
+    }
+    if (!(pivotAbs > kPivotTolerance) || !std::isfinite(pivotAbs)) {
+      return false;
+    }
+    if (pivot != col) {
+      matrix.row(col).swap(matrix.row(pivot));
+      std::swap(rhs[col], rhs[pivot]);
+    }
+
+    for (Eigen::Index row = col + 1; row < size; ++row) {
+      const double factor = matrix(row, col) / matrix(col, col);
+      matrix(row, col) = 0.0;
+      for (Eigen::Index c = col + 1; c < size; ++c) {
+        matrix(row, c) -= factor * matrix(col, c);
+      }
+      rhs[row] -= factor * rhs[col];
+    }
+  }
+
+  solution.resize(size);
+  solution.setZero();
+  for (Eigen::Index row = size; row-- > 0;) {
+    double value = rhs[row];
+    for (Eigen::Index col = row + 1; col < size; ++col) {
+      value -= matrix(row, col) * solution[col];
+    }
+    const double diagonal = matrix(row, row);
+    if (!(std::abs(diagonal) > kPivotTolerance) || !std::isfinite(diagonal)) {
+      return false;
+    }
+    solution[row] = value / diagonal;
+  }
+  return solution.head(size).allFinite();
+}
+
 bool solveEqualityConstrainedKktInto(
     const RigidIpcBarrierAssembly& assembly,
     const Eigen::MatrixXd& denseHessian,
@@ -1408,16 +1744,9 @@ bool solveEqualityConstrainedKktInto(
   kktRhs.head(dofs) = -assembly.gradient;
   kktRhs.tail(equalityRows) = -assembly.equalityResidual;
 
-  auto& kktQr = workspace.equalityKktQr;
-  kktQr.compute(kktMatrix);
-  if (kktQr.info() != Eigen::Success) {
-    return false;
-  }
-
   auto& kktSolution = workspace.equalityKktSolution;
-  kktSolution.resize(kktSize);
-  kktSolution = kktQr.solve(kktRhs);
-  if (!kktSolution.allFinite()) {
+  if (!solveDynamicLinearSystemInPlace(
+          kktMatrix, kktRhs, kktSize, kktSolution)) {
     return false;
   }
 
@@ -1490,7 +1819,14 @@ RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
                              : localDenseHessianLdlt;
 
   denseHessian.resize(dofs, dofs);
-  denseHessian = assembly.hessian;
+  denseHessian.setZero();
+  for (int outer = 0; outer < assembly.hessian.outerSize(); ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(assembly.hessian, outer);
+         it;
+         ++it) {
+      denseHessian(it.row(), it.col()) += it.value();
+    }
+  }
   denseHessian.diagonal().array() += regularization;
   if (!denseHessian.allFinite()) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
@@ -3052,6 +3388,81 @@ RigidIpcProjectedNewtonSolveScratch::operator=(
   workspace = std::exchange(other.workspace, nullptr);
   other.memoryAllocator = nullptr;
   return *this;
+}
+
+void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch)
+{
+  const Eigen::Index dofs = result.assembly.gradient.size();
+  const Eigen::Index equalityRows = result.assembly.equalityResidual.size();
+
+  std::vector<BarrierTriplet, BarrierTripletAllocator> localTriplets{
+      BarrierTripletAllocator{allocatorOrDefault(scratch.memoryAllocator)}};
+  auto& triplets = scratch.workspace != nullptr
+                       ? scratch.workspace->assemblyScratch.barrierTriplets
+                       : localTriplets;
+  RigidIpcSurfacePairScratch* pairScratch
+      = scratch.workspace != nullptr ? &scratch.workspace->assemblyScratch.pairs
+                                     : nullptr;
+  reserveRigidIpcAssemblySparsePatternsLike(
+      result.assembly, result.assembly, surfaces, pairScratch, triplets, true);
+
+  if (scratch.workspace == nullptr) {
+    return;
+  }
+
+  auto& workspace = *scratch.workspace;
+  const auto hessianPatternNonZeros
+      = static_cast<std::size_t>(result.assembly.hessian.nonZeros());
+  const std::size_t laggedFrictionTripletCapacity
+      = 144u * result.assembly.activeConstraints.size();
+  workspace.assemblyScratch.barrierTriplets.reserve(hessianPatternNonZeros);
+  workspace.assemblyScratch.objectiveTriplets.reserve(
+      hessianPatternNonZeros + laggedFrictionTripletCapacity
+      + 6u * surfaces.size());
+  reserveRigidIpcAssemblySparsePatternsLike(
+      workspace.assemblyScratch.energyAssembly,
+      result.assembly,
+      surfaces,
+      pairScratch,
+      triplets);
+  reserveRigidIpcAssemblySparsePatternsLike(
+      workspace.assemblyScratch.unitBarrierAssembly,
+      result.assembly,
+      surfaces,
+      pairScratch,
+      triplets);
+  reserveRigidIpcAssemblySparsePatternsLike(
+      workspace.assemblyScratch.laggedAssembly,
+      result.assembly,
+      surfaces,
+      pairScratch,
+      triplets);
+  reserveRigidIpcAssemblySparsePatternsLike(
+      workspace.assemblyScratch.candidateAssembly,
+      result.assembly,
+      surfaces,
+      pairScratch,
+      triplets);
+
+  workspace.denseHessian.resize(dofs, dofs);
+  workspace.denseHessian.setIdentity();
+  workspace.denseHessianLdlt.compute(workspace.denseHessian);
+  workspace.denseHessian.setZero();
+  workspace.rawStep.resize(dofs);
+
+  if (equalityRows > 0) {
+    workspace.equalityDenseJacobian.resize(equalityRows, dofs);
+    workspace.equalityDenseJacobian.setZero();
+    const Eigen::Index kktSize = dofs + equalityRows;
+    workspace.equalityKktMatrix.resize(kktSize, kktSize);
+    workspace.equalityKktMatrix.setIdentity();
+    workspace.equalityKktRhs.resize(kktSize);
+    workspace.equalityKktSolution.resize(kktSize);
+    workspace.equalityKktMatrix.setZero();
+  }
 }
 
 RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(

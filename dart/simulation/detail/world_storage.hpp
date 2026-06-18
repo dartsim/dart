@@ -171,6 +171,13 @@ struct WorldStorage
   /// otherwise.
   std::optional<StepDerivatives> stepDerivatives;
 
+  /// True only after a real simulation step captured `stepDerivatives`.
+  ///
+  /// The bake boundary may resize this storage to make the first post-bake
+  /// differentiable step allocation-free, but callers still need `step()` to
+  /// populate a semantically valid derivative snapshot.
+  bool stepDerivativesValid = false;
+
   /// Persistent pair-level collision-query exclusions, stored with canonical
   /// endpoint ordering. This scene-level filter is applied after broad-phase
   /// candidate generation and before narrow-phase contact generation.

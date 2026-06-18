@@ -246,6 +246,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Added first-post-bake no-allocation gates for DART 7 simulation loops,
+  including differentiable contact-free stepping, large rigid IPC equality KKT
+  rows, and the default above-dense deformable sparse iterative path.
+  ([#3053](https://github.com/dartsim/dart/pull/3053))
 - Added optional CUDA smoke and benchmark packet paths while keeping default
   Pixi environments and dartpy wheels free of GPU runtime dependencies.
 

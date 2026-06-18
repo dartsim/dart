@@ -1153,10 +1153,10 @@ TEST(RigidIpcFixtureReplay, RuntimeReplayCanUseParsedSolverSettings)
     }
 
     sx::compute::RigidIpcContactStageOptions stageOptions;
-    stageOptions.maxIterations = 4u;
+    stageOptions.maxIterations = 8u;
     expio::applyRigidIpcFixtureStageOptions(fixture, stageOptions);
     sx::compute::RigidIpcContactStage ipcStage(stageOptions);
-    EXPECT_EQ(ipcStage.getMaxIterations(), 4u);
+    EXPECT_EQ(ipcStage.getMaxIterations(), 8u);
     EXPECT_DOUBLE_EQ(ipcStage.getActivationDistance(), activationDistance);
     EXPECT_EQ(
         ipcStage.getFrictionIterations(),
