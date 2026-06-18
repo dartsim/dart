@@ -8,6 +8,7 @@ nonblank screenshot is produced. The full-catalog in-process smoke remains in
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 import sys
@@ -56,9 +57,15 @@ def test_representative_scenes_render_headlessly() -> None:
         "--height",
         "240",
     ]
+    pythonpath = os.environ.get("PYTHONPATH", "")
+    child_pythonpath = str(_PYTHON_DIR)
+    if pythonpath:
+        child_pythonpath = os.pathsep.join([child_pythonpath, pythonpath])
+    env = {**os.environ, "PYTHONPATH": child_pythonpath}
     proc = subprocess.run(
         cmd,
         cwd=_REPO_ROOT,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
