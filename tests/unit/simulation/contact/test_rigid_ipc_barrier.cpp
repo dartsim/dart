@@ -1763,6 +1763,12 @@ TEST(RigidIpcBarrier, ProjectedNewtonScratchReserveKeepsSparseAssemblyPattern)
   expdetail::RigidIpcProjectedNewtonSolveOptions options(allocator);
   options.barrier.squaredActivationDistance = 1.0;
   options.maxIterations = 0u;
+  auto& articulation = options.articulationConstraints.emplace_back();
+  articulation.active = true;
+  articulation.bodyA = 0u;
+  articulation.bodyB = 1u;
+  articulation.localPointA = Eigen::Vector3d::Zero();
+  articulation.localPointB = Eigen::Vector3d::Zero();
   options.dynamicsTerms.reserve(kSurfaceCount);
   for (std::size_t i = 0; i < kSurfaceCount; ++i) {
     auto& dynamics = options.dynamicsTerms.emplace_back();
@@ -1782,6 +1788,12 @@ TEST(RigidIpcBarrier, ProjectedNewtonScratchReserveKeepsSparseAssemblyPattern)
   ASSERT_GT(nonZerosBeforeReserve, 0);
   ASSERT_LT(nonZerosBeforeReserve, dofs * dofs / 4)
       << "warm-solve assembly should stay sparse before scratch reserve";
+  const Eigen::VectorXd gradientBeforeReserve = result.assembly.gradient;
+  const Eigen::MatrixXd hessianBeforeReserve(result.assembly.hessian);
+  const Eigen::VectorXd equalityResidualBeforeReserve
+      = result.assembly.equalityResidual;
+  const Eigen::MatrixXd equalityJacobianBeforeReserve(
+      result.assembly.equalityJacobian);
 
   expdetail::reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
       surfaces, result, scratch);
@@ -1790,6 +1802,14 @@ TEST(RigidIpcBarrier, ProjectedNewtonScratchReserveKeepsSparseAssemblyPattern)
   EXPECT_LT(result.assembly.hessian.nonZeros(), dofs * dofs / 4)
       << "scratch reserve must mirror the warm sparse pattern instead of "
          "materializing a dense dof-by-dof pattern";
+  EXPECT_TRUE(result.assembly.gradient.isApprox(gradientBeforeReserve));
+  EXPECT_TRUE(
+      Eigen::MatrixXd(result.assembly.hessian).isApprox(hessianBeforeReserve));
+  EXPECT_TRUE(
+      result.assembly.equalityResidual.isApprox(equalityResidualBeforeReserve));
+  EXPECT_TRUE(
+      Eigen::MatrixXd(result.assembly.equalityJacobian)
+          .isApprox(equalityJacobianBeforeReserve));
 }
 
 //==============================================================================

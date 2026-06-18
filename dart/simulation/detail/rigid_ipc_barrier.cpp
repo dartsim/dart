@@ -255,6 +255,43 @@ void zeroSparseValues(Eigen::SparseMatrix<double>& matrix)
   }
 }
 
+void restoreSparseValuesFromMatchingPattern(
+    Eigen::SparseMatrix<double>& target,
+    const Eigen::SparseMatrix<double>& source)
+{
+  if (source.nonZeros() == 0) {
+    return;
+  }
+
+  using SparseMatrix = Eigen::SparseMatrix<double>;
+  using StorageIndex = SparseMatrix::StorageIndex;
+  const StorageIndex* outer = target.outerIndexPtr();
+  const StorageIndex* inner = target.innerIndexPtr();
+  double* values = target.valuePtr();
+  if (outer == nullptr || inner == nullptr || values == nullptr) {
+    return;
+  }
+
+  for (Eigen::Index sourceOuter = 0; sourceOuter < source.outerSize();
+       ++sourceOuter) {
+    for (SparseMatrix::InnerIterator it(source, sourceOuter); it; ++it) {
+      const Eigen::Index row = it.row();
+      const Eigen::Index col = it.col();
+      if (row < 0 || row >= target.rows() || col < 0 || col >= target.cols()) {
+        continue;
+      }
+      const auto begin = outer[col];
+      const auto end = outer[col + 1];
+      const StorageIndex rowIndex = static_cast<StorageIndex>(row);
+      const StorageIndex* targetIt
+          = std::lower_bound(inner + begin, inner + end, rowIndex);
+      if (targetIt != inner + end && *targetIt == rowIndex) {
+        values[targetIt - inner] = it.value();
+      }
+    }
+  }
+}
+
 bool sparsePatternsMatch(
     const Eigen::SparseMatrix<double>& target,
     const Eigen::SparseMatrix<double>& source)
@@ -291,13 +328,24 @@ bool sparsePatternsMatch(
 
 void reserveSparsePatternLike(
     Eigen::SparseMatrix<double>& target,
-    const Eigen::SparseMatrix<double>& source)
+    const Eigen::SparseMatrix<double>& source,
+    const bool preserveExistingValues = false)
 {
+  std::optional<Eigen::SparseMatrix<double>> preservedValues;
+  if (preserveExistingValues) {
+    preservedValues.emplace(target);
+    preservedValues->makeCompressed();
+  }
+
   if (!sparsePatternsMatch(target, source)) {
     target = source;
     target.makeCompressed();
   }
-  zeroSparseValues(target);
+  if (preservedValues.has_value()) {
+    restoreSparseValuesFromMatchingPattern(target, *preservedValues);
+  } else {
+    zeroSparseValues(target);
+  }
 }
 
 template <typename TripletVector>
@@ -585,8 +633,15 @@ std::size_t reserveBlockSparseHessianPatternLike(
     const RigidIpcBarrierAssembly& source,
     std::span<const RigidIpcBarrierSurface> surfaces,
     RigidIpcSurfacePairScratch* pairScratch,
-    TripletVector& triplets)
+    TripletVector& triplets,
+    const bool preserveExistingValues = false)
 {
+  std::optional<Eigen::SparseMatrix<double>> preservedValues;
+  if (preserveExistingValues) {
+    preservedValues.emplace(target);
+    preservedValues->makeCompressed();
+  }
+
   double activationDistance = 0.0;
   for (const auto& constraint : source.activeConstraints) {
     activationDistance = std::max(
@@ -651,7 +706,8 @@ std::size_t reserveBlockSparseHessianPatternLike(
     }
   }
 
-  if (tryAssembleSparseFromExistingPattern(
+  if (!preserveExistingValues
+      && tryAssembleSparseFromExistingPattern(
           target, source.hessian.rows(), source.hessian.cols(), triplets)) {
     return candidatePrimitiveCapacity;
   }
@@ -662,6 +718,9 @@ std::size_t reserveBlockSparseHessianPatternLike(
   target.setFromTriplets(triplets.begin(), triplets.end());
   target.makeCompressed();
   zeroSparseValues(target);
+  if (preservedValues.has_value()) {
+    restoreSparseValuesFromMatchingPattern(target, *preservedValues);
+  }
   return candidatePrimitiveCapacity;
 }
 
@@ -671,19 +730,26 @@ void reserveRigidIpcAssemblySparsePatternsLike(
     const RigidIpcBarrierAssembly& source,
     std::span<const RigidIpcBarrierSurface> surfaces,
     RigidIpcSurfacePairScratch* pairScratch,
-    TripletVector& triplets)
+    TripletVector& triplets,
+    const bool preserveExistingValues = false)
 {
   if (target.gradient.size() != source.gradient.size()) {
     target.gradient.resize(source.gradient.size());
   }
   const std::size_t candidatePrimitiveCapacity
       = reserveBlockSparseHessianPatternLike(
-          target.hessian, source, surfaces, pairScratch, triplets);
+          target.hessian,
+          source,
+          surfaces,
+          pairScratch,
+          triplets,
+          preserveExistingValues);
 
   if (target.equalityResidual.size() != source.equalityResidual.size()) {
     target.equalityResidual.resize(source.equalityResidual.size());
   }
-  reserveSparsePatternLike(target.equalityJacobian, source.equalityJacobian);
+  reserveSparsePatternLike(
+      target.equalityJacobian, source.equalityJacobian, preserveExistingValues);
 
   target.bodyDofOffsets.reserve(source.bodyDofOffsets.size());
   const std::size_t activeConstraintCapacity = std::max(
@@ -3341,7 +3407,7 @@ void reserveRigidIpcProjectedNewtonSolveScratchForSameShape(
       = scratch.workspace != nullptr ? &scratch.workspace->assemblyScratch.pairs
                                      : nullptr;
   reserveRigidIpcAssemblySparsePatternsLike(
-      result.assembly, result.assembly, surfaces, pairScratch, triplets);
+      result.assembly, result.assembly, surfaces, pairScratch, triplets, true);
 
   if (scratch.workspace == nullptr) {
     return;
