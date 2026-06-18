@@ -305,6 +305,9 @@ void ResidentRigidBodyBatchCuda::uploadState(const RigidBodyStateBatch& state)
     throwIfCudaRuntimeUnavailable();
   }
 
+  m_impl->stateUploaded = false;
+  m_impl->diagnostics.deviceStateValid = false;
+  m_impl->diagnostics.hostStateCoherent = false;
   m_impl->devicePosition.ensure(state.position.size());
   m_impl->deviceLinearVelocity.ensure(state.linearVelocity.size());
   m_impl->deviceOrientation.ensure(state.orientation.size());
@@ -340,6 +343,7 @@ void ResidentRigidBodyBatchCuda::uploadControl(const std::vector<double>& force)
     throwIfCudaRuntimeUnavailable();
   }
 
+  m_impl->controlUploaded = false;
   m_impl->deviceForce.ensure(force.size());
   m_impl->deviceForce.copyToDevice(force, "resident rigid-body force upload");
   m_impl->controlUploaded = true;
