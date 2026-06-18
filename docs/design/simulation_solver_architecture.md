@@ -288,7 +288,7 @@ per domain from content:
 | Content                    | Default method family                                                                   |
 | -------------------------- | --------------------------------------------------------------------------------------- |
 | Free rigid bodies          | Sequential-impulse free-rigid dynamics/contact path                                     |
-| Articulated multibodies    | Semi-implicit joint-space forward dynamics plus the unified constraint/contact path     |
+| Articulated multibodies    | Semi-implicit joint-space integration plus the unified constraint/contact path          |
 | Deformables                | Mass-spring / stable neo-Hookean FEM through the deformable dynamics stage              |
 | Particles / fluids (later) | Continuum/particle solver                                                               |
 | Mixed domains              | Per-domain defaults in the content-aware schedule; cross-domain couplers remain planned |

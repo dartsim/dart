@@ -760,8 +760,10 @@ computeMultibodyMechanicalEnergyTerms(
 /// configuration, via the articulated-body algorithm (zero velocity/gravity).
 /// This is the linear-time inverse-mass apply that powers the variational
 /// integrator's RIQN step; exposed for testing against the dense mass-matrix
-/// solve. Throws InvalidArgumentException if `impulse` size does not equal the
-/// movable degree-of-freedom count.
+/// solve. This path intentionally excludes joint armature until the
+/// variational residual/Jacobian include matching armature terms. Throws
+/// InvalidArgumentException if `impulse` size does not equal the movable
+/// degree-of-freedom count.
 [[nodiscard]] DART_SIMULATION_API Eigen::VectorXd
 computeMultibodyInverseMassProduct(
     detail::WorldRegistry& registry,

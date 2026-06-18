@@ -20,6 +20,7 @@
 #include "dart/simulation/comps/variational_contact.hpp"
 #include "dart/simulation/comps/variational_contact_dual_state.hpp"
 #include "dart/simulation/compute/multibody_dynamics.hpp"
+#include "dart/simulation/detail/articulated_inverse_mass.hpp"
 #include "dart/simulation/detail/multibody_spatial_algebra.hpp"
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/variational/discrete_mechanics_math.hpp"

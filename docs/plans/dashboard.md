@@ -26,14 +26,14 @@ its own line so status updates remain git-history friendly.
   WP-091.30 (executor primitives), and WP-091.33 (batch/device design notes)
   are `[done]` via PR #3029; WP-091.33a (batch semantics tests) is `[done]`
   via PR #3042; and WP-091.21 (baked dense-index Model artifact) is `[done]`
-  via PR #3044. The current branch executes WP-091.33b and folds in the tightly
-  related WP-091.33c Control-sequence rollout shape plus WP-091.31's per-World
-  accelerator policy to avoid another PR: give the rigid batch seed an internal
-  baked Model/State owner, a backend-neutral Control sequence layout, rollout
-  diagnostics that distinguish homogeneous batch from heterogeneous fallback,
-  and a World-baked deformable PSD accelerator choice. The remaining WS0 packet
-  is WP-091.4 legacy freeze, which stays **blocked**: PLAN-042 Decision 5 has
-  no recorded maintainer direction. Packets are orchestrator-authored per
+  via PR #3044; WP-091.31 (per-World accelerator policy), WP-091.33b (baked
+  rigid Model/State owner), and WP-091.33c (Control-sequence rollout shape) are
+  `[done]` via PR #3052. The remaining WS0 packet is WP-091.4 legacy freeze,
+  which stays **blocked**: PLAN-042 Decision 5 has no recorded maintainer
+  direction. The next unblocked PLAN-091 work is the available WS2/WS3 packet
+  set, with WP-091.32 (O(n) shared articulated core) first in document order
+  and WP-091.33d (resident device owner) available after the accepted
+  WP-091.31/WP-091.33c dependency chain. Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
   line. The standing rule applies now: new solver-family work routes through

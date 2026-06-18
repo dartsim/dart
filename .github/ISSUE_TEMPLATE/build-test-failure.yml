@@ -1,8 +1,8 @@
 name: Build/Test Failure (Specific Platform)
 description: Report build or test failures on a specific OS/distro or packaging stack.
 title: "[Build/Test] <short summary>"
+type: Bug
 labels:
-  - "priority: low"
   - "status: help wanted"
 body:
   - type: markdown
