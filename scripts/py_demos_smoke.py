@@ -220,7 +220,12 @@ def _ppm_is_nonblank(path: os.PathLike[str] | str) -> bool:
 
 
 def _run_render_worker(
-    scene_id: str, frames: int, timeout: float, width: int, height: int
+    scene_id: str,
+    frames: int,
+    gpu_pref: bool | None,
+    timeout: float,
+    width: int,
+    height: int,
 ) -> SceneResult:
     with tempfile.NamedTemporaryFile(
         prefix=f"dart_py_demo_{scene_id}_", suffix=".ppm", delete=False
@@ -243,6 +248,10 @@ def _run_render_worker(
         "--height",
         str(height),
     ]
+    if gpu_pref is True:
+        cmd.append("--gpu")
+    elif gpu_pref is False:
+        cmd.append("--no-gpu")
 
     start = time.monotonic()
     try:
@@ -303,7 +312,7 @@ def _orchestrate(args: argparse.Namespace) -> int:
         print(
             f"py-demos smoke: {len(scene_ids)} scenes, {args.frames} frames each, "
             f"timeout {args.timeout:.0f}s, mode=render, "
-            f"resolution={args.width}x{args.height}"
+            f"resolution={args.width}x{args.height}, gpu={args.gpu_pref_label}"
         )
     else:
         print(
@@ -316,7 +325,7 @@ def _orchestrate(args: argparse.Namespace) -> int:
     for i, scene_id in enumerate(scene_ids, 1):
         if args.render:
             res = _run_render_worker(
-                scene_id, args.frames, args.timeout, args.width, args.height
+                scene_id, args.frames, args.gpu, args.timeout, args.width, args.height
             )
         else:
             res = _run_worker(scene_id, args.frames, args.gpu, args.timeout)

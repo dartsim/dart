@@ -140,3 +140,35 @@ def test_run_worker_reports_timeout(monkeypatch) -> None:
     assert result.status == "timeout"
     assert result.scene_id == "rigid_body"
     assert "exceeded 2s" in result.detail
+
+
+def test_run_render_worker_forwards_gpu_preference(monkeypatch) -> None:
+    module = _load_smoke_module()
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *_args, **_kwargs):
+        commands.append(list(cmd))
+        screenshot = cmd[cmd.index("--screenshot") + 1]
+        Path(screenshot).write_bytes(b"not blank")
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    monkeypatch.setattr(module, "_ppm_is_nonblank", lambda _path: True)
+
+    for gpu_pref in (True, False, None):
+        result = module._run_render_worker(
+            "rigid_body",
+            frames=2,
+            gpu_pref=gpu_pref,
+            timeout=5.0,
+            width=320,
+            height=240,
+        )
+        assert result.status == "ok"
+
+    assert "--gpu" in commands[0]
+    assert "--no-gpu" not in commands[0]
+    assert "--no-gpu" in commands[1]
+    assert "--gpu" not in commands[1]
+    assert "--gpu" not in commands[2]
+    assert "--no-gpu" not in commands[2]
