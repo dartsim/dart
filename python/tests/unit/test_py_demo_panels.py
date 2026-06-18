@@ -3220,6 +3220,41 @@ def test_rigid_solver_panel_edits_reset_visual_runs(
     )
 
 
+def test_rigid_body_panel_edits_contact_solver_method() -> None:
+    sx = _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    world = setup.info["sx_world"]
+    assert setup.pre_step is not None
+
+    setup.pre_step()
+    assert world.time > 0.0
+
+    target_method = 1
+    builder = _ScriptedPanelBuilder(select_values={"Contact solver": target_method})
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("select:Contact solver:") for event in builder.events)
+    assert controller.contact_method_index == target_method
+    assert world.time == pytest.approx(0.0)
+    assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["contact_solver"] == "Boxed LCP"
+    assert capture_metrics["contact_solver_method"] == "BOXED_LCP"
+    assert capture_metrics["controls"]["contact_method_index"] == pytest.approx(
+        float(target_method)
+    )
+
+    replay_state = controller.capture_replay_state()
+    controller.contact_method_index = 0
+    controller.restore_replay_state(replay_state)
+
+    assert controller.contact_method_index == target_method
+    assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+
+
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     _require_simulation_symbols("World", "CollisionQueryOptions")
 

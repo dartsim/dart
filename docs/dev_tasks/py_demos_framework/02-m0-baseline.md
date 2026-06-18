@@ -22,19 +22,20 @@ The catalog was not broken — it was **unguarded**. Before this, only the first
 solid; what was missing was a systematic full-catalog no-crash guarantee. That
 guarantee now exists (tier-1: build + headless step + render/debug providers).
 
-So there are **no Codex fix-tasks** from the baseline. M0 pivots from "fix the
-breakage" to "lock the guarantee in and deepen it."
+So there are **no Codex fix-tasks** from the baseline. M0 pivoted from "fix the
+breakage" to "lock the guarantee in and deepen it"; that follow-up work is now
+complete.
 
-## Remaining M0 work (revised)
+## M0 Follow-Up Status
 
-1. **Lock the guard into CI** (exit criterion #5): a `pixi` task + a bounded
-   pytest so the full catalog stays green as it grows. ← next action.
-2. **Tier-2 coverage:** exercise `ScenePanel.build` with a fake builder
-   (panels are a live-viewer crash source not covered by tier-1).
-3. **Tier-3 coverage (later):** a full-catalog headless *render* pass through
-   the real Filament viewer (`--cycle-scenes --headless`).
-4. Scalable-contract lint (unregistered/duplicate scene guard) — likely already
-   partly covered by `test_registry_has_scenes`; confirm and extend.
+1. **Locked into CI:** `pixi run -e cuda py-demos-smoke` and the bounded pytest
+   guard keep the full catalog green as it grows.
+2. **Tier-2 coverage:** `ScenePanel.build` is exercised with a faithful fake
+   builder for the full catalog.
+3. **Tier-3 coverage:** the real Filament viewer render smoke covers the full
+   catalog with non-blank-frame detection.
+4. **Scalable-contract lint:** the registry tests catch unregistered,
+   duplicate, or ill-formed scene modules.
 
 ## Re-run
 

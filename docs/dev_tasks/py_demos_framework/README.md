@@ -26,13 +26,16 @@ and replay metadata.
   - [x] Scalable-contract guard: `test_every_scene_module_is_registered`
         (no orphan `scenes/*.py`) complements `test_registry_has_scenes`
         (unique ids + field contract). Adding a scene is now drift-safe.
-  - [x] Tier-3: full-catalog headless *render* pass through the real Filament
+  - [x] Tier-3: full-catalog headless _render_ pass through the real Filament
         viewer (`py-demos-smoke --render`, `pixi run -e cuda py-demos-render-smoke`,
         `test_demos_render_smoke.py`). **155/155** render non-blank; blank-detector
         verified (rejects a uniform frame). Software-Mesa env applied for dev hosts.
 - [ ] **M1 — Best domain + solver**: pick the flagship domain (rigid body) and
-      solver, and make that path excellent end-to-end (visual + panels + replay
-      + capture + docs).
+      solver, and make that path excellent end-to-end (visual + panels + replay + capture + docs). **In progress**.
+  - [x] First contact-baseline increment: the flagship `rigid_body` scene
+        exposes `contact_solver_method` in its panel, replay state, and capture
+        metadata so Sequential Impulse and the DART 6-style boxed-LCP contact
+        path can be inspected from the live demo.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -50,11 +53,11 @@ repeatable operation.
 - Chasing every solver/domain at once. M1 commits to one flagship pair; breadth
   comes only after the core is proven stable.
 - Performance benchmarking (that lives in the headless benchmark harness) and
-  headless correctness (that lives in tests). py-demos owns *visual inspection*.
+  headless correctness (that lives in tests). py-demos owns _visual inspection_.
 
 ## Key Decisions
 
-- **Battle-test = no-crash across the *full* catalog.** Today only the first 3
+- **Battle-test = no-crash across the _full_ catalog.** Today only the first 3
   scenes are smoke-tested via the GUI cycle (`test_demos_cycle.py`); ~140 scenes
   are registered. M0's foundation is a full-catalog headless smoke that exercises
   every scene's build + step + render and fails loudly on any regression.
@@ -67,12 +70,12 @@ repeatable operation.
 
 ## Immediate Next Steps
 
-1. Finish the dev build (`pixi run build-py-dev-docking`) so the viewer binding
-   is importable.
-2. Run a full-catalog headless no-crash smoke (every registered scene id) and
-   record which scenes fail today — this is the M0 ground-truth baseline.
-3. Triage failures into: fix-now, quarantine (mark planned/skip), or defer.
-4. Promote the full-catalog smoke into the test suite so the catalog stays green
-   as it grows.
+1. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
+   `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
+2. Capture a visual A/B packet for `rigid_body` with Sequential Impulse and
+   boxed-LCP contacts so reviewers can inspect the DART 6 baseline behavior.
+3. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
+   decide whether the final M1 experience remains two complementary scenes or
+   grows into one unified comparison scene.
 
 See `01-milestones.md` for the detailed milestone criteria and solver analysis.

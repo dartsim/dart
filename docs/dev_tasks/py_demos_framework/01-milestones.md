@@ -42,14 +42,14 @@ repeatable operation; the core is modern and lean.
 
 ### M0 smoke coverage tiers
 
-- **Tier 1 (now, `scripts/py_demos_smoke.py`):** per-scene build + headless step
-  + render/debug provider calls, subprocess-isolated. This is the baseline
-  no-crash signal.
+- **Tier 1 (now, `scripts/py_demos_smoke.py`):** per-scene build, headless
+  step, and render/debug provider calls, subprocess-isolated. This is the
+  baseline no-crash signal.
 - **Tier 2 (after baseline is green):** also exercise each `ScenePanel.build`
   with a fake builder. Reuse/extract `_FakePanelBuilder` / `_FakePanelContext`
-  from `python/tests/unit/test_py_demo_panels.py` (must cover the *full* builder
+  from `python/tests/unit/test_py_demo_panels.py` (must cover the _full_ builder
   API or it yields false failures). Panels are a real live-viewer crash source.
-- **Tier 3 (later):** a full-catalog headless *render* pass through the real
+- **Tier 3 (later):** a full-catalog headless _render_ pass through the real
   viewer (`--cycle-scenes --headless`) for the Filament render path.
 
 ### M0 triage policy (CONFIRMED): quarantine to green
@@ -58,7 +58,7 @@ Decision by the task owner: the **live catalog the user browses must be 100%
 green**. Scenes that cannot run yet (intentional `PLANNED_*` / PLAN-083
 placeholders, or anything blocked on a missing engine feature) are **explicitly
 marked skipped/planned and excluded from the live no-crash guarantee**, with the
-deferred work tracked here — *not* left to crash and *not* force-fixed now.
+deferred work tracked here — _not_ left to crash and _not_ force-fixed now.
 Genuine bugs in scenes that are supposed to run are fix-now. The smoke must
 distinguish "intentionally quarantined" from "unexpectedly broken" so a
 regression in a runnable scene still fails loudly.
@@ -80,12 +80,11 @@ used domain in robotics.
 **Direction: AVBD flagship + DART 6 boxed-LCP reference baseline.** Confirmed by
 the task owner. IPC remains the deferred accuracy/no-penetration specialist.
 
-
-| Option | What it is | Role in M1 |
-| --- | --- | --- |
-| **DART 6 boxed-LCP** (Dantzig / PGS, `BoxedLcpConstraintSolver`) | The battle-tested constraint solver robotics users (DART 6, Gazebo / gz-physics) rely on today | **Reference baseline** — the known-good for visual A/B trust checks |
-| **AVBD** (Augmented Vertex Block Descent, 2024) | The modern successor/generalization of XPBD/VBD; robust at high stiffness and high mass ratios; unifies rigid → articulated → soft | **Flagship** — the modern path we showcase and inspect deeply |
-| **IPC** (Incremental Potential Contact, 2020) | Guaranteed intersection-free contact; high fidelity but compute-heavy | **Specialist** — reserve for the accuracy / no-penetration showcase, not the M1 default |
+| Option                                                           | What it is                                                                                                                         | Role in M1                                                                              |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **DART 6 boxed-LCP** (Dantzig / PGS, `BoxedLcpConstraintSolver`) | The battle-tested constraint solver robotics users (DART 6, Gazebo / gz-physics) rely on today                                     | **Reference baseline** — the known-good for visual A/B trust checks                     |
+| **AVBD** (Augmented Vertex Block Descent, 2024)                  | The modern successor/generalization of XPBD/VBD; robust at high stiffness and high mass ratios; unifies rigid → articulated → soft | **Flagship** — the modern path we showcase and inspect deeply                           |
+| **IPC** (Incremental Potential Contact, 2020)                    | Guaranteed intersection-free contact; high fidelity but compute-heavy                                                              | **Specialist** — reserve for the accuracy / no-penetration showcase, not the M1 default |
 
 Rationale:
 
@@ -96,7 +95,7 @@ Rationale:
 - **Modern differentiator:** AVBD is the most modern approach DART 7 ships and
   already has deep investment (`docs/dev_tasks/avbd_solver/`, dozens of AVBD
   scenes). It handles stiff/high-mass-ratio cases that trip classic solvers —
-  exactly the failure modes worth *visually* inspecting.
+  exactly the failure modes worth _visually_ inspecting.
 - **Sets up "beyond M1":** AVBD unifies rigid → articulated → soft, so the same
   flagship path expands outward cleanly into later milestones.
 - **Why not IPC as default:** its strength (provable non-penetration) comes with
@@ -111,7 +110,7 @@ Rationale:
 DART 7's solver surfaces are not one flat list — this shapes how M1 wires the
 flagship comparison (see `dart/simulation/world_options.hpp`):
 
-- **`World.RigidBodySolver`** (the free rigid-body solver *family* in the
+- **`World.RigidBodySolver`** (the free rigid-body solver _family_ in the
   built-in `World::step()` schedule) has exactly two values:
   `SequentialImpulse` (default) and `Ipc`. **AVBD is not here.**
 - **`ContactSolverMethod`** is a separate contact-stage knob:
@@ -124,7 +123,7 @@ Implication for the locked decision: the "DART 6 LCP baseline" is the
 `World` rigid path with `ContactSolverMethod::BoxedLcp` (and/or the default
 `SequentialImpulse`), and the "AVBD flagship" is the separate AVBD track shown
 alongside it. The flagship visual comparison therefore spans two solver
-*tracks*, not two values of one enum.
+_tracks_, not two values of one enum.
 
 ### M1 engagement mechanism (verified post-M0)
 
@@ -142,16 +141,17 @@ head-to-head** on a single scenario:
   unified flagship scene is feasible at the construction level.
 
 So the M1 flagship is **two complementary showcases**, both reference-grade:
+
 1. **Contact-solver comparison** — SI / IPC / BoxedLcp on a contact-rich rigid
-   scene (BoxedLcp = the DART 6 trust baseline). Concrete first increment:
-   extend the flagship `rigid_body` scene to expose `contact_solver_method`
-   alongside its existing `rigid_body_solver` (SI/IPC) dropdown.
+   scene (BoxedLcp = the DART 6 trust baseline). First increment: the flagship
+   `rigid_body` scene exposes `contact_solver_method` alongside its existing
+   `rigid_body_solver` (SI/IPC) dropdown.
 2. **AVBD constraint showcase** — joints / motors / breakable constraints solved
    by AVBD (the modern differentiator), curated from the `avbd_*` scenes.
 
-**Open M1 scoping point for the task owner:** which to build first, and whether
-the contact comparison should be a new unified scene or an enhancement of the
-existing `rigid_body` / `rigid_solver_compare` scenes.
+**Remaining M1 scoping point for the task owner:** whether the completed M1
+experience should stay as complementary contact and AVBD scenes, or grow into a
+new unified comparison scene.
 
 ---
 

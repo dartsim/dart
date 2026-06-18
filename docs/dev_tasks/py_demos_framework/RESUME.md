@@ -2,33 +2,24 @@
 
 ## Last Session Summary
 
-Mapped the architecture, built the cuda binding, and established the **M0
-baseline: 155/155 scenes pass the full-catalog no-crash smoke** (verified
-genuine — see `02-m0-baseline.md`). The catalog was unguarded, not broken, so
-there are no fix-tasks. M0 pivoted to locking the guard into CI (delegated to
-Codex) and deepening coverage (tier-2 panels). Orchestration model in use: this
-session steers/diagnoses/verifies; Codex (`codex exec`) implements well-defined
-offloaded tasks in this same working tree.
+M0 is complete: 155/155 scenes pass the full-catalog no-crash smoke, tier-2
+panel coverage, scalable registry coverage, and the real-viewer render smoke
+(see `02-m0-baseline.md`). The branch is now in M1: rigid body remains the
+flagship domain, with AVBD as the modern solver track and boxed-LCP as the DART
+6 contact baseline.
 
-## Current Branch
-
-`py-demos-framework` — off `main`, uncommitted. New files: the three dev-task
-docs + `scripts/py_demos_smoke.py` (full-catalog no-crash smoke harness).
+The first M1 contact-baseline increment makes `World.contact_solver_method`
+writable after construction and exposes that choice in the flagship
+`rigid_body` Python demo panel, replay state, and capture metadata.
 
 ## Immediate Next Step
 
-**M0 is complete** (no-crash + panels + scalable contract + real render, all
-155/155, CI-guarded; commits on `py-demos-framework`). The cuda binding is built
-at `build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so`.
-
-Next is **M1**: the AVBD flagship + DART 6 LCP/SI baseline rigid showcase. First
-design decision to resolve (see `01-milestones.md` "M1 architecture reality"):
-how to present the AVBD solver *track* next to the in-`World` SI/IPC/BoxedLcp
-baseline — side-by-side scenes vs a unified comparison scene. The flagship
-`rigid_body` scene currently exposes only the in-`World` `SequentialImpulse`/`Ipc`
-dropdown.
+**M1 is in progress.** Verify the contact-baseline increment, then capture the
+rigid-body SI vs boxed-LCP visual evidence and curate the AVBD constraint
+showcase.
 
 Re-run any M0 guard:
+
 ```bash
 PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/python \
   scripts/py_demos_smoke.py            # logic (build/step/providers/panels)
@@ -40,6 +31,9 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 - M1 solver: **AVBD flagship + DART 6 boxed-LCP baseline** (IPC deferred).
   Note the architecture reality in `01-milestones.md` (World rigid solvers are
   only SI+IPC; LCP is a `ContactSolverMethod`; AVBD is a separate track).
+- First M1 increment: enhance the existing `rigid_body` scene before creating a
+  new comparison scene. This keeps the baseline path visible in the flagship
+  scene while AVBD showcase curation proceeds separately.
 - M0 triage: **quarantine to green** — non-runnable/planned scenes are marked
   skipped (tracked as deferred), not crashed and not force-fixed.
 - Sibling worktrees (`task_6` memory allocator, `task_7` WP-091 enum) keep
@@ -59,9 +53,9 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 - The viewer is C++ (`dart::gui::run_demos`); Python provides scenes, `pre_step`
   hooks, `ScenePanel`s, `debug_provider` overlays, replay metadata.
 - Codex is invoked as: `codex exec -s workspace-write -C <repo> -o <out.txt> "<prompt>"`.
-  Verify Codex's *artifacts* (files, test runs) — do not trust its summary text.
-- M1 solver recommendation pending user confirmation (see `01-milestones.md`):
-  AVBD flagship + DART 6 boxed-LCP reference baseline.
+  Verify Codex's _artifacts_ (files, test runs) — do not trust its summary text.
+- M1 solver direction is confirmed (see `01-milestones.md`): AVBD flagship +
+  DART 6 boxed-LCP reference baseline.
 
 ## How to Resume
 
@@ -72,5 +66,5 @@ git status && git log -3 --oneline
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: finish/confirm the build, run the full-catalog no-crash smoke, record
-failures in this folder, and proceed with M0 triage.
+Then: run focused C++/dartpy verification for the writable contact solver
+method, run the py-demos panel/smoke guards, and proceed with M1 visual capture.

@@ -32,6 +32,10 @@ _SOLVERS: tuple[tuple[str, sx.RigidBodySolver], ...] = (
     ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
     ("IPC barrier", sx.RigidBodySolver.IPC),
 )
+_CONTACT_METHODS: tuple[tuple[str, sx.ContactSolverMethod], ...] = (
+    ("Sequential impulse", sx.ContactSolverMethod.SEQUENTIAL_IMPULSE),
+    ("Boxed LCP", sx.ContactSolverMethod.BOXED_LCP),
+)
 
 
 def _visual_for(
@@ -55,12 +59,14 @@ class _InitialBodyState:
 class _RigidBodyBaseline:
     def __init__(self) -> None:
         self.solver_index = 0
+        self.contact_method_index = 0
         self.friction = _DEFAULT_FRICTION
         self.restitution = _DEFAULT_RESTITUTION
 
         self.world = sx.World(
             time_step=_TIME_STEP,
             rigid_body_solver=self._solver(),
+            contact_solver_method=self._contact_method(),
         )
         self.world.step_profiling_enabled = True
         self.bridge = WorldRenderBridge(self.world, name="world_rigid_body_render")
@@ -132,6 +138,16 @@ class _RigidBodyBaseline:
     def _solver_label(self) -> str:
         return _SOLVERS[max(0, min(int(self.solver_index), len(_SOLVERS) - 1))][0]
 
+    def _contact_method(self) -> sx.ContactSolverMethod:
+        index = max(0, min(int(self.contact_method_index), len(_CONTACT_METHODS) - 1))
+        self.contact_method_index = index
+        return _CONTACT_METHODS[index][1]
+
+    def _contact_method_label(self) -> str:
+        return _CONTACT_METHODS[
+            max(0, min(int(self.contact_method_index), len(_CONTACT_METHODS) - 1))
+        ][0]
+
     def _capture_initial_states(self) -> list[_InitialBodyState]:
         return [
             _InitialBodyState(
@@ -195,12 +211,14 @@ class _RigidBodyBaseline:
             "contact_count": contact_count,
             "step_ms": step_ms,
             "solver": self._solver_label(),
+            "contact_solver": self._contact_method_label(),
             "executor": "World.step default",
         }
 
     def reset(self, *, clear_replay: bool = True) -> None:
         self.world.time = 0.0
         self.world.rigid_body_solver = self._solver()
+        self.world.contact_solver_method = self._contact_method()
         self._apply_materials()
         for state in self._initial_states:
             state.body.transform = state.transform
@@ -230,6 +248,7 @@ class _RigidBodyBaseline:
 
     def pre_step(self) -> None:
         self.world.rigid_body_solver = self._solver()
+        self.world.contact_solver_method = self._contact_method()
         self._apply_materials()
         self.bridge.pre_step()
         self._record_metrics()
@@ -251,8 +270,10 @@ class _RigidBodyBaseline:
         return {
             "row": "rigid_body",
             "solver": self._solver_label(),
+            "contact_solver": self._contact_method_label(),
             "executor": "World.step default",
             "solver_enum": self._solver().name,
+            "contact_solver_method": self._contact_method().name,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "dynamic_body_count": float(len(self.dynamic_bodies)),
@@ -267,6 +288,7 @@ class _RigidBodyBaseline:
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),
                 "solver_index": float(self.solver_index),
+                "contact_method_index": float(self.contact_method_index),
             },
             "metrics": dict(self._last_metrics),
             "history": {
@@ -283,6 +305,7 @@ class _RigidBodyBaseline:
         return {
             "controls": {
                 "solver_index": int(self.solver_index),
+                "contact_method_index": int(self.contact_method_index),
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),
             },
@@ -303,9 +326,17 @@ class _RigidBodyBaseline:
                 len(_SOLVERS) - 1,
             ),
         )
+        self.contact_method_index = max(
+            0,
+            min(
+                int(controls.get("contact_method_index", self.contact_method_index)),
+                len(_CONTACT_METHODS) - 1,
+            ),
+        )
         self.friction = float(controls.get("friction", self.friction))
         self.restitution = float(controls.get("restitution", self.restitution))
         self.world.rigid_body_solver = self._solver()
+        self.world.contact_solver_method = self._contact_method()
         self._apply_materials()
         self._restore_history(self._speed_history, state.get("speed_history", []))
         self._restore_history(
@@ -327,6 +358,11 @@ class _RigidBodyBaseline:
         changed_solver, solver_index = builder.select(
             "Solver", int(self.solver_index), [label for label, _solver in _SOLVERS]
         )
+        changed_contact_method, contact_method_index = builder.select(
+            "Contact solver",
+            int(self.contact_method_index),
+            [label for label, _method in _CONTACT_METHODS],
+        )
         changed_friction, friction = builder.slider(
             "Friction", float(self.friction), 0.0, 1.0
         )
@@ -336,6 +372,9 @@ class _RigidBodyBaseline:
 
         if changed_solver:
             self.solver_index = int(solver_index)
+            self.reset(clear_replay=True)
+        if changed_contact_method:
+            self.contact_method_index = int(contact_method_index)
             self.reset(clear_replay=True)
         if changed_friction:
             self.friction = float(friction)
@@ -348,6 +387,10 @@ class _RigidBodyBaseline:
 
         metrics = self._last_metrics
         builder.text(f"solver: {metrics.get('solver', self._solver_label())}")
+        builder.text(
+            f"contact solver: "
+            f"{metrics.get('contact_solver', self._contact_method_label())}"
+        )
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(f"dynamic bodies: {len(self.dynamic_bodies)}")
         builder.text(f"max speed: {float(metrics.get('max_speed', 0.0)):.3f} m/s")

@@ -2399,6 +2399,9 @@ class World:
     @property
     def contact_solver_method(self) -> ContactSolverMethod: ...
 
+    @contact_solver_method.setter
+    def contact_solver_method(self, arg: ContactSolverMethod, /) -> None: ...
+
     @property
     def contact_gradient_mode(self) -> ContactGradientMode: ...
 

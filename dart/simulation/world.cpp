@@ -5481,6 +5481,20 @@ ContactSolverMethod World::getContactSolverMethod() const noexcept
 }
 
 //==============================================================================
+void World::setContactSolverMethod(ContactSolverMethod method)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidContactSolverMethod(method),
+      InvalidArgumentException,
+      "Contact solver method is invalid");
+
+  m_contactSolverMethod = method;
+  if (m_simulationMode) {
+    prepareStepPipelineCacheForCurrentConfiguration();
+  }
+}
+
+//==============================================================================
 ContactGradientMode World::getContactGradientMode() const noexcept
 {
   return m_contactGradientMode;

@@ -650,12 +650,19 @@ public:
   /// false the step executes the identical non-differentiable path.
   [[nodiscard]] bool isDifferentiable() const noexcept;
 
-  /// The rigid-body contact resolution method this World uses.
+  /// Set the rigid-body contact resolution method this World uses.
   ///
   /// Selected via `WorldOptions::contactSolverMethod` (default
   /// `SequentialImpulse`) and independent of the differentiable flag. The
   /// `BoxedLcp` value opts the rigid-body contact stage into the boxed-LCP
-  /// normal solve; all other behavior is unchanged.
+  /// normal solve; all other behavior is unchanged. Safe to change at any time:
+  /// when the World is already in simulation mode, the step pipeline cache is
+  /// rebuilt for the new contact method.
+  /// @throws InvalidArgumentException if `method` is not a valid
+  ///         `ContactSolverMethod` enumerator.
+  void setContactSolverMethod(ContactSolverMethod method);
+
+  /// Get the rigid-body contact resolution method this World uses.
   [[nodiscard]] ContactSolverMethod getContactSolverMethod() const noexcept;
 
   /// The backward-pass contact gradient mode this World uses.
