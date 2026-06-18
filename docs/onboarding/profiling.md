@@ -101,8 +101,9 @@ no-profile builds they execute the graph normally and return an empty profile.
 `acceleration` is backend-neutral stage metadata. A stage can advertise `gpu`
 without exposing CUDA, streams, or device handles; when an accelerated backend
 is active for that stage, `accelerated_backend_enabled` is true. For the
-deformable solve, this reflects the existing process-wide accelerated PSD
-backend selected by `set_accelerated_deformable_solve()`.
+deformable solve, this reflects the World-baked PSD projector selected by that
+World's `ComputeAcceleratorPolicy`; the legacy flat PSD toggle still affects
+direct backend calls outside `World::step()`.
 
 ### C++
 

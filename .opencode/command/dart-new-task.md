@@ -18,11 +18,21 @@ Read these files first:
 @docs/onboarding/code-style.md
 @docs/dev_tasks/README.md
 @docs/ai/sessions.md
+@docs/ai/principles.md
+@docs/ai/verification.md
 
 ## Workflow
 
 1. **Understand the task** - Parse: goal, constraints, type (feature|bugfix|refactor|docs)
-2. **Assess scope** - Multi-phase or multi-session? Create `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria)
+2. **Assess scope** - Multi-phase or multi-session? Create
+   `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria).
+   For multi-session, design-heavy, public API, solver/paper, release, or
+   cross-module work, fill the dev-task specification intake before editing:
+   value, scope, assumptions, traceability, non-goals, acceptance evidence,
+   gates, and open decisions. If consequential ambiguity would change public
+   API, release compatibility, numerical correctness, benchmark claims, or
+   roadmap scope, record an owner-local `Decision needed` block instead of
+   silently choosing.
 3. **Setup** - Choose the target branch before creating a topic branch:
    - features/docs/non-bugfix refactors: branch from `origin/main`
    - bug fixes that apply to the current release line: branch from the active

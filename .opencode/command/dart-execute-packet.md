@@ -63,11 +63,35 @@ If any signal says the packet is taken: in auto/plan mode skip to the next
 available packet; for an explicit packet ID, report the conflicting signal
 and stop.
 
+## Readiness check
+
+Before claiming, inspect the packet text and named owner docs for the
+specification intake required by `docs/ai/orchestration.md`:
+
+- objective;
+- value or rationale;
+- scope;
+- non-goals;
+- assumptions and open decisions;
+- acceptance evidence;
+- gates; and
+- dependencies.
+
+If objective, scope, non-goals, acceptance evidence, gates, or dependencies are
+missing or too vague to verify, report that the packet is not executable and
+stop. For older packets that lack an explicit value or assumptions field,
+proceed only when the owner docs make the value and assumptions unambiguous,
+and state those inferred fields before editing. If an unresolved decision would
+materially change public API, release compatibility, numerical correctness,
+benchmark claims, or roadmap scope, stop and ask the orchestrator to record an
+owner-local `Decision needed` block.
+
 ## Workflow
 
 1. **Locate the packet** — open the owning numbered plan file linked from
    `docs/plans/dashboard.md` and read the packet's objective, scope,
-   non-goals, acceptance evidence, gates, and dependencies.
+   value/rationale, assumptions/open decisions, non-goals, acceptance evidence,
+   gates, and dependencies.
 2. **Claim** — append `[claimed]` to the packet heading in the plan file and
    create the topic branch named `wp-<plan>-<n>-<slug>`. The branch name is
    the cross-machine claim signal once pushed; pushing it (like any GitHub

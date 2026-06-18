@@ -79,6 +79,84 @@ bool sameRigidBodyModelIdentity(
 }
 
 //==============================================================================
+template <typename LhsRange, typename RhsRange>
+bool rangeEquals(const LhsRange& lhs, const RhsRange& rhs)
+{
+  return lhs.size() == rhs.size()
+         && std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+
+//==============================================================================
+void appendRigidBodyStateFromBakedModel(
+    const World& world,
+    const dart::simulation::detail::BakedWorldModel& model,
+    RigidBodyStateBatch& batch)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  for (const auto entity : model.rigidBodyEntities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    const auto& velocity = registry.get<comps::Velocity>(entity);
+
+    batch.position.push_back(transform.position.x());
+    batch.position.push_back(transform.position.y());
+    batch.position.push_back(transform.position.z());
+
+    batch.orientation.push_back(transform.orientation.w());
+    batch.orientation.push_back(transform.orientation.x());
+    batch.orientation.push_back(transform.orientation.y());
+    batch.orientation.push_back(transform.orientation.z());
+
+    batch.linearVelocity.push_back(velocity.linear.x());
+    batch.linearVelocity.push_back(velocity.linear.y());
+    batch.linearVelocity.push_back(velocity.linear.z());
+
+    batch.angularVelocity.push_back(velocity.angular.x());
+    batch.angularVelocity.push_back(velocity.angular.y());
+    batch.angularVelocity.push_back(velocity.angular.z());
+  }
+}
+
+//==============================================================================
+void appendRigidBodyControlFromBakedModel(
+    const World& world,
+    const dart::simulation::detail::BakedWorldModel& model,
+    std::vector<double>& forceBatch)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  for (const auto entity : model.rigidBodyEntities) {
+    const auto& force = registry.get<comps::Force>(entity);
+    forceBatch.push_back(force.force.x());
+    forceBatch.push_back(force.force.y());
+    forceBatch.push_back(force.force.z());
+  }
+}
+
+//==============================================================================
+std::size_t rigidBodyControlStepSize(
+    const RigidBodyControlSequenceBatch& controlSequence)
+{
+  return 3 * controlSequence.worldCount * controlSequence.bodyCount;
+}
+
+//==============================================================================
+void validateRigidBodyControlSequenceStorage(
+    const RigidBodyControlSequenceBatch& controlSequence)
+{
+  const auto stepSize = rigidBodyControlStepSize(controlSequence);
+  const auto expectedSize = controlSequence.stepCount * stepSize;
+  DART_SIMULATION_THROW_T_IF(
+      controlSequence.force.size() != expectedSize,
+      InvalidArgumentException,
+      "RigidBodyControlSequenceBatch force array has size {}, expected {} "
+      "(stepCount {}, worldCount {}, bodyCount {})",
+      controlSequence.force.size(),
+      expectedSize,
+      controlSequence.stepCount,
+      controlSequence.worldCount,
+      controlSequence.bodyCount);
+}
+
+//==============================================================================
 // Add the angular acceleration from torque to each body's angular velocity,
 // mirroring the per-entity integrateAngularVelocity: it forms the world-frame
 // inertia (R I R^T) from the normalized orientation, LDLT-solves the torque,
@@ -237,6 +315,189 @@ void integrateOrientationsBatch(
 }
 
 } // namespace
+
+//==============================================================================
+void BakedRigidBodyBatchOwner::clear()
+{
+  m_model = RigidBodyModelBatch{};
+  m_state = RigidBodyStateBatch{};
+  m_diagnostics = BakedRigidBodyBatchOwnerDiagnostics{};
+  m_rigidBodyIsDynamic.clear();
+  m_modelValid = false;
+}
+
+//==============================================================================
+void BakedRigidBodyBatchOwner::captureFromWorlds(
+    const std::vector<const World*>& worlds)
+{
+  m_state.worldCount = worlds.size();
+  m_state.bodyCount = 0;
+  m_state.position.clear();
+  m_state.orientation.clear();
+  m_state.linearVelocity.clear();
+  m_state.angularVelocity.clear();
+
+  if (worlds.empty()) {
+    m_model = RigidBodyModelBatch{};
+    m_rigidBodyIsDynamic.clear();
+    m_modelValid = false;
+    return;
+  }
+
+  std::vector<const dart::simulation::detail::BakedWorldModel*> laneModels;
+  laneModels.reserve(worlds.size());
+  const dart::simulation::detail::BakedWorldModel* referenceModel = nullptr;
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    DART_SIMULATION_THROW_T_IF(
+        worlds[w] == nullptr,
+        InvalidArgumentException,
+        "BakedRigidBodyBatchOwner received a null world at lane {}",
+        w);
+
+    const auto& model
+        = dart::simulation::detail::ensureBakedWorldModelCurrent(*worlds[w]);
+    if (w == 0) {
+      referenceModel = &model;
+    } else {
+      DART_SIMULATION_THROW_T_IF(
+          model.rigidBodyEntities.size()
+              != referenceModel->rigidBodyEntities.size(),
+          InvalidArgumentException,
+          "Heterogeneous body counts: lane 0 has {}, lane {} has {}",
+          referenceModel->rigidBodyEntities.size(),
+          w,
+          model.rigidBodyEntities.size());
+      DART_SIMULATION_THROW_T_IF(
+          !sameRigidBodyModelIdentity(model, *referenceModel),
+          InvalidArgumentException,
+          "BakedRigidBodyBatchOwner lane {} has a different rigid-body "
+          "dense-index Model identity than lane 0; all worlds must expose the "
+          "same ordered Model",
+          w);
+    }
+    laneModels.push_back(&model);
+  }
+
+  const auto bodyCount = referenceModel->rigidBodyEntities.size();
+  const bool reuseModel = modelMatches(
+      std::span<const std::uint8_t>{
+          referenceModel->rigidBodyIsDynamic.data(),
+          referenceModel->rigidBodyIsDynamic.size()},
+      std::span<const double>{
+          referenceModel->rigidBodyInverseMass.data(),
+          referenceModel->rigidBodyInverseMass.size()},
+      std::span<const double>{
+          referenceModel->rigidBodyInertia.data(),
+          referenceModel->rigidBodyInertia.size()},
+      worlds.size(),
+      bodyCount);
+
+  if (reuseModel) {
+    ++m_diagnostics.modelReuseCount;
+  } else {
+    m_model.worldCount = worlds.size();
+    m_model.bodyCount = bodyCount;
+    m_model.inverseMass.clear();
+    m_model.inertia.clear();
+    m_model.inverseMass.reserve(worlds.size() * bodyCount);
+    m_model.inertia.reserve(9 * worlds.size() * bodyCount);
+    for (const auto* model : laneModels) {
+      m_model.inverseMass.insert(
+          m_model.inverseMass.end(),
+          model->rigidBodyInverseMass.begin(),
+          model->rigidBodyInverseMass.end());
+      m_model.inertia.insert(
+          m_model.inertia.end(),
+          model->rigidBodyInertia.begin(),
+          model->rigidBodyInertia.end());
+    }
+    m_rigidBodyIsDynamic.assign(
+        referenceModel->rigidBodyIsDynamic.begin(),
+        referenceModel->rigidBodyIsDynamic.end());
+    m_modelValid = true;
+    ++m_diagnostics.modelRefreshCount;
+  }
+
+  m_state.worldCount = worlds.size();
+  m_state.bodyCount = bodyCount;
+  m_state.position.reserve(3 * worlds.size() * bodyCount);
+  m_state.orientation.reserve(4 * worlds.size() * bodyCount);
+  m_state.linearVelocity.reserve(3 * worlds.size() * bodyCount);
+  m_state.angularVelocity.reserve(3 * worlds.size() * bodyCount);
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    appendRigidBodyStateFromBakedModel(*worlds[w], *laneModels[w], m_state);
+  }
+  ++m_diagnostics.stateCaptureCount;
+}
+
+//==============================================================================
+void BakedRigidBodyBatchOwner::captureFromWorld(const World& world)
+{
+  const std::vector<const World*> worlds{&world};
+  captureFromWorlds(worlds);
+}
+
+//==============================================================================
+void BakedRigidBodyBatchOwner::applyToWorlds(
+    const std::vector<World*>& worlds) const
+{
+  applyRigidBodyStateBatch(worlds, m_state);
+}
+
+//==============================================================================
+void BakedRigidBodyBatchOwner::applyToWorld(World& world) const
+{
+  applyRigidBodyState(world, m_state);
+}
+
+//==============================================================================
+const RigidBodyModelBatch& BakedRigidBodyBatchOwner::model() const noexcept
+{
+  return m_model;
+}
+
+//==============================================================================
+RigidBodyStateBatch& BakedRigidBodyBatchOwner::mutableState() noexcept
+{
+  return m_state;
+}
+
+//==============================================================================
+const RigidBodyStateBatch& BakedRigidBodyBatchOwner::state() const noexcept
+{
+  return m_state;
+}
+
+//==============================================================================
+const BakedRigidBodyBatchOwnerDiagnostics&
+BakedRigidBodyBatchOwner::diagnostics() const noexcept
+{
+  return m_diagnostics;
+}
+
+//==============================================================================
+bool BakedRigidBodyBatchOwner::modelMatches(
+    std::span<const std::uint8_t> dynamicMask,
+    std::span<const double> inverseMass,
+    std::span<const double> inertia,
+    std::size_t worldCount,
+    std::size_t bodyCount) const
+{
+  if (!m_modelValid || m_model.worldCount != worldCount
+      || m_model.bodyCount != bodyCount
+      || m_model.inverseMass.size() != worldCount * bodyCount
+      || m_model.inertia.size() != 9 * worldCount * bodyCount
+      || !rangeEquals(m_rigidBodyIsDynamic, dynamicMask)) {
+    return false;
+  }
+
+  const std::span<const double> cachedInverseMass{
+      m_model.inverseMass.data(), inverseMass.size()};
+  const std::span<const double> cachedInertia{
+      m_model.inertia.data(), inertia.size()};
+  return rangeEquals(cachedInverseMass, inverseMass)
+         && rangeEquals(cachedInertia, inertia);
+}
 
 namespace rigid_body_batch_ops {
 
@@ -470,60 +731,9 @@ void applyRigidBodyState(World& world, const RigidBodyStateBatch& state)
 RigidBodyStateBatch extractRigidBodyStateBatch(
     const std::vector<const World*>& worlds)
 {
-  RigidBodyStateBatch batch;
-  batch.worldCount = worlds.size();
-  if (worlds.empty()) {
-    return batch;
-  }
-
-  const dart::simulation::detail::BakedWorldModel* referenceModel = nullptr;
-  for (std::size_t w = 0; w < worlds.size(); ++w) {
-    DART_SIMULATION_THROW_T_IF(
-        worlds[w] == nullptr,
-        InvalidArgumentException,
-        "extractRigidBodyStateBatch received a null world at lane {}",
-        w);
-
-    const auto single = extractRigidBodyState(*worlds[w]);
-    const auto& model
-        = dart::simulation::detail::ensureBakedWorldModelCurrent(*worlds[w]);
-    if (w == 0) {
-      batch.bodyCount = single.bodyCount;
-      referenceModel = &model;
-    } else {
-      DART_SIMULATION_THROW_T_IF(
-          single.bodyCount != batch.bodyCount,
-          InvalidArgumentException,
-          "Heterogeneous body counts: lane 0 has {}, lane {} has {}",
-          batch.bodyCount,
-          w,
-          single.bodyCount);
-      DART_SIMULATION_THROW_T_IF(
-          !sameRigidBodyModelIdentity(model, *referenceModel),
-          InvalidArgumentException,
-          "extractRigidBodyStateBatch lane {} has a different rigid-body "
-          "dense-index Model identity than lane 0; all worlds must expose the "
-          "same ordered Model",
-          w);
-    }
-
-    batch.position.insert(
-        batch.position.end(), single.position.begin(), single.position.end());
-    batch.orientation.insert(
-        batch.orientation.end(),
-        single.orientation.begin(),
-        single.orientation.end());
-    batch.linearVelocity.insert(
-        batch.linearVelocity.end(),
-        single.linearVelocity.begin(),
-        single.linearVelocity.end());
-    batch.angularVelocity.insert(
-        batch.angularVelocity.end(),
-        single.angularVelocity.begin(),
-        single.angularVelocity.end());
-  }
-
-  return batch;
+  BakedRigidBodyBatchOwner owner;
+  owner.captureFromWorlds(worlds);
+  return owner.state();
 }
 
 //==============================================================================
@@ -650,6 +860,109 @@ RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
 }
 
 //==============================================================================
+RigidBodyControlSequenceBatch extractRigidBodyControlSequenceBatch(
+    const std::vector<const World*>& worlds, std::size_t stepCount)
+{
+  RigidBodyControlSequenceBatch controlSequence;
+  controlSequence.stepCount = stepCount;
+  controlSequence.worldCount = worlds.size();
+
+  if (worlds.empty()) {
+    controlSequence.worldCount = 0;
+    return controlSequence;
+  }
+
+  std::vector<const dart::simulation::detail::BakedWorldModel*> laneModels;
+  laneModels.reserve(worlds.size());
+  const dart::simulation::detail::BakedWorldModel* referenceModel = nullptr;
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    DART_SIMULATION_THROW_T_IF(
+        worlds[w] == nullptr,
+        InvalidArgumentException,
+        "extractRigidBodyControlSequenceBatch received a null world at lane {}",
+        w);
+
+    const auto& model
+        = dart::simulation::detail::ensureBakedWorldModelCurrent(*worlds[w]);
+    if (w == 0) {
+      referenceModel = &model;
+    } else {
+      DART_SIMULATION_THROW_T_IF(
+          model.rigidBodyEntities.size()
+              != referenceModel->rigidBodyEntities.size(),
+          InvalidArgumentException,
+          "Heterogeneous body counts: lane 0 has {}, lane {} has {}",
+          referenceModel->rigidBodyEntities.size(),
+          w,
+          model.rigidBodyEntities.size());
+      DART_SIMULATION_THROW_T_IF(
+          !sameRigidBodyModelIdentity(model, *referenceModel),
+          InvalidArgumentException,
+          "extractRigidBodyControlSequenceBatch lane {} has a different "
+          "rigid-body dense-index Model identity than lane 0; all worlds must "
+          "expose the same ordered Model",
+          w);
+    }
+    laneModels.push_back(&model);
+  }
+
+  controlSequence.bodyCount = referenceModel->rigidBodyEntities.size();
+  std::vector<double> oneStepForce;
+  oneStepForce.reserve(3 * worlds.size() * controlSequence.bodyCount);
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    appendRigidBodyControlFromBakedModel(
+        *worlds[w], *laneModels[w], oneStepForce);
+  }
+
+  controlSequence.force.reserve(stepCount * oneStepForce.size());
+  for (std::size_t step = 0; step < stepCount; ++step) {
+    controlSequence.force.insert(
+        controlSequence.force.end(), oneStepForce.begin(), oneStepForce.end());
+  }
+  return controlSequence;
+}
+
+//==============================================================================
+std::span<double> rigidBodyControlForcesAtStep(
+    RigidBodyControlSequenceBatch& controlSequence, std::size_t step)
+{
+  validateRigidBodyControlSequenceStorage(controlSequence);
+  DART_SIMULATION_THROW_T_IF(
+      step >= controlSequence.stepCount,
+      InvalidArgumentException,
+      "RigidBodyControlSequenceBatch step {} is out of range for stepCount {}",
+      step,
+      controlSequence.stepCount);
+
+  const auto stepSize = rigidBodyControlStepSize(controlSequence);
+  if (stepSize == 0) {
+    return {};
+  }
+  return std::span<double>{
+      controlSequence.force.data() + step * stepSize, stepSize};
+}
+
+//==============================================================================
+std::span<const double> rigidBodyControlForcesAtStep(
+    const RigidBodyControlSequenceBatch& controlSequence, std::size_t step)
+{
+  validateRigidBodyControlSequenceStorage(controlSequence);
+  DART_SIMULATION_THROW_T_IF(
+      step >= controlSequence.stepCount,
+      InvalidArgumentException,
+      "RigidBodyControlSequenceBatch step {} is out of range for stepCount {}",
+      step,
+      controlSequence.stepCount);
+
+  const auto stepSize = rigidBodyControlStepSize(controlSequence);
+  if (stepSize == 0) {
+    return {};
+  }
+  return std::span<const double>{
+      controlSequence.force.data() + step * stepSize, stepSize};
+}
+
+//==============================================================================
 void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
@@ -703,6 +1016,56 @@ RigidBodyStateBatch rolloutRigidBodyStateBatch(
   RigidBodyStateBatch state = initialState;
   for (const auto& force : controlSequence) {
     integrateRigidBodyStateBatch(state, model, force, timeStep);
+  }
+  return state;
+}
+
+//==============================================================================
+RigidBodyStateBatch rolloutRigidBodyStateBatch(
+    const RigidBodyStateBatch& initialState,
+    const RigidBodyModelBatch& model,
+    const RigidBodyControlSequenceBatch& controlSequence,
+    double timeStep,
+    RigidBodyBatchRolloutDiagnostics* diagnostics)
+{
+  DART_SIMULATION_THROW_T_IF(
+      model.worldCount != initialState.worldCount
+          || model.bodyCount != initialState.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyModelBatch ({}x{}) does not match the initial state batch "
+      "({}x{})",
+      model.worldCount,
+      model.bodyCount,
+      initialState.worldCount,
+      initialState.bodyCount);
+  DART_SIMULATION_THROW_T_IF(
+      controlSequence.worldCount != initialState.worldCount
+          || controlSequence.bodyCount != initialState.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyControlSequenceBatch ({} steps, {}x{}) does not match the "
+      "initial state batch ({}x{})",
+      controlSequence.stepCount,
+      controlSequence.worldCount,
+      controlSequence.bodyCount,
+      initialState.worldCount,
+      initialState.bodyCount);
+  validateRigidBodyControlSequenceStorage(controlSequence);
+
+  if (diagnostics != nullptr) {
+    *diagnostics = RigidBodyBatchRolloutDiagnostics{
+        RigidBodyBatchExecutionShape::HomogeneousBatch,
+        controlSequence.stepCount,
+        initialState.worldCount,
+        initialState.bodyCount};
+  }
+
+  RigidBodyStateBatch state = initialState;
+  for (std::size_t step = 0; step < controlSequence.stepCount; ++step) {
+    integrateRigidBodyStateBatch(
+        state,
+        model,
+        rigidBodyControlForcesAtStep(controlSequence, step),
+        timeStep);
   }
   return state;
 }

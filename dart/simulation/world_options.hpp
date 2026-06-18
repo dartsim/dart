@@ -109,6 +109,23 @@ enum class ContactGradientMode
   PreContactSurrogate,
 };
 
+/// Backend-neutral per-World compute accelerator policy.
+///
+/// Accelerators are optional sidecars discovered at runtime. This policy only
+/// says whether a World may use an available accelerator for internal compute
+/// hotspots; it does not expose device types, streams, kernels, or memory
+/// pools.
+enum class ComputeAcceleratorPolicy
+{
+  /// Always use built-in CPU compute paths for World stepping.
+  CpuOnly,
+
+  /// Use an available accelerator for supported hotspots, otherwise fall back
+  /// to the CPU path and record that substitution in the resolved
+  /// configuration.
+  PreferAccelerated,
+};
+
 /// Opt-in automatic deactivation ("sleeping") policy.
 ///
 /// Deactivation is disabled by default. When enabled, supported dynamic rigid
@@ -146,9 +163,10 @@ struct DeactivationOptions
 /// `WorldOptions` is a plain value object: it carries the initial time step,
 /// gravity, domain solver-family choices, whether the world opts in to
 /// differentiable simulation, which contact-solver method the rigid-body
-/// contact stage uses, and the root CPU allocator knobs for the World-owned
-/// memory hierarchy. It does not expose any backend, stage, registry, or ECS
-/// storage type, so it is safe as a public facade surface.
+/// contact stage uses, the backend-neutral compute accelerator policy, and the
+/// root CPU allocator knobs for the World-owned memory hierarchy. It does not
+/// expose any backend, stage, registry, or ECS storage type, so it is safe as a
+/// public facade surface.
 ///
 /// Differentiability is opt-in and defaults off. When `differentiable` is false
 /// the step executes the identical non-differentiable code path with no extra
@@ -180,6 +198,12 @@ struct WorldOptions
   /// behavior). Affects ONLY the gradient; the forward step is identical for
   /// every value. See `ContactGradientMode` for the per-mode semantics.
   ContactGradientMode contactGradientMode = ContactGradientMode::Analytic;
+
+  /// Backend-neutral compute accelerator policy. Defaults to CPU-only so two
+  /// Worlds in one process can choose different accelerator policies
+  /// explicitly.
+  ComputeAcceleratorPolicy computeAcceleratorPolicy
+      = ComputeAcceleratorPolicy::CpuOnly;
 
   /// When true, `enterSimulationMode` rejects (throws) a configuration whose
   /// resolved solver families substitute a method the World did not request

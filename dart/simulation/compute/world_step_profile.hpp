@@ -166,8 +166,8 @@ struct DART_SIMULATION_API ResolvedConfigurationNote
   }
 };
 
-/// The per-domain solver families the World resolved at
-/// `enterSimulationMode`, exposed alongside the step profile (see
+/// The per-domain solver and backend-neutral compute families the World
+/// resolved at `enterSimulationMode`, exposed alongside the step profile (see
 /// `World::getResolvedConfiguration`). Every resolution is recorded with its
 /// reason so a scene can no longer silently substitute a method.
 ///

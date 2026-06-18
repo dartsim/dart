@@ -61,7 +61,9 @@ Treat missing positional values as details to infer from the user request or ask
    - add cross-references from relevant commands or skills
 5. Run the principle audit from `docs/ai/principles.md` and use
    `docs/ai/verification.md` to map audit results to evidence.
-6. Run `pixi run lint` and, for AI workflow changes, `pixi run check-ai-commands`.
+6. Run the relevant gate set from `docs/ai/verification.md`. For AI workflow
+   changes, that includes generated adapter sync/checks, docs policy, spell,
+   Markdown checks, and `pixi run lint`.
 
 ## Output
 

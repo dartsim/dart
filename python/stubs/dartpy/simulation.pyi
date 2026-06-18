@@ -10,6 +10,7 @@ __all__: list[str] = [
     "CollisionShape",
     "CollisionShapeType",
     "ComputeExecutionProfile",
+    "ComputeAcceleratorPolicy",
     "ComputeExecutor",
     "ComputeNodeExecutionProfile",
     "Contact",
@@ -158,6 +159,11 @@ class ContactGradientMode(enum.Enum):
     COMPLEMENTARITY_AWARE = 1
 
     PRE_CONTACT_SURROGATE = 2
+
+class ComputeAcceleratorPolicy(enum.Enum):
+    CPU_ONLY = 0
+
+    PREFER_ACCELERATED = 1
 
 class MultibodyIntegrationFamily(enum.Enum):
     SEMI_IMPLICIT = 0
@@ -2172,7 +2178,7 @@ def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
-    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., rigid_body_solver: RigidBodySolver = RigidBodySolver.SEQUENTIAL_IMPULSE, multibody_options: MultibodyOptions = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC, deactivation_options: DeactivationOptions = ...) -> None: ...
+    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., rigid_body_solver: RigidBodySolver = RigidBodySolver.SEQUENTIAL_IMPULSE, multibody_options: MultibodyOptions = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC, compute_accelerator_policy: ComputeAcceleratorPolicy = ComputeAcceleratorPolicy.CPU_ONLY, deactivation_options: DeactivationOptions = ...) -> None: ...
 
     def add_free_frame(self, name: str = ..., *, parent: object | None = ...) -> FreeFrame: ...
 
@@ -2407,6 +2413,12 @@ class World:
 
     @contact_gradient_mode.setter
     def contact_gradient_mode(self, arg: ContactGradientMode, /) -> None: ...
+
+    @property
+    def compute_accelerator_policy(self) -> ComputeAcceleratorPolicy: ...
+
+    @compute_accelerator_policy.setter
+    def compute_accelerator_policy(self, arg: ComputeAcceleratorPolicy, /) -> None: ...
 
     @property
     def deactivation_options(self) -> DeactivationOptions: ...

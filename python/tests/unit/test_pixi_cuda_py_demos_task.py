@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PIXI = ROOT / "pixi.toml"
+CMAKE_COMPILER_CACHE = ROOT / "cmake" / "compiler_cache.cmake"
 
 
 def _tasks() -> dict:
@@ -43,6 +44,32 @@ def test_config_py_resets_stale_cuda_compiler_cache_before_cmake() -> None:
     assert "CMAKE_CUDA_HOST_COMPILER:*)" in script
     assert 'rm -f "${CMAKE_CACHE}"' in script
     assert 'rm -rf "${CMAKE_BUILD_DIR}/CMakeFiles"' in script
+
+
+def test_config_py_keeps_host_compiler_cache_for_cuda_py_demos() -> None:
+    script = _task_script("config-py")
+
+    disable_assignment = script.index(
+        "DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}"
+    )
+    gha_disable = script.index('if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then')
+    default_cache_section = script[disable_assignment:gha_disable]
+    assert "DART_DISABLE_COMPILER_CACHE_VALUE=ON" not in default_cache_section
+
+    cxx_launcher = script.index("CMAKE_CXX_COMPILER_LAUNCHER=sccache")
+    cuda_launcher = script.index(
+        'LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER:STRING="'
+    )
+    assert cxx_launcher < cuda_launcher
+
+
+def test_cmake_compiler_cache_respects_empty_cuda_launcher() -> None:
+    script = CMAKE_COMPILER_CACHE.read_text(encoding="utf-8")
+
+    preconfigured_check = script.index("DEFINED CMAKE_CUDA_COMPILER_LAUNCHER")
+    cuda_launcher_set = script.index("CMAKE_CUDA_COMPILER_LAUNCHER\n          ")
+    assert preconfigured_check < cuda_launcher_set
+    assert "NOT _dart_cuda_compiler_launcher_preconfigured" in script
 
 
 def test_py_demos_depends_on_docking_dartpy_build() -> None:

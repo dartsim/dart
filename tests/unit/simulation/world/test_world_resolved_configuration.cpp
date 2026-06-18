@@ -96,6 +96,33 @@ TEST(ResolvedConfiguration, RecordsDefaultFamiliesAtFinalize)
   const auto* multibody = findNote(config, "multibody");
   ASSERT_NE(multibody, nullptr);
   EXPECT_EQ(multibody->resolved, "semi-implicit");
+
+  const auto* accelerator = findNote(config, "deformable-psd");
+  ASSERT_NE(accelerator, nullptr);
+  EXPECT_EQ(accelerator->requested, "cpu");
+  EXPECT_EQ(accelerator->resolved, "cpu");
+  EXPECT_FALSE(accelerator->isSubstitution());
+}
+
+TEST(ResolvedConfiguration, PreferAcceleratedFallsBackToCpuWhenUnavailable)
+{
+  sx::World world;
+  world.enterSimulationMode();
+  world.setComputeAcceleratorPolicy(
+      sx::ComputeAcceleratorPolicy::PreferAccelerated);
+
+  EXPECT_EQ(
+      world.getComputeAcceleratorPolicy(),
+      sx::ComputeAcceleratorPolicy::PreferAccelerated);
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_TRUE(config.hasSubstitution());
+
+  const auto* accelerator = findNote(config, "deformable-psd");
+  ASSERT_NE(accelerator, nullptr);
+  EXPECT_TRUE(accelerator->isSubstitution());
+  EXPECT_EQ(accelerator->requested, "accelerated");
+  EXPECT_EQ(accelerator->resolved, "cpu");
+  EXPECT_EQ(accelerator->reason, "no available accelerator registered");
 }
 
 TEST(ResolvedConfiguration, ReflectsRequestedContactMethod)

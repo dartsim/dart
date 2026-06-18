@@ -14,8 +14,8 @@ skill files stay thin, generated, or compatibility-focused.
 For general DART agent work:
 
 1. `AGENTS.md`
-2. `docs/ai/README.md` (this file)
-3. `docs/ai/principles.md`
+2. `docs/ai/principles.md`
+3. `docs/ai/README.md` (this file)
 4. `docs/ai/north-star.md`
 5. `docs/ai/workflows.md`
 6. `docs/ai/verification.md`

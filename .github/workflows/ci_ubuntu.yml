@@ -26,6 +26,20 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -54,6 +68,20 @@ jobs:
     strategy:
       fail-fast: false
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -119,6 +147,20 @@ jobs:
       # dominant CI cost. ctest honors CTEST_PARALLEL_LEVEL natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -178,6 +220,20 @@ jobs:
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -263,6 +319,20 @@ jobs:
       DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE: OFF
       DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE: OFF
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -329,6 +399,20 @@ jobs:
       DART_PARALLEL_JOBS: 8
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -379,6 +463,20 @@ jobs:
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
       CTEST_PARALLEL_LEVEL: 4
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -403,7 +501,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.1
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb mold
           version: 3
 
       - name: Configure environment for compiler cache
@@ -419,8 +517,12 @@ jobs:
         run: |
           # This step builds the dartpy nanobind extension. In Debug each
           # binding TU is large, so keep parallelism below the 16 GB hosted
-          # runner's memory limit. Binding-layer Debug symbols are disabled by
-          # default in CMake; the core DART libraries still keep Debug symbols.
+          # runner's memory limit. Use mold for the final Debug module link and
+          # keep this as a Debug dartpy smoke path; Release and wheel jobs run
+          # the full Python suite.
+          DART_USE_MOLD_OVERRIDE=ON \
+          DARTPY_PYTEST_ARGS="-vv --tb=short" \
+          DARTPY_PYTEST_SOURCES="unit/common/test_string.py unit/math/test_lcp.py unit/test_lifetime.py" \
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_PARALLEL_JOBS=4 \
@@ -438,6 +540,20 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -497,6 +613,20 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -525,6 +655,20 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -593,6 +737,20 @@ jobs:
       DART_PARALLEL_JOBS: 2
       LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 

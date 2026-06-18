@@ -14,8 +14,8 @@ experimental simulation world — its public API and its algorithms.
 `docs/readthedocs/papers.md` is the single source of truth and the published
 website page. It is a companion to the experimental API design docs:
 
-- `docs/design/simulation_experimental_cpp_api.md`
-- `docs/design/simulation_experimental_python_api.md`
+- `docs/design/simulation_cpp_api.md`
+- `docs/design/simulation_python_api.md`
 
 ## Entry Schema
 
@@ -59,13 +59,14 @@ classic location noted in `Notes`.
 - Keep the catalog scoped to the experimental world for now; the schema is
   general and can extend to the rest of DART later.
 - Keep `engine` entries as baselines/comparisons, never as dependencies.
-- Run `pixi run lint` after edits (it runs `sync-ai-commands` and doc checks).
+- Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
+  gate set, then run `pixi run lint` after edits.
 
 ## Full Documentation
 
 For the catalog and its rationale: `docs/readthedocs/papers.md`
 
-For the API it supports: `docs/design/simulation_experimental_cpp_api.md`,
-`docs/design/simulation_experimental_python_api.md`
+For the API it supports: `docs/design/simulation_cpp_api.md`,
+`docs/design/simulation_python_api.md`
 
 For DART's research focus: `docs/ai/north-star.md`

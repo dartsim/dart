@@ -44,6 +44,7 @@
 #include "dart/simulation/common/ecs_utils.hpp"
 #include "dart/simulation/common/exceptions.hpp"
 #include "dart/simulation/comps/all.hpp"
+#include "dart/simulation/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/compute/multibody_dynamics.hpp"
 #include "dart/simulation/compute/sequential_executor.hpp"
@@ -498,6 +499,8 @@ struct World::ReplayState
     ContactSolverMethod contactSolverMethod{
         ContactSolverMethod::SequentialImpulse};
     ContactGradientMode contactGradientMode{ContactGradientMode::Analytic};
+    ComputeAcceleratorPolicy computeAcceleratorPolicy{
+        ComputeAcceleratorPolicy::CpuOnly};
     DeactivationOptions deactivationOptions{};
     double time = 0.0;
     std::size_t frame = 0;
@@ -1482,6 +1485,18 @@ bool isValidContactGradientMode(ContactGradientMode mode)
 }
 
 //==============================================================================
+bool isValidComputeAcceleratorPolicy(ComputeAcceleratorPolicy policy)
+{
+  switch (policy) {
+    case ComputeAcceleratorPolicy::CpuOnly:
+    case ComputeAcceleratorPolicy::PreferAccelerated:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 bool isValidMultibodyIntegrationFamily(MultibodyIntegrationFamily family)
 {
   switch (family) {
@@ -1626,6 +1641,37 @@ ContactGradientMode decodeContactGradientMode(std::uint8_t value)
       InvalidArgumentException,
       "Serialized World contact gradient mode value is invalid");
   return ContactGradientMode::Analytic;
+}
+
+//==============================================================================
+std::uint8_t encodeComputeAcceleratorPolicy(ComputeAcceleratorPolicy policy)
+{
+  switch (policy) {
+    case ComputeAcceleratorPolicy::CpuOnly:
+      return 0u;
+    case ComputeAcceleratorPolicy::PreferAccelerated:
+      return 1u;
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Compute accelerator policy is invalid");
+  return 0u;
+}
+
+//==============================================================================
+ComputeAcceleratorPolicy decodeComputeAcceleratorPolicy(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return ComputeAcceleratorPolicy::CpuOnly;
+    case 1u:
+      return ComputeAcceleratorPolicy::PreferAccelerated;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World compute accelerator policy value is invalid");
+  return ComputeAcceleratorPolicy::CpuOnly;
 }
 
 //==============================================================================
@@ -3419,6 +3465,7 @@ World::World(const WorldOptions& options)
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
     m_contactGradientMode(options.contactGradientMode),
+    m_computeAcceleratorPolicy(options.computeAcceleratorPolicy),
     m_strictSolverResolution(options.strictSolverResolution),
     m_deactivationOptions(options.deactivationOptions),
     m_collisionQueryCache(
@@ -3446,6 +3493,10 @@ World::World(const WorldOptions& options)
       !isValidContactGradientMode(options.contactGradientMode),
       InvalidArgumentException,
       "WorldOptions.contactGradientMode is invalid");
+  DART_SIMULATION_THROW_T_IF(
+      !isValidComputeAcceleratorPolicy(options.computeAcceleratorPolicy),
+      InvalidArgumentException,
+      "WorldOptions.computeAcceleratorPolicy is invalid");
   validateDeactivationOptions(options.deactivationOptions);
   setMultibodyOptions(options.multibodyOptions);
 }
@@ -3688,6 +3739,9 @@ void World::clear()
   m_differentiable = false;
   m_contactSolverMethod = ContactSolverMethod::SequentialImpulse;
   m_contactGradientMode = ContactGradientMode::Analytic;
+  m_computeAcceleratorPolicy = ComputeAcceleratorPolicy::CpuOnly;
+  m_deformablePsdProjector = nullptr;
+  m_deformablePsdAcceleratedResolved = false;
   m_deactivationOptions = {};
   resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
   m_lastDeformableSolverDiagnostics = {};
@@ -3875,7 +3929,28 @@ void World::prepareStepPipelineCacheForCurrentConfiguration()
       cache.hasAdvanceableRigidBodies,
       cache.hasMultibodyStructure,
       cache.hasDeformableBodies);
+  resolveComputeAcceleratorForCurrentConfiguration();
   recordResolvedConfiguration();
+}
+
+//==============================================================================
+void World::resolveComputeAcceleratorForCurrentConfiguration()
+{
+  m_deformablePsdProjector = &compute::projectSymmetricBlocksToPsdCpu;
+  m_deformablePsdAcceleratedResolved = false;
+
+  switch (m_computeAcceleratorPolicy) {
+    case ComputeAcceleratorPolicy::CpuOnly:
+      return;
+    case ComputeAcceleratorPolicy::PreferAccelerated:
+      if (compute::DeformablePsdBlockProjector projector
+          = compute::deformablePsdAcceleratorProjector();
+          projector != nullptr) {
+        m_deformablePsdProjector = projector;
+        m_deformablePsdAcceleratedResolved = true;
+      }
+      return;
+  }
 }
 
 //==============================================================================
@@ -3941,6 +4016,28 @@ void World::recordResolvedConfiguration()
   }
   m_resolvedConfiguration.notes.push_back(
       {"multibody", multibody, multibody, "as requested"});
+
+  const char* requestedAccelerator = "unknown";
+  switch (m_computeAcceleratorPolicy) {
+    case ComputeAcceleratorPolicy::CpuOnly:
+      requestedAccelerator = "cpu";
+      break;
+    case ComputeAcceleratorPolicy::PreferAccelerated:
+      requestedAccelerator = "accelerated";
+      break;
+  }
+  const char* resolvedAccelerator
+      = m_deformablePsdAcceleratedResolved ? "accelerated" : "cpu";
+  const char* acceleratorReason = "as requested";
+  if (m_computeAcceleratorPolicy == ComputeAcceleratorPolicy::PreferAccelerated
+      && !m_deformablePsdAcceleratedResolved) {
+    acceleratorReason = "no available accelerator registered";
+  }
+  m_resolvedConfiguration.notes.push_back(
+      {"deformable-psd",
+       requestedAccelerator,
+       resolvedAccelerator,
+       acceleratorReason});
 
   DART_SIMULATION_THROW_T_IF(
       m_strictSolverResolution && m_resolvedConfiguration.hasSubstitution(),
@@ -5512,6 +5609,26 @@ void World::setContactGradientMode(ContactGradientMode mode)
 }
 
 //==============================================================================
+void World::setComputeAcceleratorPolicy(ComputeAcceleratorPolicy policy)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidComputeAcceleratorPolicy(policy),
+      InvalidArgumentException,
+      "Compute accelerator policy is invalid");
+
+  m_computeAcceleratorPolicy = policy;
+  if (m_simulationMode) {
+    prepareStepPipelineCacheForCurrentConfiguration();
+  }
+}
+
+//==============================================================================
+ComputeAcceleratorPolicy World::getComputeAcceleratorPolicy() const noexcept
+{
+  return m_computeAcceleratorPolicy;
+}
+
+//==============================================================================
 void World::setDeactivationOptions(const DeactivationOptions& options)
 {
   validateDeactivationOptions(options);
@@ -6640,6 +6757,9 @@ void World::stepPipelineOnce(
     captureStepDerivatives();
   }
 
+  compute::ScopedDeformablePsdBlockProjector psdProjectorScope(
+      m_deformablePsdProjector);
+
 #if DART_BUILD_PROFILE
   if (m_stepProfilingEnabled) {
     pipeline.executeProfiled(*this, executor, m_stepProfileScratch);
@@ -7014,6 +7134,7 @@ void World::restoreReplayFrame(std::size_t index)
   const auto previousRigidBodySolver = m_rigidBodySolver;
   const auto previousMultibodyIntegrationMethod = m_multibodyIntegrationMethod;
   const auto previousContactSolverMethod = m_contactSolverMethod;
+  const auto previousComputeAcceleratorPolicy = m_computeAcceleratorPolicy;
 
   validateReplayComponents<comps::DeformableNodeState>(
       m_storage->registry,
@@ -7320,6 +7441,7 @@ void World::restoreReplayFrame(std::size_t index)
   m_differentiable = replayFrame.differentiable;
   m_contactSolverMethod = replayFrame.contactSolverMethod;
   m_contactGradientMode = replayFrame.contactGradientMode;
+  m_computeAcceleratorPolicy = replayFrame.computeAcceleratorPolicy;
   m_deactivationOptions = replayFrame.deactivationOptions;
   m_time = replayFrame.time;
   m_frame = replayFrame.frame;
@@ -7345,7 +7467,8 @@ void World::restoreReplayFrame(std::size_t index)
         = !wasSimulationMode || frameTopologyChanged
           || previousRigidBodySolver != m_rigidBodySolver
           || previousMultibodyIntegrationMethod != m_multibodyIntegrationMethod
-          || previousContactSolverMethod != m_contactSolverMethod;
+          || previousContactSolverMethod != m_contactSolverMethod
+          || previousComputeAcceleratorPolicy != m_computeAcceleratorPolicy;
     if (stepPipelinePolicyChanged) {
       prepareStepPipelineCacheForCurrentConfiguration();
     }
@@ -7377,6 +7500,7 @@ void World::recordReplayFrame()
   replayFrame.differentiable = m_differentiable;
   replayFrame.contactSolverMethod = m_contactSolverMethod;
   replayFrame.contactGradientMode = m_contactGradientMode;
+  replayFrame.computeAcceleratorPolicy = m_computeAcceleratorPolicy;
   replayFrame.deactivationOptions = m_deactivationOptions;
   replayFrame.time = m_time;
   replayFrame.frame = m_frame;
@@ -7958,6 +8082,9 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, m_deactivationOptions.timeUntilSleep);
   io::writePOD(output, m_deactivationOptions.wakeThresholdScale);
   io::writePOD(output, m_deactivationOptions.disturbanceForceThreshold);
+
+  io::writePOD(
+      output, encodeComputeAcceleratorPolicy(m_computeAcceleratorPolicy));
 }
 
 //==============================================================================
@@ -8093,6 +8220,13 @@ void World::loadBinary(std::istream& input)
       options.enabled = deactivationEnabled != 0u;
       validateDeactivationOptions(options);
       m_deactivationOptions = options;
+    }
+
+    if (formatVersion >= 26 && input.peek() != std::char_traits<char>::eof()) {
+      std::uint8_t computeAcceleratorPolicy = 0u;
+      io::readPOD(input, computeAcceleratorPolicy);
+      m_computeAcceleratorPolicy
+          = decodeComputeAcceleratorPolicy(computeAcceleratorPolicy);
     }
   }
 

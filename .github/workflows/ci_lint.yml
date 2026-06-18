@@ -26,6 +26,20 @@ jobs:
     if: github.event.deleted != true
     runs-on: ubuntu-latest
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -46,6 +60,20 @@ jobs:
       startsWith(github.ref, 'refs/heads/release-'))
     runs-on: ubuntu-latest
     steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
 
