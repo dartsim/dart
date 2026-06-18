@@ -1273,7 +1273,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
 - Dependencies: WP-091.24, WP-091.33a.
 
-#### WP-091.34 Graph granularity policy
+#### WP-091.34 Graph granularity policy [claimed]
 
 - Objective: compute-graph nodes are coarse units (islands, trees, bodies,
   colors) with the lowered task graph cached against a topology revision;
@@ -1285,6 +1285,16 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   (profile evidence); parallel-vs-sequential determinism tests green.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.30.
+- Progress: local PR #3061 follow-up lowers kinematics into cached
+  topology-level worker chunks, routes `World::updateKinematics()` through the
+  cached kinematics stage, and replaces the rigid-body per-entity dependency
+  graph with ordered coarse batches. Local evidence: `pixi run build`,
+  `pixi run test-unit`, `pixi run build-py-dev`, and
+  `pixi run -e py314-wheel wheel-build` pass; added coverage includes
+  `WorldKinematicsGraphLowersFramesIntoWorkerChunks`,
+  `UpdateKinematicsReusesCachedGraphForStableTopology`,
+  `DefaultRigidBodyStepIsBitwiseDeterministicAcrossWorkers`, and the warmed
+  nested-profile allocation guard.
 
 ### WS4 — Facade and public API
 

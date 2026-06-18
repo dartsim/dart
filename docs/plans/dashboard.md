@@ -31,9 +31,8 @@ its own line so status updates remain git-history friendly.
   `[done]` via PR #3052; and WP-091.32 (O(n) shared articulated core) is
   `[done]` via PR #3058. The remaining WS0 packet is WP-091.4 legacy freeze,
   which stays **blocked**: PLAN-042 Decision 5 has no recorded maintainer
-  direction. The current in-progress PLAN-091 work is WP-091.33d (resident
-  device owner), available after the accepted WP-091.31/WP-091.33c dependency
-  chain.
+  direction. The current in-progress PLAN-091 work is WP-091.34 (graph
+  granularity policy), available after WP-091.30.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies

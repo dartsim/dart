@@ -272,24 +272,20 @@ struct RigidIpcContactStage::Scratch
   sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
 };
 
-struct RigidBodyNode
-{
-  entt::entity entity;
-  ComputeNode* node;
-};
-
 struct RigidBodyIntegrationStage::Scratch
 {
   Scratch() = default;
 
   explicit Scratch(common::MemoryAllocator& allocator)
     : entities(common::StlAllocator<entt::entity>{allocator}),
-      nodes(common::StlAllocator<RigidBodyNode>{allocator})
+      orderedEntities(common::StlAllocator<entt::entity>{allocator}),
+      visitState(common::StlAllocator<int>{allocator})
   {
   }
 
   std::vector<entt::entity, common::StlAllocator<entt::entity>> entities;
-  std::vector<RigidBodyNode, common::StlAllocator<RigidBodyNode>> nodes;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> orderedEntities;
+  std::vector<int, common::StlAllocator<int>> visitState;
 };
 
 namespace {
@@ -534,20 +530,6 @@ void orderRigidBodiesParentBeforeChild(
     appendRigidBodyParentBeforeChild(
         registry, rigidBodyEntities, visitState, ordered, i);
   }
-}
-
-//==============================================================================
-ComputeNode* findRigidBodyNode(const auto& nodes, entt::entity entity)
-{
-  const auto it = std::find_if(
-      nodes.begin(), nodes.end(), [entity](const RigidBodyNode& entry) {
-        return entry.entity == entity;
-      });
-  if (it == nodes.end()) {
-    return nullptr;
-  }
-
-  return it->node;
 }
 
 //==============================================================================
@@ -1098,46 +1080,20 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
                    : ComputeGraph();
   const auto gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
-  if (hasRigidBodyFrameDependency(registry, entities)) {
-    auto& nodes = m_scratch->nodes;
-    nodes.clear();
-    nodes.reserve(entities.size());
 
-    for (const auto entity : entities) {
-      auto& node = graph.addNode(
-          "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
-          [&registry, entity, gravity, timeStep]() {
-            integrateRigidBody(registry, entity, gravity, timeStep);
-          },
-          getMetadata());
-      nodes.push_back({entity, &node});
-    }
-
-    for (const auto& entry : nodes) {
-      const auto& frameState = registry.get<comps::FrameState>(entry.entity);
-      const auto parentRigidBody = findNearestRigidBodyAncestor(
-          registry, frameState.parentFrame, entities);
-      if (parentRigidBody == entt::null) {
-        continue;
-      }
-
-      auto* parentNode = findRigidBodyNode(nodes, parentRigidBody);
-      DART_SIMULATION_THROW_T_IF(
-          !parentNode,
-          InvalidOperationException,
-          "Rigid-body ancestor is missing an integration node");
-
-      graph.addDependency(*parentNode, *entry.node);
-    }
-
-    executor.execute(graph);
-    return;
+  auto* entityList = &entities;
+  const bool serializeBatches = hasRigidBodyFrameDependency(registry, entities);
+  if (serializeBatches) {
+    orderRigidBodiesParentBeforeChild(
+        registry, entities, m_scratch->orderedEntities, m_scratch->visitState);
+    entityList = &m_scratch->orderedEntities;
   }
 
-  const auto* entityList = &entities;
-  for (std::size_t begin = 0; begin < entities.size(); begin += m_batchSize) {
-    const auto end = std::min(begin + m_batchSize, entities.size());
-    graph.addNode(
+  ComputeNode* previousNode = nullptr;
+  for (std::size_t begin = 0; begin < entityList->size();
+       begin += m_batchSize) {
+    const auto end = std::min(begin + m_batchSize, entityList->size());
+    auto& node = graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
         [&registry, entityList, begin, end, gravity, timeStep]() {
           for (auto i = begin; i < end; ++i) {
@@ -1149,6 +1105,10 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
           }
         },
         getMetadata());
+    if (serializeBatches && previousNode != nullptr) {
+      graph.addDependency(*previousNode, node);
+    }
+    previousNode = &node;
   }
 
   executor.execute(graph);
