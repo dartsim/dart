@@ -41,6 +41,8 @@ def test_hanging_bridge_demo_steps_rigid_ipc_world() -> None:
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
     assert sx_world.num_rigid_body_fixed_joints == len(boards)
+    assert traveler.is_kinematic is True
+    assert all(board.is_static for board in boards)
     assert "--headless" in setup.info["plan083_smoke_command"]
     assert setup.info["plan083_visual_command"].startswith("pixi run py-demo-capture")
     assert setup.pre_step is not None
@@ -235,7 +237,9 @@ def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
     assert sx_world.num_rigid_body_joints == 4
+    assert chassis.is_kinematic is True
     assert len(wheels) == 4
+    assert all(wheel.is_kinematic for wheel in wheels)
     assert setup.info["plan083_benchmark_command"] == (
         "pixi run bm-plan083-cpu-terrain-vehicle-packet"
     )
