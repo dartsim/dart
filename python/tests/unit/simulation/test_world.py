@@ -10,6 +10,9 @@ import numpy as np
 import pytest
 
 
+SDF_PENDULUM_URI = "dart://sample/sdf/test/single_pendulum.sdf"
+
+
 def _simulation():
     try:
         module = importlib.import_module("dartpy")
@@ -20,6 +23,15 @@ def _simulation():
     if not hasattr(module, "World"):
         raise AssertionError("dartpy imported but did not expose World")
     return module
+
+
+def _add_sdf_fixture_skeleton_or_skip(sx, world, *args):
+    try:
+        return sx.add_skeleton(world, SDF_PENDULUM_URI, *args)
+    except Exception as exc:
+        if "Failed to read Skeleton from URI" in str(exc):
+            pytest.skip("DART SDF support is disabled")
+        raise
 
 
 def _translation_transform(x: float, y: float, z: float):
@@ -5681,9 +5693,7 @@ def test_simulation_add_skeleton_loads_uri():
     options.root_anchor_prefix = "py_uri_anchor_"
 
     world = sx.World()
-    multibody = sx.add_skeleton(
-        world, "dart://sample/sdf/test/single_pendulum.sdf", options
-    )
+    multibody = _add_sdf_fixture_skeleton_or_skip(sx, world, options)
 
     assert multibody.name == "single_pendulum"
     assert multibody.num_links == 2
@@ -5718,9 +5728,9 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     load_options.root_anchor_prefix = "py_read_options_anchor_"
 
     world = sx.World()
-    multibody = sx.add_skeleton(
+    multibody = _add_sdf_fixture_skeleton_or_skip(
+        sx,
         world,
-        "dart://sample/sdf/test/single_pendulum.sdf",
         read_options,
         load_options,
     )
@@ -5731,11 +5741,7 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     wrong_format = sx.ReadOptions()
     wrong_format.format = sx.ModelFormat.URDF
     with pytest.raises(Exception, match="Failed to read Skeleton"):
-        sx.add_skeleton(
-            sx.World(),
-            "dart://sample/sdf/test/single_pendulum.sdf",
-            wrong_format,
-        )
+        sx.add_skeleton(sx.World(), SDF_PENDULUM_URI, wrong_format)
 
 
 def test_simulation_api_does_not_expose_add_world_bridge():

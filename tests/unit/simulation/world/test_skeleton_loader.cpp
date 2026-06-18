@@ -569,6 +569,7 @@ TEST(SkeletonLoader, LoadedPendulumAdvancesOneStep)
 
 TEST(SkeletonLoader, LoadsSkeletonFromUri)
 {
+#if DART_HAS_SDFORMAT
   sx::World world;
   sx::io::SkeletonLoadOptions options;
   options.rootAnchorPrefix = "uri_anchor_";
@@ -591,6 +592,9 @@ TEST(SkeletonLoader, LoadsSkeletonFromUri)
   EXPECT_EQ(joint.getType(), sx::JointType::Revolute);
   EXPECT_TRUE(joint.getAxis().isApprox(Eigen::Vector3d::UnitZ()));
   expectBoxCollisionShape(*link, Eigen::Vector3d(0.05, 0.1, 0.15));
+#else
+  GTEST_SKIP() << "SDF support is disabled";
+#endif
 }
 
 TEST(SkeletonLoader, TranslatesMultipleSkeletonsIntoWorld)
@@ -683,6 +687,7 @@ TEST(SkeletonLoader, RejectsInvalidBodyInertiaBeforeCreatingMultibody)
 
 TEST(SkeletonLoader, LoadsUriWithReadOptions)
 {
+#if DART_HAS_SDFORMAT
   const dart::common::Uri uri("dart://sample/sdf/test/single_pendulum.sdf");
 
   dart::io::ReadOptions readOptions;
@@ -704,6 +709,9 @@ TEST(SkeletonLoader, LoadsUriWithReadOptions)
   EXPECT_THROW(
       sx::io::addSkeleton(rejectedWorld, uri, wrongFormat),
       sx::InvalidArgumentException);
+#else
+  GTEST_SKIP() << "SDF support is disabled";
+#endif
 }
 
 TEST(SkeletonLoader, TranslatesMeshCollisionShape)
