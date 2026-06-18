@@ -569,16 +569,16 @@ DART_SIMULATION_API bool assembleMultibodyLinkContactProblemInto(
     double timeStep,
     std::span<const LinkContact> linkContacts);
 
-/// Fixed-base articulated-body forward-dynamics stage.
+/// Fixed-base semi-implicit joint-space multibody stage.
 ///
 /// For each multibody, this stage computes generalized joint accelerations from
 /// joint efforts, gravity, and velocity-dependent (Coriolis/centrifugal) terms,
 /// then integrates joint velocities and positions with semi-implicit Euler.
 ///
-/// The dynamics use a recursive Newton-Euler formulation to build the
-/// joint-space mass matrix and bias forces, then solve `M qddot = tau - bias`.
-/// This matches the legacy DART rigid-body articulated-dynamics results for
-/// open chains while keeping the implementation backend-neutral.
+/// The dynamics use recursive Newton-Euler bias terms and the shared
+/// articulated inverse-mass apply to solve `qddot = M^-1 (tau - bias)`. This
+/// matches the legacy DART rigid-body articulated-dynamics results for open
+/// chains while keeping the implementation backend-neutral.
 ///
 /// Scope and assumptions:
 /// - Fixed-base trees only: the root link is fixed to the world (it has no

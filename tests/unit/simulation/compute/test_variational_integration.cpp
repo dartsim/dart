@@ -484,8 +484,10 @@ TEST(VariationalIntegration, SelectableThroughWorldStep)
 }
 
 // The O(n) articulated-body inverse-mass apply that powers the RIQN step must
-// equal the dense mass-matrix solve M(q)^{-1} b to machine precision, on a
-// branchy mixed-joint chain at a non-trivial configuration.
+// equal the dense variational mass-matrix solve M(q)^{-1} b to machine
+// precision, on a branchy mixed-joint chain at a non-trivial configuration.
+// Joint armature is intentionally ignored here until the variational residual
+// and Jacobian model matching armature terms.
 TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
 {
   sx::World world;
@@ -530,13 +532,22 @@ TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const auto& structure = structureOf(world);
-  const Eigen::MatrixXd massMatrix
+  const Eigen::MatrixXd variationalMassMatrix
       = sxc::computeMultibodyDynamicsTerms(
             registry, structure, world.getGravity())
             .massMatrix;
-  ASSERT_EQ(massMatrix.rows(), 3);
 
-  const Eigen::LDLT<Eigen::MatrixXd> dense(massMatrix);
+  l1.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.05));
+  l2.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.08));
+  l3.getParentJoint().setArmature(Eigen::VectorXd::Constant(1, 0.03));
+  const Eigen::MatrixXd armatureMassMatrix
+      = sxc::computeMultibodyDynamicsTerms(
+            registry, structure, world.getGravity())
+            .massMatrix;
+  ASSERT_EQ(variationalMassMatrix.rows(), 3);
+  EXPECT_GT((armatureMassMatrix - variationalMassMatrix).norm(), 1e-6);
+
+  const Eigen::LDLT<Eigen::MatrixXd> dense(variationalMassMatrix);
   const std::vector<Eigen::VectorXd> rhs
       = {(Eigen::VectorXd(3) << 1, 0, 0).finished(),
          (Eigen::VectorXd(3) << 0, 1, 0).finished(),
