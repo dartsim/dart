@@ -18,10 +18,6 @@ if str(_PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(_PYTHON_DIR))
 
 import pytest
-from examples.demos._smoke_support import exercise_panels  # noqa: E402
-from examples.demos.registry import make_demo_scenes  # noqa: E402
-
-from examples.demos import runner  # noqa: E402
 
 
 def _simulation_has(*names: str) -> bool:
@@ -37,6 +33,9 @@ def test_all_registered_scenes_build_step_and_render() -> None:
         pytest.skip("dartpy.World unavailable in this build")
 
     import dartpy as dart
+    from examples.demos import runner
+    from examples.demos._smoke_support import exercise_panels
+    from examples.demos.registry import make_demo_scenes
 
     configure_gpu_compute = getattr(runner, "_configure_gpu_compute", None)
     if callable(configure_gpu_compute):
