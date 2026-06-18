@@ -3,6 +3,7 @@ from __future__ import annotations
 import gc
 import importlib
 import math
+import os
 from pathlib import Path
 
 import dartpy as dart
@@ -25,13 +26,35 @@ def _simulation():
     return module
 
 
+def _dart_build_config_header():
+    candidates = []
+    runtime_dir = os.environ.get("DARTPY_RUNTIME_DIR")
+    if runtime_dir:
+        candidates.append(Path(runtime_dir).resolve())
+    if dart.__file__:
+        candidates.append(Path(dart.__file__).resolve().parent)
+
+    for path in candidates:
+        for parent in (path, *path.parents):
+            config_header = parent / "dart" / "config.hpp"
+            if config_header.exists():
+                return config_header
+    return None
+
+
+def _dart_build_has_sdf_support():
+    config_header = _dart_build_config_header()
+    if config_header is None:
+        return True
+    return "#define DART_HAVE_SDFORMAT 0" not in config_header.read_text(
+        encoding="utf-8"
+    )
+
+
 def _add_sdf_fixture_skeleton_or_skip(sx, world, *args):
-    try:
-        return sx.add_skeleton(world, SDF_PENDULUM_URI, *args)
-    except Exception as exc:
-        if "Failed to read Skeleton from URI" in str(exc):
-            pytest.skip("DART SDF support is disabled")
-        raise
+    if not _dart_build_has_sdf_support():
+        pytest.skip("DART SDF support is disabled")
+    return sx.add_skeleton(world, SDF_PENDULUM_URI, *args)
 
 
 def _translation_transform(x: float, y: float, z: float):
