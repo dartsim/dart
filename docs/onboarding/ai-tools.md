@@ -591,6 +591,15 @@ clear reason, such as removing sensitive content, repairing broken branch
 history, or cleaning up noisy local work before the PR is first published.
 Force-pushes are PR mutations and require explicit maintainer/user approval.
 
+If a push is rejected because the remote PR branch moved, fetch the PR branch
+and inspect the local/remote divergence before retrying. When the remote already
+contains an equivalent fix, validate the remote PR head instead of pushing a
+duplicate follow-up commit, and realign the local branch to the remote head
+after preserving any useful local-only work on a backup branch. Do not leave the
+main working checkout detached or visibly diverged while continuing PR
+management; it makes later status, IDE branch indicators, and CI evidence easy
+to misread.
+
 If a PR was temporarily based on another PR branch, and that base PR lands into
 `main`, GitHub may retarget the dependent PR to `main` and mark it behind. Treat
 the retargeted branch as the new base state: fetch `main`, merge `origin/main`
