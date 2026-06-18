@@ -36,7 +36,11 @@
 
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
 
+#include <memory>
+#include <string_view>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart::simulation::compute::cuda {
 
@@ -93,5 +97,68 @@ void rolloutRigidBodyStateBatchCuda(
     const std::vector<double>& force,
     double timeStep,
     std::size_t stepCount);
+
+/// Copy/synchronization counters for the internal resident rigid-batch owner.
+struct ResidentRigidBodyBatchCudaDiagnostics
+{
+  std::uint64_t modelUploadCount = 0;
+  std::uint64_t stateUploadCount = 0;
+  std::uint64_t controlUploadCount = 0;
+  std::uint64_t stateDownloadCount = 0;
+  std::uint64_t stepCount = 0;
+  bool deviceStateValid = false;
+  bool hostStateCoherent = false;
+};
+
+/// Internal owner for the CUDA rigid-batch residency slice.
+///
+/// This sidecar-only type makes the residency boundaries explicit: callers
+/// upload immutable Model storage, upload mutable State, upload Control data,
+/// run one or more resident steps, and download State only at a synchronization
+/// boundary. It is deliberately kept under the optional CUDA target and never
+/// appears in the public simulation facade.
+class ResidentRigidBodyBatchCuda
+{
+public:
+  ResidentRigidBodyBatchCuda();
+  ~ResidentRigidBodyBatchCuda();
+
+  ResidentRigidBodyBatchCuda(const ResidentRigidBodyBatchCuda&) = delete;
+  ResidentRigidBodyBatchCuda& operator=(const ResidentRigidBodyBatchCuda&)
+      = delete;
+
+  ResidentRigidBodyBatchCuda(ResidentRigidBodyBatchCuda&&) noexcept;
+  ResidentRigidBodyBatchCuda& operator=(ResidentRigidBodyBatchCuda&&) noexcept;
+
+  void clear();
+
+  /// Upload immutable Model storage to the device. The model shape becomes the
+  /// resident shape and later State/Control uploads must match it.
+  void uploadModel(const RigidBodyModelBatch& model);
+
+  /// Upload mutable State storage to the device. Host State is coherent until a
+  /// resident step succeeds or fails after kernel launch.
+  void uploadState(const RigidBodyStateBatch& state);
+
+  /// Upload one force slice used by subsequent resident steps.
+  void uploadControl(const std::vector<double>& force);
+
+  /// Run one resident CUDA step. This does not copy State back to the host.
+  void step(double timeStep);
+
+  /// Download resident State to @p state and mark host/device State coherent.
+  void downloadState(RigidBodyStateBatch& state);
+
+  /// Throws unless host State is coherent with the resident device State.
+  void requireCoherentStateForHostFallback(std::string_view operation) const;
+
+  [[nodiscard]] bool canFallbackToHost() const noexcept;
+  [[nodiscard]] ResidentRigidBodyBatchCudaDiagnostics diagnostics()
+      const noexcept;
+
+private:
+  struct Impl;
+  std::unique_ptr<Impl> m_impl;
+};
 
 } // namespace dart::simulation::compute::cuda

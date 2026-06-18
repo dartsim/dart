@@ -316,8 +316,10 @@ private:
   std::unique_ptr<WorldKinematicsGraph, CachedGraphDeleter> m_cachedGraph;
 };
 
-/// Per-entity unconstrained rigid-body integration stage for the experimental
-/// World.
+/// Direct unconstrained rigid-body integration stage for the experimental
+/// World. Work is lowered as coarse ordered batches; frame-coupled batches keep
+/// parent-before-child write-back order without creating one graph node per
+/// body.
 class DART_SIMULATION_API RigidBodyIntegrationStage final
   : public WorldStepStage
 {
