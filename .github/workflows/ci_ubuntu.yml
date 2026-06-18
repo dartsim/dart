@@ -501,8 +501,28 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.1
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb mold
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
+
+      - name: Install mold when available
+        run: |
+          if command -v mold >/dev/null 2>&1; then
+            mold --version
+            exit 0
+          fi
+
+          # Self-hosted ubuntu-latest runners may not expose the mold apt
+          # package. Keep mold as an opportunistic Debug dartpy link
+          # accelerator and let CMake fall back when it is unavailable.
+          if sudo apt-get update && apt-cache show mold >/dev/null 2>&1; then
+            if sudo apt-get install -y --no-install-recommends mold; then
+              mold --version
+            else
+              echo "::notice::Unable to install mold; Debug dartpy will use the default linker."
+            fi
+          else
+            echo "::notice::mold is unavailable on this runner; Debug dartpy will use the default linker."
+          fi
 
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
