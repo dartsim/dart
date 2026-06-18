@@ -218,7 +218,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   Systematic energy/momentum-conservation and order-of-convergence validation
   across the scene corpus is deferred to WP-091.24.
 
-#### WP-091.3 Architecture-page claim lint [claimed]
+#### WP-091.3 Architecture-page claim lint [done — PR #2999, merged 2026-06-14]
 
 - Objective: every ✅/available claim in `docs/readthedocs/architecture.md`
   is CI-checkable: each marked row cites a header symbol and a test.
@@ -314,7 +314,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   exist). The quarantine lane this packet's freeze check must enforce is
   undefined until that decision exists, so do not start the check before then.
 
-#### WP-091.5 Renumber colliding plan IDs [claimed]
+#### WP-091.5 Renumber colliding plan IDs [done — PR #3003, merged 2026-06-14]
 
 - Objective: `PLAN-080` and `PLAN-082` each identify exactly one initiative.
 - Scope: assign fresh IDs to the Performance Dashboard and Linear-Time
@@ -386,7 +386,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
 
 ### WS1 — Internal solver contract and selection
 
-#### WP-091.10 Solver contract step 1: virtual finalize/prepare [claimed]
+#### WP-091.10 Solver contract step 1: virtual finalize/prepare [done — PR #3003, merged 2026-06-14]
 
 - Objective: the hand-synchronized prepare-table-plus-switch pair is replaced
   by virtual `prepare()`/`finalize()` on the stage contract.
@@ -422,7 +422,7 @@ Classification`, marked "compatibility/quarantine lane; surviving concepts
   `test_variational_integration` all pass (`pixi run lint` clean; full
   `test-unit` deferred to CI).
 
-#### WP-091.11 Minimal capabilities and validated finalize [claimed]
+#### WP-091.11 Minimal capabilities and validated finalize [done — PR #3003, merged 2026-06-14]
 
 - Objective: each solver family declares a minimal capability set (domain,
   supported joints/actuators/shapes, differentiability), the built-in
@@ -523,7 +523,7 @@ tests/test_avbd_packet_schema.py`, `pixi run lint` green. The live
   a previously-silent-substitution scene erroring under strict resolution —
   already landed in slice 2 (`StrictResolutionRejectsSubstitution`).
 
-#### WP-091.12 Single selection idiom [claimed]
+#### WP-091.12 Single selection idiom [done — PR #3020, merged 2026-06-15]
 
 - Objective: every domain selects its method family through one idiom —
   typed per-domain policy value objects on `WorldOptions` resolved once at
@@ -632,7 +632,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   physics-convergence work this slice deliberately leaves for a focused
   follow-up (which also needs the diff build unbroken).
 
-#### WP-091.14 Family-neutral joint model [claimed]
+#### WP-091.14 Family-neutral joint model [done — PR #3003, merged 2026-06-14]
 
 - Objective: shared `comps::Joint` carries only family-neutral semantics;
   per-family solver state lives in family-owned sidecar components; no family
@@ -647,7 +647,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   serialization round-trip preserved; existing joint suites green.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.10.
-- Evidence (re-homing slice landed; field move remaining): the rigid/articulated
+- Evidence: the rigid/articulated
   AVBD machinery — `rigid_block_kernel.hpp` and `rigid_world_contact.hpp` (the
   latter holds the `AvbdRigidWorld*` joint/spring sidecar components) — is
   re-homed out of the deformable-named `detail/deformable_vbd/` directory into a
@@ -841,7 +841,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   hierarchy, frame/stack/stage scratch contract, evidence surfaces, and bounded
   future-work rules moved into the allocator design doc.
 
-#### WP-091.23 Stable serialization identity [claimed]
+#### WP-091.23 Stable serialization identity [done — PR #3003, merged 2026-06-14]
 
 - Objective: on-disk component identity is an explicit stable ID plus schema
   version, not a compiler-mangled type name.
@@ -1228,7 +1228,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   (163/163), `pixi run check-api-boundaries`, and `pixi run lint`.
   Accepted by maintainer merge of PR #3052.
 
-#### WP-091.33d Resident device owner [claimed]
+#### WP-091.33d Resident device owner [done — PR #3061, merged 2026-06-18]
 
 - Objective: the optional sidecar path has an internal residency owner with
   explicit upload, download, and synchronization boundaries.
@@ -1244,11 +1244,10 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`; on Linux
   CUDA hosts with a visible device, `pixi run -e cuda test-all`.
 - Dependencies: WP-091.31, WP-091.33c.
-- Evidence: local branch `wp-091-33d-resident-device-owner` adds the internal
-  `ResidentRigidBodyBatchCuda` sidecar owner with explicit Model, State, and
-  Control uploads, resident CUDA stepping without per-step State downloads,
-  explicit State download, coherence diagnostics, and host fallback rejection
-  while the host State is stale. Tests:
+- Evidence: PR #3061 added the internal `ResidentRigidBodyBatchCuda` sidecar
+  owner with explicit Model, State, and Control uploads, resident CUDA stepping
+  without per-step State downloads, explicit State download, coherence
+  diagnostics, and host fallback rejection while the host State is stale. Tests:
   `ResidentOwnerRejectsInvalidModelBeforeCudaRuntime`,
   `ResidentOwnerRequiresModelBeforeStateOrControl`, and
   `ResidentOwnerDownloadsOnlyAtExplicitSync`. Gates: `pixi run lint`,
@@ -1256,6 +1255,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run -e cuda test-all` (full CUDA suite, including
   `test_rigid_body_state_batch_cuda` and the resident rollout benchmark smoke
   row `BM_CudaResidentRigidBodyStateBatchLinearRollout/4/256/1`) passed.
+  Accepted by maintainer merge of PR #3061.
 
 #### WP-091.33e Precision and packet reporting
 
@@ -1273,7 +1273,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
 - Dependencies: WP-091.24, WP-091.33a.
 
-#### WP-091.34 Graph granularity policy [claimed]
+#### WP-091.34 Graph granularity policy [done — PR #3061, merged 2026-06-18]
 
 - Objective: compute-graph nodes are coarse units (islands, trees, bodies,
   colors) with the lowered task graph cached against a topology revision;
@@ -1285,16 +1285,18 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   (profile evidence); parallel-vs-sequential determinism tests green.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.30.
-- Progress: local PR #3061 follow-up lowers kinematics into cached
-  topology-level worker chunks, routes `World::updateKinematics()` through the
-  cached kinematics stage, and replaces the rigid-body per-entity dependency
-  graph with ordered coarse batches. Local evidence: `pixi run build`,
-  `pixi run test-unit`, `pixi run build-py-dev`, and
-  `pixi run -e py314-wheel wheel-build` pass; added coverage includes
+- Evidence: PR #3061 lowers kinematics into cached topology-level worker
+  chunks, routes `World::updateKinematics()` through the cached kinematics
+  stage, and replaces the rigid-body per-entity dependency graph with ordered
+  coarse batches. Local evidence: `pixi run build`, `pixi run test-unit`,
+  `pixi run build-py-dev`, and `pixi run -e py314-wheel wheel-build` pass;
+  added coverage includes
   `WorldKinematicsGraphLowersFramesIntoWorkerChunks`,
   `UpdateKinematicsReusesCachedGraphForStableTopology`,
   `DefaultRigidBodyStepIsBitwiseDeterministicAcrossWorkers`, and the warmed
-  nested-profile allocation guard.
+  nested-profile allocation guard
+  (`WorldStepProfileIntegration.WarmedNestedGraphProfileDoesNotAllocate`).
+  Accepted by maintainer merge of PR #3061.
 
 ### WS4 — Facade and public API
 
