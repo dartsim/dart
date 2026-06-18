@@ -877,19 +877,10 @@ dart::gui::Panel makeDemoSidebarPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     dart::gui::ViewerLifecycleState* lifecycle = context.lifecycle;
-    const dart::gui::DemoSceneEntry* active = nullptr;
-    if (activeIndex >= 0 && activeIndex < static_cast<int>(scenes.size())) {
-      active = &scenes[static_cast<std::size_t>(activeIndex)];
-      builder.text("Current: " + active->title);
-      if (!active->summary.empty()) {
-        builder.text(active->summary);
-      }
-    }
     if (lifecycle != nullptr && !lifecycle->sceneActivationStatus.empty()) {
-      builder.separator();
       builder.text(lifecycle->sceneActivationStatus);
+      builder.separator();
     }
-    builder.separator();
 
     std::string& search = demoSidebarSearch();
     builder.text("Search");

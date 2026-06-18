@@ -399,7 +399,8 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Healthy: coarse error is larger while lane times remain comparable.",
     ),
     "rigid_step_diagnostics": (
-        "Switch solver/executor and reset while watching stage summaries.",
+        "Keep the realtime solver fixed; switch executor and reset while "
+        "watching stage summaries.",
         "Healthy: profile, ECS, contact, and scratch counters stay finite.",
     ),
     "rigid_contact_scale_budget": (
@@ -407,7 +408,7 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Healthy: denser lanes cost more and the budget status changes predictably.",
     ),
     "rigid_restitution_ladder": (
-        "Move launch height and restitution scale before changing solver.",
+        "Move launch height and restitution scale before comparing lanes.",
         "Healthy: higher restitution rebounds higher than lower restitution.",
     ),
     "rigid_material_mixing": (
@@ -2447,6 +2448,8 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
 
         builder.text(f"{guide.index:02d}/{guide.count:02d} {guide.label}")
         builder.text(scene.title)
+        if scene.summary:
+            builder.text(scene.summary)
         builder.separator()
         builder.text("Question")
         builder.text(guide.question)

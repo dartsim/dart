@@ -3220,6 +3220,40 @@ def test_rigid_solver_panel_edits_reset_visual_runs(
     )
 
 
+@pytest.mark.parametrize(
+    "scene_module",
+    [
+        rigid_body,
+        rigid_body_modes,
+        rigid_timestep_sensitivity,
+        rigid_step_diagnostics,
+        rigid_contact_scale_budget,
+        rigid_executor_equivalence,
+        rigid_restitution_ladder,
+    ],
+)
+def test_realtime_rigid_workflow_solver_choices_stay_on_sequential_impulse(
+    scene_module: object,
+) -> None:
+    sx = _require_simulation_symbols("RigidBodySolver")
+
+    assert tuple(getattr(scene_module, "_SOLVERS", ())) == (
+        ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
+    )
+
+
+def test_dedicated_rigid_solver_compare_keeps_ipc_lane() -> None:
+    sx = _require_simulation_symbols("RigidBodySolver")
+
+    setup = rigid_solver_compare.build()
+    controller = setup.info["rigid_solver_compare_controller"]
+
+    assert [case.solver for case in controller.cases] == [
+        sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
+        sx.RigidBodySolver.IPC,
+    ]
+
+
 def test_rigid_body_panel_edits_contact_solver_method() -> None:
     sx = _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod", "World")
 
@@ -3429,6 +3463,7 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         events = build_guidance_events(scene_id)
 
         assert f"text:{guide.index:02d}/{guide.count:02d} {guide.label}" in events
+        assert "text:Workflow guidance test." in events
         assert "text:Question" in events
         assert f"text:{guide.question}" in events
         assert "text:Workflow phase" in events

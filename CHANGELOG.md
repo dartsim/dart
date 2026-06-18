@@ -142,8 +142,9 @@ compatibility remains on the active DART 6 LTS branch._
   at the new correctness and benchmark contracts.
 - Made the DART 7 `World` contact solver method writable after construction in
   C++ and dartpy so visual tools can switch between Sequential Impulse and the
-  boxed-LCP contact baseline at runtime, while the `rigid_body` py-demos
-  baseline stays on the realtime Sequential Impulse rigid-body solver.
+  boxed-LCP contact baseline at runtime, while realtime py-demos workflow rows
+  stay on the Sequential Impulse rigid-body path and route SI-vs-IPC inspection
+  to the dedicated solver-comparison scenes.
 
 #### Collision and Geometry
 

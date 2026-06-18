@@ -255,21 +255,21 @@ plus a warning block if any selected row is missing those fields.
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                            |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
 | 01/36 | `rigid_body`                     | What is the baseline World rigid-body path?        | Solver, materials, replay, force drag, reset          | Speed, height, energy, contacts, step timing                  |
-| 02/36 | `rigid_body_modes`               | Which body mode should I choose?                   | Solver, executor, gravity, force, kinematic speed     | Dynamic fall, static drift, kinematic path error              |
+| 02/36 | `rigid_body_modes`               | Which body mode should I choose?                   | Executor, gravity, force, kinematic speed             | Dynamic fall, static drift, kinematic path error              |
 | 03/36 | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?     | Executor, launch speed/angle, gravity, spin/inertia   | Path error, momentum residual, energy drift, spin ratio       |
 | 04/36 | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?     | Executor, body yaw/path, local offset/yaw             | Parent frame, world pose, relative/world residuals            |
 | 05/36 | `rigid_external_loads`           | How do loads and impulses move/spin bodies?        | Force/torque, direct impulse, mass/inertia, executor  | Acceleration, impulse momentum, angular speed, static drift   |
 | 06/36 | `rigid_link_point_loads`         | Do point forces create lever-arm torque?           | Force, point offset, body yaw, executor               | Translation, yaw acceleration, pulse clear, frame split       |
-| 07/36 | `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Solver, executor, base time step, gravity scale       | Free-fall error, contact timing, clearance, step time         |
-| 08/36 | `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Solver, executor, reset                               | Stage/domain/backend status, ECS, scratch, contacts           |
-| 09/36 | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Solver, executor, frame budget, friction              | Contact count, wall ms, per-contact cost, scratch             |
-| 10/36 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend                 |
+| 07/36 | `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Executor, base time step, gravity scale               | Free-fall error, contact timing, clearance, step time         |
+| 08/36 | `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Executor, reset                                       | Stage/domain/backend status, ECS, scratch, contacts           |
+| 09/36 | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Executor, frame budget, friction                      | Contact count, wall ms, per-contact cost, scratch             |
+| 10/36 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Executor, launch height, restitution scale            | Height, vertical speed, contact, energy trend                 |
 | 11/36 | `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas         |
 | 12/36 | `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape ids, metrics       |
 | 13/36 | `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids          |
 | 14/36 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins, metrics   |
 | 15/36 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time           |
-| 16/36 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics   |
+| 16/36 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Fixed SI solver, launch speed, friction, restitution  | Pose/velocity divergence, contact count, step time, metrics   |
 | 17/36 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence            |
 | 18/36 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel           |
 | 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | IPC fixed, executor, ramp angle, controlled friction  | Friction-threshold axis, drift, speed, clearance, metrics     |
@@ -407,9 +407,10 @@ The **`rigid_timestep_sensitivity`** scene makes time-step and gravity tuning
 visible without changing the displayed simulation-time advance per frame.
 Three matched Worlds drop identical spheres with fine, medium, and coarse
 integration steps while using substeps so all lanes reach the same displayed
-time. The panel exposes solver, executor, base time step, gravity scale,
-free-fall error against the analytic no-contact reference, clearance, first
-contact time, contact count, coarse/fine error ratio, and step-profile timing.
+time. The panel uses the fixed realtime solver and exposes executor, base time
+step, gravity scale, free-fall error against the analytic no-contact reference,
+clearance, first contact time, contact count, coarse/fine error ratio, and
+step-profile timing.
 It is a convergence and parameter-sensitivity diagnostic, not a solver
 correctness proof or exact contact-threshold claim.
 
@@ -417,10 +418,11 @@ correctness proof or exact contact-threshold claim.
 
 The **`rigid_step_diagnostics`** scene makes `World.last_step_profile` and
 `World.memory_diagnostics` visible in the GUI. Three side-by-side Worlds run a
-single free body, an active contact pair, and a small stack under the same
-selected solver and executor so users can inspect how scene complexity changes
-wall time, stage totals, top stage, worker count, ECS entity/component counts,
-contact count, frame-scratch peak usage, and overflow/reset counters. The top
+single free body, an active contact pair, and a small stack under the same fixed
+realtime solver and selected executor so users can inspect how scene complexity
+changes wall time, stage totals, top stage, worker count, ECS entity/component
+counts, contact count, frame-scratch peak usage, and overflow/reset counters.
+The top
 stage also reports its domain, backend-neutral acceleration mask, and whether
 any accelerated backend stage was active, so users can separate executor choice
 from actual accelerator use. If step profiling is compiled out, the row still
@@ -432,8 +434,8 @@ backend-status metrics into the manifest sidecar.
 
 The **`rigid_contact_scale_budget`** scene keeps performance inspection on the
 same live-GUI surface as the rest of the workflow. Three matched Worlds run one-,
-four-, and nine-box contact workloads under one selected solver, executor, frame
-budget, and friction value. The panel reports contact-point count, bodies,
+four-, and nine-box contact workloads under the fixed realtime solver, executor,
+frame budget, and friction value. The panel reports contact-point count, bodies,
 contacts per body, wall time, per-contact cost, top profile stage, frame-scratch
 peak usage, ECS counters, worker count, dense/single wall-time ratio, and whether
 each lane is within the selected budget. It is a bounded frame-budget diagnostic,
@@ -446,8 +448,9 @@ scratch-memory, ECS, and budget-status metrics into the manifest sidecar.
 The **`rigid_restitution_ladder`** scene makes the public restitution material
 parameter visible without mixing it into a broader contact scenario. Three
 matched lanes drop identical rigid spheres onto separate ground pads with
-low, medium, and high restitution. The panel exposes solver, executor, launch
-height, and restitution scale, then plots height, vertical velocity, contact
+low, medium, and high restitution. The panel uses the fixed realtime solver and
+exposes executor, launch height, and restitution scale, then plots height,
+vertical velocity, contact
 count, rebound height, and mechanical-energy trends as diagnostics rather than
 exact conservation claims.
 
@@ -518,14 +521,14 @@ selection, controls, per-solver response metrics, and divergence ranges.
 ## Rigid executor equivalence
 
 The **`rigid_executor_equivalence`** scene answers the executor question
-directly: two matched DART 7 Worlds run the same rigid-body tray with one shared
-physics solver, while the left world steps with the sequential executor and the
-right world steps with a parallel executor. The panel keeps the physics solver,
-friction, restitution, and launch speed explicit, then plots pose divergence,
-velocity divergence, contact-count delta, and per-executor step time so users
-can tell executor performance changes apart from physics changes. The panel
-names the comparison axis as executor-only. Its capture metrics record the same
-comparison axis, same-solver identity, selected solver index, controls,
+directly: two matched DART 7 Worlds run the same rigid-body tray with one fixed
+realtime physics solver, while the left world steps with the sequential executor
+and the right world steps with a parallel executor. The panel names the physics
+solver and keeps friction, restitution, and launch speed explicit, then plots
+pose divergence, velocity divergence, contact-count delta, and per-executor step
+time so users can tell executor performance changes apart from physics changes.
+The panel names the comparison axis as executor-only. Its capture metrics record
+the same comparison axis, same-solver identity, selected solver index, controls,
 per-executor contact/timing metrics, divergence ranges, and fallback executor
 label when parallel execution is unavailable. The shared `Replay` panel uses
 pose divergence as the timeline signal and marks frames where executor

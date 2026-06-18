@@ -32,9 +32,10 @@ _BOX_COLORS = (
     (0.28, 0.72, 0.48),
     (0.72, 0.50, 0.86),
 )
+# Keep the executor-equivalence row on one realtime physics path; the dedicated
+# rigid_solver_compare scene owns SI-vs-IPC visual inspection.
 _SOLVERS: tuple[tuple[str, sx.RigidBodySolver], ...] = (
     ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
-    ("IPC barrier", sx.RigidBodySolver.IPC),
 )
 
 

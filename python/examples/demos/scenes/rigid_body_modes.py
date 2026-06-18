@@ -18,9 +18,10 @@ _HISTORY = 180
 _BODY_HALF = np.array([0.10, 0.10, 0.10])
 _MARKER_HALF = np.array([0.012, 0.34, 0.012])
 _GRAVITY_Z = -9.81
+# Keep live mode inspection on the realtime SI rigid-body path; the dedicated
+# rigid_solver_compare scene owns SI-vs-IPC visual inspection.
 _SOLVERS = [
     ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
-    ("IPC", sx.RigidBodySolver.IPC),
 ]
 _LANE_Y = {
     "dynamic": 0.64,
