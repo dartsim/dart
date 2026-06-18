@@ -69,6 +69,17 @@ def _debug_line(
     return line
 
 
+def _debug_overlay_available() -> bool:
+    required = (
+        "DebugDrawOptions",
+        "DebugLineDescriptor",
+        "DebugScene",
+        "make_joint_axis_debug_lines",
+        "make_velocity_debug_lines",
+    )
+    return all(hasattr(dart.gui, name) for name in required)
+
+
 def _make_debug_skeleton() -> tuple[object, object, object, object]:
     skeleton = dart.Skeleton("debug_reference")
 
@@ -215,7 +226,7 @@ def build() -> SceneSetup:
         world=render_scene,
         pre_step=pre_step,
         panels=[ScenePanel("Renderer Fidelity", build_panel)],
-        debug_provider=debug_provider,
+        debug_provider=debug_provider if _debug_overlay_available() else None,
         info={"debug_state": state, "debug_skeleton": _skeleton},
     )
 
