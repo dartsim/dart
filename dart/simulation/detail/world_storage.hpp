@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/compute/multibody_dynamics.hpp>
+#include <dart/simulation/compute/world_step_profile.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
@@ -177,6 +178,11 @@ struct WorldStorage
   /// differentiable step allocation-free, but callers still need `step()` to
   /// populate a semantically valid derivative snapshot.
   bool stepDerivativesValid = false;
+
+  /// Last-step contact and solver diagnostics populated by mutating step
+  /// stages. `World::computeStepMetrics()` folds these into its read-only
+  /// physical snapshot without running a narrow-phase query itself.
+  compute::StepMetrics lastStepDiagnostics;
 
   /// Persistent pair-level collision-query exclusions, stored with canonical
   /// endpoint ordering. This scene-level filter is applied after broad-phase

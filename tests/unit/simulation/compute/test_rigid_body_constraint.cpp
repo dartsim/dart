@@ -17,6 +17,7 @@
 
 #include <gtest/gtest.h>
 
+#include <span>
 #include <vector>
 
 #include <cmath>
@@ -228,4 +229,114 @@ TEST(RigidBodyConstraint, TreatsKinematicBodiesAsPrescribed)
       kinematic.getAngularVelocity().isApprox(kinematicAngularBefore, 1e-12));
   EXPECT_TRUE(dynamic.getLinearVelocity().isApprox(
       dynamicLinearBefore + Eigen::Vector3d(0.0, 0.0, 0.25), 1e-12));
+}
+
+//==============================================================================
+TEST(RigidBodyConstraint, SupportsNormalFirstRowsAndJacobian)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+
+  sx::RigidBodyOptions lowerOptions;
+  lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto lower = world.addRigidBody("lower", lowerOptions);
+
+  sx::RigidBodyOptions upperOptions;
+  upperOptions.position = Eigen::Vector3d(0.0, 0.0, 1.5);
+  auto upper = world.addRigidBody("upper", upperOptions);
+
+  std::vector<sx::Contact> contacts;
+  sx::Contact groundLower;
+  groundLower.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  groundLower.bodyB = sx::CollisionBody(lower.getEntity(), &world);
+  groundLower.point = Eigen::Vector3d(0.0, 0.0, 0.0);
+  groundLower.normal = Eigen::Vector3d::UnitZ();
+  groundLower.depth = 0.02;
+  contacts.push_back(groundLower);
+
+  sx::Contact lowerUpper;
+  lowerUpper.bodyA = sx::CollisionBody(lower.getEntity(), &world);
+  lowerUpper.bodyB = sx::CollisionBody(upper.getEntity(), &world);
+  lowerUpper.point = Eigen::Vector3d(0.0, 0.0, 1.0);
+  lowerUpper.normal = Eigen::Vector3d::UnitZ();
+  lowerUpper.depth = 0.03;
+  contacts.push_back(lowerUpper);
+
+  sx::compute::RigidBodyContactAssemblyOptions options;
+  options.rowLayout
+      = sx::compute::RigidBodyContactRowLayout::NormalThenTangents;
+  options.populateJacobian = true;
+  options.regularizeFrictionRows = true;
+  const auto problem = sx::compute::assembleRigidBodyContactProblem(
+      dart::simulation::detail::registryOf(world), contacts, options);
+
+  ASSERT_EQ(problem.constraints.size(), 2u);
+  ASSERT_EQ(problem.dynamicBodies.size(), 2u);
+  ASSERT_EQ(problem.delassus.rows(), 6);
+  ASSERT_EQ(problem.jacobian.rows(), 6);
+  ASSERT_EQ(problem.jacobian.cols(), 12);
+
+  EXPECT_EQ(problem.findex[0], -1);
+  EXPECT_EQ(problem.findex[1], -1);
+  EXPECT_EQ(problem.findex[2], 0);
+  EXPECT_EQ(problem.findex[3], 0);
+  EXPECT_EQ(problem.findex[4], 1);
+  EXPECT_EQ(problem.findex[5], 1);
+
+  const Eigen::RowVector3d zRow(0.0, 0.0, 1.0);
+  EXPECT_TRUE((problem.jacobian.block<1, 3>(0, 0).isApprox(zRow)));
+  EXPECT_TRUE((problem.jacobian.block<1, 3>(1, 0).isApprox(-zRow)));
+  EXPECT_TRUE((problem.jacobian.block<1, 3>(1, 6).isApprox(zRow)));
+
+  sx::compute::RigidBodyContactAssemblyOptions unregularized = options;
+  unregularized.regularizeFrictionRows = false;
+  const auto reference = sx::compute::assembleRigidBodyContactProblem(
+      dart::simulation::detail::registryOf(world), contacts, unregularized);
+  EXPECT_GT(problem.delassus(2, 2), reference.delassus(2, 2));
+  EXPECT_GT(problem.delassus(5, 5), reference.delassus(5, 5));
+}
+
+//==============================================================================
+TEST(RigidBodyConstraint, AppliesBaumgarteVelocityBiasWhenRequested)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto body = world.addRigidBody("body", bodyOptions);
+
+  sx::Contact contact;
+  contact.bodyA = sx::CollisionBody(ground.getEntity(), &world);
+  contact.bodyB = sx::CollisionBody(body.getEntity(), &world);
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.depth = 0.03;
+
+  sx::compute::RigidBodyContactAssemblyOptions options;
+  options.includeBaumgarteBias = true;
+  options.timeStep = 0.01;
+  const auto problem = sx::compute::assembleRigidBodyContactProblem(
+      dart::simulation::detail::registryOf(world),
+      std::span<const sx::Contact>(&contact, 1),
+      options);
+
+  ASSERT_EQ(problem.constraints.size(), 1u);
+  constexpr double kExpectedBias = 0.2 * (0.03 - 1e-4) / 0.01;
+  EXPECT_NEAR(problem.constraints[0].normalVelocityBias, kExpectedBias, 1e-12);
+  EXPECT_NEAR(problem.rhs[0], kExpectedBias, 1e-12);
 }

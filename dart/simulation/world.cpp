@@ -6475,6 +6475,7 @@ bool World::tryStepCleanNoWorkDefaultPipeline()
   m_memoryDiagnostics.frameScratchOverflowCount = 0;
   m_memoryDiagnostics.frameScratchOverflowBytes = 0;
   m_lastDeformableSolverDiagnostics = {};
+  m_storage->lastStepDiagnostics = {};
   m_time += m_timeStep;
   ++m_frame;
   if (m_replay && m_replay->recordingEnabled) {
@@ -6640,6 +6641,7 @@ void World::stepPipelineOnce(
   }
 
   resetFrameScratchForStep();
+  m_storage->lastStepDiagnostics = {};
   prepareDeactivationForStep();
 
   // Differentiable opt-in: record the analytic contact-free step Jacobians at
@@ -6944,15 +6946,13 @@ compute::StepMetrics World::computeStepMetrics() const
         += transform.position.cross(linear) + worldInertia * velocity.angular;
   }
 
-  // Multibodies: link world-frame velocities are not stored (they are derived
-  // from the joint degrees of freedom by forward kinematics), so both the
-  // kinetic and potential terms are taken from the variational integrator's own
-  // energy helper, which evaluates them on the VarTree's forward-kinematics
-  // world transforms. This makes the per-domain split physical -- an earlier
-  // version derived potential from the stored comps::LinkState::worldTransform
-  // cache, whose gauge did not match the helper (yielding negative kinetic
-  // energy at rest). World-frame multibody-link momentum aggregation still
-  // needs the link Jacobian and is deferred to a later WP-091.24 slice.
+  // Multibodies: link world-frame velocities are derived from the joint degrees
+  // of freedom by forward kinematics, so energy and momentum are taken from the
+  // variational integrator's helper. It evaluates them on the VarTree's
+  // forward-kinematics world transforms and link-frame spatial velocities. This
+  // keeps the per-domain split physical -- an earlier version derived potential
+  // from the stored comps::LinkState::worldTransform cache, whose gauge did not
+  // match the helper (yielding negative kinetic energy at rest).
   const auto structureView = registry.view<comps::MultibodyStructure>();
   for (const auto structureEntity : structureView) {
     const auto& structure
@@ -6962,7 +6962,17 @@ compute::StepMetrics World::computeStepMetrics() const
         registry, structure, gravity);
     metrics.kineticEnergy += terms.kinetic;
     metrics.potentialEnergy += terms.potential;
+    metrics.linearMomentum += terms.linearMomentum;
+    metrics.angularMomentum += terms.angularMomentum;
   }
+
+  metrics.activeContactCount
+      = m_storage->lastStepDiagnostics.activeContactCount;
+  metrics.maxPenetrationDepth
+      = m_storage->lastStepDiagnostics.maxPenetrationDepth;
+  metrics.lastStepIterations
+      = m_storage->lastStepDiagnostics.lastStepIterations;
+  metrics.lastStepResidual = m_storage->lastStepDiagnostics.lastStepResidual;
 
   metrics.totalEnergy = metrics.kineticEnergy + metrics.potentialEnergy;
   return metrics;

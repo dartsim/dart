@@ -50,9 +50,9 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <algorithm>
 #include <limits>
 #include <span>
-#include <unordered_map>
 #include <vector>
 
 #include <cmath>
@@ -63,8 +63,8 @@ namespace dart::simulation::detail {
 void BoxedLcpContactScratch::reserve(
     std::size_t contactCapacity, std::size_t bodyCapacity)
 {
-  normals.reserve(contactCapacity);
-  bodyColumn.reserve(bodyCapacity);
+  problem.constraints.reserve(contactCapacity);
+  problem.dynamicBodies.reserve(bodyCapacity);
 
   const Eigen::Index rows = static_cast<Eigen::Index>(3u * contactCapacity);
   const Eigen::Index dofs = static_cast<Eigen::Index>(6u * bodyCapacity);
@@ -119,8 +119,14 @@ void BoxedLcpContactScratch::reserve(
 //==============================================================================
 void BoxedLcpContactScratch::clearProblem()
 {
-  normals.clear();
-  bodyColumn.clear();
+  problem.constraints.clear();
+  problem.dynamicBodies.clear();
+  problem.delassus.resize(0, 0);
+  problem.rhs.resize(0);
+  problem.lo.resize(0);
+  problem.hi.resize(0);
+  problem.findex.resize(0);
+  problem.jacobian.resize(0, 0);
   systemA.clear();
   systemB.clear();
   systemLo.clear();
@@ -149,12 +155,17 @@ void reserveBoxedLcpContactScratch(
     return;
   }
 
-  scratch.normals.reserve(contacts.size());
-  scratch.bodyColumn.clear();
-  scratch.bodyColumn.reserve(2u * contacts.size());
+  scratch.problem.constraints.reserve(contacts.size());
+  scratch.problem.dynamicBodies.clear();
+  scratch.problem.dynamicBodies.reserve(2u * contacts.size());
   const auto registerBody = [&](entt::entity entity, bool isStatic) {
-    if (!isStatic) {
-      scratch.bodyColumn.emplace(entity, scratch.bodyColumn.size());
+    if (isStatic) {
+      return;
+    }
+    auto& dynamicBodies = scratch.problem.dynamicBodies;
+    if (std::find(dynamicBodies.begin(), dynamicBodies.end(), entity)
+        == dynamicBodies.end()) {
+      dynamicBodies.push_back(entity);
     }
   };
 
@@ -180,8 +191,8 @@ void reserveBoxedLcpContactScratch(
     registerBody(entityB, staticB);
   }
 
-  scratch.reserve(activeContacts, scratch.bodyColumn.size());
-  scratch.bodyColumn.clear();
+  scratch.reserve(activeContacts, scratch.problem.dynamicBodies.size());
+  scratch.problem.dynamicBodies.clear();
 }
 
 //==============================================================================
@@ -211,122 +222,30 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
     return scratch.snapshot;
   }
 
-  // Velocity-level bias combines restitution with a Baumgarte-style
-  // penetration recovery for slow resting contacts. High-speed inelastic
-  // impacts stay restitution-only so penetration bias does not inject extra
-  // rebound velocity. The positional projection step still removes any
-  // residual penetration after the impulse solve; the slow-contact velocity
-  // bias prevents taller coupled stacks from accumulating downward drift
-  // between projections.
-  constexpr double restitutionThreshold = kRigidContactRestitutionThreshold;
-  constexpr double penetrationSlop = 1e-4;
-  constexpr double baumgarteFactor = 0.2;
-  constexpr double baumgarteApproachThreshold = -0.25;
+  compute::RigidBodyContactAssemblyOptions assemblyOptions;
+  assemblyOptions.populateSystem = false;
+  assemblyOptions.includeBaumgarteBias = true;
+  assemblyOptions.timeStep = timeStep;
+  compute::assembleRigidBodyContactProblemInto(
+      scratch.problem, registry, contacts, assemblyOptions);
 
-  // Collect rigid-body/rigid-body normal contacts and the dynamic bodies they
-  // touch. Each dynamic body owns a 6-column block in J ([v; ω]).
-  auto& normals = scratch.normals;
-  auto& bodyColumn = scratch.bodyColumn;
-  normals.clear();
-  normals.reserve(contacts.size());
-  bodyColumn.clear();
-  bodyColumn.reserve(2u * contacts.size());
-
-  const auto registerBody = [&](entt::entity entity, bool isStatic) {
-    if (isStatic) {
-      return;
-    }
-    bodyColumn.emplace(entity, bodyColumn.size());
-  };
-
-  for (const auto& contact : contacts) {
-    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
-    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
-
-    // Rigid-body pairs only; articulated-link contacts are out of scope for
-    // this slice (handled by the multibody solve).
-    if (!registry.all_of<comps::RigidBodyTag>(entityA)
-        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
-      continue;
-    }
-
-    const bool kinematicA = registry.all_of<comps::KinematicBodyTag>(entityA);
-    const bool kinematicB = registry.all_of<comps::KinematicBodyTag>(entityB);
-    const bool staticA
-        = hasPrescribedRigidBodyContactResponse(registry, entityA);
-    const bool staticB
-        = hasPrescribedRigidBodyContactResponse(registry, entityB);
-    if (staticA && staticB) {
-      continue;
-    }
-
-    const auto& transformA = registry.get<comps::Transform>(entityA);
-    const auto& transformB = registry.get<comps::Transform>(entityB);
-
-    BoxedLcpContactNormal normal;
-    normal.bodyA = entityA;
-    normal.bodyB = entityB;
-    normal.staticA = staticA;
-    normal.staticB = staticB;
-    normal.normal = contact.normal;
-    // Orthonormal tangent basis spanning the contact plane, matching the
-    // sequential-impulse stage's convention so the box Coulomb model is shared.
-    normal.tangent1 = contact.normal.unitOrthogonal();
-    normal.tangent2 = contact.normal.cross(normal.tangent1);
-    normal.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
-    normal.armA = contact.point - transformA.position;
-    normal.armB = contact.point - transformB.position;
-
-    // Restitution target from the pre-solve approach velocity, combining the
-    // two materials by the larger bounce (parity with the existing stage).
-    const auto& velocityA = registry.get<comps::Velocity>(entityA);
-    const auto& velocityB = registry.get<comps::Velocity>(entityB);
-    Eigen::Vector3d pointVelocityA = Eigen::Vector3d::Zero();
-    if (!staticA) {
-      pointVelocityA = velocityA.linear + velocityA.angular.cross(normal.armA);
-    }
-    Eigen::Vector3d pointVelocityB = Eigen::Vector3d::Zero();
-    if (!staticB) {
-      pointVelocityB = velocityB.linear + velocityB.angular.cross(normal.armB);
-    }
-    const double approach
-        = (pointVelocityB - pointVelocityA).dot(normal.normal);
-
-    const double restitution = std::max(
-        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
-    const double restitutionVelocity
-        = (restitution > 0.0 && approach < -restitutionThreshold)
-              ? -restitution * approach
-              : 0.0;
-    // Kinematic bodies follow the sequential-impulse compatibility path here:
-    // their prescribed motion is ignored by the LCP contact solve, and initial
-    // penetration does not inject a velocity-level push from the kinematic
-    // body.
-    const double baumgarteVelocity
-        = (timeStep > 0.0 && !kinematicA && !kinematicB
-           && approach > baumgarteApproachThreshold)
-              ? baumgarteFactor * std::max(0.0, contact.depth - penetrationSlop)
-                    / timeStep
-              : 0.0;
-
-    normal.bias = std::max(restitutionVelocity, baumgarteVelocity);
-
-    registerBody(entityA, staticA);
-    registerBody(entityB, staticB);
-    normals.push_back(normal);
-  }
-
-  const Eigen::Index n = static_cast<Eigen::Index>(normals.size());
+  auto& constraints = scratch.problem.constraints;
+  const auto& dynamicBodies = scratch.problem.dynamicBodies;
+  const Eigen::Index n = static_cast<Eigen::Index>(constraints.size());
   if (n == 0) {
     scratch.clearProblem();
     return scratch.snapshot;
   }
 
-  const std::size_t bodyCount = bodyColumn.size();
+  const std::size_t bodyCount = dynamicBodies.size();
   const Eigen::Index dofs = static_cast<Eigen::Index>(6 * bodyCount);
-  scratch.reserve(normals.size(), bodyCount);
+  scratch.reserve(constraints.size(), bodyCount);
   auto& snapshot = scratch.snapshot;
+  const auto bodyColumn = [&](entt::entity entity) {
+    const auto it
+        = std::find(dynamicBodies.begin(), dynamicBodies.end(), entity);
+    return static_cast<Eigen::Index>(std::distance(dynamicBodies.begin(), it));
+  };
 
   // Stacked inverse mass operator M⁻¹ (block-diagonal, 6 dofs per body) and the
   // free velocity v_free at solve time.
@@ -337,7 +256,8 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   Eigen::Map<Eigen::VectorXd> vFree(scratch.vFree.data(), dofs);
   Minv.setZero();
   vFree.setZero();
-  for (const auto& [entity, column] : bodyColumn) {
+  for (std::size_t column = 0; column < dynamicBodies.size(); ++column) {
+    const auto entity = dynamicBodies[column];
     const auto& mass = registry.get<comps::MassProperties>(entity);
     const auto& transform = registry.get<comps::Transform>(entity);
     const auto& velocity = registry.get<comps::Velocity>(entity);
@@ -368,26 +288,26 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   Eigen::Map<Eigen::MatrixXd> J(scratch.systemJ.data(), rows, dofs);
   J.setZero();
   const auto fillRow = [&](Eigen::Index row,
-                           const BoxedLcpContactNormal& contact,
+                           const compute::RigidBodyContactConstraint& contact,
                            const Eigen::Vector3d& direction) {
     if (!contact.staticB) {
       const Eigen::Index base
-          = static_cast<Eigen::Index>(6 * bodyColumn.at(contact.bodyB));
+          = static_cast<Eigen::Index>(6 * bodyColumn(contact.bodyB));
       J.block<1, 3>(row, base) += direction.transpose();
       J.block<1, 3>(row, base + 3) += contact.armB.cross(direction).transpose();
     }
     if (!contact.staticA) {
       const Eigen::Index base
-          = static_cast<Eigen::Index>(6 * bodyColumn.at(contact.bodyA));
+          = static_cast<Eigen::Index>(6 * bodyColumn(contact.bodyA));
       J.block<1, 3>(row, base) -= direction.transpose();
       J.block<1, 3>(row, base + 3) -= contact.armA.cross(direction).transpose();
     }
   };
   for (Eigen::Index i = 0; i < n; ++i) {
-    const auto& normal = normals[static_cast<std::size_t>(i)];
-    fillRow(i, normal, normal.normal);
-    fillRow(n + 2 * i, normal, normal.tangent1);
-    fillRow(n + 2 * i + 1, normal, normal.tangent2);
+    const auto& constraint = constraints[static_cast<std::size_t>(i)];
+    fillRow(i, constraint, constraint.normal);
+    fillRow(n + 2 * i, constraint, constraint.tangent1);
+    fillRow(n + 2 * i + 1, constraint, constraint.tangent2);
   }
 
   // Delassus system: A = J M⁻¹ Jᵀ.
@@ -411,7 +331,7 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   b.noalias() = J * vFree;
   b = -b;
   for (Eigen::Index i = 0; i < n; ++i) {
-    b[i] += normals[static_cast<std::size_t>(i)].bias;
+    b[i] += constraints[static_cast<std::size_t>(i)].normalVelocityBias;
   }
 
   // Constraint-force-mixing regularization on the FRICTION-row diagonal,
@@ -440,7 +360,7 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   hi.setConstant(std::numeric_limits<double>::infinity());
   findex.setConstant(-1);
   for (Eigen::Index i = 0; i < n; ++i) {
-    const double mu = normals[static_cast<std::size_t>(i)].friction;
+    const double mu = constraints[static_cast<std::size_t>(i)].friction;
     for (Eigen::Index t = 0; t < 2; ++t) {
       const Eigen::Index row = n + 2 * i + t;
       lo[row] = -mu;
@@ -497,7 +417,8 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   Eigen::Map<Eigen::VectorXd> deltaV(scratch.deltaV.data(), dofs);
   jtImpulse.noalias() = J.transpose() * f;
   deltaV.noalias() = Minv * jtImpulse;
-  for (const auto& [entity, column] : bodyColumn) {
+  for (std::size_t column = 0; column < dynamicBodies.size(); ++column) {
+    const auto entity = dynamicBodies[column];
     const Eigen::Index base = static_cast<Eigen::Index>(6 * column);
     auto& velocity = registry.get<comps::Velocity>(entity);
     velocity.linear += deltaV.segment<3>(base);

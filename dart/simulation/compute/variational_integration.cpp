@@ -25,6 +25,7 @@
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/variational/discrete_mechanics_math.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
+#include "dart/simulation/detail/world_storage.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -4217,14 +4218,30 @@ MultibodyMechanicalEnergyTerms computeMultibodyMechanicalEnergyTerms(
   // Mirrors computeMultibodyMechanicalEnergy's per-link terms exactly (same
   // VarTree forward-kinematics world transforms), so terms.kinetic +
   // terms.potential equals that function's mechanical-energy return value.
+  // Momentum uses the same body-frame spatial velocities, rotated once into the
+  // world frame and accumulated about the world origin.
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     const auto& link = tree.links[i];
     const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
     terms.kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
     const auto& linkComp = registry.get<comps::LinkModel>(structure.links[i]);
-    const Eigen::Vector3d comWorld
-        = link.worldTransform * linkComp.mass.localCenterOfMass;
+    const Eigen::Matrix3d rotation = link.worldTransform.linear();
+    const Eigen::Vector3d comLocal = linkComp.mass.localCenterOfMass;
+    const Eigen::Vector3d comWorld = link.worldTransform * comLocal;
     terms.potential -= linkComp.mass.mass * gravity.dot(comWorld);
+
+    const Eigen::Vector3d angularWorld
+        = rotation * spatialVelocity.template head<3>();
+    const Eigen::Vector3d originLinearWorld
+        = rotation * spatialVelocity.template tail<3>();
+    const Eigen::Vector3d comLinearWorld
+        = originLinearWorld + angularWorld.cross(rotation * comLocal);
+    const Eigen::Vector3d linearMomentum = linkComp.mass.mass * comLinearWorld;
+    const Eigen::Matrix3d worldInertia
+        = rotation * linkComp.mass.inertia * rotation.transpose();
+    terms.linearMomentum += linearMomentum;
+    terms.angularMomentum
+        += comWorld.cross(linearMomentum) + worldInertia * angularWorld;
   }
   return terms;
 }
@@ -4689,7 +4706,7 @@ void MultibodyVariationalIntegrationStage::execute(
         }
       }
     }
-    integrateMultibodyVariationalImpl(
+    const VariationalSolveReport report = integrateMultibodyVariationalImpl(
         registry,
         structure,
         gravity,
@@ -4710,6 +4727,12 @@ void MultibodyVariationalIntegrationStage::execute(
         &scratch.inverseDynamics,
         &scratch.projection,
         &scratch.anderson);
+    auto& metrics = detail::storageOf(world).lastStepDiagnostics;
+    metrics.lastStepIterations += report.iterations;
+    if (std::isfinite(report.residualNorm)) {
+      metrics.lastStepResidual
+          = std::max(metrics.lastStepResidual, report.residualNorm);
+    }
     if (compliantScratch != nullptr && !compliantScratch->constraints.empty()) {
       updateVariationalCompliantLoopConstraintRows(
           registry, structure, scratch.tree, *compliantScratch);

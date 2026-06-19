@@ -67,7 +67,9 @@ struct RigidBodyContactConstraint
   Eigen::Matrix3d invInertiaB = Eigen::Matrix3d::Zero();
   double effectiveMass = 0.0;
   double depth = 0.0;
+  double restitution = 0.0;
   double restitutionVelocity = 0.0;
+  double normalVelocityBias = 0.0;
   double normalImpulse = 0.0;
   Eigen::Vector3d tangent1 = Eigen::Vector3d::UnitX();
   Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
@@ -78,47 +80,84 @@ struct RigidBodyContactConstraint
   double friction = 1.0;
 };
 
-/// Fully assembled rigid-body contact-space boxed-LCP.
+enum class RigidBodyContactRowLayout
+{
+  /// Rows are grouped by contact: normal, tangent 1, tangent 2.
+  ContactMajor,
+  /// All normal rows first, then each contact's two tangent rows.
+  NormalThenTangents,
+};
+
+struct RigidBodyContactAssemblyOptions
+{
+  bool populateSystem = true;
+  bool populateJacobian = false;
+  RigidBodyContactRowLayout rowLayout = RigidBodyContactRowLayout::ContactMajor;
+  bool includeBaumgarteBias = false;
+  bool regularizeFrictionRows = false;
+  double timeStep = 0.0;
+};
+
+/// Canonical rigid-body contact problem.
+///
+/// The accepted contacts and dynamic-body order are always populated. Dense
+/// system rows and Jacobian rows are optional because some callers consume only
+/// the precomputed per-contact constraints.
 struct RigidBodyContactProblem
 {
   static constexpr int kRowsPerContact = 3;
 
   using ConstraintAllocator = common::StlAllocator<RigidBodyContactConstraint>;
+  using EntityAllocator = common::StlAllocator<entt::entity>;
 
   RigidBodyContactProblem() = default;
 
   explicit RigidBodyContactProblem(common::MemoryAllocator& allocator)
-    : constraints(ConstraintAllocator{allocator})
+    : constraints(ConstraintAllocator{allocator}),
+      dynamicBodies(EntityAllocator{allocator})
   {
   }
 
   std::vector<RigidBodyContactConstraint, ConstraintAllocator> constraints;
+  std::vector<entt::entity, EntityAllocator> dynamicBodies;
   Eigen::MatrixXd delassus;
   Eigen::VectorXd rhs;
   Eigen::VectorXd lo;
   Eigen::VectorXd hi;
   Eigen::VectorXi findex;
+  Eigen::MatrixXd jacobian;
 };
 
 /// Velocity of a rigid body's contact point in world coordinates.
 DART_SIMULATION_API Eigen::Vector3d computeRigidBodyContactPointVelocity(
     const comps::Velocity& velocity, const Eigen::Vector3d& arm, bool isStatic);
 
-/// Assemble the rigid-body-only boxed-LCP contact problem.
+/// Assemble the rigid-body-only contact problem.
 ///
 /// Contacts involving multibody links are ignored here; they are handled by
 /// articulated contact stages until the unified constraint stage lands. The
-/// output row order is exactly three rows per accepted rigid contact: normal,
+/// default output row order is three rows per accepted rigid contact: normal,
 /// first tangent, second tangent.
 DART_SIMULATION_API RigidBodyContactProblem assembleRigidBodyContactProblem(
     const detail::WorldRegistry& registry, std::span<const Contact> contacts);
 
-/// Assemble the rigid-body-only boxed-LCP contact problem into caller-owned
+DART_SIMULATION_API RigidBodyContactProblem assembleRigidBodyContactProblem(
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const RigidBodyContactAssemblyOptions& options);
+
+/// Assemble the rigid-body-only contact problem into caller-owned
 /// storage, reusing any existing vector/Eigen capacity for same-shape solves.
 DART_SIMULATION_API void assembleRigidBodyContactProblemInto(
     RigidBodyContactProblem& problem,
     const detail::WorldRegistry& registry,
     std::span<const Contact> contacts);
+
+DART_SIMULATION_API void assembleRigidBodyContactProblemInto(
+    RigidBodyContactProblem& problem,
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const RigidBodyContactAssemblyOptions& options);
 
 /// Apply one world-space contact impulse to both rigid-body ends.
 DART_SIMULATION_API void applyRigidBodyContactImpulse(

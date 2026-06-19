@@ -129,6 +129,9 @@ compatibility remains on the active DART 6 LTS branch._
   vectors, with scoped C++/dartpy rigid-body vector accessors for the previous
   rigid-only translational slice.
   ([#3077](https://github.com/dartsim/dart/pull/3077))
+- Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
+  rigid-contact counts, penetration, solver iterations/residuals, and
+  world-frame multibody momentum while remaining a read-only query.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.

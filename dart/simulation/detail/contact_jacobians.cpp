@@ -37,6 +37,7 @@
 #include "dart/simulation/comps/contact_material.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
+#include "dart/simulation/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/rigid_contact/rigid_contact_assembly.hpp"
 
@@ -343,43 +344,27 @@ ContactScene buildScene(
     registerBody(entity, false);
   }
 
-  for (const auto& contact : contacts) {
-    const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
-    const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
-
-    // Rigid-body pairs only (parity with solveBoxedLcpContacts).
-    if (!registry.all_of<comps::RigidBodyTag>(entityA)
-        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
-      continue;
-    }
-    const bool prescribedA
-        = hasPrescribedRigidBodyContactResponse(registry, entityA);
-    const bool prescribedB
-        = hasPrescribedRigidBodyContactResponse(registry, entityB);
-    if (prescribedA && prescribedB) {
-      continue;
-    }
-
-    const auto& transformA = registry.get<comps::Transform>(entityA);
-    const auto& transformB = registry.get<comps::Transform>(entityB);
-
+  compute::RigidBodyContactProblem rigidContacts(allocator);
+  compute::RigidBodyContactAssemblyOptions assemblyOptions;
+  assemblyOptions.populateSystem = false;
+  compute::assembleRigidBodyContactProblemInto(
+      rigidContacts, registry, contacts, assemblyOptions);
+  for (const auto& constraint : rigidContacts.constraints) {
     FrozenContact frozen;
-    frozen.bodyA = entityA;
-    frozen.bodyB = entityB;
-    frozen.prescribedA = prescribedA;
-    frozen.prescribedB = prescribedB;
-    frozen.normal = contact.normal;
-    frozen.tangent1 = contact.normal.unitOrthogonal();
-    frozen.tangent2 = contact.normal.cross(frozen.tangent1);
-    frozen.armA = contact.point - transformA.position;
-    frozen.armB = contact.point - transformB.position;
-    frozen.restitution = std::max(
-        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
-    frozen.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
+    frozen.bodyA = constraint.bodyA;
+    frozen.bodyB = constraint.bodyB;
+    frozen.prescribedA = constraint.staticA;
+    frozen.prescribedB = constraint.staticB;
+    frozen.normal = constraint.normal;
+    frozen.tangent1 = constraint.tangent1;
+    frozen.tangent2 = constraint.tangent2;
+    frozen.armA = constraint.armA;
+    frozen.armB = constraint.armB;
+    frozen.restitution = constraint.restitution;
+    frozen.friction = constraint.friction;
 
-    registerBody(entityA, prescribedA);
-    registerBody(entityB, prescribedB);
+    registerBody(constraint.bodyA, constraint.staticA);
+    registerBody(constraint.bodyB, constraint.staticB);
     scene.contacts.push_back(frozen);
   }
 

@@ -632,15 +632,22 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   projection helper and the sequential path call the same projection helper
   instead of keeping duplicate loops. Behavior-preserving cleanup only; the
   four assembler layouts still remain distinct.
-  **Slice B (remaining):** converge the four contact-problem _assemblers_ (the
-  canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
-  differentiable-capture rebuild, and the sequential-impulse scratch in
-  `world_step_stage.cpp`) onto one producer, single-source the remaining
-  positional-correction constants in `world_step_stage.cpp`, and hand the
-  populated snapshot to the
-  differentiable capture instead of rebuilding it — the higher-risk
-  physics-convergence work this slice deliberately leaves for a focused
-  follow-up (which also needs the diff build unbroken).
+  **Slice B (closeout packet):** the four rigid contact assemblers now route
+  through the canonical `compute::RigidBodyContactProblem` producer. The
+  producer records per-contact restitution/material data, dynamic-body ordering,
+  optional Baumgarte velocity bias, optional friction-row regularization, and
+  either contact-major or normal-then-tangents row layouts; callers can request
+  only canonical constraints, only the dense system, or both. Sequential impulse
+  consumes those canonical constraints directly instead of rebuilding local
+  normal rows; boxed-LCP builds its normal-first allocator-backed snapshot from
+  the same constraints while preserving the public/fixture row order; and
+  `detail/contact_jacobians.cpp` freezes differentiable contacts from the same
+  canonical producer rather than reclassifying endpoints itself. The remaining
+  Baumgarte approach-threshold constant is single-sourced beside the other
+  rigid-contact constants. Focused validation: `pixi run build`,
+  `test_rigid_body_constraint`, `test_boxed_lcp_contact`, and
+  `test_unified_constraint` pass, including new row-layout/Jacobian and
+  Baumgarte-bias unit coverage.
 
 #### WP-091.14 Family-neutral joint model [done — PR #3003, merged 2026-06-14]
 
@@ -1009,7 +1016,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   integration families are genuinely distinct paths (final energy −18.2298 vs
   −18.2052). `test_cross_family_corpus` 1/1, golden 3/3, lint +
   `check-api-boundaries` green; pure-additive (no library change).
-  **Standalone harness + packet slice (pending acceptance in PR #3083):**
+  **Standalone harness + packet slice (landed via PR #3083):**
   `tests/benchmark/simulation/bm_plan091_cross_family_corpus.cpp`
   runs the same registered cross-family row set as a standalone Google
   Benchmark target,
@@ -1026,10 +1033,27 @@ tests/test_benchmark_packet_utils.py -q` green; actual benchmark packet smoke:
 scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
 .benchmark_results/plan091/cross_family_metrics_benchmark.json --output
 .benchmark_results/plan091/cross_family_metrics_packet.json` accepted them.
-  **Remaining:** contact/iteration metric population (needs a non-const
-  narrow-phase pass), world-frame multibody-link momentum aggregation, and a
-  corpus-wide order-of-convergence sweep (the current convergence seed covers
-  one scene).
+  **Metrics closeout packet:** `WorldStorage` now caches last-step diagnostics
+  from mutating stages so `World::computeStepMetrics()` stays read-only while
+  still reporting contact and solver fields. The rigid contact stage records
+  active rigid-rigid contact count, maximum penetration depth, and the exposed
+  sequential/AVBD iteration budget; the variational multibody stage records
+  RIQN iterations plus final residual norm; direct solvers and stages without a
+  comparable public residual still contribute 0 by contract. The multibody
+  energy helper now also returns world-frame linear and angular momentum by
+  rotating link-frame spatial velocities and COM inertia terms from the same
+  VarTree state used for energy, so `StepMetrics` reports full rigid +
+  multibody momentum without touching link-cache gauges. Validation adds
+  `World.ComputeStepMetricsReportsCachedContactDiagnostics`,
+  `World.ComputeStepMetricsReportsMultibodyMomentum`, and
+  `CrossFamilyCorpus.SmoothMultibodyScenesConvergeUnderTimeStepRefinement`;
+  focused gates: `pixi run build`,
+  `test_world --gtest_filter='World.ComputeStepMetrics*'`, and ctest over
+  `test_rigid_body_constraint`, `test_boxed_lcp_contact`,
+  `test_unified_constraint`, `test_cross_family_metrics`, and
+  `test_cross_family_corpus` pass. **Remaining:** none for WP-091.24; boxed-LCP
+  direct solves intentionally continue to report 0 iterations/residual because
+  they do not expose iterative convergence data.
   NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
