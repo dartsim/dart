@@ -1,3 +1,12 @@
+# Coverage files
+*.info
+*.gcda
+*.gcno
+*.gcov
+htmlcov/
+coverage_html/
+.gcov/
+
 # Custom build files
 build/
 .build/
@@ -63,6 +72,13 @@ docs/readthedocs/_generated_stubs/
 
 # Data files
 data/screencap/*
+*.ppm
+
+# Headless rendering artifacts
+/*.png
+headless_frames*/
+rigid_frames/
+*_frames/
 
 # Temporary directory for dependencies
 .deps/
@@ -80,8 +96,74 @@ dist/
 # pixi environments
 .pixi
 
+# API docs build artifacts
+dart_docs/
+gh-pages/
+
 # ImGui configuration
 imgui.ini
 
 # Gazebo physics plugins
 /libgz-physics-*.so
+
+# Profiling logs
+profiling/*.txt
+rp3d_profiling_*.txt
+*_profile_*.txt
+
+# Benchmark result artifacts
+.benchmark_results/
+
+# clangd / LSP artifacts
+.clangd
+compile_commands.json
+compile_flags.txt
+
+# AI tool local state
+.omc/
+.omx/
+.sisyphus/
+
+# AI agent project files
+#
+# Shared workflow files may be added under allowlisted command/skill folders.
+# Per-developer runtime caches, package installs, locks, and local settings stay
+# ignored.
+.opencode/*
+!.opencode/command/
+!.opencode/command/**/*.md
+!.opencode/AGENTS.md
+
+.codex/*
+!.codex/skills/
+!.codex/skills/**/
+!.codex/skills/**/SKILL.md
+!.codex/AGENTS.md
+
+.claude/*
+!.claude/commands/
+!.claude/commands/**/*.md
+!.claude/skills/
+!.claude/skills/**/
+!.claude/skills/**/SKILL.md
+!.claude/agents/
+!.claude/agents/**/*.md
+!.claude/hooks/
+!.claude/hooks/**/*
+!.claude/settings.json
+
+# Other AI agents
+.aider*
+.cursor/
+.cursor-tutor/
+.cursorignore
+.gemini/
+.windsurf/
+.continue/
+.sourcegraph/
+.codeium/
+.tabnine/
+.cody*
+
+# Temporary apt downloads
+.tmp_apt/
