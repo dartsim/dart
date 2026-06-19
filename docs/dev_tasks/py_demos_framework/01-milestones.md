@@ -152,9 +152,16 @@ So the M1 flagship is **two complementary showcases**, both reference-grade:
 2. **AVBD constraint showcase** — joints / motors / breakable constraints solved
    by AVBD (the modern differentiator), curated from the `avbd_*` scenes.
 
-**Remaining M1 scoping point for the task owner:** whether the completed M1
-experience should stay as complementary contact and AVBD scenes, or grow into a
-new unified comparison scene.
+**Current M1 scoping:** keep the completed M1 experience as complementary
+contact-policy / boxed-LCP and AVBD constraint-showcase packets for now. The
+dedicated contact-baseline packet captures the `rigid_body` Sequential Impulse
+and boxed-LCP variants with state/label metadata; the dedicated AVBD packet is
+curated from the existing `avbd_*` scenes. A unified comparison scene remains a
+possible follow-up only if review asks for stronger single-scene visual
+evidence. The current full-packet pass is sufficient for the active PR:
+contact-baseline rows are solver-evidence-first through labels, restored state,
+solver identity, and metrics, while AVBD rows provide the visually distinct
+rigid-constraint showcase.
 
 ---
 

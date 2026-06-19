@@ -59,6 +59,8 @@
 namespace dart::gui {
 namespace {
 
+constexpr double kMinDebugLineLengthSquared = 1e-18;
+
 Eigen::Vector4d rgba(double red, double green, double blue, double alpha = 1.0)
 {
   return {red, green, blue, alpha};
@@ -71,6 +73,13 @@ void appendLine(
     const Eigen::Vector4d& color,
     std::string label = {})
 {
+  const Eigen::Vector3d segment = to - from;
+  const double lengthSquared = segment.squaredNorm();
+  if (!from.allFinite() || !to.allFinite() || !std::isfinite(lengthSquared)
+      || lengthSquared <= kMinDebugLineLengthSquared) {
+    return;
+  }
+
   DebugLineDescriptor line;
   line.from = from;
   line.to = to;

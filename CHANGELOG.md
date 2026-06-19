@@ -210,7 +210,13 @@ compatibility remains on the active DART 6 LTS branch._
   ([#3043](https://github.com/dartsim/dart/pull/3043))
 - Exposed the rigid-body Python demo's contact-solver method in its live panel
   and capture metadata, giving py-demos a direct SI versus boxed-LCP inspection
-  path for the DART 6 contact baseline.
+  path for the DART 6 contact baseline, including scriptable capture-state
+  overrides, labeled capture artifacts, a dedicated SI/boxed-LCP contact
+  baseline packet, and a dedicated AVBD rigid-constraint showcase packet for M1
+  visual review.
+- Hardened `dart::gui` debug overlays so zero-motion selection and force-drag
+  gestures in `py-demos` skip degenerate primitives instead of tripping
+  Filament's empty-AABB precondition.
 
 #### Gazebo Integration
 
@@ -258,6 +264,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Sharded the heaviest simulation CTest binaries, tightened CUDA environment
+  label selection, and fixed CUDA Debug nanobind configuration so
+  `pixi run test-all` and `pixi run -e cuda test-all` spend less time tail-bound
+  by monolithic DART 7 simulation tests.
 - Added first-post-bake no-allocation gates for DART 7 simulation loops,
   including differentiable contact-free stepping, large rigid IPC equality KKT
   rows, and the default above-dense deformable sparse iterative path.

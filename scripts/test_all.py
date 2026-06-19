@@ -492,11 +492,12 @@ def run_simulation_tests() -> bool:
     """Run every simulation C++ test, including the long poles.
 
     Uses the load-aware ``test-simulation-full`` tier runner
-    (``ctest_tier.py -L simulation``) so the simulation long poles (chiefly
-    ``test_rigid_ipc_paper_experiments``) overlap the rest of the suite instead
-    of running one-at-a-time after it. Explicit CMake ``COST`` hints on the long
-    poles let the parallel scheduler front-load them even on a cold build with
-    no prior ``CTestCostData.txt``.
+    (``ctest_tier.py -L '^simulation$'``) so the simulation long-pole shards
+    overlap the rest of the suite instead of running one-at-a-time after it.
+    The exact label keeps CUDA-specific tests in ``test-cuda`` only, avoiding
+    duplicate ``simulation-cuda`` execution during ``pixi run -e cuda test-all``.
+    Explicit CMake ``COST`` hints on those shards let the parallel scheduler
+    front-load them even on a cold build with no prior ``CTestCostData.txt``.
     """
     print_header("SIMULATION TESTS")
 

@@ -15,18 +15,23 @@ from examples.demos.runner import (
     REPLAY_TIMELINE_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
+    SCENE_STATE_OVERRIDE_INFO_KEY,
     ScenePanel,
     SceneSetup,
+    _apply_scene_state_override,
     _attach_replay_controls,
     _capture_metadata_mapping,
     _default_initial_scene_args,
     _has_world_replay_api,
     _make_world_factory,
+    _parse_scene_state_json,
+    _rigid_workflow_capture_command,
     _rigid_workflow_packet_command,
     _rigid_workflow_row_packet_command,
     _rigid_workflow_row_video_packet_command,
     _rigid_workflow_viewer_command,
     _scene_build_timeout_ms,
+    _scene_state_target_scene_id,
     _workflow_matching_guides,
     _workflow_related_evidence_matches,
     _validate_scene,
@@ -193,6 +198,45 @@ def test_make_world_factory_returns_debug_provider() -> None:
     result = _make_world_factory(scene)()
 
     assert result == (None, None, None, None, debug_provider)
+
+
+def test_scene_state_override_uses_replay_restore_hook() -> None:
+    restored: list[dict[str, object]] = []
+
+    def restore_state(state: dict[str, object]) -> None:
+        restored.append(state)
+
+    scene = PythonDemoScene(
+        id="stateful",
+        title="Stateful",
+        category="Tests",
+        summary="Accepts scriptable state.",
+        build=lambda: SceneSetup(),
+    )
+    setup = SceneSetup(info={"replay_restore_state": restore_state})
+    state = {"controls": {"contact_method_index": 1}}
+
+    _apply_scene_state_override(scene, setup, state)
+    state["controls"]["contact_method_index"] = 0
+
+    assert restored == [{"controls": {"contact_method_index": 1}}]
+    assert setup.info[SCENE_STATE_OVERRIDE_INFO_KEY] == {
+        "controls": {"contact_method_index": 1}
+    }
+    assert _capture_metadata_mapping(setup)[SCENE_STATE_OVERRIDE_INFO_KEY] == {
+        "controls": {"contact_method_index": 1}
+    }
+
+
+def test_parse_scene_state_json_requires_object() -> None:
+    assert _parse_scene_state_json('{"controls":{"contact_method_index":1}}') == {
+        "controls": {"contact_method_index": 1}
+    }
+    assert _parse_scene_state_json("") is None
+    with pytest.raises(SystemExit):
+        _parse_scene_state_json("[1, 2]")
+    with pytest.raises(SystemExit):
+        _parse_scene_state_json("{")
 
 
 def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
@@ -710,6 +754,25 @@ def test_default_py_demos_launch_uses_rigid_body_front_door() -> None:
     )
     assert _default_initial_scene_args([], None, {"DART_DEMOS_SCENE": "boxes"}) == []
     assert _default_initial_scene_args(["--cycle-scenes"], None, {}) == []
+
+
+def test_scene_state_target_scene_id_honors_explicit_env_and_default_scene() -> None:
+    assert (
+        _scene_state_target_scene_id(
+            "rigid-body", [], {"DART_DEMOS_SCENE": "rigid_contact_solver_compare"}
+        )
+        == "rigid_body"
+    )
+    assert (
+        _scene_state_target_scene_id(
+            None, [], {"DART_DEMOS_SCENE": "rigid-contact-solver-compare"}
+        )
+        == "rigid_contact_solver_compare"
+    )
+    assert _scene_state_target_scene_id(None, ["--scene", "rigid_body"], {}) == (
+        "rigid_body"
+    )
+    assert _scene_state_target_scene_id(None, [], {}) is None
 
 
 def test_scene_build_timeout_follows_demo_startup_budget_by_default(
@@ -3298,6 +3361,66 @@ def test_rigid_body_panel_edits_contact_solver_method() -> None:
     assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
 
 
+def test_rigid_body_panel_contact_baseline_presets_reset_scene() -> None:
+    sx = _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    world = setup.info["sx_world"]
+    assert setup.pre_step is not None
+
+    for _ in range(3):
+        setup.pre_step()
+    assert world.time > 0.0
+
+    boxed_builder = _ScriptedPanelBuilder(clicked_buttons={"Boxed LCP"})
+    setup.panels[0].build(boxed_builder, object())
+
+    assert "text:Contact baseline preset" in boxed_builder.events
+    assert "button:Sequential impulse" in boxed_builder.events
+    assert "button:Boxed LCP" in boxed_builder.events
+    assert "same_line" in boxed_builder.events
+    assert (
+        "tooltip:Reset to the DART 6-style boxed-LCP baseline."
+        in boxed_builder.events
+    )
+    assert controller.contact_method_index == 1
+    assert world.time == pytest.approx(0.0)
+    assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+    assert len(controller._speed_history) == 1
+
+    setup.pre_step()
+    assert world.time > 0.0
+
+    si_builder = _ScriptedPanelBuilder(clicked_buttons={"Sequential impulse"})
+    setup.panels[0].build(si_builder, object())
+
+    assert "tooltip:Reset to the default contact baseline." in si_builder.events
+    assert controller.contact_method_index == 0
+    assert world.time == pytest.approx(0.0)
+    assert world.contact_solver_method == sx.ContactSolverMethod.SEQUENTIAL_IMPULSE
+    assert len(controller._speed_history) == 1
+
+
+def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open contact comparison"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open contact comparison" in builder.events
+    assert (
+        "tooltip:Open the side-by-side Sequential Impulse and boxed-LCP policy row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_contact_solver_compare"]
+    assert controller.contact_method_index == 0
+
+
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     _require_simulation_symbols("World", "CollisionQueryOptions")
 
@@ -3503,6 +3626,37 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         )
         assert f"text:{guide.capture_command}" in events
         assert "tooltip:Run from the repository root to regenerate this row." in events
+        if scene_id == "rigid_body":
+            assert "text:Boxed-LCP baseline variant" in events
+            assert (
+                "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"contact_method_index":1}}',
+                )
+            ) in events
+            assert (
+                "tooltip:Open the rigid_body row live with the contact solver "
+                "set to Boxed LCP before the first frame."
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"contact_method_index":1}}',
+                    capture_label="boxed_lcp",
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the same baseline row with the contact solver "
+                "set to Boxed LCP before the first frame."
+            ) in events
         assert "text:Review packet" in events
         assert (
             "text:"
@@ -3512,6 +3666,28 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         ) in events
         assert (
             "tooltip:Capture all numbered rows and write review_index.html."
+            in events
+        )
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                contact_baseline_only=True,
+                output_dir="/tmp/dart_capture_rigid_contact_baseline",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the SI and boxed-LCP rigid_body "
+            "contact-baseline packet."
+        ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                avbd_showcase_only=True,
+                output_dir="/tmp/dart_capture_rigid_avbd_showcase",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the curated AVBD rigid-constraint showcase packet."
             in events
         )
         assert f"text:{_rigid_workflow_row_packet_command(guide)}" in events
