@@ -191,7 +191,10 @@ def test_visual_capture_manifest_records_image_evidence(
         "workflow_phase": "1. Foundations: state, frames, and loads",
         "focus_axis": "DART 7 World rigid-body baseline",
         "try_first": "Start here before moving to specialized rows.",
-        "inspect": ["Solver/material controls", "Contacts, energy, step timing"],
+        "inspect": [
+            "Fixed Sequential Impulse solver context",
+            "Material/contact controls, energy, step timing",
+        ],
         "healthy_signal": "Contacts settle and energy remains bounded.",
         "scope": "Baseline front door; focused edge cases stay specialized.",
     }
@@ -581,7 +584,14 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         manifest["captures"][0]["user_question"]
         == "What is the baseline DART 7 World rigid-body path?"
     )
-    assert "Solver/material controls" in manifest["captures"][0]["inspect"]
+    assert (
+        "Fixed Sequential Impulse solver context"
+        in manifest["captures"][0]["inspect"]
+    )
+    assert (
+        "Material/contact controls, energy, step timing"
+        in manifest["captures"][0]["inspect"]
+    )
     assert manifest["captures"][1]["workflow_label"] == "Solver family"
     assert manifest["captures"][1]["workflow_phase"] == "4. Solver decision path"
     assert manifest["captures"][1]["focus_axis"] == "rigid-body solver family"
@@ -874,6 +884,126 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
         "pixi run py-demos -- --scene rigid_body --width 960 --height 540 "
         "--scene-state-json &#x27;{&quot;controls&quot;:"
     ) in review_html
+
+
+def test_rigid_workflow_dry_run_can_capture_material_examples_only(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_material_examples"
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--material-examples-only",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_material_examples"] is True
+    assert manifest["include_contact_baseline"] is False
+    assert manifest["include_avbd_showcase"] is False
+    assert manifest["include_related"] is False
+    assert manifest["include_ipc_shelf"] is False
+    assert manifest["include_packets"] is False
+    assert manifest["selected_include_material_examples"] is True
+    assert manifest["selected_include_contact_baseline"] is False
+    assert manifest["selected_include_avbd_showcase"] is False
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is False
+    assert manifest["selected_include_packets"] is False
+    assert manifest["capture_count"] == 3
+    assert manifest["workflow_total_count"] == 3
+    assert manifest["workflow_row_start"] == 1
+    assert manifest["workflow_row_end"] == 3
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_body",
+        "rigid_body",
+        "rigid_body",
+    ]
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "material_examples",
+        "material_examples",
+        "material_examples",
+    ]
+    assert [capture["capture_label"] for capture in manifest["captures"]] == [
+        "default_material",
+        "slide_material",
+        "bounce_material",
+    ]
+    assert manifest["captures"][0]["scene_state_json"] == ""
+    assert (
+        manifest["captures"][1]["scene_state_json"]
+        == '{"controls":{"material_preset":"Slide"}}'
+    )
+    assert (
+        manifest["captures"][2]["scene_state_json"]
+        == '{"controls":{"material_preset":"Bounce"}}'
+    )
+    assert "--capture-label default_material" in manifest["captures"][0]["command"]
+    assert "--capture-label slide_material" in manifest["captures"][1]["command"]
+    assert "--capture-label bounce_material" in manifest["captures"][2]["command"]
+    assert "--scene-state-json" not in manifest["captures"][0]["command"]
+    assert (
+        "--scene-state-json '{\"controls\":{\"material_preset\":\"Slide\"}}'"
+        in manifest["captures"][1]["command"]
+    )
+    assert (
+        "--scene-state-json '{\"controls\":{\"material_preset\":\"Bounce\"}}'"
+        in manifest["captures"][2]["viewer_command"]
+    )
+    assert (
+        manifest["captures"][0]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --material-examples-only "
+        "--workflow-start-row 1 --workflow-end-row 1 --output-dir "
+        f"{output}/reruns/01_rigid_body"
+    )
+    assert manifest["captures"][0]["workflow_label"] == "Material example"
+    assert manifest["captures"][0]["workflow_phase"] == "M1 material examples"
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "rigid_body friction/restitution presets"
+    )
+    assert "default high-friction" in manifest["captures"][0]["user_question"]
+    assert "sliding contact controls" in manifest["captures"][1]["try_first"]
+    assert "material_preset=Bounce" in manifest["captures"][2]["healthy_signal"]
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "M1 material examples",
+            "focus_axes": ["rigid_body friction/restitution presets"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": 3,
+            "row_count": 3,
+            "row_span": "1-3",
+            "rows": [1, 2, 3],
+            "scenes": ["rigid_body", "rigid_body", "rigid_body"],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": 3,
+            },
+        }
+    ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "material examples" in review_html
+    assert "<strong>phases</strong> 1" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "M1 material examples" in review_html
+    assert "rigid_body friction/restitution presets" in review_html
+    assert "--material-examples-only" in review_html
+    assert "<dt>capture label</dt><dd>default_material</dd>" in review_html
+    assert "<dt>capture label</dt><dd>slide_material</dd>" in review_html
+    assert "<dt>capture label</dt><dd>bounce_material</dd>" in review_html
+    assert "<dt>scene state</dt><dd>{&quot;controls&quot;" in review_html
 
 
 def test_rigid_workflow_dry_run_can_include_related_evidence(
@@ -1829,6 +1959,22 @@ def test_rigid_workflow_latest_signals_prioritize_baseline_values() -> None:
     ]
     assert highlights.index("baseline scene contact count: 3") < highlights.index(
         "baseline contact count: 12"
+    )
+
+
+def test_rigid_workflow_latest_signals_include_material_preset() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "baseline_max_speed": 2.1,
+            "dynamic_body_count": 5,
+            "material_preset": "Bounce",
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert "material preset: Bounce" in highlights
+    assert highlights.index("dynamic body count: 5") < highlights.index(
+        "material preset: Bounce"
     )
 
 
@@ -3223,6 +3369,10 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
             "--avbd-showcase-only",
             "--avbd-showcase-only requires --rigid-workflow",
         ),
+        (
+            "--material-examples-only",
+            "--material-examples-only requires --rigid-workflow",
+        ),
         ("--include-ipc-shelf", "--include-ipc-shelf requires --rigid-workflow"),
         ("--include-packets", "--include-packets requires --rigid-workflow"),
         (
@@ -3273,6 +3423,44 @@ def test_rigid_workflow_contact_baseline_rejects_avbd_showcase(
             [
                 "--rigid-workflow",
                 "--contact-baseline-only",
+                "--avbd-showcase-only",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+
+
+def test_rigid_workflow_material_examples_rejects_other_groups(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--material-examples-only cannot be combined with other workflow groups",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--material-examples-only",
+                "--include-related",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+
+
+def test_rigid_workflow_material_examples_rejects_other_packets(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--material-examples-only cannot be combined with other workflow packets",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--material-examples-only",
                 "--avbd-showcase-only",
                 "--dry-run",
                 "--output-dir",

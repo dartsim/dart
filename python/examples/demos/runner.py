@@ -55,6 +55,12 @@ CAPTURE_METRICS_INFO_KEY = "capture_metrics"
 CAPTURE_METADATA_EVENT_NAME = "scene_capture_metadata"
 SCENE_STATE_OVERRIDE_INFO_KEY = "scene_state_override"
 _RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
+_RIGID_BODY_SLIDE_MATERIAL_STATE_JSON = (
+    '{"controls":{"material_preset":"Slide"}}'
+)
+_RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON = (
+    '{"controls":{"material_preset":"Bounce"}}'
+)
 CAPTURE_METRICS_EVENT_NAME = "scene_capture_metrics"
 _REPLAY_RATE_LABELS = (
     "1 frame/tick",
@@ -186,7 +192,10 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
 ] = {
     "rigid_body": (
         "What is the baseline DART 7 World rigid-body path?",
-        ("Solver/material controls", "Contacts, energy, step timing"),
+        (
+            "Fixed Sequential Impulse solver context",
+            "Material/contact controls, energy, step timing",
+        ),
         "Baseline front door; focused edge cases stay in the specialized verifier rows.",
     ),
     "rigid_body_modes": (
@@ -374,7 +383,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
 
 _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
     "rigid_body": (
-        "Try solver/material controls, then reset the baseline.",
+        "Try material/contact controls, then reset the fixed Sequential Impulse baseline.",
         "Healthy: contacts settle while energy, speed, and step timing remain bounded.",
     ),
     "rigid_body_modes": (
@@ -956,6 +965,7 @@ def _rigid_workflow_packet_command(
     *,
     contact_baseline_only: bool = False,
     avbd_showcase_only: bool = False,
+    material_examples_only: bool = False,
     include_related: bool = False,
     include_ipc_shelf: bool = False,
     include_packets: bool = False,
@@ -971,6 +981,8 @@ def _rigid_workflow_packet_command(
         command = f"{command} --contact-baseline-only"
     if avbd_showcase_only:
         command = f"{command} --avbd-showcase-only"
+    if material_examples_only:
+        command = f"{command} --material-examples-only"
     if include_related:
         command = f"{command} --include-related"
     if include_ipc_shelf:
@@ -2585,6 +2597,38 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
                 "Capture the same baseline row with the contact solver set to "
                 "Boxed LCP before the first frame."
             )
+            builder.text("Material example variants")
+            for label, state_json, capture_label in (
+                ("Slide", _RIGID_BODY_SLIDE_MATERIAL_STATE_JSON, "slide_material"),
+                ("Bounce", _RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON, "bounce_material"),
+            ):
+                builder.text(
+                    _rigid_workflow_viewer_command(
+                        guide.scene_id,
+                        guide.capture_width,
+                        guide.capture_height,
+                        scene_state_json=state_json,
+                    )
+                )
+                builder.item_tooltip(
+                    f"Open the rigid_body row live with the {label} material "
+                    "example restored before the first frame."
+                )
+                builder.text(
+                    _rigid_workflow_capture_command(
+                        guide.scene_id,
+                        guide.capture_frames,
+                        guide.capture_width,
+                        guide.capture_height,
+                        guide.capture_show_ui,
+                        scene_state_json=state_json,
+                        capture_label=capture_label,
+                    )
+                )
+                builder.item_tooltip(
+                    f"Capture the {label} material example with the named "
+                    "material preset restored."
+                )
         builder.separator()
         builder.text("Review packet")
         builder.text(
@@ -2601,6 +2645,15 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         )
         builder.item_tooltip(
             "Capture the SI and boxed-LCP rigid_body contact-baseline packet."
+        )
+        builder.text(
+            _rigid_workflow_packet_command(
+                material_examples_only=True,
+                output_dir="/tmp/dart_capture_rigid_material_examples",
+            )
+        )
+        builder.item_tooltip(
+            "Capture the Default, Slide, and Bounce rigid_body material-example packet."
         )
         builder.text(
             _rigid_workflow_packet_command(

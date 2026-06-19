@@ -3335,7 +3335,12 @@ def test_rigid_body_panel_edits_contact_solver_method() -> None:
     builder = _ScriptedPanelBuilder(select_values={"Contact solver": target_method})
     setup.panels[0].build(builder, object())
 
-    assert builder.events[0] == "select:Solver:0:Sequential impulse"
+    assert builder.events[0] == "text:rigid solver: Sequential impulse (fixed baseline)"
+    assert (
+        "tooltip:Use Rigid Solver Compare for SI-vs-IPC rigid-body solver inspection."
+        in builder.events
+    )
+    assert not any(event.startswith("select:Solver:") for event in builder.events)
     assert any(event.startswith("select:Contact solver:") for event in builder.events)
     assert controller.contact_method_index == target_method
     assert world.time == pytest.approx(0.0)
@@ -3402,6 +3407,129 @@ def test_rigid_body_panel_contact_baseline_presets_reset_scene() -> None:
     assert len(controller._speed_history) == 1
 
 
+@pytest.mark.parametrize("preset", rigid_body._MATERIAL_PRESETS)
+def test_rigid_body_panel_material_example_presets_reset_scene(
+    preset: rigid_body._MaterialPreset,
+) -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    world = setup.info["sx_world"]
+    assert setup.pre_step is not None
+
+    for _ in range(3):
+        setup.pre_step()
+    assert world.time > 0.0
+
+    builder = _ScriptedPanelBuilder(clicked_buttons={preset.label})
+    setup.panels[0].build(builder, object())
+
+    assert "text:Material examples" in builder.events
+    assert all(
+        f"button:{candidate.label}" in builder.events
+        for candidate in rigid_body._MATERIAL_PRESETS
+    )
+    assert f"tooltip:{preset.tooltip}" in builder.events
+    assert (
+        f"text:active material: {preset.label} | friction {preset.friction:.2f} "
+        f"| restitution {preset.restitution:.2f}"
+    ) in builder.events
+    assert controller.friction == pytest.approx(preset.friction)
+    assert controller.restitution == pytest.approx(preset.restitution)
+    assert world.time == pytest.approx(0.0)
+    assert controller.ground.friction == pytest.approx(preset.friction)
+    assert all(
+        body.friction == pytest.approx(preset.friction)
+        for body in controller.dynamic_bodies
+    )
+    assert all(
+        body.restitution == pytest.approx(preset.restitution)
+        for body in controller.dynamic_bodies
+    )
+    assert len(controller._speed_history) == 1
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == preset.label
+    assert capture_metrics["controls"]["friction"] == pytest.approx(preset.friction)
+    assert capture_metrics["controls"]["restitution"] == pytest.approx(
+        preset.restitution
+    )
+    assert capture_metrics["controls"]["material_preset"] == preset.label
+    assert capture_metrics["metrics"]["material_preset"] == preset.label
+
+    replay_state = controller.capture_replay_state()
+    assert replay_state["controls"]["material_preset"] == preset.label
+
+
+def test_rigid_body_panel_material_status_tracks_custom_sliders() -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Friction": 0.33,
+            "Restitution": 0.44,
+        }
+    )
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:active material: Custom | friction 0.33 | restitution 0.44" in (
+        builder.events
+    )
+    assert controller.friction == pytest.approx(0.33)
+    assert controller.restitution == pytest.approx(0.44)
+    assert controller.ground.friction == pytest.approx(0.33)
+    assert all(
+        body.friction == pytest.approx(0.33) for body in controller.dynamic_bodies
+    )
+    assert all(
+        body.restitution == pytest.approx(0.44)
+        for body in controller.dynamic_bodies
+    )
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == "Custom"
+    assert capture_metrics["controls"]["friction"] == pytest.approx(0.33)
+    assert capture_metrics["controls"]["restitution"] == pytest.approx(0.44)
+    assert capture_metrics["controls"]["material_preset"] == "Custom"
+    assert capture_metrics["metrics"]["material_preset"] == "Custom"
+
+
+def test_rigid_body_replay_restore_accepts_material_preset_name() -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+
+    controller.restore_replay_state({"controls": {"material_preset": "Bounce"}})
+
+    assert controller.friction == pytest.approx(0.45)
+    assert controller.restitution == pytest.approx(0.65)
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == "Bounce"
+    assert capture_metrics["controls"]["material_preset"] == "Bounce"
+
+
+def test_rigid_body_panel_routes_to_material_mixing() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open material mixing"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open material mixing" in builder.events
+    assert (
+        "tooltip:Open the dedicated friction/restitution material-combine row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_material_mixing"]
+
+
 def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
     _require_simulation_symbols("World")
 
@@ -3419,6 +3547,23 @@ def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
     )
     assert context.scene_switch_requests == ["rigid_contact_solver_compare"]
     assert controller.contact_method_index == 0
+
+
+def test_rigid_body_panel_routes_to_avbd_showcase() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open AVBD showcase"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open AVBD showcase" in builder.events
+    assert (
+        "tooltip:Open the curated AVBD fixed-joint/contact rigid-constraint row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["avbd_rigid_fixed_joint_contact"]
 
 
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
@@ -3657,6 +3802,61 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                 "tooltip:Capture the same baseline row with the contact solver "
                 "set to Boxed LCP before the first frame."
             ) in events
+            assert "text:Material example variants" in events
+            assert (
+                "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"material_preset":"Slide"}}',
+                )
+            ) in events
+            assert (
+                "tooltip:Open the rigid_body row live with the Slide material "
+                "example restored before the first frame."
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"material_preset":"Slide"}}',
+                    capture_label="slide_material",
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the Slide material example with the named "
+                "material preset restored."
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"material_preset":"Bounce"}}',
+                )
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"material_preset":"Bounce"}}',
+                    capture_label="bounce_material",
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the Bounce material example with the named "
+                "material preset restored."
+            ) in events
         assert "text:Review packet" in events
         assert (
             "text:"
@@ -3678,6 +3878,17 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert (
             "tooltip:Capture the SI and boxed-LCP rigid_body "
             "contact-baseline packet."
+        ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                material_examples_only=True,
+                output_dir="/tmp/dart_capture_rigid_material_examples",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the Default, Slide, and Bounce rigid_body "
+            "material-example packet."
         ) in events
         assert (
             "text:"

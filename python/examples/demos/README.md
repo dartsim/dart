@@ -351,9 +351,10 @@ solver comparisons.
 
 The **`rigid_body`** scene is the default front door for DART 7 rigid-body
 `World` dynamics. It keeps the first run simple: falling spheres and a box,
-static ground, live replay, viewport force drag, solver/material controls, an
-explicit reset path, and a compact panel for baseline speed, height, energy,
-contact, and step-timing state. Use the focused rows below when a material,
+static ground, live replay, viewport force drag, fixed-solver context, named
+material presets, an explicit reset path, and a compact panel for baseline
+speed, height, energy, contact, material, and step-timing state. Use the
+focused rows below when a material,
 contact-query, solver, executor, friction, stacking, manipulation, body-mode,
 kinematic, external-load, point-load, time-step, or joint behavior needs deeper
 inspection.
@@ -930,15 +931,15 @@ writes a top-level manifest that points at every per-scene manifest and a
 questions, try-first guidance, scope notes, live open commands, capture
 commands, workflow-row rerun commands, and metric summaries from one page: the
 in-viewer `Rigid Workflow` panel also shows the full numbered packet,
-current-row rerun, contact-baseline, AVBD showcase, and extended
-related/IPC-shelf/packet commands.
+current-row rerun, contact-baseline, material-example, AVBD showcase, and
+extended related/IPC-shelf/packet commands.
 Numbered rows carry their workflow phase and focus axis in the manifest and
-review card, while the contact-baseline packet, AVBD showcase, and optional
-related, direct IPC shelf, and capture-first packet rows carry row-guidance
-fields in the
-manifest and review index, so non-numbered packets remain readable without
-opening the live GUI. The same outputs also include a guidance-completeness
-audit and the exact top-level workflow command for the selected packet.
+review card, while the contact-baseline packet, material-example packet, AVBD
+showcase, and optional related, direct IPC shelf, and capture-first packet rows
+carry row-guidance fields in the manifest and review index, so non-numbered
+packets remain readable without opening the live GUI. The same outputs also
+include a guidance-completeness audit and the exact top-level workflow command
+for the selected packet.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run
@@ -1000,6 +1001,18 @@ labels and state metadata in the workflow manifest and review index.
 pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --dry-run
 pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
     --output-dir /tmp/dart_capture_rigid_contact_baseline
+```
+
+Use `--material-examples-only` when the target is the M1 `rigid_body`
+front-door material examples. The packet captures Default, Slide, and Bounce
+variants of the same scene, preserving named material-preset state and capture
+labels in the manifest and review index, plus the resolved material-preset name
+in the latest scene metrics.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only --dry-run
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only \
+    --output-dir /tmp/dart_capture_rigid_material_examples
 ```
 
 Use `--avbd-showcase-only` when the target is the curated AVBD

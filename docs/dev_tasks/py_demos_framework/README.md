@@ -33,6 +33,10 @@ and replay metadata.
   - [x] Interactive selection/force-drag overlay hardening: a zero-motion
         click/drag on `rigid_body` no longer feeds degenerate debug primitives
         into Filament's AABB precondition path.
+  - [x] Selection crash regression guard: the real-viewer integration suite now
+        runs the original zero-motion `rigid_body` scripted force-drag path and
+        requires a valid headless screenshot, so the exact crash path is covered
+        beyond manual PR evidence.
   - [x] Local full-catalog regression pass on PR #3084 local head `bd0b8e7`:
         default `pixi run py-demos-smoke --json-out
 /tmp/py_demos_smoke_default_pr3084_local.json` passed **155/155** in
@@ -48,7 +52,8 @@ and replay metadata.
         baseline presets for the default Sequential Impulse and boxed-LCP
         contact paths, plus a route into the side-by-side
         `rigid_contact_solver_compare` row. Realtime rigid workflow rows keep
-        the rigid-body solver fixed to the Sequential Impulse path; use
+        the rigid-body solver fixed to the Sequential Impulse path and present
+        that as fixed panel context instead of a one-option selector; use
         `rigid_solver_compare` and the explicit IPC shelf scenes for SI-vs-IPC
         visual inspection.
   - [x] Scriptable contact-policy capture: `py-demo-capture` can restore
@@ -81,6 +86,30 @@ and replay metadata.
         identity, and metrics in the review index are the key evidence. A
         unified comparison scene is not required for the current PR evidence;
         keep it as a follow-up only if review finds the two packets insufficient.
+  - [x] Front-door material examples: the flagship `rigid_body` panel now has
+        one-click Default, Slide, and Bounce material presets that reset the scene
+        and flow through the same friction/restitution replay and capture
+        controls as the manual sliders. The panel also reports the active
+        material preset or custom friction/restitution state, preserves that
+        label in replay/capture metrics, and routes directly to the dedicated
+        material-mixing row for deeper inspection.
+  - [x] Front-door AVBD bridge: the flagship `rigid_body` panel now links
+        directly to `avbd_rigid_fixed_joint_contact`, giving the baseline World
+        contact/material scene a live path into the curated AVBD rigid-constraint
+        showcase without pretending the two tracks are one solver enum.
+  - [x] Dedicated material-example packet: the `--material-examples-only`
+        workflow captures the `rigid_body` Default, Slide, and Bounce
+        friction/restitution variants as one review-indexed packet with
+        state/label metadata and rerun commands.
+  - [x] Reviewer-facing material packet pass: full material-example packets
+        completed in both default and CUDA Pixi environments on local head
+        `2b887338002`. The default packet
+        `/tmp/dart_capture_rigid_material_examples_full_default_2b887338002`
+        completed in `real 63.16s`; the CUDA packet
+        `/tmp/dart_capture_rigid_material_examples_full_cuda_2b887338002`
+        completed in `real 94.86s`. Both manifests report `status=complete`,
+        three captured material rows, complete guidance, solver identity, and
+        material scene metrics.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -116,14 +145,22 @@ repeatable operation.
 ## Immediate Next Steps
 
 1. Keep the interactive selection repro in the validation set when touching
-   `dart::gui` debug overlays:
+   `dart::gui` debug overlays. The focused regression test is
+   `python/tests/integration/test_demos_cycle.py::test_rigid_body_scripted_selection_force_drag_is_stable`;
+   the direct manual command remains:
    `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
-3. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
+3. Keep the `rigid_body` material example presets covered by
+   `python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene`
+   when touching the flagship panel or material controls.
+4. Use the dedicated material-example packet for reviewer-facing
+   friction/restitution examples when refreshing artifacts:
+   `pixi run py-demo-capture -- --rigid-workflow --material-examples-only --output-dir /tmp/dart_capture_rigid_material_examples`.
+5. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
    evidence when refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --output-dir /tmp/dart_capture_rigid_contact_baseline`.
-4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
+6. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
    refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
    M1 remains two complementary showcases for now: World contact-policy /

@@ -40,6 +40,8 @@ _CONTACT_METHODS: tuple[tuple[str, sx.ContactSolverMethod], ...] = (
 _CONTACT_METHOD_SEQUENTIAL_INDEX = 0
 _CONTACT_METHOD_BOXED_LCP_INDEX = 1
 _CONTACT_POLICY_COMPARE_SCENE_ID = "rigid_contact_solver_compare"
+_MATERIAL_MIXING_SCENE_ID = "rigid_material_mixing"
+_AVBD_SHOWCASE_SCENE_ID = "avbd_rigid_fixed_joint_contact"
 
 
 def _visual_for(
@@ -58,6 +60,36 @@ class _InitialBodyState:
     transform: np.ndarray
     linear_velocity: np.ndarray
     angular_velocity: np.ndarray
+
+
+@dataclass(frozen=True)
+class _MaterialPreset:
+    label: str
+    friction: float
+    restitution: float
+    tooltip: str
+
+
+_MATERIAL_PRESETS: tuple[_MaterialPreset, ...] = (
+    _MaterialPreset(
+        "Default",
+        _DEFAULT_FRICTION,
+        _DEFAULT_RESTITUTION,
+        "Reset to the default high-friction falling-stack material.",
+    ),
+    _MaterialPreset(
+        "Slide",
+        0.08,
+        0.02,
+        "Reset with low friction and low bounce for sliding contact inspection.",
+    ),
+    _MaterialPreset(
+        "Bounce",
+        0.45,
+        0.65,
+        "Reset with moderate friction and high restitution for rebound inspection.",
+    ),
+)
 
 
 class _RigidBodyBaseline:
@@ -216,6 +248,7 @@ class _RigidBodyBaseline:
             "step_ms": step_ms,
             "solver": self._solver_label(),
             "contact_solver": self._contact_method_label(),
+            "material_preset": self._active_material_label(),
             "executor": "World.step default",
         }
 
@@ -266,6 +299,9 @@ class _RigidBodyBaseline:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
+        material_preset = self._active_material_label()
+        metrics = dict(self._last_metrics)
+        metrics["material_preset"] = material_preset
         speed_values = list(self._speed_history)
         height_values = list(self._min_height_history)
         energy_values = list(self._energy_history)
@@ -275,6 +311,7 @@ class _RigidBodyBaseline:
             "row": "rigid_body",
             "solver": self._solver_label(),
             "contact_solver": self._contact_method_label(),
+            "material_preset": material_preset,
             "executor": "World.step default",
             "solver_enum": self._solver().name,
             "contact_solver_method": self._contact_method().name,
@@ -293,8 +330,9 @@ class _RigidBodyBaseline:
                 "restitution": float(self.restitution),
                 "solver_index": float(self.solver_index),
                 "contact_method_index": float(self.contact_method_index),
+                "material_preset": material_preset,
             },
-            "metrics": dict(self._last_metrics),
+            "metrics": metrics,
             "history": {
                 "samples": float(len(speed_values)),
                 "max_speed": max(speed_values, default=0.0),
@@ -312,6 +350,7 @@ class _RigidBodyBaseline:
                 "contact_method_index": int(self.contact_method_index),
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),
+                "material_preset": self._active_material_label(),
             },
             "speed_history": list(self._speed_history),
             "min_height_history": list(self._min_height_history),
@@ -337,6 +376,21 @@ class _RigidBodyBaseline:
                 len(_CONTACT_METHODS) - 1,
             ),
         )
+        material_preset = controls.get("material_preset")
+        if (
+            isinstance(material_preset, str)
+            and (
+                "friction" not in controls
+                or "restitution" not in controls
+            )
+        ):
+            for preset in _MATERIAL_PRESETS:
+                if preset.label == material_preset:
+                    if "friction" not in controls:
+                        self.friction = float(preset.friction)
+                    if "restitution" not in controls:
+                        self.restitution = float(preset.restitution)
+                    break
         self.friction = float(controls.get("friction", self.friction))
         self.restitution = float(controls.get("restitution", self.restitution))
         self.world.rigid_body_solver = self._solver()
@@ -368,14 +422,38 @@ class _RigidBodyBaseline:
         )
         self.reset(clear_replay=True)
 
+    def _apply_material_preset(self, preset: _MaterialPreset) -> None:
+        self.friction = float(preset.friction)
+        self.restitution = float(preset.restitution)
+        self.reset(clear_replay=True)
+
+    def _active_material_label(self) -> str:
+        for preset in _MATERIAL_PRESETS:
+            if np.isclose(self.friction, preset.friction) and np.isclose(
+                self.restitution, preset.restitution
+            ):
+                return preset.label
+        return "Custom"
+
     def _request_contact_policy_compare(self, context: object) -> None:
         request_scene_switch = getattr(context, "request_scene_switch", None)
         if callable(request_scene_switch):
             request_scene_switch(_CONTACT_POLICY_COMPARE_SCENE_ID)
 
+    def _request_material_mixing(self, context: object) -> None:
+        request_scene_switch = getattr(context, "request_scene_switch", None)
+        if callable(request_scene_switch):
+            request_scene_switch(_MATERIAL_MIXING_SCENE_ID)
+
+    def _request_avbd_showcase(self, context: object) -> None:
+        request_scene_switch = getattr(context, "request_scene_switch", None)
+        if callable(request_scene_switch):
+            request_scene_switch(_AVBD_SHOWCASE_SCENE_ID)
+
     def build_panel(self, builder: object, context: object) -> None:
-        changed_solver, solver_index = builder.select(
-            "Solver", int(self.solver_index), [label for label, _solver in _SOLVERS]
+        builder.text(f"rigid solver: {self._solver_label()} (fixed baseline)")
+        builder.item_tooltip(
+            "Use Rigid Solver Compare for SI-vs-IPC rigid-body solver inspection."
         )
         changed_contact_method, contact_method_index = builder.select(
             "Contact solver",
@@ -389,9 +467,6 @@ class _RigidBodyBaseline:
             "Restitution", float(self.restitution), 0.0, 0.8
         )
 
-        if changed_solver:
-            self.solver_index = int(solver_index)
-            self.reset(clear_replay=True)
         if changed_contact_method:
             self._set_contact_method_index(contact_method_index)
         if changed_friction:
@@ -408,10 +483,31 @@ class _RigidBodyBaseline:
         if builder.button("Boxed LCP"):
             self._set_contact_method_index(_CONTACT_METHOD_BOXED_LCP_INDEX)
         builder.item_tooltip("Reset to the DART 6-style boxed-LCP baseline.")
+        builder.text("Material examples")
+        for index, preset in enumerate(_MATERIAL_PRESETS):
+            if index > 0:
+                builder.same_line()
+            if builder.button(preset.label):
+                self._apply_material_preset(preset)
+            builder.item_tooltip(preset.tooltip)
+        builder.text(
+            f"active material: {self._active_material_label()} | "
+            f"friction {self.friction:.2f} | restitution {self.restitution:.2f}"
+        )
+        if builder.button("Open material mixing"):
+            self._request_material_mixing(context)
+        builder.item_tooltip(
+            "Open the dedicated friction/restitution material-combine row."
+        )
         if builder.button("Open contact comparison"):
             self._request_contact_policy_compare(context)
         builder.item_tooltip(
             "Open the side-by-side Sequential Impulse and boxed-LCP policy row."
+        )
+        if builder.button("Open AVBD showcase"):
+            self._request_avbd_showcase(context)
+        builder.item_tooltip(
+            "Open the curated AVBD fixed-joint/contact rigid-constraint row."
         )
         if builder.button("Reset baseline scene"):
             self.reset(clear_replay=True)

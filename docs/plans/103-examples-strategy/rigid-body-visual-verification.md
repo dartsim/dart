@@ -453,6 +453,16 @@ pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
+Use `--material-examples-only` when the target is the M1 `rigid_body`
+front-door material examples. The packet captures Default, Slide, and Bounce
+variants of the same scene, preserving named material-preset state and capture
+labels in the manifest and review index.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only --dry-run
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only --output-dir /tmp/dart_capture_rigid_material_examples
+```
+
 Capture the direct Rigid IPC shelf routes with the docked UI visible:
 
 These commands are also included after the numbered rows, and after related
@@ -1285,9 +1295,10 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
 - Latest baseline-hardening follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_frame_hierarchy_tracks_body_fixed_frame python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_resets_baseline_scene python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle -q`
   reported `15 passed`. It upgrades the default `rigid_body` first-run scene with
-  selectable solver/material controls, explicit reset, force drag, contact,
-  energy, height, speed, step-timing, and replay-control diagnostics while keeping
-  focused edge cases in later rows. The docked visual smoke command for
+  fixed Sequential Impulse solver context, material/contact controls, explicit
+  reset, force drag, contact, energy, height, speed, step-timing, and
+  replay-control diagnostics while keeping focused edge cases in later rows. The
+  docked visual smoke command for
   `rigid_body` wrote a nonblank 960x540 screenshot plus 23 PNG frames with final
   contacts at 0. `pixi run lint` passed and bounded `pixi run build` reported
   `ninja: no work to do`.

@@ -119,29 +119,116 @@ default `pixi run py-demos-smoke --json-out
 /tmp/py_demos_smoke_cuda_pr3084_local.json` passed 155/155 scenes in
 `real 76.18s`.
 
+PR #3084 merged to `main` as `0e6dcd0` on 2026-06-19. The current follow-up
+branch adds a durable real-viewer regression guard for the original
+zero-motion `rigid_body` scripted force-drag crash path, so the crash is covered
+by pytest instead of relying only on manual PR evidence.
+
+The same follow-up branch also advances the M1 `rigid_body` front door with
+one-click material examples. The panel now has Default, Slide, and Bounce
+presets that set friction/restitution and reset through the existing replay and
+capture state path, giving reviewers quick rigid-body material cases without
+leaving the flagship scene.
+
+The latest local increment promotes those material examples into the workflow
+capture helper: `py-demo-capture -- --rigid-workflow --material-examples-only`
+captures the Default, Slide, and Bounce `rigid_body` variants as a
+review-indexed packet with state metadata, capture labels, rerun commands, and
+the same workflow guidance fields used by the contact-baseline and AVBD packets.
+
+The full material-example packet pass completed on local head `2b887338002`:
+
+- Default material-example packet:
+  `/tmp/dart_capture_rigid_material_examples_full_default_2b887338002`
+  (`real 63.16s`).
+- CUDA material-example packet:
+  `/tmp/dart_capture_rigid_material_examples_full_cuda_2b887338002`
+  (`real 94.86s`).
+
+Both workflow manifests report `status=complete`, three captured
+`material_examples` rows (`default_material`, `slide_material`,
+`bounce_material`), complete guidance, solver identity, scene metrics, and
+friction/restitution state metadata for the Slide and Bounce variants.
+
+The current local follow-up now uses named `material_preset` replay state for
+the Slide and Bounce material-example packet rows instead of raw
+friction/restitution JSON, so the packet commands exercise the same
+user-facing restore path that capture metrics report.
+
+The latest local UI slice makes the `rigid_body` front-door panel report the
+active material preset (or `Custom`) beside the live friction/restitution values
+and adds an `Open material mixing` route to `rigid_material_mixing`, matching
+the existing contact-comparison route pattern.
+
+The newest material-evidence slice also records the active material preset name
+in `rigid_body` capture metrics and replay state, and replay restore accepts a
+`material_preset` control name so packet rows can preserve the same
+Default/Slide/Bounce/Custom label shown in the live panel.
+
+The next local M1 bridge adds an `Open AVBD showcase` route from the same
+`rigid_body` front-door panel to `avbd_rigid_fixed_joint_contact`. This keeps
+the AVBD rigid-constraint track discoverable from the flagship baseline scene
+while preserving the documented distinction between World contact-policy rows
+and the separate AVBD `sx` constraint showcase.
+
+The latest UI cleanup removes the one-option `Solver` dropdown from the
+`rigid_body` front-door panel. The panel now displays the Sequential Impulse
+rigid solver as fixed baseline context and points users to
+`rigid_solver_compare` for real SI-vs-IPC inspection.
+
 ## Current Branch
 
-`fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
-selection debug-overlay fix, scriptable capture-state restoration, labeled
-stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
-packet. The remote PR branch also includes the phase-map, stateful open-live
-command, boxed-LCP workflow-panel UI, rigid-body contact preset, and
-full-catalog smoke evidence follow-ups. The PR body has been refreshed with the
-default and CUDA before/after launch timings plus the full-catalog smoke
-results. A local UI follow-up for the `rigid_body` contact-comparison route may
-be ahead of the remote PR branch until explicitly pushed. A local follow-up also
-addresses the Codex `DART_DEMOS_SCENE` / `--scene-state-json` review finding.
+`fix/py-demos-selection-regression-guard` - branched from current `main` after
+the #3084 merge. It currently contains the scripted-selection integration guard
+plus the `rigid_body` material-example preset, packet, full-packet evidence, and
+material/AVBD-route/fixed-solver-context UI increments, plus material-preset
+labels in replay/capture metrics. Keep any remaining edits narrow, keep the
+dev-task handoff current, and validate the exact default/CUDA py-demos front
+doors before publishing a follow-up PR.
 
 ## Immediate Next Step
 
-**M1 is in progress.** Keep the scripted selection repro above in the validation
-set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
-visual evidence, and use the dedicated AVBD showcase packet for the modern
-rigid-constraint track. The next useful slice is PR management: watch hosted CI
-and the fresh Codex review request on PR #3084 for actionable feedback. If the
-local contact-comparison route and `DART_DEMOS_SCENE` state-override fix are
-included in PR #3084, refresh the PR body and rerun/retrigger the same review
-loop after the approved push.
+**M1 is in progress.** For this branch, run the focused regression test:
+
+```bash
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
+  -m pytest \
+  python/tests/integration/test_demos_cycle.py::test_rigid_body_scripted_selection_force_drag_is_stable -q
+```
+
+Then keep the direct default and CUDA front-door commands in the validation set:
+`pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`
+and the matching `pixi run -e cuda py-demos` command.
+
+For the material-preset panel increment, also run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
+  -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_status_tracks_custom_sliders \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_replay_restore_accepts_material_preset_name \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_material_mixing \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_avbd_showcase \
+  python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_include_material_preset \
+  -q
+```
+
+For the material-example workflow packet increment, also run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
+  -m pytest \
+  python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_capture_material_examples_only \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows \
+  -q
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only \
+  --dry-run --output-dir /tmp/dart_capture_rigid_material_examples_dry_run
+```
+
+After this follow-up, continue M1 by using the dedicated contact-baseline packet
+for rigid-body SI vs boxed-LCP visual evidence and the dedicated AVBD showcase
+packet for the modern rigid-constraint track.
 
 Re-run any M0 guard:
 
@@ -191,12 +278,12 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 ## How to Resume
 
 ```bash
-git checkout fix/py-demos-selection-crash
+git checkout fix/py-demos-selection-regression-guard
 git status && git log -3 --oneline
 # Verify build state:
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: run the py-demos panel/smoke guards if changing runtime behavior; for the
-current reporting-only follow-up, focused capture tests plus `pixi run lint` are
-the relevant local gates before any approved push.
+Then: run the focused scripted-selection regression guard, the default/CUDA
+manual front-door checks, and `pixi run lint` before any commit or approved
+push.
