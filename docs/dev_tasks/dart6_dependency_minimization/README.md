@@ -146,15 +146,14 @@ Default Pixi/package metadata for optional components
 
 - Risk: medium because the OSG GUI path remains part of DART 6.
 - Status: in progress on `chore/replace-imgui-release-6.20`.
-- Plan: make the packaged/system ImGui path the default for normal builds,
-  replace the source-tree vendored copy with an explicit FetchContent fallback
-  when `DART_USE_SYSTEM_IMGUI=OFF`, and preserve the `external-imgui` component
-  plus old installed `dart/external/imgui` include path for DART 6
-  compatibility.
+- Plan: make the packaged/system ImGui path the default for normal GUI builds,
+  replace the source-tree vendored copy with an explicit DART-patched
+  FetchContent compatibility target, and preserve the `external-imgui`
+  component plus old installed `dart/external/imgui` include path for DART 6.
 - Validation: default configure/build with system ImGui, explicit fetched-ImGui
   fallback configure/build, OSG GUI target build, install-tree headers, and
   package smoke proving ImGui headers are found through `find_package(DART
-  COMPONENTS external-imgui gui-osg)` in both system and fallback modes.
+  COMPONENTS external-imgui gui-osg)`.
 
 `dart/external/lodepng`
 
