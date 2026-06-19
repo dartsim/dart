@@ -533,6 +533,9 @@ TEST(WorldStepProfileIntegration, WarmedNestedGraphProfileDoesNotAllocate)
   }
 
   sx::compute::ParallelExecutor executor(2);
+  // Keep the no-allocation assertion focused on reusable profiling snapshots;
+  // Taskflow's scheduling future allocates on each non-inline run.
+  executor.setInlineThreshold(9);
 
   world.setStepProfilingEnabled(true);
   world.step(executor);
