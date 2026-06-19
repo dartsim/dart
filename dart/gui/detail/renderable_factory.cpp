@@ -88,6 +88,8 @@ namespace {
 
 constexpr int kDebugLineTubeSegments = 8;
 constexpr double kTwoPi = 6.2831853071795864769;
+constexpr double kMinDebugLineLength = 1e-9;
+constexpr double kMinDebugTriangleArea = 1e-12;
 constexpr float kDefaultDielectricMetallic = 0.0f;
 constexpr float kDefaultMatteRoughness = 0.82f;
 
@@ -538,17 +540,32 @@ std::uint32_t packColor(const Eigen::Vector4d& rgba)
   return red | (green << 8u) | (blue << 16u) | (alpha << 24u);
 }
 
-void appendThinDebugLine(
+bool isDrawableDebugLine(const DebugLineDescriptor& line)
+{
+  if (!line.from.allFinite() || !line.to.allFinite()) {
+    return false;
+  }
+
+  const double length = (line.to - line.from).norm();
+  return std::isfinite(length) && length >= kMinDebugLineLength;
+}
+
+bool appendThinDebugLine(
     std::vector<DebugVertex>& vertices,
     std::vector<std::uint32_t>& indices,
     const DebugLineDescriptor& line)
 {
+  if (!isDrawableDebugLine(line)) {
+    return false;
+  }
+
   const auto start = static_cast<std::uint32_t>(vertices.size());
   const std::uint32_t color = packColor(line.rgba);
   vertices.push_back({toFloat3(line.from), color});
   vertices.push_back({toFloat3(line.to), color});
   indices.push_back(start);
   indices.push_back(start + 1u);
+  return true;
 }
 
 bool appendThickDebugLine(
@@ -557,15 +574,12 @@ bool appendThickDebugLine(
     const DebugLineDescriptor& line)
 {
   if (line.thickness <= 0.0 || !std::isfinite(line.thickness)
-      || !line.from.allFinite() || !line.to.allFinite()) {
+      || !isDrawableDebugLine(line)) {
     return false;
   }
 
   const Eigen::Vector3d segment = line.to - line.from;
   const double length = segment.norm();
-  if (!std::isfinite(length) || length < 1e-9) {
-    return false;
-  }
 
   const Eigen::Vector3d direction = segment / length;
   const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
@@ -651,6 +665,12 @@ bool appendDebugTriangle(
 {
   if (!triangle.a.allFinite() || !triangle.b.allFinite()
       || !triangle.c.allFinite()) {
+    return false;
+  }
+  const Eigen::Vector3d normal
+      = (triangle.b - triangle.a).cross(triangle.c - triangle.a);
+  const double area = normal.norm() * 0.5;
+  if (!std::isfinite(area) || area <= kMinDebugTriangleArea) {
     return false;
   }
 

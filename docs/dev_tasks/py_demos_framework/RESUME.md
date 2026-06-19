@@ -15,11 +15,25 @@ testing found realtime workflow rows should stay on the Sequential Impulse
 rigid-body solver; SI-vs-IPC inspection belongs in `rigid_solver_compare` and
 explicit IPC shelf scenes.
 
+Interactive selection found one M0 gap: a click/force-drag with no cursor motion
+could enqueue a zero-length debug overlay segment, trip Filament's empty-AABB
+precondition, and then fail shutdown while destroying `dartDebugColor`.
+Reproducer:
+
+```bash
+pixi run py-demos -- --scene rigid_body --headless --frames 4 \
+  --width 640 --height 480 --screenshot /tmp/rigid_body.ppm \
+  --scripted-force-drag 1:sphere_0_visual:0,0,0:2
+```
+
+The fix hardens both debug-line generation and the Filament renderable factory
+against degenerate debug primitives.
+
 ## Immediate Next Step
 
-**M1 is in progress.** Verify the contact-baseline increment, then capture the
-rigid-body SI vs boxed-LCP visual evidence and curate the AVBD constraint
-showcase.
+**M1 is in progress.** Keep the scripted selection repro above in the validation
+set, verify the contact-baseline increment, then capture the rigid-body SI vs
+boxed-LCP visual evidence and curate the AVBD constraint showcase.
 
 Re-run any M0 guard:
 

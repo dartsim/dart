@@ -30,6 +30,9 @@ and replay metadata.
         viewer (`py-demos-smoke --render`, `pixi run -e cuda py-demos-render-smoke`,
         `test_demos_render_smoke.py`). **155/155** render non-blank; blank-detector
         verified (rejects a uniform frame). Software-Mesa env applied for dev hosts.
+  - [x] Interactive selection/force-drag overlay hardening: a zero-motion
+        click/drag on `rigid_body` no longer feeds degenerate debug primitives
+        into Filament's AABB precondition path.
 - [ ] **M1 — Best domain + solver**: pick the flagship domain (rigid body) and
       solver, and make that path excellent end-to-end (visual + panels + replay + capture + docs). **In progress**.
   - [x] First contact-baseline increment: the flagship `rigid_body` scene
@@ -73,11 +76,14 @@ repeatable operation.
 
 ## Immediate Next Steps
 
-1. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
+1. Keep the interactive selection repro in the validation set when touching
+   `dart::gui` debug overlays:
+   `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
+2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
-2. Capture a visual A/B packet for `rigid_body` with Sequential Impulse and
+3. Capture a visual A/B packet for `rigid_body` with Sequential Impulse and
    boxed-LCP contacts so reviewers can inspect the DART 6 baseline behavior.
-3. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
+4. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
    decide whether the final M1 experience remains two complementary scenes or
    grows into one unified comparison scene.
 
