@@ -830,9 +830,9 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     assert default_start_stiffness > 0.0
     assert math.isinf(joint.constraint_projection_policy.linear_stiffness)
     assert math.isinf(joint.constraint_projection_policy.angular_stiffness)
-    _set_constraint_projection_policy(joint, start=1.0)
-    _set_constraint_projection_policy(joint, linear=1000.0)
-    _set_constraint_projection_policy(joint, angular=100.0)
+    joint.constraint_projection_policy.start_stiffness = 1.0
+    joint.constraint_projection_policy.linear_stiffness = 1000.0
+    joint.constraint_projection_policy.angular_stiffness = 100.0
     assert joint.constraint_projection_policy.start_stiffness == pytest.approx(1.0)
     assert joint.constraint_projection_policy.linear_stiffness == pytest.approx(1000.0)
     assert joint.constraint_projection_policy.angular_stiffness == pytest.approx(100.0)
@@ -1219,7 +1219,7 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
     assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
     assert math.isinf(fixed.constraint_projection_policy.linear_stiffness)
     assert math.isinf(fixed.constraint_projection_policy.angular_stiffness)
-    _set_constraint_projection_policy(fixed, linear=200.0)
+    fixed.constraint_projection_policy.linear_stiffness = 200.0
     assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
     assert fixed.constraint_projection_policy.linear_stiffness == pytest.approx(200.0)
     _set_constraint_projection_policy(fixed, start=2.0)
@@ -7730,14 +7730,14 @@ def test_simulation_collision_query():
     assert body_a.collision_shape.type == sx.CollisionShapeType.SPHERE
     assert body_b.collision_shape.type == sx.CollisionShapeType.BOX
     assert not body_b.deformable_obstacle_policy.surface_obstacle
-    _set_deformable_obstacle_policy(body_b, surface_obstacle=True)
+    body_b.deformable_obstacle_policy.surface_obstacle = True
     assert body_b.deformable_obstacle_policy.surface_obstacle
-    _set_deformable_obstacle_policy(body_b, surface_obstacle=False)
+    body_b.deformable_obstacle_policy.surface_obstacle = False
     assert not body_b.deformable_obstacle_policy.surface_obstacle
     assert not body_b.deformable_obstacle_policy.ground_barrier
-    _set_deformable_obstacle_policy(body_b, ground_barrier=True)
+    body_b.deformable_obstacle_policy.ground_barrier = True
     assert body_b.deformable_obstacle_policy.ground_barrier
-    _set_deformable_obstacle_policy(body_b, ground_barrier=False)
+    body_b.deformable_obstacle_policy.ground_barrier = False
     assert not body_b.deformable_obstacle_policy.ground_barrier
     assert world.add_rigid_body("c").collision_shape is None
 

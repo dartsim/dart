@@ -109,6 +109,147 @@ namespace {
 
 namespace sim = dart::simulation;
 
+class PyJointConstraintProjectionPolicy
+{
+public:
+  explicit PyJointConstraintProjectionPolicy(
+      sim::JointConstraintProjectionPolicy policy)
+    : mPolicy(policy)
+  {
+  }
+
+  explicit PyJointConstraintProjectionPolicy(sim::Joint joint)
+    : mPolicy(joint.getConstraintProjectionPolicy()), mJoint(std::move(joint))
+  {
+  }
+
+  [[nodiscard]] const sim::JointConstraintProjectionPolicy& getPolicy() const
+  {
+    return mPolicy;
+  }
+
+  [[nodiscard]] double getStartStiffness() const
+  {
+    return mPolicy.startStiffness;
+  }
+
+  void setStartStiffness(double value)
+  {
+    auto policy = mPolicy;
+    policy.startStiffness = value;
+    setPolicy(policy);
+  }
+
+  [[nodiscard]] double getLinearStiffness() const
+  {
+    return mPolicy.linearStiffness;
+  }
+
+  void setLinearStiffness(double value)
+  {
+    auto policy = mPolicy;
+    policy.linearStiffness = value;
+    setPolicy(policy);
+  }
+
+  [[nodiscard]] double getAngularStiffness() const
+  {
+    return mPolicy.angularStiffness;
+  }
+
+  void setAngularStiffness(double value)
+  {
+    auto policy = mPolicy;
+    policy.angularStiffness = value;
+    setPolicy(policy);
+  }
+
+private:
+  void setPolicy(const sim::JointConstraintProjectionPolicy& policy)
+  {
+    if (mJoint.has_value()) {
+      mJoint->setConstraintProjectionPolicy(policy);
+      mPolicy = mJoint->getConstraintProjectionPolicy();
+      return;
+    }
+
+    mPolicy = policy;
+  }
+
+  sim::JointConstraintProjectionPolicy mPolicy;
+  std::optional<sim::Joint> mJoint;
+};
+
+class PyDeformableObstaclePolicy
+{
+public:
+  explicit PyDeformableObstaclePolicy(sim::DeformableObstaclePolicy policy)
+    : mPolicy(policy)
+  {
+  }
+
+  explicit PyDeformableObstaclePolicy(sim::RigidBody body)
+    : mPolicy(body.getDeformableObstaclePolicy()), mBody(std::move(body))
+  {
+  }
+
+  [[nodiscard]] const sim::DeformableObstaclePolicy& getPolicy() const
+  {
+    return mPolicy;
+  }
+
+  [[nodiscard]] bool getGroundBarrier() const
+  {
+    return mPolicy.groundBarrier;
+  }
+
+  void setGroundBarrier(bool value)
+  {
+    auto policy = mPolicy;
+    policy.groundBarrier = value;
+    setPolicy(policy);
+  }
+
+  [[nodiscard]] bool getSurfaceObstacle() const
+  {
+    return mPolicy.surfaceObstacle;
+  }
+
+  void setSurfaceObstacle(bool value)
+  {
+    auto policy = mPolicy;
+    policy.surfaceObstacle = value;
+    setPolicy(policy);
+  }
+
+  [[nodiscard]] bool getBarrierOnly() const
+  {
+    return mPolicy.barrierOnly;
+  }
+
+  void setBarrierOnly(bool value)
+  {
+    auto policy = mPolicy;
+    policy.barrierOnly = value;
+    setPolicy(policy);
+  }
+
+private:
+  void setPolicy(const sim::DeformableObstaclePolicy& policy)
+  {
+    if (mBody.has_value()) {
+      mBody->setDeformableObstaclePolicy(policy);
+      mPolicy = mBody->getDeformableObstaclePolicy();
+      return;
+    }
+
+    mPolicy = policy;
+  }
+
+  sim::DeformableObstaclePolicy mPolicy;
+  std::optional<sim::RigidBody> mBody;
+};
+
 // Backend-neutral acceleration control for direct deformable PSD backend calls.
 // World stepping uses the per-World ComputeAcceleratorPolicy, but these legacy
 // wrappers remain useful for tests and direct backend probes. They never name a
@@ -401,16 +542,28 @@ void setJointSpecAnchor(
   validateJointSpecAnchor(target, field);
 }
 
-sim::JointConstraintProjectionPolicy getJointConstraintProjectionPolicy(
+PyJointConstraintProjectionPolicy getJointConstraintProjectionPolicy(
     const sim::Joint& joint)
 {
-  return joint.getConstraintProjectionPolicy();
+  return PyJointConstraintProjectionPolicy(joint);
 }
 
 void setJointConstraintProjectionPolicy(
-    sim::Joint& joint, const sim::JointConstraintProjectionPolicy& policy)
+    sim::Joint& joint, const PyJointConstraintProjectionPolicy& policy)
 {
-  joint.setConstraintProjectionPolicy(policy);
+  joint.setConstraintProjectionPolicy(policy.getPolicy());
+}
+
+PyDeformableObstaclePolicy getDeformableObstaclePolicy(
+    const sim::RigidBody& body)
+{
+  return PyDeformableObstaclePolicy(body);
+}
+
+void setDeformableObstaclePolicy(
+    sim::RigidBody& body, const PyDeformableObstaclePolicy& policy)
+{
+  body.setDeformableObstaclePolicy(policy.getPolicy());
 }
 
 void validateOrientation(const Eigen::Quaterniond& orientation)
@@ -936,63 +1089,77 @@ void defSimulationModule(nb::module_& m)
         return format_repr("JointSpec", fields);
       });
 
-  nb::class_<sim::JointConstraintProjectionPolicy>(
+  nb::class_<PyJointConstraintProjectionPolicy>(
       m, "JointConstraintProjectionPolicy")
       .def(
           nb::new_([](double startStiffness,
                       double linearStiffness,
                       double angularStiffness) {
-            return sim::JointConstraintProjectionPolicy{
-                .startStiffness = startStiffness,
-                .linearStiffness = linearStiffness,
-                .angularStiffness = angularStiffness};
+            return PyJointConstraintProjectionPolicy(
+                sim::JointConstraintProjectionPolicy{
+                    .startStiffness = startStiffness,
+                    .linearStiffness = linearStiffness,
+                    .angularStiffness = angularStiffness});
           }),
           nb::arg("start_stiffness") = 1.0,
           nb::arg("linear_stiffness") = std::numeric_limits<double>::infinity(),
           nb::arg("angular_stiffness")
           = std::numeric_limits<double>::infinity())
-      .def_rw(
+      .def_prop_rw(
           "start_stiffness",
-          &sim::JointConstraintProjectionPolicy::startStiffness)
-      .def_rw(
+          &PyJointConstraintProjectionPolicy::getStartStiffness,
+          &PyJointConstraintProjectionPolicy::setStartStiffness)
+      .def_prop_rw(
           "linear_stiffness",
-          &sim::JointConstraintProjectionPolicy::linearStiffness)
-      .def_rw(
+          &PyJointConstraintProjectionPolicy::getLinearStiffness,
+          &PyJointConstraintProjectionPolicy::setLinearStiffness)
+      .def_prop_rw(
           "angular_stiffness",
-          &sim::JointConstraintProjectionPolicy::angularStiffness)
-      .def("__repr__", [](const sim::JointConstraintProjectionPolicy& self) {
+          &PyJointConstraintProjectionPolicy::getAngularStiffness,
+          &PyJointConstraintProjectionPolicy::setAngularStiffness)
+      .def("__repr__", [](const PyJointConstraintProjectionPolicy& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back(
-            "start_stiffness", repr_double(self.startStiffness));
+            "start_stiffness", repr_double(self.getStartStiffness()));
         fields.emplace_back(
-            "linear_stiffness", repr_double(self.linearStiffness));
+            "linear_stiffness", repr_double(self.getLinearStiffness()));
         fields.emplace_back(
-            "angular_stiffness", repr_double(self.angularStiffness));
+            "angular_stiffness", repr_double(self.getAngularStiffness()));
         return format_repr("JointConstraintProjectionPolicy", fields);
       });
 
-  nb::class_<sim::DeformableObstaclePolicy>(m, "DeformableObstaclePolicy")
+  nb::class_<PyDeformableObstaclePolicy>(m, "DeformableObstaclePolicy")
       .def(
           nb::new_(
               [](bool groundBarrier, bool surfaceObstacle, bool barrierOnly) {
-                return sim::DeformableObstaclePolicy{
-                    .groundBarrier = groundBarrier,
-                    .surfaceObstacle = surfaceObstacle,
-                    .barrierOnly = barrierOnly};
+                return PyDeformableObstaclePolicy(
+                    sim::DeformableObstaclePolicy{
+                        .groundBarrier = groundBarrier,
+                        .surfaceObstacle = surfaceObstacle,
+                        .barrierOnly = barrierOnly});
               }),
           nb::arg("ground_barrier") = false,
           nb::arg("surface_obstacle") = false,
           nb::arg("barrier_only") = false)
-      .def_rw("ground_barrier", &sim::DeformableObstaclePolicy::groundBarrier)
-      .def_rw(
-          "surface_obstacle", &sim::DeformableObstaclePolicy::surfaceObstacle)
-      .def_rw("barrier_only", &sim::DeformableObstaclePolicy::barrierOnly)
-      .def("__repr__", [](const sim::DeformableObstaclePolicy& self) {
+      .def_prop_rw(
+          "ground_barrier",
+          &PyDeformableObstaclePolicy::getGroundBarrier,
+          &PyDeformableObstaclePolicy::setGroundBarrier)
+      .def_prop_rw(
+          "surface_obstacle",
+          &PyDeformableObstaclePolicy::getSurfaceObstacle,
+          &PyDeformableObstaclePolicy::setSurfaceObstacle)
+      .def_prop_rw(
+          "barrier_only",
+          &PyDeformableObstaclePolicy::getBarrierOnly,
+          &PyDeformableObstaclePolicy::setBarrierOnly)
+      .def("__repr__", [](const PyDeformableObstaclePolicy& self) {
         std::vector<std::pair<std::string, std::string>> fields;
-        fields.emplace_back("ground_barrier", repr_bool(self.groundBarrier));
         fields.emplace_back(
-            "surface_obstacle", repr_bool(self.surfaceObstacle));
-        fields.emplace_back("barrier_only", repr_bool(self.barrierOnly));
+            "ground_barrier", repr_bool(self.getGroundBarrier()));
+        fields.emplace_back(
+            "surface_obstacle", repr_bool(self.getSurfaceObstacle()));
+        fields.emplace_back("barrier_only", repr_bool(self.getBarrierOnly()));
         return format_repr("DeformableObstaclePolicy", fields);
       });
 
@@ -1224,7 +1391,8 @@ void defSimulationModule(nb::module_& m)
       .def_prop_rw(
           "constraint_projection_policy",
           &getJointConstraintProjectionPolicy,
-          &setJointConstraintProjectionPolicy)
+          &setJointConstraintProjectionPolicy,
+          nb::keep_alive<0, 1>())
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
       .def_prop_ro("parent_rigid_body", &sim::Joint::getParentRigidBody)
@@ -1806,8 +1974,9 @@ void defSimulationModule(nb::module_& m)
           nb::arg("shape"))
       .def_prop_rw(
           "deformable_obstacle_policy",
-          &sim::RigidBody::getDeformableObstaclePolicy,
-          &sim::RigidBody::setDeformableObstaclePolicy)
+          &getDeformableObstaclePolicy,
+          &setDeformableObstaclePolicy,
+          nb::keep_alive<0, 1>())
       .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
       .def_prop_ro("collision_shapes", &sim::RigidBody::getCollisionShapes)
       .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
