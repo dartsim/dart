@@ -937,8 +937,19 @@ def _rigid_workflow_capture_command(
     return command
 
 
-def _rigid_workflow_viewer_command(scene_id: str, width: int, height: int) -> str:
-    return f"pixi run py-demos -- --scene {scene_id} --width {width} --height {height}"
+def _rigid_workflow_viewer_command(
+    scene_id: str,
+    width: int,
+    height: int,
+    scene_state_json: str | None = None,
+) -> str:
+    command = (
+        f"pixi run py-demos -- --scene {scene_id} "
+        f"--width {width} --height {height}"
+    )
+    if scene_state_json is not None:
+        command = f"{command} --scene-state-json {shlex.quote(scene_state_json)}"
+    return command
 
 
 def _rigid_workflow_packet_command(
@@ -2547,6 +2558,18 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.item_tooltip("Run from the repository root to regenerate this row.")
         if guide.scene_id == "rigid_body":
             builder.text("Boxed-LCP baseline variant")
+            builder.text(
+                _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json=_RIGID_BODY_BOXED_LCP_STATE_JSON,
+                )
+            )
+            builder.item_tooltip(
+                "Open the rigid_body row live with the contact solver set to "
+                "Boxed LCP before the first frame."
+            )
             builder.text(
                 _rigid_workflow_capture_command(
                     guide.scene_id,

@@ -46,8 +46,8 @@ and replay metadata.
         scene-owned replay state before launch via `--scene-state-json`, and
         `--capture-label` gives stateful A/B captures distinct artifact stems
         and default output directories. The `rigid_body` workflow panel now
-        advertises the boxed-LCP baseline capture command. Verified in default
-        and CUDA environments with manifests resolving
+        advertises both the boxed-LCP baseline live command and capture command.
+        Verified in default and CUDA environments with manifests resolving
         `contact_solver_method=BOXED_LCP`.
   - [x] Dedicated contact-baseline packet: the `--contact-baseline-only`
         workflow captures the `rigid_body` Sequential Impulse and boxed-LCP

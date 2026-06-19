@@ -3550,6 +3550,19 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             assert "text:Boxed-LCP baseline variant" in events
             assert (
                 "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"contact_method_index":1}}',
+                )
+            ) in events
+            assert (
+                "tooltip:Open the rigid_body row live with the contact solver "
+                "set to Boxed LCP before the first frame."
+            ) in events
+            assert (
+                "text:"
                 + _rigid_workflow_capture_command(
                     guide.scene_id,
                     guide.capture_frames,

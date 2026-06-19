@@ -91,6 +91,9 @@ A follow-up local improvement makes packet review pages report their M1 phase
 maps for contact-baseline and AVBD-only packets instead of showing `phases 0`.
 It also preserves `scene_state_json` in each row's `open live` command, so the
 boxed-LCP contact-baseline row opens the same state that the capture used.
+The live rigid workflow panel now advertises the matching boxed-LCP `py-demos`
+command beside the boxed-LCP capture command, so the panel opens and captures
+the same stateful baseline.
 
 ## Current Branch
 
@@ -98,7 +101,8 @@ boxed-LCP contact-baseline row opens the same state that the capture used.
 selection debug-overlay fix, scriptable capture-state restoration, labeled
 stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
 packet. Local follow-up work may be ahead of the remote PR branch until the
-phase-map and stateful open-live command fixes are pushed.
+phase-map, stateful open-live command, and boxed-LCP workflow-panel UI fixes are
+pushed.
 
 ## Immediate Next Step
 
@@ -106,9 +110,9 @@ phase-map and stateful open-live command fixes are pushed.
 set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
 rigid-constraint track. The next useful slice is PR management: push the local
-phase-map/open-live command fixes after explicit approval, refresh the PR body
-with the full-packet evidence if pushing, then watch CI/Codex review for
-actionable feedback.
+phase-map/open-live command and workflow-panel UI fixes after explicit
+approval, refresh the PR body with the full-packet evidence if pushing, then
+watch CI/Codex review for actionable feedback.
 
 Re-run any M0 guard:
 
