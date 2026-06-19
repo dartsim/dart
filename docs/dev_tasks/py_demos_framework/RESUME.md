@@ -136,13 +136,28 @@ captures the Default, Slide, and Bounce `rigid_body` variants as a
 review-indexed packet with state metadata, capture labels, rerun commands, and
 the same workflow guidance fields used by the contact-baseline and AVBD packets.
 
+The full material-example packet pass completed on local head `2b887338002`:
+
+- Default material-example packet:
+  `/tmp/dart_capture_rigid_material_examples_full_default_2b887338002`
+  (`real 63.16s`).
+- CUDA material-example packet:
+  `/tmp/dart_capture_rigid_material_examples_full_cuda_2b887338002`
+  (`real 94.86s`).
+
+Both workflow manifests report `status=complete`, three captured
+`material_examples` rows (`default_material`, `slide_material`,
+`bounce_material`), complete guidance, solver identity, scene metrics, and
+friction/restitution state metadata for the Slide and Bounce variants.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
-plus the `rigid_body` material-example preset and packet increments. Keep any
-remaining edits narrow, keep the dev-task handoff current, and validate the
-exact default/CUDA py-demos front doors before publishing a follow-up PR.
+plus the `rigid_body` material-example preset, packet, and full-packet evidence
+increments. Keep any remaining edits narrow, keep the dev-task handoff current,
+and validate the exact default/CUDA py-demos front doors before publishing a
+follow-up PR.
 
 ## Immediate Next Step
 

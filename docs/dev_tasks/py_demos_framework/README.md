@@ -93,6 +93,15 @@ and replay metadata.
         workflow captures the `rigid_body` Default, Slide, and Bounce
         friction/restitution variants as one review-indexed packet with
         state/label metadata and rerun commands.
+  - [x] Reviewer-facing material packet pass: full material-example packets
+        completed in both default and CUDA Pixi environments on local head
+        `2b887338002`. The default packet
+        `/tmp/dart_capture_rigid_material_examples_full_default_2b887338002`
+        completed in `real 63.16s`; the CUDA packet
+        `/tmp/dart_capture_rigid_material_examples_full_cuda_2b887338002`
+        completed in `real 94.86s`. Both manifests report `status=complete`,
+        three captured material rows, complete guidance, solver identity, and
+        scene metrics.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
