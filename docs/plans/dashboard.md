@@ -27,14 +27,18 @@ its own line so status updates remain git-history friendly.
   PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR #3029;
   WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31, WP-091.33b, and
   WP-091.33c via PR #3052; WP-091.32 via PR #3058; WP-091.33d plus WP-091.34
-  via PR #3061; WP-091.15 via PR #3067; and WP-091.41 through WP-091.44 via
-  PR #3072. The remaining WS0 packet is WP-091.4 legacy freeze, which stays
-  **blocked**: PLAN-042 Decision 5 has no recorded maintainer direction.
+  via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077; and
+  WP-091.41 through WP-091.44 via PR #3072. The remaining WS0 packet is
+  WP-091.4 legacy freeze, which stays **blocked**: PLAN-042 Decision 5 has no
+  recorded maintainer direction.
   WP-091.13 and WP-091.24 still have partial landed evidence under
   `[claimed]` headings, so they require orchestrator release or split
-  follow-up packets before executor pickup. WP-091.33e waits on WP-091.24.
-  WP-091.40 is claimed on the final WS4 branch after recording the scoped
-  rigid-body naming decision in the packet.
+  follow-up packets before executor pickup; PR #3083 adds the WP-091.24
+  standalone cross-family metrics harness/packet slice plus a bounded
+  WP-091.13 shared-helper/projection-constant cleanup while leaving the risky
+  contact/iteration and multibody-momentum metric semantics explicit.
+  WP-091.33e is claimed in PR #3083 for the batched precision/transfer
+  packet-reporting checker.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies

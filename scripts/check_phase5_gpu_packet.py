@@ -37,8 +37,11 @@ import sys
 from pathlib import Path
 
 from benchmark_packet_utils import (
+    batched_benchmark_row_schema_errors,
     benchmark_packet_timing_schema_errors,
-    median_timing_by_name,
+    benchmark_row_name,
+    benchmark_timing_ns,
+    canonical_benchmark_name,
 )
 
 DEFAULT_CPU_PREFIX = "BM_Phase5RigidBodyBatchCpuBaseline"
@@ -203,6 +206,12 @@ def make_packet_template(
                 "aggregate_name": "median",
                 "real_time": None,
                 "time_unit": "ms",
+                "backend": "cpu",
+                "precision": "double-reference",
+                "includes_transfer_time": False,
+                "lane_count": world_count,
+                "resolved_execution_shape": "homogeneous-batch",
+                "step_count": step_count,
             },
             {
                 "name": gpu_name,
@@ -211,6 +220,12 @@ def make_packet_template(
                 "aggregate_name": "median",
                 "real_time": None,
                 "time_unit": "ms",
+                "backend": "cuda",
+                "precision": "double-reference",
+                "includes_transfer_time": True,
+                "lane_count": world_count,
+                "resolved_execution_shape": "homogeneous-batch",
+                "step_count": step_count,
             },
         ],
     }
@@ -274,6 +289,42 @@ def _validate_metadata(
     return world_count, actual_body_count, actual_step_count, max_error
 
 
+def _median_rows_by_name(rows: list) -> dict[str, dict]:
+    median_rows: dict[str, dict] = {}
+    duplicates: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("aggregate_name") != "median":
+            continue
+        name = canonical_benchmark_name(benchmark_row_name(row))
+        if not name:
+            continue
+        if name in median_rows:
+            duplicates.add(name)
+            continue
+        median_rows[name] = row
+    if duplicates:
+        raise Phase5PacketError(
+            "duplicate median benchmark rows: " + ", ".join(sorted(duplicates))
+        )
+    return median_rows
+
+
+def _representative_rows_by_name(
+    rows: list,
+    names: tuple[str, str],
+) -> dict[str, list[dict]]:
+    representative_rows = {name: [] for name in names}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = canonical_benchmark_name(benchmark_row_name(row))
+        if name in representative_rows:
+            representative_rows[name].append(row)
+    return representative_rows
+
+
 def validate_packet(
     data: dict,
     *,
@@ -303,10 +354,53 @@ def validate_packet(
 
     cpu_name = f"{cpu_prefix}/{world_count}/{actual_body_count}/{actual_step_count}"
     gpu_name = f"{gpu_prefix}/{world_count}/{actual_body_count}/{actual_step_count}"
-    timings = median_timing_by_name(rows)
-    missing = [name for name in (cpu_name, gpu_name) if name not in timings]
+    median_rows = _median_rows_by_name(rows)
+    missing = [name for name in (cpu_name, gpu_name) if name not in median_rows]
     if missing:
         raise Phase5PacketError("missing median benchmark rows: " + ", ".join(missing))
+
+    representative_rows = _representative_rows_by_name(rows, (cpu_name, gpu_name))
+    timings: dict[str, float] = {}
+    expected_rows = (
+        (cpu_name, "cpu", False),
+        (gpu_name, "cuda", True),
+    )
+    for name, expected_backend, expected_transfer_time in expected_rows:
+        for row in representative_rows[name]:
+            errors = batched_benchmark_row_schema_errors(
+                row, f"phase5_gpu_packet.benchmarks[{name}]"
+            )
+            if errors:
+                raise Phase5PacketError(errors[0])
+            if row["backend"] != expected_backend:
+                raise Phase5PacketError(
+                    f"phase5_gpu_packet.benchmarks[{name}].backend must be "
+                    f"{expected_backend!r}"
+                )
+            if row["includes_transfer_time"] is not expected_transfer_time:
+                raise Phase5PacketError(
+                    f"phase5_gpu_packet.benchmarks[{name}].includes_transfer_time "
+                    f"must be {expected_transfer_time!r}"
+                )
+            if row["lane_count"] != world_count:
+                raise Phase5PacketError(
+                    f"phase5_gpu_packet.benchmarks[{name}].lane_count must match "
+                    "phase5_gpu_packet.world_count"
+                )
+            if row["step_count"] != actual_step_count:
+                raise Phase5PacketError(
+                    f"phase5_gpu_packet.benchmarks[{name}].step_count must match "
+                    "phase5_gpu_packet.step_count"
+                )
+
+        median_row = median_rows[name]
+        timing = benchmark_timing_ns(median_row)
+        if not math.isfinite(timing) or timing <= 0.0:
+            raise Phase5PacketError(
+                f"phase5_gpu_packet.benchmarks[{name}] median timing must be "
+                "finite and positive"
+            )
+        timings[name] = timing
 
     cpu_ns = timings[cpu_name]
     gpu_ns = timings[gpu_name]

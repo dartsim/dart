@@ -22,7 +22,15 @@ def _load_module():
     return module
 
 
-def _median_row(name, real_time):
+def _median_row(
+    name,
+    real_time,
+    *,
+    backend="cpu",
+    includes_transfer_time=False,
+    lane_count=4096,
+    step_count=100,
+):
     return {
         "name": f"{name}_median",
         "run_name": f"{name}_median",
@@ -30,6 +38,12 @@ def _median_row(name, real_time):
         "aggregate_name": "median",
         "real_time": real_time,
         "time_unit": "ms",
+        "backend": backend,
+        "precision": "double-reference",
+        "includes_transfer_time": includes_transfer_time,
+        "lane_count": lane_count,
+        "resolved_execution_shape": "homogeneous-batch",
+        "step_count": step_count,
     }
 
 
@@ -50,8 +64,15 @@ def _packet(*, cpu_ms=100.0, gpu_ms=70.0, max_error=1e-12, world_count=4096):
             _median_row(
                 f"BM_Phase5RigidBodyBatchCpuBaseline/{world_count}/128/100",
                 cpu_ms,
+                lane_count=world_count,
             ),
-            _median_row(f"BM_Phase5RigidBodyBatchGpu/{world_count}/128/100", gpu_ms),
+            _median_row(
+                f"BM_Phase5RigidBodyBatchGpu/{world_count}/128/100",
+                gpu_ms,
+                backend="cuda",
+                includes_transfer_time=True,
+                lane_count=world_count,
+            ),
         ],
     }
 
@@ -123,6 +144,26 @@ def test_validate_packet_rejects_non_median_rows():
     ]
 
     with pytest.raises(module.Phase5PacketError, match="missing median"):
+        module.validate_packet(packet)
+
+
+def test_validate_packet_rejects_unannotated_representative_raw_row():
+    module = _load_module()
+    packet = _packet()
+    packet["benchmarks"].insert(
+        0,
+        {
+            "name": f"{CPU_ROW}/repeats:3",
+            "run_name": f"{CPU_ROW}/repeats:3",
+            "real_time": 100.0,
+            "time_unit": "ms",
+        },
+    )
+
+    with pytest.raises(
+        module.Phase5PacketError,
+        match="backend must be a non-empty string",
+    ):
         module.validate_packet(packet)
 
 

@@ -1035,15 +1035,15 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 \
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 44-45 are the two
+`--include-related --include-packets`, rows 49-50 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 48-49.
+packet rows become 53-54.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow \
     --workflow-start-row 15 --workflow-end-row 17 --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
-    --include-packets --workflow-start-row 44 --workflow-end-row 45 \
+    --include-packets --workflow-start-row 49 --workflow-end-row 50 \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
@@ -1223,6 +1223,16 @@ pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 \
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint \
+    --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_revolute_motor --frames 72 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 \
     --width 960 --height 540 --show-ui
 ```
 
