@@ -24953,6 +24953,79 @@ TEST(World, ComputeStepMetricsConservesLinearMomentumThroughCollision)
   EXPECT_LE(after.kineticEnergy, initial.kineticEnergy + 1e-9);
 }
 
+TEST(World, ComputeStepMetricsReportsCachedContactDiagnostics)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.contactSolverMethod = sx::ContactSolverMethod::SequentialImpulse;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+  const sx::compute::StepMetrics before = world.computeStepMetrics();
+  EXPECT_EQ(before.activeContactCount, 0u);
+  EXPECT_DOUBLE_EQ(before.maxPenetrationDepth, 0.0);
+  EXPECT_EQ(before.lastStepIterations, 0u);
+
+  world.step();
+
+  const sx::compute::StepMetrics after = world.computeStepMetrics();
+  EXPECT_GE(after.activeContactCount, 1u);
+  EXPECT_GT(after.maxPenetrationDepth, 1e-3);
+  EXPECT_GT(after.lastStepIterations, 0u);
+  EXPECT_DOUBLE_EQ(after.lastStepResidual, 0.0);
+
+  const sx::compute::StepMetrics repeated = world.computeStepMetrics();
+  EXPECT_EQ(repeated.activeContactCount, after.activeContactCount);
+  EXPECT_DOUBLE_EQ(repeated.maxPenetrationDepth, after.maxPenetrationDepth);
+  EXPECT_EQ(repeated.lastStepIterations, after.lastStepIterations);
+  EXPECT_DOUBLE_EQ(repeated.lastStepResidual, after.lastStepResidual);
+}
+
+TEST(World, ComputeStepMetricsReportsMultibodyMomentum)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slide";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(2.0);
+  link.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+
+  world.enterSimulationMode();
+  auto joint = link.getParentJoint();
+  joint.setVelocity(Eigen::VectorXd::Constant(1, 0.7));
+  world.updateKinematics();
+
+  const sx::compute::StepMetrics metrics = world.computeStepMetrics();
+
+  EXPECT_NEAR(metrics.kineticEnergy, 0.5 * 2.0 * 0.7 * 0.7, 1e-12);
+  EXPECT_TRUE(metrics.linearMomentum.isApprox(
+      Eigen::Vector3d(2.0 * 0.7, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(metrics.angularMomentum.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+
 TEST(World, ComputeStepMetricsPotentialEnergyConvergesWithTimeStep)
 {
   namespace sx = dart::simulation;

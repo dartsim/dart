@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <optional>
 
 #include <cmath>
 
@@ -73,6 +74,52 @@ std::array<ContactEnd, 2> endsOf(const RigidBodyContactConstraint& c)
 const Eigen::Vector3d& directionOf(const RigidBodyContactConstraint& c, int row)
 {
   return row == 0 ? c.normal : (row == 1 ? c.tangent1 : c.tangent2);
+}
+
+//==============================================================================
+Eigen::Index contactRowIndex(
+    RigidBodyContactRowLayout layout,
+    std::size_t contactIndex,
+    int row,
+    std::size_t contactCount)
+{
+  const Eigen::Index i = static_cast<Eigen::Index>(contactIndex);
+  switch (layout) {
+    case RigidBodyContactRowLayout::ContactMajor:
+      return i * RigidBodyContactProblem::kRowsPerContact + row;
+    case RigidBodyContactRowLayout::NormalThenTangents:
+      if (row == 0) {
+        return i;
+      }
+      return static_cast<Eigen::Index>(contactCount) + 2 * i + (row - 1);
+  }
+  return i * RigidBodyContactProblem::kRowsPerContact + row;
+}
+
+//==============================================================================
+std::optional<std::size_t> dynamicBodyColumn(
+    const std::vector<entt::entity, RigidBodyContactProblem::EntityAllocator>&
+        dynamicBodies,
+    entt::entity entity)
+{
+  const auto it = std::find(dynamicBodies.begin(), dynamicBodies.end(), entity);
+  if (it == dynamicBodies.end()) {
+    return std::nullopt;
+  }
+  return static_cast<std::size_t>(std::distance(dynamicBodies.begin(), it));
+}
+
+//==============================================================================
+void registerDynamicBody(
+    std::vector<entt::entity, RigidBodyContactProblem::EntityAllocator>&
+        dynamicBodies,
+    entt::entity entity,
+    bool isStatic)
+{
+  if (isStatic || dynamicBodyColumn(dynamicBodies, entity).has_value()) {
+    return;
+  }
+  dynamicBodies.push_back(entity);
 }
 
 //==============================================================================
@@ -116,8 +163,18 @@ Eigen::Vector3d computeRigidBodyContactPointVelocity(
 RigidBodyContactProblem assembleRigidBodyContactProblem(
     const detail::WorldRegistry& registry, std::span<const Contact> contacts)
 {
+  return assembleRigidBodyContactProblem(
+      registry, contacts, RigidBodyContactAssemblyOptions{});
+}
+
+//==============================================================================
+RigidBodyContactProblem assembleRigidBodyContactProblem(
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const RigidBodyContactAssemblyOptions& options)
+{
   RigidBodyContactProblem problem;
-  assembleRigidBodyContactProblemInto(problem, registry, contacts);
+  assembleRigidBodyContactProblemInto(problem, registry, contacts, options);
   return problem;
 }
 
@@ -127,7 +184,25 @@ void assembleRigidBodyContactProblemInto(
     const detail::WorldRegistry& registry,
     std::span<const Contact> contacts)
 {
+  assembleRigidBodyContactProblemInto(
+      problem, registry, contacts, RigidBodyContactAssemblyOptions{});
+}
+
+//==============================================================================
+void assembleRigidBodyContactProblemInto(
+    RigidBodyContactProblem& problem,
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    const RigidBodyContactAssemblyOptions& options)
+{
   problem.constraints.clear();
+  problem.dynamicBodies.clear();
+  problem.delassus.resize(0, 0);
+  problem.rhs.resize(0);
+  problem.lo.resize(0);
+  problem.hi.resize(0);
+  problem.findex.resize(0);
+  problem.jacobian.resize(0, 0);
 
   std::size_t rigidContactCount = 0;
   for (const auto& contact : contacts) {
@@ -194,7 +269,7 @@ void assembleRigidBodyContactProblemInto(
 
     // Restitution target from the pre-solve approach velocity. Combine the two
     // materials by taking the larger bounce.
-    const double restitution = std::max(
+    constraint.restitution = std::max(
         detail::restitutionOf(registry, entityA),
         detail::restitutionOf(registry, entityB));
     const auto& velocityA = registry.get<comps::Velocity>(entityA);
@@ -208,8 +283,9 @@ void assembleRigidBodyContactProblemInto(
     constexpr double restitutionThreshold
         = detail::kRigidContactRestitutionThreshold;
     constraint.restitutionVelocity
-        = (restitution > 0.0 && initialApproach < -restitutionThreshold)
-              ? -restitution * initialApproach
+        = (constraint.restitution > 0.0
+           && initialApproach < -restitutionThreshold)
+              ? -constraint.restitution * initialApproach
               : 0.0;
 
     // Two tangent directions spanning the contact plane, plus their effective
@@ -230,24 +306,48 @@ void assembleRigidBodyContactProblemInto(
     constraint.friction = std::sqrt(
         detail::frictionOf(registry, entityA)
         * detail::frictionOf(registry, entityB));
+    constraint.normalVelocityBias = constraint.restitutionVelocity;
+    if (options.includeBaumgarteBias && options.timeStep > 0.0
+        && initialApproach > detail::kRigidContactBaumgarteApproachThreshold
+        && !registry.all_of<comps::KinematicBodyTag>(entityA)
+        && !registry.all_of<comps::KinematicBodyTag>(entityB)) {
+      const double penetration = std::max(
+          0.0, contact.depth - detail::kRigidContactPositionAllowance);
+      const double baumgarteVelocity
+          = detail::kRigidContactPositionCorrectionFactor * penetration
+            / options.timeStep;
+      constraint.normalVelocityBias
+          = std::max(constraint.normalVelocityBias, baumgarteVelocity);
+    }
 
     problem.constraints.push_back(constraint);
+    registerDynamicBody(problem.dynamicBodies, entityA, constraint.staticA);
+    registerDynamicBody(problem.dynamicBodies, entityB, constraint.staticB);
   }
 
   const std::size_t n = problem.constraints.size();
+  if (!options.populateSystem && !options.populateJacobian) {
+    return;
+  }
+
   const auto size
       = static_cast<Eigen::Index>(n * RigidBodyContactProblem::kRowsPerContact);
-  problem.delassus = Eigen::MatrixXd::Zero(size, size);
-  problem.rhs.resize(size);
-  problem.lo.resize(size);
-  problem.hi.resize(size);
-  problem.findex.resize(size);
+  if (options.populateSystem) {
+    problem.delassus = Eigen::MatrixXd::Zero(size, size);
+    problem.rhs.resize(size);
+    problem.lo.resize(size);
+    problem.hi.resize(size);
+    problem.findex.resize(size);
+  }
+  if (options.populateJacobian) {
+    problem.jacobian = Eigen::MatrixXd::Zero(
+        size, static_cast<Eigen::Index>(6 * problem.dynamicBodies.size()));
+  }
 
   for (std::size_t i = 0; i < n; ++i) {
     const auto& ci = problem.constraints[i];
     const auto endsI = endsOf(ci);
-    const Eigen::Index normalRow = static_cast<Eigen::Index>(i)
-                                   * RigidBodyContactProblem::kRowsPerContact;
+    const Eigen::Index normalRow = contactRowIndex(options.rowLayout, i, 0, n);
 
     // Relative contact velocity before any impulse is applied this step.
     const auto& velocityA = registry.get<comps::Velocity>(ci.bodyA);
@@ -258,35 +358,81 @@ void assembleRigidBodyContactProblemInto(
               velocityA, ci.armA, ci.staticA);
 
     // Normal row: drive the approach velocity to the restitution target.
-    problem.rhs[normalRow]
-        = ci.restitutionVelocity - relativeVelocity.dot(ci.normal);
-    problem.lo[normalRow] = 0.0;
-    problem.hi[normalRow] = std::numeric_limits<double>::infinity();
-    problem.findex[normalRow] = -1;
+    if (options.populateSystem) {
+      problem.rhs[normalRow]
+          = ci.normalVelocityBias - relativeVelocity.dot(ci.normal);
+      problem.lo[normalRow] = 0.0;
+      problem.hi[normalRow] = std::numeric_limits<double>::infinity();
+      problem.findex[normalRow] = -1;
+    }
 
     // Friction rows: drive each tangential velocity to zero, bounded by the
     // Coulomb cone. `hi` carries the friction coefficient mu; the solver scales
     // it by the solved normal impulse referenced through `findex`.
     for (int t = 1; t < RigidBodyContactProblem::kRowsPerContact; ++t) {
-      const Eigen::Index row = normalRow + t;
-      problem.rhs[row] = -relativeVelocity.dot(directionOf(ci, t));
-      problem.lo[row] = -ci.friction;
-      problem.hi[row] = ci.friction;
-      problem.findex[row] = static_cast<int>(normalRow);
+      if (options.populateSystem) {
+        const Eigen::Index row = contactRowIndex(options.rowLayout, i, t, n);
+        problem.rhs[row] = -relativeVelocity.dot(directionOf(ci, t));
+        problem.lo[row] = -ci.friction;
+        problem.hi[row] = ci.friction;
+        problem.findex[row] = static_cast<int>(normalRow);
+      }
     }
 
-    // Fill the 3x3 Delassus block of contact i against every contact j.
-    for (std::size_t j = 0; j < n; ++j) {
-      const auto& cj = problem.constraints[j];
-      const auto endsJ = endsOf(cj);
-      const Eigen::Index columnBase
-          = static_cast<Eigen::Index>(j)
-            * RigidBodyContactProblem::kRowsPerContact;
-      for (int a = 0; a < RigidBodyContactProblem::kRowsPerContact; ++a) {
-        for (int b = 0; b < RigidBodyContactProblem::kRowsPerContact; ++b) {
-          problem.delassus(normalRow + a, columnBase + b) = delassusEntry(
-              endsI, directionOf(ci, a), endsJ, directionOf(cj, b));
+    if (options.populateJacobian) {
+      const auto fillJacobianRow = [&](Eigen::Index row,
+                                       const Eigen::Vector3d& direction) {
+        if (!ci.staticB) {
+          const auto column
+              = dynamicBodyColumn(problem.dynamicBodies, ci.bodyB);
+          if (column.has_value()) {
+            const Eigen::Index base = static_cast<Eigen::Index>(6 * *column);
+            problem.jacobian.block<1, 3>(row, base) += direction.transpose();
+            problem.jacobian.block<1, 3>(row, base + 3)
+                += ci.armB.cross(direction).transpose();
+          }
         }
+        if (!ci.staticA) {
+          const auto column
+              = dynamicBodyColumn(problem.dynamicBodies, ci.bodyA);
+          if (column.has_value()) {
+            const Eigen::Index base = static_cast<Eigen::Index>(6 * *column);
+            problem.jacobian.block<1, 3>(row, base) -= direction.transpose();
+            problem.jacobian.block<1, 3>(row, base + 3)
+                -= ci.armA.cross(direction).transpose();
+          }
+        }
+      };
+      for (int a = 0; a < RigidBodyContactProblem::kRowsPerContact; ++a) {
+        fillJacobianRow(
+            contactRowIndex(options.rowLayout, i, a, n), directionOf(ci, a));
+      }
+    }
+
+    if (options.populateSystem) {
+      // Fill the 3x3 Delassus block of contact i against every contact j.
+      for (std::size_t j = 0; j < n; ++j) {
+        const auto& cj = problem.constraints[j];
+        const auto endsJ = endsOf(cj);
+        for (int a = 0; a < RigidBodyContactProblem::kRowsPerContact; ++a) {
+          const Eigen::Index row = contactRowIndex(options.rowLayout, i, a, n);
+          for (int b = 0; b < RigidBodyContactProblem::kRowsPerContact; ++b) {
+            const Eigen::Index col
+                = contactRowIndex(options.rowLayout, j, b, n);
+            problem.delassus(row, col) = delassusEntry(
+                endsI, directionOf(ci, a), endsJ, directionOf(cj, b));
+          }
+        }
+      }
+    }
+  }
+
+  if (options.populateSystem && options.regularizeFrictionRows) {
+    for (std::size_t i = 0; i < n; ++i) {
+      for (int t = 1; t < RigidBodyContactProblem::kRowsPerContact; ++t) {
+        const Eigen::Index row = contactRowIndex(options.rowLayout, i, t, n);
+        problem.delassus(row, row)
+            += problem.delassus(row, row) * detail::kRigidContactFrictionCfm;
       }
     }
   }

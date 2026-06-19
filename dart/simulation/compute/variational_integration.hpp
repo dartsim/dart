@@ -737,17 +737,19 @@ DART_SIMULATION_API VariationalSolveReport integrateMultibodyVariational(
     MultibodyVariationalTreeScratch& treeScratch,
     VariationalStepScratch& stepScratch);
 
-/// The kinetic/potential split of a multibody's mechanical energy, computed
-/// from the same forward-kinematics world transforms as
+/// The energy/momentum split of a multibody, computed from the same
+/// forward-kinematics world transforms and link-frame spatial velocities as
 /// `computeMultibodyMechanicalEnergy` (so `kinetic + potential` equals it). Use
-/// this for a physical per-domain energy split: deriving the split from the
-/// stored `comps::LinkState::worldTransform` cache is unreliable (it is not
-/// always refreshed for the current configuration), which is why the metrics
-/// layer routes through this helper instead.
+/// this for physical per-domain metrics: deriving the split from the stored
+/// `comps::LinkState::worldTransform` cache is unreliable (it is not always
+/// refreshed for the current configuration), which is why the metrics layer
+/// routes through this helper instead.
 struct MultibodyMechanicalEnergyTerms
 {
   double kinetic = 0.0;
   double potential = 0.0;
+  Eigen::Vector3d linearMomentum = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angularMomentum = Eigen::Vector3d::Zero();
 };
 
 [[nodiscard]] DART_SIMULATION_API MultibodyMechanicalEnergyTerms

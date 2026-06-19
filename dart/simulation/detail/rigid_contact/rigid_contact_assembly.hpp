@@ -68,6 +68,10 @@ inline constexpr double kRigidContactPositionAllowance = 1e-4;
 /// Fraction of penetration beyond the allowance removed by position projection.
 inline constexpr double kRigidContactPositionCorrectionFactor = 0.2;
 
+/// Slow-contact velocity threshold above which Baumgarte penetration bias is
+/// allowed to assist the boxed-LCP solve (m/s).
+inline constexpr double kRigidContactBaumgarteApproachThreshold = -0.25;
+
 /// Reciprocal of a finite, positive body mass; zero for static/degenerate mass.
 inline double inverseMassOf(const comps::MassProperties& mass)
 {

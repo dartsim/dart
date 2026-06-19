@@ -487,6 +487,63 @@ CorpusRow runCaseFamily(const SceneCase& c, const std::string& family)
   return row;
 }
 
+std::string multibodyNameForScene(const SceneCase& c)
+{
+  if (c.id == "pendulum_1link") {
+    return "pend1";
+  }
+  if (c.id == "pendulum_2link") {
+    return "pend2";
+  }
+  return {};
+}
+
+Eigen::VectorXd jointPositionVector(sx::World& world, const SceneCase& c)
+{
+  const std::string robotName = multibodyNameForScene(c);
+  auto robot = world.getMultibody(robotName);
+  if (!robot.has_value()) {
+    return {};
+  }
+
+  Eigen::Index dofs = 0;
+  for (auto joint : robot->getJoints()) {
+    dofs += joint.getDOFCount();
+  }
+
+  Eigen::VectorXd q(dofs);
+  Eigen::Index offset = 0;
+  for (auto joint : robot->getJoints()) {
+    const Eigen::VectorXd segment = joint.getPosition();
+    q.segment(offset, segment.size()) = segment;
+    offset += segment.size();
+  }
+  return q;
+}
+
+Eigen::VectorXd rollSmoothCaseJointPositions(
+    const SceneCase& c, const std::string& family, double dt, double totalTime)
+{
+  sx::World world;
+  world.setMultibodyOptions(
+      {.integrationFamily
+       = (family == "variational integrator")
+             ? sx::MultibodyIntegrationFamily::Variational
+             : sx::MultibodyIntegrationFamily::SemiImplicit});
+  c.build(world);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  if (c.postEnter) {
+    c.postEnter(world);
+  }
+
+  const int steps = static_cast<int>(std::lround(totalTime / dt));
+  for (int k = 0; k < steps; ++k) {
+    world.step();
+  }
+  return jointPositionVector(world, c);
+}
+
 //==============================================================================
 // The harness test: iterate the corpus, run every family of every case from one
 // loop, log the rows, and assert finiteness + invariant + cross-family
@@ -660,6 +717,51 @@ TEST(CrossFamilyCorpus, AllScenesRunUnderEveryFamily)
   // Echo the table to stdout too, so the comparison is visible without parsing
   // the gtest XML property -- the rows ARE the deliverable of this harness.
   std::cout << "\n[cross-family corpus rows]\n" << table.str() << std::endl;
+}
+
+TEST(CrossFamilyCorpus, SmoothMultibodyScenesConvergeUnderTimeStepRefinement)
+{
+  const std::vector<SceneCase> corpus = makeCorpus();
+  ASSERT_FALSE(corpus.empty());
+
+  // Contact rows are deliberately excluded from this convergence sweep: impact
+  // activation is nonsmooth, so halving dt can move event timing rather than
+  // expose the integration order. The smooth multibody corpus rows have the
+  // same initial condition under every family and a continuous state
+  // trajectory, so self-convergence against a dt/4 reference is a meaningful
+  // gate.
+  constexpr double kTotalTime = 0.2;
+  constexpr double kCoarseDt = 2.0e-3;
+  constexpr double kMediumDt = 1.0e-3;
+  constexpr double kFineDt = 5.0e-4;
+
+  int checkedRows = 0;
+  for (const SceneCase& c : corpus) {
+    if (c.axis != FamilyAxis::MultibodyIntegration) {
+      continue;
+    }
+    for (const std::string& family : c.families) {
+      const Eigen::VectorXd coarse
+          = rollSmoothCaseJointPositions(c, family, kCoarseDt, kTotalTime);
+      const Eigen::VectorXd medium
+          = rollSmoothCaseJointPositions(c, family, kMediumDt, kTotalTime);
+      const Eigen::VectorXd fine
+          = rollSmoothCaseJointPositions(c, family, kFineDt, kTotalTime);
+      ASSERT_EQ(coarse.size(), medium.size()) << c.id << ":" << family;
+      ASSERT_EQ(medium.size(), fine.size()) << c.id << ":" << family;
+      ASSERT_GT(fine.size(), 0) << c.id << ":" << family;
+
+      const double coarseError = (coarse - fine).norm();
+      const double mediumError = (medium - fine).norm();
+      ASSERT_GT(coarseError, 1e-10) << c.id << ":" << family;
+      EXPECT_LT(mediumError, 0.8 * coarseError)
+          << c.id << ":" << family << " coarse=" << coarseError
+          << " medium=" << mediumError;
+      ++checkedRows;
+    }
+  }
+
+  EXPECT_GE(checkedRows, 4);
 }
 
 } // namespace
