@@ -30,24 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/external/convhull_3d/convhull_3d.h"
 
-// Check if we are using GCC or Clang
-#ifdef __GNUC__
-  #pragma GCC system_header
-  #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
+void dart_convhull_c_compat_smoke(void)
+{
+  ch_vertex vertex = {{{0.0, 0.0, 0.0}}};
+  ch_vertex* vertices = &vertex;
+  int* faces = 0;
+  int numFaces = 0;
+  CH_FLOAT* coefficients = 0;
+  CH_FLOAT* offsets = 0;
+  int* mesh = 0;
+  int numMesh = 0;
 
-// Check if we are using MSVC
-#elif defined(_MSC_VER)
-  #pragma warning(push, 0)
-  #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
-  #pragma warning(pop)
-
-// For other compilers, you might just include it normally or
-// add specific pragmas for those compilers
-#else
-  #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
-#endif
+  convhull_3d_build(vertices, 1, &faces, &numFaces);
+  convhull_nd_build(vertex.v, 1, 3, &faces, &coefficients, &offsets, &numFaces);
+  delaunay_nd_mesh((const float*)vertex.v, 1, 3, &mesh, &numMesh);
+}
