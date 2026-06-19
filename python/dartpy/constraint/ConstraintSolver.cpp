@@ -138,6 +138,16 @@ void ConstraintSolver(py::module& m)
             return self->getTimeStep();
           })
       .def(
+          "setNumThreads",
+          +[](dart::constraint::ConstraintSolver* self,
+              std::size_t numThreads) { self->setNumThreads(numThreads); },
+          ::py::arg("numThreads"))
+      .def(
+          "getNumThreads",
+          +[](const dart::constraint::ConstraintSolver* self) -> std::size_t {
+            return self->getNumThreads();
+          })
+      .def(
           "setCollisionDetector",
           +[](dart::constraint::ConstraintSolver* self,
               const std::shared_ptr<dart::collision::CollisionDetector>&

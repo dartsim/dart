@@ -49,6 +49,7 @@
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -57,6 +58,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <cstdint>
 
@@ -102,6 +104,10 @@ ConstraintSolver::ConstraintSolver()
   // incorrect contact point computation.
   // (see: https://github.com/flexible-collision-library/fcl/issues/106)
 }
+
+//==============================================================================
+// Kept out-of-line so there is one key function for this polymorphic class.
+ConstraintSolver::~ConstraintSolver() = default;
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -402,6 +408,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  setNumThreads(other.mNumThreads);
 }
 
 //==============================================================================
@@ -834,14 +841,43 @@ void ConstraintSolver::buildConstrainedGroups()
 }
 
 //==============================================================================
+void ConstraintSolver::setNumThreads(std::size_t numThreads)
+{
+  mNumThreads = (numThreads == 0) ? 1 : numThreads;
+}
+
+//==============================================================================
+void ConstraintSolver::setIslandSolveExecutor(
+    detail::IslandSolveExecutor* executor)
+{
+  mIslandSolveExecutor = executor;
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumThreads() const
+{
+  return mNumThreads;
+}
+
+//==============================================================================
+bool ConstraintSolver::isConstrainedGroupSolveThreadSafe() const
+{
+  // Conservative default: an unknown solver may keep mutable per-instance
+  // state, so the base solver never permits parallel island solving.
+  return false;
+}
+
+//==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
+  const std::size_t numGroups = mConstrainedGroups.size();
+
   static thread_local std::vector<char> groupAlreadyResting;
-  groupAlreadyResting.assign(mConstrainedGroups.size(), 1);
+  groupAlreadyResting.assign(numGroups, 1);
   static thread_local std::vector<char> groupSolvedToRest;
-  groupSolvedToRest.assign(mConstrainedGroups.size(), 0);
+  groupSolvedToRest.assign(numGroups, 0);
 
   if (mDeactivationActive) {
     for (const auto& skeleton : mSkeletons) {
@@ -858,32 +894,85 @@ void ConstraintSolver::solveConstrainedGroups()
     }
   }
 
-  for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
-    const bool groupCanRest = i < mGroupResting.size() && mGroupResting[i];
+  auto groupCanRest = [this](std::size_t i) {
+    return i < mGroupResting.size() && mGroupResting[i];
+  };
 
-    // Skip only islands that were already frozen at the start of this solve. A
-    // newly eligible island still needs one final solve to refresh the contact
-    // impulse and body-force caches before it is frozen for subsequent steps.
-    if (groupCanRest && groupAlreadyResting[i])
-      continue;
+  auto freezeSolvedGroups = [&]() {
+    for (const auto& skeleton : mSkeletons) {
+      const int island = skeleton->getIslandIndex();
+      if (island < 0)
+        continue;
 
-    solveConstrainedGroup(mConstrainedGroups[i]);
-
-    if (groupCanRest)
-      groupSolvedToRest[i] = 1;
-  }
-
-  for (const auto& skeleton : mSkeletons) {
-    const int island = skeleton->getIslandIndex();
-    if (island < 0)
-      continue;
-
-    const auto groupIndex = static_cast<std::size_t>(island);
-    if (groupIndex < groupSolvedToRest.size()
-        && groupSolvedToRest[groupIndex]) {
-      skeleton->setResting(true);
+      const auto groupIndex = static_cast<std::size_t>(island);
+      if (groupIndex < groupSolvedToRest.size()
+          && groupSolvedToRest[groupIndex]) {
+        skeleton->setResting(true);
+      }
     }
+  };
+
+  // Gather the indices of islands that actually need solving. Skip only
+  // islands that were already frozen at the start of this solve. A newly
+  // eligible island still needs one final solve to refresh the contact impulse
+  // and body-force caches before it is frozen for subsequent steps.
+  std::vector<std::size_t> active;
+  active.reserve(numGroups);
+  std::size_t totalWork = 0;
+  for (std::size_t i = 0; i < numGroups; ++i) {
+    if (groupCanRest(i) && groupAlreadyResting[i])
+      continue;
+    active.push_back(i);
+    const std::size_t n = mConstrainedGroups[i].getTotalDimension();
+    totalWork += n * n;
   }
+
+  auto solveActiveGroup = [&](std::size_t idx) {
+    solveConstrainedGroup(mConstrainedGroups[idx]);
+    if (groupCanRest(idx))
+      groupSolvedToRest[idx] = 1;
+  };
+
+  // Serial path (default, or whenever parallelism is unavailable/unsafe): this
+  // is byte-for-byte identical to the historical loop.
+  if (mNumThreads <= 1 || !mIslandSolveExecutor
+      || !isConstrainedGroupSolveThreadSafe()) {
+    for (std::size_t idx : active)
+      solveActiveGroup(idx);
+    freezeSolvedGroups();
+    return;
+  }
+
+  // Cost gate: parallelize only with at least two islands AND enough aggregate
+  // solve work to amortize the dispatch overhead. Without the work term, a
+  // scene with many tiny islands (e.g. light articulated chains) would be
+  // dispatched in parallel even though its solve is too cheap to benefit,
+  // making it slower than serial. The threshold keeps such scenes on the
+  // (faster) serial path.
+  constexpr std::size_t kMinIslandsForParallel = 2;
+  constexpr std::size_t kMinWorkForParallel = 8192; // ~ a single 90-row island
+  if (active.size() < kMinIslandsForParallel
+      || totalWork < kMinWorkForParallel) {
+    for (std::size_t idx : active)
+      solveActiveGroup(idx);
+    freezeSolvedGroups();
+    return;
+  }
+
+  // Solve independent islands on the persistent worker pool. Islands are a
+  // disjoint union-find partition (built serially in buildConstrainedGroups),
+  // so each skeleton is touched by exactly one worker and there is no
+  // cross-island floating-point reduction. The per-island results are therefore
+  // order-independent: the outcome is bit-identical to the serial loop and
+  // independent of the worker count or scheduling. Any lazy per-body cache fill
+  // during the solve (e.g. getArticulatedInertia) happens single-threaded for
+  // its skeleton, so no pre-warm is required. Each worker reuses its own
+  // thread_local LCP scratch across steps (see
+  // BoxedLcpConstraintSolver/PgsBoxedLcpSolver).
+  mIslandSolveExecutor->run(active.size(), [&](std::size_t k) {
+    solveActiveGroup(active[k]);
+  });
+  freezeSolvedGroups();
 }
 
 //==============================================================================

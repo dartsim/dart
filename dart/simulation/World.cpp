@@ -44,6 +44,7 @@
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 
@@ -100,6 +101,7 @@ WorldPtr World::clone() const
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
   worldClone->setDeactivationOptions(mDeactivationOptions);
+  worldClone->setNumThreads(mNumThreads);
 
   auto cd = getConstraintSolver()->getCollisionDetector();
   worldClone->getConstraintSolver()->setCollisionDetector(
@@ -186,20 +188,28 @@ void World::step(bool _resetCommand)
   // after _resetCommand clears the actuation vectors below. Disturbance
   // tracking is only needed while contact islands exist; unconstrained active
   // scenes cannot sleep.
-  std::vector<bool> disturbedThisStep;
+  // std::vector<char> (not <bool>): the integrate-velocity loop below may run
+  // in parallel and writes disturbedThisStep[i] for disjoint i; a bit-packed
+  // vector<bool> would make those concurrent writes race on shared words.
+  std::vector<char> disturbedThisStep;
   const bool trackDisturbances
       = deactivationEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
   if (trackDisturbances)
     disturbedThisStep.assign(mSkeletons.size(), false);
 
-  // Integrate velocity for unconstrained skeletons
+  // Integrate velocity for unconstrained skeletons. The per-skeleton work is
+  // independent (each skeleton owns its kinematics/dynamics caches and state),
+  // so it runs on the worker pool when enabled -- bit-identical to the serial
+  // loop because there is no cross-skeleton coupling and each disturbedThisStep
+  // entry is written by a single thread.
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
-    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    const std::size_t numSkeletons = mSkeletons.size();
+    auto integrateVelocity = [&](std::size_t i) {
       auto& skel = mSkeletons[i];
       if (!skel->isMobile())
-        continue;
+        return;
 
       const bool externallyDisturbed
           = deactivationEnabled && (trackDisturbances || skel->isResting())
@@ -217,13 +227,19 @@ void World::step(bool _resetCommand)
           skel->setResting(false);
           skel->setSleepCandidate(false);
         } else {
-          continue;
+          return;
         }
       }
 
       skel->computeForwardDynamics();
       skel->integrateVelocities(mTimeStep);
-    }
+    };
+
+    if (mExecutor && numSkeletons >= 8)
+      mExecutor->run(numSkeletons, integrateVelocity);
+    else
+      for (std::size_t i = 0; i < numSkeletons; ++i)
+        integrateVelocity(i);
   }
 
   // Detect activated constraints and compute constraint impulses
@@ -232,55 +248,68 @@ void World::step(bool _resetCommand)
     mConstraintSolver->solve();
   }
 
-  // Compute velocity changes given constraint impulses
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    auto& skel = mSkeletons[i];
-    if (!skel->isMobile())
-      continue;
+  // Compute velocity changes given constraint impulses, then integrate
+  // positions. Like the integrate-velocity loop this is per-skeleton and
+  // independent, so it runs on the worker pool when enabled -- bit-identical to
+  // the serial loop.
+  {
+    DART_PROFILE_SCOPED_N("World::step - Integrate position");
+    const std::size_t numSkeletons = mSkeletons.size();
+    auto integratePosition = [&](std::size_t i) {
+      auto& skel = mSkeletons[i];
+      if (!skel->isMobile())
+        return;
 
-    bool preservingFinalSleepSolve = false;
+      bool preservingFinalSleepSolve = false;
 
-    // A resting skeleton skips both the impulse-based forward dynamics and the
-    // position integration. The only exception is when an impulse was applied
-    // to it this step: that means a moving body contacted this island (the
-    // solver united them so the group was not all-resting and was solved),
-    // delivering an impulse. Such a skeleton must wake and be processed
-    // normally so the impulse is applied and the position is advanced. A
-    // newly sleep-eligible contact island also receives one final solved
-    // impulse before freezing so transmitted-wrench/body-force queries keep
-    // the last solved contact forces; that path processes the impulse but
-    // preserves the resting state.
-    if (deactivationEnabled && skel->isResting()) {
-      if (skel->isImpulseApplied()) {
-        if (skel->isSleepCandidate()) {
-          preservingFinalSleepSolve = true;
+      // A resting skeleton skips both the impulse-based forward dynamics and
+      // the position integration. The only exception is when an impulse was
+      // applied to it this step: that means a moving body contacted this island
+      // (the solver united them so the group was not all-resting and was
+      // solved), delivering an impulse. Such a skeleton must wake and be
+      // processed normally so the impulse is applied and the position is
+      // advanced. A newly sleep-eligible contact island also receives one final
+      // solved impulse before freezing so transmitted-wrench/body-force queries
+      // keep the last solved contact forces; that path processes the impulse
+      // but preserves the resting state.
+      if (deactivationEnabled && skel->isResting()) {
+        if (skel->isImpulseApplied()) {
+          if (skel->isSleepCandidate()) {
+            preservingFinalSleepSolve = true;
+          } else {
+            skel->setResting(false);
+            skel->setSleepCandidate(false);
+            if (!disturbedThisStep.empty())
+              disturbedThisStep[i] = true;
+          }
         } else {
-          skel->setResting(false);
-          skel->setSleepCandidate(false);
-          if (!disturbedThisStep.empty())
-            disturbedThisStep[i] = true;
+          return;
         }
-      } else {
-        continue;
       }
-    }
 
-    if (skel->isImpulseApplied()) {
-      skel->computeImpulseForwardDynamics();
-      skel->setImpulseApplied(false);
-    }
+      if (skel->isImpulseApplied()) {
+        skel->computeImpulseForwardDynamics();
+        skel->setImpulseApplied(false);
+      }
 
-    skel->integratePositions(mTimeStep);
+      skel->integratePositions(mTimeStep);
 
-    if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
-      skel->setVelocities(
-          Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
+      if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
+        skel->setVelocities(
+            Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
 
-    if (_resetCommand) {
-      skel->clearInternalForces();
-      skel->clearExternalForces();
-      skel->resetCommands();
-    }
+      if (_resetCommand) {
+        skel->clearInternalForces();
+        skel->clearExternalForces();
+        skel->resetCommands();
+      }
+    };
+
+    if (mExecutor && numSkeletons >= 8)
+      mExecutor->run(numSkeletons, integratePosition);
+    else
+      for (std::size_t i = 0; i < numSkeletons; ++i)
+        integratePosition(i);
   }
 
   // Rest-detection pass: decide which mobile skeletons are quiet enough to
@@ -296,7 +325,7 @@ void World::step(bool _resetCommand)
 }
 
 //==============================================================================
-void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
+void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
   DART_PROFILE_SCOPED_N("World::step - Rest detection");
 
@@ -727,6 +756,31 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);
+  mConstraintSolver->setNumThreads(mNumThreads);
+  mConstraintSolver->setIslandSolveExecutor(mExecutor.get());
+}
+
+//==============================================================================
+void World::setNumThreads(std::size_t numThreads)
+{
+  mNumThreads = (numThreads == 0) ? 1 : numThreads;
+  if (mNumThreads <= 1) {
+    mExecutor.reset();
+  } else if (!mExecutor || mExecutor->getNumThreads() != mNumThreads) {
+    mExecutor = std::make_unique<constraint::detail::IslandSolveExecutor>(
+        mNumThreads);
+  }
+  if (mConstraintSolver) {
+    mConstraintSolver->setNumThreads(mNumThreads);
+    // Share this one pool with the solver's island solve.
+    mConstraintSolver->setIslandSolveExecutor(mExecutor.get());
+  }
+}
+
+//==============================================================================
+std::size_t World::getNumThreads() const
+{
+  return mNumThreads;
 }
 
 //==============================================================================

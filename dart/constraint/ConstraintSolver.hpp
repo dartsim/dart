@@ -43,6 +43,7 @@
 
 #include <Eigen/Dense>
 
+#include <memory>
 #include <vector>
 
 namespace dart {
@@ -53,6 +54,10 @@ class ShapeNodeCollisionObject;
 } // namespace dynamics
 
 namespace constraint {
+
+namespace detail {
+class IslandSolveExecutor;
+} // namespace detail
 
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
@@ -79,7 +84,7 @@ public:
   ConstraintSolver(const ConstraintSolver& other) = delete;
 
   /// Destructor
-  virtual ~ConstraintSolver() = default;
+  virtual ~ConstraintSolver();
 
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -218,6 +223,24 @@ public:
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
+  /// Sets the number of worker threads used to solve independent constraint
+  /// islands in parallel. Default 1 (serial) is bit-for-bit identical to prior
+  /// behavior. Values > 1 are honored only when the configured boxed-LCP
+  /// solvers are known-reentrant built-ins (Dantzig primary with a
+  /// default-option PGS or no secondary); otherwise the solve falls back to
+  /// serial. Parallel results are deterministic and independent of the thread
+  /// count.
+  void setNumThreads(std::size_t numThreads);
+
+  /// Returns the number of worker threads used for the constraint solve.
+  std::size_t getNumThreads() const;
+
+  /// Injects the (caller-owned) worker pool used for parallel island solving.
+  /// The owning World shares a single pool between step()'s per-skeleton loops
+  /// and this solver. Passing nullptr restores serial island solving. The pool
+  /// must outlive this solver's use of it.
+  void setIslandSolveExecutor(detail::IslandSolveExecutor* executor);
+
   /// Sets this constraint solver using other constraint solver. All the
   /// properties and registered skeletons and constraints will be copied over.
   virtual void setFromOtherConstraintSolver(const ConstraintSolver& other);
@@ -270,6 +293,12 @@ protected:
 
   /// Solve constrained groups
   void solveConstrainedGroups();
+
+  /// Returns true if independent constraint islands may be solved on separate
+  /// threads with the currently configured solvers. The base implementation
+  /// returns false; BoxedLcpConstraintSolver overrides it to allow parallel
+  /// solving only when its LCP solvers are reentrant built-ins.
+  virtual bool isConstrainedGroupSolveThreadSafe() const;
 
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;
@@ -338,6 +367,15 @@ protected:
 
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
+
+  /// Number of worker threads for the island constraint solve. 1 == serial
+  /// (default). See setNumThreads().
+  std::size_t mNumThreads = 1;
+
+  /// Non-owning worker pool used for parallel island solving. It is owned by
+  /// the World, which shares one pool between step()'s per-skeleton loops and
+  /// this solver, and injected via setIslandSolveExecutor(). Null => serial.
+  detail::IslandSolveExecutor* mIslandSolveExecutor = nullptr;
 };
 
 } // namespace constraint

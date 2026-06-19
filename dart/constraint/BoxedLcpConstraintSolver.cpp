@@ -43,12 +43,30 @@
 
 #include <iomanip>
 #include <iostream>
+#include <memory>
 
 #include <cassert>
 #include <cmath>
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+// Per-thread LCP assembly buffers, reused across steps. thread_local so that a
+// parallel island solve can give each worker private scratch without changing
+// the solver's class layout (ABI). solveConstrainedGroup aliases these to the
+// historical mA/mX/... names so the assembly math below stays verbatim.
+struct LcpWorkspace
+{
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      ABackup;
+  Eigen::VectorXd X, XBackup, B, BBackup, W, Lo, LoBackup, Hi, HiBackup;
+  Eigen::VectorXi FIndex, FIndexBackup, Offset;
+};
+
+} // namespace
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
@@ -140,6 +158,30 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
 }
 
 //==============================================================================
+bool BoxedLcpConstraintSolver::isConstrainedGroupSolveThreadSafe() const
+{
+  // The Dantzig primary allocates its own scratch internally, so it is
+  // reentrant. solveConstrainedGroup and the PGS secondary now keep their
+  // working buffers in thread_local scratch, so a shared instance is reentrant
+  // too -- except that PGS constraint-order randomization draws from ODE's
+  // global RNG, which is neither thread-safe nor deterministic. A custom
+  // user-supplied solver may keep mutable per-instance state, so it is treated
+  // as unsafe and forces the serial path.
+  if (!std::dynamic_pointer_cast<const DantzigBoxedLcpSolver>(mBoxedLcpSolver))
+    return false;
+
+  if (!mSecondaryBoxedLcpSolver)
+    return true;
+
+  const auto pgs = std::dynamic_pointer_cast<const PgsBoxedLcpSolver>(
+      mSecondaryBoxedLcpSolver);
+  if (!pgs)
+    return false;
+
+  return !pgs->getOption().mRandomizeConstraintOrder;
+}
+
+//==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
   DART_PROFILE_SCOPED;
@@ -163,6 +205,25 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   constraintPtrs.resize(numConstraints);
   for (std::size_t i = 0; i < numConstraints; ++i)
     constraintPtrs[i] = group.getConstraint(i).get();
+
+  // LCP working buffers, reused across steps but thread_local so a parallel
+  // island solve gives each worker private scratch. Aliased to the historical
+  // member names so the assembly/solve code below is unchanged.
+  static thread_local LcpWorkspace tlws;
+  auto& mA = tlws.A;
+  auto& mABackup = tlws.ABackup;
+  auto& mX = tlws.X;
+  auto& mXBackup = tlws.XBackup;
+  auto& mB = tlws.B;
+  auto& mBBackup = tlws.BBackup;
+  auto& mW = tlws.W;
+  auto& mLo = tlws.Lo;
+  auto& mLoBackup = tlws.LoBackup;
+  auto& mHi = tlws.Hi;
+  auto& mHiBackup = tlws.HiBackup;
+  auto& mFIndex = tlws.FIndex;
+  auto& mFIndexBackup = tlws.FIndexBackup;
+  auto& mOffset = tlws.Offset;
 
   const int nSkip = dPAD(n);
 #if DART_BUILD_MODE_RELEASE

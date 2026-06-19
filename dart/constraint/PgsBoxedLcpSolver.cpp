@@ -89,6 +89,16 @@ bool PgsBoxedLcpSolver::solve(
 {
   const int nskip = dPAD(n);
 
+  // Scratch reused across calls, but thread_local so this solver instance can
+  // be shared by parallel island solves without racing on these caches (the
+  // rest of PGS reads only the caller-provided A/x/b/lo/hi/findex, which are
+  // per-island). Aliased to the historical member names so the solve body stays
+  // verbatim.
+  static thread_local std::vector<double> tlCacheD;
+  static thread_local std::vector<int> tlCacheOrder;
+  auto& mCacheD = tlCacheD;
+  auto& mCacheOrder = tlCacheOrder;
+
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
   if (nub >= n) {

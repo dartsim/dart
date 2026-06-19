@@ -72,6 +72,9 @@ class Skeleton;
 
 namespace constraint {
 class ConstraintSolver;
+namespace detail {
+class IslandSolveExecutor;
+} // namespace detail
 } // namespace constraint
 
 namespace collision {
@@ -262,6 +265,16 @@ public:
   /// Get the constraint solver
   const constraint::ConstraintSolver* getConstraintSolver() const;
 
+  /// Sets the number of worker threads World::step() may use for independent
+  /// per-skeleton loops and constraint islands. Default 1 (serial) is
+  /// bit-for-bit identical to previous behavior. The setting is forwarded to
+  /// the constraint solver and re-applied if the solver is replaced. See
+  /// ConstraintSolver::setNumThreads for the determinism and fallback rules.
+  void setNumThreads(std::size_t numThreads);
+
+  /// Returns the configured World::step() worker-thread count.
+  std::size_t getNumThreads() const;
+
   //--------------------------------------------------------------------------
   // Automatic deactivation ("sleeping")
   //--------------------------------------------------------------------------
@@ -351,7 +364,7 @@ protected:
   /// moving again. \p disturbedThisStep marks skeletons that were woken or kept
   /// awake during this step (by a pending force/command or an applied impulse),
   /// indexed in parallel with mSkeletons.
-  void updateRestStates(const std::vector<bool>& disturbedThisStep);
+  void updateRestStates(const std::vector<char>& disturbedThisStep);
 
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
@@ -410,6 +423,17 @@ protected:
 
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
+
+  /// Worker-thread count for independent World::step() loops and constraint
+  /// islands (1 == serial). Stored here so it survives a
+  /// setConstraintSolver() replacement.
+  std::size_t mNumThreads = 1;
+
+  /// Persistent worker pool for the per-skeleton forward-dynamics loops in
+  /// step(). Null unless mNumThreads > 1. The integrate-velocity/position loops
+  /// are independent across skeletons, so running them on this pool is
+  /// bit-identical to the serial loop.
+  std::unique_ptr<constraint::detail::IslandSolveExecutor> mExecutor;
 
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
