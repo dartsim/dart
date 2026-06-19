@@ -2,6 +2,15 @@
 
 ## DART 6
 
+### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
+
+* Build
+
+  * Replace the installed vendored `dart/external/convhull_3d` headers with a
+    DART-owned native `dart/math/detail/convhull.hpp` implementation used by
+    `math::computeConvexHull3D`, keeping the public math/TriMesh behavior
+    covered by focused tests: [#3076](https://github.com/dartsim/dart/pull/3076)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
