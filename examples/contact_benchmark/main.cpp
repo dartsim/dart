@@ -1613,7 +1613,7 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
   const auto startTime = std::chrono::steady_clock::now();
 
   {
-    DART_PROFILE_SCOPED_N("sdf_perf_test::runHeadless");
+    DART_PROFILE_SCOPED_N("contact_benchmark::runHeadless");
     for (std::size_t step = 0; step < options.steps; ++step) {
       {
         DART_PROFILE_SCOPED_N("world->step");
