@@ -334,7 +334,7 @@ def validate_packet(
     if missing:
         raise Phase5PacketError("missing median benchmark rows: " + ", ".join(missing))
 
-    for name in (cpu_name, gpu_name):
+    for name, expected_backend in ((cpu_name, "cpu"), (gpu_name, "cuda")):
         row = _find_median_row(rows, name)
         if row is None:
             raise Phase5PacketError(f"missing median benchmark row: {name}")
@@ -343,6 +343,11 @@ def validate_packet(
         )
         if errors:
             raise Phase5PacketError(errors[0])
+        if row["backend"] != expected_backend:
+            raise Phase5PacketError(
+                f"phase5_gpu_packet.benchmarks[{name}].backend must be "
+                f"{expected_backend!r}"
+            )
         if row["lane_count"] != world_count:
             raise Phase5PacketError(
                 f"phase5_gpu_packet.benchmarks[{name}].lane_count must match "

@@ -201,6 +201,33 @@ def test_phase5_packet_validator_uses_shared_canonical_rows():
     assert summary["speedup"] == 2.0
 
 
+def test_phase5_packet_validator_rejects_swapped_backend_labels():
+    phase5 = load_script_module("check_phase5_gpu_packet")
+    data = phase5.make_packet_template()
+    metadata = data["phase5_gpu_packet"]
+    metadata["includes_transfer_setup_compute_readback"] = True
+    metadata["max_final_state_abs_error"] = 1e-12
+    for key in phase5.REQUIRED_EVIDENCE_FLAGS:
+        metadata[key] = True
+    cpu_row, gpu_row = data["benchmarks"]
+    cpu_row["backend"] = "cuda"
+    gpu_row["backend"] = "cpu"
+    cpu_row["real_time"] = 4.0
+    cpu_row["cpu_time"] = 4.0
+    gpu_row["real_time"] = 2.0
+    gpu_row["cpu_time"] = 2.0
+
+    try:
+        phase5.validate_packet(data)
+    except phase5.Phase5PacketError as exc:
+        assert (
+            "phase5_gpu_packet.benchmarks[BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100].backend must be 'cpu'"
+            in str(exc)
+        )
+    else:
+        raise AssertionError("expected swapped backend labels to fail")
+
+
 def test_phase5_packet_validator_rejects_missing_batched_row_metadata():
     phase5 = load_script_module("check_phase5_gpu_packet")
     data = phase5.make_packet_template()
