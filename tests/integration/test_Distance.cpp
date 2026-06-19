@@ -344,3 +344,56 @@ TEST(Distance, UsesMinimumAcrossPairs)
       || (result.shapeFrame1 == frame2.get()
           && result.shapeFrame2 == frame1.get()));
 }
+
+//==============================================================================
+TEST(Distance, PlanePlaneSeparatedHalfspaces)
+{
+  auto fcl = FCLCollisionDetector::create();
+
+  auto lower = SimpleFrame::createShared(Frame::World());
+  auto upper = SimpleFrame::createShared(Frame::World());
+
+  lower->setShape(std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  upper->setShape(
+      std::make_shared<PlaneShape>(-Eigen::Vector3d::UnitZ(), -1.0));
+
+  collision::DistanceOption option;
+  option.enableNearestPoints = true;
+
+  const auto expectSeparatedPlanes
+      = [&](const collision::DistanceResult& result) {
+          ASSERT_TRUE(result.found());
+          EXPECT_NEAR(1.0, result.minDistance, 1e-12);
+          EXPECT_TRUE(
+              (result.shapeFrame1 == lower.get()
+               && result.shapeFrame2 == upper.get())
+              || (result.shapeFrame1 == upper.get()
+                  && result.shapeFrame2 == lower.get()));
+
+          if (result.shapeFrame1 == lower.get()) {
+            EXPECT_TRUE(
+                result.nearestPoint1.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+            EXPECT_TRUE(
+                result.nearestPoint2.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+          } else {
+            EXPECT_TRUE(
+                result.nearestPoint1.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+            EXPECT_TRUE(
+                result.nearestPoint2.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+          }
+        };
+
+  collision::DistanceResult result;
+  auto lowerGroup = fcl->createCollisionGroup(lower.get());
+  auto upperGroup = fcl->createCollisionGroup(upper.get());
+  const double distance
+      = lowerGroup->distance(upperGroup.get(), option, &result);
+  EXPECT_NEAR(1.0, distance, 1e-12);
+  expectSeparatedPlanes(result);
+
+  result.clear();
+  auto combinedGroup = fcl->createCollisionGroup(lower.get(), upper.get());
+  const double internalDistance = combinedGroup->distance(option, &result);
+  EXPECT_NEAR(1.0, internalDistance, 1e-12);
+  expectSeparatedPlanes(result);
+}
