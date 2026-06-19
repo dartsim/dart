@@ -42,6 +42,27 @@ function(dart_find_imgui_header out_var header_name)
   set(${out_var} "${${resolved_header_var}}" PARENT_SCOPE)
 endfunction()
 
+function(dart_try_find_imgui_header out_var header_name)
+  foreach(search_dir IN LISTS ARGN)
+    if(NOT search_dir OR NOT IS_DIRECTORY "${search_dir}")
+      continue()
+    endif()
+
+    foreach(candidate_dir
+        "${search_dir}"
+        "${search_dir}/imgui"
+        "${search_dir}/imgui/backends"
+        "${search_dir}/backends")
+      if(EXISTS "${candidate_dir}/${header_name}")
+        set(${out_var} "${candidate_dir}/${header_name}" PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endforeach()
+
+  set(${out_var} "" PARENT_SCOPE)
+endfunction()
+
 function(dart_find_imgui_source out_var source_name)
   foreach(search_dir IN LISTS ARGN)
     if(NOT search_dir OR NOT IS_DIRECTORY "${search_dir}")
@@ -206,6 +227,28 @@ if(DART_USE_SYSTEM_IMGUI)
     list(APPEND imgui_header_search_dirs ${imgui_target_include_dirs})
   endif()
 
+  set(imgui_missing_compat_headers)
+  foreach(imgui_header_name IN LISTS imgui_header_names)
+    dart_try_find_imgui_header(
+      imgui_compat_header
+      "${imgui_header_name}"
+      ${imgui_header_search_dirs}
+    )
+    if(NOT imgui_compat_header)
+      list(APPEND imgui_missing_compat_headers "${imgui_header_name}")
+    endif()
+  endforeach()
+  if(imgui_missing_compat_headers AND NOT DART_BUILD_GUI_OSG)
+    string(REPLACE ";" ", " imgui_missing_compat_headers_text
+      "${imgui_missing_compat_headers}"
+    )
+    message(STATUS
+      "Skipping dart-external-imgui: system ImGui compatibility headers were "
+      "not found (${imgui_missing_compat_headers_text})"
+    )
+    return()
+  endif()
+
   dart_configure_imgui_compat_headers(
     imgui_compat_headers ${imgui_header_search_dirs}
   )
@@ -230,9 +273,9 @@ if(DART_USE_SYSTEM_IMGUI)
     #include <imgui_impl_opengl2.h>
     int main()
     {
-      (void)&ImGui_ImplOpenGL2_Init;
-      (void)&ImGui_ImplOpenGL2_NewFrame;
-      (void)&ImGui_ImplOpenGL2_RenderDrawData;
+      ImGui_ImplOpenGL2_Init();
+      ImGui_ImplOpenGL2_NewFrame();
+      ImGui_ImplOpenGL2_RenderDrawData(nullptr);
       return 0;
     }
     "
