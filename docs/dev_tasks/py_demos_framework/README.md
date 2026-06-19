@@ -46,9 +46,11 @@ and replay metadata.
         metadata so Sequential Impulse and the DART 6-style boxed-LCP contact
         path can be inspected from the live demo. The panel also has one-click
         baseline presets for the default Sequential Impulse and boxed-LCP
-        contact paths. Realtime rigid workflow rows keep the rigid-body solver
-        fixed to the Sequential Impulse path; use `rigid_solver_compare` and the
-        explicit IPC shelf scenes for SI-vs-IPC visual inspection.
+        contact paths, plus a route into the side-by-side
+        `rigid_contact_solver_compare` row. Realtime rigid workflow rows keep
+        the rigid-body solver fixed to the Sequential Impulse path; use
+        `rigid_solver_compare` and the explicit IPC shelf scenes for SI-vs-IPC
+        visual inspection.
   - [x] Scriptable contact-policy capture: `py-demo-capture` can restore
         scene-owned replay state before launch via `--scene-state-json`, and
         `--capture-label` gives stateful A/B captures distinct artifact stems

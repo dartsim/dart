@@ -3382,6 +3382,25 @@ def test_rigid_body_panel_contact_baseline_presets_reset_scene() -> None:
     assert len(controller._speed_history) == 1
 
 
+def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open contact comparison"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open contact comparison" in builder.events
+    assert (
+        "tooltip:Open the side-by-side Sequential Impulse and boxed-LCP policy row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_contact_solver_compare"]
+    assert controller.contact_method_index == 0
+
+
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     _require_simulation_symbols("World", "CollisionQueryOptions")
 
