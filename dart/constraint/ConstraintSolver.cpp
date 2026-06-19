@@ -1027,6 +1027,14 @@ void ConstraintSolver::solveConstrainedGroups()
           }
         }
 
+        if (const auto* softContact
+            = dynamic_cast<const SoftContactConstraint*>(constraint)) {
+          if (touchesSharedDependency(softContact->mBodyNode1, idx)
+              || touchesSharedDependency(softContact->mBodyNode2, idx)) {
+            return true;
+          }
+        }
+
         if (const auto* dynamicJoint
             = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
           if (touchesSharedDependency(dynamicJoint->getBodyNode1(), idx)

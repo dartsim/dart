@@ -31,6 +31,9 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -38,11 +41,15 @@
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -99,6 +106,84 @@ class DerivedDantzigBoxedLcpSolver final
 
 class DerivedPgsBoxedLcpSolver final : public constraint::PgsBoxedLcpSolver
 {
+};
+
+class FakeCollisionObject final : public collision::CollisionObject
+{
+public:
+  FakeCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : collision::CollisionObject(detector, shapeFrame)
+  {
+  }
+
+protected:
+  void updateEngineData() override {}
+};
+
+class FakeCollisionDetector final : public collision::CollisionDetector
+{
+public:
+  std::shared_ptr<collision::CollisionDetector> cloneWithoutCollisionObjects()
+      const override
+  {
+    return std::make_shared<FakeCollisionDetector>();
+  }
+
+  const std::string& getType() const override
+  {
+    static const std::string type = "FakeCollisionDetector";
+    return type;
+  }
+
+  std::unique_ptr<collision::CollisionGroup> createCollisionGroup() override
+  {
+    return nullptr;
+  }
+
+  bool collide(
+      collision::CollisionGroup*,
+      const collision::CollisionOption& = collision::CollisionOption(),
+      collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  bool collide(
+      collision::CollisionGroup*,
+      collision::CollisionGroup*,
+      const collision::CollisionOption& = collision::CollisionOption(),
+      collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  double distance(
+      collision::CollisionGroup*,
+      const collision::DistanceOption& = collision::DistanceOption(),
+      collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+  double distance(
+      collision::CollisionGroup*,
+      collision::CollisionGroup*,
+      const collision::DistanceOption& = collision::DistanceOption(),
+      collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+protected:
+  std::unique_ptr<collision::CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame*) override
+  {
+    return nullptr;
+  }
+
+  void refreshCollisionObject(collision::CollisionObject*) override {}
 };
 
 class ExposedBoxedLcpConstraintSolver final
@@ -214,6 +299,22 @@ dynamics::BodyNode* createFreeBody(
   return body;
 }
 
+dynamics::SoftBodyNode* createSoftBody(
+    const std::string& name,
+    bool mobile,
+    std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto body = skeleton
+                  ->createJointAndBodyNodePair<
+                      dynamics::FreeJoint,
+                      dynamics::SoftBodyNode>()
+                  .second;
+  skeleton->setMobile(mobile);
+  skeletons.push_back(skeleton);
+  return body;
+}
+
 std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
     const std::string& name, std::vector<dynamics::SkeletonPtr>& skeletons)
 {
@@ -224,6 +325,16 @@ std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
       = rootPair.second->createChildJointAndBodyNodePair<dynamics::BallJoint>();
   skeletons.push_back(skeleton);
   return {rootPair.second, childPair.second};
+}
+
+std::shared_ptr<constraint::SoftContactConstraint> createSoftContactConstraint(
+    collision::Contact& contact)
+{
+  auto constraint
+      = std::make_shared<constraint::SoftContactConstraint>(contact, 0.001);
+  constraint::ConstraintBase& base = *constraint;
+  base.update();
+  return constraint;
 }
 
 } // namespace
@@ -397,6 +508,60 @@ TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialGroupSolves)
       std::make_shared<FakeConstraint>(100),
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody2, mixedBodies.first, Eigen::Vector3d::Zero()),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* softBody = createSoftBody("soft", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ASSERT_FALSE(softBody->isReactive());
+  ASSERT_TRUE(dynamicBody1->isReactive());
+  ASSERT_TRUE(dynamicBody2->isReactive());
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* softShapeNode = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode1 = dynamicBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode2 = dynamicBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject softObject(&detector, softShapeNode);
+  FakeCollisionObject dynamicObject1(&detector, dynamicShapeNode1);
+  FakeCollisionObject dynamicObject2(&detector, dynamicShapeNode2);
+
+  collision::Contact contact1;
+  contact1.collisionObject1 = &dynamicObject1;
+  contact1.collisionObject2 = &softObject;
+  contact1.point = Eigen::Vector3d::Zero();
+  contact1.normal = Eigen::Vector3d::UnitZ();
+
+  collision::Contact contact2 = contact1;
+  contact2.collisionObject1 = &dynamicObject2;
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(contact1),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(contact2),
   });
 
   solver.solveGroupsForTest();
