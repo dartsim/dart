@@ -9,6 +9,7 @@ dart_build_tests(
 )
 
 add_library(UNIT_math_LegacyConvexHullC OBJECT test_LegacyConvexHullC.c)
+dart_property_add(DART_unit_TESTS UNIT_math_LegacyConvexHullC)
 target_include_directories(
   UNIT_math_LegacyConvexHullC
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
