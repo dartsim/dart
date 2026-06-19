@@ -69,6 +69,7 @@ docs/readthedocs/site
 docs/readthedocs/_build/
 docs/readthedocs/_generated/
 docs/readthedocs/_generated_stubs/
+docs/python_api/_build/
 
 # Data files
 data/screencap/*
@@ -122,6 +123,7 @@ compile_flags.txt
 # AI tool local state
 .omc/
 .omx/
+.omo/
 .sisyphus/
 
 # AI agent project files

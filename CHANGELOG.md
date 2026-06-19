@@ -20,6 +20,17 @@
     as a unit-test fixture:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+* Python
+
+  * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
+    including a Python analytical callback bridge that lets ssik-like solvers
+    feed DART's native analytical and whole-body IK pipeline.
+
+* Examples
+
+  * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
+    prebuilt IK modules and changing target and solver options online.
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
