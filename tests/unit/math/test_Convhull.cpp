@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/external/convhull_3d/safe_convhull_3d.h"
 #include "dart/math/detail/convhull.hpp"
 
 #include <Eigen/Geometry>
@@ -40,6 +41,8 @@
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
+
+#include <cstdlib>
 
 using dart::math::detail::convexHull3dBuild;
 
@@ -67,6 +70,34 @@ TEST(ConvhullInternal, SortFloatAndInt)
   EXPECT_EQ(ints[0], 1);
   EXPECT_EQ(ints[1], 2);
   EXPECT_EQ(ints[2], 3);
+}
+
+//==============================================================================
+TEST(ConvhullCompatibility, BuildThroughInstalledHeader)
+{
+  std::array<ch_vertex, 4> vertices{};
+  vertices[0].x = 0.0;
+  vertices[0].y = 0.0;
+  vertices[0].z = 0.0;
+  vertices[1].x = 1.0;
+  vertices[1].y = 0.0;
+  vertices[1].z = 0.0;
+  vertices[2].x = 0.0;
+  vertices[2].y = 1.0;
+  vertices[2].z = 0.0;
+  vertices[3].x = 0.0;
+  vertices[3].y = 0.0;
+  vertices[3].z = 1.0;
+
+  int* faces = nullptr;
+  int numFaces = 0;
+  convhull_3d_build(
+      vertices.data(), static_cast<int>(vertices.size()), &faces, &numFaces);
+
+  ASSERT_NE(faces, nullptr);
+  EXPECT_EQ(numFaces, 4);
+
+  std::free(faces);
 }
 
 //==============================================================================

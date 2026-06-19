@@ -117,7 +117,8 @@ ODE in the Gazebo feature lane.
 - Status: in progress on `chore/replace-convhull-3d-release-6.20`.
 - Plan: replace the vendored C implementation with the DART-owned native
   `dart/math/detail/convhull.hpp` implementation adapted from DART 7, update
-  the geometry include, and remove the external target/install rule.
+  the geometry include, and keep the old installed `dart/external/convhull_3d`
+  include path as a small compatibility adapter.
 - Validation: `pixi run build-tests`, focused `UNIT_math_Convhull` and
   `UNIT_math_TriMesh`, plus the branch-required formatting gate.
 
@@ -207,8 +208,8 @@ OpenSceneGraph and GLUT GUI dependencies
    Pixi/package path one surface at a time, preserving explicit feature
    environments and component builds.
 3. **Low-risk native replacements.** Replace `convhull_3d` with DART-owned
-   native math detail code, then move IKFast with a compatibility-forwarder
-   decision.
+   native math detail code behind the old installed include path, then move
+   IKFast with a compatibility-forwarder decision.
 4. **ImGui vendored-source removal.** Prefer system ImGui or an approved fetch
    fallback while preserving the DART 6 OSG GUI component.
 5. **GUI screenshot dependency decision.** Replace `lodepng` only after the
