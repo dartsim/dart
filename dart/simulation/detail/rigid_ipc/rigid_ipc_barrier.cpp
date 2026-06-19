@@ -36,7 +36,7 @@
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Cholesky>
 

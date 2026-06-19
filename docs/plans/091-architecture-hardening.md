@@ -576,7 +576,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   copies in the sequential-impulse scratch (lives in
   `dart/simulation/compute/world_step_stage.{hpp,cpp}` — touch only the
   contact-assembly region of that multi-family file; WP-091.15 owns the
-  split), `detail/boxed_lcp_contact.*`, and `detail/contact_jacobians.*`;
+  split), `detail/rigid_contact/boxed_lcp_contact.*`, and `detail/contact_jacobians.*`;
   single-source the contact constants.
 - Non-goals: changing contact physics; AVBD's endpoint classification;
   restructuring `world_step_stage.cpp` beyond the assembly region.
@@ -594,8 +594,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   (`kRigidContactRestitutionThreshold` = 1e-3, `kRigidContactFrictionCfm` = 1e-5)
   were duplicated verbatim across the three rigid-contact translation units.
   They now live once in the new header
-  `dart/simulation/detail/rigid_contact_assembly.hpp`;
-  `compute/rigid_body_constraint.cpp`, `detail/boxed_lcp_contact.cpp`, and
+  `dart/simulation/detail/rigid_contact/rigid_contact_assembly.hpp`;
+  `compute/rigid_body_constraint.cpp`, `detail/rigid_contact/boxed_lcp_contact.cpp`, and
   `detail/contact_jacobians.cpp` include it and use the shared definitions
   (`rigid_body_constraint` qualifies them `detail::` and drops its
   `inverseMass`/`inverseWorldInertia` spellings for the shared `…Of` names; its
@@ -685,7 +685,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   byte-order reasoning against the old PFR record (no committed pre-v20 binary
   fixture in the suite) — a follow-up could add one.
 
-#### WP-091.15 Family-scoped source layout
+#### WP-091.15 Family-scoped source layout [claimed]
 
 - Objective: each solver family's runtime lives in its own module under
   `dart/simulation/detail/`, ending the multi-family monolithic translation
@@ -700,6 +700,25 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   moved headers.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: WP-091.2, WP-091.10, WP-091.14.
+- Evidence: the former multi-family
+  `dart/simulation/compute/world_step_stage.cpp` translation unit is split by
+  stage/family responsibility: shared pipeline/profiling/kinematics setup lives
+  in `world_step_pipeline.cpp`; rigid velocity/position integration in
+  `rigid_body_integration_stage.cpp`; homogeneous rigid batch integration in
+  `batched_rigid_body_integration_stage.cpp`; sequential/boxed-LCP/AVBD rigid
+  contact dispatch in `rigid_body_contact_stage.cpp`; rigid IPC contact in
+  `rigid_ipc_contact_stage.cpp`; and deformable dynamics in
+  `deformable_dynamics_stage.cpp`, with the shared stage-owned scratch helper
+  isolated in `compute/detail/stage_scratch.hpp`. Flat rigid detail files now
+  live under family modules:
+  `detail/rigid_contact/{boxed_lcp_contact,rigid_contact_assembly}.*` and
+  `detail/rigid_ipc/{rigid_ipc_barrier,rigid_ipc_ccd}.*`; all code/test/doc
+  includers were rewritten, and
+  `rg -n "detail/(rigid_ipc_barrier|rigid_ipc_ccd|boxed_lcp_contact|rigid_contact_assembly)|dart/simulation/detail/(rigid_ipc_barrier|rigid_ipc_ccd|boxed_lcp_contact|rigid_contact_assembly)" dart tests python scripts .github docs/plans docs/design docs/dev_tasks docs/onboarding -g'!*_build*' -g'!*_generated*'`
+  is grep-clean. Verification: `pixi run lint`, `pixi run build`,
+  `pixi run test-unit` (163/163), and
+  `ctest --test-dir build/default/cpp/Release -R test_world_default_step_golden --output-on-failure`
+  (1/1) pass.
 
 ### WS2 — Physical data architecture
 

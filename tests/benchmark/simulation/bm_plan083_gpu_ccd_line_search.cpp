@@ -33,7 +33,7 @@
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/deformable_contact/continuous_collision_step.hpp>
-#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <dart/collision/native/types.hpp>

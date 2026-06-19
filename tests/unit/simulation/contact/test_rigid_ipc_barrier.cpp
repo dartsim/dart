@@ -30,7 +30,7 @@
  */
 
 #include <dart/simulation/detail/deformable_contact/barrier_kernel.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
 
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>

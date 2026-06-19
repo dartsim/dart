@@ -38,7 +38,7 @@
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
-#include "dart/simulation/detail/rigid_contact_assembly.hpp"
+#include "dart/simulation/detail/rigid_contact/rigid_contact_assembly.hpp"
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>

@@ -95,7 +95,7 @@ Added an **opt-in boxed-LCP rigid-body contact path** to the DART 7 World
 
 - `WorldOptions::contactSolverMethod` = `SequentialImpulse` (default, unchanged)
   | `BoxedLcp`; `World::getContactSolverMethod()`.
-- `detail/boxed_lcp_contact.{hpp,cpp}` — `solveBoxedLcpContacts(...)`
+- `detail/rigid_contact/boxed_lcp_contact.{hpp,cpp}` — `solveBoxedLcpContacts(...)`
   (`DART_SIMULATION_API`, exported, `nm`-verified) assembles `A = J M⁻¹ Jᵀ`,
   `b = −J v_free + bias`, one normal row plus two Coulomb tangent rows per
   contact (`findex`-coupled box bounds), solves with `dart::math::DantzigSolver`,

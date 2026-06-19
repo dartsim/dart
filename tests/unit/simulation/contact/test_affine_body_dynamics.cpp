@@ -30,7 +30,7 @@
  */
 
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>

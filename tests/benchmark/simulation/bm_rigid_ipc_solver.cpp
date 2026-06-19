@@ -45,8 +45,8 @@
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
-#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <Eigen/Core>

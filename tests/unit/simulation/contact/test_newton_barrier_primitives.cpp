@@ -44,7 +44,7 @@
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/restitution_damping.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
-#include <dart/simulation/detail/rigid_ipc_barrier.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp>
 
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>

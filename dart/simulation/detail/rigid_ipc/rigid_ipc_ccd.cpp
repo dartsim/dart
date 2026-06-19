@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/detail/rigid_ipc_ccd.hpp>
+#include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 
 #include <Eigen/Geometry>
 

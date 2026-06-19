@@ -34,7 +34,7 @@
     articulated-body dynamics `compute/multibody_dynamics.*` (`M, C, g`, link
     Jacobians), and the `tan-lcp` formulation.
   - As built: an opt-in boxed-LCP rigid-body contact path landed on the
-    DART 7 `World` (`detail/boxed_lcp_contact.{hpp,cpp}` assembles the
+    DART 7 `World` (`detail/rigid_contact/boxed_lcp_contact.{hpp,cpp}` assembles the
     Delassus system `A = J M⁻¹ Jᵀ` and solves it via the `dart/math/lcp` Dantzig
     pivoting solver, behind `WorldOptions::contactSolverMethod == BoxedLcp`; the
     default `SequentialImpulse` path is unchanged). The analytic contact gradient
