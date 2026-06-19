@@ -65,6 +65,7 @@
 #include <iterator>
 #include <map>
 #include <new>
+#include <optional>
 #include <ranges>
 #include <set>
 #include <sstream>
@@ -193,6 +194,32 @@ constexpr std::size_t kWorldOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
       + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes;
 
+dart::simulation::JointSpec makeJointSpec(
+    std::string_view name,
+    dart::simulation::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  dart::simulation::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
+
+dart::simulation::JointConstraintProjectionPolicy
+makeConstraintProjectionPolicy(
+    double startStiffness, double linearStiffness, double angularStiffness)
+{
+  return dart::simulation::JointConstraintProjectionPolicy{
+      .startStiffness = startStiffness,
+      .linearStiffness = linearStiffness,
+      .angularStiffness = angularStiffness};
+}
+
 RegistryStorageCapacities registryStorageCapacities(
     const dart::simulation::detail::WorldRegistry& registry)
 {
@@ -285,8 +312,8 @@ void expectBrokenRigidBodyJointRoundTrips(
   world2.loadBinary(ss);
 
   EXPECT_TRUE(world2.isSimulationMode());
-  EXPECT_EQ(world2.getRigidBodyJointCount(), 1u);
-  auto restoredJoint = world2.getRigidBodyJoint(jointName);
+  EXPECT_EQ(world2.getJointCount(), 1u);
+  auto restoredJoint = world2.getJoint(jointName);
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_EQ(restoredJoint->getType(), expectedType);
   EXPECT_EQ(restoredJoint->getDOFCount(), expectedDofCount);
@@ -357,8 +384,8 @@ void expectBrokenArticulatedPointJointRoundTrips(
   EXPECT_EQ(
       world2.getMultibodyOptions().integrationFamily,
       sx::MultibodyIntegrationFamily::Variational);
-  EXPECT_EQ(world2.getArticulatedJointCount(), 1u);
-  auto restoredJoint = world2.getArticulatedJoint(jointName);
+  EXPECT_EQ(world2.getJointCount(), 1u);
+  auto restoredJoint = world2.getJoint(jointName);
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_EQ(restoredJoint->getType(), expectedType);
   EXPECT_EQ(restoredJoint->getDOFCount(), expectedDofCount);
@@ -769,8 +796,8 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   groundCollisionShape.localTransform.translation()
       = Eigen::Vector3d(0.25, -0.5, 0.75);
   ground.setCollisionShape(groundCollisionShape);
-  ground.setDeformableGroundBarrier(true);
-  ground.setDeformableSurfaceCcdObstacle(true);
+  ground.setDeformableObstaclePolicy(
+      {.groundBarrier = true, .surfaceObstacle = true});
 
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
@@ -823,8 +850,9 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   EXPECT_TRUE(groundRestored->isStatic());
   EXPECT_DOUBLE_EQ(groundRestored->getRestitution(), 0.75);
   EXPECT_DOUBLE_EQ(groundRestored->getFriction(), 0.25);
-  EXPECT_TRUE(groundRestored->isDeformableGroundBarrier());
-  EXPECT_TRUE(groundRestored->isDeformableSurfaceCcdObstacle());
+  const auto groundPolicy = groundRestored->getDeformableObstaclePolicy();
+  EXPECT_TRUE(groundPolicy.groundBarrier);
+  EXPECT_TRUE(groundPolicy.surfaceObstacle);
 
   auto groundShape = groundRestored->getCollisionShape();
   ASSERT_TRUE(groundShape.has_value());
@@ -1274,10 +1302,11 @@ TEST(Serialization, PreservesJointCounterAcrossArticulatedGeneratedNames)
   spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
   auto child = robot.addLink("child", base, spec);
 
-  auto explicitJoint
-      = world1.addArticulatedFixedJoint("joint_001", base, child);
-  auto generatedJoint
-      = world1.addArticulatedRevoluteJoint("", child, Eigen::Vector3d::UnitY());
+  auto explicitJoint = world1.addJoint(
+      base, child, makeJointSpec("joint_001", sx::JointType::Fixed));
+  auto generatedJoint = world1.addJoint(
+      child,
+      makeJointSpec("", sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
   EXPECT_EQ(explicitJoint.getName(), "joint_001");
   EXPECT_EQ(generatedJoint.getName(), "joint_002");
 
@@ -1294,16 +1323,18 @@ TEST(Serialization, PreservesJointCounterAcrossArticulatedGeneratedNames)
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
 
-  EXPECT_TRUE(world2.hasArticulatedJoint("joint_001"));
-  EXPECT_TRUE(world2.hasArticulatedJoint("joint_002"));
-  EXPECT_EQ(world2.getArticulatedJointCount(), 2u);
+  EXPECT_TRUE(world2.hasJoint("joint_001"));
+  EXPECT_TRUE(world2.hasJoint("joint_002"));
+  EXPECT_EQ(world2.getJointCount(), 2u);
 
   // The topology joint is also a restored Joint component, so the load-time
   // counter guard advances the next generated public facade past it.
-  auto afterLoadGenerated = world2.addArticulatedPrismaticJoint(
-      "", *restoredBase, *restoredChild, Eigen::Vector3d::UnitX());
+  auto afterLoadGenerated = world2.addJoint(
+      *restoredBase,
+      *restoredChild,
+      makeJointSpec("", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
   EXPECT_EQ(afterLoadGenerated.getName(), "joint_004");
-  EXPECT_EQ(world2.getArticulatedJointCount(), 3u);
+  EXPECT_EQ(world2.getJointCount(), 3u);
 }
 
 // Test multiple save/load cycles
@@ -1571,7 +1602,8 @@ TEST(Serialization, RigidBodyFixedJointBreakageRoundTrips)
          std::string_view name,
          const sx::RigidBody& parent,
          const sx::RigidBody& child) {
-        return world.addRigidBodyFixedJoint(name, parent, child);
+        return world.addJoint(
+            parent, child, makeJointSpec(name, sx::JointType::Fixed));
       });
 }
 
@@ -1589,8 +1621,11 @@ TEST(Serialization, RigidBodyRevoluteJointBreakageRoundTrips)
          std::string_view name,
          const sx::RigidBody& parent,
          const sx::RigidBody& child) {
-        return world.addRigidBodyRevoluteJoint(
-            name, parent, child, Eigen::Vector3d::UnitY());
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name, sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
       });
 }
 
@@ -1608,8 +1643,11 @@ TEST(Serialization, RigidBodyPrismaticJointBreakageRoundTrips)
          std::string_view name,
          const sx::RigidBody& parent,
          const sx::RigidBody& child) {
-        return world.addRigidBodyPrismaticJoint(
-            name, parent, child, Eigen::Vector3d::UnitY());
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name, sx::JointType::Prismatic, Eigen::Vector3d::UnitY()));
       });
 }
 
@@ -1627,7 +1665,8 @@ TEST(Serialization, RigidBodySphericalJointBreakageRoundTrips)
          std::string_view name,
          const sx::RigidBody& parent,
          const sx::RigidBody& child) {
-        return world.addRigidBodySphericalJoint(name, parent, child);
+        return world.addJoint(
+            parent, child, makeJointSpec(name, sx::JointType::Spherical));
       });
 }
 
@@ -1650,8 +1689,15 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
          const sx::Link& child,
          const Eigen::Vector3d& parentAnchor,
          const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedFixedJoint(
-            name, parent, child, parentAnchor, childAnchor);
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Fixed,
+                Eigen::Vector3d::UnitZ(),
+                parentAnchor,
+                childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "same_hinge",
@@ -1667,8 +1713,15 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
           const sx::Link& child,
           const Eigen::Vector3d& parentAnchor,
           const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedRevoluteJoint(
-            name, parent, child, axis, parentAnchor, childAnchor);
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Revolute,
+                axis,
+                parentAnchor,
+                childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "same_slider",
@@ -1684,8 +1737,15 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
           const sx::Link& child,
           const Eigen::Vector3d& parentAnchor,
           const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedPrismaticJoint(
-            name, parent, child, axis, parentAnchor, childAnchor);
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Prismatic,
+                axis,
+                parentAnchor,
+                childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "same_socket",
@@ -1700,8 +1760,15 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
          const sx::Link& child,
          const Eigen::Vector3d& parentAnchor,
          const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedSphericalJoint(
-            name, parent, child, parentAnchor, childAnchor);
+        return world.addJoint(
+            parent,
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Spherical,
+                Eigen::Vector3d::UnitZ(),
+                parentAnchor,
+                childAnchor));
       });
 
   expectBrokenArticulatedPointJointRoundTrips(
@@ -1717,8 +1784,14 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
          const sx::Link& child,
          const Eigen::Vector3d& worldAnchor,
          const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedFixedJoint(
-            name, child, worldAnchor, childAnchor);
+        return world.addJoint(
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Fixed,
+                Eigen::Vector3d::UnitZ(),
+                worldAnchor,
+                childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "world_hinge",
@@ -1734,8 +1807,10 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
           const sx::Link& child,
           const Eigen::Vector3d& worldAnchor,
           const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedRevoluteJoint(
-            name, child, axis, worldAnchor, childAnchor);
+        return world.addJoint(
+            child,
+            makeJointSpec(
+                name, sx::JointType::Revolute, axis, worldAnchor, childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "world_slider",
@@ -1751,8 +1826,14 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
           const sx::Link& child,
           const Eigen::Vector3d& worldAnchor,
           const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedPrismaticJoint(
-            name, child, axis, worldAnchor, childAnchor);
+        return world.addJoint(
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Prismatic,
+                axis,
+                worldAnchor,
+                childAnchor));
       });
   expectBrokenArticulatedPointJointRoundTrips(
       "world_socket",
@@ -1767,8 +1848,14 @@ TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
          const sx::Link& child,
          const Eigen::Vector3d& worldAnchor,
          const Eigen::Vector3d& childAnchor) {
-        return world.addArticulatedSphericalJoint(
-            name, child, worldAnchor, childAnchor);
+        return world.addJoint(
+            child,
+            makeJointSpec(
+                name,
+                sx::JointType::Spherical,
+                Eigen::Vector3d::UnitZ(),
+                worldAnchor,
+                childAnchor));
       });
 }
 
@@ -1786,10 +1873,10 @@ TEST(Serialization, RigidBodyJointAvbdStiffnessRoundTripsDesignMode)
   childOptions.position = Eigen::Vector3d::UnitX();
   auto child = world1.addRigidBody("child", childOptions);
 
-  auto joint = world1.addRigidBodyFixedJoint("fixed", parent, child);
-  joint.setAvbdStartStiffness(2.0);
-  joint.setAvbdLinearStiffness(123.0);
-  joint.setAvbdAngularStiffness(456.0);
+  auto joint = world1.addJoint(
+      parent, child, makeJointSpec("fixed", sx::JointType::Fixed));
+  joint.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(2.0, 123.0, 456.0));
   ASSERT_FALSE(world1.isSimulationMode());
 
   std::stringstream ss;
@@ -1799,23 +1886,26 @@ TEST(Serialization, RigidBodyJointAvbdStiffnessRoundTripsDesignMode)
   world2.loadBinary(ss);
 
   ASSERT_FALSE(world2.isSimulationMode());
-  auto restoredJoint = world2.getRigidBodyJoint("fixed");
+  auto restoredJoint = world2.getJoint("fixed");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 2.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 123.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 456.0);
+  auto restoredPolicy = restoredJoint->getConstraintProjectionPolicy();
+  EXPECT_DOUBLE_EQ(restoredPolicy.startStiffness, 2.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.linearStiffness, 123.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.angularStiffness, 456.0);
 
-  restoredJoint->setAvbdLinearStiffness(789.0);
-  restoredJoint->setAvbdAngularStiffness(987.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 789.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 987.0);
+  restoredJoint->setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(2.0, 789.0, 987.0));
+  restoredPolicy = restoredJoint->getConstraintProjectionPolicy();
+  EXPECT_DOUBLE_EQ(restoredPolicy.linearStiffness, 789.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.angularStiffness, 987.0);
 
   world2.enterSimulationMode();
-  restoredJoint = world2.getRigidBodyJoint("fixed");
+  restoredJoint = world2.getJoint("fixed");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 2.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 789.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 987.0);
+  restoredPolicy = restoredJoint->getConstraintProjectionPolicy();
+  EXPECT_DOUBLE_EQ(restoredPolicy.startStiffness, 2.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.linearStiffness, 789.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.angularStiffness, 987.0);
 }
 
 TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
@@ -1865,52 +1955,56 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
       {"world_socket", sx::JointType::Spherical, 3u, 10.0, 901.0, 1234.0},
   };
 
-  auto fixed = world1.addArticulatedFixedJoint("fixed", base, fixedChild);
-  fixed.setAvbdStartStiffness(3.0);
-  fixed.setAvbdLinearStiffness(234.0);
-  fixed.setAvbdAngularStiffness(567.0);
+  auto fixed = world1.addJoint(
+      base, fixedChild, makeJointSpec("fixed", sx::JointType::Fixed));
+  fixed.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(3.0, 234.0, 567.0));
 
-  auto hinge = world1.addArticulatedRevoluteJoint(
-      "hinge", base, hingeChild, Eigen::Vector3d::UnitY());
-  hinge.setAvbdStartStiffness(4.0);
-  hinge.setAvbdLinearStiffness(345.0);
-  hinge.setAvbdAngularStiffness(678.0);
+  auto hinge = world1.addJoint(
+      base,
+      hingeChild,
+      makeJointSpec(
+          "hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
+  hinge.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(4.0, 345.0, 678.0));
 
-  auto slider = world1.addArticulatedPrismaticJoint(
-      "slider", base, sliderChild, Eigen::Vector3d::UnitX());
-  slider.setAvbdStartStiffness(5.0);
-  slider.setAvbdLinearStiffness(456.0);
-  slider.setAvbdAngularStiffness(789.0);
+  auto slider = world1.addJoint(
+      base,
+      sliderChild,
+      makeJointSpec(
+          "slider", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
+  slider.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(5.0, 456.0, 789.0));
 
-  auto socket
-      = world1.addArticulatedSphericalJoint("socket", base, socketChild);
-  socket.setAvbdStartStiffness(6.0);
-  socket.setAvbdLinearStiffness(567.0);
-  socket.setAvbdAngularStiffness(890.0);
+  auto socket = world1.addJoint(
+      base, socketChild, makeJointSpec("socket", sx::JointType::Spherical));
+  socket.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(6.0, 567.0, 890.0));
 
-  auto worldFixed
-      = world1.addArticulatedFixedJoint("world_fixed", worldFixedChild);
-  worldFixed.setAvbdStartStiffness(7.0);
-  worldFixed.setAvbdLinearStiffness(678.0);
-  worldFixed.setAvbdAngularStiffness(901.0);
+  auto worldFixed = world1.addJoint(
+      worldFixedChild, makeJointSpec("world_fixed", sx::JointType::Fixed));
+  worldFixed.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(7.0, 678.0, 901.0));
 
-  auto worldHinge = world1.addArticulatedRevoluteJoint(
-      "world_hinge", worldHingeChild, Eigen::Vector3d::UnitY());
-  worldHinge.setAvbdStartStiffness(8.0);
-  worldHinge.setAvbdLinearStiffness(789.0);
-  worldHinge.setAvbdAngularStiffness(1012.0);
+  auto worldHinge = world1.addJoint(
+      worldHingeChild,
+      makeJointSpec(
+          "world_hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
+  worldHinge.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(8.0, 789.0, 1012.0));
 
-  auto worldSlider = world1.addArticulatedPrismaticJoint(
-      "world_slider", worldSliderChild, Eigen::Vector3d::UnitX());
-  worldSlider.setAvbdStartStiffness(9.0);
-  worldSlider.setAvbdLinearStiffness(890.0);
-  worldSlider.setAvbdAngularStiffness(1123.0);
+  auto worldSlider = world1.addJoint(
+      worldSliderChild,
+      makeJointSpec(
+          "world_slider", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
+  worldSlider.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(9.0, 890.0, 1123.0));
 
-  auto worldSocket
-      = world1.addArticulatedSphericalJoint("world_socket", worldSocketChild);
-  worldSocket.setAvbdStartStiffness(10.0);
-  worldSocket.setAvbdLinearStiffness(901.0);
-  worldSocket.setAvbdAngularStiffness(1234.0);
+  auto worldSocket = world1.addJoint(
+      worldSocketChild,
+      makeJointSpec("world_socket", sx::JointType::Spherical));
+  worldSocket.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(10.0, 901.0, 1234.0));
   ASSERT_FALSE(world1.isSimulationMode());
 
   std::stringstream ss;
@@ -1925,16 +2019,14 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
       sx::MultibodyIntegrationFamily::Variational);
   for (const auto& expected : expectedBeforeMutation) {
     SCOPED_TRACE(expected.name);
-    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    auto restoredJoint = world2.getJoint(expected.name);
     ASSERT_TRUE(restoredJoint.has_value());
     EXPECT_EQ(restoredJoint->getType(), expected.type);
     EXPECT_EQ(restoredJoint->getDOFCount(), expected.dofs);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdStartStiffness(), expected.startStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+    const auto policy = restoredJoint->getConstraintProjectionPolicy();
+    EXPECT_DOUBLE_EQ(policy.startStiffness, expected.startStiffness);
+    EXPECT_DOUBLE_EQ(policy.linearStiffness, expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(policy.angularStiffness, expected.angularStiffness);
   }
 
   const std::vector<ExpectedJoint> expectedAfterMutation{
@@ -1949,29 +2041,28 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
   };
   for (const auto& expected : expectedAfterMutation) {
     SCOPED_TRACE(expected.name);
-    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    auto restoredJoint = world2.getJoint(expected.name);
     ASSERT_TRUE(restoredJoint.has_value());
-    restoredJoint->setAvbdLinearStiffness(expected.linearStiffness);
-    restoredJoint->setAvbdAngularStiffness(expected.angularStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+    restoredJoint->setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+        expected.startStiffness,
+        expected.linearStiffness,
+        expected.angularStiffness));
+    const auto policy = restoredJoint->getConstraintProjectionPolicy();
+    EXPECT_DOUBLE_EQ(policy.linearStiffness, expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(policy.angularStiffness, expected.angularStiffness);
   }
 
   world2.enterSimulationMode();
   for (const auto& expected : expectedAfterMutation) {
     SCOPED_TRACE(expected.name);
-    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    auto restoredJoint = world2.getJoint(expected.name);
     ASSERT_TRUE(restoredJoint.has_value());
     EXPECT_EQ(restoredJoint->getType(), expected.type);
     EXPECT_EQ(restoredJoint->getDOFCount(), expected.dofs);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdStartStiffness(), expected.startStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
-    EXPECT_DOUBLE_EQ(
-        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+    const auto policy = restoredJoint->getConstraintProjectionPolicy();
+    EXPECT_DOUBLE_EQ(policy.startStiffness, expected.startStiffness);
+    EXPECT_DOUBLE_EQ(policy.linearStiffness, expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(policy.angularStiffness, expected.angularStiffness);
   }
 }
 

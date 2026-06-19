@@ -46,7 +46,9 @@ def build() -> SceneSetup:
     ground = world.add_rigid_body("ground", position=_GROUND_CENTER)
     ground.is_static = True
     ground.set_collision_shape(sx.CollisionShape.box(_GROUND_HALF))
-    ground.is_deformable_ground_barrier = True
+    policy = ground.deformable_obstacle_policy
+    policy.ground_barrier = True
+    ground.deformable_obstacle_policy = policy
 
     body = world.add_deformable_body("fem_drop", options)
     world.enter_simulation_mode()

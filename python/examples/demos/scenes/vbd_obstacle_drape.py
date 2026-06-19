@@ -88,12 +88,16 @@ def build() -> SceneSetup:
     ground = world.add_rigid_body("ground", position=_GROUND_CENTER)
     ground.is_static = True
     ground.set_collision_shape(sx.CollisionShape.box(_GROUND_HALF))
-    ground.is_deformable_ground_barrier = True
+    policy = ground.deformable_obstacle_policy
+    policy.ground_barrier = True
+    ground.deformable_obstacle_policy = policy
 
     sphere = world.add_rigid_body("sphere", position=_SPHERE_CENTER)
     sphere.is_static = True
     sphere.set_collision_shape(sx.CollisionShape.sphere(_SPHERE_RADIUS))
-    sphere.is_deformable_surface_ccd_obstacle = True
+    policy = sphere.deformable_obstacle_policy
+    policy.surface_obstacle = True
+    sphere.deformable_obstacle_policy = policy
 
     # A free cloth slightly wider than the sphere, released just above its top.
     world.add_deformable_body(

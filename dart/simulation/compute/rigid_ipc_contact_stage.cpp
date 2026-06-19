@@ -39,7 +39,7 @@
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"

@@ -46,11 +46,11 @@
 #include "dart/simulation/comps/all.hpp"
 #include "dart/simulation/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/compute/multibody_dynamics.hpp"
 #include "dart/simulation/compute/sequential_executor.hpp"
 #include "dart/simulation/compute/variational_integration.hpp"
 #include "dart/simulation/compute/world_kinematics_graph.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
 #include "dart/simulation/constraint/loop_closure.hpp"
 #include "dart/simulation/constraint/loop_closure_spec.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
@@ -1932,6 +1932,17 @@ bool isArticulatedPointJoint(
   const entt::entity structureA
       = findOwningMultibodyStructure(registry, joint.parentLink);
   return structureA != entt::null && structureA == structureB;
+}
+
+//==============================================================================
+template <typename Registry>
+bool isWorldOwnedJoint(
+    const Registry& registry,
+    entt::entity jointEntity,
+    const comps::JointModel& joint)
+{
+  return isRigidBodyJoint(registry, joint)
+         || isArticulatedPointJoint(registry, jointEntity, joint);
 }
 
 //==============================================================================
@@ -4265,216 +4276,92 @@ std::size_t World::getMultibodyCount() const
 }
 
 //==============================================================================
-Joint World::addArticulatedFixedJoint(
-    std::string_view name, const Link& parent, const Link& child)
+Joint World::addJoint(
+    const Frame& parent, const Frame& child, const JointSpec& spec)
 {
-  return addArticulatedJoint(
-      name, &parent, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
+  ensureDesignMode();
+
+  DART_SIMULATION_THROW_T_IF(
+      !parent.isWorld() && !parent.isValid(),
+      InvalidArgumentException,
+      "Joint parent frame is invalid or has been destroyed");
+  DART_SIMULATION_THROW_T_IF(
+      child.isWorld() || !child.isValid(),
+      InvalidArgumentException,
+      "Joint child frame is invalid or cannot be the world frame");
+  DART_SIMULATION_THROW_T_IF(
+      !parent.isWorld() && parent.getWorld() != this,
+      InvalidArgumentException,
+      "Joint parent frame must belong to this World");
+  DART_SIMULATION_THROW_T_IF(
+      child.getWorld() != this,
+      InvalidArgumentException,
+      "Joint child frame must belong to this World");
+
+  const entt::entity parentEntity
+      = parent.isWorld() ? entt::null
+                         : detail::toRegistryEntity(parent.getEntity());
+  const entt::entity childEntity = detail::toRegistryEntity(child.getEntity());
+  const bool parentIsLink
+      = parentEntity != entt::null
+        && m_storage->registry.all_of<comps::LinkModel>(parentEntity);
+  const bool childIsLink
+      = m_storage->registry.all_of<comps::LinkModel>(childEntity);
+  const bool parentIsRigidBody
+      = parentEntity != entt::null
+        && m_storage->registry.all_of<comps::RigidBodyTag>(parentEntity);
+  const bool childIsRigidBody
+      = m_storage->registry.all_of<comps::RigidBodyTag>(childEntity);
+
+  if (childIsLink && (parent.isWorld() || parentIsLink)) {
+    Link childLink(child.getEntity(), this);
+    if (parent.isWorld()) {
+      return createArticulatedPointJoint(
+          spec.name,
+          nullptr,
+          childLink,
+          spec.type,
+          spec.axis,
+          spec.parentAnchor,
+          spec.childAnchor);
+    }
+
+    Link parentLink(parent.getEntity(), this);
+    return createArticulatedPointJoint(
+        spec.name,
+        &parentLink,
+        childLink,
+        spec.type,
+        spec.axis,
+        spec.parentAnchor,
+        spec.childAnchor);
+  }
+
+  if (parentIsRigidBody && childIsRigidBody) {
+    return createRigidBodyPointJoint(
+        spec.name,
+        RigidBody(parent.getEntity(), this),
+        RigidBody(child.getEntity(), this),
+        spec.type,
+        spec.axis,
+        spec.parentAnchor,
+        spec.childAnchor);
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "World joints currently require Link-Link, world-Link, or "
+      "RigidBody-RigidBody frame endpoints");
 }
 
 //==============================================================================
-Joint World::addArticulatedFixedJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& parentAnchor,
-    const Eigen::Vector3d& childAnchor)
+Joint World::addJoint(const Frame& child, const JointSpec& spec)
 {
-  return addArticulatedJoint(
-      name,
-      &parent,
-      child,
-      JointType::Fixed,
-      Eigen::Vector3d::UnitZ(),
-      parentAnchor,
-      childAnchor);
+  return addJoint(Frame::world(), child, spec);
 }
 
 //==============================================================================
-Joint World::addArticulatedFixedJoint(std::string_view name, const Link& child)
-{
-  return addArticulatedJoint(
-      name, nullptr, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-Joint World::addArticulatedFixedJoint(
-    std::string_view name,
-    const Link& child,
-    const Eigen::Vector3d& worldAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      nullptr,
-      child,
-      JointType::Fixed,
-      Eigen::Vector3d::UnitZ(),
-      worldAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedRevoluteJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& axis)
-{
-  return addArticulatedJoint(name, &parent, child, JointType::Revolute, axis);
-}
-
-//==============================================================================
-Joint World::addArticulatedRevoluteJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& axis,
-    const Eigen::Vector3d& parentAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      &parent,
-      child,
-      JointType::Revolute,
-      axis,
-      parentAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedRevoluteJoint(
-    std::string_view name, const Link& child, const Eigen::Vector3d& axis)
-{
-  return addArticulatedJoint(name, nullptr, child, JointType::Revolute, axis);
-}
-
-//==============================================================================
-Joint World::addArticulatedRevoluteJoint(
-    std::string_view name,
-    const Link& child,
-    const Eigen::Vector3d& axis,
-    const Eigen::Vector3d& worldAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      nullptr,
-      child,
-      JointType::Revolute,
-      axis,
-      worldAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedPrismaticJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& axis)
-{
-  return addArticulatedJoint(name, &parent, child, JointType::Prismatic, axis);
-}
-
-//==============================================================================
-Joint World::addArticulatedPrismaticJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& axis,
-    const Eigen::Vector3d& parentAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      &parent,
-      child,
-      JointType::Prismatic,
-      axis,
-      parentAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedPrismaticJoint(
-    std::string_view name, const Link& child, const Eigen::Vector3d& axis)
-{
-  return addArticulatedJoint(name, nullptr, child, JointType::Prismatic, axis);
-}
-
-//==============================================================================
-Joint World::addArticulatedPrismaticJoint(
-    std::string_view name,
-    const Link& child,
-    const Eigen::Vector3d& axis,
-    const Eigen::Vector3d& worldAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      nullptr,
-      child,
-      JointType::Prismatic,
-      axis,
-      worldAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedSphericalJoint(
-    std::string_view name, const Link& parent, const Link& child)
-{
-  return addArticulatedJoint(
-      name, &parent, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-Joint World::addArticulatedSphericalJoint(
-    std::string_view name,
-    const Link& parent,
-    const Link& child,
-    const Eigen::Vector3d& parentAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      &parent,
-      child,
-      JointType::Spherical,
-      Eigen::Vector3d::UnitZ(),
-      parentAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedSphericalJoint(
-    std::string_view name, const Link& child)
-{
-  return addArticulatedJoint(
-      name, nullptr, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-Joint World::addArticulatedSphericalJoint(
-    std::string_view name,
-    const Link& child,
-    const Eigen::Vector3d& worldAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addArticulatedJoint(
-      name,
-      nullptr,
-      child,
-      JointType::Spherical,
-      Eigen::Vector3d::UnitZ(),
-      worldAnchor,
-      childAnchor);
-}
-
-//==============================================================================
-Joint World::addArticulatedJoint(
+Joint World::createArticulatedPointJoint(
     std::string_view name,
     const Link* parent,
     const Link& child,
@@ -4627,14 +4514,14 @@ Joint World::addArticulatedJoint(
 }
 
 //==============================================================================
-std::optional<Joint> World::getArticulatedJoint(std::string_view name)
+std::optional<Joint> World::getJoint(std::string_view name)
 {
   auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
     const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
-        && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+        && isWorldOwnedJoint(m_storage->registry, entity, joint)) {
       return Joint(detail::fromRegistryEntity(entity), this);
     }
   }
@@ -4642,14 +4529,14 @@ std::optional<Joint> World::getArticulatedJoint(std::string_view name)
 }
 
 //==============================================================================
-bool World::hasArticulatedJoint(std::string_view name) const
+bool World::hasJoint(std::string_view name) const
 {
   const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
   for (auto entity : view) {
     const auto& joint = view.get<comps::JointModel>(entity);
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name
-        && isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+        && isWorldOwnedJoint(m_storage->registry, entity, joint)) {
       return true;
     }
   }
@@ -4657,13 +4544,13 @@ bool World::hasArticulatedJoint(std::string_view name) const
 }
 
 //==============================================================================
-std::size_t World::getArticulatedJointCount() const
+std::size_t World::getJointCount() const
 {
   std::size_t count = 0;
   const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
     const auto& joint = view.get<comps::JointModel>(entity);
-    if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+    if (isWorldOwnedJoint(m_storage->registry, entity, joint)) {
       ++count;
     }
   }
@@ -4671,13 +4558,13 @@ std::size_t World::getArticulatedJointCount() const
 }
 
 //==============================================================================
-std::vector<Joint> World::getArticulatedJoints()
+std::vector<Joint> World::getJoints()
 {
   std::vector<Joint> joints;
   const auto view = m_storage->registry.view<comps::JointModel>();
   for (auto entity : view) {
     const auto& joint = view.get<comps::JointModel>(entity);
-    if (isArticulatedPointJoint(m_storage->registry, entity, joint)) {
+    if (isWorldOwnedJoint(m_storage->registry, entity, joint)) {
       joints.emplace_back(detail::fromRegistryEntity(entity), this);
     }
   }
@@ -4809,61 +4696,6 @@ RigidBody World::addRigidBody(
   return RigidBody(entity, this);
 }
 
-//==============================================================================
-Joint World::addRigidBodyFixedJoint(
-    std::string_view name, const RigidBody& parent, const RigidBody& child)
-{
-  return addRigidBodyJoint(
-      name, parent, child, JointType::Fixed, Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-Joint World::addRigidBodyRevoluteJoint(
-    std::string_view name,
-    const RigidBody& parent,
-    const RigidBody& child,
-    const Eigen::Vector3d& axis)
-{
-  return addRigidBodyJoint(name, parent, child, JointType::Revolute, axis);
-}
-
-//==============================================================================
-Joint World::addRigidBodyPrismaticJoint(
-    std::string_view name,
-    const RigidBody& parent,
-    const RigidBody& child,
-    const Eigen::Vector3d& axis)
-{
-  return addRigidBodyJoint(name, parent, child, JointType::Prismatic, axis);
-}
-
-//==============================================================================
-Joint World::addRigidBodySphericalJoint(
-    std::string_view name, const RigidBody& parent, const RigidBody& child)
-{
-  return addRigidBodyJoint(
-      name, parent, child, JointType::Spherical, Eigen::Vector3d::UnitZ());
-}
-
-//==============================================================================
-Joint World::addRigidBodySphericalJoint(
-    std::string_view name,
-    const RigidBody& parent,
-    const RigidBody& child,
-    const Eigen::Vector3d& parentAnchor,
-    const Eigen::Vector3d& childAnchor)
-{
-  return addRigidBodyJoint(
-      name,
-      parent,
-      child,
-      JointType::Spherical,
-      Eigen::Vector3d::UnitZ(),
-      parentAnchor,
-      childAnchor);
-}
-
-//==============================================================================
 void World::addRigidBodyDistanceSpring(
     std::string_view name,
     const RigidBody& parent,
@@ -5062,7 +4894,7 @@ void World::setRigidBodyDistanceSpringParameters(
 }
 
 //==============================================================================
-Joint World::addRigidBodyJoint(
+Joint World::createRigidBodyPointJoint(
     std::string_view name,
     const RigidBody& parent,
     const RigidBody& child,
@@ -5231,125 +5063,6 @@ Joint World::addRigidBodyJoint(
   return Joint(detail::fromRegistryEntity(jointEntity), this);
 }
 
-//==============================================================================
-std::optional<Joint> World::getRigidBodyJoint(std::string_view name)
-{
-  auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    const auto& info = view.get<comps::Name>(entity);
-    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
-      return Joint(detail::fromRegistryEntity(entity), this);
-    }
-  }
-  return std::nullopt;
-}
-
-//==============================================================================
-bool World::hasRigidBodyJoint(std::string_view name) const
-{
-  const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    const auto& info = view.get<comps::Name>(entity);
-    if (info.name == name && isRigidBodyJoint(m_storage->registry, joint)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-//==============================================================================
-std::size_t World::getRigidBodyJointCount() const
-{
-  std::size_t count = 0;
-  const auto view = m_storage->registry.view<comps::JointModel>();
-  for (auto entity : view) {
-    (void)entity;
-    const auto& joint = view.get<comps::JointModel>(entity);
-    if (isRigidBodyJoint(m_storage->registry, joint)) {
-      ++count;
-    }
-  }
-  return count;
-}
-
-//==============================================================================
-std::vector<Joint> World::getRigidBodyJoints()
-{
-  std::vector<Joint> joints;
-  joints.reserve(getRigidBodyJointCount());
-  const auto view = m_storage->registry.view<comps::JointModel>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    if (isRigidBodyJoint(m_storage->registry, joint)) {
-      joints.emplace_back(detail::fromRegistryEntity(entity), this);
-    }
-  }
-  return joints;
-}
-
-//==============================================================================
-std::optional<Joint> World::getRigidBodyFixedJoint(std::string_view name)
-{
-  auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    const auto& info = view.get<comps::Name>(entity);
-    if (info.name == name
-        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
-      return Joint(detail::fromRegistryEntity(entity), this);
-    }
-  }
-  return std::nullopt;
-}
-
-//==============================================================================
-bool World::hasRigidBodyFixedJoint(std::string_view name) const
-{
-  const auto view = m_storage->registry.view<comps::JointModel, comps::Name>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    const auto& info = view.get<comps::Name>(entity);
-    if (info.name == name
-        && isRigidBodyFixedJoint(m_storage->registry, joint)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-//==============================================================================
-std::size_t World::getRigidBodyFixedJointCount() const
-{
-  std::size_t count = 0;
-  const auto view = m_storage->registry.view<comps::JointModel>();
-  for (auto entity : view) {
-    (void)entity;
-    const auto& joint = view.get<comps::JointModel>(entity);
-    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
-      ++count;
-    }
-  }
-  return count;
-}
-
-//==============================================================================
-std::vector<Joint> World::getRigidBodyFixedJoints()
-{
-  std::vector<Joint> joints;
-  joints.reserve(getRigidBodyFixedJointCount());
-  const auto view = m_storage->registry.view<comps::JointModel>();
-  for (auto entity : view) {
-    const auto& joint = view.get<comps::JointModel>(entity);
-    if (isRigidBodyFixedJoint(m_storage->registry, joint)) {
-      joints.emplace_back(detail::fromRegistryEntity(entity), this);
-    }
-  }
-  return joints;
-}
-
-//==============================================================================
 std::optional<RigidBody> World::getRigidBody(std::string_view name)
 {
   auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();

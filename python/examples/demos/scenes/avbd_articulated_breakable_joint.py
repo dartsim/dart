@@ -78,9 +78,12 @@ def build() -> SceneSetup:
         _CAPTURED_YAW,
     ]
 
-    breakable_joint = world.add_articulated_fixed_joint(
-        "avbd_articulated_breakable_hold",
+    breakable_joint = world.add_joint(
         payload,
+                sx.JointSpec(
+            name="avbd_articulated_breakable_hold",
+            type=sx.JointType.FIXED,
+        )
     )
     breakable_joint.break_force = _BREAK_FORCE
     world.enter_simulation_mode()

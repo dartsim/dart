@@ -49,6 +49,7 @@
 #include <dart/simulation/compute/compute_executor.hpp>
 #include <dart/simulation/compute/compute_graph.hpp>
 #include <dart/simulation/compute/detail/deformable_avbd_replay_state.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
@@ -56,7 +57,6 @@
 #include <dart/simulation/compute/variational_integration.hpp>
 #include <dart/simulation/compute/world_batch.hpp>
 #include <dart/simulation/compute/world_kinematics_graph.hpp>
-#include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
@@ -118,6 +118,32 @@ std::atomic<std::size_t> g_heapAllocationBytes{0};
 [[maybe_unused]] std::atomic<bool> g_rawHeapAllocationTrackingEnabled{false};
 [[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationCount{0};
 [[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationBytes{0};
+
+dart::simulation::JointSpec makeJointSpec(
+    std::string_view name,
+    dart::simulation::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  dart::simulation::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
+
+dart::simulation::JointConstraintProjectionPolicy
+makeConstraintProjectionPolicy(
+    double startStiffness, double linearStiffness, double angularStiffness)
+{
+  return dart::simulation::JointConstraintProjectionPolicy{
+      .startStiffness = startStiffness,
+      .linearStiffness = linearStiffness,
+      .angularStiffness = angularStiffness};
+}
 
 void recordHeapAllocation(std::size_t bytes) noexcept
 {
@@ -1937,7 +1963,7 @@ void configureDeformableFemGroundFrictionBlockScene(
   auto ground = world.addRigidBody("fem_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   addDeformableFemGroundFrictionBlock(
       world, "fem_ground_friction_block", Eigen::Vector3d::Zero(), 2, false);
@@ -1957,7 +1983,7 @@ void configureDeformableIterativeFemGroundFrictionBlockScene(
   auto ground = world.addRigidBody("iterative_fem_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   addDeformableFemGroundFrictionBlock(
       world,
@@ -1982,7 +2008,7 @@ void configureDeformableDefaultSparseIterativeFemGroundFrictionBlockScene(
   auto ground = world.addRigidBody("default_sparse_fem_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   addDeformableFemGroundFrictionBlock(
       world,
@@ -2007,7 +2033,7 @@ void configureMixedDefaultDeformableFemProductionStorageScene(
   auto ground = world.addRigidBody("mixed_fem_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(12.0, 12.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   addDeformableFemGroundFrictionBlock(
       world,
@@ -2565,8 +2591,8 @@ void configureDeformableStaticObstacleBarrierScene(
     obstacleOptions.position = position;
     auto obstacle = world.addRigidBody(name, obstacleOptions);
     obstacle.setCollisionShape(shape);
-    obstacle.setDeformableSurfaceCcdObstacle(true);
-    obstacle.setDeformableObstacleBarrierOnly(true);
+    obstacle.setDeformableObstaclePolicy(
+        {.surfaceObstacle = true, .barrierOnly = true});
   };
 
   addBarrierObstacle(
@@ -2608,8 +2634,8 @@ void configureDeformableStaticObstacleFrictionProductionSceneWithSolver(
     obstacleOptions.position = position;
     auto obstacle = world.addRigidBody(name, obstacleOptions);
     obstacle.setCollisionShape(shape);
-    obstacle.setDeformableSurfaceCcdObstacle(true);
-    obstacle.setDeformableObstacleBarrierOnly(true);
+    obstacle.setDeformableObstaclePolicy(
+        {.surfaceObstacle = true, .barrierOnly = true});
   };
 
   const Eigen::Vector3d sphereCenter(-3.0, 0.0, 0.0);
@@ -2730,7 +2756,7 @@ void configureDeformableMovingRigidSurfaceCcdCrossingScene(
   obstacle.setMass(1.0);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-  obstacle.setDeformableSurfaceCcdObstacle(true);
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
@@ -2841,7 +2867,8 @@ void configureRigidIpcFixedJointConstraintScene(dart::simulation::World& world)
   child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
   child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
 
-  (void)world.addRigidBodyFixedJoint("ipc_fixed_joint", parent, child);
+  (void)world.addJoint(
+      parent, child, makeJointSpec("ipc_fixed_joint", sx::JointType::Fixed));
 }
 
 void configureRigidIpcLargeEqualityKktScene(dart::simulation::World& world)
@@ -2872,8 +2899,11 @@ void configureRigidIpcLargeEqualityKktScene(dart::simulation::World& world)
         Eigen::Vector3d(0.0, 0.02 * static_cast<double>(i + 1u), 0.01));
     body.setForce(Eigen::Vector3d(0.05, 0.01 * static_cast<double>(i), 0.0));
 
-    (void)world.addRigidBodyFixedJoint(
-        std::format("ipc_large_kkt_fixed_{:02}", i), previous, body);
+    (void)world.addJoint(
+        previous,
+        body,
+        makeJointSpec(
+            std::format("ipc_large_kkt_fixed_{:02}", i), sx::JointType::Fixed));
     previous = body;
   }
 }
@@ -2898,8 +2928,13 @@ void configureRigidIpcRevoluteJointConstraintScene(
   childOptions.mass = 1.0;
   auto child = world.addRigidBody("ipc_hinge_child", childOptions);
   child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "ipc_hinge_joint", parent, child, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      parent,
+      child,
+      makeJointSpec(
+          "ipc_hinge_joint",
+          sx::JointType::Revolute,
+          Eigen::Vector3d::UnitZ()));
 
   auto& registry = sx::detail::registryOf(world);
   auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
@@ -3030,7 +3065,7 @@ void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
   obstacle.setKinematic(true);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-  obstacle.setDeformableSurfaceCcdObstacle(true);
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
@@ -3057,7 +3092,7 @@ void configureDeformableMultiKinematicRigidSurfaceCcdScene(
     obstacle.setKinematic(true);
     obstacle.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 0.5, 0.5)));
-    obstacle.setDeformableSurfaceCcdObstacle(true);
+    obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
   };
   addKinematicObstacle("multi_kinematic_surface_box_a", 0.0);
   addKinematicObstacle("multi_kinematic_surface_box_b", 2.0);
@@ -3328,7 +3363,7 @@ void configureAvbdGroundFrictionRowsScene(dart::simulation::World& world)
   auto ground = world.addRigidBody("avbd_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, -0.002)};
@@ -3414,7 +3449,10 @@ void configureRigidAvbdFixedJointRowsScene(dart::simulation::World& world)
   auto link = world.addRigidBody("rigid_avbd_joint_link", linkOptions);
   link.setMass(1.0);
 
-  (void)world.addRigidBodyFixedJoint("rigid_avbd_fixed_joint", base, link);
+  (void)world.addJoint(
+      base,
+      link,
+      makeJointSpec("rigid_avbd_fixed_joint", sx::JointType::Fixed));
 
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
   driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
@@ -3461,8 +3499,13 @@ void configureRigidAvbdRevoluteMotorRowsScene(dart::simulation::World& world)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("rigid_avbd_revolute_motor_link", linkOptions);
 
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "rigid_avbd_revolute_motor", base, link, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec(
+          "rigid_avbd_revolute_motor",
+          sx::JointType::Revolute,
+          Eigen::Vector3d::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
   joint.setEffortLimits(
@@ -3487,8 +3530,13 @@ void configureRigidAvbdPrismaticMotorRowsScene(dart::simulation::World& world)
   auto link
       = world.addRigidBody("rigid_avbd_prismatic_motor_link", linkOptions);
 
-  auto joint = world.addRigidBodyPrismaticJoint(
-      "rigid_avbd_prismatic_motor", base, link, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec(
+          "rigid_avbd_prismatic_motor",
+          sx::JointType::Prismatic,
+          Eigen::Vector3d::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.6));
   joint.setEffortLimits(
@@ -5345,7 +5393,7 @@ TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
       = world.addRigidBody("deformable_allocator_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 1.0, 0.25)));
-  ground.setDeformableGroundBarrier(true);
+  ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
   const auto addObstacle = [&](std::string_view name,
                                const Eigen::Vector3d& position,
@@ -5355,7 +5403,7 @@ TEST(World, DeformableDynamicsStageScratchPayloadUsesProvidedAllocator)
     options.position = position;
     auto obstacle = world.addRigidBody(name, options);
     obstacle.setCollisionShape(shape);
-    obstacle.setDeformableSurfaceCcdObstacle(true);
+    obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
   };
   addObstacle(
       "deformable_allocator_sphere_obstacle",
@@ -6573,7 +6621,8 @@ void configureLongVariationalArticulatedPointJointScene(
     parent = link;
   }
 
-  world.addArticulatedFixedJoint("tip_world_anchor", parent);
+  world.addJoint(
+      parent, makeJointSpec("tip_world_anchor", sx::JointType::Fixed));
 }
 
 void configureCompliantVariationalContactSliderScene(
@@ -9612,7 +9661,7 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         auto ground = world.addRigidBody("ground", groundOptions);
         ground.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-        ground.setDeformableGroundBarrier(true);
+        ground.setDeformableObstaclePolicy({.groundBarrier = true});
 
         sx::DeformableBodyOptions options;
         options.positions = {Eigen::Vector3d(0.0, 0.0, 0.01)};
@@ -9835,7 +9884,7 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         auto obstacle = world.addRigidBody("surface_obstacle", obstacleOptions);
         obstacle.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
-        obstacle.setDeformableSurfaceCcdObstacle(true);
+        obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
 
         sx::DeformableBodyOptions options;
         options.positions
@@ -9861,7 +9910,7 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         auto obstacle = world.addRigidBody("static_box", obstacleOptions);
         obstacle.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-        obstacle.setDeformableSurfaceCcdObstacle(true);
+        obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
 
         sx::DeformableBodyOptions options;
         options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
@@ -9894,7 +9943,7 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         auto obstacle = world.addRigidBody("static_box", obstacleOptions);
         obstacle.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-        obstacle.setDeformableSurfaceCcdObstacle(true);
+        obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
 
         sx::DeformableBodyOptions options;
         options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};
@@ -14431,7 +14480,8 @@ TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
 
   ASSERT_TRUE(hasContactBetween(world.collide(), "rigid_a", "rigid_b"));
 
-  auto joint = world.addRigidBodyFixedJoint("locked", bodyA, bodyB);
+  auto joint = world.addJoint(
+      bodyA, bodyB, makeJointSpec("locked", sx::JointType::Fixed));
   EXPECT_FALSE(world.isCollisionPairIgnored(bodyA, bodyB));
   EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
   const auto filteredContacts = world.collide();
@@ -14463,8 +14513,10 @@ TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
         "allocation_rigid_b", allocationBodyBOptions);
     allocationBodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-    auto allocationJoint = allocationWorld.addRigidBodyFixedJoint(
-        "allocation_locked", allocationBodyA, allocationBodyB);
+    auto allocationJoint = allocationWorld.addJoint(
+        allocationBodyA,
+        allocationBodyB,
+        makeJointSpec("allocation_locked", sx::JointType::Fixed));
     EXPECT_FALSE(allocationJoint.isBroken());
 
     ASSERT_TRUE(allocationWorld.collide().empty());
@@ -20909,26 +20961,34 @@ TEST(World, RigidBodyPointJointsExposeAvbdFiniteStiffness)
   sx::World world;
   auto parent = world.addRigidBody("parent", parentOptions);
   auto child = world.addRigidBody("child", childOptions);
-  auto joint = world.addRigidBodyFixedJoint("fixed", parent, child);
+  auto joint = world.addJoint(
+      parent, child, makeJointSpec("fixed", sx::JointType::Fixed));
 
-  EXPECT_GT(joint.getAvbdStartStiffness(), 0.0);
-  EXPECT_TRUE(std::isinf(joint.getAvbdLinearStiffness()));
-  EXPECT_TRUE(std::isinf(joint.getAvbdAngularStiffness()));
+  const auto defaultPolicy = joint.getConstraintProjectionPolicy();
+  EXPECT_GT(defaultPolicy.startStiffness, 0.0);
+  EXPECT_TRUE(std::isinf(defaultPolicy.linearStiffness));
+  EXPECT_TRUE(std::isinf(defaultPolicy.angularStiffness));
 
-  joint.setAvbdStartStiffness(1.0);
-  joint.setAvbdLinearStiffness(1000.0);
-  joint.setAvbdAngularStiffness(100.0);
+  joint.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(1.0, 1000.0, 100.0));
 
-  EXPECT_DOUBLE_EQ(joint.getAvbdStartStiffness(), 1.0);
-  EXPECT_DOUBLE_EQ(joint.getAvbdLinearStiffness(), 1000.0);
-  EXPECT_DOUBLE_EQ(joint.getAvbdAngularStiffness(), 100.0);
+  const auto policy = joint.getConstraintProjectionPolicy();
+  EXPECT_DOUBLE_EQ(policy.startStiffness, 1.0);
+  EXPECT_DOUBLE_EQ(policy.linearStiffness, 1000.0);
+  EXPECT_DOUBLE_EQ(policy.angularStiffness, 100.0);
 
-  EXPECT_THROW(joint.setAvbdStartStiffness(-1.0), sx::InvalidArgumentException);
   EXPECT_THROW(
-      joint.setAvbdLinearStiffness(std::numeric_limits<double>::quiet_NaN()),
+      joint.setConstraintProjectionPolicy(
+          makeConstraintProjectionPolicy(-1.0, 1000.0, 100.0)),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      joint.setAvbdAngularStiffness(-1.0), sx::InvalidArgumentException);
+      joint.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+          1.0, std::numeric_limits<double>::quiet_NaN(), 100.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setConstraintProjectionPolicy(
+          makeConstraintProjectionPolicy(1.0, 1000.0, -1.0)),
+      sx::InvalidArgumentException);
 }
 
 TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
@@ -20946,18 +21006,28 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
   spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
   auto child = robot.addLink("child", base, spec);
 
-  auto fixed = world.addArticulatedFixedJoint("fixed", base, child);
-  auto hinge = world.addArticulatedRevoluteJoint(
-      "hinge", base, child, Eigen::Vector3d::UnitY());
-  auto slider = world.addArticulatedPrismaticJoint(
-      "slider", base, child, Eigen::Vector3d::UnitX());
-  auto socket = world.addArticulatedSphericalJoint("socket", base, child);
-  auto worldFixed = world.addArticulatedFixedJoint("world_fixed", child);
+  auto fixed = world.addJoint(
+      base, child, makeJointSpec("fixed", sx::JointType::Fixed));
+  auto hinge = world.addJoint(
+      base,
+      child,
+      makeJointSpec(
+          "hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
+  auto slider = world.addJoint(
+      base,
+      child,
+      makeJointSpec(
+          "slider", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
+  auto socket = world.addJoint(
+      base, child, makeJointSpec("socket", sx::JointType::Spherical));
+  auto worldFixed = world.addJoint(
+      child, makeJointSpec("world_fixed", sx::JointType::Fixed));
 
   const auto expectDefaultHardJoint = [](const sx::Joint& joint) {
-    EXPECT_TRUE(std::isinf(joint.getAvbdStartStiffness()));
-    EXPECT_TRUE(std::isinf(joint.getAvbdLinearStiffness()));
-    EXPECT_TRUE(std::isinf(joint.getAvbdAngularStiffness()));
+    const auto policy = joint.getConstraintProjectionPolicy();
+    EXPECT_TRUE(std::isinf(policy.startStiffness));
+    EXPECT_TRUE(std::isinf(policy.linearStiffness));
+    EXPECT_TRUE(std::isinf(policy.angularStiffness));
   };
   expectDefaultHardJoint(fixed);
   expectDefaultHardJoint(hinge);
@@ -20966,13 +21036,13 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
   expectDefaultHardJoint(worldFixed);
 
   const auto expectFiniteStiffnessSetters = [](sx::Joint& joint) {
-    joint.setAvbdStartStiffness(2.0);
-    joint.setAvbdLinearStiffness(200.0);
-    joint.setAvbdAngularStiffness(300.0);
+    joint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(2.0, 200.0, 300.0));
 
-    EXPECT_DOUBLE_EQ(joint.getAvbdStartStiffness(), 2.0);
-    EXPECT_DOUBLE_EQ(joint.getAvbdLinearStiffness(), 200.0);
-    EXPECT_DOUBLE_EQ(joint.getAvbdAngularStiffness(), 300.0);
+    const auto policy = joint.getConstraintProjectionPolicy();
+    EXPECT_DOUBLE_EQ(policy.startStiffness, 2.0);
+    EXPECT_DOUBLE_EQ(policy.linearStiffness, 200.0);
+    EXPECT_DOUBLE_EQ(policy.angularStiffness, 300.0);
   };
   expectFiniteStiffnessSetters(fixed);
   expectFiniteStiffnessSetters(hinge);
@@ -20981,13 +21051,17 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
   expectFiniteStiffnessSetters(worldFixed);
 
   EXPECT_THROW(
-      fixed.setAvbdStartStiffness(std::numeric_limits<double>::infinity()),
+      fixed.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+          std::numeric_limits<double>::infinity(), 200.0, 300.0)),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      hinge.setAvbdLinearStiffness(std::numeric_limits<double>::quiet_NaN()),
+      hinge.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+          2.0, std::numeric_limits<double>::quiet_NaN(), 300.0)),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      slider.setAvbdAngularStiffness(-1.0), sx::InvalidArgumentException);
+      slider.setConstraintProjectionPolicy(
+          makeConstraintProjectionPolicy(2.0, 200.0, -1.0)),
+      sx::InvalidArgumentException);
 }
 
 TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
@@ -21005,21 +21079,26 @@ TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
   spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
   auto child = robot.addLink("child", base, spec);
 
-  auto explicitJoint = world.addArticulatedFixedJoint("joint_001", base, child);
-  auto generatedFixed = world.addArticulatedFixedJoint("", base, child);
-  auto generatedWorldHinge
-      = world.addArticulatedRevoluteJoint("", child, Eigen::Vector3d::UnitY());
-  auto generatedSlider = world.addArticulatedPrismaticJoint(
-      "", base, child, Eigen::Vector3d::UnitX());
+  auto explicitJoint = world.addJoint(
+      base, child, makeJointSpec("joint_001", sx::JointType::Fixed));
+  auto generatedFixed
+      = world.addJoint(base, child, makeJointSpec("", sx::JointType::Fixed));
+  auto generatedWorldHinge = world.addJoint(
+      child,
+      makeJointSpec("", sx::JointType::Revolute, Eigen::Vector3d::UnitY()));
+  auto generatedSlider = world.addJoint(
+      base,
+      child,
+      makeJointSpec("", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
 
   EXPECT_EQ(explicitJoint.getName(), "joint_001");
   EXPECT_EQ(generatedFixed.getName(), "joint_002");
   EXPECT_EQ(generatedWorldHinge.getName(), "joint_003");
   EXPECT_EQ(generatedSlider.getName(), "joint_004");
-  EXPECT_EQ(world.getArticulatedJointCount(), 4u);
+  EXPECT_EQ(world.getJointCount(), 4u);
 
   std::map<std::string, sx::JointType> jointsByName;
-  for (const auto& joint : world.getArticulatedJoints()) {
+  for (const auto& joint : world.getJoints()) {
     jointsByName.emplace(std::string(joint.getName()), joint.getType());
   }
   ASSERT_EQ(jointsByName.size(), 4u);
@@ -21032,13 +21111,14 @@ TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
   EXPECT_EQ(jointsByName.at("joint_003"), sx::JointType::Revolute);
   EXPECT_EQ(jointsByName.at("joint_004"), sx::JointType::Prismatic);
 
-  auto foundFixed = world.getArticulatedJoint("joint_002");
+  auto foundFixed = world.getJoint("joint_002");
   ASSERT_TRUE(foundFixed.has_value());
   EXPECT_EQ(foundFixed->getChildLink().getName(), "child");
-  EXPECT_TRUE(world.hasArticulatedJoint("joint_003"));
-  EXPECT_FALSE(world.getArticulatedJoint("joint_005").has_value());
+  EXPECT_TRUE(world.hasJoint("joint_003"));
+  EXPECT_FALSE(world.getJoint("joint_005").has_value());
   EXPECT_THROW(
-      world.addArticulatedSphericalJoint("joint_004", base, child),
+      world.addJoint(
+          base, child, makeJointSpec("joint_004", sx::JointType::Spherical)),
       sx::InvalidArgumentException);
 }
 
@@ -21056,16 +21136,17 @@ TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
   spec.type = sx::JointType::Floating;
   auto child = robot.addLink("child", base, spec);
 
-  auto firstGenerated = world.addArticulatedFixedJoint("", base, child);
+  auto firstGenerated
+      = world.addJoint(base, child, makeJointSpec("", sx::JointType::Fixed));
   EXPECT_EQ(firstGenerated.getName(), "joint_001");
-  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(world.getJointCount(), 1u);
   EXPECT_TRUE(base.isValid());
   EXPECT_TRUE(child.isValid());
   EXPECT_TRUE(firstGenerated.isValid());
 
   world.clear();
-  EXPECT_EQ(world.getArticulatedJointCount(), 0u);
-  EXPECT_FALSE(world.hasArticulatedJoint("joint_001"));
+  EXPECT_EQ(world.getJointCount(), 0u);
+  EXPECT_FALSE(world.hasJoint("joint_001"));
   EXPECT_FALSE(base.isValid());
   EXPECT_FALSE(child.isValid());
   EXPECT_FALSE(firstGenerated.isValid());
@@ -21077,11 +21158,12 @@ TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
   rebuiltSpec.type = sx::JointType::Floating;
   auto rebuiltChild = rebuiltRobot.addLink("child", rebuiltBase, rebuiltSpec);
 
-  auto regenerated = world.addArticulatedRevoluteJoint(
-      "", rebuiltChild, Eigen::Vector3d::UnitZ());
+  auto regenerated = world.addJoint(
+      rebuiltChild,
+      makeJointSpec("", sx::JointType::Revolute, Eigen::Vector3d::UnitZ()));
   EXPECT_EQ(regenerated.getName(), "joint_001");
   EXPECT_EQ(regenerated.getType(), sx::JointType::Revolute);
-  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(world.getJointCount(), 1u);
 }
 
 TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
@@ -21114,21 +21196,35 @@ TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
   auto foreignBase = foreignRobot.addLink("base");
 
   EXPECT_THROW(
-      world.addArticulatedFixedJoint("same_link", base, base),
+      world.addJoint(
+          base, base, makeJointSpec("same_link", sx::JointType::Fixed)),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      world.addArticulatedRevoluteJoint(
-          "cross_multibody", base, otherChild, Eigen::Vector3d::UnitZ()),
+      world.addJoint(
+          base,
+          otherChild,
+          makeJointSpec(
+              "cross_multibody",
+              sx::JointType::Revolute,
+              Eigen::Vector3d::UnitZ())),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      world.addArticulatedPrismaticJoint(
-          "cross_world", base, foreignBase, Eigen::Vector3d::UnitX()),
+      world.addJoint(
+          base,
+          foreignBase,
+          makeJointSpec(
+              "cross_world",
+              sx::JointType::Prismatic,
+              Eigen::Vector3d::UnitX())),
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      world.addArticulatedSphericalJoint("world_cross_world", foreignBase),
+      world.addJoint(
+          foreignBase,
+          makeJointSpec("world_cross_world", sx::JointType::Spherical)),
       sx::InvalidArgumentException);
 
-  auto valid = world.addArticulatedFixedJoint("valid", base, child);
+  auto valid = world.addJoint(
+      base, child, makeJointSpec("valid", sx::JointType::Fixed));
   EXPECT_EQ(valid.getParentLink().getName(), "base");
   EXPECT_EQ(valid.getChildLink().getName(), "child");
 }
@@ -21155,7 +21251,8 @@ TEST(World, RigidIpcContactStageProjectsFixedJointPose)
   child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
   child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
   child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
-  (void)world.addRigidBodyFixedJoint("fixed", parent, child);
+  (void)world.addJoint(
+      parent, child, makeJointSpec("fixed", sx::JointType::Fixed));
 
   sx::compute::SequentialExecutor executor;
   sx::compute::RigidIpcContactStage ipcStage(16);
@@ -21202,8 +21299,11 @@ TEST(World, RigidIpcContactStageProjectsRevoluteJointHingeAxis)
   parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
   auto child = world.addRigidBody("child", childOptions);
   child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "hinge", parent, child, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      parent,
+      child,
+      makeJointSpec(
+          "hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitZ()));
 
   auto& registry = sx::detail::registryOf(world);
   auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
@@ -21252,18 +21352,21 @@ TEST(World, RigidBodyPrismaticJointsRejectIpcSolver)
   auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
   auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
   EXPECT_THROW(
-      solverFirst.addRigidBodyPrismaticJoint(
-          "slide",
+      solverFirst.addJoint(
           solverFirstParent,
           solverFirstChild,
-          Eigen::Vector3d::UnitX()),
+          makeJointSpec(
+              "slide", sx::JointType::Prismatic, Eigen::Vector3d::UnitX())),
       sx::InvalidOperationException);
 
   sx::World jointFirst;
   auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
   auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
-  (void)jointFirst.addRigidBodyPrismaticJoint(
-      "slide", jointFirstParent, jointFirstChild, Eigen::Vector3d::UnitX());
+  (void)jointFirst.addJoint(
+      jointFirstParent,
+      jointFirstChild,
+      makeJointSpec(
+          "slide", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()));
 
   EXPECT_THROW(
       jointFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc),
@@ -21287,8 +21390,10 @@ TEST(World, RigidBodyBreakableJointsRejectIpcSolver)
   solverFirst.setRigidBodySolver(sx::RigidBodySolver::Ipc);
   auto solverFirstParent = solverFirst.addRigidBody("parent", parentOptions);
   auto solverFirstChild = solverFirst.addRigidBody("child", childOptions);
-  auto solverFirstJoint = solverFirst.addRigidBodyFixedJoint(
-      "fixed", solverFirstParent, solverFirstChild);
+  auto solverFirstJoint = solverFirst.addJoint(
+      solverFirstParent,
+      solverFirstChild,
+      makeJointSpec("fixed", sx::JointType::Fixed));
   solverFirstJoint.setBreakForce(10.0);
 
   EXPECT_THROW(
@@ -21297,8 +21402,10 @@ TEST(World, RigidBodyBreakableJointsRejectIpcSolver)
   sx::World jointFirst;
   auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
   auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
-  auto jointFirstJoint = jointFirst.addRigidBodyFixedJoint(
-      "fixed", jointFirstParent, jointFirstChild);
+  auto jointFirstJoint = jointFirst.addJoint(
+      jointFirstParent,
+      jointFirstChild,
+      makeJointSpec("fixed", sx::JointType::Fixed));
   jointFirstJoint.setBreakForce(10.0);
 
   EXPECT_THROW(
@@ -21325,15 +21432,19 @@ TEST(World, RigidBodyFixedJointsRejectUnifiedMultibodyPipeline)
       = multibodyFirst.addRigidBody("parent", parentOptions);
   auto multibodyFirstChild = multibodyFirst.addRigidBody("child", childOptions);
   EXPECT_THROW(
-      multibodyFirst.addRigidBodyFixedJoint(
-          "fixed", multibodyFirstParent, multibodyFirstChild),
+      multibodyFirst.addJoint(
+          multibodyFirstParent,
+          multibodyFirstChild,
+          makeJointSpec("fixed", sx::JointType::Fixed)),
       sx::InvalidOperationException);
 
   sx::World jointFirst;
   auto jointFirstParent = jointFirst.addRigidBody("parent", parentOptions);
   auto jointFirstChild = jointFirst.addRigidBody("child", childOptions);
-  (void)jointFirst.addRigidBodyFixedJoint(
-      "fixed", jointFirstParent, jointFirstChild);
+  (void)jointFirst.addJoint(
+      jointFirstParent,
+      jointFirstChild,
+      makeJointSpec("fixed", sx::JointType::Fixed));
 
   EXPECT_THROW(jointFirst.addMultibody("robot"), sx::InvalidOperationException);
   EXPECT_EQ(jointFirst.getMultibodyCount(), 0u);
@@ -24304,7 +24415,7 @@ TEST(World, ReplayRecordingRejectsRigidBodyConstructionEdits)
   expectBodyMutationRejected(
       [](sx::World&, sx::RigidBody&) {},
       [](sx::World&, sx::RigidBody& body) {
-        body.setDeformableGroundBarrier(true);
+        body.setDeformableObstaclePolicy({.groundBarrier = true});
       });
 
   sx::World parentWorld;

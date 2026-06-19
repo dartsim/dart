@@ -58,6 +58,22 @@ using Vec3 = Eigen::Vector3d;
 namespace common = dart::common;
 namespace sx = dart::simulation;
 
+sx::JointSpec makeJointSpec(
+    std::string_view name,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
+
 class CountingMemoryAllocator final : public common::MemoryAllocator
 {
 public:
@@ -5299,8 +5315,10 @@ TEST(AvbdRigidBlock, RigidWorldRevoluteVelocityActuatorBuildsMotorRows)
   linkOptions.position = Vec3::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "motorized_hinge", base, link, Vec3::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec("motorized_hinge", sx::JointType::Revolute, Vec3::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
   joint.setEffortLimits(
@@ -5370,8 +5388,10 @@ TEST(AvbdRigidBlock, RigidWorldContactStepFallbackUsesInventoryAllocator)
   linkOptions.position = Vec3::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "motorized_hinge", base, link, Vec3::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec("motorized_hinge", sx::JointType::Revolute, Vec3::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
   joint.setEffortLimits(
@@ -5437,8 +5457,11 @@ TEST(AvbdRigidBlock, RigidWorldPrismaticVelocityActuatorBuildsLinearMotorRows)
   linkOptions.position = Vec3::UnitZ();
   auto link = world.addRigidBody("slider", linkOptions);
 
-  auto joint = world.addRigidBodyPrismaticJoint(
-      "motorized_slider", base, link, Vec3::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec(
+          "motorized_slider", sx::JointType::Prismatic, Vec3::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.6));
   joint.setEffortLimits(
@@ -5513,8 +5536,10 @@ TEST(
   linkOptions.position = Vec3::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "motorized_hinge", base, link, Vec3::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec("motorized_hinge", sx::JointType::Revolute, Vec3::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
   joint.setEffortLimits(
@@ -5693,7 +5718,8 @@ TEST(AvbdRigidBlock, RigidWorldSphericalJointExtractsLinearOnlyRows)
   linkOptions.position = Vec3::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  sx::Joint joint = world.addRigidBodySphericalJoint("socket", base, link);
+  sx::Joint joint = world.addJoint(
+      base, link, makeJointSpec("socket", sx::JointType::Spherical));
   EXPECT_EQ(joint.getType(), sx::JointType::Spherical);
   EXPECT_EQ(joint.getDOFCount(), 3u);
 
@@ -5801,15 +5827,19 @@ TEST(AvbdRigidBlock, RigidWorldPointJointInputsRotateAxesWithParentFrame)
   sliderOptions.mass = 1.0;
   sliderOptions.position = Vec3::UnitZ();
   auto slider = world.addRigidBody("slider", sliderOptions);
-  sx::Joint sliderJoint = world.addRigidBodyPrismaticJoint(
-      "slider_joint", base, slider, Vec3::UnitZ());
+  sx::Joint sliderJoint = world.addJoint(
+      base,
+      slider,
+      makeJointSpec("slider_joint", sx::JointType::Prismatic, Vec3::UnitZ()));
 
   sx::RigidBodyOptions hingeOptions;
   hingeOptions.mass = 1.0;
   hingeOptions.position = 2.0 * Vec3::UnitZ();
   auto hinge = world.addRigidBody("hinge", hingeOptions);
-  sx::Joint hingeJoint = world.addRigidBodyRevoluteJoint(
-      "hinge_joint", base, hinge, Vec3::UnitZ());
+  sx::Joint hingeJoint = world.addJoint(
+      base,
+      hinge,
+      makeJointSpec("hinge_joint", sx::JointType::Revolute, Vec3::UnitZ()));
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity sliderJointEntity
@@ -5962,7 +5992,9 @@ TEST(AvbdRigidBlock, RigidWorldFixedJointHelperRejectsMultibodyLinks)
           .name = "fixed",
           .type = sx::JointType::Fixed,
           .transformFromParent
-          = Eigen::Isometry3d(Eigen::Translation3d(Vec3::UnitX()))});
+          = Eigen::Isometry3d(Eigen::Translation3d(Vec3::UnitX())),
+          .parentAnchor = std::nullopt,
+          .childAnchor = std::nullopt});
   const std::optional<sx::Joint> fixed = robot.getJoint("fixed");
   ASSERT_TRUE(fixed.has_value());
 

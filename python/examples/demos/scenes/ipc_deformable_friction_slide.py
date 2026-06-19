@@ -35,7 +35,9 @@ def _add_ground_barrier_box(world, name, center, half_extents):
     body = world.add_rigid_body(name, position=center)
     body.is_static = True
     body.set_collision_shape(sx.CollisionShape.box(half_extents))
-    body.is_deformable_ground_barrier = True
+    policy = body.deformable_obstacle_policy
+    policy.ground_barrier = True
+    body.deformable_obstacle_policy = policy
     return body
 
 

@@ -721,84 +721,49 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
 }
 
 //==============================================================================
-void RigidBody::setDeformableGroundBarrier(bool enabled)
+void RigidBody::setDeformableObstaclePolicy(
+    const DeformableObstaclePolicy& policy)
 {
   DART_SIMULATION_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
   auto& registry = dart::simulation::detail::registryOf(*getWorld());
-  if (enabled) {
-    registry.get_or_emplace<comps::DeformableGroundBarrierTag>(
-        detail::toRegistryEntity(getEntity()));
+  const auto entity = detail::toRegistryEntity(getEntity());
+
+  if (policy.groundBarrier) {
+    registry.get_or_emplace<comps::DeformableGroundBarrierTag>(entity);
   } else {
-    registry.remove<comps::DeformableGroundBarrierTag>(
-        detail::toRegistryEntity(getEntity()));
+    registry.remove<comps::DeformableGroundBarrierTag>(entity);
+  }
+
+  if (policy.surfaceObstacle) {
+    registry.get_or_emplace<comps::DeformableSurfaceCcdObstacleTag>(entity);
+  } else {
+    registry.remove<comps::DeformableSurfaceCcdObstacleTag>(entity);
+  }
+
+  if (policy.barrierOnly) {
+    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(entity);
+  } else {
+    registry.remove<comps::DeformableObstacleNoCcdTag>(entity);
   }
 }
 
 //==============================================================================
-bool RigidBody::isDeformableGroundBarrier() const
+DeformableObstaclePolicy RigidBody::getDeformableObstaclePolicy() const
 {
   DART_SIMULATION_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid rigid body handle");
 
-  return dart::simulation::detail::registryOf(*getWorld())
-      .all_of<comps::DeformableGroundBarrierTag>(
-          detail::toRegistryEntity(getEntity()));
-}
-
-//==============================================================================
-void RigidBody::setDeformableSurfaceCcdObstacle(bool enabled)
-{
-  DART_SIMULATION_THROW_T_IF(
-      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
-
-  auto& registry = dart::simulation::detail::registryOf(*getWorld());
-  if (enabled) {
-    registry.get_or_emplace<comps::DeformableSurfaceCcdObstacleTag>(
-        detail::toRegistryEntity(getEntity()));
-  } else {
-    registry.remove<comps::DeformableSurfaceCcdObstacleTag>(
-        detail::toRegistryEntity(getEntity()));
-  }
-}
-
-//==============================================================================
-bool RigidBody::isDeformableSurfaceCcdObstacle() const
-{
-  DART_SIMULATION_THROW_T_IF(
-      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
-
-  return dart::simulation::detail::registryOf(*getWorld())
-      .all_of<comps::DeformableSurfaceCcdObstacleTag>(
-          detail::toRegistryEntity(getEntity()));
-}
-
-//==============================================================================
-void RigidBody::setDeformableObstacleBarrierOnly(bool enabled)
-{
-  DART_SIMULATION_THROW_T_IF(
-      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
-
-  auto& registry = dart::simulation::detail::registryOf(*getWorld());
-  if (enabled) {
-    registry.get_or_emplace<comps::DeformableObstacleNoCcdTag>(
-        detail::toRegistryEntity(getEntity()));
-  } else {
-    registry.remove<comps::DeformableObstacleNoCcdTag>(
-        detail::toRegistryEntity(getEntity()));
-  }
-}
-
-//==============================================================================
-bool RigidBody::isDeformableObstacleBarrierOnly() const
-{
-  DART_SIMULATION_THROW_T_IF(
-      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
-
-  return dart::simulation::detail::registryOf(*getWorld())
-      .all_of<comps::DeformableObstacleNoCcdTag>(
-          detail::toRegistryEntity(getEntity()));
+  const auto& registry = dart::simulation::detail::registryOf(*getWorld());
+  const auto entity = detail::toRegistryEntity(getEntity());
+  return DeformableObstaclePolicy{
+      .groundBarrier
+      = registry.all_of<comps::DeformableGroundBarrierTag>(entity),
+      .surfaceObstacle
+      = registry.all_of<comps::DeformableSurfaceCcdObstacleTag>(entity),
+      .barrierOnly
+      = registry.all_of<comps::DeformableObstacleNoCcdTag>(entity)};
 }
 
 //==============================================================================

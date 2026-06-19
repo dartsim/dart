@@ -39,6 +39,7 @@
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
@@ -46,6 +47,7 @@
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/multibody/joint.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <Eigen/Cholesky>
@@ -58,6 +60,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -67,6 +70,53 @@ namespace sxdetail = dart::simulation::detail;
 namespace nb = dart::simulation::detail::newton_barrier;
 
 namespace {
+
+void setSurfaceObstaclePolicy(sx::RigidBody& body, bool enabled = true)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.surfaceObstacle = enabled;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+void setBarrierOnlyPolicy(sx::RigidBody& body, bool enabled = true)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.barrierOnly = enabled;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+sx::JointSpec makePointJointSpec(
+    std::string_view name,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ())
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  return spec;
+}
+
+sx::Joint addFixedJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::RigidBody& parent,
+    const sx::RigidBody& child)
+{
+  return world.addJoint(
+      parent, child, makePointJointSpec(name, sx::JointType::Fixed));
+}
+
+sx::Joint addRevoluteJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::RigidBody& parent,
+    const sx::RigidBody& child,
+    const Eigen::Vector3d& axis)
+{
+  return world.addJoint(
+      parent, child, makePointJointSpec(name, sx::JointType::Revolute, axis));
+}
 
 constexpr std::array<double, 4> kBridgeBoardX{-0.45, -0.15, 0.15, 0.45};
 constexpr double kMaxReducedEqualityResidual = 1e-8;
@@ -293,7 +343,7 @@ sx::RigidBody addPlan083StaticSurfaceCcdBox(
   options.position = position;
   auto body = world.addRigidBody(name, options);
   body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
-  body.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(body);
   return body;
 }
 
@@ -309,7 +359,7 @@ sx::RigidBody addPlan083MovingSurfaceCcdBox(
   options.position = position;
   auto body = world.addRigidBody(name, options);
   body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
-  body.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(body);
   body.setLinearVelocity(linearVelocity);
   return body;
 }
@@ -389,7 +439,8 @@ struct HangingBridgeFixture
       board.setFriction(0.7);
       board.setCollisionShape(
           sx::CollisionShape::makeBox(kBridgeBoardHalfExtents));
-      world.addRigidBodyFixedJoint(
+      addFixedJoint(
+          world,
           "plan083_bridge_point_connection_" + std::to_string(index),
           parent,
           board);
@@ -471,8 +522,12 @@ struct NunchakuFixture
         kNunchakuHandleHalfExtents,
         Eigen::Vector3d(kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
 
-    (void)world.addRigidBodyRevoluteJoint(
-        "plan083_nunchaku_hinge", *anchor, *swinging, Eigen::Vector3d::UnitZ());
+    (void)addRevoluteJoint(
+        world,
+        "plan083_nunchaku_hinge",
+        *anchor,
+        *swinging,
+        Eigen::Vector3d::UnitZ());
 
     snapshotBody(snapshots, *anchor);
     snapshotBody(snapshots, *swinging);
@@ -543,12 +598,16 @@ struct PulleyFixture
     rightLoad->setCollisionShape(
         sx::CollisionShape::makeBox(kPulleyLoadHalfExtents));
 
-    (void)world.addRigidBodyRevoluteJoint(
-        "plan083_pulley_hinge", *support, *wheel, Eigen::Vector3d::UnitY());
-    (void)world.addRigidBodyFixedJoint(
-        "plan083_pulley_left_point_connection", *wheel, *leftLoad);
-    (void)world.addRigidBodyFixedJoint(
-        "plan083_pulley_right_point_connection", *wheel, *rightLoad);
+    (void)addRevoluteJoint(
+        world,
+        "plan083_pulley_hinge",
+        *support,
+        *wheel,
+        Eigen::Vector3d::UnitY());
+    (void)addFixedJoint(
+        world, "plan083_pulley_left_point_connection", *wheel, *leftLoad);
+    (void)addFixedJoint(
+        world, "plan083_pulley_right_point_connection", *wheel, *rightLoad);
 
     snapshotBody(snapshots, *support);
     snapshotBody(snapshots, *wheel);
@@ -627,12 +686,16 @@ struct UmbrellaFixture
     rightRib->setCollisionShape(
         sx::CollisionShape::makeBox(kUmbrellaRibHalfExtents));
 
-    (void)world.addRigidBodyRevoluteJoint(
-        "plan083_umbrella_canopy_hinge", *mast, *hub, Eigen::Vector3d::UnitY());
-    (void)world.addRigidBodyFixedJoint(
-        "plan083_umbrella_left_rib_point_connection", *hub, *leftRib);
-    (void)world.addRigidBodyFixedJoint(
-        "plan083_umbrella_right_rib_point_connection", *hub, *rightRib);
+    (void)addRevoluteJoint(
+        world,
+        "plan083_umbrella_canopy_hinge",
+        *mast,
+        *hub,
+        Eigen::Vector3d::UnitY());
+    (void)addFixedJoint(
+        world, "plan083_umbrella_left_rib_point_connection", *hub, *leftRib);
+    (void)addFixedJoint(
+        world, "plan083_umbrella_right_rib_point_connection", *hub, *rightRib);
 
     snapshotBody(snapshots, *mast);
     snapshotBody(snapshots, *hub);
@@ -761,8 +824,8 @@ struct LyingFlatFixture
     options.position = position;
     sx::RigidBody body = world.addRigidBody(name, options);
     body.setCollisionShape(shape);
-    body.setDeformableSurfaceCcdObstacle(true);
-    body.setDeformableObstacleBarrierOnly(barrierOnly);
+    setSurfaceObstaclePolicy(body);
+    setBarrierOnlyPolicy(body, barrierOnly);
     obstacles.push_back(body);
     return body;
   }
@@ -779,8 +842,8 @@ struct LyingFlatFixture
     options.linearVelocity = linearVelocity;
     sx::RigidBody body = world.addRigidBody(name, options);
     body.setCollisionShape(shape);
-    body.setDeformableSurfaceCcdObstacle(true);
-    body.setDeformableObstacleBarrierOnly(false);
+    setSurfaceObstaclePolicy(body);
+    setBarrierOnlyPolicy(body, false);
     obstacles.push_back(body);
     snapshotBody(obstacleSnapshots, body);
     return body;
@@ -877,8 +940,8 @@ struct CandyFixture
         world.addRigidBody("plan083_candy_reduced_shell", shellOptions));
     shell->setCollisionShape(
         sx::CollisionShape::makeBox(kCandyShellHalfExtents));
-    shell->setDeformableSurfaceCcdObstacle(true);
-    shell->setDeformableObstacleBarrierOnly(true);
+    setSurfaceObstaclePolicy(*shell);
+    setBarrierOnlyPolicy(*shell);
 
     sx::DeformableBodyOptions clothOptions;
     const double halfWidth
@@ -1035,7 +1098,8 @@ struct NunchakuScalingFixture
           kNunchakuHandleHalfExtents,
           Eigen::Vector3d(kNunchakuHandleHalfExtents.x(), 0.0, 0.0)));
 
-      (void)world.addRigidBodyRevoluteJoint(
+      (void)addRevoluteJoint(
+          world,
           "plan083_nunchaku_scaling_hinge_" + std::to_string(index),
           anchor,
           swing,
@@ -1105,8 +1169,12 @@ struct WindmillFixture
     striker->setCollisionShape(
         sx::CollisionShape::makeBox(kWindmillStrikerHalfExtents));
 
-    (void)world.addRigidBodyRevoluteJoint(
-        "plan083_windmill_hinge", *hub, *blade, Eigen::Vector3d::UnitY());
+    (void)addRevoluteJoint(
+        world,
+        "plan083_windmill_hinge",
+        *hub,
+        *blade,
+        Eigen::Vector3d::UnitY());
 
     snapshotBody(snapshots, *hub);
     snapshotBody(snapshots, *blade);
@@ -1188,7 +1256,8 @@ struct TerrainVehicleFixture
       wheel.setFriction(0.9);
       wheel.setCollisionShape(
           sx::CollisionShape::makeSphere(kTerrainWheelRadius));
-      (void)world.addRigidBodyRevoluteJoint(
+      (void)addRevoluteJoint(
+          world,
           "plan083_vehicle_wheel_hinge_" + std::to_string(index),
           *chassis,
           wheel,
@@ -1340,7 +1409,8 @@ struct RagdollFixture
         part.setCollisionShape(
             sx::CollisionShape::makeBox(kRagdollLegHalfExtents));
       }
-      (void)world.addRigidBodyRevoluteJoint(
+      (void)addRevoluteJoint(
+          world,
           "plan083_ragdoll_joint_" + std::to_string(index),
           *torso,
           part,
@@ -2626,7 +2696,7 @@ static void BM_Plan083CpuScene_nunchaku_single_reduced_world_step(
   state.counters["dynamic_body_count"]
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["revolute_joint_count"]
-      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+      = static_cast<double>(fixture.world.getJointCount());
   state.counters["active_articulation_constraints"]
       = static_cast<double>(lastStats.activeArticulationConstraints);
   state.counters["solver_iterations"]
@@ -2682,7 +2752,7 @@ static void BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step(
   state.counters["dynamic_body_count"]
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["revolute_joint_count"]
-      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+      = static_cast<double>(fixture.world.getJointCount());
   state.counters["active_articulation_constraints"]
       = static_cast<double>(lastStats.activeArticulationConstraints);
   state.counters["solver_iterations"]
@@ -2739,7 +2809,7 @@ static void BM_Plan083CpuScene_windmill_reduced_world_step(
   state.counters["dynamic_body_count"]
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["revolute_joint_count"]
-      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+      = static_cast<double>(fixture.world.getJointCount());
   state.counters["active_constraints"]
       = static_cast<double>(lastStats.activeConstraints);
   state.counters["active_friction_constraints"]
@@ -2811,7 +2881,7 @@ static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["wheel_count"] = static_cast<double>(fixture.wheels.size());
   state.counters["revolute_joint_count"]
-      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+      = static_cast<double>(fixture.world.getJointCount());
   state.counters["active_constraints"]
       = static_cast<double>(lastStats.activeConstraints);
   state.counters["active_friction_constraints"]
@@ -2976,7 +3046,7 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
   state.counters["ragdoll_body_count"]
       = static_cast<double>(1 + fixture.parts.size());
   state.counters["revolute_joint_count"]
-      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+      = static_cast<double>(fixture.world.getJointCount());
   state.counters["active_constraints"]
       = static_cast<double>(lastStats.activeConstraints);
   state.counters["active_friction_constraints"]

@@ -33,8 +33,10 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -44,6 +46,31 @@ namespace {
 namespace sx = dart::simulation;
 namespace sxc = dart::simulation::compute;
 namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+sx::JointSpec makeJointSpec(
+    std::string_view name,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
+
+sx::JointConstraintProjectionPolicy makeConstraintProjectionPolicy(
+    double startStiffness, double linearStiffness, double angularStiffness)
+{
+  return sx::JointConstraintProjectionPolicy{
+      .startStiffness = startStiffness,
+      .linearStiffness = linearStiffness,
+      .angularStiffness = angularStiffness};
+}
 
 // Returns the (single) multibody structure component in the world.
 const sx::comps::MultibodyStructure& structureOf(sx::World& world)
@@ -2669,10 +2696,10 @@ TEST(
     body.setMass(2.0);
     body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
-    sx::Joint joint = world.addArticulatedFixedJoint("hold", body);
-    joint.setAvbdStartStiffness(10.0);
-    joint.setAvbdLinearStiffness(linearMaterialStiffness);
-    joint.setAvbdAngularStiffness(angularMaterialStiffness);
+    sx::Joint joint
+        = world.addJoint(body, makeJointSpec("hold", sx::JointType::Fixed));
+    joint.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+        10.0, linearMaterialStiffness, angularMaterialStiffness));
 
     auto& registry = dart::simulation::detail::registryOf(world);
     const entt::entity jointEntity
@@ -3842,14 +3869,15 @@ TEST(
   pose << 0.25, -0.15, 0.2, 0.0, 0.0, 0.3;
   body.getParentJoint().setPosition(pose);
 
-  sx::Joint joint = world.addArticulatedFixedJoint("base_hold", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("base_hold", sx::JointType::Fixed));
   EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
   EXPECT_EQ(joint.getParentLink().getName(), "base");
   EXPECT_EQ(joint.getChildLink().getName(), "body");
-  EXPECT_TRUE(world.hasArticulatedJoint("base_hold"));
-  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
-  ASSERT_TRUE(world.getArticulatedJoint("base_hold").has_value());
-  EXPECT_EQ(world.getArticulatedJoints().size(), 1u);
+  EXPECT_TRUE(world.hasJoint("base_hold"));
+  EXPECT_EQ(world.getJointCount(), 1u);
+  ASSERT_TRUE(world.getJoint("base_hold").has_value());
+  EXPECT_EQ(world.getJoints().size(), 1u);
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity
@@ -3906,8 +3934,15 @@ TEST(
 
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "offset_hold", pair.parent, pair.child, parentAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec(
+          "offset_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity
@@ -3970,12 +4005,15 @@ TEST(
 
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "serialized_link_hold",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_link_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
   joint.setBreakForce(17.0);
 
   std::stringstream data;
@@ -3992,7 +4030,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_link_hold");
+  auto restoredJoint = restored.getJoint("serialized_link_hold");
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Fixed);
   EXPECT_EQ(restoredJoint->getDOFCount(), 0u);
@@ -4181,25 +4219,42 @@ TEST(
   }};
 
   std::array<sx::Joint, expected.size()> joints{
-      world.addArticulatedFixedJoint(expected[0].name, pair.parent, pair.child),
-      world.addArticulatedRevoluteJoint(
-          expected[1].name, pair.parent, pair.child, hingeAxis),
-      world.addArticulatedPrismaticJoint(
-          expected[2].name, pair.parent, pair.child, sliderAxis),
-      world.addArticulatedSphericalJoint(
-          expected[3].name, pair.parent, pair.child),
-      world.addArticulatedFixedJoint(expected[4].name, pair.parent),
-      world.addArticulatedRevoluteJoint(
-          expected[5].name, pair.parent, hingeAxis),
-      world.addArticulatedPrismaticJoint(
-          expected[6].name, pair.child, sliderAxis),
-      world.addArticulatedSphericalJoint(expected[7].name, pair.child),
+      world.addJoint(
+          pair.parent,
+          pair.child,
+          makeJointSpec(expected[0].name, sx::JointType::Fixed)),
+      world.addJoint(
+          pair.parent,
+          pair.child,
+          makeJointSpec(expected[1].name, sx::JointType::Revolute, hingeAxis)),
+      world.addJoint(
+          pair.parent,
+          pair.child,
+          makeJointSpec(
+              expected[2].name, sx::JointType::Prismatic, sliderAxis)),
+      world.addJoint(
+          pair.parent,
+          pair.child,
+          makeJointSpec(expected[3].name, sx::JointType::Spherical)),
+      world.addJoint(
+          pair.parent, makeJointSpec(expected[4].name, sx::JointType::Fixed)),
+      world.addJoint(
+          pair.parent,
+          makeJointSpec(expected[5].name, sx::JointType::Revolute, hingeAxis)),
+      world.addJoint(
+          pair.child,
+          makeJointSpec(
+              expected[6].name, sx::JointType::Prismatic, sliderAxis)),
+      world.addJoint(
+          pair.child,
+          makeJointSpec(expected[7].name, sx::JointType::Spherical)),
   };
 
   for (std::size_t i = 0; i < expected.size(); ++i) {
-    joints[i].setAvbdStartStiffness(expected[i].startStiffness);
-    joints[i].setAvbdLinearStiffness(expected[i].linearStiffness);
-    joints[i].setAvbdAngularStiffness(expected[i].angularStiffness);
+    joints[i].setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+        expected[i].startStiffness,
+        expected[i].linearStiffness,
+        expected[i].angularStiffness));
   }
 
   std::stringstream data;
@@ -4213,7 +4268,7 @@ TEST(
   auto& registry = dart::simulation::detail::registryOf(restored);
   for (const ExpectedJoint& joint : expected) {
     SCOPED_TRACE(joint.name);
-    auto restoredJoint = restored.getArticulatedJoint(joint.name);
+    auto restoredJoint = restored.getJoint(joint.name);
     ASSERT_TRUE(restoredJoint.has_value());
     EXPECT_EQ(restoredJoint->getType(), joint.type);
     EXPECT_EQ(restoredJoint->getDOFCount(), joint.dofs);
@@ -4225,7 +4280,7 @@ TEST(
 
   for (const ExpectedJoint& joint : expected) {
     SCOPED_TRACE(joint.name);
-    auto restoredJoint = restored.getArticulatedJoint(joint.name);
+    auto restoredJoint = restored.getJoint(joint.name);
     ASSERT_TRUE(restoredJoint.has_value());
     const entt::entity jointEntity
         = sx::detail::toRegistryEntity(restoredJoint->getEntity());
@@ -4270,12 +4325,12 @@ TEST(
   body.setMass(2.0);
   body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
 
-  sx::Joint joint
-      = world.addArticulatedSphericalJoint("base_socket", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("base_socket", sx::JointType::Spherical));
   EXPECT_EQ(joint.getType(), sx::JointType::Spherical);
   EXPECT_EQ(joint.getDOFCount(), 3u);
-  EXPECT_TRUE(world.hasArticulatedJoint("base_socket"));
-  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_TRUE(world.hasJoint("base_socket"));
+  EXPECT_EQ(world.getJointCount(), 1u);
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity
@@ -4344,11 +4399,17 @@ TEST(
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
 
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "world_offset_socket", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_offset_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   EXPECT_EQ(joint.getType(), sx::JointType::Spherical);
   EXPECT_EQ(joint.getDOFCount(), 3u);
-  EXPECT_TRUE(world.hasArticulatedJoint("world_offset_socket"));
+  EXPECT_TRUE(world.hasJoint("world_offset_socket"));
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity
@@ -4413,8 +4474,14 @@ TEST(
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
 
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "serialized_socket", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   joint.setBreakForce(7.5);
 
   std::stringstream data;
@@ -4430,9 +4497,9 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_socket");
+  auto restoredJoint = restored.getJoint("serialized_socket");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_EQ(restored.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(restored.getJointCount(), 1u);
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Spherical);
   EXPECT_EQ(restoredJoint->getDOFCount(), 3u);
   EXPECT_EQ(restoredJoint->getChildLink().getName(), "body");
@@ -4501,12 +4568,15 @@ TEST(
 
   const Eigen::Vector3d parentAnchor(0.15, 0.05, 0.0);
   const Eigen::Vector3d childAnchor(-0.15, 0.05, 0.0);
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "serialized_link_socket",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_link_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
   joint.setBreakForce(9.0);
 
   std::stringstream data;
@@ -4523,9 +4593,9 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_link_socket");
+  auto restoredJoint = restored.getJoint("serialized_link_socket");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_EQ(restored.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(restored.getJointCount(), 1u);
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Spherical);
   EXPECT_EQ(restoredJoint->getDOFCount(), 3u);
   EXPECT_EQ(restoredJoint->getParentLink().getName(), "parent");
@@ -4606,8 +4676,8 @@ TEST(
   body.setMass(2.0);
   body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
 
-  sx::Joint joint
-      = world.addArticulatedSphericalJoint("breakable_socket", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("breakable_socket", sx::JointType::Spherical));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -4660,8 +4730,14 @@ TEST(
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
   const Eigen::Matrix3d capturedRotation = body.getWorldTransform().linear();
 
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "world_breakable_socket", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_breakable_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -4733,8 +4809,14 @@ TEST(
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
   const Eigen::Matrix3d capturedRotation = body.getWorldTransform().linear();
 
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "serialized_world_broken_socket", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_world_broken_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -4760,8 +4842,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_world_broken_socket");
+  auto restoredJoint = restored.getJoint("serialized_world_broken_socket");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Spherical);
@@ -4838,12 +4919,15 @@ TEST(
 
   const Eigen::Vector3d parentAnchor(0.15, 0.05, 0.0);
   const Eigen::Vector3d childAnchor(-0.15, 0.05, 0.0);
-  sx::Joint joint = world.addArticulatedSphericalJoint(
-      "serialized_link_broken_socket",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_link_broken_socket",
+          sx::JointType::Spherical,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -4874,8 +4958,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_link_broken_socket");
+  auto restoredJoint = restored.getJoint("serialized_link_broken_socket");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 1e-18);
@@ -4982,8 +5065,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint
-      = world.addArticulatedRevoluteJoint("base_hinge", base, body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("base_hinge", sx::JointType::Revolute, hingeAxis));
   ASSERT_EQ(joint.getType(), sx::JointType::Revolute);
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
@@ -5057,8 +5142,15 @@ TEST(
   Eigen::VectorXd pose = Eigen::VectorXd::Zero(6);
   pose.head<3>() = parentAnchor - childAnchor;
   body.getParentJoint().setPosition(pose);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "base_hinge", base, body, hingeAxis, parentAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec(
+          "base_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5125,8 +5217,11 @@ TEST(
   body.setMass(2.0);
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "base_hinge", base, body, Eigen::Vector3d::UnitZ());
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec(
+          "base_hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5189,8 +5284,10 @@ TEST(
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "movable_hinge", pair.parent, pair.child, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec("movable_hinge", sx::JointType::Revolute, hingeAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5262,13 +5359,15 @@ TEST(
   Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
   childPose.head<3>() = parentAnchor - childAnchor;
   pair.child.getParentJoint().setPosition(childPose);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "movable_tiny_hinge",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      hingeAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "movable_tiny_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5344,13 +5443,15 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.0, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.0, 0.0);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "offset_hinge",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      hingeAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "offset_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5427,13 +5528,15 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.0, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.0, 0.0);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "serialized_link_hinge",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      hingeAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_link_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5456,7 +5559,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_link_hinge");
+  auto restoredJoint = restored.getJoint("serialized_link_hinge");
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Revolute);
   EXPECT_EQ(restoredJoint->getDOFCount(), 1u);
@@ -5548,8 +5651,10 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "base_slider", base, body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("base_slider", sx::JointType::Prismatic, sliderAxis));
   ASSERT_EQ(joint.getType(), sx::JointType::Prismatic);
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
@@ -5622,8 +5727,15 @@ TEST(
   Eigen::VectorXd pose = Eigen::VectorXd::Zero(6);
   pose.head<3>() = parentAnchor - childAnchor;
   body.getParentJoint().setPosition(pose);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "base_slider", base, body, sliderAxis, parentAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec(
+          "base_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5695,8 +5807,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "base_slider", base, body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("base_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5761,8 +5875,10 @@ TEST(
   const FloatingLinkPair pair = addFloatingLinkPair(world);
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "movable_slider", pair.parent, pair.child, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec("movable_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5834,13 +5950,15 @@ TEST(
   Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
   childPose.head<3>() = parentAnchor - childAnchor;
   pair.child.getParentJoint().setPosition(childPose);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "movable_tiny_slider",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "movable_tiny_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5915,13 +6033,15 @@ TEST(
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "offset_slider",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "offset_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -5997,13 +6117,15 @@ TEST(
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "serialized_link_slider",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_link_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -6026,7 +6148,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_link_slider");
+  auto restoredJoint = restored.getJoint("serialized_link_slider");
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Prismatic);
   EXPECT_EQ(restoredJoint->getDOFCount(), 1u);
@@ -6115,8 +6237,8 @@ TEST(
   body.setMass(2.0);
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
-  sx::Joint joint
-      = world.addArticulatedFixedJoint("breakable_hold", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("breakable_hold", sx::JointType::Fixed));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6161,8 +6283,8 @@ TEST(VariationalIntegration, AvbdPublicArticulatedBreakForceResetReengagesJoint)
   pose << 0.1, -0.2, 0.15, 0.0, 0.0, 0.2;
   body.getParentJoint().setPosition(pose);
 
-  sx::Joint joint
-      = world.addArticulatedFixedJoint("resettable_hold", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("resettable_hold", sx::JointType::Fixed));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6223,7 +6345,8 @@ TEST(VariationalIntegration, AvbdPublicArticulatedBreakForceReArmsAfterReset)
   pose << 0.1, -0.2, 0.15, 0.0, 0.0, 0.2;
   body.getParentJoint().setPosition(pose);
 
-  sx::Joint joint = world.addArticulatedFixedJoint("rearm_hold", base, body);
+  sx::Joint joint = world.addJoint(
+      base, body, makeJointSpec("rearm_hold", sx::JointType::Fixed));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6308,8 +6431,15 @@ TEST(
 
   const Eigen::Vector3d childAnchor(-0.15, 0.05, 0.0);
   const Eigen::Vector3d parentAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "serialized_broken_hold", base, body, parentAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec(
+          "serialized_broken_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6334,7 +6464,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_broken_hold");
+  auto restoredJoint = restored.getJoint("serialized_broken_hold");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Fixed);
@@ -6401,8 +6531,10 @@ TEST(
   world.setTimeStep(0.005);
 
   FloatingLinkPair pair = addFloatingLinkPair(world);
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "movable_breakable_hold", pair.parent, pair.child);
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec("movable_breakable_hold", sx::JointType::Fixed));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6468,13 +6600,15 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "movable_offset_breakable_hinge",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      hingeAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "movable_offset_breakable_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -6565,13 +6699,15 @@ TEST(
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "movable_offset_breakable_slider",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "movable_offset_breakable_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -6659,12 +6795,15 @@ TEST(
 
   const Eigen::Vector3d parentAnchor(0.15, 0.05, 0.0);
   const Eigen::Vector3d childAnchor(-0.15, 0.05, 0.0);
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "serialized_movable_broken_hold",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_movable_broken_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          parentAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -6695,8 +6834,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_movable_broken_hold");
+  auto restoredJoint = restored.getJoint("serialized_movable_broken_hold");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 1e-18);
@@ -6792,13 +6930,15 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "serialized_movable_broken_hinge",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      hingeAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_movable_broken_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -6828,8 +6968,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_movable_broken_hinge");
+  auto restoredJoint = restored.getJoint("serialized_movable_broken_hinge");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 1e-18);
@@ -6936,13 +7075,15 @@ TEST(
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "serialized_movable_broken_slider",
+  sx::Joint joint = world.addJoint(
       pair.parent,
       pair.child,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_movable_broken_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -6972,8 +7113,7 @@ TEST(
   ASSERT_TRUE(restoredParent.has_value());
   auto restoredChild = restoredRobot->getLink("child");
   ASSERT_TRUE(restoredChild.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_movable_broken_slider");
+  auto restoredJoint = restored.getJoint("serialized_movable_broken_slider");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 1e-18);
@@ -7087,8 +7227,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "breakable_hinge", base, body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("breakable_hinge", sx::JointType::Revolute, hingeAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -7153,8 +7295,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "breakable_hinge", base, body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("breakable_hinge", sx::JointType::Revolute, hingeAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -7225,13 +7369,15 @@ TEST(
   pose.head<3>() = Eigen::Vector3d(0.1, -0.2, 0.15);
   body.getParentJoint().setPosition(pose);
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "serialized_broken_hinge",
+  sx::Joint joint = world.addJoint(
       base,
       body,
-      hingeAxis,
-      body.getWorldTransform() * Eigen::Vector3d(-0.15, 0.05, 0.0),
-      Eigen::Vector3d(-0.15, 0.05, 0.0));
+      makeJointSpec(
+          "serialized_broken_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          body.getWorldTransform() * Eigen::Vector3d(-0.15, 0.05, 0.0),
+          Eigen::Vector3d(-0.15, 0.05, 0.0)));
   const Eigen::Vector3d parentAnchor(0.1 - 0.15, -0.2 + 0.05, 0.15);
   const Eigen::Vector3d childAnchor(-0.15, 0.05, 0.0);
   joint.setActuatorType(sx::ActuatorType::Velocity);
@@ -7260,7 +7406,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_broken_hinge");
+  auto restoredJoint = restored.getJoint("serialized_broken_hinge");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Revolute);
@@ -7361,8 +7507,10 @@ TEST(
       = (Eigen::Vector3d::UnitY()
          - Eigen::Vector3d::UnitY().dot(sliderAxis) * sliderAxis)
             .normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "breakable_slider", base, body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("breakable_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -7431,8 +7579,10 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "breakable_slider", base, body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      base,
+      body,
+      makeJointSpec("breakable_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -7505,13 +7655,15 @@ TEST(
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   const Eigen::Vector3d childAnchor(0.0, 0.2, 0.1);
   const Eigen::Vector3d parentAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "serialized_broken_slider",
+  sx::Joint joint = world.addJoint(
       base,
       body,
-      sliderAxis,
-      parentAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_broken_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          parentAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -7538,7 +7690,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_broken_slider");
+  auto restoredJoint = restored.getJoint("serialized_broken_slider");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Prismatic);
@@ -7643,12 +7795,13 @@ TEST(
   pose << 0.3, -0.2, 0.1, 0.0, 0.0, 0.25;
   body.getParentJoint().setPosition(pose);
 
-  sx::Joint joint = world.addArticulatedFixedJoint("world_hold", body);
+  sx::Joint joint
+      = world.addJoint(body, makeJointSpec("world_hold", sx::JointType::Fixed));
   EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
   EXPECT_EQ(joint.getChildLink().getName(), "body");
   EXPECT_THROW({ (void)joint.getParentLink(); }, sx::InvalidArgumentException);
-  EXPECT_TRUE(world.hasArticulatedJoint("world_hold"));
-  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_TRUE(world.hasJoint("world_hold"));
+  EXPECT_EQ(world.getJointCount(), 1u);
 
   world.enterSimulationMode();
 
@@ -7701,8 +7854,14 @@ TEST(
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Isometry3d captured = body.getWorldTransform();
   const Eigen::Vector3d worldAnchor = captured * childAnchor;
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "world_offset_hold", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_offset_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
 
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity
@@ -7765,8 +7924,14 @@ TEST(
   body.getParentJoint().setPosition(pose);
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "serialized_world_hold", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_world_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   joint.setBreakForce(19.0);
 
   std::stringstream data;
@@ -7781,9 +7946,9 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_world_hold");
+  auto restoredJoint = restored.getJoint("serialized_world_hold");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_EQ(restored.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(restored.getJointCount(), 1u);
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Fixed);
   EXPECT_EQ(restoredJoint->getDOFCount(), 0u);
   EXPECT_EQ(restoredJoint->getChildLink().getName(), "body");
@@ -7860,8 +8025,8 @@ TEST(
   pose << 0.3, -0.2, 0.1, 0.0, 0.0, 0.25;
   body.getParentJoint().setPosition(pose);
 
-  sx::Joint joint
-      = world.addArticulatedFixedJoint("world_breakable_hold", body);
+  sx::Joint joint = world.addJoint(
+      body, makeJointSpec("world_breakable_hold", sx::JointType::Fixed));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -7933,8 +8098,14 @@ TEST(
 
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedFixedJoint(
-      "serialized_world_broken_hold", body, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_world_broken_hold",
+          sx::JointType::Fixed,
+          Eigen::Vector3d::UnitZ(),
+          worldAnchor,
+          childAnchor));
   joint.setBreakForce(1e-18);
 
   world.enterSimulationMode();
@@ -7959,8 +8130,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_world_broken_hold");
+  auto restoredJoint = restored.getJoint("serialized_world_broken_hold");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 1e-18);
@@ -8042,8 +8212,8 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint
-      = world.addArticulatedRevoluteJoint("world_hinge", body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      body, makeJointSpec("world_hinge", sx::JointType::Revolute, hingeAxis));
   ASSERT_EQ(joint.getType(), sx::JointType::Revolute);
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
@@ -8119,8 +8289,14 @@ TEST(
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "world_offset_hinge", body, hingeAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_offset_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8197,8 +8373,14 @@ TEST(
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
 
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "serialized_world_hinge", body, hingeAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_world_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8220,9 +8402,9 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_world_hinge");
+  auto restoredJoint = restored.getJoint("serialized_world_hinge");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_EQ(restored.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(restored.getJointCount(), 1u);
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Revolute);
   EXPECT_EQ(restoredJoint->getDOFCount(), 1u);
   EXPECT_EQ(restoredJoint->getChildLink().getName(), "body");
@@ -8307,8 +8489,14 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "world_hinge", body, hingeAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8375,8 +8563,10 @@ TEST(
   body.setMass(2.0);
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "world_hinge", body, Eigen::Vector3d::UnitZ());
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitZ()));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8447,8 +8637,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "world_breakable_hinge", body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_breakable_hinge", sx::JointType::Revolute, hingeAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8513,8 +8705,10 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "world_breakable_hinge", body, hingeAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_breakable_hinge", sx::JointType::Revolute, hingeAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8586,12 +8780,14 @@ TEST(
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d childAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedRevoluteJoint(
-      "serialized_world_broken_hinge",
+  sx::Joint joint = world.addJoint(
       body,
-      hingeAxis,
-      worldAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_world_broken_hinge",
+          sx::JointType::Revolute,
+          hingeAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.4;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -8618,8 +8814,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_world_broken_hinge");
+  auto restoredJoint = restored.getJoint("serialized_world_broken_hinge");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Revolute);
@@ -8715,8 +8910,8 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.2, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
-  sx::Joint hinge
-      = world.addArticulatedRevoluteJoint("clear_hinge", body, hingeAxis);
+  sx::Joint hinge = world.addJoint(
+      body, makeJointSpec("clear_hinge", sx::JointType::Revolute, hingeAxis));
   ASSERT_EQ(hinge.getType(), sx::JointType::Revolute);
   hinge.setActuatorType(sx::ActuatorType::Velocity);
   const double hingeSpeed = 0.4;
@@ -8761,13 +8956,13 @@ TEST(
   EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
   EXPECT_EQ(world.getFrame(), 0u);
   EXPECT_EQ(world.getMultibodyCount(), 0u);
-  EXPECT_EQ(world.getArticulatedJointCount(), 0u);
+  EXPECT_EQ(world.getJointCount(), 0u);
   EXPECT_EQ(
       world.getMultibodyOptions().integrationFamily,
       sx::MultibodyIntegrationFamily::SemiImplicit);
   EXPECT_FALSE(world.hasMultibody("clear_revolute_world_facade"));
-  EXPECT_FALSE(world.hasArticulatedJoint("clear_hinge"));
-  EXPECT_FALSE(world.getArticulatedJoint("clear_hinge").has_value());
+  EXPECT_FALSE(world.hasJoint("clear_hinge"));
+  EXPECT_FALSE(world.getJoint("clear_hinge").has_value());
 
   world.setGravity(Eigen::Vector3d::Zero());
   world.setMultibodyOptions(
@@ -8786,8 +8981,9 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint slider = world.addArticulatedPrismaticJoint(
-      "clear_slider", sliderBody, sliderAxis);
+  sx::Joint slider = world.addJoint(
+      sliderBody,
+      makeJointSpec("clear_slider", sx::JointType::Prismatic, sliderAxis));
   ASSERT_EQ(slider.getType(), sx::JointType::Prismatic);
   slider.setActuatorType(sx::ActuatorType::Velocity);
   const double sliderSpeed = 0.3;
@@ -8800,8 +8996,8 @@ TEST(
   const entt::entity sliderEntity
       = sx::detail::toRegistryEntity(slider.getEntity());
   EXPECT_TRUE(slider.isValid());
-  EXPECT_TRUE(world.hasArticulatedJoint("clear_slider"));
-  ASSERT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_TRUE(world.hasJoint("clear_slider"));
+  ASSERT_EQ(world.getJointCount(), 1u);
 
   world.enterSimulationMode();
 
@@ -8855,8 +9051,9 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint
-      = world.addArticulatedPrismaticJoint("world_slider", body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec("world_slider", sx::JointType::Prismatic, sliderAxis));
   ASSERT_EQ(joint.getType(), sx::JointType::Prismatic);
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
@@ -8932,8 +9129,14 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "world_offset_slider", body, sliderAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_offset_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9012,8 +9215,14 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "serialized_world_slider", body, sliderAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "serialized_world_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9035,9 +9244,9 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint = restored.getArticulatedJoint("serialized_world_slider");
+  auto restoredJoint = restored.getJoint("serialized_world_slider");
   ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_EQ(restored.getArticulatedJointCount(), 1u);
+  EXPECT_EQ(restored.getJointCount(), 1u);
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Prismatic);
   EXPECT_EQ(restoredJoint->getDOFCount(), 1u);
   EXPECT_EQ(restoredJoint->getChildLink().getName(), "body");
@@ -9123,8 +9332,14 @@ TEST(
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   const Eigen::Vector3d childAnchor(0.1, 0.2, -0.1);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "world_slider", body, sliderAxis, worldAnchor, childAnchor);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9196,8 +9411,9 @@ TEST(
   body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
 
   const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
-  sx::Joint joint
-      = world.addArticulatedPrismaticJoint("world_slider", body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec("world_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9274,8 +9490,10 @@ TEST(
       = (Eigen::Vector3d::UnitY()
          - Eigen::Vector3d::UnitY().dot(sliderAxis) * sliderAxis)
             .normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "world_breakable_slider", body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_breakable_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9344,8 +9562,10 @@ TEST(
 
   const Eigen::Vector3d sliderAxis
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "world_breakable_slider", body, sliderAxis);
+  sx::Joint joint = world.addJoint(
+      body,
+      makeJointSpec(
+          "world_breakable_slider", sx::JointType::Prismatic, sliderAxis));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9418,12 +9638,14 @@ TEST(
       = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
   const Eigen::Vector3d childAnchor(0.0, 0.2, 0.1);
   const Eigen::Vector3d worldAnchor = body.getWorldTransform() * childAnchor;
-  sx::Joint joint = world.addArticulatedPrismaticJoint(
-      "serialized_world_broken_slider",
+  sx::Joint joint = world.addJoint(
       body,
-      sliderAxis,
-      worldAnchor,
-      childAnchor);
+      makeJointSpec(
+          "serialized_world_broken_slider",
+          sx::JointType::Prismatic,
+          sliderAxis,
+          worldAnchor,
+          childAnchor));
   joint.setActuatorType(sx::ActuatorType::Velocity);
   const double targetSpeed = 0.3;
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
@@ -9450,8 +9672,7 @@ TEST(
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredBody = restoredRobot->getLink("body");
   ASSERT_TRUE(restoredBody.has_value());
-  auto restoredJoint
-      = restored.getArticulatedJoint("serialized_world_broken_slider");
+  auto restoredJoint = restored.getJoint("serialized_world_broken_slider");
   ASSERT_TRUE(restoredJoint.has_value());
   ASSERT_TRUE(restoredJoint->isBroken());
   EXPECT_EQ(restoredJoint->getType(), sx::JointType::Prismatic);

@@ -685,7 +685,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   byte-order reasoning against the old PFR record (no committed pre-v20 binary
   fixture in the suite) — a follow-up could add one.
 
-#### WP-091.15 Family-scoped source layout [claimed]
+#### WP-091.15 Family-scoped source layout [done — PR #3067, merged 2026-06-19]
 
 - Objective: each solver family's runtime lives in its own module under
   `dart/simulation/detail/`, ending the multi-family monolithic translation
@@ -1337,7 +1337,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run test-py`, `pixi run check-api-boundaries`.
 - Dependencies: WP-091.21 (ordering), maintainer sign-off on naming.
 
-#### WP-091.41 JointSpec construction surface
+#### WP-091.41 JointSpec construction surface [claimed]
 
 - Objective: joint creation collapses to one verb taking a spec value object
   and frame-derived endpoints, with one query family; solver-family
@@ -1350,8 +1350,16 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run test-py`, `pixi run check-api-boundaries`.
 - Dependencies: WP-091.12 (selection validation at bake).
+- Evidence: the unified branch removes the parallel public
+  `World::addRigidBody*Joint`/`addArticulated*Joint` method families in favor
+  of `World::addJoint(..., JointSpec)`, adds optional `JointSpec` anchors,
+  and aligns dartpy/stubs on `World.add_joint`, `get_joint`, `has_joint`,
+  `joints`, and `num_joints`. In-repo C++/Python examples, tests, and
+  benchmarks were migrated. Gates: stale public-name scan, `pixi run lint`,
+  `pixi run build`, `pixi run test-unit` (163/163), `pixi run test-py`
+  (1401 passed, 18 skipped), and `pixi run check-api-boundaries`.
 
-#### WP-091.42 Policy objects for solver knobs on shared handles
+#### WP-091.42 Policy objects for solver knobs on shared handles [claimed]
 
 - Objective: solver-family vocabulary leaves the shared handles: AVBD-named
   joint stiffness knobs and the deformable-solver booleans on rigid bodies
@@ -1365,8 +1373,16 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run test-py`, `pixi run check-api-boundaries`.
 - Dependencies: WP-091.12, WP-091.14.
+- Evidence: the unified branch replaces shared-handle AVBD stiffness setters
+  with `JointConstraintProjectionPolicy` and replaces deformable-obstacle
+  rigid-body booleans with `DeformableObstaclePolicy`, with matching
+  dartpy/stub properties and migrated examples/tests. Old public names are
+  absent outside negative-coverage/schema/internal implementation references.
+  Gates: stale public-name scan, `pixi run lint`, `pixi run build`,
+  `pixi run test-unit` (163/163), `pixi run test-py` (1401 passed,
+  18 skipped), and `pixi run check-api-boundaries`.
 
-#### WP-091.43 Installed-header split and curated diagnostics
+#### WP-091.43 Installed-header split and curated diagnostics [claimed]
 
 - Objective: the installed public compute surface is the minimal custom-stage
   contract (stage base, pipeline, metadata/profile types); concrete family
@@ -1383,8 +1399,19 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run check-api-boundaries`.
 - Dependencies: WP-091.15 (family modules give the internals a home).
+- Evidence: the unified branch keeps installed
+  `compute/world_step_stage.hpp` to the custom-stage/pipeline contract and
+  moves built-in stage classes plus per-family stats to the non-installed
+  `compute/detail/world_step_stages.hpp`; internal callers include the detail
+  header explicitly and the API-boundary docs record the split. Gates:
+  `pixi run check-simulation-public-header-smoke`,
+  `pixi run check-dart7-promotion-surface`,
+  `pixi run check-dart7-promotion-package-contract`,
+  `pixi run check-api-boundaries`,
+  `pixi run check-compute-backend-boundaries`, `pixi run build`, and
+  `pixi run test-unit` (163/163).
 
-#### WP-091.44 Python surface alignment and lifecycle polish
+#### WP-091.44 Python surface alignment and lifecycle polish [claimed]
 
 - Objective: the dartpy surface matches its design doc — core scene-authoring
   symbols flat, compute/diff in submodules — and the World lifecycle is
@@ -1401,6 +1428,14 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-py`,
   `pixi run check-api-boundaries`.
 - Dependencies: WP-091.11 (bake-time validation).
+- Evidence: the unified branch aligns dartpy, stubs, Python demos, and Python
+  tests with the unified joint and policy surfaces, keeps solver-specific
+  compute/diff details out of the flat scene-authoring API, and updates
+  lifecycle/error tests for bake-time validation behavior. Gates: focused
+  Python failure reruns, `pixi run test-py` (1401 passed, 18 skipped),
+  `pixi run check-dartpy-import-layout`,
+  `pixi run check-dart7-promotion-package-contract`, `pixi run lint`, and
+  `pixi run build-py-dev`.
 
 ## Acceptance Criteria
 

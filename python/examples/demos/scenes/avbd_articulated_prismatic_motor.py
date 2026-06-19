@@ -53,11 +53,14 @@ def build() -> SceneSetup:
     carriage.mass = 1.4
     carriage.inertia = ((0.12, 0.0, 0.0), (0.0, 0.18, 0.0), (0.0, 0.0, 0.18))
 
-    motor_joint = world.add_articulated_prismatic_joint(
-        "avbd_articulated_prismatic_axis",
+    motor_joint = world.add_joint(
         base,
         carriage,
-        axis=(1.0, 0.0, 0.0),
+                sx.JointSpec(
+            name="avbd_articulated_prismatic_axis",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
     motor_joint.actuator_type = sx.ActuatorType.VELOCITY
     motor_joint.command_velocity = [_TARGET_SPEED]

@@ -94,11 +94,14 @@ def build() -> SceneSetup:
     bar = world.add_rigid_body("avbd_demo2d_motor_bar", position=tuple(_BAR_POS))
     bar.mass = 1.0
 
-    motor_joint = world.add_rigid_body_revolute_joint(
-        "avbd_demo2d_motor_pin",
+    motor_joint = world.add_joint(
         ground,
         bar,
-        axis=(0.0, 0.0, 1.0),
+                sx.JointSpec(
+            name="avbd_demo2d_motor_pin",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     motor_joint.actuator_type = sx.ActuatorType.VELOCITY
     motor_joint.command_velocity = [_TARGET_SPEED]

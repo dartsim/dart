@@ -43,11 +43,14 @@ def build() -> SceneSetup:
     )
     slider.mass = 1.0
 
-    motor_joint = world.add_rigid_body_prismatic_joint(
-        "avbd_prismatic_motor_axis",
+    motor_joint = world.add_joint(
         base,
         slider,
-        axis=(1.0, 0.0, 0.0),
+                sx.JointSpec(
+            name="avbd_prismatic_motor_axis",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
     motor_joint.actuator_type = sx.ActuatorType.VELOCITY
     motor_joint.command_velocity = [_TARGET_SPEED]

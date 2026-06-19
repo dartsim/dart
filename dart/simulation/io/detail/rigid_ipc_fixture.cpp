@@ -34,8 +34,8 @@
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
-#include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>

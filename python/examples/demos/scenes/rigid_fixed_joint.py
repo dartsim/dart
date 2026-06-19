@@ -61,8 +61,13 @@ class _RigidFixedJointVerifier:
         self.payload.mass = 1.0
         self.payload.angular_velocity = (0.0, 0.0, 1.2)
 
-        self.fixed_joint = self.world.add_rigid_body_fixed_joint(
-            "fixed_joint_base_to_payload", self.base, self.payload
+        self.fixed_joint = self.world.add_joint(
+            self.base,
+            self.payload,
+                        sx.JointSpec(
+                name="fixed_joint_base_to_payload",
+                type=sx.JointType.FIXED,
+            )
         )
         self._captured_relative_transform = self._relative_transform()
         self.world.enter_simulation_mode()
@@ -205,7 +210,7 @@ class _RigidFixedJointVerifier:
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "joint_name": str(self.fixed_joint.name),
-            "fixed_joint_count": float(self.world.num_rigid_body_fixed_joints),
+            "fixed_joint_count": float(self.world.num_joints),
             "held_fixed": {
                 "base": "static",
                 "captured_offset_m": captured_offset,
@@ -334,7 +339,7 @@ class _RigidFixedJointVerifier:
             self.reset(clear_replay=True)
 
         metrics = self._last_metrics or {}
-        found_joint = self.world.get_rigid_body_fixed_joint(
+        found_joint = self.world.get_joint(
             self.fixed_joint.name
         ) or self.fixed_joint
         captured_offset = float(
@@ -349,7 +354,7 @@ class _RigidFixedJointVerifier:
         )
         builder.text("constraint: fixed relative transform")
         builder.text(f"name: {found_joint.name}")
-        builder.text(f"fixed joints: {self.world.num_rigid_body_fixed_joints}")
+        builder.text(f"fixed joints: {self.world.num_joints}")
         builder.text(f"parent: {found_joint.parent_rigid_body.name}")
         builder.text(f"child: {found_joint.child_rigid_body.name}")
         builder.text(f"world time: {float(metrics.get('world_time', 0.0)):.3f} s")

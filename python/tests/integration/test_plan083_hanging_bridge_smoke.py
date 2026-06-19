@@ -28,6 +28,18 @@ def _sx():
     return sx
 
 
+def _fixed_joint_count(world) -> int:
+    def type_name(joint) -> str:
+        name = getattr(joint.type, "name", None)
+        if callable(name):
+            name = name()
+        if name is None:
+            name = str(joint.type)
+        return str(name).rsplit(".", 1)[-1]
+
+    return sum(1 for joint in world.joints if type_name(joint) == "FIXED")
+
+
 def test_hanging_bridge_demo_steps_rigid_ipc_world() -> None:
     sx = _sx()
     from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
@@ -40,7 +52,7 @@ def test_hanging_bridge_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_fixed_joints == len(boards)
+    assert _fixed_joint_count(sx_world) == len(boards)
     assert traveler.is_kinematic is True
     assert all(board.is_static for board in boards)
     assert "--headless" in setup.info["plan083_smoke_command"]
@@ -70,7 +82,7 @@ def test_nunchaku_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_joints == 1
+    assert sx_world.num_joints == 1
     assert setup.info["plan083_benchmark_command"] == (
         "pixi run bm-plan083-cpu-nunchaku-packet"
     )
@@ -97,7 +109,7 @@ def test_windmill_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_joints == 1
+    assert sx_world.num_joints == 1
     assert setup.info["plan083_benchmark_command"] == (
         "pixi run bm-plan083-cpu-windmill-packet"
     )
@@ -128,8 +140,8 @@ def test_umbrella_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_joints == 3
-    assert sx_world.num_rigid_body_fixed_joints == 2
+    assert sx_world.num_joints == 3
+    assert _fixed_joint_count(sx_world) == 2
     assert setup.info["plan083_benchmark_command"] == (
         "pixi run bm-plan083-cpu-umbrella-packet"
     )
@@ -236,7 +248,7 @@ def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_joints == 4
+    assert sx_world.num_joints == 4
     assert chassis.is_kinematic is True
     assert len(wheels) == 4
     assert all(wheel.is_kinematic for wheel in wheels)
@@ -314,7 +326,7 @@ def test_ragdolls_demo_steps_rigid_ipc_world() -> None:
 
     assert setup.info["runtime_smoke_scene"] is True
     assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
-    assert sx_world.num_rigid_body_joints == 5
+    assert sx_world.num_joints == 5
     assert len(parts) == 5
     assert setup.info["plan083_benchmark_command"] == (
         "pixi run bm-plan083-cpu-ragdoll-packet"

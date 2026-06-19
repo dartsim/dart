@@ -277,10 +277,12 @@ the release roadmap.
   deformable bodies exist, and a final kinematics refresh. The schedule is an
   internal `WorldStepPipeline` of cached stages, so common users select
   capability names and policies rather than stage objects. The batched
-  rigid-body integration stage remains available as an explicit unconstrained
-  SoA path for parity tests, SIMD/data-locality work, and future device
-  prototype evidence. Executor/pipeline overloads already allow selected stage
-  execution and repeated stepping with caller-owned execution policy.
+  rigid-body integration stage remains an internal explicit unconstrained SoA
+  path for parity tests, SIMD/data-locality work, and future device prototype
+  evidence. Executor/pipeline overloads allow caller-owned execution policy and
+  custom user stages through the public `WorldStepStage` /
+  `WorldStepPipeline` contract, while DART-owned concrete family stages stay
+  out of the installed public headers.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `Multibody`, `Link`, and `Joint` provide
@@ -847,7 +849,14 @@ promotion should include only backend-neutral concepts:
 - executor injection through public abstract interfaces;
 - stage metadata, domain/acceleration metadata, execution profiles, and DOT
   visualization;
-- world-step stages and pipelines.
+- custom world-step stages and pipelines.
+
+The installed compute stage surface is the extension contract, not the built-in
+schedule catalog. `WorldStepStage`, `WorldStepPipeline`, executor interfaces,
+metadata, and profile value types are public; concrete DART-owned family stages
+and their large internal stats structs remain implementation headers. Facade
+diagnostics should expose curated snapshots through `World` and profile value
+types instead of requiring users to instantiate a built-in stage object.
 
 The public API should not expose backend implementation types, raw task graph
 types, GPU devices, streams, kernels, memory pools, transfer queues, or solver

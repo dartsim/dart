@@ -121,6 +121,9 @@ compatibility remains on the active DART 6 LTS branch._
   [#3035](https://github.com/dartsim/dart/pull/3035),
   [#3042](https://github.com/dartsim/dart/pull/3042),
   [#3044](https://github.com/dartsim/dart/pull/3044))
+- Consolidated the experimental `World` joint construction/query surface around
+  `JointSpec`, moved solver-family knobs behind policy value objects, and kept
+  installed compute headers to the custom-stage contract.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.

@@ -34,8 +34,8 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/deformable_body.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
-#include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/io/binary_io.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -60,6 +60,48 @@ namespace compute = dart::simulation::compute;
 namespace nc = dart::collision::native;
 
 namespace {
+
+//==============================================================================
+void setGroundBarrierPolicy(sx::RigidBody& body, bool enabled = true)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.groundBarrier = enabled;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+//==============================================================================
+void setSurfaceObstaclePolicy(sx::RigidBody& body, bool enabled = true)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.surfaceObstacle = enabled;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+//==============================================================================
+void setBarrierOnlyPolicy(sx::RigidBody& body, bool enabled = true)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.barrierOnly = enabled;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+//==============================================================================
+bool hasGroundBarrierPolicy(const sx::RigidBody& body)
+{
+  return body.getDeformableObstaclePolicy().groundBarrier;
+}
+
+//==============================================================================
+bool hasSurfaceObstaclePolicy(const sx::RigidBody& body)
+{
+  return body.getDeformableObstaclePolicy().surfaceObstacle;
+}
+
+//==============================================================================
+bool hasBarrierOnlyPolicy(const sx::RigidBody& body)
+{
+  return body.getDeformableObstaclePolicy().barrierOnly;
+}
 
 //==============================================================================
 void expectVectorNear(
@@ -311,7 +353,7 @@ sx::RigidBody addStaticSurfaceCcdBox(
   options.orientation = orientation;
   auto body = world.addRigidBody(name, options);
   body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
-  body.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(body);
   return body;
 }
 
@@ -366,7 +408,7 @@ sx::RigidBody addMovingSurfaceCcdBox(
   options.orientation = orientation;
   auto body = world.addRigidBody(name, options);
   body.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
-  body.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(body);
   body.setLinearVelocity(linearVelocity);
   body.setAngularVelocity(angularVelocity);
   return body;
@@ -1195,7 +1237,7 @@ TEST(DeformableBody, FemCubeSettlesOnGroundBarrierWithoutPenetrating)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
-  ground.setDeformableGroundBarrier(true); // top face at z = 0
+  setGroundBarrierPolicy(ground); // top face at z = 0
 
   auto body = world.addDeformableBody(
       "fem_cube", makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5));
@@ -1240,7 +1282,7 @@ TEST(DeformableBody, FemCubeSettlesOnSphereObstacleWithoutPenetrating)
   sphereOptions.position = sphereCenter;
   auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
 
   // A small FEM cube released just above the sphere's top.
   auto body = world.addDeformableBody(
@@ -1288,7 +1330,7 @@ TEST(DeformableBody, BoxObstacleBarrierRepelsNodeAlongFaceNormal)
   auto box = world.addRigidBody("obstacle_box", boxOptions);
   box.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
-  box.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(box);
 
   // 0.505 is inside the band off the +x face (surface 0.5, distance 0.005).
   sx::DeformableBodyOptions options;
@@ -1322,7 +1364,7 @@ TEST(DeformableBody, CapsuleObstacleBarrierRepelsNodeRadially)
   // spans z in [-0.4, 0.4]).
   capsule.setCollisionShape(
       sx::CollisionShape::makeCapsule(/*radius=*/0.3, /*halfHeight=*/0.4));
-  capsule.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(capsule);
 
   // 0.305 is inside the band off the cylindrical side (surface 0.3, distance
   // 0.005), at z = 0 (mid-segment).
@@ -1364,7 +1406,7 @@ TEST(DeformableBody, CapsuleObstacleFrictionDeceleratesSlidingNode)
     // cylindrical side over the test rather than sliding off an end cap.
     rod.setCollisionShape(
         sx::CollisionShape::makeCapsule(radius, /*halfHeight=*/3.0));
-    rod.setDeformableSurfaceCcdObstacle(true);
+    setSurfaceObstaclePolicy(rod);
 
     // A node resting on top of the rod (inside the radial band), pushed along
     // the rod's axis (+y).
@@ -1410,9 +1452,9 @@ TEST(DeformableBody, BarrierOnlyBoxObstacleFrictionDeceleratesSlidingNode)
     // A wide plate (top face at z = 0.5) so the node stays on top.
     box.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 1.0, 0.5)));
-    box.setDeformableSurfaceCcdObstacle(true);
-    box.setDeformableObstacleBarrierOnly(true);
-    EXPECT_TRUE(box.isDeformableObstacleBarrierOnly());
+    setSurfaceObstaclePolicy(box);
+    setBarrierOnlyPolicy(box);
+    EXPECT_TRUE(hasBarrierOnlyPolicy(box));
 
     sx::DeformableBodyOptions options;
     options.positions = {Eigen::Vector3d(-0.8, 0.0, 0.512)};
@@ -1455,7 +1497,7 @@ TEST(DeformableBody, FemCubeSettlesOnBoxObstacleWithoutPenetrating)
   boxOptions.position = boxCenter;
   auto box = world.addRigidBody("obstacle_box", boxOptions);
   box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
-  box.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(box);
 
   auto body = world.addDeformableBody(
       "fem_cube",
@@ -1565,8 +1607,8 @@ TEST(DeformableBody, StaticGroundBarrierPreventsCrossing)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
-  EXPECT_TRUE(ground.isDeformableGroundBarrier());
+  setGroundBarrierPolicy(ground);
+  EXPECT_TRUE(hasGroundBarrierPolicy(ground));
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, 0.5)};
@@ -1598,7 +1640,7 @@ TEST(DeformableBody, AdaptiveBarrierStiffnessHoldsHeavyNodeFurtherFromGround)
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-    ground.setDeformableGroundBarrier(true); // top face at z = 0
+    setGroundBarrierPolicy(ground); // top face at z = 0
 
     // A single heavy node starting inside the activation band (d_hat = 2e-2).
     // The mass (40) is heavy enough that the adaptive kappa is far above the
@@ -1643,7 +1685,7 @@ TEST(DeformableBody, SphereObstacleBarrierRepelsNodeRadially)
   sphereOptions.isStatic = true;
   auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
 
   // 0.505 is inside the band (surface 0.5, distance 0.005 < d_hat 0.02).
   sx::DeformableBodyOptions options;
@@ -1676,7 +1718,7 @@ TEST(DeformableBody, SphereObstacleBarrierRequiresOptIn)
   sphereOptions.isStatic = true;
   auto sphere = world.addRigidBody("ordinary_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  ASSERT_FALSE(sphere.isDeformableSurfaceCcdObstacle());
+  ASSERT_FALSE(hasSurfaceObstaclePolicy(sphere));
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.505, 0.0, 0.0)};
@@ -1701,7 +1743,7 @@ TEST(DeformableBody, ActiveStaticGroundContactAllowsTangentialMotion)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, 1e-4)};
@@ -1728,7 +1770,7 @@ TEST(DeformableBody, ActiveDirichletNodesDoNotBlockGroundBarrierSolve)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   sx::DeformableBodyOptions options;
   options.positions
@@ -1761,7 +1803,7 @@ TEST(DeformableBody, StaticGroundBarrierUsesFiniteStaticFootprint)
   auto obstacle = world.addRigidBody("distant_obstacle", obstacleOptions);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 1.0, 0.5)));
-  obstacle.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(obstacle);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, 0.5)};
@@ -1786,7 +1828,7 @@ TEST(DeformableBody, StaticGroundBarrierUsesOrientedBoxFootprint)
   auto obstacle = world.addRigidBody("rotated_obstacle", obstacleOptions);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 1.0)));
-  obstacle.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(obstacle);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(2.5, 1.0, 0.25)};
@@ -1810,7 +1852,7 @@ TEST(DeformableBody, StaticGroundBarrierUsesTiltedBoxSurfaceHeight)
   auto obstacle = world.addRigidBody("tilted_obstacle", obstacleOptions);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.2)));
-  obstacle.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(obstacle);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, 0.35)};
@@ -1834,14 +1876,14 @@ TEST(DeformableBody, StaticCollisionRequiresGroundBarrierOptIn)
   auto ceiling = world.addRigidBody("ordinary_static_box", ceilingOptions);
   ceiling.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ASSERT_FALSE(ceiling.isDeformableGroundBarrier());
+  ASSERT_FALSE(hasGroundBarrierPolicy(ceiling));
 
   sx::RigidBodyOptions sphereOptions;
   sphereOptions.isStatic = true;
   sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
   auto sphere = world.addRigidBody("ordinary_static_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
-  ASSERT_FALSE(sphere.isDeformableGroundBarrier());
+  ASSERT_FALSE(hasGroundBarrierPolicy(sphere));
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.0, 0.0, 0.25)};
@@ -1867,7 +1909,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdLimitsFastFallingNode)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   auto body = world.addDeformableBody(
       "falling_node",
@@ -1903,7 +1945,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdCatchesFiniteFootprintFlyThrough)
   auto ground = world.addRigidBody("finite_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   auto body = world.addDeformableBody(
       "fast_node",
@@ -1936,7 +1978,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdCatchesNarrowOffsetFootprint)
   auto ground = world.addRigidBody("narrow_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.005, 0.5, 0.05)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   auto body = world.addDeformableBody(
       "fast_node",
@@ -1968,7 +2010,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdLimitsSphereTopSurface)
   sphereOptions.position = Eigen::Vector3d::Zero();
   auto sphere = world.addRigidBody("sphere_ground", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  sphere.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(sphere);
 
   auto body = world.addDeformableBody(
       "falling_node",
@@ -2001,7 +2043,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdIgnoresOrdinaryStaticShapes)
   auto obstacle = world.addRigidBody("ordinary_static_box", obstacleOptions);
   obstacle.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.05)));
-  ASSERT_FALSE(obstacle.isDeformableGroundBarrier());
+  ASSERT_FALSE(hasGroundBarrierPolicy(obstacle));
 
   auto body = world.addDeformableBody(
       "fast_node",
@@ -2035,7 +2077,7 @@ TEST(DeformableBody, StaticGroundBarrierCcdSkipsFixedNodes)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   auto body = world.addDeformableBody(
       "fixed_node",
@@ -2381,7 +2423,7 @@ TEST(DeformableBody, StaticRigidSurfaceCcdRequiresOptIn)
   auto box = world.addRigidBody("ordinary_static_box", boxOptions);
   box.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-  ASSERT_FALSE(box.isDeformableSurfaceCcdObstacle());
+  ASSERT_FALSE(hasSurfaceObstaclePolicy(box));
 
   auto body = world.addDeformableBody(
       "fast_point",
@@ -2416,7 +2458,7 @@ TEST(DeformableBody, StaticRigidSurfaceCcdLimitsAgainstSphereObstacle)
   sphereOptions.isStatic = true;
   auto sphere = world.addRigidBody("static_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
 
   auto body = world.addDeformableBody(
       "fast_point",
@@ -2455,7 +2497,7 @@ TEST(DeformableBody, StaticRigidSurfaceCcdSphereRequiresOptIn)
   sphereOptions.isStatic = true;
   auto sphere = world.addRigidBody("ordinary_static_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  ASSERT_FALSE(sphere.isDeformableSurfaceCcdObstacle());
+  ASSERT_FALSE(hasSurfaceObstaclePolicy(sphere));
 
   auto body = world.addDeformableBody(
       "fast_point",
@@ -3253,7 +3295,7 @@ TEST(DeformableBody, KinematicSurfaceCcdSphereKeepsCurrentPoseSnapshot)
   sphereOptions.position = Eigen::Vector3d::Zero();
   auto sphere = world.addRigidBody("kinematic_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
   sphere.setLinearVelocity(velocity);
   sphere.setKinematic(true);
 
@@ -3763,7 +3805,7 @@ TEST(DeformableBody, SparseProjectedNewtonScalesWithGroundBarrier)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   // 20x16 = 320-node grid lying just inside the barrier activation band
   // (d_hat = 2e-2), connected by structural springs along both axes.
@@ -3849,7 +3891,7 @@ TEST(DeformableBody, StiffGroundBarrierSettlesByStepNorm)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   constexpr std::size_t kColumns = 20;
   constexpr std::size_t kRows = 16;
@@ -3936,7 +3978,7 @@ TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   // Raised central box barrier: a finite-footprint step with top at z = 0.24.
   constexpr double boxHalf = 0.30;
@@ -3948,7 +3990,7 @@ TEST(DeformableBody, SparseProjectedNewtonDrapesMatOverStepBarrier)
   box.setCollisionShape(
       sx::CollisionShape::makeBox(
           Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
-  box.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(box);
 
   // 18x16 = 288-node mat (> 256) overhanging the box footprint. It is started
   // near its draped equilibrium -- step-shaped, just above the box top over the
@@ -4100,7 +4142,7 @@ TEST(DeformableBody, IterativeLinearSolverMatchesDirectSolve)
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
-    ground.setDeformableGroundBarrier(true); // top face at z = 0
+    setGroundBarrierPolicy(ground); // top face at z = 0
 
     auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5);
     options.material.useIterativeLinearSolver = iterative;
@@ -4250,7 +4292,7 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSolversOnGroundContact)
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
-    ground.setDeformableGroundBarrier(true); // top face at z = 0
+    setGroundBarrierPolicy(ground); // top face at z = 0
 
     auto options = makeFemCubeBody(0.2, Eigen::Vector3d(0.0, 0.0, 0.3), 1.5e5);
     options.material.useIterativeLinearSolver = mode == SolveMode::SparseCg;
@@ -4346,7 +4388,7 @@ TEST(DeformableBody, IterativeSolverConvergesOnStiffGroundContact)
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
-    ground.setDeformableGroundBarrier(true); // top face at z = 0
+    setGroundBarrierPolicy(ground); // top face at z = 0
 
     // A stiffer cube (E = 1e6) than the soft-contact equivalence test, so the
     // contact Hessian is ill-conditioned enough to exercise the CG path.
@@ -4531,7 +4573,7 @@ GroundSlideResult runGroundFrictionSlide(double frictionCoefficient, int steps)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   // Start inside the barrier band (d_hat = 2e-2) with a tangential velocity.
   auto options = makeSingleNodeBodyOptions(
@@ -4590,7 +4632,7 @@ TEST(DeformableBody, GroundFrictionInactiveWithoutGroundContact)
   auto ground = world.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   auto options = makeSingleNodeBodyOptions(
       Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(2.0, 0.0, 0.0));
@@ -4637,7 +4679,7 @@ TiltedGroundSlideResult runTiltedGroundFrictionSlide(
   auto ground = world.addRigidBody("tilted_ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.2)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 
   // The tilted top face directly above (0, 0) sits at z = sqrt(2) * 0.2 ~=
   // 0.283; start ~0.007 into the d_hat = 2e-2 activation band.
@@ -4707,7 +4749,7 @@ TEST(DeformableBody, FrictionDiagnosticsReportSlidingDissipation)
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(100.0, 100.0, 0.5)));
-    ground.setDeformableGroundBarrier(true);
+    setGroundBarrierPolicy(ground);
 
     // Start in the d_hat = 2e-2 band with a tangential velocity so the node
     // slides while staying in static-ground contact.

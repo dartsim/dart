@@ -94,12 +94,15 @@ def build() -> SceneSetup:
 
     captured_child_anchor = _link_anchor(payload, _CHILD_ANCHOR)
     parent_anchor = _local_anchor_for_world(base, captured_child_anchor)
-    breakable_joint = world.add_articulated_spherical_joint(
-        "avbd_articulated_spherical_pair_breakable_socket",
+    breakable_joint = world.add_joint(
         base,
         payload,
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=_CHILD_ANCHOR.tolist(),
+                sx.JointSpec(
+            name="avbd_articulated_spherical_pair_breakable_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=_CHILD_ANCHOR.tolist(),
+        )
     )
     breakable_joint.break_force = _BREAK_FORCE
     world.enter_simulation_mode()

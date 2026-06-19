@@ -183,14 +183,19 @@ def build() -> SceneSetup:
 
     joints = []
     for index, (parent, child) in enumerate(zip(links, links[1:])):
-        joint = world.add_rigid_body_spherical_joint(
-            f"avbd_demo2d_hanging_rope_point_joint_{index:02d}",
+        joint = world.add_joint(
             parent,
             child,
-            parent_anchor=tuple(_PARENT_ANCHOR),
-            child_anchor=tuple(_child_anchor(index)),
+                        sx.JointSpec(
+                name=f"avbd_demo2d_hanging_rope_point_joint_{index:02d}",
+                type=sx.JointType.SPHERICAL,
+                parent_anchor=tuple(_PARENT_ANCHOR),
+                child_anchor=tuple(_child_anchor(index)),
+            )
         )
-        joint.avbd_start_stiffness = _HARD_ROW_START_STIFFNESS
+        policy = joint.constraint_projection_policy
+        policy.start_stiffness = _HARD_ROW_START_STIFFNESS
+        joint.constraint_projection_policy = policy
         joints.append(joint)
 
     world.enter_simulation_mode()

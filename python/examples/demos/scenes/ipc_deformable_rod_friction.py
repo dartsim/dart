@@ -61,7 +61,9 @@ def build() -> SceneSetup:
     )
     rod.is_static = True
     rod.set_collision_shape(sx.CollisionShape.capsule(_ROD_RADIUS, _ROD_HALF_HEIGHT))
-    rod.is_deformable_surface_ccd_obstacle = True
+    policy = rod.deformable_obstacle_policy
+    policy.surface_obstacle = True
+    rod.deformable_obstacle_policy = policy
 
     body = world.add_deformable_body("rod_strip", options)
     world.enter_simulation_mode()

@@ -38,6 +38,7 @@
 
 #include <Eigen/Core>
 
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -60,6 +61,23 @@ enum class ActuatorType
   Acceleration,
   Locked,
   Mimic
+};
+
+/// Solver-neutral policy for point-joint constraint projection stiffness.
+///
+/// The policy applies to public world-owned point-joint facades. A finite
+/// linear or angular stiffness makes the matching projected rows finite-
+/// stiffness rows; infinity keeps the default hard-constraint behavior.
+struct JointConstraintProjectionPolicy
+{
+  /// Starting projection stiffness. Must be finite and non-negative.
+  double startStiffness = 1.0;
+
+  /// Linear projection material stiffness. Infinity keeps hard rows.
+  double linearStiffness = std::numeric_limits<double>::infinity();
+
+  /// Angular projection material stiffness. Infinity keeps hard rows.
+  double angularStiffness = std::numeric_limits<double>::infinity();
 };
 
 /// Generic Joint handle class
@@ -316,52 +334,33 @@ public:
   /// Get the per-coordinate upper effort limits (default +infinity).
   [[nodiscard]] Eigen::VectorXd getEffortUpperLimits() const;
 
-  /// Set the AVBD break-force threshold.
+  /// Set the point-joint break-force threshold.
   ///
   /// A finite non-negative value is required. The default value, 0, disables
-  /// automatic breakage. When AVBD rigid point-joint rows accumulate a
+  /// automatic breakage. When projected point-joint rows accumulate a
   /// constraint load at or above this threshold, the joint is marked broken and
-  /// excluded from later AVBD point-joint extraction until resetBreakage().
+  /// excluded from later point-joint extraction until resetBreakage().
   void setBreakForce(double breakForce);
 
-  /// Get the AVBD break-force threshold.
+  /// Get the point-joint break-force threshold.
   [[nodiscard]] double getBreakForce() const;
 
-  /// Return whether this joint has been broken by AVBD break-force handling.
+  /// Return whether this joint has been broken by break-force handling.
   [[nodiscard]] bool isBroken() const;
 
-  /// Clear the broken flag so the joint can participate in AVBD extraction
-  /// again.
+  /// Clear the broken flag so the joint can participate in extraction again.
   void resetBreakage();
 
-  /// Set the AVBD point-joint row starting stiffness.
+  /// Set the point-joint constraint projection policy.
   ///
   /// This applies to public rigid-body/articulated point-joint facades that
-  /// extract into AVBD rows. Values must be finite and non-negative.
-  void setAvbdStartStiffness(double stiffness);
+  /// extract into solver projection rows.
+  void setConstraintProjectionPolicy(
+      const JointConstraintProjectionPolicy& policy);
 
-  /// Get the AVBD point-joint row starting stiffness.
-  [[nodiscard]] double getAvbdStartStiffness() const;
-
-  /// Set the AVBD linear point-joint material stiffness.
-  ///
-  /// A finite value makes the point-joint linear rows finite-stiffness rows
-  /// that ramp up to this material stiffness and do not carry persistent duals.
-  /// Infinity keeps the default hard-constraint row behavior.
-  void setAvbdLinearStiffness(double stiffness);
-
-  /// Get the AVBD linear point-joint material stiffness.
-  [[nodiscard]] double getAvbdLinearStiffness() const;
-
-  /// Set the AVBD angular point-joint material stiffness.
-  ///
-  /// A finite value makes the point-joint angular rows finite-stiffness rows
-  /// that ramp up to this material stiffness and do not carry persistent duals.
-  /// Infinity keeps the default hard-constraint row behavior.
-  void setAvbdAngularStiffness(double stiffness);
-
-  /// Get the AVBD angular point-joint material stiffness.
-  [[nodiscard]] double getAvbdAngularStiffness() const;
+  /// Get the effective point-joint constraint projection policy.
+  [[nodiscard]] JointConstraintProjectionPolicy getConstraintProjectionPolicy()
+      const;
 
   /// Get the parent link
   ///
