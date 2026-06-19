@@ -118,9 +118,9 @@ protected:
   // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
   // change in DART 7 because it's API breaking change.
 
-  // Kept for DART 6 protected layout compatibility. solveConstrainedGroup()
-  // uses thread-local LcpWorkspace storage in BoxedLcpConstraintSolver.cpp so
-  // independent islands can be solved on separate threads with private scratch.
+  // Serial solves reuse these solver-owned buffers so peak storage is released
+  // with the solver. Parallel island solves use private thread-local scratch
+  // from BoxedLcpConstraintSolver.cpp.
   /// Cache data for boxed LCP formulation
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
 

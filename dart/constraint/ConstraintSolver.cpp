@@ -69,6 +69,25 @@ namespace constraint {
 
 using namespace dynamics;
 
+class ParallelConstrainedGroupSolveScope final
+{
+public:
+  explicit ParallelConstrainedGroupSolveScope(bool& flag)
+    : mFlag(flag), mPrevious(flag)
+  {
+    mFlag = true;
+  }
+
+  ~ParallelConstrainedGroupSolveScope()
+  {
+    mFlag = mPrevious;
+  }
+
+private:
+  bool& mFlag;
+  bool mPrevious;
+};
+
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
@@ -963,8 +982,8 @@ void ConstraintSolver::solveConstrainedGroups()
   // User-supplied manual constraints are only required to satisfy the serial
   // ConstraintBase API. Keep them off the parallel executor unless each
   // concrete type is explicitly known to be reentrant.
-  if (mNumThreads <= 1 || !executor || !mManualConstraints.empty()
-      || !isConstrainedGroupSolveThreadSafe()) {
+  if (mNumThreads <= 1 || !executor || executor->getNumThreads() <= 1
+      || !mManualConstraints.empty() || !isConstrainedGroupSolveThreadSafe()) {
     for (std::size_t idx : active)
       solveActiveGroup(idx);
     freezeSolvedGroups();
@@ -1124,6 +1143,8 @@ void ConstraintSolver::solveConstrainedGroups()
   // its body, so no pre-warm is required. Each worker reuses its own
   // thread_local LCP scratch across steps (see
   // BoxedLcpConstraintSolver/PgsBoxedLcpSolver).
+  const ParallelConstrainedGroupSolveScope parallelSolveScope(
+      mSolvingConstrainedGroupsInParallel);
   executor->run(
       active.size(), [&](std::size_t k) { solveActiveGroup(active[k]); });
   freezeSolvedGroups();

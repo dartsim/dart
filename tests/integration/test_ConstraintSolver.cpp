@@ -101,6 +101,59 @@ public:
   }
 };
 
+class PassiveLcpConstraint final : public constraint::ConstraintBase
+{
+public:
+  explicit PassiveLcpConstraint(std::size_t dimension)
+  {
+    mDim = dimension;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    for (std::size_t i = 0; i < mDim; ++i) {
+      info->x[i] = 0.0;
+      info->lo[i] = -1.0;
+      info->hi[i] = 1.0;
+      info->b[i] = 0.0;
+      info->w[i] = 0.0;
+      info->findex[i] = -1;
+    }
+  }
+
+  void applyUnitImpulse(std::size_t index) override
+  {
+    mImpulseIndex = index;
+  }
+
+  void getVelocityChange(double* vel, bool) override
+  {
+    for (std::size_t i = 0; i < mDim; ++i)
+      vel[i] = i == mImpulseIndex ? 1.0 : 0.0;
+  }
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+private:
+  std::size_t mImpulseIndex = 0;
+};
+
 class DerivedDantzigBoxedLcpSolver final
   : public constraint::DantzigBoxedLcpSolver
 {
@@ -203,6 +256,21 @@ public:
   bool isParallelSolveSafeForTest() const
   {
     return isConstrainedGroupSolveThreadSafe();
+  }
+
+  void solveGroupForTest(constraint::ConstrainedGroup& group)
+  {
+    solveConstrainedGroup(group);
+  }
+
+  Eigen::Index getSolverScratchRowsForTest() const
+  {
+    return mA.rows();
+  }
+
+  Eigen::Index getSolverScratchColsForTest() const
+  {
+    return mA.cols();
   }
 };
 
@@ -713,6 +781,19 @@ TEST(ConstraintSolver, ParallelSolveRequiresExactBuiltInSolvers)
   ExposedBoxedLcpConstraintSolver randomizedSecondarySolver(
       std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
   EXPECT_FALSE(randomizedSecondarySolver.isParallelSolveSafeForTest());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SerialBoxedLcpSolveUsesSolverOwnedScratch)
+{
+  ExposedBoxedLcpConstraintSolver solver;
+  constraint::ConstrainedGroup group;
+  group.addConstraint(std::make_shared<PassiveLcpConstraint>(3));
+
+  solver.solveGroupForTest(group);
+
+  EXPECT_EQ(3, solver.getSolverScratchRowsForTest());
+  EXPECT_GE(solver.getSolverScratchColsForTest(), 3);
 }
 
 //==============================================================================

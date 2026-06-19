@@ -54,10 +54,9 @@ namespace constraint {
 
 namespace {
 
-// Per-thread LCP assembly buffers, reused across steps. thread_local so that a
-// parallel island solve can give each worker private scratch without changing
-// the solver's class layout (ABI). solveConstrainedGroup aliases these to the
-// historical mA/mX/... names so the assembly math below stays verbatim.
+// Per-thread LCP assembly buffers used only while the island executor is
+// running groups concurrently. Serial solves reuse the solver-owned mA/mX/...
+// members so their peak storage is released with the solver.
 struct LcpWorkspace
 {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
@@ -207,31 +206,46 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // ConstraintBasePtr by value, i.e. an atomic refcount bump) on every access.
   // The off-diagonal fill below touches getConstraint(k) O(n^2) times. The
   // group owns these constraints for the whole solve, so the pointers stay
-  // valid. A reused thread_local scratch buffer keeps the solver's class layout
-  // (and therefore its ABI) unchanged while still avoiding per-call allocation.
-  static thread_local std::vector<ConstraintBase*> constraintPtrs;
-  constraintPtrs.resize(numConstraints);
+  // valid. Parallel solves reuse thread-local pointer storage; serial solves
+  // use stack-owned storage so no thread-local capacity survives solver
+  // destruction.
+  std::vector<ConstraintBase*> serialConstraintPtrs;
+  auto* constraintPtrs = &serialConstraintPtrs;
+  if (mSolvingConstrainedGroupsInParallel) {
+    static thread_local std::vector<ConstraintBase*> tlsConstraintPtrs;
+    constraintPtrs = &tlsConstraintPtrs;
+  }
+  constraintPtrs->resize(numConstraints);
   for (std::size_t i = 0; i < numConstraints; ++i)
-    constraintPtrs[i] = group.getConstraint(i).get();
+    (*constraintPtrs)[i] = group.getConstraint(i).get();
 
-  // LCP working buffers, reused across steps but thread_local so a parallel
-  // island solve gives each worker private scratch. Aliased to the historical
-  // member names so the assembly/solve code below is unchanged.
-  static thread_local LcpWorkspace tlws;
-  auto& mA = tlws.A;
-  auto& mABackup = tlws.ABackup;
-  auto& mX = tlws.X;
-  auto& mXBackup = tlws.XBackup;
-  auto& mB = tlws.B;
-  auto& mBBackup = tlws.BBackup;
-  auto& mW = tlws.W;
-  auto& mLo = tlws.Lo;
-  auto& mLoBackup = tlws.LoBackup;
-  auto& mHi = tlws.Hi;
-  auto& mHiBackup = tlws.HiBackup;
-  auto& mFIndex = tlws.FIndex;
-  auto& mFIndexBackup = tlws.FIndexBackup;
-  auto& mOffset = tlws.Offset;
+  // LCP working buffers. Serial solves use solver-owned storage; only true
+  // parallel executor dispatch uses thread-local storage.
+  LcpWorkspace* parallelWorkspace = nullptr;
+  if (mSolvingConstrainedGroupsInParallel) {
+    static thread_local LcpWorkspace tlws;
+    parallelWorkspace = &tlws;
+  }
+  auto& mA = parallelWorkspace ? parallelWorkspace->A : this->mA;
+  auto& mABackup
+      = parallelWorkspace ? parallelWorkspace->ABackup : this->mABackup;
+  auto& mX = parallelWorkspace ? parallelWorkspace->X : this->mX;
+  auto& mXBackup
+      = parallelWorkspace ? parallelWorkspace->XBackup : this->mXBackup;
+  auto& mB = parallelWorkspace ? parallelWorkspace->B : this->mB;
+  auto& mBBackup
+      = parallelWorkspace ? parallelWorkspace->BBackup : this->mBBackup;
+  auto& mW = parallelWorkspace ? parallelWorkspace->W : this->mW;
+  auto& mLo = parallelWorkspace ? parallelWorkspace->Lo : this->mLo;
+  auto& mLoBackup
+      = parallelWorkspace ? parallelWorkspace->LoBackup : this->mLoBackup;
+  auto& mHi = parallelWorkspace ? parallelWorkspace->Hi : this->mHi;
+  auto& mHiBackup
+      = parallelWorkspace ? parallelWorkspace->HiBackup : this->mHiBackup;
+  auto& mFIndex = parallelWorkspace ? parallelWorkspace->FIndex : this->mFIndex;
+  auto& mFIndexBackup = parallelWorkspace ? parallelWorkspace->FIndexBackup
+                                          : this->mFIndexBackup;
+  auto& mOffset = parallelWorkspace ? parallelWorkspace->Offset : this->mOffset;
 
   const int nSkip = dPAD(n);
 #if DART_BUILD_MODE_RELEASE
@@ -251,7 +265,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mOffset.resize(numConstraints);
   mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i) {
-    const ConstraintBase* constraint = constraintPtrs[i - 1];
+    const ConstraintBase* constraint = (*constraintPtrs)[i - 1];
     DART_ASSERT(constraint->getDimension() > 0);
     mOffset[i] = mOffset[i - 1] + constraint->getDimension();
   }
@@ -262,7 +276,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      ConstraintBase* constraint = constraintPtrs[i];
+      ConstraintBase* constraint = (*constraintPtrs)[i];
 
       constInfo.x = mX.data() + mOffset[i];
       constInfo.lo = mLo.data() + mOffset[i];
@@ -299,7 +313,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
             constraint->getVelocityChange(mA.data() + index, true);
             for (std::size_t k = i + 1; k < numConstraints; ++k) {
               index = nSkip * (mOffset[i] + j) + mOffset[k];
-              constraintPtrs[k]->getVelocityChange(mA.data() + index, false);
+              (*constraintPtrs)[k]->getVelocityChange(mA.data() + index, false);
             }
           }
         }
@@ -430,7 +444,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      ConstraintBase* constraint = constraintPtrs[i];
+      ConstraintBase* constraint = (*constraintPtrs)[i];
       constraint->applyImpulse(mX.data() + mOffset[i]);
       constraint->excite();
     }
