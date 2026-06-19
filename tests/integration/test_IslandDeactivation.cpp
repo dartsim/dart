@@ -372,8 +372,11 @@ TEST(IslandDeactivation, SolverIgnoresStaleIslandIndexWithoutGroups)
   auto box = createFreeBox(
       "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
 
+  solver.setAutomaticSleepingEnabled(false);
   solver.addSkeleton(box);
-  solver.setAutomaticSleepingEnabled(true);
+  // Exercise both spellings: the legacy "active" API must still toggle the
+  // same automatic sleeping work as the new sleeping-enabled name.
+  solver.setDeactivationActive(true);
   box->setIslandIndex(0);
   box->setResting(true);
 
