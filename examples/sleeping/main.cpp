@@ -960,7 +960,9 @@ int initialWindowHeight(const Options& opt)
 void configureImGuiStyle(float scale)
 {
   ImGuiIO& io = ImGui::GetIO();
+#if IMGUI_VERSION_NUM < 19200
   io.FontGlobalScale = 1.0f;
+#endif
   io.Fonts->Clear();
   ImFontConfig fontConfig;
   fontConfig.SizePixels = 13.0f * scale;
