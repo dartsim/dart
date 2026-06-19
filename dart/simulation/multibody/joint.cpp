@@ -226,18 +226,7 @@ comps::AvbdJointStiffness& materializeAvbdStiffnessState(
   return registry.emplace<comps::AvbdJointStiffness>(jointEntity, stiffness);
 }
 
-void validateFiniteNonnegative(
-    double value, std::string_view fieldName, std::string_view jointName)
-{
-  DART_SIMULATION_THROW_T_IF(
-      !std::isfinite(value) || value < 0.0,
-      InvalidArgumentException,
-      "Joint '{}' {} must be finite and non-negative",
-      jointName,
-      fieldName);
-}
-
-void validateMaterialStiffness(
+void validateNonnegativeOrInfinity(
     double value, std::string_view fieldName, std::string_view jointName)
 {
   DART_SIMULATION_THROW_T_IF(
@@ -246,6 +235,12 @@ void validateMaterialStiffness(
       "Joint '{}' {} must be non-negative or infinity",
       jointName,
       fieldName);
+}
+
+void validateMaterialStiffness(
+    double value, std::string_view fieldName, std::string_view jointName)
+{
+  validateNonnegativeOrInfinity(value, fieldName, jointName);
 }
 
 void validateJointStateVector(
@@ -707,7 +702,7 @@ void Joint::setConstraintProjectionPolicy(
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   const auto entity = detail::toRegistryEntity(m_entity);
   validatePointJointProjectionFacade(registry, entity, jointModel);
-  validateFiniteNonnegative(
+  validateNonnegativeOrInfinity(
       policy.startStiffness,
       "constraint projection start stiffness",
       jointModel.name);

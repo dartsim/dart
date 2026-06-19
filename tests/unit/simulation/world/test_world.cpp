@@ -21051,6 +21051,16 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
   expectDefaultHardJoint(socket);
   expectDefaultHardJoint(worldFixed);
 
+  auto hardStartPolicy = fixed.getConstraintProjectionPolicy();
+  ASSERT_TRUE(std::isinf(hardStartPolicy.startStiffness));
+  hardStartPolicy.linearStiffness = 123.0;
+  hardStartPolicy.angularStiffness = 456.0;
+  fixed.setConstraintProjectionPolicy(hardStartPolicy);
+  hardStartPolicy = fixed.getConstraintProjectionPolicy();
+  EXPECT_TRUE(std::isinf(hardStartPolicy.startStiffness));
+  EXPECT_DOUBLE_EQ(hardStartPolicy.linearStiffness, 123.0);
+  EXPECT_DOUBLE_EQ(hardStartPolicy.angularStiffness, 456.0);
+
   const auto expectFiniteStiffnessSetters = [](sx::Joint& joint) {
     joint.setConstraintProjectionPolicy(
         makeConstraintProjectionPolicy(2.0, 200.0, 300.0));
@@ -21068,7 +21078,7 @@ TEST(World, ArticulatedPointJointsExposeAvbdFiniteStiffness)
 
   EXPECT_THROW(
       fixed.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
-          std::numeric_limits<double>::infinity(), 200.0, 300.0)),
+          std::numeric_limits<double>::quiet_NaN(), 200.0, 300.0)),
       sx::InvalidArgumentException);
   EXPECT_THROW(
       hinge.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(

@@ -70,7 +70,7 @@ enum class ActuatorType
 /// stiffness rows; infinity keeps the default hard-constraint behavior.
 struct JointConstraintProjectionPolicy
 {
-  /// Starting projection stiffness. Must be finite and non-negative.
+  /// Starting projection stiffness. Infinity keeps the hard-start projection.
   double startStiffness = 1.0;
 
   /// Linear projection material stiffness. Infinity keeps hard rows.

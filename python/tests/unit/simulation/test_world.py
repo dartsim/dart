@@ -840,7 +840,7 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
         joint.break_force = -1.0
     with pytest.raises(Exception, match="finite and non-negative"):
         joint.break_force = math.inf
-    with pytest.raises(Exception, match="finite and non-negative"):
+    with pytest.raises(Exception, match="non-negative or infinity"):
         _set_constraint_projection_policy(joint, start=-1.0)
     with pytest.raises(Exception, match="non-negative or infinity"):
         _set_constraint_projection_policy(joint, linear=math.nan)
@@ -1219,8 +1219,10 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
     assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
     assert math.isinf(fixed.constraint_projection_policy.linear_stiffness)
     assert math.isinf(fixed.constraint_projection_policy.angular_stiffness)
-    _set_constraint_projection_policy(fixed, start=2.0)
     _set_constraint_projection_policy(fixed, linear=200.0)
+    assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
+    assert fixed.constraint_projection_policy.linear_stiffness == pytest.approx(200.0)
+    _set_constraint_projection_policy(fixed, start=2.0)
     _set_constraint_projection_policy(fixed, angular=300.0)
     assert fixed.constraint_projection_policy.start_stiffness == pytest.approx(2.0)
     assert fixed.constraint_projection_policy.linear_stiffness == pytest.approx(200.0)
@@ -1520,8 +1522,8 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
                 child_anchor=(0.0, 0.0, 0.0),
             )
         )
-    with pytest.raises(Exception, match="finite and non-negative"):
-        _set_constraint_projection_policy(fixed, start=math.inf)
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        _set_constraint_projection_policy(fixed, start=math.nan)
     with pytest.raises(Exception, match="non-negative or infinity"):
         _set_constraint_projection_policy(hinge, linear=math.nan)
     with pytest.raises(Exception, match="non-negative or infinity"):
