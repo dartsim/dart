@@ -125,9 +125,47 @@ function(dart_configure_imgui_compat_headers out_var)
 endfunction()
 
 macro(dart_try_find_system_imgui)
-  find_package(imgui QUIET CONFIG)
-  if(NOT imgui_FOUND)
-    find_package(imgui QUIET MODULE)
+  if(CMAKE_DISABLE_FIND_PACKAGE_imgui)
+    set(imgui_FOUND FALSE)
+  else()
+    find_package(imgui QUIET CONFIG)
+  endif()
+
+  if(NOT imgui_FOUND AND NOT CMAKE_DISABLE_FIND_PACKAGE_imgui)
+    find_package(PkgConfig QUIET)
+    pkg_check_modules(PC_imgui imgui QUIET)
+
+    find_path(_dart_imgui_include_dir
+      NAMES imgui.h
+      HINTS ${PC_imgui_INCLUDEDIR}
+      PATHS
+        "${CMAKE_INSTALL_PREFIX}/include"
+        "${CMAKE_INSTALL_PREFIX}/include/imgui"
+    )
+    find_path(_dart_imgui_backends_include_dir
+      NAMES imgui_impl_opengl2.h
+      HINTS
+        ${PC_imgui_INCLUDEDIR}
+        ${PC_imgui_INCLUDEDIR}/backends
+      PATHS
+        "${CMAKE_INSTALL_PREFIX}/include"
+        "${CMAKE_INSTALL_PREFIX}/include/imgui/backends"
+    )
+    find_library(_dart_imgui_library
+      NAMES imgui
+      HINTS ${PC_imgui_LIBDIR}
+    )
+
+    if(_dart_imgui_include_dir
+        AND _dart_imgui_backends_include_dir
+        AND _dart_imgui_library)
+      set(imgui_INCLUDE_DIRS
+        ${_dart_imgui_include_dir}
+        ${_dart_imgui_backends_include_dir}
+      )
+      set(imgui_LIBRARIES ${_dart_imgui_library})
+      set(imgui_FOUND TRUE)
+    endif()
   endif()
 
   if(imgui_FOUND AND NOT TARGET imgui::imgui)
@@ -280,6 +318,10 @@ else()
       file(READ "${imgui_SOURCE_DIR}/imgui_draw.cpp" imgui_draw_contents)
       file(READ "${imgui_SOURCE_DIR}/imgui_internal.h" imgui_internal_contents)
       file(READ "${imgui_SOURCE_DIR}/imgui_widgets.cpp" imgui_widgets_contents)
+      file(READ
+        "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
+        imgui_opengl2_contents
+      )
       string(FIND
         "${imgui_draw_contents}"
         "Guard against null/empty input (issue #2516)"
@@ -305,11 +347,17 @@ else()
         "issue #2668"
         imgui_widgets_patch_marker
       )
+      string(FIND
+        "${imgui_opengl2_contents}"
+        "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
+        imgui_opengl2_patch_marker
+      )
       if(imgui_draw_ttf_patch_marker EQUAL -1
           OR imgui_draw_compressed_ttf_patch_marker EQUAL -1
           OR imgui_draw_base85_patch_marker EQUAL -1
           OR imgui_internal_patch_marker EQUAL -1
-          OR imgui_widgets_patch_marker EQUAL -1)
+          OR imgui_widgets_patch_marker EQUAL -1
+          OR imgui_opengl2_patch_marker EQUAL -1)
         message(FATAL_ERROR "DART ImGui patch is incompatible: ${imgui_patch}")
       endif()
     endif()
