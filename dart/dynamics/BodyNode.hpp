@@ -450,6 +450,16 @@ public:
   // Documentation inherited
   ConstSkeletonPtr getSkeleton() const override;
 
+  /// Return the non-owning Skeleton pointer cached by this BodyNode.
+  ///
+  /// This avoids the atomic reference-count traffic of getSkeleton() in hot
+  /// internal loops. The owning Skeleton outlives its BodyNodes, so the pointer
+  /// is valid while this BodyNode is alive.
+  Skeleton* getSkeletonRawPtr();
+
+  /// Return the non-owning Skeleton pointer cached by this BodyNode.
+  const Skeleton* getSkeletonRawPtr() const;
+
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
 

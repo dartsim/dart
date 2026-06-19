@@ -47,14 +47,212 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 
+#include <algorithm>
+#include <condition_variable>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <type_traits>
 #include <vector>
 
 #include <cmath>
 
 namespace dart {
 namespace simulation {
+
+//==============================================================================
+class SimulationThreadPool
+{
+public:
+  SimulationThreadPool() = default;
+
+  ~SimulationThreadPool()
+  {
+    setWorkerCount(0u);
+  }
+
+  void setWorkerCount(std::size_t workerCount)
+  {
+    if (workerCount == mWorkers.size())
+      return;
+
+    stopWorkers();
+    if (workerCount == 0u)
+      return;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = false;
+    }
+
+    mWorkers.reserve(workerCount);
+    for (std::size_t i = 0; i < workerCount; ++i) {
+      mWorkers.emplace_back([this] { workerLoop(); });
+    }
+  }
+
+  template <typename Func>
+  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  {
+    if (count == 0u)
+      return;
+
+    const std::size_t totalParticipants = std::min<std::size_t>(
+        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
+    if (totalParticipants <= 1u) {
+      for (std::size_t i = 0; i < count; ++i)
+        func(i);
+      return;
+    }
+
+    const std::size_t chunkSize
+        = (count + totalParticipants - 1u) / totalParticipants;
+    const std::size_t workerCount = totalParticipants - 1u;
+    using Function = typename std::remove_reference<Func>::type;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      DART_ASSERT(!mTaskActive);
+      mTaskActive = true;
+      mTaskCallable = static_cast<void*>(std::addressof(func));
+      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
+        auto& task = *static_cast<Function*>(callable);
+        for (std::size_t i = begin; i < end; ++i)
+          task(i);
+      };
+      mTaskCount = count;
+      mTaskChunkSize = chunkSize;
+      mWorkerLimit = totalParticipants;
+      mNextWorkerIndex = 1u;
+      mActiveWorkerCount = workerCount;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
+    for (std::size_t i = 0; i < mainEnd; ++i)
+      func(i);
+
+    {
+      std::unique_lock<std::mutex> lock(mMutex);
+      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
+      mTaskActive = false;
+      mTaskCallable = nullptr;
+      mTaskInvoker = nullptr;
+      mWorkerLimit = 1u;
+    }
+  }
+
+private:
+  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
+
+  void stopWorkers()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = true;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    for (auto& worker : mWorkers) {
+      if (worker.joinable())
+        worker.join();
+    }
+    mWorkers.clear();
+
+    std::lock_guard<std::mutex> lock(mMutex);
+    mStop = false;
+    mTaskActive = false;
+    mTaskCallable = nullptr;
+    mTaskInvoker = nullptr;
+    mActiveWorkerCount = 0u;
+    mWorkerLimit = 1u;
+    mNextWorkerIndex = 1u;
+  }
+
+  void workerLoop()
+  {
+    std::size_t observedGeneration = 0u;
+
+    while (true) {
+      void* callable = nullptr;
+      TaskInvoker invoker = nullptr;
+      std::size_t begin = 0u;
+      std::size_t end = 0u;
+
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mTaskCv.wait(lock, [&] {
+          return mStop || observedGeneration != mTaskGeneration;
+        });
+
+        if (mStop)
+          return;
+
+        observedGeneration = mTaskGeneration;
+        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
+          continue;
+
+        const std::size_t workerIndex = mNextWorkerIndex++;
+        begin = workerIndex * mTaskChunkSize;
+        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
+        callable = mTaskCallable;
+        invoker = mTaskInvoker;
+      }
+
+      if (begin < end)
+        invoker(callable, begin, end);
+
+      {
+        std::lock_guard<std::mutex> lock(mMutex);
+        DART_ASSERT(mActiveWorkerCount > 0u);
+        --mActiveWorkerCount;
+        if (mActiveWorkerCount == 0u)
+          mDoneCv.notify_one();
+      }
+    }
+  }
+
+  std::vector<std::thread> mWorkers;
+  std::mutex mMutex;
+  std::condition_variable mTaskCv;
+  std::condition_variable mDoneCv;
+  bool mStop = false;
+  bool mTaskActive = false;
+  std::size_t mTaskGeneration = 0u;
+  std::size_t mTaskCount = 0u;
+  std::size_t mTaskChunkSize = 0u;
+  std::size_t mWorkerLimit = 1u;
+  std::size_t mNextWorkerIndex = 1u;
+  std::size_t mActiveWorkerCount = 0u;
+  void* mTaskCallable = nullptr;
+  TaskInvoker mTaskInvoker = nullptr;
+};
+
+//==============================================================================
+template <typename Func>
+void parallelForIndexRange(
+    SimulationThreadPool* threadPool,
+    std::size_t count,
+    std::size_t numThreads,
+    Func&& func)
+{
+  if (count == 0u)
+    return;
+
+  if (threadPool == nullptr || numThreads <= 1u || count < 128u) {
+    for (std::size_t i = 0; i < count; ++i)
+      func(i);
+    return;
+  }
+
+  threadPool->parallelFor(count, numThreads, std::forward<Func>(func));
+}
 
 //==============================================================================
 std::shared_ptr<World> World::create(const std::string& name)
@@ -100,6 +298,7 @@ WorldPtr World::clone() const
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
   worldClone->setDeactivationOptions(mDeactivationOptions);
+  worldClone->setNumSimulationThreads(mNumSimulationThreads);
 
   auto cd = getConstraintSolver()->getCollisionDetector();
   worldClone->getConstraintSolver()->setCollisionDetector(
@@ -148,6 +347,7 @@ void World::setTimeStep(double _timeStep)
   mConstraintSolver->setTimeStep(_timeStep);
   for (auto& skel : mSkeletons)
     skel->setTimeStep(_timeStep);
+  invalidateAllRestingKinematicSnapshot();
 }
 
 //==============================================================================
@@ -157,12 +357,42 @@ double World::getTimeStep() const
 }
 
 //==============================================================================
+void World::setNumSimulationThreads(std::size_t numThreads)
+{
+  if (numThreads == 0u) {
+    numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0u)
+      numThreads = 1u;
+  }
+
+  mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
+  if (mConstraintSolver)
+    mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
+
+  if (mNumSimulationThreads <= 1u) {
+    mSimulationThreadPool.reset();
+    return;
+  }
+
+  if (!mSimulationThreadPool)
+    mSimulationThreadPool = std::make_unique<SimulationThreadPool>();
+  mSimulationThreadPool->setWorkerCount(mNumSimulationThreads - 1u);
+}
+
+//==============================================================================
+std::size_t World::getNumSimulationThreads() const
+{
+  return mNumSimulationThreads;
+}
+
+//==============================================================================
 void World::reset()
 {
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
+  invalidateAllRestingKinematicSnapshot();
 
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
@@ -175,55 +405,160 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  const bool sleepingEnabled = mDeactivationOptions.mEnabled;
+  const bool deactivationEnabled = mDeactivationOptions.mEnabled;
 
-  // Mirror the option onto the solver so its sleeping / LCP-skipping work runs
-  // only when sleeping is enabled (otherwise it is a strict no-op).
-  mConstraintSolver->setAutomaticSleepingEnabled(sleepingEnabled);
+  // Mirror the enable flag onto the solver so its island rest-detection / LCP
+  // skipping runs only when the feature is on (otherwise it is a strict no-op).
+  mConstraintSolver->setDeactivationActive(deactivationEnabled);
+
+  if (!deactivationEnabled) {
+    {
+      DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
+      parallelForIndexRange(
+          mSimulationThreadPool.get(),
+          mSkeletons.size(),
+          mNumSimulationThreads,
+          [&](std::size_t i) {
+            auto& skel = mSkeletons[i];
+            if (!skel->isMobile())
+              return;
+
+            skel->computeForwardDynamics();
+            skel->integrateVelocities(mTimeStep);
+          });
+    }
+
+    {
+      DART_PROFILE_SCOPED_N("World::step - Solve constraints");
+      mConstraintSolver->solve();
+    }
+
+    {
+      DART_PROFILE_SCOPED_N("World::step - Integrate positions");
+      parallelForIndexRange(
+          mSimulationThreadPool.get(),
+          mSkeletons.size(),
+          mNumSimulationThreads,
+          [&](std::size_t i) {
+            auto& skel = mSkeletons[i];
+            if (!skel->isMobile())
+              return;
+
+            if (skel->isImpulseApplied()) {
+              skel->computeImpulseForwardDynamics();
+              skel->setImpulseApplied(false);
+            }
+
+            skel->integratePositions(mTimeStep);
+
+            if (_resetCommand && skel->checkExternalDisturbanceAndReset(true)) {
+              skel->clearInternalForces();
+              skel->clearExternalForces();
+              skel->resetCommands();
+            }
+          });
+    }
+
+    mTime += mTimeStep;
+    mFrame++;
+    invalidateAllRestingKinematicSnapshot();
+    return;
+  }
+
+  const bool lastStepHadNoContacts
+      = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
+  bool allRestingFastPathReady = false;
+  if (deactivationEnabled && lastStepHadNoContacts) {
+    bool allRestingSnapshotStale = false;
+    allRestingFastPathReady
+        = isAllRestingFastPathReady(_resetCommand, &allRestingSnapshotStale);
+    if (allRestingSnapshotStale)
+      wakeRestingSkeletonsForWorldChange();
+  }
+
+  if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
+    DART_PROFILE_SCOPED_N("World::step - All-resting fast path");
+    mTime += mTimeStep;
+    mFrame++;
+    return;
+  }
 
   // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
   // step so the post-step rest-detection pass can treat it as non-quiet even
   // after _resetCommand clears the actuation vectors below. Disturbance
   // tracking is only needed while contact islands exist; unconstrained active
   // scenes cannot sleep.
-  std::vector<bool> disturbedThisStep;
+  std::vector<char> disturbedThisStep;
   const bool trackDisturbances
-      = sleepingEnabled
+      = deactivationEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
-  if (trackDisturbances)
-    disturbedThisStep.assign(mSkeletons.size(), false);
+  {
+    DART_PROFILE_SCOPED_N("World::step - Prepare deactivation");
+    if (trackDisturbances)
+      disturbedThisStep.assign(mSkeletons.size(), false);
+  }
 
   // Integrate velocity for unconstrained skeletons
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
-    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-      auto& skel = mSkeletons[i];
-      if (!skel->isMobile())
-        continue;
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
 
-      const bool externallyDisturbed
-          = sleepingEnabled && (trackDisturbances || skel->isResting())
-            && skel->hasExternalDisturbance();
-      if (externallyDisturbed && !disturbedThisStep.empty())
-        disturbedThisStep[i] = true;
+          const bool externallyDisturbed
+              = deactivationEnabled && (trackDisturbances || skel->isResting())
+                && skel->hasExternalDisturbance();
+          if (externallyDisturbed && !disturbedThisStep.empty())
+            disturbedThisStep[i] = 1;
 
-      // A resting skeleton skips forward dynamics (including gravity) unless a
-      // user-applied force/command is pending this step, in which case it is
-      // woken so the actuation is integrated rather than silently dropped.
-      // Gravity alone is not a disturbance, so a body resting on its support
-      // stays asleep.
-      if (sleepingEnabled && skel->isResting()) {
-        if (externallyDisturbed) {
-          skel->setResting(false);
-          skel->setSleepCandidate(false);
-        } else {
-          continue;
-        }
-      }
+          // A resting skeleton skips forward dynamics (including gravity)
+          // unless a user-applied force/command is pending this step, in which
+          // case it is woken so the actuation is integrated rather than
+          // silently dropped. Gravity alone is not a disturbance, so a body
+          // resting on its support stays asleep.
+          if (deactivationEnabled && skel->isResting()) {
+            if (externallyDisturbed) {
+              skel->setResting(false);
+              skel->setSleepCandidate(false);
+            } else {
+              if (_resetCommand) {
+                skel->clearInternalForces();
+                skel->clearExternalForces();
+                skel->resetCommands();
+              }
+              return;
+            }
+          }
 
-      skel->computeForwardDynamics();
-      skel->integrateVelocities(mTimeStep);
-    }
+          skel->computeForwardDynamics();
+          skel->integrateVelocities(mTimeStep);
+
+          // A sleep candidate can briefly lose its support contact due to
+          // discrete collision jitter. Preserve that candidacy only while the
+          // integrated velocity is still inside the wake band; if the body is
+          // genuinely moving again, clear the stale candidate before the
+          // solver has a chance to freeze its next contact island.
+          if (skel->isSleepCandidate()) {
+            const double linWake = mDeactivationOptions.mWakeThresholdScale
+                                   * mDeactivationOptions.mLinearSpeedThreshold;
+            const double angWake
+                = mDeactivationOptions.mWakeThresholdScale
+                  * mDeactivationOptions.mAngularSpeedThreshold;
+            const double linSpeed = skel->computeMaxBodyLinearSpeed();
+            const double angSpeed = skel->computeMaxBodyAngularSpeed();
+            if (externallyDisturbed || linSpeed > linWake
+                || angSpeed > angWake) {
+              skel->setSleepCandidate(false);
+              if (!disturbedThisStep.empty())
+                disturbedThisStep[i] = 1;
+            }
+          }
+        });
   }
 
   // Detect activated constraints and compute constraint impulses
@@ -232,71 +567,86 @@ void World::step(bool _resetCommand)
     mConstraintSolver->solve();
   }
 
-  // Compute velocity changes given constraint impulses
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    auto& skel = mSkeletons[i];
-    if (!skel->isMobile())
-      continue;
+  {
+    DART_PROFILE_SCOPED_N("World::step - Integrate positions");
+    parallelForIndexRange(
+        mSimulationThreadPool.get(),
+        mSkeletons.size(),
+        mNumSimulationThreads,
+        [&](std::size_t i) {
+          auto& skel = mSkeletons[i];
+          if (!skel->isMobile())
+            return;
 
-    bool preservingFinalSleepSolve = false;
+          bool preservingFinalSleepSolve = false;
 
-    // A resting skeleton skips both the impulse-based forward dynamics and the
-    // position integration. The only exception is when an impulse was applied
-    // to it this step: that means a moving body contacted this island (the
-    // solver united them so the group was not all-resting and was solved),
-    // delivering an impulse. Such a skeleton must wake and be processed
-    // normally so the impulse is applied and the position is advanced. A
-    // newly sleep-eligible contact island also receives one final solved
-    // impulse before freezing so transmitted-wrench/body-force queries keep
-    // the last solved contact forces; that path processes the impulse but
-    // preserves the resting state.
-    if (sleepingEnabled && skel->isResting()) {
-      if (skel->isImpulseApplied()) {
-        if (skel->isSleepCandidate()) {
-          preservingFinalSleepSolve = true;
-        } else {
-          skel->setResting(false);
-          skel->setSleepCandidate(false);
-          if (!disturbedThisStep.empty())
-            disturbedThisStep[i] = true;
-        }
-      } else {
-        continue;
-      }
-    }
+          // A resting skeleton skips both the impulse-based forward dynamics
+          // and the position integration. The only exception is when an impulse
+          // was applied to it this step: that means a moving body contacted
+          // this island (the solver united them so the group was not
+          // all-resting and was solved), delivering the wake-up impulse to the
+          // previously-resting bodies. Such a skeleton must wake and be
+          // processed normally so the impulse is applied and the position is
+          // advanced. A newly sleep-eligible contact island also receives one
+          // final solved impulse before freezing so
+          // transmitted-wrench/body-force queries keep the last solved contact
+          // forces; that path processes the impulse but preserves the resting
+          // state.
+          if (deactivationEnabled && skel->isResting()) {
+            if (skel->isImpulseApplied()) {
+              if (skel->isSleepCandidate()) {
+                preservingFinalSleepSolve = true;
+              } else {
+                skel->setResting(false);
+                skel->setSleepCandidate(false);
+                if (!disturbedThisStep.empty())
+                  disturbedThisStep[i] = 1;
+              }
+            } else {
+              return;
+            }
+          }
 
-    if (skel->isImpulseApplied()) {
-      skel->computeImpulseForwardDynamics();
-      skel->setImpulseApplied(false);
-    }
+          if (skel->isImpulseApplied()) {
+            skel->computeImpulseForwardDynamics();
+            skel->setImpulseApplied(false);
+          }
 
-    skel->integratePositions(mTimeStep);
+          skel->integratePositions(mTimeStep);
 
-    if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
-      skel->setVelocities(
-          Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
+          if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
+            skel->setVelocities(
+                Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
 
-    if (_resetCommand) {
-      skel->clearInternalForces();
-      skel->clearExternalForces();
-      skel->resetCommands();
-    }
+          if (_resetCommand) {
+            skel->clearInternalForces();
+            skel->clearExternalForces();
+            skel->resetCommands();
+          }
+        });
   }
 
   // Rest-detection pass: decide which mobile skeletons are quiet enough to
   // sleep, and wake any that have started moving again. This is a deterministic
   // function of post-step cached speeds, dwell time, and the configured
   // thresholds, so it does not depend on container or iteration order.
-  if (sleepingEnabled
+  if (deactivationEnabled
       && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
     updateRestStates(disturbedThisStep);
 
   mTime += mTimeStep;
   mFrame++;
+
+  if (deactivationEnabled
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0) {
+    updateAllRestingKinematicSnapshot();
+  } else {
+    invalidateAllRestingKinematicSnapshot();
+  }
 }
 
 //==============================================================================
-void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
+void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
   DART_PROFILE_SCOPED_N("World::step - Rest detection");
 
@@ -312,16 +662,27 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
   // sustained motion keeps a high smoothed speed and never qualifies.
   const double alpha = 0.2;
 
-  // This pass updates per-skeleton sleep CANDIDACY only. The island-atomic
-  // freeze flag (isResting) is derived from candidacy by the constraint solver,
-  // so a body is never frozen unless its whole island qualifies.
+  // This pass updates per-skeleton sleep candidacy. The constraint solver
+  // handles active contact islands; the final contact-result pass below handles
+  // quiet candidate bodies whose static support contact produced no active
+  // constraint on this step.
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
     if (!skel->isMobile())
       continue;
 
-    if (skel->getIslandIndex() < 0) {
-      skel->setSleepCandidate(false);
+    const bool disturbed
+        = (i < disturbedThisStep.size() && disturbedThisStep[i])
+          || skel->hasExternalDisturbance();
+
+    const bool islanded = skel->getIslandIndex() >= 0;
+    if (!islanded)
+      skel->setResting(false);
+
+    if (islanded && skel->isResting() && skel->isSleepCandidate()
+        && !disturbed) {
+      skel->setSmoothedLinearSpeed(0.0);
+      skel->setSmoothedAngularSpeed(0.0);
       continue;
     }
 
@@ -334,10 +695,6 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
     skel->setSmoothedLinearSpeed(linSpeed);
     skel->setSmoothedAngularSpeed(angSpeed);
 
-    const bool disturbed
-        = (i < disturbedThisStep.size() && disturbedThisStep[i])
-          || skel->hasExternalDisturbance();
-
     if (skel->isSleepCandidate()) {
       // Stay a candidate unless the body clearly started moving again (beyond
       // the wider wake band) or was disturbed/impulsed this step. The wake band
@@ -346,8 +703,10 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
       if (disturbed || linSpeed > linWake || angSpeed > angWake)
         skel->setSleepCandidate(false);
     } else {
-      const bool quiet
-          = (linSpeed < linSleep) && (angSpeed < angSleep) && !disturbed;
+      const bool canAccumulateDwell = islanded || skel->isSleepCandidate()
+                                      || skel->getRestDwellTime() > 0.0;
+      const bool quiet = canAccumulateDwell && (linSpeed < linSleep)
+                         && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
         const double dwell = skel->getRestDwellTime() + mTimeStep;
         skel->setRestDwellTime(dwell);
@@ -358,6 +717,214 @@ void World::updateRestStates(const std::vector<bool>& disturbedThisStep)
       }
     }
   }
+
+  // Collision backends can report a persistent, shallow static support contact
+  // without producing an active contact constraint every frame. If a body has
+  // already accumulated the full quiet dwell and is touching only an inactive
+  // support, let it sleep instead of requiring a non-zero LCP island on that
+  // exact frame. Moving or disturbed candidates are cleared before this point
+  // by the wake-band checks above and in the pre-solve velocity pass.
+  constexpr double kSleepContactPenetrationTolerance = 1e-3;
+  const auto& contacts = mConstraintSolver->getLastCollisionResult();
+  for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
+    const auto& contact = contacts.getContact(i);
+    if (contact.penetrationDepth > kSleepContactPenetrationTolerance)
+      continue;
+
+    auto tryRestOnInactiveSupport = [&](const auto& bodyNode,
+                                        const auto& supportBodyNode) {
+      if (!bodyNode)
+        return;
+
+      auto* skel
+          = const_cast<dynamics::Skeleton*>(bodyNode->getSkeletonRawPtr());
+      if (!skel || !skel->isMobile() || skel->isResting()
+          || !skel->isSleepCandidate() || skel->getIslandIndex() >= 0) {
+        return;
+      }
+
+      const auto* supportSkel
+          = supportBodyNode ? supportBodyNode->getSkeletonRawPtr() : nullptr;
+      const bool supportInactive = supportSkel == nullptr
+                                   || !supportSkel->isMobile()
+                                   || supportSkel->isResting();
+      if (!supportInactive)
+        return;
+
+      if (skel->getSmoothedLinearSpeed() > linWake
+          || skel->getSmoothedAngularSpeed() > angWake) {
+        skel->setSleepCandidate(false);
+        return;
+      }
+
+      skel->setIslandIndex(0);
+      skel->setResting(true);
+    };
+
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    tryRestOnInactiveSupport(bodyNode1, bodyNode2);
+    tryRestOnInactiveSupport(bodyNode2, bodyNode1);
+  }
+
+  constexpr double kZeroSpeedForContactMissSleep = 1e-10;
+  for (auto& skel : mSkeletons) {
+    if (!skel->isMobile() || skel->isResting() || !skel->isSleepCandidate()
+        || skel->getIslandIndex() >= 0) {
+      continue;
+    }
+
+    if (skel->getRestDwellTime() < mDeactivationOptions.mTimeUntilSleep)
+      continue;
+
+    if (skel->computeMaxBodyLinearSpeed() > kZeroSpeedForContactMissSleep
+        || skel->computeMaxBodyAngularSpeed() > kZeroSpeedForContactMissSleep) {
+      continue;
+    }
+
+    skel->setIslandIndex(0);
+    skel->setResting(true);
+  }
+}
+
+//==============================================================================
+bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
+{
+  DART_PROFILE_SCOPED_N("all-resting readiness check");
+
+  if (snapshotStale)
+    *snapshotStale = false;
+
+  auto markSnapshotStale = [&]() {
+    if (snapshotStale)
+      *snapshotStale = true;
+  };
+
+  if (!mAllRestingKinematicSnapshotValid)
+    return false;
+
+  if (mAllRestingKinematicSnapshot.size() != mSkeletons.size()) {
+    markSnapshotStale();
+    return false;
+  }
+
+  if (mAllRestingSnapshotReady && mAllRestingSnapshotHasMobileSkeleton
+      && mAllRestingSnapshotStructuralVersion
+             == dynamics::Skeleton::getGlobalStructuralVersion()
+      && mAllRestingSnapshotKinematicVersion
+             == dynamics::Skeleton::getGlobalKinematicVersion()
+      && mAllRestingSnapshotExternalDisturbanceVersion
+             == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
+      && mAllRestingSnapshotDeactivationStateVersion
+             == dynamics::Skeleton::getGlobalDeactivationStateVersion()) {
+    return true;
+  }
+
+  bool hasMobileSkeleton = false;
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    auto& skel = mSkeletons[i];
+    auto& snapshot = mAllRestingKinematicSnapshot[i];
+    if (snapshot.mSkeleton != skel.get()
+        || snapshot.mNumBodyNodes != skel->getNumBodyNodes()) {
+      markSnapshotStale();
+      return false;
+    }
+
+    if (snapshot.mStructuralVersion != skel->getVersion()
+        || snapshot.mKinematicVersion != skel->getKinematicVersion()) {
+      const Eigen::VectorXd positions = skel->getPositions();
+      if (positions.size() != snapshot.mPositions.size()
+          || !positions.isApprox(snapshot.mPositions, 0.0)) {
+        markSnapshotStale();
+        return false;
+      }
+
+      snapshot.mStructuralVersion = skel->getVersion();
+      snapshot.mKinematicVersion = skel->getKinematicVersion();
+    }
+
+    if (!skel->isMobile())
+      continue;
+
+    hasMobileSkeleton = true;
+    if (!skel->isResting() || !skel->isSleepCandidate()
+        || skel->getIslandIndex() < 0
+        || skel->checkExternalDisturbanceAndReset(_resetCommand)) {
+      return false;
+    }
+  }
+
+  if (hasMobileSkeleton) {
+    mAllRestingSnapshotReady = true;
+    updateAllRestingSnapshotGlobalVersions();
+  } else {
+    mAllRestingSnapshotReady = false;
+  }
+
+  return hasMobileSkeleton;
+}
+
+//==============================================================================
+void World::updateAllRestingKinematicSnapshot()
+{
+  mAllRestingKinematicSnapshot.clear();
+  mAllRestingKinematicSnapshot.reserve(mSkeletons.size());
+  mAllRestingSnapshotHasMobileSkeleton = false;
+  mAllRestingSnapshotReady = false;
+
+  for (const auto& skel : mSkeletons) {
+    AllRestingKinematicSnapshot snapshot;
+    snapshot.mSkeleton = skel.get();
+    snapshot.mStructuralVersion = skel->getVersion();
+    snapshot.mKinematicVersion = skel->getKinematicVersion();
+    snapshot.mNumBodyNodes = skel->getNumBodyNodes();
+    snapshot.mPositions = skel->getPositions();
+    mAllRestingKinematicSnapshot.push_back(snapshot);
+    mAllRestingSnapshotHasMobileSkeleton
+        = mAllRestingSnapshotHasMobileSkeleton || skel->isMobile();
+  }
+
+  updateAllRestingSnapshotGlobalVersions();
+  mAllRestingKinematicSnapshotValid = true;
+}
+
+//==============================================================================
+void World::updateAllRestingSnapshotGlobalVersions()
+{
+  mAllRestingSnapshotStructuralVersion
+      = dynamics::Skeleton::getGlobalStructuralVersion();
+  mAllRestingSnapshotKinematicVersion
+      = dynamics::Skeleton::getGlobalKinematicVersion();
+  mAllRestingSnapshotExternalDisturbanceVersion
+      = dynamics::Skeleton::getGlobalExternalDisturbanceVersion();
+  mAllRestingSnapshotDeactivationStateVersion
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+}
+
+//==============================================================================
+void World::invalidateAllRestingKinematicSnapshot()
+{
+  mAllRestingKinematicSnapshotValid = false;
+  mAllRestingSnapshotHasMobileSkeleton = false;
+  mAllRestingSnapshotReady = false;
+}
+
+//==============================================================================
+void World::wakeRestingSkeletonsForWorldChange()
+{
+  DART_PROFILE_SCOPED_N("World::step - Wake resting after world change");
+
+  for (auto& skel : mSkeletons) {
+    if (!skel->isMobile() || !skel->isResting())
+      continue;
+
+    skel->setResting(false);
+    skel->setSleepCandidate(false);
+    skel->setIslandIndex(-1);
+    skel->setRestDwellTime(0.0);
+  }
+
+  invalidateAllRestingKinematicSnapshot();
 }
 
 //==============================================================================
@@ -410,6 +977,8 @@ void World::setGravity(const Eigen::Vector3d& _gravity)
        ++it) {
     (*it)->setGravity(_gravity);
   }
+  invalidateAllRestingKinematicSnapshot();
+  wakeRestingSkeletonsForWorldChange();
 }
 
 //==============================================================================
@@ -478,6 +1047,8 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
+  invalidateAllRestingKinematicSnapshot();
+  wakeRestingSkeletonsForWorldChange();
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -520,6 +1091,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   // Remove _skeleton from constraint handler.
   mConstraintSolver->removeSkeleton(_skeleton);
+  invalidateAllRestingKinematicSnapshot();
 
   // Remove _skeleton from mSkeletons
   mSkeletons.erase(
@@ -727,6 +1299,9 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);
+  mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
+  invalidateAllRestingKinematicSnapshot();
+  wakeRestingSkeletonsForWorldChange();
 }
 
 //==============================================================================
@@ -745,6 +1320,8 @@ const constraint::ConstraintSolver* World::getConstraintSolver() const
 void World::setDeactivationOptions(const DeactivationOptions& options)
 {
   mDeactivationOptions = options;
+  invalidateAllRestingKinematicSnapshot();
+  wakeRestingSkeletonsForWorldChange();
 
   // If the feature is being disabled, clear any resting/candidacy state so
   // subsequent steps process every skeleton normally and behavior is identical

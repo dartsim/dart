@@ -673,6 +673,12 @@ public:
   /// \param[in] _index Index of joint axis.
   virtual double getCoulombFriction(std::size_t _index) const = 0;
 
+  /// Return true if any degree of freedom has nonzero Coulomb friction.
+  bool hasCoulombFriction() const;
+
+  /// Global revision for properties that affect automatic constraint creation.
+  static std::size_t getAutomaticConstraintRevision();
+
   /// \}
 
   //----------------------------------------------------------------------------
@@ -842,6 +848,12 @@ protected:
 
   /// Called by the Skeleton class
   virtual void registerDofs() = 0;
+
+  /// Notify that user-writable force/command state has changed.
+  void notifyExternalDisturbanceUpdated();
+
+  /// Notify that this joint's automatic-constraint eligibility changed.
+  void notifyAutomaticConstraintPropertiesUpdated();
 
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
@@ -1139,6 +1151,9 @@ protected:
   /// True iff this joint's relative Jacobian time derivative has not been
   /// updated since the last position or velocity change
   mutable bool mIsRelativeJacobianTimeDerivDirty;
+
+  /// Number of degrees of freedom whose Coulomb friction is nonzero.
+  std::size_t mNumNonzeroCoulombFrictionDofs;
 
 public:
   // To get byte-aligned Eigen vectors

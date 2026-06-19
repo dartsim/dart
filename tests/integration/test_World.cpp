@@ -395,6 +395,32 @@ TEST(World, SetNewConstraintSolver)
 }
 
 //==============================================================================
+TEST(World, SimulationThreadCount)
+{
+  auto world = World::create();
+  EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+
+  world->setNumSimulationThreads(2u);
+  EXPECT_EQ(world->getNumSimulationThreads(), 2u);
+
+  // Add enough independent skeletons to exercise the parallel per-skeleton
+  // path. Empty skeletons keep the test focused on World's scheduling surface.
+  for (std::size_t i = 0; i < 130u; ++i) {
+    world->addSkeleton(Skeleton::create("empty_" + std::to_string(i)));
+  }
+
+  world->step();
+  EXPECT_EQ(world->getSimFrames(), 1);
+
+  auto clone = world->clone();
+  ASSERT_TRUE(clone != nullptr);
+  EXPECT_EQ(clone->getNumSimulationThreads(), 2u);
+
+  world->setNumSimulationThreads(1u);
+  EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+}
+
+//==============================================================================
 // Regression test for https://github.com/dartsim/dart/issues/2426
 TEST(World, GetIndexBoundsCheck)
 {

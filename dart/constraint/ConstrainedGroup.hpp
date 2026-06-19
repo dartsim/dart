@@ -45,6 +45,7 @@
 namespace dart {
 
 namespace dynamics {
+class BodyNode;
 class Skeleton;
 } // namespace dynamics
 
@@ -52,6 +53,7 @@ namespace constraint {
 
 struct ConstraintInfo;
 class ConstraintBase;
+class BoxedLcpConstraintSolver;
 class ConstraintSolver;
 
 /// ConstrainedGroup is a group of skeletons that interact each other with
@@ -100,6 +102,7 @@ public:
   //----------------------------------------------------------------------------
 
   friend class ConstraintSolver;
+  friend class BoxedLcpConstraintSolver;
 
 private:
   /// Return true if _constraint is contained
@@ -110,6 +113,21 @@ private:
 
   ///
   std::shared_ptr<dynamics::Skeleton> mRootSkeleton;
+
+  /// True when this group was built entirely from ContactConstraint instances
+  /// with exactly one reactive skeleton.
+  bool mAllSingleReactiveContacts = false;
+
+  /// True while all single-reactive contacts in this group share the same
+  /// reactive body.
+  bool mSingleReactiveContactsShareBody = true;
+
+  /// Cached sole reactive body for groups where
+  /// mSingleReactiveContactsShareBody is true.
+  dynamics::BodyNode* mSingleReactiveBodyNode = nullptr;
+
+  /// Cached sole reactive skeleton for mAllSingleReactiveContacts groups.
+  dynamics::Skeleton* mSingleReactiveSkeleton = nullptr;
 };
 
 } // namespace constraint

@@ -50,11 +50,12 @@ namespace simulation {
 /// it does not depend on iteration or container order.
 struct DeactivationOptions
 {
-  /// Whether automatic deactivation is enabled. Defaults to true: resting
-  /// constrained islands sleep automatically for the resting-scene speedup.
-  /// Set this to false to opt out; when disabled, no skeleton is ever flagged
-  /// as resting and behavior is byte-identical to having the feature absent.
-  bool mEnabled = true;
+  /// Whether automatic deactivation is enabled. Defaults to false in DART 6
+  /// LTS to preserve existing simulation behavior for downstream integrations.
+  /// Set this to true to opt into resting-scene acceleration. When disabled,
+  /// no skeleton is ever flagged as resting and behavior is byte-identical to
+  /// having the feature absent.
+  bool mEnabled = false;
 
   /// Maximum linear speed (m/s) of any body in a skeleton for that skeleton to
   /// be considered quiet enough to begin sleeping.

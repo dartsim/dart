@@ -58,6 +58,7 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 namespace dart {
@@ -222,6 +223,17 @@ void filterOutCollisions(btCollisionWorld* world)
 }
 
 //==============================================================================
+std::size_t getPersistentPairFilterRevision(const CollisionFilter* filter)
+{
+  if (const auto* bodyNodeFilter
+      = dynamic_cast<const BodyNodeCollisionFilter*>(filter)) {
+    return bodyNodeFilter->getRevision();
+  }
+
+  return (std::numeric_limits<std::size_t>::max)();
+}
+
+//==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group,
     const CollisionOption& option,
@@ -244,7 +256,12 @@ bool BulletCollisionDetector::collide(
       collisionWorld->getDispatcher());
   dispatcher->setFilter(option.collisionFilter);
 
-  if (option.collisionFilter) {
+  const std::size_t filterRevision
+      = getPersistentPairFilterRevision(option.collisionFilter.get());
+  if (option.collisionFilter
+      && (filterRevision == (std::numeric_limits<std::size_t>::max)()
+          || castedGroup->shouldFilterPersistentPairs(
+              option.collisionFilter.get(), filterRevision))) {
     DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
     filterOutCollisions(collisionWorld);
   }

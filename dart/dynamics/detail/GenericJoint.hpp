@@ -445,6 +445,8 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       DART_ASSERT(false);
       break;
   }
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -522,6 +524,8 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       DART_ASSERT(false);
       break;
   }
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -536,6 +540,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetCommands()
 {
   this->mAspectState.mCommands.setZero();
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1200,6 +1205,8 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1227,6 +1234,8 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1332,6 +1341,8 @@ void GenericJoint<ConfigSpaceT>::resetForces()
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1592,7 +1603,16 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     friction = 0.0;
   }
 
+  const bool hadFriction = Base::mAspectProperties.mFrictions[index] != 0.0;
+  const bool hasFriction = friction != 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
+  if (hadFriction && !hasFriction) {
+    --Joint::mNumNonzeroCoulombFrictionDofs;
+    this->notifyAutomaticConstraintPropertiesUpdated();
+  } else if (!hadFriction && hasFriction) {
+    ++Joint::mNumNonzeroCoulombFrictionDofs;
+    this->notifyAutomaticConstraintPropertiesUpdated();
+  }
 }
 
 //==============================================================================
@@ -1688,6 +1708,10 @@ GenericJoint<ConfigSpaceT>::GenericJoint(const Properties& properties)
   // Joint and GenericJoint Aspects must be created by the most derived class.
   this->mAspectState.mPositions = properties.mInitialPositions;
   this->mAspectState.mVelocities = properties.mInitialVelocities;
+  for (auto i = 0u; i < NumDofs; ++i) {
+    if (!std::isnan(properties.mFrictions[i]) && properties.mFrictions[i] > 0.0)
+      ++Joint::mNumNonzeroCoulombFrictionDofs;
+  }
 }
 
 //==============================================================================

@@ -39,10 +39,17 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <atomic>
 #include <string>
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+std::atomic<std::size_t> gAutomaticConstraintRevision{0u};
+
+} // namespace
 
 //==============================================================================
 const Joint::ActuatorType Joint::DefaultActuatorType
@@ -200,6 +207,7 @@ void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
     return;
 
   mAspectProperties.mActuatorType = _actuatorType;
+  notifyAutomaticConstraintPropertiesUpdated();
   resetCommands();
 }
 
@@ -231,12 +239,14 @@ void Joint::setMimicJointDof(
     std::size_t index, const MimicDofProperties& mimicProp)
 {
   mAspectProperties.mMimicDofProps[index] = mimicProp;
+  notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
 void Joint::setMimicJointDofs(const std::vector<MimicDofProperties>& mimicProps)
 {
   mAspectProperties.mMimicDofProps = mimicProps;
+  notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -472,7 +482,11 @@ void Joint::setPositionLimitEnforced(bool enforced)
 //==============================================================================
 void Joint::setLimitEnforcement(bool enforced)
 {
+  if (mAspectProperties.mIsPositionLimitEnforced == enforced)
+    return;
+
   mAspectProperties.mIsPositionLimitEnforced = enforced;
+  notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -485,6 +499,18 @@ bool Joint::isPositionLimitEnforced() const
 bool Joint::areLimitsEnforced() const
 {
   return mAspectProperties.mIsPositionLimitEnforced;
+}
+
+//==============================================================================
+bool Joint::hasCoulombFriction() const
+{
+  return mNumNonzeroCoulombFrictionDofs != 0u;
+}
+
+//==============================================================================
+std::size_t Joint::getAutomaticConstraintRevision()
+{
+  return gAutomaticConstraintRevision.load(std::memory_order_relaxed);
 }
 
 //==============================================================================
@@ -614,7 +640,8 @@ Joint::Joint()
     mNeedSpatialAccelerationUpdate(true),
     mNeedPrimaryAccelerationUpdate(true),
     mIsRelativeJacobianDirty(true),
-    mIsRelativeJacobianTimeDerivDirty(true)
+    mIsRelativeJacobianTimeDerivDirty(true),
+    mNumNonzeroCoulombFrictionDofs(0u)
 {
   // Do nothing. The Joint::Aspect must be created by a derived class.
 }
@@ -720,6 +747,7 @@ void Joint::notifyPositionUpdated()
 
   SkeletonPtr skel = getSkeleton();
   if (skel) {
+    skel->incrementKinematicVersion();
     std::size_t tree = mChildBodyNode->mTreeIndex;
     skel->dirtyArticulatedInertia(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
@@ -761,6 +789,20 @@ void Joint::notifyAccelerationUpdated()
 
   mNeedSpatialAccelerationUpdate = true;
   mNeedPrimaryAccelerationUpdate = true;
+}
+
+//==============================================================================
+void Joint::notifyExternalDisturbanceUpdated()
+{
+  SkeletonPtr skel = getSkeleton();
+  if (skel)
+    skel->incrementExternalDisturbanceVersion();
+}
+
+//==============================================================================
+void Joint::notifyAutomaticConstraintPropertiesUpdated()
+{
+  gAutomaticConstraintRevision.fetch_add(1, std::memory_order_relaxed);
 }
 
 } // namespace dynamics

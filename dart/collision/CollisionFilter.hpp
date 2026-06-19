@@ -104,6 +104,9 @@ public:
   /// Remove all the BodyNode pairs from the blacklist.
   void removeAllBodyNodePairsFromBlackList();
 
+  /// Returns a revision for state that can change this filter's decisions.
+  std::size_t getRevision() const;
+
   // Documentation inherited
   bool ignoresCollision(
       const CollisionObject* object1,
@@ -118,6 +121,10 @@ private:
 
   /// List of pairs to be ignored in the collision detection.
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
+
+  /// Revision for blacklist updates. Combined with global skeleton filter
+  /// state in getRevision().
+  std::size_t mRevision = 0u;
 };
 
 } // namespace collision
