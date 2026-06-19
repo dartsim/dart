@@ -42,6 +42,54 @@ function(dart_find_imgui_header out_var header_name)
   set(${out_var} "${${resolved_header_var}}" PARENT_SCOPE)
 endfunction()
 
+function(dart_find_imgui_source out_var source_name)
+  foreach(search_dir IN LISTS ARGN)
+    if(NOT search_dir OR NOT IS_DIRECTORY "${search_dir}")
+      continue()
+    endif()
+
+    foreach(candidate_dir
+        "${search_dir}"
+        "${search_dir}/imgui"
+        "${search_dir}/imgui/backends"
+        "${search_dir}/backends"
+        "${search_dir}/../share/imgui"
+        "${search_dir}/../share/imgui/backends"
+        "${search_dir}/../share/imgui/examples"
+        "${search_dir}/../share/doc/imgui/examples")
+      if(EXISTS "${candidate_dir}/${source_name}")
+        set(${out_var} "${candidate_dir}/${source_name}" PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endforeach()
+
+  string(MAKE_C_IDENTIFIER "${source_name}" source_cache_name)
+  set(resolved_source_var "resolved_${source_cache_name}")
+  find_file(${resolved_source_var}
+    NAMES "${source_name}"
+    HINTS ${ARGN}
+    PATH_SUFFIXES
+      imgui
+      imgui/backends
+      backends
+      ../share/imgui
+      ../share/imgui/backends
+      ../share/imgui/examples
+      ../share/doc/imgui/examples
+  )
+  if(NOT ${resolved_source_var})
+    message(
+      FATAL_ERROR
+      "Could not find ImGui source ${source_name}. The system ImGui package "
+      "must either provide OpenGL2 backend symbols in imgui::imgui or install "
+      "${source_name} so DART can build its compatibility target."
+    )
+  endif()
+
+  set(${out_var} "${${resolved_source_var}}" PARENT_SCOPE)
+endfunction()
+
 function(dart_configure_imgui_compat_headers out_var)
   set(imgui_compat_header_dir "${DART_BINARY_DIR}/dart/external/imgui")
   file(MAKE_DIRECTORY "${imgui_compat_header_dir}")
@@ -63,6 +111,8 @@ endfunction()
 if(DART_USE_SYSTEM_IMGUI)
   dart_find_package(imgui)
   dart_check_required_package(imgui "imgui")
+  dart_find_package(OpenGL)
+  dart_check_required_package(OpenGL "OpenGL")
 
   set(imgui_header_search_dirs ${imgui_INCLUDE_DIRS})
   get_target_property(
@@ -80,13 +130,53 @@ if(DART_USE_SYSTEM_IMGUI)
     "namespace dart_external_imgui { void keep_component() {} }\n"
   )
 
-  dart_add_library(${target_name} ${imgui_compat_source} ${imgui_compat_headers})
+  set(imgui_compat_sources ${imgui_compat_source})
+
+  # Some system packages put the OpenGL2 backend in libimgui, while others
+  # install the backend as example source that consumers must compile.
+  include(CheckCXXSourceCompiles)
+  set(_dart_saved_required_includes ${CMAKE_REQUIRED_INCLUDES})
+  set(_dart_saved_required_libraries ${CMAKE_REQUIRED_LIBRARIES})
+  set(_dart_saved_required_quiet ${CMAKE_REQUIRED_QUIET})
+  set(CMAKE_REQUIRED_INCLUDES ${imgui_header_search_dirs})
+  set(CMAKE_REQUIRED_LIBRARIES imgui::imgui OpenGL::GL)
+  set(CMAKE_REQUIRED_QUIET TRUE)
+  check_cxx_source_compiles(
+    "
+    #include <imgui_impl_opengl2.h>
+    int main()
+    {
+      (void)&ImGui_ImplOpenGL2_Init;
+      (void)&ImGui_ImplOpenGL2_NewFrame;
+      (void)&ImGui_ImplOpenGL2_RenderDrawData;
+      return 0;
+    }
+    "
+    DART_SYSTEM_IMGUI_HAS_OPENGL2_BACKEND
+  )
+  set(CMAKE_REQUIRED_INCLUDES ${_dart_saved_required_includes})
+  set(CMAKE_REQUIRED_LIBRARIES ${_dart_saved_required_libraries})
+  set(CMAKE_REQUIRED_QUIET ${_dart_saved_required_quiet})
+  unset(_dart_saved_required_includes)
+  unset(_dart_saved_required_libraries)
+  unset(_dart_saved_required_quiet)
+
+  if(NOT DART_SYSTEM_IMGUI_HAS_OPENGL2_BACKEND)
+    dart_find_imgui_source(
+      imgui_opengl2_backend_source
+      imgui_impl_opengl2.cpp
+      ${imgui_header_search_dirs}
+    )
+    list(APPEND imgui_compat_sources "${imgui_opengl2_backend_source}")
+  endif()
+
+  dart_add_library(${target_name} ${imgui_compat_sources} ${imgui_compat_headers})
   target_include_directories(${target_name}
     PUBLIC
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
       $<INSTALL_INTERFACE:include>
   )
-  target_link_libraries(${target_name} PUBLIC imgui::imgui)
+  target_link_libraries(${target_name} PUBLIC imgui::imgui OpenGL::GL)
 else()
   dart_find_package(OpenGL)
   if(NOT DEFINED OPENGL_FOUND)
@@ -214,7 +304,7 @@ target_compile_definitions(${target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTION
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 if(DART_USE_SYSTEM_IMGUI)
-  add_component_dependency_packages(${PROJECT_NAME} ${component_name} imgui)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} imgui OpenGL)
 endif()
 
 install(

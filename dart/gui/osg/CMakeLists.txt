@@ -19,15 +19,8 @@ dart_check_required_package(OpenSceneGraph "dart-gui-osg" "OpenSceneGraph")
 list(APPEND component_dependency_packages OpenSceneGraph)
 
 # ImGui
-if(DART_USE_SYSTEM_IMGUI)
-  dart_find_package(imgui)
-  dart_check_required_package(imgui "imgui")
-  list(APPEND component_dependency_packages imgui)
-  list(APPEND link_libraries imgui::imgui)
-else()
-  list(APPEND component_dependencies external-imgui)
-  list(APPEND link_libraries ${PROJECT_NAME}-external-imgui)
-endif()
+list(APPEND component_dependencies external-imgui)
+list(APPEND link_libraries ${PROJECT_NAME}-external-imgui)
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
