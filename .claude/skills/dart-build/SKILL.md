@@ -13,7 +13,7 @@ Load this skill when working with DART's build system.
 pixi run config       # Configure CMake
 pixi run build        # Build
 pixi run test         # Run tests
-pixi run test-all     # Full validation (lint + build + tests)
+pixi run test-all     # Build all CMake targets
 pixi run -e gazebo test-gz # Gazebo/gz-physics compatibility gate
 pixi run lint         # Format code
 ```
