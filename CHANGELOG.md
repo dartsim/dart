@@ -20,10 +20,15 @@
     as a unit-test fixture:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
-  * Replace the vendored `dart/external/imgui` source tree with the existing
-    system ImGui path for default GUI builds, a system-backed DART 6
-    `external-imgui` compatibility component for default packages, and an
-    explicit DART-patched FetchContent target when `DART_USE_SYSTEM_IMGUI=OFF`:
+  * Move the IKFast support header to the DART-owned
+    `dart/dynamics/ikfast.h` path while keeping the old installed
+    and build-tree `dart/external/ikfast/ikfast.h` include path available for
+    DART 6 source compatibility:
+    [#3078](https://github.com/dartsim/dart/pull/3078)
+
+  * Replace the vendored `dart/external/imgui` source tree with a DART-patched
+    FetchContent `external-imgui` compatibility target by default, while keeping
+    an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
