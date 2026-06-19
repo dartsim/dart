@@ -253,11 +253,6 @@ class ExposedBoxedLcpConstraintSolver final
 public:
   using BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
 
-  bool isParallelSolveSafeForTest() const
-  {
-    return isConstrainedGroupSolveThreadSafe();
-  }
-
   void solveGroupForTest(constraint::ConstrainedGroup& group)
   {
     solveConstrainedGroup(group);
@@ -275,18 +270,10 @@ public:
 };
 
 class ExposedThreadedConstraintSolver final
-  : public constraint::ConstraintSolver
+  : public constraint::BoxedLcpConstraintSolver
 {
 public:
-  bool hasOwnedIslandSolveExecutor() const
-  {
-    return mOwnedIslandSolveExecutor != nullptr;
-  }
-
-  bool hasInjectedIslandSolveExecutor() const
-  {
-    return mIslandSolveExecutor != nullptr;
-  }
+  using BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
 
   void addFakeConstrainedGroups(std::size_t numGroups, std::size_t dimension)
   {
@@ -334,6 +321,13 @@ public:
     return mMaxConcurrentSolves.load(std::memory_order_relaxed);
   }
 
+  void resetSolveStats()
+  {
+    mConcurrentSolves.store(0, std::memory_order_relaxed);
+    mMaxConcurrentSolves.store(0, std::memory_order_relaxed);
+    mNumSolvedGroups.store(0, std::memory_order_relaxed);
+  }
+
 protected:
   void solveConstrainedGroup(constraint::ConstrainedGroup&) override
   {
@@ -349,11 +343,6 @@ protected:
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     mNumSolvedGroups.fetch_add(1, std::memory_order_relaxed);
     mConcurrentSolves.fetch_sub(1, std::memory_order_relaxed);
-  }
-
-  bool isConstrainedGroupSolveThreadSafe() const override
-  {
-    return true;
   }
 
 private:
@@ -444,39 +433,49 @@ std::shared_ptr<World> createWorld()
 }
 
 //==============================================================================
-TEST(ConstraintSolver, DirectThreadSettingCreatesOwnedExecutor)
+TEST(ConstraintSolver, DirectThreadSettingControlsThreadedSolve)
 {
   ExposedThreadedConstraintSolver solver;
 
   EXPECT_EQ(1u, solver.getNumThreads());
-  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
-  EXPECT_FALSE(solver.hasInjectedIslandSolveExecutor());
 
   solver.setNumThreads(0);
   EXPECT_EQ(1u, solver.getNumThreads());
-  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
 
   solver.setNumThreads(4);
   EXPECT_EQ(4u, solver.getNumThreads());
-  EXPECT_TRUE(solver.hasOwnedIslandSolveExecutor());
+  solver.addFakeConstrainedGroups(8, 100);
+  solver.solveGroupsForTest();
+  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
 
-  constraint::detail::IslandSolveExecutor externalExecutor(2);
+  ExposedThreadedConstraintSolver injectedSolver;
+  injectedSolver.setNumThreads(4);
+  injectedSolver.addFakeConstrainedGroups(8, 100);
+
+  constraint::detail::IslandSolveExecutor externalExecutor(1);
   solver.setIslandSolveExecutor(&externalExecutor);
-  EXPECT_TRUE(solver.hasInjectedIslandSolveExecutor());
-  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+  solver.resetSolveStats();
+  solver.solveGroupsForTest();
+  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 
-  solver.setNumThreads(3);
-  EXPECT_EQ(3u, solver.getNumThreads());
-  EXPECT_TRUE(solver.hasInjectedIslandSolveExecutor());
-  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+  injectedSolver.setIslandSolveExecutor(&externalExecutor);
+  injectedSolver.solveGroupsForTest();
+  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
+  EXPECT_EQ(1, injectedSolver.getMaxConcurrentSolves());
 
-  solver.setIslandSolveExecutor(nullptr);
-  EXPECT_FALSE(solver.hasInjectedIslandSolveExecutor());
-  EXPECT_TRUE(solver.hasOwnedIslandSolveExecutor());
+  injectedSolver.setIslandSolveExecutor(nullptr);
+  injectedSolver.resetSolveStats();
+  injectedSolver.solveGroupsForTest();
+  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
+  EXPECT_GT(injectedSolver.getMaxConcurrentSolves(), 1);
 
-  solver.setNumThreads(1);
-  EXPECT_EQ(1u, solver.getNumThreads());
-  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+  injectedSolver.setNumThreads(1);
+  injectedSolver.resetSolveStats();
+  injectedSolver.solveGroupsForTest();
+  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
+  EXPECT_EQ(1, injectedSolver.getMaxConcurrentSolves());
 }
 
 //==============================================================================
@@ -756,31 +755,39 @@ TEST(ConstraintSolver, FixedSkeletonJointConstraintsForceSerialGroupSolves)
 //==============================================================================
 TEST(ConstraintSolver, ParallelSolveRequiresExactBuiltInSolvers)
 {
-  ExposedBoxedLcpConstraintSolver defaultSolver;
-  EXPECT_TRUE(defaultSolver.isParallelSolveSafeForTest());
+  auto solvesInParallel = [](ExposedThreadedConstraintSolver& solver) {
+    solver.setNumThreads(4);
+    solver.addFakeConstrainedGroups(8, 100);
+    solver.solveGroupsForTest();
+    EXPECT_EQ(8, solver.getNumSolvedGroups());
+    return solver.getMaxConcurrentSolves() > 1;
+  };
 
-  ExposedBoxedLcpConstraintSolver noSecondarySolver(
+  ExposedThreadedConstraintSolver defaultSolver;
+  EXPECT_TRUE(solvesInParallel(defaultSolver));
+
+  ExposedThreadedConstraintSolver noSecondarySolver(
       std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
-  EXPECT_TRUE(noSecondarySolver.isParallelSolveSafeForTest());
+  EXPECT_TRUE(solvesInParallel(noSecondarySolver));
 
-  ExposedBoxedLcpConstraintSolver derivedPrimarySolver(
+  ExposedThreadedConstraintSolver derivedPrimarySolver(
       std::make_shared<DerivedDantzigBoxedLcpSolver>(),
       std::make_shared<constraint::PgsBoxedLcpSolver>());
-  EXPECT_FALSE(derivedPrimarySolver.isParallelSolveSafeForTest());
+  EXPECT_FALSE(solvesInParallel(derivedPrimarySolver));
 
-  ExposedBoxedLcpConstraintSolver derivedSecondarySolver(
+  ExposedThreadedConstraintSolver derivedSecondarySolver(
       std::make_shared<constraint::DantzigBoxedLcpSolver>(),
       std::make_shared<DerivedPgsBoxedLcpSolver>());
-  EXPECT_FALSE(derivedSecondarySolver.isParallelSolveSafeForTest());
+  EXPECT_FALSE(solvesInParallel(derivedSecondarySolver));
 
   auto randomizedPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
   auto option = randomizedPgs->getOption();
   option.mRandomizeConstraintOrder = true;
   randomizedPgs->setOption(option);
 
-  ExposedBoxedLcpConstraintSolver randomizedSecondarySolver(
+  ExposedThreadedConstraintSolver randomizedSecondarySolver(
       std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
-  EXPECT_FALSE(randomizedSecondarySolver.isParallelSolveSafeForTest());
+  EXPECT_FALSE(solvesInParallel(randomizedSecondarySolver));
 }
 
 //==============================================================================

@@ -41,14 +41,17 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -57,6 +60,8 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <mutex>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
@@ -68,6 +73,89 @@ namespace dart {
 namespace constraint {
 
 using namespace dynamics;
+
+namespace {
+
+struct ConstraintSolverThreadState
+{
+  mutable std::mutex mutex;
+  std::size_t numThreads = 1;
+  std::shared_ptr<detail::IslandSolveExecutor> ownedIslandSolveExecutor;
+  detail::IslandSolveExecutor* islandSolveExecutor = nullptr;
+};
+
+std::mutex& getConstraintSolverThreadStateMapMutex()
+{
+  static std::mutex mutex;
+  return mutex;
+}
+
+std::unordered_map<
+    const ConstraintSolver*,
+    std::shared_ptr<ConstraintSolverThreadState>>&
+getConstraintSolverThreadStateMap()
+{
+  static std::unordered_map<
+      const ConstraintSolver*,
+      std::shared_ptr<ConstraintSolverThreadState>>
+      states;
+  return states;
+}
+
+std::shared_ptr<ConstraintSolverThreadState> getConstraintSolverThreadState(
+    const ConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(getConstraintSolverThreadStateMapMutex());
+  auto& state = getConstraintSolverThreadStateMap()[solver];
+  if (!state)
+    state = std::make_shared<ConstraintSolverThreadState>();
+  return state;
+}
+
+void eraseConstraintSolverThreadState(const ConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(getConstraintSolverThreadStateMapMutex());
+  getConstraintSolverThreadStateMap().erase(solver);
+}
+
+template <typename Solver>
+bool isExactSolverType(const ConstBoxedLcpSolverPtr& solver)
+{
+  const auto* rawSolver = solver.get();
+  return rawSolver && typeid(*rawSolver) == typeid(Solver);
+}
+
+bool canSolveConstrainedGroupsInParallel(const ConstraintSolver& solver)
+{
+  const auto* boxedSolver
+      = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
+  if (!boxedSolver)
+    return false;
+
+  // The Dantzig primary allocates its own scratch internally, so it is
+  // reentrant. solveConstrainedGroup and the PGS secondary keep working
+  // buffers in thread-local scratch during parallel solves, so a shared
+  // instance is reentrant too, except that PGS constraint-order randomization
+  // draws from ODE's global RNG. Custom user solvers may keep mutable
+  // per-instance state, so they force the serial path.
+  if (!isExactSolverType<DantzigBoxedLcpSolver>(
+          boxedSolver->getBoxedLcpSolver())) {
+    return false;
+  }
+
+  const auto secondarySolver = boxedSolver->getSecondaryBoxedLcpSolver();
+  if (!secondarySolver)
+    return true;
+
+  if (!isExactSolverType<PgsBoxedLcpSolver>(secondarySolver))
+    return false;
+
+  const auto pgsSolver
+      = std::static_pointer_cast<const PgsBoxedLcpSolver>(secondarySolver);
+  return !pgsSolver->getOption().mRandomizeConstraintOrder;
+}
+
+} // namespace
 
 class ParallelConstrainedGroupSolveScope final
 {
@@ -128,7 +216,10 @@ ConstraintSolver::ConstraintSolver()
 
 //==============================================================================
 // Kept out-of-line so there is one key function for this polymorphic class.
-ConstraintSolver::~ConstraintSolver() = default;
+ConstraintSolver::~ConstraintSolver()
+{
+  eraseConstraintSolverThreadState(this);
+}
 
 //==============================================================================
 thread_local bool ConstraintSolver::mSolvingConstrainedGroupsInParallel = false;
@@ -438,7 +529,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
-  setNumThreads(other.mNumThreads);
+  setNumThreads(other.getNumThreads());
 }
 
 //==============================================================================
@@ -873,18 +964,22 @@ void ConstraintSolver::buildConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::setNumThreads(std::size_t numThreads)
 {
-  mNumThreads = (numThreads == 0) ? 1 : numThreads;
+  auto state = getConstraintSolverThreadState(this);
+  std::lock_guard<std::mutex> lock(state->mutex);
 
-  if (mIslandSolveExecutor)
+  state->numThreads = (numThreads == 0) ? 1 : numThreads;
+
+  if (state->islandSolveExecutor)
     return;
 
-  if (mNumThreads <= 1) {
-    mOwnedIslandSolveExecutor.reset();
+  if (state->numThreads <= 1) {
+    state->ownedIslandSolveExecutor.reset();
   } else if (
-      !mOwnedIslandSolveExecutor
-      || mOwnedIslandSolveExecutor->getNumThreads() != mNumThreads) {
-    mOwnedIslandSolveExecutor
-        = std::make_unique<detail::IslandSolveExecutor>(mNumThreads);
+      !state->ownedIslandSolveExecutor
+      || state->ownedIslandSolveExecutor->getNumThreads()
+             != state->numThreads) {
+    state->ownedIslandSolveExecutor
+        = std::make_shared<detail::IslandSolveExecutor>(state->numThreads);
   }
 }
 
@@ -892,25 +987,29 @@ void ConstraintSolver::setNumThreads(std::size_t numThreads)
 void ConstraintSolver::setIslandSolveExecutor(
     detail::IslandSolveExecutor* executor)
 {
-  mIslandSolveExecutor = executor;
-  if (mIslandSolveExecutor)
-    mOwnedIslandSolveExecutor.reset();
-  else
-    setNumThreads(mNumThreads);
+  auto state = getConstraintSolverThreadState(this);
+  std::lock_guard<std::mutex> lock(state->mutex);
+
+  state->islandSolveExecutor = executor;
+  if (state->islandSolveExecutor) {
+    state->ownedIslandSolveExecutor.reset();
+  } else if (state->numThreads <= 1) {
+    state->ownedIslandSolveExecutor.reset();
+  } else if (
+      !state->ownedIslandSolveExecutor
+      || state->ownedIslandSolveExecutor->getNumThreads()
+             != state->numThreads) {
+    state->ownedIslandSolveExecutor
+        = std::make_shared<detail::IslandSolveExecutor>(state->numThreads);
+  }
 }
 
 //==============================================================================
 std::size_t ConstraintSolver::getNumThreads() const
 {
-  return mNumThreads;
-}
-
-//==============================================================================
-bool ConstraintSolver::isConstrainedGroupSolveThreadSafe() const
-{
-  // Conservative default: an unknown solver may keep mutable per-instance
-  // state, so the base solver never permits parallel island solving.
-  return false;
+  auto state = getConstraintSolverThreadState(this);
+  std::lock_guard<std::mutex> lock(state->mutex);
+  return state->numThreads;
 }
 
 //==============================================================================
@@ -980,13 +1079,24 @@ void ConstraintSolver::solveConstrainedGroups()
 
   // Serial path (default, or whenever parallelism is unavailable/unsafe): this
   // is byte-for-byte identical to the historical loop.
-  auto* executor = mIslandSolveExecutor ? mIslandSolveExecutor
-                                        : mOwnedIslandSolveExecutor.get();
+  auto state = getConstraintSolverThreadState(this);
+  std::size_t numThreads = 1;
+  detail::IslandSolveExecutor* injectedExecutor = nullptr;
+  std::shared_ptr<detail::IslandSolveExecutor> ownedExecutor;
+  {
+    std::lock_guard<std::mutex> lock(state->mutex);
+    numThreads = state->numThreads;
+    injectedExecutor = state->islandSolveExecutor;
+    ownedExecutor = state->ownedIslandSolveExecutor;
+  }
+
+  auto* executor = injectedExecutor ? injectedExecutor : ownedExecutor.get();
   // User-supplied manual constraints are only required to satisfy the serial
   // ConstraintBase API. Keep them off the parallel executor unless each
   // concrete type is explicitly known to be reentrant.
-  if (mNumThreads <= 1 || !executor || executor->getNumThreads() <= 1
-      || !mManualConstraints.empty() || !isConstrainedGroupSolveThreadSafe()) {
+  if (numThreads <= 1 || !executor || executor->getNumThreads() <= 1
+      || !mManualConstraints.empty()
+      || !canSolveConstrainedGroupsInParallel(*this)) {
     for (std::size_t idx : active)
       solveActiveGroup(idx);
     freezeSolvedGroups();

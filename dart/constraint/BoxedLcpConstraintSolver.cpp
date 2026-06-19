@@ -44,7 +44,6 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <typeinfo>
 
 #include <cassert>
 #include <cmath>
@@ -65,13 +64,6 @@ struct LcpWorkspace
   Eigen::VectorXd X, XBackup, B, BBackup, W, Lo, LoBackup, Hi, HiBackup;
   Eigen::VectorXi FIndex, FIndexBackup, Offset;
 };
-
-template <typename Solver>
-bool isExactSolverType(const BoxedLcpSolverPtr& solver)
-{
-  const auto* rawSolver = solver.get();
-  return rawSolver && typeid(*rawSolver) == typeid(Solver);
-}
 
 } // namespace
 
@@ -162,30 +154,6 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
     const
 {
   return mSecondaryBoxedLcpSolver;
-}
-
-//==============================================================================
-bool BoxedLcpConstraintSolver::isConstrainedGroupSolveThreadSafe() const
-{
-  // The Dantzig primary allocates its own scratch internally, so it is
-  // reentrant. solveConstrainedGroup and the PGS secondary now keep their
-  // working buffers in thread_local scratch, so a shared instance is reentrant
-  // too -- except that PGS constraint-order randomization draws from ODE's
-  // global RNG, which is neither thread-safe nor deterministic. A custom
-  // user-supplied solver may keep mutable per-instance state, so it is treated
-  // as unsafe and forces the serial path.
-  if (!isExactSolverType<DantzigBoxedLcpSolver>(mBoxedLcpSolver))
-    return false;
-
-  if (!mSecondaryBoxedLcpSolver)
-    return true;
-
-  if (!isExactSolverType<PgsBoxedLcpSolver>(mSecondaryBoxedLcpSolver))
-    return false;
-
-  const auto pgs = std::static_pointer_cast<const PgsBoxedLcpSolver>(
-      mSecondaryBoxedLcpSolver);
-  return !pgs->getOption().mRandomizeConstraintOrder;
 }
 
 //==============================================================================

@@ -43,7 +43,6 @@
 
 #include <Eigen/Dense>
 
-#include <memory>
 #include <vector>
 
 namespace dart {
@@ -301,12 +300,6 @@ protected:
   /// Solve constrained groups
   void solveConstrainedGroups();
 
-  /// Returns true if independent constraint islands may be solved on separate
-  /// threads with the currently configured solvers. The base implementation
-  /// returns false; BoxedLcpConstraintSolver overrides it to allow parallel
-  /// solving only when its LCP solvers are reentrant built-ins.
-  virtual bool isConstrainedGroupSolveThreadSafe() const;
-
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& contact) const;
 
@@ -375,24 +368,11 @@ protected:
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
 
-  /// Number of worker threads for the island constraint solve. 1 == serial
-  /// (default). See setNumThreads().
-  std::size_t mNumThreads = 1;
-
   /// True only while the current thread is solving a constrained group through
   /// the island executor. Derived solvers use this to choose thread-private
-  /// scratch only for actual concurrent solves.
+  /// scratch only for actual concurrent solves. Static state does not affect
+  /// ConstraintSolver's object layout.
   static thread_local bool mSolvingConstrainedGroupsInParallel;
-
-  /// Solver-owned worker pool used when this solver is configured directly
-  /// rather than through World::setNumThreads().
-  std::unique_ptr<detail::IslandSolveExecutor> mOwnedIslandSolveExecutor;
-
-  /// Non-owning worker pool used for parallel island solving. It is owned by
-  /// the World, which shares one pool between step()'s per-skeleton loops and
-  /// this solver, and injected via setIslandSolveExecutor(). Null means the
-  /// solver-owned pool is used instead.
-  detail::IslandSolveExecutor* mIslandSolveExecutor = nullptr;
 };
 
 } // namespace constraint

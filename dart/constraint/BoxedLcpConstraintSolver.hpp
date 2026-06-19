@@ -101,13 +101,6 @@ protected:
   // Documentation inherited.
   void solveConstrainedGroup(ConstrainedGroup& group) override;
 
-  // Documentation inherited. Allows parallel island solving only when both LCP
-  // solvers are reentrant built-ins: the Dantzig primary (which allocates its
-  // own scratch) with either no secondary or a PGS secondary that is not
-  // randomizing constraint order (randomization uses ODE's global RNG). Any
-  // user-supplied custom solver is treated as not thread-safe.
-  bool isConstrainedGroupSolveThreadSafe() const override;
-
   /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
   // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
