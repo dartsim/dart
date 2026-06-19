@@ -27,8 +27,8 @@
   #include <malloc.h>
 #endif
 
-#include "dart/external/odelcpsolver/common.h"
-#include "dart/external/odelcpsolver/matrix.h"
+#include "dart/lcpsolver/dantzig/common.h"
+#include "dart/lcpsolver/dantzig/matrix.h"
 
 #ifndef EFFICIENT_ALIGNMENT
 #define EFFICIENT_ALIGNMENT 16
@@ -55,8 +55,8 @@
 #define ALLOCA dALLOCA16
 
 namespace dart {
-namespace external {
-namespace ode {
+namespace lcpsolver {
+namespace dantzig {
 
 void _dSetZero (dReal *a, size_t n)
 {
@@ -558,6 +558,6 @@ void dRemoveRowCol (dReal *A, int n, int nskip, int r)
   _dRemoveRowCol (A, n, nskip, r);
 }
 
-} // namespace ode
-} // namespace external
+} // namespace dantzig
+} // namespace lcpsolver
 } // namespace dart

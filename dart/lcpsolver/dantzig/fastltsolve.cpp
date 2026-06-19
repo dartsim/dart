@@ -22,11 +22,11 @@
 
 /* generated code, do not edit. */
 
-#include "dart/external/odelcpsolver/matrix.h"
+#include "dart/lcpsolver/dantzig/matrix.h"
 
 namespace dart {
-namespace external {
-namespace ode {
+namespace lcpsolver {
+namespace dantzig {
 
 /* solve L^T * x=b, with b containing 1 right hand side.
  * L is an n*n lower triangular matrix with ones on the diagonal.
@@ -232,6 +232,6 @@ void dSolveL1T (const dReal *L, dReal *B, int n, int lskip1)
   _dSolveL1T (L, B, n, lskip1);
 }
 
-} // namespace ode
-} // namespace external
+} // namespace dantzig
+} // namespace lcpsolver
 } // namespace dart

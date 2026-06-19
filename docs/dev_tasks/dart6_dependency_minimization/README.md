@@ -185,6 +185,9 @@ Bullet and ODE collision components
 - Plan: the narrow cleanup is to rehome the DART 6 solver code under a
   DART-owned internal path, not delete it. True replacement requires a separate
   solver behavior project with full contact and downstream evidence.
+- Current PR direction: move the implementation under `dart/lcpsolver/dantzig`
+  while keeping legacy `dart/external/odelcpsolver` forwarding headers and the
+  `external-odelcpsolver` package component for DART 6 compatibility.
 - Validation: full unit tests for constraints/contact/dynamics, focused LCP
   solver regressions, dartpy smoke where constraint solver types are bound, and
   Gazebo.

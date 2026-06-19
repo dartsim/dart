@@ -37,7 +37,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/lcp.h"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>

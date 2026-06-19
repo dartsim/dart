@@ -20,12 +20,12 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/error.h"
+#include "dart/lcpsolver/dantzig/odeconfig.h"
+#include "dart/lcpsolver/dantzig/error.h"
 
 namespace dart {
-namespace external {
-namespace ode {
+namespace lcpsolver {
+namespace dantzig {
 
 static dMessageFunction *error_function = 0;
 static dMessageFunction *debug_function = 0;
@@ -179,6 +179,6 @@ void dMessage (int num, const char *msg, ...)
 
 #endif
 
-} // namespace ode
-} // namespace external
+} // namespace dantzig
+} // namespace lcpsolver
 } // namespace dart

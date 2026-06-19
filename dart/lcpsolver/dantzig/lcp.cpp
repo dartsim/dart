@@ -108,10 +108,10 @@ rows/columns and manipulate C.
 
 */
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/lcp.h"
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "dart/lcpsolver/dantzig/odeconfig.h"
+#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/lcpsolver/dantzig/matrix.h"
+#include "dart/lcpsolver/dantzig/misc.h"
 
 //***************************************************************************
 // code generation parameters
@@ -134,8 +134,8 @@ rows/columns and manipulate C.
 #define NUB_OPTIMIZATIONS
 
 namespace dart {
-namespace external {
-namespace ode {
+namespace lcpsolver {
+namespace dantzig {
 
 //***************************************************************************
 
@@ -1290,6 +1290,6 @@ ODE_API int dTestSolveLCP()
   return 1;
 }
 
-} // namespace ode
-} // namespace external
+} // namespace dantzig
+} // namespace lcpsolver
 } // namespace dart

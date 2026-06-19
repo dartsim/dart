@@ -36,8 +36,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+#include "dart/lcpsolver/dantzig/lcp.h"
 
 #include <iomanip>
 #include <iostream>
@@ -155,7 +155,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   //  std::cout << std::endl;
 
   // Solve LCP using ODE's Dantzig algorithm
-  external::ode::dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
+  ::dart::lcpsolver::dantzig::dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
 
   // Print LCP formulation
   //  dtdbg << "After solve:" << std::endl;

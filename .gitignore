@@ -16,6 +16,9 @@ build/
 *.swo
 
 # CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
 CPack*
 CTest*
 Testing/
