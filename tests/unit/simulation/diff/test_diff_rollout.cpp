@@ -45,6 +45,7 @@
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/diff/rollout.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
 
@@ -104,6 +105,42 @@ std::unique_ptr<sx::World> buildFreeFallScene()
   auto bodyB = world->addRigidBody("sphereB", sphereB);
   bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
   bodyB.setFriction(0.0);
+
+  return world;
+}
+
+//==============================================================================
+// Mixed-family differentiable state vectors are full dense World vectors, while
+// the current analytic Jacobian implementation is family-specific. Until
+// full-world Jacobians land, public rollout rejects the mixed scene instead of
+// returning gradients with mismatched shapes.
+std::unique_ptr<sx::World> buildMixedRigidMultibodyScene()
+{
+  sx::WorldOptions options;
+  options.timeStep = kTimeStep;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  bodyOptions.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  bodyOptions.linearVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
+  auto body = world->addRigidBody("body", bodyOptions);
+  body.setForce(Eigen::Vector3d::Zero());
+
+  auto robot = world->addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec sliderSpec;
+  sliderSpec.name = "slider";
+  sliderSpec.type = sx::JointType::Prismatic;
+  sliderSpec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, sliderSpec);
+  auto slider = link.getParentJoint();
+  slider.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+  slider.setVelocity(Eigen::VectorXd::Constant(1, -0.2));
+  slider.setForce(Eigen::VectorXd::Constant(1, 0.0));
 
   return world;
 }
@@ -258,6 +295,24 @@ TEST(DiffRollout, PerStepVjpReducesToFinalStateVjp)
             .maxCoeff(),
         1e-12);
   }
+}
+
+//==============================================================================
+TEST(DiffRollout, RejectsMixedRigidBodyAndMultibodyWorld)
+{
+  auto world = buildMixedRigidMultibodyScene();
+  const Eigen::VectorXd initialState = world->getStateVector();
+  const auto efforts = static_cast<Eigen::Index>(world->getNumEfforts());
+  const Eigen::MatrixXd controls = Eigen::MatrixXd::Zero(kSteps, efforts);
+
+  ASSERT_GT(world->getNumRigidBodyDofs(), 0u);
+  ASSERT_GT(world->getNumDofs(), world->getNumRigidBodyDofs());
+
+  EXPECT_THROW(
+      static_cast<void>(
+          sx::diff::rollout(*world, initialState, controls, kSteps)),
+      sx::NotImplementedException);
+  EXPECT_THROW(world->step(), sx::NotImplementedException);
 }
 
 //==============================================================================

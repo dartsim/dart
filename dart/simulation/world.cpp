@@ -6663,6 +6663,15 @@ void World::captureStepDerivatives()
   m_storage->stepDerivativesValid = false;
 
 #ifdef DART_HAS_DIFF
+  const auto& bakedModel = detail::ensureBakedWorldModelCurrent(*this);
+  DART_SIMULATION_THROW_T_IF(
+      countRigidBodyDofs(bakedModel) != 0
+          && countMultibodyDofs(bakedModel) != 0,
+      NotImplementedException,
+      "World::step(): differentiable mixed rigid-body plus multibody worlds "
+      "are not supported until full-world step Jacobians are assembled; use a "
+      "rigid-only or multibody-only differentiable World");
+
   // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
   // selected, the differentiable step Jacobian must include the analytic
   // frictionless normal-contact gradient. Capture the active contacts at the

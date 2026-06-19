@@ -39,6 +39,22 @@
 
 namespace dart::simulation::diff {
 
+namespace {
+
+//==============================================================================
+void validateSupportedDifferentiableRolloutLayout(const World& world)
+{
+  const std::size_t rigidDofs = world.getNumRigidBodyDofs();
+  DART_SIMULATION_THROW_T_IF(
+      rigidDofs != 0 && rigidDofs != world.getNumDofs(),
+      NotImplementedException,
+      "diff::rollout(): mixed rigid-body plus multibody differentiable "
+      "rollouts are not supported until full-world step Jacobians are "
+      "assembled; use a rigid-only or multibody-only differentiable World");
+}
+
+} // namespace
+
 //==============================================================================
 RolloutTrajectory rollout(
     World& world,
@@ -50,6 +66,8 @@ RolloutTrajectory rollout(
       steps == 0,
       InvalidArgumentException,
       "diff::rollout(): steps must be >= 1");
+
+  validateSupportedDifferentiableRolloutLayout(world);
 
   const auto stateSize = static_cast<Eigen::Index>(2 * world.getNumDofs());
   const auto controlSize = static_cast<Eigen::Index>(world.getNumEfforts());
