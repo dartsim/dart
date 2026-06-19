@@ -31,6 +31,7 @@ from examples.demos.runner import (
     _rigid_workflow_row_video_packet_command,
     _rigid_workflow_viewer_command,
     _scene_build_timeout_ms,
+    _scene_state_target_scene_id,
     _workflow_matching_guides,
     _workflow_related_evidence_matches,
     _validate_scene,
@@ -753,6 +754,25 @@ def test_default_py_demos_launch_uses_rigid_body_front_door() -> None:
     )
     assert _default_initial_scene_args([], None, {"DART_DEMOS_SCENE": "boxes"}) == []
     assert _default_initial_scene_args(["--cycle-scenes"], None, {}) == []
+
+
+def test_scene_state_target_scene_id_honors_explicit_env_and_default_scene() -> None:
+    assert (
+        _scene_state_target_scene_id(
+            "rigid-body", [], {"DART_DEMOS_SCENE": "rigid_contact_solver_compare"}
+        )
+        == "rigid_body"
+    )
+    assert (
+        _scene_state_target_scene_id(
+            None, [], {"DART_DEMOS_SCENE": "rigid-contact-solver-compare"}
+        )
+        == "rigid_contact_solver_compare"
+    )
+    assert _scene_state_target_scene_id(None, ["--scene", "rigid_body"], {}) == (
+        "rigid_body"
+    )
+    assert _scene_state_target_scene_id(None, [], {}) is None
 
 
 def test_scene_build_timeout_follows_demo_startup_budget_by_default(

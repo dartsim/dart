@@ -2849,11 +2849,33 @@ def _default_initial_scene_args(
 
     if scene_arg is not None:
         return []
-    if environ.get("DART_DEMOS_SCENE"):
+    if _environment_initial_scene_id(environ) is not None:
         return []
     if "--cycle-scenes" in argv:
         return []
     return ["--scene", DEFAULT_INITIAL_SCENE_ID]
+
+
+def _environment_initial_scene_id(environ: Mapping[str, str]) -> str | None:
+    value = environ.get("DART_DEMOS_SCENE", "").strip()
+    if not value:
+        return None
+    return _canonical_scene_id(value)
+
+
+def _scene_state_target_scene_id(
+    scene_arg: str | None,
+    default_initial_scene_args: list[str],
+    environ: Mapping[str, str],
+) -> str | None:
+    if scene_arg is not None:
+        return _canonical_scene_id(scene_arg)
+    environment_scene_id = _environment_initial_scene_id(environ)
+    if environment_scene_id is not None:
+        return environment_scene_id
+    if default_initial_scene_args:
+        return DEFAULT_INITIAL_SCENE_ID
+    return None
 
 
 def _make_gpu_panel(sx: Any) -> ScenePanel:
@@ -2959,16 +2981,16 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     scene_state_override = _parse_scene_state_json(known.scene_state_json)
     scene_state_scene_id: str | None = None
     if scene_state_override is not None:
-        if known.scene is not None:
-            scene_state_scene_id = _canonical_scene_id(known.scene)
-        elif default_initial_scene_args:
-            scene_state_scene_id = DEFAULT_INITIAL_SCENE_ID
-        else:
+        scene_state_scene_id = _scene_state_target_scene_id(
+            known.scene, default_initial_scene_args, os.environ
+        )
+        if scene_state_scene_id is None:
             raise SystemExit(
                 "--scene-state-json requires a single selected scene; pass "
                 "--scene or omit --cycle-scenes so the default rigid_body "
                 "scene is selected"
             )
+        _validate_scene(scene_state_scene_id, scenes)
 
     # Import dartpy.gui lazily so `--list` works even when the GUI
     # backend isn't built (e.g. on CI variants without filament).

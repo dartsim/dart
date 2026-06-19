@@ -104,6 +104,14 @@ The next local UI follow-up adds an `Open contact comparison` button to the
 direct path from the baseline scene to the side-by-side Sequential
 Impulse/boxed-LCP comparison row.
 
+The fresh Codex review on PR #3084 head `e9ef404` found a valid state-override
+edge case: `DART_DEMOS_SCENE=rigid_body pixi run py-demos --
+--scene-state-json ...` rejected the override even though the environment
+variable selects a single supported scene. The local fix resolves the
+state-override target from explicit `--scene`, then `DART_DEMOS_SCENE`, then the
+injected default `rigid_body` scene, while still rejecting true multi-scene
+cycle runs.
+
 A broad local M0 regression recheck completed on PR #3084 local head `bd0b8e7`:
 default `pixi run py-demos-smoke --json-out
 /tmp/py_demos_smoke_default_pr3084_local.json` passed 155/155 scenes in
@@ -121,7 +129,8 @@ command, boxed-LCP workflow-panel UI, rigid-body contact preset, and
 full-catalog smoke evidence follow-ups. The PR body has been refreshed with the
 default and CUDA before/after launch timings plus the full-catalog smoke
 results. A local UI follow-up for the `rigid_body` contact-comparison route may
-be ahead of the remote PR branch until explicitly pushed.
+be ahead of the remote PR branch until explicitly pushed. A local follow-up also
+addresses the Codex `DART_DEMOS_SCENE` / `--scene-state-json` review finding.
 
 ## Immediate Next Step
 
@@ -130,8 +139,9 @@ set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
 rigid-constraint track. The next useful slice is PR management: watch hosted CI
 and the fresh Codex review request on PR #3084 for actionable feedback. If the
-local contact-comparison route is included in PR #3084, refresh the PR body and
-rerun/retrigger the same review loop after the approved push.
+local contact-comparison route and `DART_DEMOS_SCENE` state-override fix are
+included in PR #3084, refresh the PR body and rerun/retrigger the same review
+loop after the approved push.
 
 Re-run any M0 guard:
 
