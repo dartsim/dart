@@ -1286,7 +1286,7 @@ void ConstraintSolver::buildConstrainedGroups()
     // expose solver forces as part of their observable behavior; keeping those
     // islands awake preserves existing query semantics when sleeping is enabled
     // by default.
-    constexpr double kSleepContactPenetrationTolerance = 1e-3;
+    constexpr double kSleepContactPenetrationTolerance = 1e-5;
     {
       DART_PROFILE_SCOPED_N("classify resting groups");
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {

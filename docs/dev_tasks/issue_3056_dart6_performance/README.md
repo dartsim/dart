@@ -10,7 +10,8 @@ speedup.
 
 - PR0 `jslee02/issue-3056-baseline-sdf-perf` / #3089 adds the baseline
   benchmark, GUI verifier, reset path, HUD, drop-state scene generation, and
-  final-state checks.
+  final-state checks. Review fix `a2621f80185` rejects signed size arguments
+  before `std::stoull` and makes final-state digest size hashing portable.
 - Baseline evidence, Bullet collision, 120 generated objects, 9000 steps,
   default sleeping: RTF `0.882581`, final contacts `360`, final resting
   `81 / 120`, finite state true, final hash `0x212c1143bd0a2fb3`.
@@ -34,6 +35,23 @@ speedup.
 - PR2 #3086 must make any behavior-preserving performance path default-on if it
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
+- PR2 current default-on Bullet run, same 120-object/9000-step generated drop
+  command: RTF `6.50174`, final contacts `0`, final resting `120 / 120`,
+  finite state true, final hash `0x5a46e38c66967e04`. The zero-contact final
+  state is expected only after all mobile skeletons are resting and the
+  all-resting fast path is active.
+- PR2 current explicit `--disable-deactivation` run on the same command: RTF
+  `0.977486`, final contacts `360`, final resting `0 / 120`, finite state
+  true, final hash `0x40e36d5812803d4`.
+- PR2 current final-scene comparison, default-on vs disabled, 121 dumped shapes:
+  max position delta `8.5907e-4` m, mean position delta `5.6539e-5` m, max
+  quaternion L2 delta `8.5911e-4`. The sleep contact penetration gate is
+  tightened to `1e-5`, and `IslandDeactivation.DefaultEnabledSettlesCloseToAlwaysActivePath`
+  now guards the default-on fidelity bar on a focused drop-and-settle case.
+- The direct single-body LCP shortcut is disabled pending fidelity evidence
+  because it changed the explicit `--disable-deactivation` baseline. PR2's
+  default speedup must come from resting-world deactivation, not from a solver
+  shortcut that changes always-active physics.
 
 ## Default-On Correctness Rule
 
@@ -67,3 +85,13 @@ bug until proven otherwise.
 - Ran `pixi run ./build/default/cpp/ReleaseNoProfile/tests/integration/test_SdfParser`:
   6 tests passed.
 - Ran `pixi run lint`.
+- For PR0 review fix #3089, built `sdf_perf_test`, verified
+  `--generate-objects -1` exits with status 1, ran a 6-object/20-step smoke run
+  that advanced time and emitted finite final state, and ran `pixi run lint`.
+- For PR2 default-on fidelity, built `sdf_perf_test`, `test_IslandDeactivation`,
+  `test_World`, and `test_ContactSurface`; ran `test_IslandDeactivation`
+  after adding the always-active comparison test: 19 tests passed.
+- Ran `test_ContactSurface` after the PR2 contact/sleep changes: 12 tests
+  passed.
+- Ran `test_World` after making deactivation default-on: 6 tests passed. The
+  existing `World.Cloning` test still emits a large non-finite-warning stream.

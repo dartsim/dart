@@ -56,6 +56,15 @@
 namespace dart {
 namespace constraint {
 
+namespace {
+
+// Keep the direct single-body LCP shortcut off until it has bitwise/fidelity
+// evidence against the legacy impulse-test assembly path. The resting-world
+// speedup must not depend on a solver path that changes the disabled baseline.
+constexpr bool kEnableDirectSingleBodyLcpShortcut = false;
+
+} // namespace
+
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
     double timeStep,
@@ -272,11 +281,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   std::array<ContactConstraint*, kInlineConstraintCount> inlineContactPtrs;
   dynamics::BodyNode* directBody = group.mSingleReactiveBodyNode;
   dynamics::Skeleton* directSkeleton = group.mSingleReactiveSkeleton;
-  bool useDirectSingleFreeBody = group.mAllSingleReactiveContacts
-                                 && group.mSingleReactiveContactsShareBody
-                                 && directBody != nullptr
-                                 && directSkeleton != nullptr
-                                 && numConstraints <= kInlineConstraintCount;
+  bool useDirectSingleFreeBody
+      = kEnableDirectSingleBodyLcpShortcut && group.mAllSingleReactiveContacts
+        && group.mSingleReactiveContactsShareBody && directBody != nullptr
+        && directSkeleton != nullptr
+        && numConstraints <= kInlineConstraintCount;
   if (useDirectSingleFreeBody) {
     for (std::size_t i = 0; i < numConstraints; ++i) {
       inlineContactPtrs[i] = static_cast<ContactConstraint*>(constraintPtrs[i]);
