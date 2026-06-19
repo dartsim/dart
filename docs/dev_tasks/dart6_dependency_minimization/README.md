@@ -121,6 +121,11 @@ ODE in the Gazebo feature lane.
   `dart/math/detail/ConvexHull.hpp` implementation adapted from DART 7, update
   the geometry include, and keep the legacy C implementation only under
   `tests/unit/math/legacy_convhull_3d` for regression coverage.
+- Compatibility decision: intentionally remove the previously installed
+  `dart/external/convhull_3d/convhull_3d.h` and
+  `dart/external/convhull_3d/safe_convhull_3d.h` headers as a breaking
+  dependency-removal slice instead of keeping forwarding headers under
+  `dart/external`.
 - Validation: `pixi run build-tests`, focused `UNIT_math_ConvexHull` and
   `UNIT_math_TriMesh`, plus the branch-required formatting gate.
 

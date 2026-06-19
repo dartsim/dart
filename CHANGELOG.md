@@ -4,6 +4,14 @@
 
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 
+* Breaking Changes
+
+  * Remove the previously installed `dart/external/convhull_3d` C headers
+    (`convhull_3d.h` and `safe_convhull_3d.h`) as part of replacing the
+    vendored dependency. Downstream code should include
+    `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
+    [#3076](https://github.com/dartsim/dart/pull/3076)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
