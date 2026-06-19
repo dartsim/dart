@@ -62,6 +62,14 @@ and replay metadata.
         AVBD `sx` rigid-constraint track beside the World contact-policy /
         boxed-LCP baseline, not a head-to-head solver enum comparison. Verified
         with default and CUDA packet row captures.
+  - [x] Reviewer-facing visual packet pass: full contact-baseline and AVBD
+        showcase packets completed in both default and CUDA Pixi environments.
+        The AVBD rows are visually legible with docked diagnostics; the
+        contact-baseline rows are solver-evidence-first because SI and boxed-LCP
+        look similar in the docked view, so labels, restored state, solver
+        identity, and metrics in the review index are the key evidence. A
+        unified comparison scene is not required for the current PR evidence;
+        keep it as a follow-up only if review finds the two packets insufficient.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -102,13 +110,14 @@ repeatable operation.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
 3. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
-   evidence:
+   evidence when refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --output-dir /tmp/dart_capture_rigid_contact_baseline`.
-4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence:
+4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
+   refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
    M1 remains two complementary showcases for now: World contact-policy /
    boxed-LCP baseline packets plus the AVBD `sx` rigid-constraint showcase.
-   Revisit a unified comparison scene only after those two packets have enough
-   reviewer-facing visual evidence.
+   The full-packet pass produced enough current PR evidence; revisit a unified
+   comparison scene only if review asks for a stronger single-scene visual.
 
 See `01-milestones.md` for the detailed milestone criteria and solver analysis.

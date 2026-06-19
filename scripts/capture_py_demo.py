@@ -472,9 +472,14 @@ _RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     },
 }
 
+_RIGID_WORKFLOW_AVBD_PHASE = "M1 AVBD constraint showcase"
+_RIGID_WORKFLOW_AVBD_FOCUS_AXIS = "AVBD rigid constraint track"
+
 _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     "avbd_rigid_fixed_joint_contact": {
         "workflow_label": "AVBD constraint showcase",
+        "workflow_phase": _RIGID_WORKFLOW_AVBD_PHASE,
+        "focus_axis": _RIGID_WORKFLOW_AVBD_FOCUS_AXIS,
         "user_question": (
             "Can AVBD keep a fixed joint coherent while contact is active?"
         ),
@@ -500,6 +505,8 @@ _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = 
     },
     "avbd_rigid_breakable_joint": {
         "workflow_label": "AVBD constraint showcase",
+        "workflow_phase": _RIGID_WORKFLOW_AVBD_PHASE,
+        "focus_axis": _RIGID_WORKFLOW_AVBD_FOCUS_AXIS,
         "user_question": (
             "Can AVBD show fixed-joint breakage and reset lifecycle evidence?"
         ),
@@ -524,6 +531,8 @@ _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = 
     },
     "avbd_rigid_spherical_breakable_joint": {
         "workflow_label": "AVBD constraint showcase",
+        "workflow_phase": _RIGID_WORKFLOW_AVBD_PHASE,
+        "focus_axis": _RIGID_WORKFLOW_AVBD_FOCUS_AXIS,
         "user_question": (
             "Can AVBD show spherical anchor breakage while orientation stays free?"
         ),
@@ -549,6 +558,8 @@ _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = 
     },
     "avbd_rigid_revolute_motor": {
         "workflow_label": "AVBD constraint showcase",
+        "workflow_phase": _RIGID_WORKFLOW_AVBD_PHASE,
+        "focus_axis": _RIGID_WORKFLOW_AVBD_FOCUS_AXIS,
         "user_question": (
             "Can AVBD drive a free-rigid hinge motor with finite diagnostics?"
         ),
@@ -574,6 +585,8 @@ _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = 
     },
     "avbd_rigid_prismatic_motor": {
         "workflow_label": "AVBD constraint showcase",
+        "workflow_phase": _RIGID_WORKFLOW_AVBD_PHASE,
+        "focus_axis": _RIGID_WORKFLOW_AVBD_FOCUS_AXIS,
         "user_question": (
             "Can AVBD drive a free-rigid slider motor with finite diagnostics?"
         ),
@@ -2932,8 +2945,6 @@ def _workflow_phase_summary(
 ) -> list[dict[str, object]]:
     phases: dict[str, dict[str, object]] = {}
     for capture in captures:
-        if capture.get("workflow_group") != "numbered":
-            continue
         phase = capture.get("workflow_phase")
         if not isinstance(phase, str) or not phase:
             continue

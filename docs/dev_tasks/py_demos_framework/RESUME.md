@@ -63,22 +63,50 @@ beside the World contact-policy / boxed-LCP baseline. Default and CUDA packet
 row captures for `avbd_rigid_revolute_motor` completed with
 `solver=avbd_rigid_joints` in the workflow manifests.
 
+The full reviewer-facing packet pass completed on PR #3084 head `fd8db58`:
+
+- Default contact-baseline packet:
+  `/tmp/dart_capture_rigid_contact_baseline_full_default_3084_fd8db58`
+  (`real 32.58s`).
+- CUDA contact-baseline packet:
+  `/tmp/dart_capture_rigid_contact_baseline_full_cuda_3084_fd8db58`
+  (`real 33.50s`).
+- Default AVBD showcase packet:
+  `/tmp/dart_capture_rigid_avbd_showcase_full_default_3084_fd8db58`
+  (`real 35.37s`).
+- CUDA AVBD showcase packet:
+  `/tmp/dart_capture_rigid_avbd_showcase_full_cuda_3084_fd8db58`
+  (`real 36.40s`).
+
+All four workflow manifests report `status=complete`; the review indexes report
+complete guidance, solver identity, and scene metrics with zero failed rows.
+Visual inspection found the AVBD rows readable as docked visual evidence. The
+contact-baseline screenshots are intentionally similar, so the review-index
+labels, scene-state metadata, `contact_solver_method` solver identity, and
+metrics are the distinguishing evidence. This is enough for the current PR
+evidence; a unified comparison scene is deferred unless review asks for a
+stronger single-scene visual.
+
+A follow-up local improvement makes packet review pages report their M1 phase
+maps for contact-baseline and AVBD-only packets instead of showing `phases 0`.
+
 ## Current Branch
 
 `fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
 selection debug-overlay fix, scriptable capture-state restoration, labeled
 stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
-packet.
+packet. Local follow-up work may be ahead of the remote PR branch until the
+phase-map reporting fix is pushed.
 
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
 set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
-rigid-constraint track. The next useful slice is a reviewer-facing visual
-packet pass: capture the full contact-baseline and AVBD packets, inspect
-screenshots/review indexes, then decide whether M1 needs a unified comparison
-scene or whether the two complementary packets are enough for review.
+rigid-constraint track. The next useful slice is PR management: push the local
+phase-map reporting fix after explicit approval, refresh the PR body with the
+full-packet evidence if pushing, then watch CI/Codex review for actionable
+feedback.
 
 Re-run any M0 guard:
 
@@ -134,5 +162,6 @@ git status && git log -3 --oneline
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: run the py-demos panel/smoke guards, and proceed with reviewer-facing M1
-visual packet capture for the contact baseline and AVBD showcase.
+Then: run the py-demos panel/smoke guards if changing runtime behavior; for the
+current reporting-only follow-up, focused capture tests plus `pixi run lint` are
+the relevant local gates before any approved push.

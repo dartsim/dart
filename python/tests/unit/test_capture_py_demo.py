@@ -694,16 +694,53 @@ def test_rigid_workflow_dry_run_can_capture_avbd_showcase_only(
         manifest["captures"][0]["workflow_label"]
         == "AVBD constraint showcase"
     )
+    assert (
+        manifest["captures"][0]["workflow_phase"]
+        == "M1 AVBD constraint showcase"
+    )
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "AVBD rigid constraint track"
+    )
     assert "fixed joint coherent" in manifest["captures"][0]["user_question"]
     assert "boxed-LCP baseline" in manifest["captures"][0]["scope"]
     assert manifest["captures"][1]["workflow_label"] == "AVBD constraint showcase"
+    assert manifest["captures"][1]["workflow_phase"] == (
+        "M1 AVBD constraint showcase"
+    )
+    assert manifest["captures"][1]["focus_axis"] == "AVBD rigid constraint track"
     assert "slider motor" in manifest["captures"][1]["user_question"]
     assert "slider travel" in manifest["captures"][1]["inspect"]
     assert manifest["captures"][1]["manifest"].endswith(
         "scenes/02_avbd_rigid_prismatic_motor/manifest.json"
     )
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "M1 AVBD constraint showcase",
+            "focus_axes": ["AVBD rigid constraint track"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": len(avbd_specs),
+            "row_count": len(avbd_specs),
+            "row_span": "1-2",
+            "rows": [1, 2],
+            "scenes": [
+                "avbd_rigid_fixed_joint_contact",
+                "avbd_rigid_prismatic_motor",
+            ],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": len(avbd_specs),
+            },
+        }
+    ]
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "AVBD constraint showcase" in review_html
+    assert "<strong>phases</strong> 1" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "M1 AVBD constraint showcase" in review_html
+    assert "AVBD rigid constraint track" in review_html
     assert "avbd showcase" in review_html
     assert "avbd_constraint_showcase" in review_html
     assert "fixed joint coherent" in review_html
@@ -784,14 +821,46 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
         f"{output}/reruns/02_rigid_body"
     )
     assert manifest["captures"][0]["workflow_label"] == "Contact baseline"
+    assert manifest["captures"][0]["workflow_phase"] == "M1 contact-policy baseline"
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "Sequential Impulse vs boxed-LCP contact method"
+    )
     assert "Sequential Impulse contact path" in manifest["captures"][0]["user_question"]
     assert manifest["captures"][1]["workflow_label"] == "Contact baseline"
+    assert manifest["captures"][1]["workflow_phase"] == "M1 contact-policy baseline"
+    assert (
+        manifest["captures"][1]["focus_axis"]
+        == "Sequential Impulse vs boxed-LCP contact method"
+    )
     assert "boxed-LCP contact baseline" in manifest["captures"][1]["user_question"]
     assert "contact_solver_method=BOXED_LCP" in manifest["captures"][1][
         "healthy_signal"
     ]
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "M1 contact-policy baseline",
+            "focus_axes": ["Sequential Impulse vs boxed-LCP contact method"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": 2,
+            "row_count": 2,
+            "row_span": "1-2",
+            "rows": [1, 2],
+            "scenes": ["rigid_body", "rigid_body"],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": 2,
+            },
+        }
+    ]
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "contact baseline" in review_html
+    assert "<strong>phases</strong> 1" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "M1 contact-policy baseline" in review_html
+    assert "Sequential Impulse vs boxed-LCP contact method" in review_html
     assert "--contact-baseline-only" in review_html
     assert "<dt>capture label</dt><dd>sequential_impulse</dd>" in review_html
     assert "<dt>capture label</dt><dd>boxed_lcp</dd>" in review_html
