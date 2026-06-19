@@ -134,6 +134,19 @@ public:
     }
   }
 
+  void addSleepEligibleFakeConstrainedGroup(
+      const dynamics::SkeletonPtr& skeleton, std::size_t dimension)
+  {
+    const auto groupIndex = mConstrainedGroups.size();
+    skeleton->setIslandIndex(static_cast<int>(groupIndex));
+    mSkeletons.push_back(skeleton);
+    mGroupResting.push_back(true);
+
+    constraint::ConstrainedGroup group;
+    group.addConstraint(std::make_shared<FakeConstraint>(dimension));
+    mConstrainedGroups.push_back(group);
+  }
+
   void addConstrainedGroup(
       const std::vector<constraint::ConstraintBasePtr>& constraints)
   {
@@ -254,6 +267,29 @@ TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
 
   EXPECT_EQ(8, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelSleepingGroupsFreezeFromWorkerResults)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.setAutomaticSleepingEnabled(true);
+
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  for (std::size_t i = 0; i < 8; ++i) {
+    auto skeleton
+        = dynamics::Skeleton::create("sleep_candidate_" + std::to_string(i));
+    skeletons.push_back(skeleton);
+    solver.addSleepEligibleFakeConstrainedGroup(skeleton, 100);
+  }
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  for (const auto& skeleton : skeletons)
+    EXPECT_TRUE(skeleton->isResting());
 }
 
 //==============================================================================

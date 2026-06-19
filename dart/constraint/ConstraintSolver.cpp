@@ -899,8 +899,7 @@ void ConstraintSolver::solveConstrainedGroups()
 
   static thread_local std::vector<char> groupAlreadyResting;
   groupAlreadyResting.assign(numGroups, 1);
-  static thread_local std::vector<char> groupSolvedToRest;
-  groupSolvedToRest.assign(numGroups, 0);
+  std::vector<char> groupSolvedToRest(numGroups, 0);
 
   if (mSleepingEnabled) {
     for (const auto& skeleton : mSkeletons) {
