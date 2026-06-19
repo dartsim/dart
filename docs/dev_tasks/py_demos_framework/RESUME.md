@@ -94,6 +94,9 @@ boxed-LCP contact-baseline row opens the same state that the capture used.
 The live rigid workflow panel now advertises the matching boxed-LCP `py-demos`
 command beside the boxed-LCP capture command, so the panel opens and captures
 the same stateful baseline.
+The `rigid_body` scene panel also has one-click Sequential Impulse and boxed-LCP
+baseline preset buttons that set the contact solver and reset the scene through
+the same replay/capture state path.
 
 ## Current Branch
 
@@ -101,8 +104,8 @@ the same stateful baseline.
 selection debug-overlay fix, scriptable capture-state restoration, labeled
 stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
 packet. Local follow-up work may be ahead of the remote PR branch until the
-phase-map, stateful open-live command, and boxed-LCP workflow-panel UI fixes are
-pushed.
+phase-map, stateful open-live command, boxed-LCP workflow-panel UI, and
+rigid-body contact preset fixes are pushed.
 
 ## Immediate Next Step
 
@@ -110,9 +113,9 @@ pushed.
 set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
 rigid-constraint track. The next useful slice is PR management: push the local
-phase-map/open-live command and workflow-panel UI fixes after explicit
-approval, refresh the PR body with the full-packet evidence if pushing, then
-watch CI/Codex review for actionable feedback.
+phase-map/open-live command, workflow-panel UI, and contact preset fixes after
+explicit approval, refresh the PR body with the full-packet evidence if pushing,
+then watch CI/Codex review for actionable feedback.
 
 Re-run any M0 guard:
 

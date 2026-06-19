@@ -3341,6 +3341,47 @@ def test_rigid_body_panel_edits_contact_solver_method() -> None:
     assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
 
 
+def test_rigid_body_panel_contact_baseline_presets_reset_scene() -> None:
+    sx = _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    world = setup.info["sx_world"]
+    assert setup.pre_step is not None
+
+    for _ in range(3):
+        setup.pre_step()
+    assert world.time > 0.0
+
+    boxed_builder = _ScriptedPanelBuilder(clicked_buttons={"Boxed LCP"})
+    setup.panels[0].build(boxed_builder, object())
+
+    assert "text:Contact baseline preset" in boxed_builder.events
+    assert "button:Sequential impulse" in boxed_builder.events
+    assert "button:Boxed LCP" in boxed_builder.events
+    assert "same_line" in boxed_builder.events
+    assert (
+        "tooltip:Reset to the DART 6-style boxed-LCP baseline."
+        in boxed_builder.events
+    )
+    assert controller.contact_method_index == 1
+    assert world.time == pytest.approx(0.0)
+    assert world.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+    assert len(controller._speed_history) == 1
+
+    setup.pre_step()
+    assert world.time > 0.0
+
+    si_builder = _ScriptedPanelBuilder(clicked_buttons={"Sequential impulse"})
+    setup.panels[0].build(si_builder, object())
+
+    assert "tooltip:Reset to the default contact baseline." in si_builder.events
+    assert controller.contact_method_index == 0
+    assert world.time == pytest.approx(0.0)
+    assert world.contact_solver_method == sx.ContactSolverMethod.SEQUENTIAL_IMPULSE
+    assert len(controller._speed_history) == 1
+
+
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     _require_simulation_symbols("World", "CollisionQueryOptions")
 
