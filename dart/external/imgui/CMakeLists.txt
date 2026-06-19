@@ -387,16 +387,16 @@ else()
   message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
   FetchContent_Declare(
-    imgui
+    dart_imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG ${IMGUI_TARGET_VERSION}
     GIT_SHALLOW TRUE
     SOURCE_DIR "${DART_BINARY_DIR}/_deps/imgui-src"
   )
 
-  FetchContent_GetProperties(imgui)
-  if(NOT imgui_POPULATED)
-    FetchContent_MakeAvailable(imgui)
+  FetchContent_GetProperties(dart_imgui)
+  if(NOT dart_imgui_POPULATED)
+    FetchContent_MakeAvailable(dart_imgui)
   endif()
 
   find_package(Git REQUIRED)
@@ -405,7 +405,9 @@ else()
   )
   foreach(imgui_patch IN LISTS imgui_patch_files)
     execute_process(
-      COMMAND "${GIT_EXECUTABLE}" -C "${imgui_SOURCE_DIR}" apply --check "${imgui_patch}"
+      COMMAND
+        "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply --check
+        "${imgui_patch}"
       RESULT_VARIABLE imgui_patch_check_result
       OUTPUT_QUIET
       ERROR_QUIET
@@ -413,7 +415,7 @@ else()
     if(imgui_patch_check_result EQUAL 0)
       message(STATUS "Applying DART ImGui compatibility patch: ${imgui_patch}")
       execute_process(
-        COMMAND "${GIT_EXECUTABLE}" -C "${imgui_SOURCE_DIR}" apply "${imgui_patch}"
+        COMMAND "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply "${imgui_patch}"
         RESULT_VARIABLE imgui_patch_result
         OUTPUT_VARIABLE imgui_patch_output
         ERROR_VARIABLE imgui_patch_error
@@ -425,11 +427,11 @@ else()
         )
       endif()
     else()
-      file(READ "${imgui_SOURCE_DIR}/imgui_draw.cpp" imgui_draw_contents)
-      file(READ "${imgui_SOURCE_DIR}/imgui_internal.h" imgui_internal_contents)
-      file(READ "${imgui_SOURCE_DIR}/imgui_widgets.cpp" imgui_widgets_contents)
+      file(READ "${dart_imgui_SOURCE_DIR}/imgui_draw.cpp" imgui_draw_contents)
+      file(READ "${dart_imgui_SOURCE_DIR}/imgui_internal.h" imgui_internal_contents)
+      file(READ "${dart_imgui_SOURCE_DIR}/imgui_widgets.cpp" imgui_widgets_contents)
       file(READ
-        "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
+        "${dart_imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
         imgui_opengl2_contents
       )
       string(FIND
@@ -474,22 +476,24 @@ else()
   endforeach()
 
   set(imgui_core_sources
-    "${imgui_SOURCE_DIR}/imgui.cpp"
-    "${imgui_SOURCE_DIR}/imgui_draw.cpp"
-    "${imgui_SOURCE_DIR}/imgui_tables.cpp"
-    "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
-    "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
+    "${dart_imgui_SOURCE_DIR}/imgui.cpp"
+    "${dart_imgui_SOURCE_DIR}/imgui_draw.cpp"
+    "${dart_imgui_SOURCE_DIR}/imgui_tables.cpp"
+    "${dart_imgui_SOURCE_DIR}/imgui_widgets.cpp"
+    "${dart_imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
   )
   dart_configure_imgui_compat_headers(
-    imgui_compat_headers "${imgui_SOURCE_DIR}" "${imgui_SOURCE_DIR}/backends"
+    imgui_compat_headers
+    "${dart_imgui_SOURCE_DIR}"
+    "${dart_imgui_SOURCE_DIR}/backends"
   )
 
   dart_add_library(${target_name} ${imgui_core_sources} ${imgui_compat_headers})
   target_include_directories(${target_name}
     PUBLIC
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-      $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
-      $<BUILD_INTERFACE:${imgui_SOURCE_DIR}/backends>
+      $<BUILD_INTERFACE:${dart_imgui_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${dart_imgui_SOURCE_DIR}/backends>
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/dart/external/imgui>
   )
