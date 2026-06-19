@@ -67,7 +67,9 @@ Usage summary:
 - `convhull_3d` is included by the math geometry implementation.
 - `ikfast` is included by DART's IKFast wrapper, generated WAM examples, and
   integration tests.
-- `imgui` is used by the OSG GUI path when `DART_USE_SYSTEM_IMGUI` is disabled.
+- `imgui` provides the DART 6 `external-imgui` compatibility component from
+  the system package by default, including headless package builds, and uses a
+  DART-patched fetched copy when `DART_USE_SYSTEM_IMGUI` is disabled.
 - `lodepng` is used by the GLUT screenshot path.
 - `odelcpsolver` is included by core constraint, contact, boxed LCP, Dantzig,
   PGS, and default `World` solver paths.
@@ -151,10 +153,11 @@ Default Pixi/package metadata for optional components
   `dart/external/imgui` include path through a system-backed compatibility
   target in default builds, and use an explicit DART-patched FetchContent
   target when `DART_USE_SYSTEM_IMGUI=OFF`.
-- Validation: default configure/build with system ImGui, explicit fetched-ImGui
-  fallback configure/build, OSG GUI target build, install-tree headers, and
-  package smoke proving ImGui headers are found through `find_package(DART
-  COMPONENTS external-imgui gui-osg)`.
+- Validation: default configure/build with system ImGui, headless system-ImGui
+  build of `dart-external-imgui`, explicit fetched-ImGui fallback
+  configure/build, OSG GUI target build, install-tree headers, and package
+  smoke proving ImGui headers are found through `find_package(DART COMPONENTS
+  external-imgui gui-osg)`.
 
 `dart/external/lodepng`
 
