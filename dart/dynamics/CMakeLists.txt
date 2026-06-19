@@ -17,7 +17,7 @@ dart_generate_include_header_file(
 )
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/detail/ikfast_compat.h.in"
-  "${CMAKE_BINARY_DIR}/dart/external/ikfast/ikfast.h"
+  "${DART_BINARY_DIR}/dart/external/ikfast/ikfast.h"
   COPYONLY
 )
 
@@ -33,7 +33,7 @@ install(
   COMPONENT headers
 )
 install(
-  FILES "${CMAKE_BINARY_DIR}/dart/external/ikfast/ikfast.h"
+  FILES "${DART_BINARY_DIR}/dart/external/ikfast/ikfast.h"
   DESTINATION include/dart/external/ikfast
   COMPONENT headers
 )
