@@ -150,14 +150,19 @@ Both workflow manifests report `status=complete`, three captured
 `bounce_material`), complete guidance, solver identity, scene metrics, and
 friction/restitution state metadata for the Slide and Bounce variants.
 
+The latest local UI slice makes the `rigid_body` front-door panel report the
+active material preset (or `Custom`) beside the live friction/restitution values
+and adds an `Open material mixing` route to `rigid_material_mixing`, matching
+the existing contact-comparison route pattern.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
-plus the `rigid_body` material-example preset, packet, and full-packet evidence
-increments. Keep any remaining edits narrow, keep the dev-task handoff current,
-and validate the exact default/CUDA py-demos front doors before publishing a
-follow-up PR.
+plus the `rigid_body` material-example preset, packet, full-packet evidence, and
+material-route UI increments. Keep any remaining edits narrow, keep the dev-task
+handoff current, and validate the exact default/CUDA py-demos front doors before
+publishing a follow-up PR.
 
 ## Immediate Next Step
 
@@ -179,6 +184,8 @@ For the material-preset panel increment, also run:
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   -m pytest \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_status_tracks_custom_sliders \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_material_mixing \
   -q
 ```
 

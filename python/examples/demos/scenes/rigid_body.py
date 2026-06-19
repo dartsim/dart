@@ -40,6 +40,7 @@ _CONTACT_METHODS: tuple[tuple[str, sx.ContactSolverMethod], ...] = (
 _CONTACT_METHOD_SEQUENTIAL_INDEX = 0
 _CONTACT_METHOD_BOXED_LCP_INDEX = 1
 _CONTACT_POLICY_COMPARE_SCENE_ID = "rigid_contact_solver_compare"
+_MATERIAL_MIXING_SCENE_ID = "rigid_material_mixing"
 
 
 def _visual_for(
@@ -403,10 +404,23 @@ class _RigidBodyBaseline:
         self.restitution = float(preset.restitution)
         self.reset(clear_replay=True)
 
+    def _active_material_label(self) -> str:
+        for preset in _MATERIAL_PRESETS:
+            if np.isclose(self.friction, preset.friction) and np.isclose(
+                self.restitution, preset.restitution
+            ):
+                return preset.label
+        return "Custom"
+
     def _request_contact_policy_compare(self, context: object) -> None:
         request_scene_switch = getattr(context, "request_scene_switch", None)
         if callable(request_scene_switch):
             request_scene_switch(_CONTACT_POLICY_COMPARE_SCENE_ID)
+
+    def _request_material_mixing(self, context: object) -> None:
+        request_scene_switch = getattr(context, "request_scene_switch", None)
+        if callable(request_scene_switch):
+            request_scene_switch(_MATERIAL_MIXING_SCENE_ID)
 
     def build_panel(self, builder: object, context: object) -> None:
         changed_solver, solver_index = builder.select(
@@ -450,6 +464,15 @@ class _RigidBodyBaseline:
             if builder.button(preset.label):
                 self._apply_material_preset(preset)
             builder.item_tooltip(preset.tooltip)
+        builder.text(
+            f"active material: {self._active_material_label()} | "
+            f"friction {self.friction:.2f} | restitution {self.restitution:.2f}"
+        )
+        if builder.button("Open material mixing"):
+            self._request_material_mixing(context)
+        builder.item_tooltip(
+            "Open the dedicated friction/restitution material-combine row."
+        )
         if builder.button("Open contact comparison"):
             self._request_contact_policy_compare(context)
         builder.item_tooltip(

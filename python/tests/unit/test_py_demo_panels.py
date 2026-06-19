@@ -3426,6 +3426,10 @@ def test_rigid_body_panel_material_example_presets_reset_scene(
         for candidate in rigid_body._MATERIAL_PRESETS
     )
     assert f"tooltip:{preset.tooltip}" in builder.events
+    assert (
+        f"text:active material: {preset.label} | friction {preset.friction:.2f} "
+        f"| restitution {preset.restitution:.2f}"
+    ) in builder.events
     assert controller.friction == pytest.approx(preset.friction)
     assert controller.restitution == pytest.approx(preset.restitution)
     assert world.time == pytest.approx(0.0)
@@ -3445,6 +3449,56 @@ def test_rigid_body_panel_material_example_presets_reset_scene(
     assert capture_metrics["controls"]["restitution"] == pytest.approx(
         preset.restitution
     )
+
+
+def test_rigid_body_panel_material_status_tracks_custom_sliders() -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Friction": 0.33,
+            "Restitution": 0.44,
+        }
+    )
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:active material: Custom | friction 0.33 | restitution 0.44" in (
+        builder.events
+    )
+    assert controller.friction == pytest.approx(0.33)
+    assert controller.restitution == pytest.approx(0.44)
+    assert controller.ground.friction == pytest.approx(0.33)
+    assert all(
+        body.friction == pytest.approx(0.33) for body in controller.dynamic_bodies
+    )
+    assert all(
+        body.restitution == pytest.approx(0.44)
+        for body in controller.dynamic_bodies
+    )
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["controls"]["friction"] == pytest.approx(0.33)
+    assert capture_metrics["controls"]["restitution"] == pytest.approx(0.44)
+
+
+def test_rigid_body_panel_routes_to_material_mixing() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open material mixing"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open material mixing" in builder.events
+    assert (
+        "tooltip:Open the dedicated friction/restitution material-combine row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_material_mixing"]
 
 
 def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:

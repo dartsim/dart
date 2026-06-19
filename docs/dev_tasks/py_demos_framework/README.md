@@ -88,7 +88,9 @@ and replay metadata.
   - [x] Front-door material examples: the flagship `rigid_body` panel now has
         one-click Default, Slide, and Bounce material presets that reset the scene
         and flow through the same friction/restitution replay and capture
-        controls as the manual sliders.
+        controls as the manual sliders. The panel also reports the active
+        material preset or custom friction/restitution state and routes directly
+        to the dedicated material-mixing row for deeper inspection.
   - [x] Dedicated material-example packet: the `--material-examples-only`
         workflow captures the `rigid_body` Default, Slide, and Bounce
         friction/restitution variants as one review-indexed packet with
