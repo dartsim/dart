@@ -75,7 +75,7 @@ class CMakeBuild(build_ext):
             f"-DDART_BUILD_DARTPY=ON",
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
-            f"-DDART_USE_SYSTEM_IMGUI=ON",
+            f"-DDART_USE_SYSTEM_IMGUI=OFF",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
             f"-DDART_VERBOSE=ON",
         ]
