@@ -115,7 +115,7 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
-dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
+dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" ON)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)

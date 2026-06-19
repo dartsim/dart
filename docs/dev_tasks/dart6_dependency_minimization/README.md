@@ -144,13 +144,15 @@ Default Pixi/package metadata for optional components
 
 - Risk: medium because the OSG GUI path remains part of DART 6.
 - Status: in progress on `chore/replace-imgui-release-6.20`.
-- Plan: keep the packaged/system ImGui path for normal builds, replace the
-  source-tree vendored copy with a FetchContent fallback when
-  `DART_USE_SYSTEM_IMGUI=OFF`, and preserve the `external-imgui` component plus
-  old installed `dart/external/imgui` include path for DART 6 compatibility.
-- Validation: GUI configure/build with system ImGui and fetched ImGui, OSG GUI
-  target build, install-tree headers, and package smoke proving ImGui headers
-  are found through `find_package(DART COMPONENTS external-imgui gui-osg)`.
+- Plan: make the packaged/system ImGui path the default for normal builds,
+  replace the source-tree vendored copy with an explicit FetchContent fallback
+  when `DART_USE_SYSTEM_IMGUI=OFF`, and preserve the `external-imgui` component
+  plus old installed `dart/external/imgui` include path for DART 6
+  compatibility.
+- Validation: default configure/build with system ImGui, explicit fetched-ImGui
+  fallback configure/build, OSG GUI target build, install-tree headers, and
+  package smoke proving ImGui headers are found through `find_package(DART
+  COMPONENTS external-imgui gui-osg)` for the fallback component path.
 
 `dart/external/lodepng`
 
@@ -256,5 +258,5 @@ Select gates by touched surface:
 - Which gz-physics lane is the authoritative DART 6.20 downstream gate?
 - For IKFast, should DART 6 keep a compatibility forwarding header at the old
   `dart/external/ikfast/ikfast.h` installed path?
-- For ImGui and GUI screenshots, should DART 6 prefer system dependencies,
-  FetchContent fallbacks, or feature-only GUI environments?
+- For GUI screenshots, should DART 6 prefer a system image dependency or defer
+  dependency removal until the GLUT path is retired?

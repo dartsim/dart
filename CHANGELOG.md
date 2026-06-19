@@ -7,9 +7,10 @@
 * Build
 
   * Replace the vendored `dart/external/imgui` source tree with the existing
-    system ImGui path for packaged builds and a FetchContent fallback for
-    non-system builds, while preserving the DART 6 `external-imgui` component
-    and legacy installed include path.
+    system ImGui path for default and packaged builds plus an explicit
+    FetchContent fallback for non-system builds, while preserving the DART 6
+    `external-imgui` component and legacy installed include path for that
+    fallback.
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
