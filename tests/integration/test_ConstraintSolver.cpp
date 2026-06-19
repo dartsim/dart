@@ -257,6 +257,20 @@ TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ManualConstraintsForceSerialGroupSolves)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstraint(std::make_shared<FakeConstraint>(1));
+  solver.addFakeConstrainedGroups(8, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, DistinctNonReactiveBodiesCanSolveGroupsInParallel)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;

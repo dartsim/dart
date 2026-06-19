@@ -954,7 +954,11 @@ void ConstraintSolver::solveConstrainedGroups()
   // is byte-for-byte identical to the historical loop.
   auto* executor = mIslandSolveExecutor ? mIslandSolveExecutor
                                         : mOwnedIslandSolveExecutor.get();
-  if (mNumThreads <= 1 || !executor || !isConstrainedGroupSolveThreadSafe()) {
+  // User-supplied manual constraints are only required to satisfy the serial
+  // ConstraintBase API. Keep them off the parallel executor unless each
+  // concrete type is explicitly known to be reentrant.
+  if (mNumThreads <= 1 || !executor || !mManualConstraints.empty()
+      || !isConstrainedGroupSolveThreadSafe()) {
     for (std::size_t idx : active)
       solveActiveGroup(idx);
     freezeSolvedGroups();
