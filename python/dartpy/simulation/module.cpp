@@ -3840,6 +3840,9 @@ void defSimulationModule(nb::module_& m)
       .def_prop_ro("deactivation_enabled", &sim::World::isDeactivationEnabled)
       .def_prop_ro("num_dofs", &sim::World::getNumDofs)
       .def_prop_ro("num_efforts", &sim::World::getNumEfforts)
+      .def_prop_ro("num_rigid_body_dofs", &sim::World::getNumRigidBodyDofs)
+      .def_prop_ro(
+          "num_rigid_body_efforts", &sim::World::getNumRigidBodyEfforts)
       .def_prop_rw(
           "state_vector",
           &sim::World::getStateVector,
@@ -3851,6 +3854,18 @@ void defSimulationModule(nb::module_& m)
           &sim::World::getControlVector,
           [](sim::World& self, const nb::handle& control) {
             self.setControlVector(toVectorX(control));
+          })
+      .def_prop_rw(
+          "rigid_body_state_vector",
+          &sim::World::getRigidBodyStateVector,
+          [](sim::World& self, const nb::handle& state) {
+            self.setRigidBodyStateVector(toVectorX(state));
+          })
+      .def_prop_rw(
+          "rigid_body_control_vector",
+          &sim::World::getRigidBodyControlVector,
+          [](sim::World& self, const nb::handle& control) {
+            self.setRigidBodyControlVector(toVectorX(control));
           })
       .def("get_step_derivatives", &sim::World::getStepDerivatives)
       .def(

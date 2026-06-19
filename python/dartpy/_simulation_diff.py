@@ -84,7 +84,9 @@ def timestep(world, state, action):
 
   Args:
     world: A differentiable ``dartpy.World`` (constructed
-      with ``differentiable=True``).
+      with ``differentiable=True``). The world's general state/control vector
+      layout must match the active differentiable family for that step
+      (rigid-only and single-multibody scenes satisfy this today).
     state: Torch tensor ``x = [q; q̇]`` of size ``2 * world.num_dofs``.
     action: Torch tensor ``u = τ`` of size ``world.num_efforts``.
 

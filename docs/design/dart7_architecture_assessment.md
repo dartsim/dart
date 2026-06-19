@@ -153,19 +153,18 @@ affected rows.
 
 ### F5 — Facade erosion at the edges
 
-The easy path genuinely delivers in both C++ and Python, but: the
-general-named `getNumDofs`/`getStateVector`/`getControlVector` implement a
-translational-rigid-only slice that must semantically break when articulated
-DOFs land (a multibody-only world reports zero DOFs today while
-`getStepDerivatives` already returns joint-space layouts); solver vocabulary
-sits on shared handles (`avbd_*` joint knobs, deformable-solver booleans on
-`RigidBody`); the installed public header set exports concrete solver stages
-and ~50–100-field internal stats structs that the facade docs themselves call
-internal; precise IPC tuning is reachable only by abandoning the facade for
-the custom-pipeline overload; and joint construction explodes across ~35
-World methods in two solver-conditioned families where a `JointSpec`-based
-single verb already half-exists. These are cheap to fix before adoption and
-compatibility liabilities after.
+The easy path genuinely delivers in both C++ and Python, but PLAN-091 WS4 was
+needed to remove several compatibility liabilities before adoption. The
+general-named `getNumDofs`/`getStateVector`/`getControlVector` now reserve the
+full dense world semantics (dynamic rigid-body translations, then multibody
+joint coordinates), and the prior translational-rigid-only slice is explicit
+behind `getRigidBodyStateVector` / `getRigidBodyControlVector`. PR #3072 also
+removed solver-family vocabulary from shared handles, moved built-in stage
+internals out of the installed public header set, aligned the Python surface,
+and collapsed joint construction onto the `JointSpec`-based verb. Keep future
+facade additions on those scoped names and policy value objects; avoid
+reintroducing solver-branded shared handles or internal stats on installed
+headers.
 
 ### F6 — Clean-break hygiene and doc truth
 

@@ -1262,6 +1262,25 @@ void markFrameCachesDirty(detail::WorldRegistry& registry)
   }
 }
 
+std::size_t countRigidBodyDofs(const detail::BakedWorldModel& model)
+{
+  return 3 * model.dynamicRigidBodyEntities.size();
+}
+
+std::size_t countMultibodyDofs(const detail::BakedWorldModel& model)
+{
+  std::size_t dofs = 0;
+  for (const auto& multibody : model.multibodies) {
+    dofs += multibody.dofCount;
+  }
+  return dofs;
+}
+
+std::size_t countWorldDofs(const detail::BakedWorldModel& model)
+{
+  return countRigidBodyDofs(model) + countMultibodyDofs(model);
+}
+
 //==============================================================================
 // Folds the full internal solver stats into the curated public diagnostics.
 DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
@@ -6016,9 +6035,7 @@ std::size_t World::getNumDifferentiableParameters() const noexcept
 //==============================================================================
 std::size_t World::getNumDofs() const
 {
-  return 3
-         * detail::ensureBakedWorldModelCurrent(*this)
-               .dynamicRigidBodyEntities.size();
+  return countWorldDofs(detail::ensureBakedWorldModelCurrent(*this));
 }
 
 //==============================================================================
@@ -6029,6 +6046,137 @@ std::size_t World::getNumEfforts() const
 
 //==============================================================================
 Eigen::VectorXd World::getStateVector() const
+{
+  const auto& model = detail::ensureBakedWorldModelCurrent(*this);
+  const auto& bodies = model.dynamicRigidBodyEntities;
+  const Eigen::Index rigidDofs
+      = static_cast<Eigen::Index>(countRigidBodyDofs(model));
+  const Eigen::Index dofs = static_cast<Eigen::Index>(countWorldDofs(model));
+  Eigen::VectorXd state(2 * dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& transform
+        = m_storage->registry.get<comps::Transform>(bodies[k]);
+    const auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
+    state.segment<3>(base) = transform.position;
+    state.segment<3>(dofs + base) = velocity.linear;
+  }
+  Eigen::Index offset = rigidDofs;
+  for (const auto jointEntity : model.multibodyJointEntities) {
+    const auto& jointState
+        = m_storage->registry.get<comps::JointState>(jointEntity);
+    const auto jointDofs = jointState.position.size();
+    state.segment(offset, jointDofs) = jointState.position;
+    state.segment(dofs + offset, jointDofs) = jointState.velocity;
+    offset += jointDofs;
+  }
+  return state;
+}
+
+//==============================================================================
+void World::setStateVector(const Eigen::VectorXd& state)
+{
+  const auto& model = detail::ensureBakedWorldModelCurrent(*this);
+  const auto& bodies = model.dynamicRigidBodyEntities;
+  const Eigen::Index rigidDofs
+      = static_cast<Eigen::Index>(countRigidBodyDofs(model));
+  const Eigen::Index dofs = static_cast<Eigen::Index>(countWorldDofs(model));
+  DART_SIMULATION_THROW_T_IF(
+      state.size() != 2 * dofs,
+      InvalidArgumentException,
+      "World::setStateVector(): expected size {} (= 2 * num_dofs) but got {}",
+      2 * dofs,
+      state.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& transform = m_storage->registry.get<comps::Transform>(bodies[k]);
+    auto& velocity = m_storage->registry.get<comps::Velocity>(bodies[k]);
+    transform.position = state.segment<3>(base);
+    velocity.linear = state.segment<3>(dofs + base);
+  }
+  Eigen::Index offset = rigidDofs;
+  bool wroteMultibodyPosition = false;
+  for (const auto jointEntity : model.multibodyJointEntities) {
+    auto& jointState = m_storage->registry.get<comps::JointState>(jointEntity);
+    const auto jointDofs = jointState.position.size();
+    jointState.position = state.segment(offset, jointDofs);
+    jointState.velocity = state.segment(dofs + offset, jointDofs);
+    wroteMultibodyPosition = wroteMultibodyPosition || jointDofs > 0;
+    offset += jointDofs;
+  }
+  if (wroteMultibodyPosition) {
+    markFrameCachesDirty(m_storage->registry);
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd World::getControlVector() const
+{
+  const auto& model = detail::ensureBakedWorldModelCurrent(*this);
+  const auto& bodies = model.dynamicRigidBodyEntities;
+  const Eigen::Index rigidDofs
+      = static_cast<Eigen::Index>(countRigidBodyDofs(model));
+  const Eigen::Index dofs = static_cast<Eigen::Index>(countWorldDofs(model));
+  Eigen::VectorXd control(dofs);
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    const auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
+    control.segment<3>(base) = force.force;
+  }
+  Eigen::Index offset = rigidDofs;
+  for (const auto jointEntity : model.multibodyJointEntities) {
+    const auto& actuation
+        = m_storage->registry.get<comps::JointActuation>(jointEntity);
+    const auto jointDofs = actuation.torque.size();
+    control.segment(offset, jointDofs) = actuation.torque;
+    offset += jointDofs;
+  }
+  return control;
+}
+
+//==============================================================================
+void World::setControlVector(const Eigen::VectorXd& control)
+{
+  const auto& model = detail::ensureBakedWorldModelCurrent(*this);
+  const auto& bodies = model.dynamicRigidBodyEntities;
+  const Eigen::Index rigidDofs
+      = static_cast<Eigen::Index>(countRigidBodyDofs(model));
+  const Eigen::Index dofs = static_cast<Eigen::Index>(countWorldDofs(model));
+  DART_SIMULATION_THROW_T_IF(
+      control.size() != dofs,
+      InvalidArgumentException,
+      "World::setControlVector(): expected size {} (= num_efforts) but got {}",
+      dofs,
+      control.size());
+  for (std::size_t k = 0; k < bodies.size(); ++k) {
+    const auto base = 3 * static_cast<Eigen::Index>(k);
+    auto& force = m_storage->registry.get<comps::Force>(bodies[k]);
+    force.force = control.segment<3>(base);
+  }
+  Eigen::Index offset = rigidDofs;
+  for (const auto jointEntity : model.multibodyJointEntities) {
+    auto& actuation
+        = m_storage->registry.get<comps::JointActuation>(jointEntity);
+    const auto jointDofs = actuation.torque.size();
+    actuation.torque = control.segment(offset, jointDofs);
+    offset += jointDofs;
+  }
+}
+
+//==============================================================================
+std::size_t World::getNumRigidBodyDofs() const
+{
+  return countRigidBodyDofs(detail::ensureBakedWorldModelCurrent(*this));
+}
+
+//==============================================================================
+std::size_t World::getNumRigidBodyEfforts() const
+{
+  return getNumRigidBodyDofs();
+}
+
+//==============================================================================
+Eigen::VectorXd World::getRigidBodyStateVector() const
 {
   const auto& bodies
       = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
@@ -6046,7 +6194,7 @@ Eigen::VectorXd World::getStateVector() const
 }
 
 //==============================================================================
-void World::setStateVector(const Eigen::VectorXd& state)
+void World::setRigidBodyStateVector(const Eigen::VectorXd& state)
 {
   const auto& bodies
       = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
@@ -6054,7 +6202,8 @@ void World::setStateVector(const Eigen::VectorXd& state)
   DART_SIMULATION_THROW_T_IF(
       state.size() != 2 * dofs,
       InvalidArgumentException,
-      "World::setStateVector(): expected size {} (= 2 * num_dofs) but got {}",
+      "World::setRigidBodyStateVector(): expected size {} "
+      "(= 2 * num_rigid_body_dofs) but got {}",
       2 * dofs,
       state.size());
   for (std::size_t k = 0; k < bodies.size(); ++k) {
@@ -6067,7 +6216,7 @@ void World::setStateVector(const Eigen::VectorXd& state)
 }
 
 //==============================================================================
-Eigen::VectorXd World::getControlVector() const
+Eigen::VectorXd World::getRigidBodyControlVector() const
 {
   const auto& bodies
       = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
@@ -6082,7 +6231,7 @@ Eigen::VectorXd World::getControlVector() const
 }
 
 //==============================================================================
-void World::setControlVector(const Eigen::VectorXd& control)
+void World::setRigidBodyControlVector(const Eigen::VectorXd& control)
 {
   const auto& bodies
       = detail::ensureBakedWorldModelCurrent(*this).dynamicRigidBodyEntities;
@@ -6090,7 +6239,8 @@ void World::setControlVector(const Eigen::VectorXd& control)
   DART_SIMULATION_THROW_T_IF(
       control.size() != dofs,
       InvalidArgumentException,
-      "World::setControlVector(): expected size {} (= num_efforts) but got {}",
+      "World::setRigidBodyControlVector(): expected size {} "
+      "(= num_rigid_body_efforts) but got {}",
       dofs,
       control.size());
   for (std::size_t k = 0; k < bodies.size(); ++k) {
