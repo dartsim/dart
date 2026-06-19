@@ -3809,7 +3809,7 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                     guide.scene_id,
                     guide.capture_width,
                     guide.capture_height,
-                    scene_state_json='{"controls":{"friction":0.08,"restitution":0.02}}',
+                    scene_state_json='{"controls":{"material_preset":"Slide"}}',
                 )
             ) in events
             assert (
@@ -3824,13 +3824,13 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                     guide.capture_width,
                     guide.capture_height,
                     guide.capture_show_ui,
-                    scene_state_json='{"controls":{"friction":0.08,"restitution":0.02}}',
+                    scene_state_json='{"controls":{"material_preset":"Slide"}}',
                     capture_label="slide_material",
                 )
             ) in events
             assert (
-                "tooltip:Capture the Slide material example with restored "
-                "friction/restitution controls."
+                "tooltip:Capture the Slide material example with the named "
+                "material preset restored."
             ) in events
             assert (
                 "text:"
@@ -3838,7 +3838,7 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                     guide.scene_id,
                     guide.capture_width,
                     guide.capture_height,
-                    scene_state_json='{"controls":{"friction":0.45,"restitution":0.65}}',
+                    scene_state_json='{"controls":{"material_preset":"Bounce"}}',
                 )
             ) in events
             assert (
@@ -3849,13 +3849,13 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                     guide.capture_width,
                     guide.capture_height,
                     guide.capture_show_ui,
-                    scene_state_json='{"controls":{"friction":0.45,"restitution":0.65}}',
+                    scene_state_json='{"controls":{"material_preset":"Bounce"}}',
                     capture_label="bounce_material",
                 )
             ) in events
             assert (
-                "tooltip:Capture the Bounce material example with restored "
-                "friction/restitution controls."
+                "tooltip:Capture the Bounce material example with the named "
+                "material preset restored."
             ) in events
         assert "text:Review packet" in events
         assert (

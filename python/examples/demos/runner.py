@@ -56,10 +56,10 @@ CAPTURE_METADATA_EVENT_NAME = "scene_capture_metadata"
 SCENE_STATE_OVERRIDE_INFO_KEY = "scene_state_override"
 _RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
 _RIGID_BODY_SLIDE_MATERIAL_STATE_JSON = (
-    '{"controls":{"friction":0.08,"restitution":0.02}}'
+    '{"controls":{"material_preset":"Slide"}}'
 )
 _RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON = (
-    '{"controls":{"friction":0.45,"restitution":0.65}}'
+    '{"controls":{"material_preset":"Bounce"}}'
 )
 CAPTURE_METRICS_EVENT_NAME = "scene_capture_metrics"
 _REPLAY_RATE_LABELS = (
@@ -2623,8 +2623,8 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
                     )
                 )
                 builder.item_tooltip(
-                    f"Capture the {label} material example with restored "
-                    "friction/restitution controls."
+                    f"Capture the {label} material example with the named "
+                    "material preset restored."
                 )
         builder.separator()
         builder.text("Review packet")

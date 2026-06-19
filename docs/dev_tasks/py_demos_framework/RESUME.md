@@ -150,6 +150,11 @@ Both workflow manifests report `status=complete`, three captured
 `bounce_material`), complete guidance, solver identity, scene metrics, and
 friction/restitution state metadata for the Slide and Bounce variants.
 
+The current local follow-up now uses named `material_preset` replay state for
+the Slide and Bounce material-example packet rows instead of raw
+friction/restitution JSON, so the packet commands exercise the same
+user-facing restore path that capture metrics report.
+
 The latest local UI slice makes the `rigid_body` front-door panel report the
 active material preset (or `Custom`) beside the live friction/restitution values
 and adds an `Open material mixing` route to `rigid_material_mixing`, matching

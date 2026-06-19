@@ -932,22 +932,22 @@ def test_rigid_workflow_dry_run_can_capture_material_examples_only(
     assert manifest["captures"][0]["scene_state_json"] == ""
     assert (
         manifest["captures"][1]["scene_state_json"]
-        == '{"controls":{"friction":0.08,"restitution":0.02}}'
+        == '{"controls":{"material_preset":"Slide"}}'
     )
     assert (
         manifest["captures"][2]["scene_state_json"]
-        == '{"controls":{"friction":0.45,"restitution":0.65}}'
+        == '{"controls":{"material_preset":"Bounce"}}'
     )
     assert "--capture-label default_material" in manifest["captures"][0]["command"]
     assert "--capture-label slide_material" in manifest["captures"][1]["command"]
     assert "--capture-label bounce_material" in manifest["captures"][2]["command"]
     assert "--scene-state-json" not in manifest["captures"][0]["command"]
     assert (
-        "--scene-state-json '{\"controls\":{\"friction\":0.08,\"restitution\":0.02}}'"
+        "--scene-state-json '{\"controls\":{\"material_preset\":\"Slide\"}}'"
         in manifest["captures"][1]["command"]
     )
     assert (
-        "--scene-state-json '{\"controls\":{\"friction\":0.45,\"restitution\":0.65}}'"
+        "--scene-state-json '{\"controls\":{\"material_preset\":\"Bounce\"}}'"
         in manifest["captures"][2]["viewer_command"]
     )
     assert (
@@ -964,7 +964,7 @@ def test_rigid_workflow_dry_run_can_capture_material_examples_only(
     )
     assert "default high-friction" in manifest["captures"][0]["user_question"]
     assert "sliding contact controls" in manifest["captures"][1]["try_first"]
-    assert "friction=0.45" in manifest["captures"][2]["healthy_signal"]
+    assert "material_preset=Bounce" in manifest["captures"][2]["healthy_signal"]
     assert manifest["workflow_phase_summary"] == [
         {
             "phase": "M1 material examples",

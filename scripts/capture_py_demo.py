@@ -283,12 +283,8 @@ def _workflow_spec_fields(
 
 
 _RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
-_RIGID_BODY_SLIDE_MATERIAL_STATE_JSON = (
-    '{"controls":{"friction":0.08,"restitution":0.02}}'
-)
-_RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON = (
-    '{"controls":{"friction":0.45,"restitution":0.65}}'
-)
+_RIGID_BODY_SLIDE_MATERIAL_STATE_JSON = '{"controls":{"material_preset":"Slide"}}'
+_RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON = '{"controls":{"material_preset":"Bounce"}}'
 
 RIGID_WORKFLOW_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("rigid_body", 180, 960, 540, True),
@@ -754,8 +750,8 @@ _RIGID_WORKFLOW_MATERIAL_EXAMPLES_GUIDANCE_BY_LABEL: dict[str, dict[str, object]
             "step timing",
         ],
         "healthy_signal": (
-            "The manifest preserves friction=0.08 and restitution=0.02 in the "
-            "scene-state metadata and capture metrics."
+            "The manifest preserves material_preset=Slide in scene-state "
+            "metadata and capture metrics."
         ),
         "scope": (
             "Low-friction material example on the World rigid_body scene; not "
@@ -782,8 +778,8 @@ _RIGID_WORKFLOW_MATERIAL_EXAMPLES_GUIDANCE_BY_LABEL: dict[str, dict[str, object]
             "step timing",
         ],
         "healthy_signal": (
-            "The manifest preserves friction=0.45 and restitution=0.65 in the "
-            "scene-state metadata and capture metrics."
+            "The manifest preserves material_preset=Bounce in scene-state "
+            "metadata and capture metrics."
         ),
         "scope": (
             "Bouncy material example on the World rigid_body scene; not a "

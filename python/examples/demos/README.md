@@ -1005,7 +1005,7 @@ pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
 
 Use `--material-examples-only` when the target is the M1 `rigid_body`
 front-door material examples. The packet captures Default, Slide, and Bounce
-variants of the same scene, preserving friction/restitution state and capture
+variants of the same scene, preserving named material-preset state and capture
 labels in the manifest and review index, plus the resolved material-preset name
 in the latest scene metrics.
 
