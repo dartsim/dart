@@ -34,7 +34,7 @@
 #define DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 
 #include <dart/math/Geometry.hpp>
-#include <dart/math/detail/convhull.hpp>
+#include <dart/math/detail/ConvexHull.hpp>
 
 #include <unordered_map>
 
@@ -87,7 +87,7 @@ computeConvexHull3D(
   std::vector<int> faces;
   int numFaces = 0;
 
-  detail::convexHull3dBuild(inputVertices, faces, numFaces);
+  detail::computeConvexHull3D(inputVertices, faces, numFaces);
 
   std::vector<Eigen::Matrix<Index, 3, 1>> eigenFaces;
   eigenFaces.reserve(numFaces);

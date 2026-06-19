@@ -104,15 +104,15 @@ namespace dart::math::detail {
 /// };
 /// std::vector<int> faces;
 /// int numFaces = 0;
-/// convexHull3dBuild(vertices, faces, numFaces);
+/// computeConvexHull3D(vertices, faces, numFaces);
 /// // Result: 4 faces (tetrahedron), 12 indices total
 /// ```
 template <typename S>
-void convexHull3dBuild(
+void computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>>& inVertices,
     std::vector<int>& outFaces,
     int& numOutFaces);
 
 } // namespace dart::math::detail
 
-#include <dart/math/detail/convhull-impl.hpp>
+#include <dart/math/detail/ConvexHull-impl.hpp>

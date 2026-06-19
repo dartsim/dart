@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/external/convhull_3d/safe_convhull_3d.h"
-#include "dart/math/detail/convhull.hpp"
+#include "dart/math/detail/ConvexHull.hpp"
+#include "legacy_convhull_3d/safe_convhull_3d.h"
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -44,15 +44,15 @@
 #include <cstdio>
 #include <cstdlib>
 
-using dart::math::detail::convexHull3dBuild;
+using dart::math::detail::computeConvexHull3D;
 
 //==============================================================================
-TEST(ConvhullInternal, SortFloatAndInt)
+TEST(ConvexHullDetail, SortFloatAndInt)
 {
   std::array<float, 3> values{{3.0f, 1.0f, 2.0f}};
   float* outValues = nullptr;
   std::array<int, 3> indices{{0, 0, 0}};
-  dart::math::detail::convhull_internal::sortFloat(
+  dart::math::detail::convex_hull_detail::sortFloat(
       values.data(),
       outValues,
       indices.data(),
@@ -64,7 +64,7 @@ TEST(ConvhullInternal, SortFloatAndInt)
   EXPECT_FLOAT_EQ(values[2], 1.0f);
 
   std::array<int, 3> ints{{3, 1, 2}};
-  dart::math::detail::convhull_internal::sortInt(
+  dart::math::detail::convex_hull_detail::sortInt(
       ints.data(), static_cast<int>(ints.size()));
 
   EXPECT_EQ(ints[0], 1);
@@ -73,7 +73,7 @@ TEST(ConvhullInternal, SortFloatAndInt)
 }
 
 //==============================================================================
-TEST(ConvhullCompatibility, BuildThroughInstalledHeader)
+TEST(LegacyConvexHullFixture, BuildsFromTestFixture)
 {
   std::array<ch_vertex, 4> vertices{};
   vertices[0].x = 0.0;
@@ -101,7 +101,7 @@ TEST(ConvhullCompatibility, BuildThroughInstalledHeader)
 }
 
 //==============================================================================
-TEST(ConvhullCompatibility, ExposesLegacyHelperApis)
+TEST(LegacyConvexHullFixture, ExposesLegacyHelperApis)
 {
   std::array<ch_vertex, 4> vertices{};
   vertices[0].x = 0.0;
@@ -190,7 +190,7 @@ TYPED_TEST(ConvexHullTest, EmptyInput)
   std::vector<int> faces;
   int numFaces = 0;
 
-  convexHull3dBuild(vertices, faces, numFaces);
+  computeConvexHull3D(vertices, faces, numFaces);
 
   EXPECT_EQ(numFaces, 0);
   EXPECT_TRUE(faces.empty());
@@ -210,7 +210,7 @@ TYPED_TEST(ConvexHullTest, Tetrahedron)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  computeConvexHull3D(vertices, faces, numFaces);
 
   ASSERT_EQ(numFaces, 4);
   ASSERT_EQ(faces.size(), 12u);
@@ -242,7 +242,7 @@ TYPED_TEST(ConvexHullTest, Cube)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  computeConvexHull3D(vertices, faces, numFaces);
 
   ASSERT_EQ(numFaces, 12);
   ASSERT_EQ(faces.size(), 36u);
@@ -275,7 +275,7 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  computeConvexHull3D(vertices, faces, numFaces);
 
   std::unordered_set<int> usedVertices(faces.begin(), faces.end());
 
@@ -303,7 +303,7 @@ TYPED_TEST(ConvexHullTest, ConsistentWindingOrder)
 
   std::vector<int> faces;
   int numFaces = 0;
-  convexHull3dBuild(vertices, faces, numFaces);
+  computeConvexHull3D(vertices, faces, numFaces);
 
   Vector3 centroid = Vector3::Zero();
   for (const auto& vertex : vertices) {

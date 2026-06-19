@@ -7,9 +7,9 @@
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
-    DART-owned native `dart/math/detail/convhull.hpp` implementation used by
-    `math::computeConvexHull3D`, while keeping compatibility headers at the old
-    installed include path:
+    DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
+    `math::computeConvexHull3D`, while keeping the legacy implementation only
+    as a unit-test fixture:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)

@@ -97,7 +97,7 @@ struct ConvexHullVertex
   };
 };
 
-namespace convhull_internal {
+namespace convex_hull_detail {
 
 // Modern C++: Use constexpr for compile-time constants
 constexpr int kMaxNumFaces = 50000;
@@ -239,10 +239,10 @@ inline void sortInt(int* ioVec, int len)
   std::sort(ioVec, ioVec + len);
 }
 
-} // namespace convhull_internal
+} // namespace convex_hull_detail
 
 template <typename S>
-inline void convexHull3dBuild(
+inline void computeConvexHull3D(
     const std::vector<ConvexHullVertex<S>>& inVertices,
     std::vector<int>& outFaces,
     int& numOutputTriangles)
@@ -266,16 +266,16 @@ inline void convexHull3dBuild(
     const int baseIdx = i * kVertexStride;
     const auto& vertex = inVertices[i];
     perturbedPtr[baseIdx]
-        = vertex.x + convhull_internal::generateNoise<S>(i, 0);
+        = vertex.x + convex_hull_detail::generateNoise<S>(i, 0);
     perturbedPtr[baseIdx + 1]
-        = vertex.y + convhull_internal::generateNoise<S>(i, 1);
+        = vertex.y + convex_hull_detail::generateNoise<S>(i, 1);
     perturbedPtr[baseIdx + 2]
-        = vertex.z + convhull_internal::generateNoise<S>(i, 2);
+        = vertex.z + convex_hull_detail::generateNoise<S>(i, 2);
     perturbedPtr[baseIdx + 3] = static_cast<S>(1.0);
   }
 
   // Find axisAlignedExtents of perturbedVertices
-  S axisAlignedExtents[convhull_internal::kDimensions];
+  S axisAlignedExtents[convex_hull_detail::kDimensions];
   for (int j = 0; j < kSpatialDimension; j++) {
     S maxP = std::numeric_limits<S>::lowest();
     S minP = std::numeric_limits<S>::max();
@@ -308,7 +308,7 @@ inline void convexHull3dBuild(
     }
 
     S triangleVertexCoords
-        [convhull_internal::kDimensions * convhull_internal::kDimensions];
+        [convex_hull_detail::kDimensions * convex_hull_detail::kDimensions];
     for (int j = 0; j < kSpatialDimension; j++) {
       for (k = 0; k < kSpatialDimension; k++) {
         triangleVertexCoords[j * kSpatialDimension + k] = perturbedVertices
@@ -318,9 +318,9 @@ inline void convexHull3dBuild(
       }
     }
 
-    S tempNormal[convhull_internal::kDimensions];
+    S tempNormal[convex_hull_detail::kDimensions];
     S tempOffset;
-    convhull_internal::computePlane3d(
+    convex_hull_detail::computePlane3d(
         triangleVertexCoords, tempNormal, &tempOffset);
     for (int j = 0; j < kSpatialDimension; j++) {
       triangleNormals[i * kSpatialDimension + j] = tempNormal[j];
@@ -329,9 +329,9 @@ inline void convexHull3dBuild(
   }
 
   // Check face orientation
-  S A[(convhull_internal::kDimensions + 1)
-      * (convhull_internal::kDimensions + 1)];
-  int sortedTriangleIndices[convhull_internal::kDimensions + 1];
+  S A[(convex_hull_detail::kDimensions + 1)
+      * (convex_hull_detail::kDimensions + 1)];
+  int sortedTriangleIndices[convex_hull_detail::kDimensions + 1];
   int swapBuffer[2];
 
   std::memset(A, 0, sizeof(A));
@@ -339,7 +339,7 @@ inline void convexHull3dBuild(
     for (int i = 0; i < kSpatialDimension; i++) {
       sortedTriangleIndices[i] = triangleIndices[k * kSpatialDimension + i];
     }
-    convhull_internal::sortInt(sortedTriangleIndices, kSpatialDimension);
+    convex_hull_detail::sortInt(sortedTriangleIndices, kSpatialDimension);
     int p = k;
     for (int i = 0; i < kSpatialDimension; i++) {
       for (int j = 0; j < (kSpatialDimension + 1); j++) {
@@ -356,7 +356,7 @@ inline void convexHull3dBuild(
       }
     }
 
-    S v = convhull_internal::det4x4(A);
+    S v = convex_hull_detail::det4x4(A);
 
     if (v < 0) {
       for (int j = 0; j < 2; j++) {
@@ -377,7 +377,7 @@ inline void convexHull3dBuild(
   }
 
   // Compute center and distances
-  S geometricCentroid[convhull_internal::kDimensions] = {0};
+  S geometricCentroid[convex_hull_detail::kDimensions] = {0};
   for (int i = kSpatialDimension + 1; i < numInputVertices; i++) {
     for (int j = 0; j < kSpatialDimension; j++) {
       geometricCentroid[j]
@@ -416,7 +416,7 @@ inline void convexHull3dBuild(
       numInputVertices - kSpatialDimension - 1);
   std::vector<int> remainingCandidates(
       numInputVertices - kSpatialDimension - 1);
-  convhull_internal::sortFloat(
+  convex_hull_detail::sortFloat(
       squaredDistances.data(),
       sortedSquaredDistances.data(),
       sortedVertexIndices.data(),
@@ -431,13 +431,13 @@ inline void convexHull3dBuild(
   // Main quickhull loop - Pre-allocate vectors to avoid reallocations
   std::memset(A, 0, sizeof(A));
 
-  S candidateVertexCoords[convhull_internal::kDimensions];
-  int sortedCurrentFace[convhull_internal::kDimensions];
-  int currentFaceVertices[convhull_internal::kDimensions];
+  S candidateVertexCoords[convex_hull_detail::kDimensions];
+  int sortedCurrentFace[convex_hull_detail::kDimensions];
+  int currentFaceVertices[convex_hull_detail::kDimensions];
 
   // Pre-allocate vectors with expected maximum sizes to avoid reallocations
   const int estimatedMaxFaces
-      = std::min(numInputVertices * 2, convhull_internal::kMaxNumFaces);
+      = std::min(numInputVertices * 2, convex_hull_detail::kMaxNumFaces);
   std::vector<int> triangleVisibilityFlags;
   triangleVisibilityFlags.reserve(estimatedMaxFaces);
   triangleVisibilityFlags.resize(currentTriangleCount);
@@ -544,8 +544,8 @@ inline void convexHull3dBuild(
         for (k = 0; k < kSpatialDimension; k++) {
           sortedCurrentFace[k] = triangleIndices[vis * kSpatialDimension + k];
         }
-        convhull_internal::sortInt(sortedCurrentFace, kSpatialDimension);
-        convhull_internal::isMember(
+        convex_hull_detail::sortInt(sortedCurrentFace, kSpatialDimension);
+        convex_hull_detail::isMember(
             occludedTriangleData.data(),
             sortedCurrentFace,
             sharedEdgeFlags.data(),
@@ -607,7 +607,7 @@ inline void convexHull3dBuild(
 
       int numNewTriangles = numHorizonEdges;
       int totalTrianglesAfterExpansion = currentTriangleCount + numNewTriangles;
-      if (totalTrianglesAfterExpansion > convhull_internal::kMaxNumFaces) {
+      if (totalTrianglesAfterExpansion > convex_hull_detail::kMaxNumFaces) {
         hullConstructionFailed = true;
         currentTriangleCount = 0;
         break;
@@ -629,7 +629,7 @@ inline void convexHull3dBuild(
             = i;
 
         S triangleVertexCoords
-            [convhull_internal::kDimensions * convhull_internal::kDimensions];
+            [convex_hull_detail::kDimensions * convex_hull_detail::kDimensions];
         for (k = 0; k < kSpatialDimension; k++) {
           for (l = 0; l < kSpatialDimension; l++) {
             triangleVertexCoords[k * kSpatialDimension + l] = perturbedVertices
@@ -640,9 +640,9 @@ inline void convexHull3dBuild(
           }
         }
 
-        S tempNormal[convhull_internal::kDimensions];
+        S tempNormal[convex_hull_detail::kDimensions];
         S tempOffset;
-        convhull_internal::computePlane3d(
+        convex_hull_detail::computePlane3d(
             triangleVertexCoords, tempNormal, &tempOffset);
         for (k = 0; k < kSpatialDimension; k++) {
           triangleNormals[(currentTriangleCount - 1) * kSpatialDimension + k]
@@ -661,8 +661,8 @@ inline void convexHull3dBuild(
         for (int j = 0; j < kSpatialDimension; j++) {
           sortedCurrentFace[j] = triangleIndices[k * kSpatialDimension + j];
         }
-        convhull_internal::sortInt(sortedCurrentFace, kSpatialDimension);
-        convhull_internal::isMember(
+        convex_hull_detail::sortInt(sortedCurrentFace, kSpatialDimension);
+        convex_hull_detail::isMember(
             allTriangleIndices.data(),
             sortedCurrentFace,
             faceContainsVertexFlags.data(),
@@ -704,7 +704,7 @@ inline void convexHull3dBuild(
             }
           }
           index++;
-          orientationDeterminant = convhull_internal::det4x4(A);
+          orientationDeterminant = convex_hull_detail::det4x4(A);
         }
 
         if (orientationDeterminant < static_cast<S>(0.0)) {
@@ -737,7 +737,7 @@ inline void convexHull3dBuild(
                   [nonMatchingTriangles[index] * (kSpatialDimension + 1) + j];
             }
           }
-          orientationDeterminant = convhull_internal::det4x4(A);
+          orientationDeterminant = convex_hull_detail::det4x4(A);
           DART_ASSERT(
               orientationDeterminant
               > -std::numeric_limits<S>::epsilon() * static_cast<S>(100.0));
@@ -767,30 +767,30 @@ inline void convexHull3dBuild(
 // Eigen makes operations 1.5-11x SLOWER than the compiler-optimized scalar
 // code. Modern compilers (GCC/Clang with -O3) already auto-vectorize the scalar
 // operations effectively. Therefore, we keep this as a thin wrapper to the
-// optimized legacy implementation.
+// optimized native scalar implementation.
 //==============================================================================
 
 template <typename S>
-inline void convexHull3dBuild(
+inline void computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>>& inVertices,
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {
-  // Convert Eigen vectors to the native scalar format. The historical DART 6
-  // path computed with double precision unless callers explicitly used the
-  // legacy CONVHULL_3D_USE_SINGLE_PRECISION header path.
-  // This thin wrapper provides modern C++ API while using the fastest
-  // implementation underneath (compiler auto-vectorized scalar code)
+  // Convert Eigen vectors to the native scalar format. DART's historical
+  // convex-hull path computed with double precision unless callers explicitly
+  // opted into single precision.
+  // This thin wrapper provides a DART-style C++ API while using the fastest
+  // implementation underneath.
   using ComputationScalar = double;
-  std::vector<ConvexHullVertex<ComputationScalar>> legacyVertices(
+  std::vector<ConvexHullVertex<ComputationScalar>> nativeVertices(
       inVertices.size());
   for (size_t i = 0; i < inVertices.size(); ++i) {
-    legacyVertices[i].x = static_cast<ComputationScalar>(inVertices[i](0));
-    legacyVertices[i].y = static_cast<ComputationScalar>(inVertices[i](1));
-    legacyVertices[i].z = static_cast<ComputationScalar>(inVertices[i](2));
+    nativeVertices[i].x = static_cast<ComputationScalar>(inVertices[i](0));
+    nativeVertices[i].y = static_cast<ComputationScalar>(inVertices[i](1));
+    nativeVertices[i].z = static_cast<ComputationScalar>(inVertices[i](2));
   }
 
-  convexHull3dBuild(legacyVertices, outFaces, numOutputTriangles);
+  computeConvexHull3D(nativeVertices, outFaces, numOutputTriangles);
 }
 
 } // namespace dart::math::detail

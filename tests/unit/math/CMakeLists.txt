@@ -8,14 +8,14 @@ dart_build_tests(
   GLOB_SOURCES
 )
 
-add_library(UNIT_math_ConvhullCCompat OBJECT test_ConvhullCCompat.c)
+add_library(UNIT_math_LegacyConvexHullC OBJECT test_LegacyConvexHullC.c)
 target_include_directories(
-  UNIT_math_ConvhullCCompat
-  PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
+  UNIT_math_LegacyConvexHullC
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_compile_options(
-  UNIT_math_ConvhullCCompat
+  UNIT_math_LegacyConvexHullC
   PRIVATE
     $<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>>>:-Wno-error>
 )
-dart_format_add(test_ConvhullCCompat.c)
+dart_format_add(test_LegacyConvexHullC.c)
