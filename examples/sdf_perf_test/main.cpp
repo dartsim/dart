@@ -264,6 +264,9 @@ bool isHelpRequest(int argc, char* argv[])
 std::size_t parseSize(const std::string& value, const std::string& name)
 {
   try {
+    if (!value.empty() && (value.front() == '-' || value.front() == '+'))
+      throw std::invalid_argument("signed value");
+
     std::size_t consumed = 0;
     const auto parsed = std::stoull(value, &consumed);
     if (consumed != value.size())
@@ -634,7 +637,7 @@ void mixDigest(FinalStateDigest& digest, double value)
 
 void consumeVector(FinalStateDigest& digest, const Eigen::VectorXd& values)
 {
-  mixDigest(digest, static_cast<std::size_t>(values.size()));
+  mixDigest(digest, static_cast<std::uint64_t>(values.size()));
   for (int i = 0; i < values.size(); ++i)
     mixDigest(digest, values[i]);
 }
@@ -649,18 +652,18 @@ FinalStateDigest collectFinalStateDigest(
   digest.mobile = sleep.mobile;
   digest.worldTime = world->getTime();
   digest.simFrames = world->getSimFrames();
-  mixDigest(digest, digest.skeletons);
+  mixDigest(digest, static_cast<std::uint64_t>(digest.skeletons));
   mixDigest(digest, digest.worldTime);
   mixDigest(
       digest,
       static_cast<std::uint64_t>(static_cast<std::int64_t>(digest.simFrames)));
-  mixDigest(digest, contacts.contacts);
-  mixDigest(digest, contacts.pairs);
-  mixDigest(digest, contacts.maxPairContacts);
+  mixDigest(digest, static_cast<std::uint64_t>(contacts.contacts));
+  mixDigest(digest, static_cast<std::uint64_t>(contacts.pairs));
+  mixDigest(digest, static_cast<std::uint64_t>(contacts.maxPairContacts));
   mixDigest(digest, contacts.maxPenetration);
-  mixDigest(digest, sleep.resting);
-  mixDigest(digest, sleep.candidates);
-  mixDigest(digest, sleep.islanded);
+  mixDigest(digest, static_cast<std::uint64_t>(sleep.resting));
+  mixDigest(digest, static_cast<std::uint64_t>(sleep.candidates));
+  mixDigest(digest, static_cast<std::uint64_t>(sleep.islanded));
 
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     const auto skel = world->getSkeleton(i);
