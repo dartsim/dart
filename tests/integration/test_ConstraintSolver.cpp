@@ -31,6 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -38,6 +39,8 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -131,6 +134,15 @@ public:
     }
   }
 
+  void addConstrainedGroup(
+      const std::vector<constraint::ConstraintBasePtr>& constraints)
+  {
+    constraint::ConstrainedGroup group;
+    for (const auto& constraint : constraints)
+      group.addConstraint(constraint);
+    mConstrainedGroups.push_back(group);
+  }
+
   void solveGroupsForTest()
   {
     solveConstrainedGroups();
@@ -173,6 +185,19 @@ private:
   std::atomic<int> mMaxConcurrentSolves{0};
   std::atomic<int> mNumSolvedGroups{0};
 };
+
+dynamics::BodyNode* createFreeBody(
+    const std::string& name,
+    bool mobile,
+    std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto body
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
+  skeleton->setMobile(mobile);
+  skeletons.push_back(skeleton);
+  return body;
+}
 
 } // namespace
 
@@ -229,6 +254,61 @@ TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
 
   EXPECT_EQ(8, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DistinctNonReactiveBodiesCanSolveGroupsInParallel)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody1 = createFreeBody("fixed1", false, skeletons);
+  auto* fixedBody2 = createFreeBody("fixed2", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, fixedBody1, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, fixedBody2, Eigen::Vector3d::Zero()),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, fixedBody, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, fixedBody, Eigen::Vector3d::Zero()),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
 //==============================================================================

@@ -44,6 +44,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -960,6 +961,51 @@ void ConstraintSolver::solveConstrainedGroups()
     return;
   }
 
+  auto hasSharedNonReactiveBody = [&]() {
+    std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
+
+    auto touchesSharedBody
+        = [&](const dynamics::BodyNode* body, std::size_t group) {
+            if (!body || body->isReactive())
+              return false;
+
+            const auto result = bodyToGroup.emplace(body, group);
+            return !result.second && result.first->second != group;
+          };
+
+    for (std::size_t idx : active) {
+      const auto& group = mConstrainedGroups[idx];
+      for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+        const auto* constraint = group.getConstraint(i).get();
+
+        if (const auto* contact
+            = dynamic_cast<const ContactConstraint*>(constraint)) {
+          if (touchesSharedBody(contact->mBodyNodeA, idx)
+              || touchesSharedBody(contact->mBodyNodeB, idx)) {
+            return true;
+          }
+        }
+
+        if (const auto* dynamicJoint
+            = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
+          if (touchesSharedBody(dynamicJoint->getBodyNode1(), idx)
+              || touchesSharedBody(dynamicJoint->getBodyNode2(), idx)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+
+  if (hasSharedNonReactiveBody()) {
+    for (std::size_t idx : active)
+      solveActiveGroup(idx);
+    freezeSolvedGroups();
+    return;
+  }
+
   // Cost gate: parallelize only with at least two islands AND enough aggregate
   // solve work to amortize the dispatch overhead. Without the work term, a
   // scene with many tiny islands (e.g. light articulated chains) would be
@@ -977,13 +1023,14 @@ void ConstraintSolver::solveConstrainedGroups()
   }
 
   // Solve independent islands on the persistent worker pool. Islands are a
-  // disjoint union-find partition (built serially in buildConstrainedGroups),
-  // so each skeleton is touched by exactly one worker and there is no
-  // cross-island floating-point reduction. The per-island results are therefore
+  // disjoint union-find partition (built serially in buildConstrainedGroups)
+  // with no active island sharing a non-reactive body, so each body touched by
+  // the solve is owned by exactly one worker and there is no cross-island
+  // floating-point reduction. The per-island results are therefore
   // order-independent: the outcome is bit-identical to the serial loop and
   // independent of the worker count or scheduling. Any lazy per-body cache fill
   // during the solve (e.g. getArticulatedInertia) happens single-threaded for
-  // its skeleton, so no pre-warm is required. Each worker reuses its own
+  // its body, so no pre-warm is required. Each worker reuses its own
   // thread_local LCP scratch across steps (see
   // BoxedLcpConstraintSolver/PgsBoxedLcpSolver).
   executor->run(
