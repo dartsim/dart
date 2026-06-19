@@ -442,6 +442,9 @@ TEST(ConstraintSolver, IslandSolveExecutorRunsAllItems)
   EXPECT_EQ(4u, executor.getNumThreads());
 
   std::vector<std::atomic<int>> counts(128);
+  for (auto& count : counts)
+    count.store(0, std::memory_order_relaxed);
+
   executor.run(counts.size(), [&](std::size_t i) {
     counts[i].fetch_add(1, std::memory_order_relaxed);
   });
