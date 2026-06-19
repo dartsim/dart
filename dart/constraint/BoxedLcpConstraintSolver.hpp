@@ -118,11 +118,51 @@ protected:
   // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
   // change in DART 7 because it's API breaking change.
 
-  // The LCP assembly buffers (A/X/B/W/Lo/Hi/findex/offsets and their backups)
-  // formerly cached here now live in a thread_local LcpWorkspace in
-  // BoxedLcpConstraintSolver.cpp, so independent islands can be solved on
-  // separate threads with private scratch. They were only ever used inside
-  // solveConstrainedGroup(); moving them out does not change its behavior.
+  // Kept for DART 6 protected layout compatibility. solveConstrainedGroup()
+  // uses thread-local LcpWorkspace storage in BoxedLcpConstraintSolver.cpp so
+  // independent islands can be solved on separate threads with private scratch.
+  /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      mABackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mX;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mXBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mB;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mBBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mW;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mLo;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mLoBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mHi;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mHiBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mFIndex;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mFIndexBackup;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mOffset;
 
 private:
   /// Return true if the matrix is symmetric

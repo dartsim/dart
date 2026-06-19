@@ -39,7 +39,9 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
+#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -212,6 +214,18 @@ dynamics::BodyNode* createFreeBody(
   return body;
 }
 
+std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
+    const std::string& name, std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto rootPair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.first->setActuatorType(dynamics::Joint::VELOCITY);
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<dynamics::BallJoint>();
+  skeletons.push_back(skeleton);
+  return {rootPair.second, childPair.second};
+}
+
 } // namespace
 
 //==============================================================================
@@ -353,6 +367,36 @@ TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialGroupSolves)
       std::make_shared<FakeConstraint>(100),
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody2, fixedBody, Eigen::Vector3d::Zero()),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  const auto mixedBodies = createMixedReactiveSkeleton("mixed", skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ASSERT_FALSE(mixedBodies.first->isReactive());
+  ASSERT_TRUE(mixedBodies.second->isReactive());
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, mixedBodies.second, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, mixedBodies.first, Eigen::Vector3d::Zero()),
   });
 
   solver.solveGroupsForTest();

@@ -970,17 +970,49 @@ void ConstraintSolver::solveConstrainedGroups()
     return;
   }
 
-  auto hasSharedNonReactiveBody = [&]() {
+  auto hasSharedNonReactiveDependency = [&]() {
     std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
+    std::unordered_map<const dynamics::Skeleton*, std::size_t>
+        touchedSkeletonToGroup;
+    std::unordered_map<const dynamics::Skeleton*, std::size_t>
+        nonReactiveSkeletonToGroup;
 
-    auto touchesSharedBody
-        = [&](const dynamics::BodyNode* body, std::size_t group) {
-            if (!body || body->isReactive())
-              return false;
+    auto touchesSharedDependency = [&](const dynamics::BodyNode* body,
+                                       std::size_t group) {
+      if (!body)
+        return false;
 
-            const auto result = bodyToGroup.emplace(body, group);
-            return !result.second && result.first->second != group;
-          };
+      const auto skeleton = body->getSkeleton().get();
+      if (skeleton) {
+        const auto nonReactiveSkeleton
+            = nonReactiveSkeletonToGroup.find(skeleton);
+        if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
+            && nonReactiveSkeleton->second != group) {
+          return true;
+        }
+
+        const auto touchedSkeleton
+            = touchedSkeletonToGroup.emplace(skeleton, group);
+        if (!body->isReactive() && !touchedSkeleton.second
+            && touchedSkeleton.first->second != group) {
+          return true;
+        }
+      }
+
+      if (body->isReactive())
+        return false;
+
+      const auto bodyResult = bodyToGroup.emplace(body, group);
+      if (!bodyResult.second && bodyResult.first->second != group)
+        return true;
+
+      if (!skeleton)
+        return false;
+
+      const auto skeletonResult
+          = nonReactiveSkeletonToGroup.emplace(skeleton, group);
+      return !skeletonResult.second && skeletonResult.first->second != group;
+    };
 
     for (std::size_t idx : active) {
       const auto& group = mConstrainedGroups[idx];
@@ -989,16 +1021,16 @@ void ConstraintSolver::solveConstrainedGroups()
 
         if (const auto* contact
             = dynamic_cast<const ContactConstraint*>(constraint)) {
-          if (touchesSharedBody(contact->mBodyNodeA, idx)
-              || touchesSharedBody(contact->mBodyNodeB, idx)) {
+          if (touchesSharedDependency(contact->mBodyNodeA, idx)
+              || touchesSharedDependency(contact->mBodyNodeB, idx)) {
             return true;
           }
         }
 
         if (const auto* dynamicJoint
             = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
-          if (touchesSharedBody(dynamicJoint->getBodyNode1(), idx)
-              || touchesSharedBody(dynamicJoint->getBodyNode2(), idx)) {
+          if (touchesSharedDependency(dynamicJoint->getBodyNode1(), idx)
+              || touchesSharedDependency(dynamicJoint->getBodyNode2(), idx)) {
             return true;
           }
         }
@@ -1008,7 +1040,7 @@ void ConstraintSolver::solveConstrainedGroups()
     return false;
   };
 
-  if (hasSharedNonReactiveBody()) {
+  if (hasSharedNonReactiveDependency()) {
     for (std::size_t idx : active)
       solveActiveGroup(idx);
     freezeSolvedGroups();
