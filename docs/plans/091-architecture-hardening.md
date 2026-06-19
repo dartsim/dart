@@ -1319,7 +1319,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS4 — Facade and public API
 
-#### WP-091.40 Reserve general state-vector semantics
+#### WP-091.40 Reserve general state-vector semantics [claimed]
 
 - Objective: the general names (`getNumDofs`, `getStateVector`,
   `getControlVector`) stop carrying a translational-rigid-only slice; the
@@ -1335,9 +1335,28 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   agree; existing consumers migrated.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`,
   `pixi run test-py`, `pixi run check-api-boundaries`.
-- Dependencies: WP-091.21 (ordering), maintainer sign-off on naming.
+- Dependencies: WP-091.21 (ordering), maintainer sign-off on naming. Naming
+  decision recorded for this packet: keep general `World` state/control names
+  for the full dense world vector and expose the previous translational
+  rigid-body reduction as `getRigidBodyStateVector` /
+  `getRigidBodyControlVector` in C++ and `rigid_body_state_vector` /
+  `rigid_body_control_vector` in Python.
+- Evidence: general `World` state/control vectors now concatenate dynamic
+  rigid-body translations first and baked multibody joint generalized
+  coordinates after the rigid slice, with `getNumDofs` / `getNumEfforts`
+  reporting the full dense world dimensions. Scoped rigid-body vector APIs keep
+  the previous translational-rigid-only reduction in C++ and dartpy, with
+  generated stubs, API docs, differentiable-simulation docs, and existing
+  consumers updated. Verification: `pixi run lint`, `pixi run build`,
+  `pixi run test-unit` (163/163), `pixi run test-py` (1402 passed, 18 skipped),
+  `pixi run check-api-boundaries`,
+  `test_world --gtest_filter='World.NumDofsBakesDenseIndexWithWorldAllocator:World.StateAndControlVectorsUseBakedDenseIndexOrder:World.PureMultibodyContributesToWorldStateVector'`,
+  `pytest python/tests/unit/simulation/test_diff.py -k 'state_and_control_vectors_roundtrip'`,
+  and
+  `pytest python/tests/unit/simulation/test_world.py -k 'state_vector_includes_multibody_dofs or world_smoke'`
+  pass.
 
-#### WP-091.41 JointSpec construction surface [claimed]
+#### WP-091.41 JointSpec construction surface [done — PR #3072, merged 2026-06-19]
 
 - Objective: joint creation collapses to one verb taking a spec value object
   and frame-derived endpoints, with one query family; solver-family
@@ -1357,9 +1376,10 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `joints`, and `num_joints`. In-repo C++/Python examples, tests, and
   benchmarks were migrated. Gates: stale public-name scan, `pixi run lint`,
   `pixi run build`, `pixi run test-unit` (163/163), `pixi run test-py`
-  (1401 passed, 18 skipped), and `pixi run check-api-boundaries`.
+  (1401 passed, 18 skipped), and `pixi run check-api-boundaries`. Accepted by
+  maintainer merge of PR #3072.
 
-#### WP-091.42 Policy objects for solver knobs on shared handles [claimed]
+#### WP-091.42 Policy objects for solver knobs on shared handles [done — PR #3072, merged 2026-06-19]
 
 - Objective: solver-family vocabulary leaves the shared handles: AVBD-named
   joint stiffness knobs and the deformable-solver booleans on rigid bodies
@@ -1380,9 +1400,10 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   absent outside negative-coverage/schema/internal implementation references.
   Gates: stale public-name scan, `pixi run lint`, `pixi run build`,
   `pixi run test-unit` (163/163), `pixi run test-py` (1401 passed,
-  18 skipped), and `pixi run check-api-boundaries`.
+  18 skipped), and `pixi run check-api-boundaries`. Accepted by maintainer
+  merge of PR #3072.
 
-#### WP-091.43 Installed-header split and curated diagnostics [claimed]
+#### WP-091.43 Installed-header split and curated diagnostics [done — PR #3072, merged 2026-06-19]
 
 - Objective: the installed public compute surface is the minimal custom-stage
   contract (stage base, pipeline, metadata/profile types); concrete family
@@ -1409,9 +1430,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pixi run check-dart7-promotion-package-contract`,
   `pixi run check-api-boundaries`,
   `pixi run check-compute-backend-boundaries`, `pixi run build`, and
-  `pixi run test-unit` (163/163).
+  `pixi run test-unit` (163/163). Accepted by maintainer merge of PR #3072.
 
-#### WP-091.44 Python surface alignment and lifecycle polish [claimed]
+#### WP-091.44 Python surface alignment and lifecycle polish [done — PR #3072, merged 2026-06-19]
 
 - Objective: the dartpy surface matches its design doc — core scene-authoring
   symbols flat, compute/diff in submodules — and the World lifecycle is
@@ -1435,7 +1456,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   Python failure reruns, `pixi run test-py` (1401 passed, 18 skipped),
   `pixi run check-dartpy-import-layout`,
   `pixi run check-dart7-promotion-package-contract`, `pixi run lint`, and
-  `pixi run build-py-dev`.
+  `pixi run build-py-dev`. Accepted by maintainer merge of PR #3072.
 
 ## Acceptance Criteria
 

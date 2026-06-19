@@ -1018,6 +1018,13 @@ Python state access should be explicit about ownership:
   transactions, not silent mutation of exposed ECS storage;
 - state-vector APIs should start from `StateSpace` metadata and a future
   public `WorldStateView`, not from raw registry mappers.
+- `World.state_vector` / `World.control_vector` are the general dense world
+  vectors: dynamic rigid-body translation coordinates first, then multibody
+  joint generalized coordinates in baked dense order. The previous
+  translational rigid-body reduction is explicit as
+  `World.rigid_body_state_vector` / `World.rigid_body_control_vector`, with
+  `num_rigid_body_dofs` / `num_rigid_body_efforts` reporting that scoped
+  dimension.
 
 Advanced APIs should distinguish at least four concepts:
 

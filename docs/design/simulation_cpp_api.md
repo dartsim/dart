@@ -803,13 +803,22 @@ whether writes immediately affect the world or require an explicit commit.
 Advanced APIs should distinguish topology, mutable state, mutable control, and
 contact/collision data. `World::step()` can hide that separation in the common
 path, but explicit control, rollout, and optimization APIs need stable owner
-types:
+semantics. The primary buckets are:
 
 - topology/model data: dimensions, names, geometry, joints, and parameters;
 - state data: positions, velocities, time, caches, and solver work values;
 - control data: targets, efforts, impulses, and user inputs;
 - contact data: typed buffers/views produced by collision generation and
   consumed by solvers.
+
+`World::getStateVector()` / `setStateVector()` and
+`World::getControlVector()` / `setControlVector()` are the general dense world
+view: dynamic rigid-body translations first, then multibody joint generalized
+coordinates in baked dense order. The current differentiable rigid-body
+translation reduction remains available through the scoped
+`getRigidBodyStateVector()` / `setRigidBodyStateVector()` and
+`getRigidBodyControlVector()` / `setRigidBodyControlVector()` accessors, so
+callers can name that narrower slice explicitly.
 
 Replay and scrubber workflows follow the same split. Opt-in live-world replay
 should store only the mutable runtime state needed to restore an

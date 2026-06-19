@@ -438,6 +438,10 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "ground_barrier",
         "surface_obstacle",
         "barrier_only",
+        "num_rigid_body_dofs",
+        "num_rigid_body_efforts",
+        "rigid_body_state_vector",
+        "rigid_body_control_vector",
         "add_rigid_body_distance_spring",
         "has_rigid_body_distance_spring",
         "get_rigid_body_distance_spring_parameters",
@@ -703,6 +707,43 @@ def test_simulation_world_smoke():
     assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
+
+
+def test_simulation_world_state_vector_includes_multibody_dofs():
+    sx = _simulation()
+
+    world = sx.World(gravity=(0.0, 0.0, 0.0))
+    robot = world.add_multibody("robot")
+    base = robot.add_link("base")
+    link = robot.add_link(
+        "link",
+        parent=base,
+        joint=sx.JointSpec(
+            name="slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        ),
+    )
+    joint = link.parent_joint
+    joint.position = [0.4]
+    joint.velocity = [-0.2]
+    joint.force = [2.5]
+
+    assert world.num_rigid_body_dofs == 0
+    assert world.num_rigid_body_efforts == 0
+    assert np.asarray(world.rigid_body_state_vector).shape == (0,)
+    assert np.asarray(world.rigid_body_control_vector).shape == (0,)
+    assert world.num_dofs == 1
+    assert world.num_efforts == 1
+    np.testing.assert_allclose(np.asarray(world.state_vector), [0.4, -0.2])
+    np.testing.assert_allclose(np.asarray(world.control_vector), [2.5])
+
+    world.state_vector = np.asarray([0.7, 0.8], dtype=float)
+    np.testing.assert_allclose(np.asarray(joint.position), [0.7])
+    np.testing.assert_allclose(np.asarray(joint.velocity), [0.8])
+
+    world.control_vector = np.asarray([-1.2], dtype=float)
+    np.testing.assert_allclose(np.asarray(joint.force), [-1.2])
 
 
 def test_simulation_world_clear_invalidates_articulated_joint_handles_from_python():

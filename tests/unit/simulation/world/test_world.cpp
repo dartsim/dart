@@ -4370,29 +4370,106 @@ TEST(World, StateAndControlVectorsUseBakedDenseIndexOrder)
   staticOptions.isStatic = true;
   world.addRigidBody("m_static", staticOptions);
 
+  auto robot = world.addMultibody("joint_order_robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec hingeSpec;
+  hingeSpec.name = "hinge";
+  hingeSpec.type = sx::JointType::Revolute;
+  hingeSpec.axis = Eigen::Vector3d::UnitZ();
+  auto link = robot.addLink("link", base, hingeSpec);
+  auto hinge = link.getParentJoint();
+  hinge.setPosition(Eigen::VectorXd::Constant(1, 0.25));
+  hinge.setVelocity(Eigen::VectorXd::Constant(1, -0.5));
+  hinge.setForce(Eigen::VectorXd::Constant(1, 1.5));
+
   world.enterSimulationMode();
   const auto& baked = sx::detail::storageOf(world).bakedModel;
   ASSERT_TRUE(baked.valid);
   ASSERT_EQ(baked.dynamicRigidBodyEntities.size(), 2u);
+  ASSERT_EQ(baked.multibodyJointEntities.size(), 1u);
   EXPECT_EQ(
       baked.dynamicRigidBodyEntities[0],
       sx::detail::toRegistryEntity(first.getEntity()));
   EXPECT_EQ(
       baked.dynamicRigidBodyEntities[1],
       sx::detail::toRegistryEntity(second.getEntity()));
+  EXPECT_EQ(
+      baked.multibodyJointEntities[0],
+      sx::detail::toRegistryEntity(hinge.getEntity()));
 
   const Eigen::VectorXd state = world.getStateVector();
-  ASSERT_EQ(state.size(), 12);
+  EXPECT_EQ(world.getNumDofs(), 7u);
+  EXPECT_EQ(world.getNumEfforts(), 7u);
+  ASSERT_EQ(state.size(), 14);
   EXPECT_TRUE(state.segment<3>(0).isApprox(firstOptions.position));
   EXPECT_TRUE(state.segment<3>(3).isApprox(secondOptions.position));
-  EXPECT_TRUE(state.segment<3>(6).isApprox(firstOptions.linearVelocity));
-  EXPECT_TRUE(state.segment<3>(9).isApprox(secondOptions.linearVelocity));
+  EXPECT_NEAR(state[6], 0.25, 1e-12);
+  EXPECT_TRUE(state.segment<3>(7).isApprox(firstOptions.linearVelocity));
+  EXPECT_TRUE(state.segment<3>(10).isApprox(secondOptions.linearVelocity));
+  EXPECT_NEAR(state[13], -0.5, 1e-12);
 
   const Eigen::VectorXd control = world.getControlVector();
-  ASSERT_EQ(control.size(), 6);
+  ASSERT_EQ(control.size(), 7);
   EXPECT_TRUE(control.segment<3>(0).isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
   EXPECT_TRUE(
       control.segment<3>(3).isApprox(Eigen::Vector3d(10.0, 11.0, 12.0)));
+  EXPECT_NEAR(control[6], 1.5, 1e-12);
+
+  const Eigen::VectorXd rigidState = world.getRigidBodyStateVector();
+  EXPECT_EQ(world.getNumRigidBodyDofs(), 6u);
+  EXPECT_EQ(world.getNumRigidBodyEfforts(), 6u);
+  ASSERT_EQ(rigidState.size(), 12);
+  EXPECT_TRUE(rigidState.segment<3>(0).isApprox(firstOptions.position));
+  EXPECT_TRUE(rigidState.segment<3>(3).isApprox(secondOptions.position));
+  EXPECT_TRUE(rigidState.segment<3>(6).isApprox(firstOptions.linearVelocity));
+  EXPECT_TRUE(rigidState.segment<3>(9).isApprox(secondOptions.linearVelocity));
+
+  const Eigen::VectorXd rigidControl = world.getRigidBodyControlVector();
+  ASSERT_EQ(rigidControl.size(), 6);
+  EXPECT_TRUE(
+      rigidControl.segment<3>(0).isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
+  EXPECT_TRUE(
+      rigidControl.segment<3>(3).isApprox(Eigen::Vector3d(10.0, 11.0, 12.0)));
+}
+
+TEST(World, PureMultibodyContributesToWorldStateVector)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto robot = world.addMultibody("single_joint_robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec sliderSpec;
+  sliderSpec.name = "slider";
+  sliderSpec.type = sx::JointType::Prismatic;
+  sliderSpec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, sliderSpec);
+  auto slider = link.getParentJoint();
+  slider.setPosition(Eigen::VectorXd::Constant(1, 0.4));
+  slider.setVelocity(Eigen::VectorXd::Constant(1, -0.2));
+  slider.setForce(Eigen::VectorXd::Constant(1, 2.5));
+
+  EXPECT_EQ(world.getNumRigidBodyDofs(), 0u);
+  EXPECT_EQ(world.getNumDofs(), 1u);
+  EXPECT_EQ(world.getNumEfforts(), 1u);
+
+  Eigen::VectorXd state = world.getStateVector();
+  ASSERT_EQ(state.size(), 2);
+  EXPECT_NEAR(state[0], 0.4, 1e-12);
+  EXPECT_NEAR(state[1], -0.2, 1e-12);
+
+  Eigen::VectorXd control = world.getControlVector();
+  ASSERT_EQ(control.size(), 1);
+  EXPECT_NEAR(control[0], 2.5, 1e-12);
+
+  state << 0.7, 0.8;
+  world.setStateVector(state);
+  EXPECT_NEAR(slider.getPosition()[0], 0.7, 1e-12);
+  EXPECT_NEAR(slider.getVelocity()[0], 0.8, 1e-12);
+
+  control << -1.2;
+  world.setControlVector(control);
+  EXPECT_NEAR(slider.getForce()[0], -1.2, 1e-12);
 }
 
 #ifdef DART_HAS_DIFF
