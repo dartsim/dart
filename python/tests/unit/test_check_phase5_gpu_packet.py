@@ -147,6 +147,26 @@ def test_validate_packet_rejects_non_median_rows():
         module.validate_packet(packet)
 
 
+def test_validate_packet_rejects_unannotated_representative_raw_row():
+    module = _load_module()
+    packet = _packet()
+    packet["benchmarks"].insert(
+        0,
+        {
+            "name": f"{CPU_ROW}/repeats:3",
+            "run_name": f"{CPU_ROW}/repeats:3",
+            "real_time": 100.0,
+            "time_unit": "ms",
+        },
+    )
+
+    with pytest.raises(
+        module.Phase5PacketError,
+        match="backend must be a non-empty string",
+    ):
+        module.validate_packet(packet)
+
+
 def test_validate_packet_rejects_small_world_count():
     module = _load_module()
 

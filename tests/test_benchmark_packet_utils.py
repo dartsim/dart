@@ -292,6 +292,40 @@ def test_phase5_packet_validator_rejects_missing_batched_row_metadata():
         raise AssertionError("expected missing batched-row metadata to fail")
 
 
+def test_phase5_packet_validator_rejects_unannotated_representative_raw_rows():
+    phase5 = load_script_module("check_phase5_gpu_packet")
+    data = phase5.make_packet_template()
+    metadata = data["phase5_gpu_packet"]
+    metadata["includes_transfer_setup_compute_readback"] = True
+    metadata["max_final_state_abs_error"] = 1e-12
+    for key in phase5.REQUIRED_EVIDENCE_FLAGS:
+        metadata[key] = True
+    cpu_row, gpu_row = data["benchmarks"]
+    cpu_row["real_time"] = 4.0
+    cpu_row["cpu_time"] = 4.0
+    gpu_row["real_time"] = 2.0
+    gpu_row["cpu_time"] = 2.0
+    data["benchmarks"].insert(
+        0,
+        {
+            "run_name": "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100/repeats:3",
+            "cpu_time": 4.1,
+            "real_time": 4.1,
+            "time_unit": "ms",
+        },
+    )
+
+    try:
+        phase5.validate_packet(data)
+    except phase5.Phase5PacketError as exc:
+        assert (
+            "phase5_gpu_packet.benchmarks[BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100].backend"
+            in str(exc)
+        )
+    else:
+        raise AssertionError("expected unannotated representative raw row to fail")
+
+
 def test_phase5_cuda_packet_writer_annotates_representative_batched_rows():
     writer = load_script_module("write_phase5_cuda_packet")
 
