@@ -137,6 +137,11 @@ struct DART_SIMULATION_API RolloutTrajectory
 /// `controlSequence` is the row-major `steps x num_efforts` control matrix: row
 /// `t` is the control `u_t` applied at step `t`. `world` is left at the final
 /// rolled-out state `x_steps` on return.
+/// The world's general state/control vector layout must match the active
+/// differentiable family for the stepped scene. Rigid-only and
+/// single-multibody scenes satisfy this today; mixed rigid-body + multibody and
+/// multiple-multibody differentiable rollouts are rejected until full-world
+/// Jacobians are assembled.
 ///
 /// @param world differentiable World (constructed with `differentiable=true`);
 ///        must have differentiable support compiled (`DART_BUILD_DIFF=ON`).

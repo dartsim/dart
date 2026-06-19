@@ -267,11 +267,14 @@ a stated project requirement.
 ### D3 — DART-owned typed state, building on the existing separation
 
 The differentiable surface reuses the Model/State/Control/Contacts separation and
-the existing `StateSpace` metadata. State is the existing `[q; q̇]` content;
-control is generalized effort `τ`; parameters are an explicit, opt-in selection
-(mass, COM, inertia, friction) via a DART-owned selector. No raw ECS storage,
-registry, or component types are exposed. Derivatives are typed value objects
-with documented shape, dtype, ownership, and freshness (valid until the next
+the existing `StateSpace` metadata. State is the `[q; q̇]` content and control is
+generalized effort `τ`; the general `World.state_vector` / `World.control_vector`
+view follows the baked dense world order, while the current rigid-body
+translation reduction is explicitly named `rigid_body_state_vector` /
+`rigid_body_control_vector`. Parameters are an explicit, opt-in selection (mass,
+COM, inertia, friction) via a DART-owned selector. No raw ECS storage, registry,
+or component types are exposed. Derivatives are typed value objects with
+documented shape, dtype, ownership, and freshness (valid until the next
 `step()`).
 
 ### D4 — Framework-neutral C++ core, optional PyTorch bridge in dartpy

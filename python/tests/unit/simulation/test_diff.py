@@ -215,19 +215,24 @@ def test_state_and_control_vectors_roundtrip():
 
     assert world.num_dofs == 3
     assert world.num_efforts == 3
+    assert world.num_rigid_body_dofs == 3
+    assert world.num_rigid_body_efforts == 3
 
     state = world.state_vector
     assert state.shape == (6,)
     np.testing.assert_allclose(state[:3], [0.0, 0.0, 0.5 - 5e-5])
     np.testing.assert_allclose(state[3:], [0.0, 0.0, -0.2])
+    np.testing.assert_allclose(world.rigid_body_state_vector, state)
 
     new_state = np.array([0.1, 0.2, 0.6, 1.0, -1.0, 0.5])
     world.state_vector = new_state
     np.testing.assert_allclose(world.state_vector, new_state)
+    np.testing.assert_allclose(world.rigid_body_state_vector, new_state)
 
     new_control = np.array([0.3, -0.4, 0.5])
     world.control_vector = new_control
     np.testing.assert_allclose(world.control_vector, new_control)
+    np.testing.assert_allclose(world.rigid_body_control_vector, new_control)
 
 
 # ==============================================================================

@@ -125,6 +125,10 @@ compatibility remains on the active DART 6 LTS branch._
   `JointSpec`, moved solver-family knobs behind policy value objects, and kept
   installed compute headers to the custom-stage contract.
   ([#3072](https://github.com/dartsim/dart/pull/3072))
+- Clarified DART 7 `World` state and control vectors as full dense world
+  vectors, with scoped C++/dartpy rigid-body vector accessors for the previous
+  rigid-only translational slice.
+  ([#3077](https://github.com/dartsim/dart/pull/3077))
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.

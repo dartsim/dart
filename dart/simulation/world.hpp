@@ -537,6 +537,11 @@ public:
   /// step had active contacts; with no active contacts the result reduces
   /// exactly to the contact-free Jacobian.
   ///
+  /// The derivative state/control layout follows the active differentiable
+  /// family. The rigid-body contact path uses the scoped rigid-body
+  /// state/control vectors; the contact-free multibody path uses the
+  /// multibody's joint generalized coordinates.
+  ///
   /// @throws InvalidOperationException if this World did not opt in to
   ///         differentiable simulation (`isDifferentiable() == false`), or if
   ///         differentiable support was not compiled (`DART_BUILD_DIFF=OFF`).
@@ -614,25 +619,27 @@ public:
   //--------------------------------------------------------------------------
   // State / control vectors
   //--------------------------------------------------------------------------
-  /// Number of generalized coordinates `ndof` exposed to the differentiable
-  /// state/control interface.
+  /// Number of generalized coordinates `ndof` exposed by the general
+  /// World state/control interface.
   ///
-  /// First slice: the translational rigid-body reduction. `ndof = 3 * (number
-  /// of dynamic, non-static rigid bodies)`, using the baked dense rigid-body
-  /// index order created at the simulation boundary. The full state vector
-  /// therefore has size `2 * ndof` and the control vector has size `ndof`.
+  /// The dense order is dynamic rigid-body translations first, followed by
+  /// multibody joint coordinates in baked multibody/joint order. The full state
+  /// vector therefore has size `2 * ndof` and the control vector has size
+  /// `ndof`. Use the `RigidBody`-scoped accessors below when the caller needs
+  /// the translational rigid-body slice used by the current differentiable
+  /// rigid-body path.
   [[nodiscard]] std::size_t getNumDofs() const;
 
-  /// Number of control (effort) coordinates. Equal to `getNumDofs()`: the
-  /// control `u = τ` for the translational reduction is the applied force on
-  /// each dynamic rigid body, three components per body.
+  /// Number of control (effort) coordinates. Equal to `getNumDofs()`: rigid
+  /// coordinates use applied forces and multibody coordinates use joint
+  /// efforts.
   [[nodiscard]] std::size_t getNumEfforts() const;
 
   /// The current state vector `x = [q; q̇]`, size `2 * getNumDofs()`.
   ///
-  /// `q` is the stacked translational position and `q̇` the stacked linear
-  /// velocity of the dynamic (non-static) rigid bodies in baked dense-index
-  /// order, matching the layout of `getStepDerivatives()`.
+  /// `q` stacks dynamic rigid-body positions, then multibody joint positions.
+  /// `q̇` stacks dynamic rigid-body linear velocities, then multibody joint
+  /// velocities in the same dense order.
   [[nodiscard]] Eigen::VectorXd getStateVector() const;
 
   /// Overwrite the state vector `x = [q; q̇]` (size `2 * getNumDofs()`).
@@ -651,6 +658,38 @@ public:
   /// @throws InvalidArgumentException if `control` does not have size
   ///         `getNumEfforts()`.
   void setControlVector(const Eigen::VectorXd& control);
+
+  /// Number of coordinates in the scoped translational rigid-body view.
+  ///
+  /// `ndof = 3 * (number of dynamic, non-static rigid bodies)`, using the baked
+  /// dense rigid-body index order created at the simulation boundary.
+  [[nodiscard]] std::size_t getNumRigidBodyDofs() const;
+
+  /// Number of efforts in the scoped translational rigid-body view.
+  [[nodiscard]] std::size_t getNumRigidBodyEfforts() const;
+
+  /// The scoped translational rigid-body state vector `x = [q; q̇]`, size
+  /// `2 * getNumRigidBodyDofs()`.
+  ///
+  /// This is the rigid-body slice used by the current differentiable
+  /// rigid-body path and `getStepDerivatives()`.
+  [[nodiscard]] Eigen::VectorXd getRigidBodyStateVector() const;
+
+  /// Overwrite the scoped translational rigid-body state vector.
+  ///
+  /// @throws InvalidArgumentException if `state` does not have size
+  ///         `2 * getNumRigidBodyDofs()`.
+  void setRigidBodyStateVector(const Eigen::VectorXd& state);
+
+  /// The scoped translational rigid-body control vector, size
+  /// `getNumRigidBodyEfforts()`.
+  [[nodiscard]] Eigen::VectorXd getRigidBodyControlVector() const;
+
+  /// Overwrite the scoped translational rigid-body control vector.
+  ///
+  /// @throws InvalidArgumentException if `control` does not have size
+  ///         `getNumRigidBodyEfforts()`.
+  void setRigidBodyControlVector(const Eigen::VectorXd& control);
 
   void setTime(double time);
   [[nodiscard]] double getTime() const noexcept;
