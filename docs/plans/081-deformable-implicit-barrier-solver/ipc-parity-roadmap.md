@@ -172,12 +172,14 @@ friction (toward Fig 8 / Fig 20 roller themes). Ships C++ + dartpy regressions a
 a `Deformable Friction on Capsule Rod (IPC)` showcase.
 
 **Sphere/box obstacle friction has also LANDED**, via an opt-in **barrier-only
-obstacle** mode (`RigidBody::setDeformableObstacleBarrierOnly`, dartpy
-`is_deformable_obstacle_barrier_only`): the obstacle keeps its clamped-log barrier
-but is `entt::exclude`-d from the surface-CCD collect, so the deformable slides
-tangentially (the barrier alone prevents penetration for the quasi-static contact)
-and the sphere/box obstacle normal forces feed the lagged Coulomb friction term. A
-strip shoved across a barrier-only box plate is decelerated by friction
+obstacle** mode (`RigidBody::setDeformableObstaclePolicy` with
+`DeformableObstaclePolicy::barrierOnly`, dartpy
+`RigidBody.deformable_obstacle_policy.barrier_only`): the obstacle keeps its
+clamped-log barrier but is `entt::exclude`-d from the surface-CCD collect, so the
+deformable slides tangentially (the barrier alone prevents penetration for the
+quasi-static contact) and the sphere/box obstacle normal forces feed the lagged
+Coulomb friction term. A strip shoved across a barrier-only box plate is
+decelerated by friction
 (`Deformable Friction on Box Plate (IPC)` showcase + C++/dartpy regressions);
 existing CCD-obstacle scenes are unchanged. **Remaining M5 (lower priority):** the
 "right" fix that keeps the conservative CCD _and_ allows tangential sliding —
