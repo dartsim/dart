@@ -75,6 +75,7 @@ class CMakeBuild(build_ext):
             f"-DDART_BUILD_DARTPY=ON",
             f"-DDART_ENABLE_SIMD=OFF",
             f"-DDART_BUILD_WHEELS=ON",
+            f"-DDART_USE_SYSTEM_IMGUI=ON",
             f"-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
             f"-DDART_VERBOSE=ON",
         ]
@@ -152,8 +153,6 @@ class CMakeBuild(build_ext):
                 build_args += ["-j2"]
         else:
             build_args += [f"-j{os.environ['CMAKE_BUILD_PARALLEL_LEVEL']}"]
-
-        cmake_args += ["-DDART_USE_SYSTEM_IMGUI=ON"]
 
         build_temp = Path(self.build_temp) / ext.name
         if not build_temp.exists():
