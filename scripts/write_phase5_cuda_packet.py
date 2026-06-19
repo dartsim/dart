@@ -182,6 +182,69 @@ def extract_max_final_state_abs_error(
     )
 
 
+def _annotate_batched_row(
+    row: dict,
+    *,
+    backend: str,
+    includes_transfer_time: bool,
+    world_count: int,
+    step_count: int,
+) -> dict:
+    annotated = dict(row)
+    annotated.update(
+        {
+            "backend": backend,
+            "precision": "double-reference",
+            "includes_transfer_time": includes_transfer_time,
+            "lane_count": world_count,
+            "resolved_execution_shape": "homogeneous-batch",
+            "step_count": step_count,
+        }
+    )
+    return annotated
+
+
+def annotate_representative_rows(
+    rows: list[dict],
+    args: argparse.Namespace,
+) -> list[dict]:
+    cpu_target = (
+        f"{args.cpu_prefix}/{args.world_count}/{args.body_count}/{args.step_count}"
+    )
+    gpu_target = (
+        f"{args.gpu_prefix}/{args.world_count}/{args.body_count}/{args.step_count}"
+    )
+    annotated_rows: list[dict] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            annotated_rows.append(row)
+            continue
+        name = _canonical_name(_row_name(row))
+        if row.get("aggregate_name") == "median" and name == cpu_target:
+            annotated_rows.append(
+                _annotate_batched_row(
+                    row,
+                    backend="cpu",
+                    includes_transfer_time=False,
+                    world_count=args.world_count,
+                    step_count=args.step_count,
+                )
+            )
+        elif row.get("aggregate_name") == "median" and name == gpu_target:
+            annotated_rows.append(
+                _annotate_batched_row(
+                    row,
+                    backend="cuda",
+                    includes_transfer_time=args.includes_transfer_setup_compute_readback,
+                    world_count=args.world_count,
+                    step_count=args.step_count,
+                )
+            )
+        else:
+            annotated_rows.append(dict(row))
+    return annotated_rows
+
+
 def make_packet(data: dict, args: argparse.Namespace) -> dict:
     rows = data["benchmarks"]
     max_error = extract_max_final_state_abs_error(
@@ -209,7 +272,7 @@ def make_packet(data: dict, args: argparse.Namespace) -> dict:
             ),
             "phase5_benchmark_contract_passed": (args.phase5_benchmark_contract_passed),
         },
-        "benchmarks": rows,
+        "benchmarks": annotate_representative_rows(rows, args),
     }
 
 

@@ -128,6 +128,11 @@ Policy:
   precision control is needed, expose a backend-neutral policy value.
 - Claims about speedups must report whether transfer time is included and must
   compare against the double reference or explain the accepted tolerance.
+- Batched benchmark packets must record the resolved backend, resolved
+  precision, whether transfer time is included, lane count, step count, and the
+  resolved execution shape for every representative batched row. The Phase 5
+  CUDA packet checker enforces these fields for new batched evidence rows so a
+  timing result cannot be separated from its precision or transfer policy.
 
 ## Current Seeds
 

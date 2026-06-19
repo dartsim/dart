@@ -37,7 +37,10 @@ import sys
 from pathlib import Path
 
 from benchmark_packet_utils import (
+    batched_benchmark_row_schema_errors,
     benchmark_packet_timing_schema_errors,
+    benchmark_row_name,
+    canonical_benchmark_name,
     median_timing_by_name,
 )
 
@@ -203,6 +206,12 @@ def make_packet_template(
                 "aggregate_name": "median",
                 "real_time": None,
                 "time_unit": "ms",
+                "backend": "cpu",
+                "precision": "double-reference",
+                "includes_transfer_time": False,
+                "lane_count": world_count,
+                "resolved_execution_shape": "homogeneous-batch",
+                "step_count": step_count,
             },
             {
                 "name": gpu_name,
@@ -211,6 +220,12 @@ def make_packet_template(
                 "aggregate_name": "median",
                 "real_time": None,
                 "time_unit": "ms",
+                "backend": "cuda",
+                "precision": "double-reference",
+                "includes_transfer_time": True,
+                "lane_count": world_count,
+                "resolved_execution_shape": "homogeneous-batch",
+                "step_count": step_count,
             },
         ],
     }
@@ -274,6 +289,17 @@ def _validate_metadata(
     return world_count, actual_body_count, actual_step_count, max_error
 
 
+def _find_median_row(rows: list, canonical_name: str) -> dict | None:
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("aggregate_name") != "median":
+            continue
+        if canonical_benchmark_name(benchmark_row_name(row)) == canonical_name:
+            return row
+    return None
+
+
 def validate_packet(
     data: dict,
     *,
@@ -307,6 +333,32 @@ def validate_packet(
     missing = [name for name in (cpu_name, gpu_name) if name not in timings]
     if missing:
         raise Phase5PacketError("missing median benchmark rows: " + ", ".join(missing))
+
+    for name in (cpu_name, gpu_name):
+        row = _find_median_row(rows, name)
+        if row is None:
+            raise Phase5PacketError(f"missing median benchmark row: {name}")
+        errors = batched_benchmark_row_schema_errors(
+            row, f"phase5_gpu_packet.benchmarks[{name}]"
+        )
+        if errors:
+            raise Phase5PacketError(errors[0])
+        if row["lane_count"] != world_count:
+            raise Phase5PacketError(
+                f"phase5_gpu_packet.benchmarks[{name}].lane_count must match "
+                "phase5_gpu_packet.world_count"
+            )
+        if row["step_count"] != actual_step_count:
+            raise Phase5PacketError(
+                f"phase5_gpu_packet.benchmarks[{name}].step_count must match "
+                "phase5_gpu_packet.step_count"
+            )
+    gpu_row = _find_median_row(rows, gpu_name)
+    if not gpu_row["includes_transfer_time"]:
+        raise Phase5PacketError(
+            f"phase5_gpu_packet.benchmarks[{gpu_name}].includes_transfer_time "
+            "must be true for the full GPU workload"
+        )
 
     cpu_ns = timings[cpu_name]
     gpu_ns = timings[gpu_name]

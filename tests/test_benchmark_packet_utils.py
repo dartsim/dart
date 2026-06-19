@@ -109,7 +109,99 @@ def test_benchmark_packet_timing_schema_rejects_bad_fields():
     ]
 
 
+def test_batched_benchmark_row_schema_accepts_required_reporting_fields():
+    utils = load_script_module("benchmark_packet_utils")
+
+    errors = utils.batched_benchmark_row_schema_errors(
+        {
+            "backend": "cuda-resident",
+            "precision": "float64-reference",
+            "includes_transfer_time": False,
+            "lane_count": 4,
+            "resolved_execution_shape": "homogeneous-batch",
+            "step_count": 100,
+        },
+        "plan091_batched_packet.rows[0]",
+    )
+
+    assert errors == []
+
+
+def test_batched_benchmark_row_schema_rejects_missing_reporting_fields():
+    utils = load_script_module("benchmark_packet_utils")
+
+    errors = utils.batched_benchmark_row_schema_errors(
+        {
+            "backend": "",
+            "precision": None,
+            "includes_transfer_time": "no",
+            "lane_count": 0,
+            "resolved_execution_shape": "",
+            "step_count": True,
+        },
+        "plan091_batched_packet.rows[0]",
+    )
+
+    assert errors == [
+        "plan091_batched_packet.rows[0].backend must be a non-empty string",
+        "plan091_batched_packet.rows[0].precision must be a non-empty string",
+        "plan091_batched_packet.rows[0].includes_transfer_time must be a boolean",
+        "plan091_batched_packet.rows[0].lane_count must be positive",
+        "plan091_batched_packet.rows[0].resolved_execution_shape must be a non-empty string",
+        "plan091_batched_packet.rows[0].step_count must be an integer",
+    ]
+
+
 def test_phase5_packet_validator_uses_shared_canonical_rows():
+    phase5 = load_script_module("check_phase5_gpu_packet")
+    data = phase5.make_packet_template()
+    metadata = data["phase5_gpu_packet"]
+    metadata["includes_transfer_setup_compute_readback"] = True
+    metadata["max_final_state_abs_error"] = 1e-12
+    for key in phase5.REQUIRED_EVIDENCE_FLAGS:
+        metadata[key] = True
+    cpu_row = aggregate_row(
+        "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100/repeats:3_median",
+        "median",
+        4.0,
+        time_unit="ms",
+    )
+    cpu_row.update(
+        {
+            "backend": "cpu",
+            "precision": "double-reference",
+            "includes_transfer_time": False,
+            "lane_count": 4096,
+            "resolved_execution_shape": "homogeneous-batch",
+            "step_count": 100,
+        }
+    )
+    gpu_row = aggregate_row(
+        "BM_Phase5RigidBodyBatchGpu/4096/128/100/repeats:3_median",
+        "median",
+        2.0,
+        time_unit="ms",
+    )
+    gpu_row.update(
+        {
+            "backend": "cuda",
+            "precision": "double-reference",
+            "includes_transfer_time": True,
+            "lane_count": 4096,
+            "resolved_execution_shape": "homogeneous-batch",
+            "step_count": 100,
+        }
+    )
+    data["benchmarks"] = [cpu_row, gpu_row]
+
+    summary = phase5.validate_packet(data)
+
+    assert summary["cpu_median_ns"] == 4_000_000.0
+    assert summary["gpu_median_ns"] == 2_000_000.0
+    assert summary["speedup"] == 2.0
+
+
+def test_phase5_packet_validator_rejects_missing_batched_row_metadata():
     phase5 = load_script_module("check_phase5_gpu_packet")
     data = phase5.make_packet_template()
     metadata = data["phase5_gpu_packet"]
@@ -119,33 +211,104 @@ def test_phase5_packet_validator_uses_shared_canonical_rows():
         metadata[key] = True
     data["benchmarks"] = [
         aggregate_row(
-            "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100/repeats:3_median",
+            "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100_median",
             "median",
             4.0,
             time_unit="ms",
         ),
         aggregate_row(
-            "BM_Phase5RigidBodyBatchGpu/4096/128/100/repeats:3_median",
+            "BM_Phase5RigidBodyBatchGpu/4096/128/100_median",
             "median",
             2.0,
             time_unit="ms",
         ),
     ]
 
-    summary = phase5.validate_packet(data)
+    try:
+        phase5.validate_packet(data)
+    except phase5.Phase5PacketError as exc:
+        assert (
+            "phase5_gpu_packet.benchmarks[BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100].backend"
+            in str(exc)
+        )
+    else:
+        raise AssertionError("expected missing batched-row metadata to fail")
 
-    assert summary["cpu_median_ns"] == 4_000_000.0
-    assert summary["gpu_median_ns"] == 2_000_000.0
-    assert summary["speedup"] == 2.0
+
+def test_phase5_cuda_packet_writer_annotates_representative_batched_rows():
+    writer = load_script_module("write_phase5_cuda_packet")
+
+    class Args:
+        cpu_prefix = "BM_Phase5RigidBodyBatchCpuBaseline"
+        gpu_prefix = "BM_Phase5RigidBodyBatchGpu"
+        world_count = 4096
+        body_count = 128
+        step_count = 100
+        includes_transfer_setup_compute_readback = True
+        gpu_build_import_gate_passed = True
+        compute_backend_boundaries_passed = True
+        no_gpu_runtime_dependencies_passed = True
+        phase5_benchmark_contract_passed = True
+
+    rows = [
+        aggregate_row(
+            "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100_median",
+            "median",
+            4.0,
+            time_unit="ms",
+        ),
+        aggregate_row(
+            "BM_Phase5RigidBodyBatchGpu/4096/128/100_median",
+            "median",
+            2.0,
+            time_unit="ms",
+        )
+        | {"max_final_state_abs_error": 1e-12},
+    ]
+
+    packet = writer.make_packet({"benchmarks": rows}, Args())
+
+    cpu_row, gpu_row = packet["benchmarks"]
+    assert cpu_row["backend"] == "cpu"
+    assert cpu_row["includes_transfer_time"] is False
+    assert gpu_row["backend"] == "cuda"
+    assert gpu_row["precision"] == "double-reference"
+    assert gpu_row["includes_transfer_time"] is True
+    assert gpu_row["lane_count"] == 4096
+    assert gpu_row["resolved_execution_shape"] == "homogeneous-batch"
 
 
 def test_abd_packet_validator_uses_shared_row_validation(tmp_path, capsys):
     abd = load_script_module("check_abd_comparison_packet")
+    rows = [
+        aggregate_row(f"{name}_median", "median", 1.0)
+        for name in sorted(abd.EXPECTED_BENCHMARKS)
+    ]
+    for row in rows:
+        if row["run_name"] == f"{abd.MICRO_SOLVE_BENCHMARK}_median":
+            row.update(
+                {
+                    "row_abd_alg_affine_body": 1.0,
+                    "paper_scale": 0.0,
+                    "affine_dynamic_body_count": 1.0,
+                    "static_triangle_body_count": 1.0,
+                    "point_triangle_pair_count": 1.0,
+                    "valid_solve": 1.0,
+                    "converged": 1.0,
+                    "barrier_active": 1.0,
+                    "solver_iterations": 8.0,
+                    "initial_objective": 2.0,
+                    "final_objective": 1.0,
+                    "objective_decrease": 1.0,
+                    "initial_gradient_norm": 3.0,
+                    "final_gradient_norm": 0.5,
+                    "initial_squared_distance": 0.01,
+                    "final_squared_distance": 0.02,
+                    "squared_activation_distance": 0.1,
+                }
+            )
     packet = {
-        "benchmarks": [
-            aggregate_row(f"{name}_median", "median", 1.0)
-            for name in sorted(abd.EXPECTED_BENCHMARKS)
-        ]
+        "benchmarks": rows,
     }
     path = tmp_path / "abd_packet.json"
     path.write_text(json.dumps(packet), encoding="utf-8")

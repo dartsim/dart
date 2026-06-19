@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "packet_name": "plan091_cross_family_metrics_packet",
+  "rows": [
+    {
+      "row_id": "rigid_head_on__sequential_impulse",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/rigid_head_on_sequential_impulse",
+      "scene_id": "rigid_head_on",
+      "family_axis": "rigid-contact",
+      "resolved_solver_identity": "rigid-contact:sequential-impulse",
+      "invariant": "conserves-linear-momentum"
+    },
+    {
+      "row_id": "rigid_head_on__boxed_lcp",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/rigid_head_on_boxed_lcp",
+      "scene_id": "rigid_head_on",
+      "family_axis": "rigid-contact",
+      "resolved_solver_identity": "rigid-contact:boxed-lcp",
+      "invariant": "conserves-linear-momentum"
+    },
+    {
+      "row_id": "sphere_drop__sequential_impulse",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/sphere_drop_sequential_impulse",
+      "scene_id": "sphere_drop",
+      "family_axis": "rigid-contact",
+      "resolved_solver_identity": "rigid-contact:sequential-impulse",
+      "invariant": "settles-on-static-support"
+    },
+    {
+      "row_id": "sphere_drop__boxed_lcp",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/sphere_drop_boxed_lcp",
+      "scene_id": "sphere_drop",
+      "family_axis": "rigid-contact",
+      "resolved_solver_identity": "rigid-contact:boxed-lcp",
+      "invariant": "settles-on-static-support"
+    },
+    {
+      "row_id": "pendulum_1link__semi_implicit",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/pendulum_1link_semi_implicit",
+      "scene_id": "pendulum_1link",
+      "family_axis": "multibody-integration",
+      "resolved_solver_identity": "multibody:semi-implicit",
+      "invariant": "conserves-total-energy"
+    },
+    {
+      "row_id": "pendulum_1link__variational",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/pendulum_1link_variational",
+      "scene_id": "pendulum_1link",
+      "family_axis": "multibody-integration",
+      "resolved_solver_identity": "multibody:variational",
+      "invariant": "conserves-total-energy"
+    },
+    {
+      "row_id": "pendulum_2link__semi_implicit",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/pendulum_2link_semi_implicit",
+      "scene_id": "pendulum_2link",
+      "family_axis": "multibody-integration",
+      "resolved_solver_identity": "multibody:semi-implicit",
+      "invariant": "conserves-total-energy"
+    },
+    {
+      "row_id": "pendulum_2link__variational",
+      "benchmark": "BM_Plan091CrossFamilyCorpus/pendulum_2link_variational",
+      "scene_id": "pendulum_2link",
+      "family_axis": "multibody-integration",
+      "resolved_solver_identity": "multibody:variational",
+      "invariant": "conserves-total-energy"
+    }
+  ]
+}

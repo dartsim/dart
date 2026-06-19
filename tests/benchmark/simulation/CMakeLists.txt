@@ -70,6 +70,11 @@ if(DART_SIMULATION_BUILD_BENCHMARKS)
   )
 
   dart_add_simulation_benchmark(
+    bm_plan091_cross_family_corpus
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_plan091_cross_family_corpus.cpp
+  )
+
+  dart_add_simulation_benchmark(
     bm_vbd_vertex_block_kernel
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_vbd_vertex_block_kernel.cpp
   )
