@@ -2,6 +2,15 @@
 
 ## DART 6
 
+### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
+
+* Build
+
+  * Move the IKFast support header to the DART-owned
+    `dart/dynamics/ikfast.h` path while keeping the old installed
+    `dart/external/ikfast/ikfast.h` include path available for DART 6 source
+    compatibility.
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
