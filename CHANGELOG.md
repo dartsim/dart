@@ -20,6 +20,12 @@
     as a unit-test fixture:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+  * Move the IKFast support header to the DART-owned
+    `dart/dynamics/ikfast.h` path while keeping the old installed
+    and build-tree `dart/external/ikfast/ikfast.h` include path available for
+    DART 6 source compatibility:
+    [#3078](https://github.com/dartsim/dart/pull/3078)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
