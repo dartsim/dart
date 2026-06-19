@@ -34,5 +34,5 @@ supported AI tools.
 | `dart-ci` | `$dart-ci` | `docs/onboarding/ci-cd.md` |
 | `dart-contribute` | `$dart-contribute` | `docs/onboarding/contributing.md`, `CONTRIBUTING.md` |
 | `dart-test` | `$dart-test` | `docs/onboarding/testing.md`, `pixi run test`, `pixi run test-py` |
-| `dart-python` | `$dart-python` | `docs/onboarding/python-bindings.md`, `python/AGENTS.md` |
-| `dart-io` | `$dart-io` | `docs/onboarding/io-parsing.md`, `dart/io/AGENTS.md` |
+| `dart-python` | `$dart-python` | `docs/onboarding/python-bindings.md`, `python/examples/`, `python/tests/` |
+| `dart-io` | `$dart-io` | `docs/onboarding/io-parsing.md`, `dart/utils/`, `tests/integration/test_DartLoader.cpp` |

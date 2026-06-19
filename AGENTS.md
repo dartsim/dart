@@ -35,7 +35,7 @@ These steps configure and compile DART from source in the Codex environment.
    ```bash
    pixi run test        # C++ tests
    pixi run test-py     # Python tests
-   pixi run test-all    # Lint + build + tests
+   pixi run test-all    # Build all default targets; run lint/tests separately
    ```
 
 If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and ensure the toolchain dependencies in `pixi.toml` are met.  The build system uses CMake and Ninja under the hood, so you can fall back to manual CMake builds if necessary.
