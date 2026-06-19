@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "owner": "docs/ai/capabilities.json owns machine-readable capability status, category, and gate profile. docs/ai/workflows.md owns human-readable public paths and gate details.",
+  "workflows": [
+    {
+      "name": "dart-analyze",
+      "category": "analysis",
+      "status": "active",
+      "gate_profile": "read-only"
+    },
+    {
+      "name": "dart-new-task",
+      "category": "task-lifecycle",
+      "status": "active",
+      "gate_profile": "task-specific"
+    },
+    {
+      "name": "dart-resume",
+      "category": "task-lifecycle",
+      "status": "active",
+      "gate_profile": "state-check"
+    },
+    {
+      "name": "dart-fix-ci",
+      "category": "ci",
+      "status": "active",
+      "gate_profile": "reproduction"
+    },
+    {
+      "name": "dart-review-pr",
+      "category": "review",
+      "status": "active",
+      "gate_profile": "read-only"
+    },
+    {
+      "name": "dart-pr",
+      "category": "pr",
+      "status": "active",
+      "gate_profile": "pr-ready"
+    },
+    {
+      "name": "dart-manage-pr",
+      "category": "pr",
+      "status": "active",
+      "gate_profile": "approval-boundary"
+    },
+    {
+      "name": "dart-docs-update",
+      "category": "docs",
+      "status": "active",
+      "gate_profile": "docs-ai"
+    },
+    {
+      "name": "dart-mechanical-refactor",
+      "category": "refactor",
+      "status": "active",
+      "gate_profile": "code-gate"
+    },
+    {
+      "name": "dart-downstream-fix",
+      "category": "issue-work",
+      "status": "active",
+      "gate_profile": "code-gate"
+    },
+    {
+      "name": "dart-release-ci-fix",
+      "category": "release",
+      "status": "active",
+      "gate_profile": "reproduction"
+    },
+    {
+      "name": "dart-backport-pr",
+      "category": "release",
+      "status": "active",
+      "gate_profile": "release-gate"
+    },
+    {
+      "name": "dart-branch-cleanup",
+      "category": "git",
+      "status": "active",
+      "gate_profile": "read-only"
+    }
+  ],
+  "domain_skills": [
+    {
+      "name": "dart-build",
+      "category": "build",
+      "status": "active",
+      "gate_profile": "command"
+    },
+    {
+      "name": "dart-ci",
+      "category": "ci",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
+      "name": "dart-contribute",
+      "category": "contribution",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
+      "name": "dart-test",
+      "category": "test",
+      "status": "active",
+      "gate_profile": "command"
+    },
+    {
+      "name": "dart-python",
+      "category": "python",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
+      "name": "dart-io",
+      "category": "io",
+      "status": "active",
+      "gate_profile": "reference"
+    }
+  ]
+}

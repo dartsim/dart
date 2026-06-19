@@ -134,6 +134,7 @@ compile_flags.txt
 !.opencode/command/**/*.md
 !.opencode/AGENTS.md
 
+!.codex/
 .codex/*
 !.codex/skills/
 !.codex/skills/**/
