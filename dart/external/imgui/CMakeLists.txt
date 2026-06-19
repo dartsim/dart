@@ -154,7 +154,9 @@ macro(dart_try_find_system_imgui)
 
   if(NOT imgui_FOUND AND NOT CMAKE_DISABLE_FIND_PACKAGE_imgui)
     find_package(PkgConfig QUIET)
-    pkg_check_modules(PC_imgui imgui QUIET)
+    if(PkgConfig_FOUND AND COMMAND pkg_check_modules)
+      pkg_check_modules(PC_imgui imgui QUIET)
+    endif()
 
     find_path(_dart_imgui_include_dir
       NAMES imgui.h
