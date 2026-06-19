@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/external/lodepng/lodepng.h"
+#include "dart/gui/detail/PngWriter.hpp"
 #include "dart/gui/glut/Window.hpp"
 
 #ifdef _WIN32
@@ -240,12 +240,14 @@ bool Window::screenshot()
         tw * 4);
   }
 
-  unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
-
-  // if there's an error, display it
-  if (result) {
-    std::cout << "lodepng error " << result << ": "
-              << lodepng_error_text(result) << std::endl;
+  std::string errorMessage;
+  if (!detail::writeRgbaPng(
+          fileName,
+          mScreenshotTemp2,
+          static_cast<unsigned>(tw),
+          static_cast<unsigned>(th),
+          &errorMessage)) {
+    dtwarn << "[Window::screenshot] " << errorMessage << "\n";
     return false;
   } else {
     std::cout << "wrote screenshot " << fileName << "\n";

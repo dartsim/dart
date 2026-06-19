@@ -16,7 +16,8 @@ else()
 endif()
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
+file(GLOB hdrs "*.hpp" "*.h")
+file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB srcs "*.cpp" "*.c" "detail/*.cpp")
 
 function(dart_add_gui_headers)
@@ -35,7 +36,7 @@ get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
 
 # Add target
 dart_add_library(${target_name}
-  ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
+  ${hdrs} ${detail_hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
 )
 target_link_libraries(${target_name}
   PUBLIC
@@ -43,7 +44,6 @@ target_link_libraries(${target_name}
     OpenGL::GL
     OpenGL::GLU
     GLUT::GLUT
-    ${PROJECT_NAME}-external-lodepng
 )
 if(APPLE)
   # Suppress "deprecated-declarations" until we abandon glut.
@@ -60,7 +60,6 @@ add_component_dependencies(
   ${PROJECT_NAME}
   ${component_name}
   utils
-  external-lodepng
 )
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL GLUT)
 
@@ -100,5 +99,12 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/gui/detail
+  COMPONENT headers
+)
 
-dart_format_add(${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources})
+dart_format_add(
+  ${hdrs} ${detail_hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
+)

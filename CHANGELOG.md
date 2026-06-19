@@ -2,6 +2,13 @@
 
 ## DART 6
 
+### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
+
+* Build
+
+  * Replace the vendored `lodepng` screenshot dependency with a DART-owned
+    RGBA PNG writer for the legacy GLUT screenshot path.
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
