@@ -426,18 +426,45 @@ Options parseOptions(int argc, char* argv[])
         "--generate-objects cannot be combined with an SDF path");
   }
 
+  if (options.primitiveShapes
+      && options.collisionEngine != CollisionEngine::Default
+      && options.collisionEngine != CollisionEngine::Fcl) {
+    throw std::invalid_argument(
+        "--primitive-shapes requires the FCL collision detector");
+  }
+
   return options;
 }
 
 dart::collision::CollisionDetectorPtr makeCollisionDetector(
-    CollisionEngine engine)
+    const Options& options)
 {
+  const auto engine = options.collisionEngine;
+  if (options.primitiveShapes && engine != CollisionEngine::Default
+      && engine != CollisionEngine::Fcl) {
+    throw std::runtime_error(
+        "--primitive-shapes requires the FCL collision detector");
+  }
+
+  if (options.primitiveShapes && engine == CollisionEngine::Default) {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    detector->setPrimitiveShapeType(
+        dart::collision::FCLCollisionDetector::PRIMITIVE);
+    return detector;
+  }
+
   if (engine == CollisionEngine::Dart)
     return dart::collision::DARTCollisionDetector::create();
   if (engine == CollisionEngine::Bullet)
     return dart::collision::BulletCollisionDetector::create();
-  if (engine == CollisionEngine::Fcl)
-    return dart::collision::FCLCollisionDetector::create();
+  if (engine == CollisionEngine::Fcl) {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    if (options.primitiveShapes) {
+      detector->setPrimitiveShapeType(
+          dart::collision::FCLCollisionDetector::PRIMITIVE);
+    }
+    return detector;
+  }
   if (engine == CollisionEngine::Ode)
     return dart::collision::OdeCollisionDetector::create();
 
@@ -495,7 +522,7 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
 
   auto world = dart::simulation::World::create("generated_3lane_shapes");
   world->setTimeStep(0.001);
-  if (auto detector = makeCollisionDetector(options.collisionEngine))
+  if (auto detector = makeCollisionDetector(options))
     world->getConstraintSolver()->setCollisionDetector(detector);
 
   const std::size_t rows = (numObjects + kLanes - 1u) / kLanes;
@@ -1065,26 +1092,15 @@ void applyOptions(
     boxedSolver->setSecondaryBoxedLcpSolver(nullptr);
   }
 
-  if (auto detector = makeCollisionDetector(options.collisionEngine)) {
-    world->getConstraintSolver()->setCollisionDetector(detector);
+  if (!options.generatedObjects.has_value()) {
+    if (auto detector = makeCollisionDetector(options)) {
+      world->getConstraintSolver()->setCollisionDetector(detector);
+    }
   }
 
   if (options.maxContacts.has_value()) {
     world->getConstraintSolver()->getCollisionOption().maxNumContacts
         = *options.maxContacts;
-  }
-
-  if (options.primitiveShapes) {
-    const auto detector = world->getConstraintSolver()->getCollisionDetector();
-    auto fclDetector
-        = std::dynamic_pointer_cast<dart::collision::FCLCollisionDetector>(
-            detector);
-    if (!fclDetector) {
-      throw std::runtime_error(
-          "--primitive-shapes requires the FCL collision detector");
-    }
-    fclDetector->setPrimitiveShapeType(
-        dart::collision::FCLCollisionDetector::PRIMITIVE);
   }
 }
 
@@ -1114,9 +1130,13 @@ void printWorldSummary(
   std::cout << "  Collision detector requested: "
             << collisionEngineName(options.collisionEngine) << "\n";
   std::cout << "  Physics pipeline: DART 6 dynamics, constraints, and solver";
-  if (options.collisionEngine != CollisionEngine::Default)
+  if (options.collisionEngine != CollisionEngine::Default
+      || options.primitiveShapes) {
     std::cout << " with only collision detection delegated";
+  }
   std::cout << "\n";
+  std::cout << "  FCL primitive shapes: "
+            << (options.primitiveShapes ? "true" : "false") << "\n";
   if (options.generatedObjects.has_value()) {
     std::cout << "  Generated mobile objects: " << *options.generatedObjects
               << "\n";
