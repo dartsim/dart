@@ -15,15 +15,25 @@ dart_generate_include_header_file(
   "dart/dynamics/"
   ${header_names}
 )
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/ikfast_compat.h.in"
+  "${DART_BINARY_DIR}/dart/external/ikfast/ikfast.h"
+  COPYONLY
+)
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
+  FILES ${hdrs} ikfast.h ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
 install(
   FILES ${detail_hdrs}
   DESTINATION include/dart/dynamics/detail
+  COMPONENT headers
+)
+install(
+  FILES "${DART_BINARY_DIR}/dart/external/ikfast/ikfast.h"
+  DESTINATION include/dart/external/ikfast
   COMPONENT headers
 )
