@@ -3335,7 +3335,12 @@ def test_rigid_body_panel_edits_contact_solver_method() -> None:
     builder = _ScriptedPanelBuilder(select_values={"Contact solver": target_method})
     setup.panels[0].build(builder, object())
 
-    assert builder.events[0] == "select:Solver:0:Sequential impulse"
+    assert builder.events[0] == "text:rigid solver: Sequential impulse (fixed baseline)"
+    assert (
+        "tooltip:Use Rigid Solver Compare for SI-vs-IPC rigid-body solver inspection."
+        in builder.events
+    )
+    assert not any(event.startswith("select:Solver:") for event in builder.events)
     assert any(event.startswith("select:Contact solver:") for event in builder.events)
     assert controller.contact_method_index == target_method
     assert world.time == pytest.approx(0.0)

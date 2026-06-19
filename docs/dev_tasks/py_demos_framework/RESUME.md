@@ -161,14 +161,19 @@ the AVBD rigid-constraint track discoverable from the flagship baseline scene
 while preserving the documented distinction between World contact-policy rows
 and the separate AVBD `sx` constraint showcase.
 
+The latest UI cleanup removes the one-option `Solver` dropdown from the
+`rigid_body` front-door panel. The panel now displays the Sequential Impulse
+rigid solver as fixed baseline context and points users to
+`rigid_solver_compare` for real SI-vs-IPC inspection.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
 plus the `rigid_body` material-example preset, packet, full-packet evidence, and
-material/AVBD-route UI increments. Keep any remaining edits narrow, keep the
-dev-task handoff current, and validate the exact default/CUDA py-demos front
-doors before publishing a follow-up PR.
+material/AVBD-route/fixed-solver-context UI increments. Keep any remaining edits
+narrow, keep the dev-task handoff current, and validate the exact default/CUDA
+py-demos front doors before publishing a follow-up PR.
 
 ## Immediate Next Step
 

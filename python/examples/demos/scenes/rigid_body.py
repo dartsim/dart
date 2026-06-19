@@ -429,8 +429,9 @@ class _RigidBodyBaseline:
             request_scene_switch(_AVBD_SHOWCASE_SCENE_ID)
 
     def build_panel(self, builder: object, context: object) -> None:
-        changed_solver, solver_index = builder.select(
-            "Solver", int(self.solver_index), [label for label, _solver in _SOLVERS]
+        builder.text(f"rigid solver: {self._solver_label()} (fixed baseline)")
+        builder.item_tooltip(
+            "Use Rigid Solver Compare for SI-vs-IPC rigid-body solver inspection."
         )
         changed_contact_method, contact_method_index = builder.select(
             "Contact solver",
@@ -444,9 +445,6 @@ class _RigidBodyBaseline:
             "Restitution", float(self.restitution), 0.0, 0.8
         )
 
-        if changed_solver:
-            self.solver_index = int(solver_index)
-            self.reset(clear_replay=True)
         if changed_contact_method:
             self._set_contact_method_index(contact_method_index)
         if changed_friction:

@@ -351,7 +351,8 @@ solver comparisons.
 
 The **`rigid_body`** scene is the default front door for DART 7 rigid-body
 `World` dynamics. It keeps the first run simple: falling spheres and a box,
-static ground, live replay, viewport force drag, solver/material controls, an
+static ground, live replay, viewport force drag, fixed-solver context, material
+controls, an
 explicit reset path, and a compact panel for baseline speed, height, energy,
 contact, and step-timing state. Use the focused rows below when a material,
 contact-query, solver, executor, friction, stacking, manipulation, body-mode,

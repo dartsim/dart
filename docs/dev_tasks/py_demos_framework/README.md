@@ -52,7 +52,8 @@ and replay metadata.
         baseline presets for the default Sequential Impulse and boxed-LCP
         contact paths, plus a route into the side-by-side
         `rigid_contact_solver_compare` row. Realtime rigid workflow rows keep
-        the rigid-body solver fixed to the Sequential Impulse path; use
+        the rigid-body solver fixed to the Sequential Impulse path and present
+        that as fixed panel context instead of a one-option selector; use
         `rigid_solver_compare` and the explicit IPC shelf scenes for SI-vs-IPC
         visual inspection.
   - [x] Scriptable contact-policy capture: `py-demo-capture` can restore
