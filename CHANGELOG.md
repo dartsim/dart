@@ -2,6 +2,17 @@
 
 ## DART 6
 
+### DART 6.19.2 (Unreleased)
+
+* Tests
+
+  * Cover servo-commanded sleeping bodies against an always-awake baseline, and
+    extend the Gazebo validation task to apply the gz-physics
+    `ChangedWorldPoses` root-cause patch before running gz-sim's
+    `INTEGRATION_entity_system` regression against the source-built DART 6
+    plugin:
+    [gazebosim/gz-sim#3697](https://github.com/gazebosim/gz-sim/issues/3697)
+
 ### [DART 6.19.1 (2026-06-17)](https://github.com/dartsim/dart/milestone/98?closed=1)
 
 * Simulation

@@ -725,17 +725,41 @@ libgz-plugin3 = ">=3.0.0"
 libgz-math8 = ">=8.0.0"
 libgz-common6 = ">=6.0.0"
 libgz-utils2 = ">=2.0.0"
+libgz-transport14 = ">=14.0.0"
+libgz-msgs11 = ">=11.0.0"
+libgz-fuel-tools10 = ">=10.0.0"
+libgz-gui9 = ">=9.0.0"
+libgz-sensors9 = ">=9.0.0"
+libgz-rendering9 = ">=9.0.0"
 libsdformat15 = ">=15.0.0"
 eigen = ">=3.4.0"
 assimp = ">=5.4.3,<6"
 libode = ">=0.16.2"
 bullet-cpp = ">=3.25"
+backward-cpp = ">=1.6"
 
 [feature.gazebo.tasks]
 download-gz = { cmd = """
     rm -rf .deps/gz-physics/ \
     && git clone --branch gz-physics8_8.0.0 https://github.com/gazebosim/gz-physics .deps/gz-physics
     """ }
+
+download-gz-sim = { cmd = """
+    rm -rf .deps/gz-sim/ \
+    && git clone --branch gz-sim9_9.0.0 https://github.com/gazebosim/gz-sim .deps/gz-sim
+    """ }
+
+patch-gz-physics = { cmd = """
+    bash -lc '
+    patch_file=$PWD/tools/gazebo/patches/gz-physics8-changed-world-poses.patch
+    if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
+        echo "gz-physics changed-world-poses patch already applied"
+    else
+        git -C .deps/gz-physics apply --check "$patch_file"
+        git -C .deps/gz-physics apply "$patch_file"
+    fi
+    '
+""", depends-on = ["download-gz"] }
 
 config-gz = { cmd = """
     cmake \
@@ -746,17 +770,56 @@ config-gz = { cmd = """
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
-        -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake \
+        -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
         -DBUILD_TESTING=ON
-""", depends-on = ["download-gz", "install"] }
+""", depends-on = ["patch-gz-physics", "install"] }
 
 build-gz = { cmd = "bash scripts/run_gz_physics_task.sh build", depends-on = [
     "config-gz",
 ] }
 
-test-gz = { cmd = "bash scripts/run_gz_physics_task.sh test", depends-on = [
+config-gz-install = { cmd = """
+    cmake \
+        -G Ninja \
+        -S .deps/gz-physics \
+        -B .deps/gz-physics/build-install \
+        -DCMAKE_INSTALL_PREFIX=$PWD/.deps/gz-physics/install \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DBUILD_TESTING=OFF
+""", depends-on = ["patch-gz-physics", "install"] }
+
+install-gz-physics = { cmd = "GZ_PHYSICS_BUILD_DIR=.deps/gz-physics/build-install bash scripts/run_gz_physics_task.sh install", depends-on = [
+    "config-gz-install",
+] }
+
+test-gz-physics = { cmd = "bash scripts/run_gz_physics_task.sh test", depends-on = [
     "build-gz",
 ] }
+
+config-gz-sim = { cmd = """
+    cmake \
+        -G Ninja \
+        -S .deps/gz-sim \
+        -B .deps/gz-sim/build \
+        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH="$PWD/.deps/gz-physics/install;$CONDA_PREFIX" \
+        -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-sim/test/gtest_vendor/include \
+        -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
+        -DSKIP_PYBIND11=ON \
+        -DBUILD_TESTING=ON
+""", depends-on = ["download-gz-sim", "install-gz-physics"] }
+
+build-gz-sim = { cmd = "bash scripts/run_gz_sim_task.sh build", depends-on = [
+    "config-gz-sim",
+] }
+
+test-gz-sim = { cmd = "bash scripts/run_gz_sim_task.sh test", depends-on = [
+    "build-gz-sim",
+] }
+
+test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 
 #==============
 # Features

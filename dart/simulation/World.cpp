@@ -175,11 +175,11 @@ void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
 
-  const bool deactivationEnabled = mDeactivationOptions.mEnabled;
+  const bool sleepingEnabled = mDeactivationOptions.mEnabled;
 
-  // Mirror the enable flag onto the solver so its island rest-detection / LCP
-  // skipping runs only when the feature is on (otherwise it is a strict no-op).
-  mConstraintSolver->setDeactivationActive(deactivationEnabled);
+  // Mirror the option onto the solver so its sleeping / LCP-skipping work runs
+  // only when sleeping is enabled (otherwise it is a strict no-op).
+  mConstraintSolver->setAutomaticSleepingEnabled(sleepingEnabled);
 
   // Tracks, per skeleton, whether it was disturbed (woken or kept awake) this
   // step so the post-step rest-detection pass can treat it as non-quiet even
@@ -188,7 +188,7 @@ void World::step(bool _resetCommand)
   // scenes cannot sleep.
   std::vector<bool> disturbedThisStep;
   const bool trackDisturbances
-      = deactivationEnabled
+      = sleepingEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
   if (trackDisturbances)
     disturbedThisStep.assign(mSkeletons.size(), false);
@@ -202,7 +202,7 @@ void World::step(bool _resetCommand)
         continue;
 
       const bool externallyDisturbed
-          = deactivationEnabled && (trackDisturbances || skel->isResting())
+          = sleepingEnabled && (trackDisturbances || skel->isResting())
             && skel->hasExternalDisturbance();
       if (externallyDisturbed && !disturbedThisStep.empty())
         disturbedThisStep[i] = true;
@@ -212,7 +212,7 @@ void World::step(bool _resetCommand)
       // woken so the actuation is integrated rather than silently dropped.
       // Gravity alone is not a disturbance, so a body resting on its support
       // stays asleep.
-      if (deactivationEnabled && skel->isResting()) {
+      if (sleepingEnabled && skel->isResting()) {
         if (externallyDisturbed) {
           skel->setResting(false);
           skel->setSleepCandidate(false);
@@ -250,7 +250,7 @@ void World::step(bool _resetCommand)
     // impulse before freezing so transmitted-wrench/body-force queries keep
     // the last solved contact forces; that path processes the impulse but
     // preserves the resting state.
-    if (deactivationEnabled && skel->isResting()) {
+    if (sleepingEnabled && skel->isResting()) {
       if (skel->isImpulseApplied()) {
         if (skel->isSleepCandidate()) {
           preservingFinalSleepSolve = true;
@@ -287,7 +287,7 @@ void World::step(bool _resetCommand)
   // sleep, and wake any that have started moving again. This is a deterministic
   // function of post-step cached speeds, dwell time, and the configured
   // thresholds, so it does not depend on container or iteration order.
-  if (deactivationEnabled
+  if (sleepingEnabled
       && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0)
     updateRestStates(disturbedThisStep);
 
