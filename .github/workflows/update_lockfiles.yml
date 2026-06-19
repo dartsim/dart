@@ -14,8 +14,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  discover-base-branches:
+    name: Maintenance | Discover lockfile bases
+    runs-on: ubuntu-latest
+    outputs:
+      bases: ${{ steps.branches.outputs.bases }}
+    steps:
+      - name: Discover latest DART 6 release branch
+        id: branches
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_branch=$(
+            git ls-remote --heads "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" "release-6.*" |
+              awk '{ sub("refs/heads/", "", $2); print $2 }' |
+              sort -V |
+              tail -n 1
+          )
+
+          if [ -z "${release_branch}" ]; then
+            echo "No release-6.* branch found" >&2
+            exit 1
+          fi
+
+          printf 'bases=["main","%s"]\n' "${release_branch}" >> "${GITHUB_OUTPUT}"
+
   pixi-update:
     name: Maintenance | Update pixi.lock (${{ matrix.base }})
+    needs: discover-base-branches
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.base }}
       cancel-in-progress: false
@@ -23,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base: [main, release-6.17]
+        base: ${{ fromJSON(needs.discover-base-branches.outputs.bases) }}
     steps:
       - uses: actions/checkout@v6
         with:
