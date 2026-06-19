@@ -283,6 +283,12 @@ def _workflow_spec_fields(
 
 
 _RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
+_RIGID_BODY_SLIDE_MATERIAL_STATE_JSON = (
+    '{"controls":{"friction":0.08,"restitution":0.02}}'
+)
+_RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON = (
+    '{"controls":{"friction":0.45,"restitution":0.65}}'
+)
 
 RIGID_WORKFLOW_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("rigid_body", 180, 960, 540, True),
@@ -345,6 +351,29 @@ RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] =
         True,
         _RIGID_BODY_BOXED_LCP_STATE_JSON,
         "boxed_lcp",
+    ),
+)
+
+
+RIGID_WORKFLOW_MATERIAL_EXAMPLE_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
+    ("rigid_body", 180, 960, 540, True, "", "default_material"),
+    (
+        "rigid_body",
+        180,
+        960,
+        540,
+        True,
+        _RIGID_BODY_SLIDE_MATERIAL_STATE_JSON,
+        "slide_material",
+    ),
+    (
+        "rigid_body",
+        180,
+        960,
+        540,
+        True,
+        _RIGID_BODY_BOUNCE_MATERIAL_STATE_JSON,
+        "bounce_material",
     ),
 )
 
@@ -671,6 +700,93 @@ _RIGID_WORKFLOW_CONTACT_BASELINE_GUIDANCE_BY_LABEL: dict[str, dict[str, object]]
     },
 }
 
+_RIGID_WORKFLOW_MATERIAL_EXAMPLES_GUIDANCE_BY_LABEL: dict[str, dict[str, object]] = {
+    "default_material": {
+        "workflow_label": "Material example",
+        "workflow_phase": "M1 material examples",
+        "focus_axis": "rigid_body friction/restitution presets",
+        "user_question": (
+            "What does the flagship rigid_body scene show with the default "
+            "high-friction falling-stack material?"
+        ),
+        "try_first": (
+            "Use this row as the material-example baseline before inspecting "
+            "the Slide and Bounce variants."
+        ),
+        "inspect": [
+            "friction control",
+            "restitution control",
+            "body motion",
+            "contact count",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The manifest records the default material controls and the scene "
+            "renders with docked diagnostics."
+        ),
+        "scope": (
+            "World rigid-body material example for M1; not a solver-family or "
+            "contact-policy comparison."
+        ),
+    },
+    "slide_material": {
+        "workflow_label": "Material example",
+        "workflow_phase": "M1 material examples",
+        "focus_axis": "rigid_body friction/restitution presets",
+        "user_question": (
+            "How does the flagship rigid_body scene behave with a low-friction, "
+            "low-bounce material preset restored before launch?"
+        ),
+        "try_first": (
+            "Use this row when reviewer evidence needs the same scene with "
+            "sliding contact controls applied reproducibly."
+        ),
+        "inspect": [
+            "friction control",
+            "restitution control",
+            "body motion",
+            "contact count",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The manifest preserves friction=0.08 and restitution=0.02 in the "
+            "scene-state metadata and capture metrics."
+        ),
+        "scope": (
+            "Low-friction material example on the World rigid_body scene; not "
+            "an analytic stick/slip threshold proof."
+        ),
+    },
+    "bounce_material": {
+        "workflow_label": "Material example",
+        "workflow_phase": "M1 material examples",
+        "focus_axis": "rigid_body friction/restitution presets",
+        "user_question": (
+            "How does the flagship rigid_body scene behave with a bouncy "
+            "material preset restored before launch?"
+        ),
+        "try_first": (
+            "Use this row when reviewer evidence needs the same scene with "
+            "higher restitution applied reproducibly."
+        ),
+        "inspect": [
+            "friction control",
+            "restitution control",
+            "body motion",
+            "contact count",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The manifest preserves friction=0.45 and restitution=0.65 in the "
+            "scene-state metadata and capture metrics."
+        ),
+        "scope": (
+            "Bouncy material example on the World rigid_body scene; not a "
+            "complete restitution ladder or energy-conservation claim."
+        ),
+    },
+}
+
 _RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     "rigid_ipc_stack_packet": {
         "workflow_label": "Capture-first packet",
@@ -749,6 +865,10 @@ def rigid_workflow_related_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
 
 def rigid_workflow_contact_baseline_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS
+
+
+def rigid_workflow_material_example_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
+    return RIGID_WORKFLOW_MATERIAL_EXAMPLE_CAPTURE_SPECS
 
 
 def rigid_workflow_avbd_showcase_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
@@ -1343,6 +1463,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--material-examples-only",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, capture only the Default, Slide, and Bounce "
+            "rigid_body material-example packet."
+        ),
+    )
+    parser.add_argument(
         "--include-ipc-shelf",
         action="store_true",
         help=(
@@ -1482,6 +1610,8 @@ def _workflow_output_dir(args: argparse.Namespace) -> pathlib.Path:
         return args.output_dir
     if getattr(args, "contact_baseline_only", False):
         return _default_output_dir("rigid_contact_baseline")
+    if getattr(args, "material_examples_only", False):
+        return _default_output_dir("rigid_material_examples")
     if getattr(args, "avbd_showcase_only", False):
         return _default_output_dir("rigid_avbd_showcase")
     return _default_output_dir("rigid_workflow")
@@ -1498,6 +1628,8 @@ def _workflow_capture_specs(
 ) -> tuple[WorkflowCaptureSpec, ...]:
     if getattr(args, "contact_baseline_only", False):
         return rigid_workflow_contact_baseline_capture_specs()
+    if getattr(args, "material_examples_only", False):
+        return rigid_workflow_material_example_capture_specs()
     if getattr(args, "avbd_showcase_only", False):
         return rigid_workflow_avbd_showcase_capture_specs()
     specs = list(rigid_workflow_capture_specs())
@@ -1515,6 +1647,9 @@ def _workflow_requested_include_flags(
 ) -> dict[str, bool]:
     return {
         "include_contact_baseline": bool(getattr(args, "contact_baseline_only", False)),
+        "include_material_examples": bool(
+            getattr(args, "material_examples_only", False)
+        ),
         "include_avbd_showcase": bool(getattr(args, "avbd_showcase_only", False)),
         "include_related": bool(getattr(args, "include_related", False)),
         "include_ipc_shelf": bool(getattr(args, "include_ipc_shelf", False)),
@@ -1594,6 +1729,8 @@ def _workflow_row_rerun_argv(
     rerun_argv = ["--rigid-workflow"]
     if getattr(args, "contact_baseline_only", False):
         rerun_argv.append("--contact-baseline-only")
+    if getattr(args, "material_examples_only", False):
+        rerun_argv.append("--material-examples-only")
     if getattr(args, "avbd_showcase_only", False):
         rerun_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
@@ -1633,6 +1770,8 @@ def _workflow_command_argv(
     workflow_argv = ["--rigid-workflow"]
     if getattr(args, "contact_baseline_only", False):
         workflow_argv.append("--contact-baseline-only")
+    if getattr(args, "material_examples_only", False):
+        workflow_argv.append("--material-examples-only")
     if getattr(args, "avbd_showcase_only", False):
         workflow_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
@@ -1686,15 +1825,17 @@ def _workflow_plan_entries(
     entries: list[dict[str, object]] = []
     specs = _workflow_capture_specs(args)
     contact_baseline_only = bool(getattr(args, "contact_baseline_only", False))
+    material_examples_only = bool(getattr(args, "material_examples_only", False))
     avbd_showcase_only = bool(getattr(args, "avbd_showcase_only", False))
     numbered_count = (
         0
-        if contact_baseline_only or avbd_showcase_only
+        if contact_baseline_only or material_examples_only or avbd_showcase_only
         else len(rigid_workflow_capture_specs())
     )
     related_count = (
         len(rigid_workflow_related_capture_specs())
         if not contact_baseline_only
+        and not material_examples_only
         and not avbd_showcase_only
         and getattr(args, "include_related", False)
         else 0
@@ -1702,6 +1843,7 @@ def _workflow_plan_entries(
     ipc_shelf_count = (
         len(rigid_workflow_ipc_shelf_capture_specs())
         if not contact_baseline_only
+        and not material_examples_only
         and not avbd_showcase_only
         and getattr(args, "include_ipc_shelf", False)
         else 0
@@ -1719,6 +1861,8 @@ def _workflow_plan_entries(
         argv = _workflow_scene_argv(args, order, spec, output_dir)
         if contact_baseline_only:
             workflow_group = "contact_baseline"
+        elif material_examples_only:
+            workflow_group = "material_examples"
         elif avbd_showcase_only:
             workflow_group = "avbd_constraint_showcase"
         elif order <= numbered_count:
@@ -1761,6 +1905,12 @@ def _workflow_plan_entries(
         if contact_baseline_only and capture_label:
             entries[-1].update(
                 _RIGID_WORKFLOW_CONTACT_BASELINE_GUIDANCE_BY_LABEL.get(
+                    capture_label, {}
+                )
+            )
+        if material_examples_only and capture_label:
+            entries[-1].update(
+                _RIGID_WORKFLOW_MATERIAL_EXAMPLES_GUIDANCE_BY_LABEL.get(
                     capture_label, {}
                 )
             )
@@ -2401,6 +2551,7 @@ def _workflow_metric_highlights(metrics: dict[str, object]) -> list[str]:
 _WORKFLOW_GROUP_LABELS = {
     "numbered": "numbered",
     "contact_baseline": "contact baseline",
+    "material_examples": "material examples",
     "avbd_constraint_showcase": "avbd showcase",
     "related_evidence": "related",
     "rigid_ipc_shelf": "ipc shelf",
@@ -2442,6 +2593,8 @@ def _workflow_requested_group_labels(
         return fallback
     if requested_include_flags.get("include_contact_baseline", False):
         return "contact baseline"
+    if requested_include_flags.get("include_material_examples", False):
+        return "material examples"
     if requested_include_flags.get("include_avbd_showcase", False):
         return "avbd showcase"
     labels = ["numbered"]
@@ -3524,6 +3677,9 @@ def _write_workflow_manifest(
     selected_include_contact_baseline = any(
         capture.get("workflow_group") == "contact_baseline" for capture in captures
     )
+    selected_include_material_examples = any(
+        capture.get("workflow_group") == "material_examples" for capture in captures
+    )
     selected_include_avbd_showcase = any(
         capture.get("workflow_group") == "avbd_constraint_showcase"
         for capture in captures
@@ -3539,6 +3695,7 @@ def _write_workflow_manifest(
     )
     requested_include_flags = requested_include_flags or {
         "include_contact_baseline": selected_include_contact_baseline,
+        "include_material_examples": selected_include_material_examples,
         "include_avbd_showcase": selected_include_avbd_showcase,
         "include_related": selected_include_related,
         "include_ipc_shelf": selected_include_ipc_shelf,
@@ -3586,6 +3743,9 @@ def _write_workflow_manifest(
             "include_contact_baseline": requested_include_flags.get(
                 "include_contact_baseline", False
             ),
+            "include_material_examples": requested_include_flags.get(
+                "include_material_examples", False
+            ),
             "include_avbd_showcase": requested_include_flags.get(
                 "include_avbd_showcase", False
             ),
@@ -3595,6 +3755,7 @@ def _write_workflow_manifest(
             ),
             "include_packets": requested_include_flags.get("include_packets", False),
             "selected_include_contact_baseline": selected_include_contact_baseline,
+            "selected_include_material_examples": selected_include_material_examples,
             "selected_include_avbd_showcase": selected_include_avbd_showcase,
             "selected_include_related": selected_include_related,
             "selected_include_ipc_shelf": selected_include_ipc_shelf,
@@ -3666,18 +3827,30 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         raise SystemExit("--rigid-workflow cannot be combined with --scene-state-json")
     if args.capture_label:
         raise SystemExit("--rigid-workflow cannot be combined with --capture-label")
-    exclusive_packets = int(bool(args.contact_baseline_only)) + int(
-        bool(args.avbd_showcase_only)
+    exclusive_packets = (
+        int(bool(args.contact_baseline_only))
+        + int(bool(args.material_examples_only))
+        + int(bool(args.avbd_showcase_only))
     )
     if exclusive_packets > 1:
+        if args.contact_baseline_only and args.avbd_showcase_only:
+            raise SystemExit(
+                "--contact-baseline-only cannot be combined with --avbd-showcase-only"
+            )
         raise SystemExit(
-            "--contact-baseline-only cannot be combined with --avbd-showcase-only"
+            "--material-examples-only cannot be combined with other workflow packets"
         )
     if args.contact_baseline_only and (
         args.include_related or args.include_ipc_shelf or args.include_packets
     ):
         raise SystemExit(
             "--contact-baseline-only cannot be combined with other workflow groups"
+        )
+    if args.material_examples_only and (
+        args.include_related or args.include_ipc_shelf or args.include_packets
+    ):
+        raise SystemExit(
+            "--material-examples-only cannot be combined with other workflow groups"
         )
     if args.avbd_showcase_only and (
         args.include_related or args.include_ipc_shelf or args.include_packets
@@ -3792,6 +3965,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.contact_baseline_only and not args.rigid_workflow:
         raise SystemExit("--contact-baseline-only requires --rigid-workflow")
+    if args.material_examples_only and not args.rigid_workflow:
+        raise SystemExit("--material-examples-only requires --rigid-workflow")
     if args.avbd_showcase_only and not args.rigid_workflow:
         raise SystemExit("--avbd-showcase-only requires --rigid-workflow")
     if args.include_related and not args.rigid_workflow:

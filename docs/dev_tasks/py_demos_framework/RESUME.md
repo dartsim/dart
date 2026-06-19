@@ -130,11 +130,17 @@ presets that set friction/restitution and reset through the existing replay and
 capture state path, giving reviewers quick rigid-body material cases without
 leaving the flagship scene.
 
+The latest local increment promotes those material examples into the workflow
+capture helper: `py-demo-capture -- --rigid-workflow --material-examples-only`
+captures the Default, Slide, and Bounce `rigid_body` variants as a
+review-indexed packet with state metadata, capture labels, rerun commands, and
+the same workflow guidance fields used by the contact-baseline and AVBD packets.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
-plus the small `rigid_body` material-example preset increment. Keep any
+plus the `rigid_body` material-example preset and packet increments. Keep any
 remaining edits narrow, keep the dev-task handoff current, and validate the
 exact default/CUDA py-demos front doors before publishing a follow-up PR.
 
@@ -159,6 +165,18 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   -m pytest \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
   -q
+```
+
+For the material-example workflow packet increment, also run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
+  -m pytest \
+  python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_capture_material_examples_only \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows \
+  -q
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only \
+  --dry-run --output-dir /tmp/dart_capture_rigid_material_examples_dry_run
 ```
 
 After this follow-up, continue M1 by using the dedicated contact-baseline packet

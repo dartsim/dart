@@ -453,6 +453,16 @@ pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
+Use `--material-examples-only` when the target is the M1 `rigid_body`
+front-door material examples. The packet captures Default, Slide, and Bounce
+variants of the same scene, preserving friction/restitution state and capture
+labels in the manifest and review index.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only --dry-run
+pixi run py-demo-capture -- --rigid-workflow --material-examples-only --output-dir /tmp/dart_capture_rigid_material_examples
+```
+
 Capture the direct Rigid IPC shelf routes with the docked UI visible:
 
 These commands are also included after the numbered rows, and after related

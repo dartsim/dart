@@ -89,6 +89,10 @@ and replay metadata.
         one-click Default, Slide, and Bounce material presets that reset the scene
         and flow through the same friction/restitution replay and capture
         controls as the manual sliders.
+  - [x] Dedicated material-example packet: the `--material-examples-only`
+        workflow captures the `rigid_body` Default, Slide, and Bounce
+        friction/restitution variants as one review-indexed packet with
+        state/label metadata and rerun commands.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -133,10 +137,13 @@ repeatable operation.
 3. Keep the `rigid_body` material example presets covered by
    `python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene`
    when touching the flagship panel or material controls.
-4. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
+4. Use the dedicated material-example packet for reviewer-facing
+   friction/restitution examples when refreshing artifacts:
+   `pixi run py-demo-capture -- --rigid-workflow --material-examples-only --output-dir /tmp/dart_capture_rigid_material_examples`.
+5. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
    evidence when refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --output-dir /tmp/dart_capture_rigid_contact_baseline`.
-5. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
+6. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
    refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
    M1 remains two complementary showcases for now: World contact-policy /

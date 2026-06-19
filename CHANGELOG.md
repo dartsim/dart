@@ -208,12 +208,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Added and tuned Atlas/G1/Hubo puppet and SIMBICON Python demos, including a
   reusable pose-window comparison utility for locomotion evidence.
   ([#3043](https://github.com/dartsim/dart/pull/3043))
-- Exposed the rigid-body Python demo's contact-solver method in its live panel
-  and capture metadata, giving py-demos a direct SI versus boxed-LCP inspection
-  path for the DART 6 contact baseline, including scriptable capture-state
-  overrides, labeled capture artifacts, a dedicated SI/boxed-LCP contact
-  baseline packet, and a dedicated AVBD rigid-constraint showcase packet for M1
-  visual review.
+- Exposed the rigid-body Python demo's contact-solver method and material
+  presets in its live panel and capture metadata, giving py-demos direct SI
+  versus boxed-LCP and friction/restitution inspection paths, including
+  scriptable capture-state overrides, labeled capture artifacts, a dedicated
+  SI/boxed-LCP contact-baseline packet, a material-example packet, and a
+  dedicated AVBD rigid-constraint showcase packet for M1 visual review.
 - Hardened `dart::gui` debug overlays so zero-motion selection and force-drag
   gestures in `py-demos` skip degenerate primitives instead of tripping
   Filament's empty-AABB precondition.

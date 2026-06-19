@@ -3702,6 +3702,61 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                 "tooltip:Capture the same baseline row with the contact solver "
                 "set to Boxed LCP before the first frame."
             ) in events
+            assert "text:Material example variants" in events
+            assert (
+                "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"friction":0.08,"restitution":0.02}}',
+                )
+            ) in events
+            assert (
+                "tooltip:Open the rigid_body row live with the Slide material "
+                "example restored before the first frame."
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"friction":0.08,"restitution":0.02}}',
+                    capture_label="slide_material",
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the Slide material example with restored "
+                "friction/restitution controls."
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_viewer_command(
+                    guide.scene_id,
+                    guide.capture_width,
+                    guide.capture_height,
+                    scene_state_json='{"controls":{"friction":0.45,"restitution":0.65}}',
+                )
+            ) in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"friction":0.45,"restitution":0.65}}',
+                    capture_label="bounce_material",
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the Bounce material example with restored "
+                "friction/restitution controls."
+            ) in events
         assert "text:Review packet" in events
         assert (
             "text:"
@@ -3723,6 +3778,17 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert (
             "tooltip:Capture the SI and boxed-LCP rigid_body "
             "contact-baseline packet."
+        ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                material_examples_only=True,
+                output_dir="/tmp/dart_capture_rigid_material_examples",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the Default, Slide, and Bounce rigid_body "
+            "material-example packet."
         ) in events
         assert (
             "text:"
