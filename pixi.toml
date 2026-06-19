@@ -111,7 +111,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python -m pip install . -vv" }
+build-py = { cmd = "python -m pip install . -vv", env = { CMAKE_ARGS = "-DDART_USE_SYSTEM_IMGUI=ON" } }
 
 build-py-dev = { cmd = """
     cmake \
@@ -568,7 +568,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python -m pip install . -vv" }
+build-py = { cmd = "python -m pip install . -vv", env = { CMAKE_ARGS = "-DDART_USE_SYSTEM_IMGUI=ON" } }
 
 build-py-dev = { cmd = """
     cmake \
