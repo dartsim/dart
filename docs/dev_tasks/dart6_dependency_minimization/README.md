@@ -156,10 +156,11 @@ Default Pixi/package metadata for optional components
 - Status: in progress on `chore/replace-lodepng-release-6.20`.
 - Plan: replace the vendored encoder with a DART-owned, narrow RGBA PNG writer
   for the legacy GLUT screenshot path. Preserve `.png` output without adding a
-  new system dependency, and remove the source `dart/external/lodepng` tree.
+  new system dependency, and keep a native compatibility component/header for
+  the old `external-lodepng` package surface.
 - Validation: PNG writer unit coverage, GUI configure/build, GLUT screenshot
-  path compilation, and package/component checks proving no external-lodepng
-  component remains.
+  path compilation, and package/component checks proving the `external-lodepng`
+  component remains available without the vendored sources.
 
 ### High-Risk Or Deferred Slices
 
@@ -210,7 +211,8 @@ OpenSceneGraph and GLUT GUI dependencies
 4. **ImGui vendored-source removal.** Prefer system ImGui or an approved fetch
    fallback while preserving the DART 6 OSG GUI component.
 5. **GUI screenshot dependency cleanup.** Replace `lodepng` with a narrow
-   DART-owned RGBA PNG writer for the legacy GLUT screenshot path.
+   DART-owned RGBA PNG writer for the legacy GLUT screenshot path while
+   preserving the old package component as a native compatibility shim.
 6. **Collision dependency reduction.** Treat Bullet/ODE package moves as
    optional-component packaging work. Treat FCL removal as a native-collision
    backport decision, not a routine cleanup.

@@ -1,0 +1,132 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER AND
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef LODEPNG_H
+#define LODEPNG_H
+
+#include <stddef.h>
+
+#ifdef __cplusplus
+#include <string>
+#include <vector>
+#endif
+
+typedef enum LodePNGColorType
+{
+  LCT_GREY = 0,
+  LCT_RGB = 2,
+  LCT_PALETTE = 3,
+  LCT_GREY_ALPHA = 4,
+  LCT_RGBA = 6
+} LodePNGColorType;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const char* LODEPNG_VERSION_STRING;
+
+unsigned lodepng_encode_memory(
+    unsigned char** out,
+    size_t* outsize,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype,
+    unsigned bitdepth);
+
+unsigned lodepng_encode32(
+    unsigned char** out,
+    size_t* outsize,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h);
+
+unsigned lodepng_encode_file(
+    const char* filename,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype,
+    unsigned bitdepth);
+
+unsigned lodepng_encode32_file(
+    const char* filename,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h);
+
+void lodepng_free(void* ptr);
+
+const char* lodepng_error_text(unsigned code);
+
+#ifdef __cplusplus
+} // extern "C"
+
+namespace lodepng {
+
+unsigned encode(
+    std::vector<unsigned char>& out,
+    const unsigned char* in,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype = LCT_RGBA,
+    unsigned bitdepth = 8);
+
+unsigned encode(
+    std::vector<unsigned char>& out,
+    const std::vector<unsigned char>& in,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype = LCT_RGBA,
+    unsigned bitdepth = 8);
+
+unsigned encode(
+    const std::string& filename,
+    const unsigned char* in,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype = LCT_RGBA,
+    unsigned bitdepth = 8);
+
+unsigned encode(
+    const std::string& filename,
+    const std::vector<unsigned char>& in,
+    unsigned w,
+    unsigned h,
+    LodePNGColorType colortype = LCT_RGBA,
+    unsigned bitdepth = 8);
+
+} // namespace lodepng
+#endif
+
+#endif // LODEPNG_H

@@ -5,7 +5,7 @@ if(TARGET dart-gui)
     TYPE unit
     COMPONENT_NAME gui
     TARGET_PREFIX UNIT_gui
-    LINK_LIBRARIES dart-gui
+    LINK_LIBRARIES dart-gui dart-external-lodepng
     GLOB_SOURCES
   )
 endif()

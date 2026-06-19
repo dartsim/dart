@@ -7,7 +7,9 @@
 * Build
 
   * Replace the vendored `lodepng` screenshot dependency with a DART-owned
-    RGBA PNG writer for the legacy GLUT screenshot path.
+    RGBA PNG writer for the legacy GLUT screenshot path while preserving the
+    `external-lodepng` component and common RGBA encode include path for DART 6
+    package compatibility.
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
