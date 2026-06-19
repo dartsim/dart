@@ -55,7 +55,7 @@ of them available by default.
 
 ## DART 6 `dart/external` Inventory
 
-`release-6.20` still builds these vendored source trees:
+`release-6.20` started with these vendored source trees:
 
 - `dart/external/convhull_3d`
 - `dart/external/ikfast`
@@ -65,7 +65,8 @@ of them available by default.
 
 Usage summary:
 
-- `convhull_3d` is included by the math geometry implementation.
+- `convhull_3d` was included by the math geometry implementation. The first
+  implementation slice replaces it with DART-owned native math detail code.
 - `ikfast` is included by DART's IKFast wrapper, generated WAM examples, and
   integration tests.
 - `imgui` is used by the OSG GUI path when `DART_USE_SYSTEM_IMGUI` is disabled.
@@ -79,7 +80,7 @@ The main checkout has no `dart/external/` directory.
 
 DART 7 moved or removed the old vendored surfaces as follows:
 
-- Convex hull code moved into DART-owned math detail files.
+- Convex hull code moved into DART-owned native math detail files.
 - IKFast moved to a DART-owned dynamics header path.
 - ImGui is resolved through the GUI dependency/fetch path instead of an
   in-tree `dart/external` copy.
@@ -115,10 +116,18 @@ ODE in the Gazebo feature lane.
 `dart/external/convhull_3d`
 
 - Risk: low.
-- Plan: rehome the implementation under `dart/math/detail`, update the geometry
-  include, and remove the external target/install rule.
-- Validation: default build plus focused math/geometry tests that cover convex
-  hull behavior.
+- Status: in progress on `chore/replace-convhull-3d-release-6.20`.
+- Plan: replace the vendored C implementation with the DART-owned native
+  `dart/math/detail/ConvexHull.hpp` implementation adapted from DART 7, update
+  the geometry include, and keep the legacy C implementation only under
+  `tests/unit/math/legacy_convhull_3d` for regression coverage.
+- Compatibility decision: intentionally remove the previously installed
+  `dart/external/convhull_3d/convhull_3d.h` and
+  `dart/external/convhull_3d/safe_convhull_3d.h` headers as a breaking
+  dependency-removal slice instead of keeping forwarding headers under
+  `dart/external`.
+- Validation: `pixi run build-tests`, focused `UNIT_math_ConvexHull` and
+  `UNIT_math_TriMesh`, plus the branch-required formatting gate.
 
 Default Pixi/package metadata for optional components
 
@@ -205,8 +214,9 @@ OpenSceneGraph and GLUT GUI dependencies
 2. **Default-environment split.** Move optional dependencies out of the default
    Pixi/package path one surface at a time, preserving explicit feature
    environments and component builds.
-3. **Low-risk external rehomes.** Remove `convhull_3d`, then move IKFast with a
-   compatibility-forwarder decision.
+3. **Low-risk native replacements.** Replace `convhull_3d` with DART-owned
+   native math detail code, then move IKFast with a compatibility-forwarder
+   decision.
 4. **ImGui vendored-source removal.** Prefer system ImGui or an approved fetch
    fallback while preserving the DART 6 OSG GUI component.
 5. **GUI screenshot dependency decision.** Replace `lodepng` only after the
