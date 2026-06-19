@@ -155,14 +155,20 @@ active material preset (or `Custom`) beside the live friction/restitution values
 and adds an `Open material mixing` route to `rigid_material_mixing`, matching
 the existing contact-comparison route pattern.
 
+The next local M1 bridge adds an `Open AVBD showcase` route from the same
+`rigid_body` front-door panel to `avbd_rigid_fixed_joint_contact`. This keeps
+the AVBD rigid-constraint track discoverable from the flagship baseline scene
+while preserving the documented distinction between World contact-policy rows
+and the separate AVBD `sx` constraint showcase.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
 plus the `rigid_body` material-example preset, packet, full-packet evidence, and
-material-route UI increments. Keep any remaining edits narrow, keep the dev-task
-handoff current, and validate the exact default/CUDA py-demos front doors before
-publishing a follow-up PR.
+material/AVBD-route UI increments. Keep any remaining edits narrow, keep the
+dev-task handoff current, and validate the exact default/CUDA py-demos front
+doors before publishing a follow-up PR.
 
 ## Immediate Next Step
 
@@ -186,6 +192,7 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_status_tracks_custom_sliders \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_material_mixing \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_avbd_showcase \
   -q
 ```
 

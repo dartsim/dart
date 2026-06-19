@@ -3520,6 +3520,23 @@ def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
     assert controller.contact_method_index == 0
 
 
+def test_rigid_body_panel_routes_to_avbd_showcase() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_body.build()
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(clicked_buttons={"Open AVBD showcase"})
+
+    setup.panels[0].build(builder, context)
+
+    assert "button:Open AVBD showcase" in builder.events
+    assert (
+        "tooltip:Open the curated AVBD fixed-joint/contact rigid-constraint row."
+        in builder.events
+    )
+    assert context.scene_switch_requests == ["avbd_rigid_fixed_joint_contact"]
+
+
 def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     _require_simulation_symbols("World", "CollisionQueryOptions")
 

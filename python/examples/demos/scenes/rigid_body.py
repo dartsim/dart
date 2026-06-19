@@ -41,6 +41,7 @@ _CONTACT_METHOD_SEQUENTIAL_INDEX = 0
 _CONTACT_METHOD_BOXED_LCP_INDEX = 1
 _CONTACT_POLICY_COMPARE_SCENE_ID = "rigid_contact_solver_compare"
 _MATERIAL_MIXING_SCENE_ID = "rigid_material_mixing"
+_AVBD_SHOWCASE_SCENE_ID = "avbd_rigid_fixed_joint_contact"
 
 
 def _visual_for(
@@ -422,6 +423,11 @@ class _RigidBodyBaseline:
         if callable(request_scene_switch):
             request_scene_switch(_MATERIAL_MIXING_SCENE_ID)
 
+    def _request_avbd_showcase(self, context: object) -> None:
+        request_scene_switch = getattr(context, "request_scene_switch", None)
+        if callable(request_scene_switch):
+            request_scene_switch(_AVBD_SHOWCASE_SCENE_ID)
+
     def build_panel(self, builder: object, context: object) -> None:
         changed_solver, solver_index = builder.select(
             "Solver", int(self.solver_index), [label for label, _solver in _SOLVERS]
@@ -477,6 +483,11 @@ class _RigidBodyBaseline:
             self._request_contact_policy_compare(context)
         builder.item_tooltip(
             "Open the side-by-side Sequential Impulse and boxed-LCP policy row."
+        )
+        if builder.button("Open AVBD showcase"):
+            self._request_avbd_showcase(context)
+        builder.item_tooltip(
+            "Open the curated AVBD fixed-joint/contact rigid-constraint row."
         )
         if builder.button("Reset baseline scene"):
             self.reset(clear_replay=True)

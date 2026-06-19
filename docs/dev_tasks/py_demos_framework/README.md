@@ -91,6 +91,10 @@ and replay metadata.
         controls as the manual sliders. The panel also reports the active
         material preset or custom friction/restitution state and routes directly
         to the dedicated material-mixing row for deeper inspection.
+  - [x] Front-door AVBD bridge: the flagship `rigid_body` panel now links
+        directly to `avbd_rigid_fixed_joint_contact`, giving the baseline World
+        contact/material scene a live path into the curated AVBD rigid-constraint
+        showcase without pretending the two tracks are one solver enum.
   - [x] Dedicated material-example packet: the `--material-examples-only`
         workflow captures the `rigid_body` Default, Slide, and Bounce
         friction/restitution variants as one review-indexed packet with
