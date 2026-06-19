@@ -54,10 +54,9 @@ row captures for `avbd_rigid_revolute_motor` completed with
 
 ## Current Branch
 
-`fix/py-demos-selection-crash` - clean after three local follow-up commits:
-`Add scriptable py-demos capture state` and
-`Label py-demos stateful captures`, followed by the AVBD showcase packet commit.
-These commits have not been pushed to PR #3084 yet.
+`fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
+selection debug-overlay fix, scriptable capture-state restoration, labeled
+stateful captures, and the AVBD showcase packet.
 
 ## Immediate Next Step
 
