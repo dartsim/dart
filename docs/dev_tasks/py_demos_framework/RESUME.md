@@ -98,6 +98,13 @@ The `rigid_body` scene panel also has one-click Sequential Impulse and boxed-LCP
 baseline preset buttons that set the contact solver and reset the scene through
 the same replay/capture state path.
 
+A broad local M0 regression recheck completed on PR #3084 local head `bd0b8e7`:
+default `pixi run py-demos-smoke --json-out
+/tmp/py_demos_smoke_default_pr3084_local.json` passed 155/155 scenes in
+`real 47.96s`, and CUDA `pixi run -e cuda py-demos-smoke --json-out
+/tmp/py_demos_smoke_cuda_pr3084_local.json` passed 155/155 scenes in
+`real 76.18s`.
+
 ## Current Branch
 
 `fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
@@ -105,7 +112,7 @@ selection debug-overlay fix, scriptable capture-state restoration, labeled
 stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
 packet. Local follow-up work may be ahead of the remote PR branch until the
 phase-map, stateful open-live command, boxed-LCP workflow-panel UI, and
-rigid-body contact preset fixes are pushed.
+rigid-body contact preset fixes plus full-catalog smoke evidence are pushed.
 
 ## Immediate Next Step
 
@@ -113,9 +120,10 @@ rigid-body contact preset fixes are pushed.
 set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
 rigid-constraint track. The next useful slice is PR management: push the local
-phase-map/open-live command, workflow-panel UI, and contact preset fixes after
-explicit approval, refresh the PR body with the full-packet evidence if pushing,
-then watch CI/Codex review for actionable feedback.
+phase-map/open-live command, workflow-panel UI, contact preset, and smoke
+evidence fixes after explicit approval, refresh the PR body with the full-packet
+and full-catalog smoke evidence if pushing, then watch CI/Codex review for
+actionable feedback.
 
 Re-run any M0 guard:
 
