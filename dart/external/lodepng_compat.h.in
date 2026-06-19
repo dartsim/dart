@@ -40,6 +40,9 @@
 #include <vector>
 #endif
 
+// Compatibility color constants for the basic lodepng encode API. Palette mode
+// is retained as a source-compatible constant, but this shim has no palette
+// state API, so palette encoding returns an explicit palette error.
 typedef enum LodePNGColorType
 {
   LCT_GREY = 0,
@@ -71,6 +74,13 @@ unsigned lodepng_encode32(
     unsigned w,
     unsigned h);
 
+unsigned lodepng_encode24(
+    unsigned char** out,
+    size_t* outsize,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h);
+
 unsigned lodepng_encode_file(
     const char* filename,
     const unsigned char* image,
@@ -80,6 +90,12 @@ unsigned lodepng_encode_file(
     unsigned bitdepth);
 
 unsigned lodepng_encode32_file(
+    const char* filename,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h);
+
+unsigned lodepng_encode24_file(
     const char* filename,
     const unsigned char* image,
     unsigned w,

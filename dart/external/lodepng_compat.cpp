@@ -47,6 +47,9 @@ const char* LODEPNG_VERSION_STRING = "DART native PNG compatibility";
 namespace {
 
 constexpr unsigned kErrorInvalidInput = 48;
+constexpr unsigned kErrorInvalidColorType = 31;
+constexpr unsigned kErrorInvalidBitDepth = 37;
+constexpr unsigned kErrorInvalidPalette = 68;
 constexpr unsigned kErrorFileOpen = 79;
 constexpr unsigned kErrorUnsupportedColor = 82;
 constexpr unsigned kErrorAllocation = 83;
@@ -139,6 +142,94 @@ bool checkedPixelBytes(
   return true;
 }
 
+unsigned bitsPerPixel(LodePNGColorType colorType, unsigned bitDepth)
+{
+  switch (colorType) {
+    case LCT_GREY:
+      return bitDepth;
+    case LCT_RGB:
+      return 3 * bitDepth;
+    case LCT_PALETTE:
+      return bitDepth;
+    case LCT_GREY_ALPHA:
+      return 2 * bitDepth;
+    case LCT_RGBA:
+      return 4 * bitDepth;
+    default:
+      return 0;
+  }
+}
+
+unsigned validateColorMode(LodePNGColorType colorType, unsigned bitDepth)
+{
+  switch (colorType) {
+    case LCT_GREY:
+      if (bitDepth == 1 || bitDepth == 2 || bitDepth == 4 || bitDepth == 8
+          || bitDepth == 16) {
+        return 0;
+      }
+      return kErrorInvalidBitDepth;
+    case LCT_RGB:
+      if (bitDepth == 8 || bitDepth == 16)
+        return 0;
+      return kErrorInvalidBitDepth;
+    case LCT_PALETTE:
+      if (bitDepth == 1 || bitDepth == 2 || bitDepth == 4 || bitDepth == 8)
+        return kErrorInvalidPalette;
+      return kErrorInvalidBitDepth;
+    case LCT_GREY_ALPHA:
+    case LCT_RGBA:
+      if (bitDepth == 8 || bitDepth == 16)
+        return 0;
+      return kErrorInvalidBitDepth;
+    default:
+      return kErrorInvalidColorType;
+  }
+}
+
+bool checkedRawBytes(
+    unsigned width,
+    unsigned height,
+    LodePNGColorType colorType,
+    unsigned bitDepth,
+    std::size_t* bytes)
+{
+  const unsigned bpp = bitsPerPixel(colorType, bitDepth);
+  if (bpp == 0 || width == 0 || height == 0)
+    return false;
+
+  const std::size_t max = std::numeric_limits<std::size_t>::max();
+  const std::size_t widthSize = width;
+  const std::size_t heightSize = height;
+  if (widthSize > max / heightSize)
+    return false;
+
+  const std::size_t pixels = widthSize * heightSize;
+  if (pixels > (max - 7) / bpp)
+    return false;
+
+  *bytes = (pixels * bpp + 7) / 8;
+  return true;
+}
+
+unsigned char expandSample(unsigned value, unsigned bitDepth)
+{
+  if (bitDepth == 8 || bitDepth == 16)
+    return static_cast<unsigned char>(value);
+
+  const unsigned maxValue = (1u << bitDepth) - 1u;
+  return static_cast<unsigned char>((value * 255u + maxValue / 2u) / maxValue);
+}
+
+unsigned char readPackedSample(
+    const unsigned char* image, std::size_t index, unsigned bitDepth)
+{
+  const std::size_t bitOffset = index * bitDepth;
+  const unsigned shift = 8u - bitDepth - static_cast<unsigned>(bitOffset % 8);
+  const unsigned mask = (1u << bitDepth) - 1u;
+  return expandSample((image[bitOffset / 8] >> shift) & mask, bitDepth);
+}
+
 unsigned makeRgba(
     const unsigned char* image,
     unsigned width,
@@ -149,31 +240,82 @@ unsigned makeRgba(
 {
   if (!image || !rgba)
     return kErrorInvalidInput;
-  if (bitDepth != 8)
-    return kErrorUnsupportedColor;
 
   std::size_t inputBytes = 0;
+  const unsigned validationError = validateColorMode(colorType, bitDepth);
+  if (validationError)
+    return validationError;
+  if (!checkedRawBytes(width, height, colorType, bitDepth, &inputBytes))
+    return kErrorOverflow;
+
+  std::size_t outputBytes = 0;
+  if (!checkedPixelBytes(width, height, 4, &outputBytes))
+    return kErrorOverflow;
+
   if (colorType == LCT_RGBA) {
-    if (!checkedPixelBytes(width, height, 4, &inputBytes))
-      return kErrorOverflow;
-    rgba->assign(image, image + static_cast<std::ptrdiff_t>(inputBytes));
+    if (bitDepth == 8) {
+      rgba->assign(image, image + static_cast<std::ptrdiff_t>(inputBytes));
+      return 0;
+    }
+
+    rgba->resize(outputBytes);
+    for (std::size_t in = 0, out = 0; in < inputBytes; in += 8, out += 4) {
+      (*rgba)[out] = image[in];
+      (*rgba)[out + 1] = image[in + 2];
+      (*rgba)[out + 2] = image[in + 4];
+      (*rgba)[out + 3] = image[in + 6];
+    }
     return 0;
   }
 
   if (colorType == LCT_RGB) {
-    if (!checkedPixelBytes(width, height, 3, &inputBytes))
-      return kErrorOverflow;
-
-    std::size_t outputBytes = 0;
-    if (!checkedPixelBytes(width, height, 4, &outputBytes))
-      return kErrorOverflow;
-
     rgba->resize(outputBytes);
-    for (std::size_t in = 0, out = 0; in < inputBytes; in += 3, out += 4) {
+    if (bitDepth == 8) {
+      for (std::size_t in = 0, out = 0; in < inputBytes; in += 3, out += 4) {
+        (*rgba)[out] = image[in];
+        (*rgba)[out + 1] = image[in + 1];
+        (*rgba)[out + 2] = image[in + 2];
+        (*rgba)[out + 3] = 255;
+      }
+      return 0;
+    }
+
+    for (std::size_t in = 0, out = 0; in < inputBytes; in += 6, out += 4) {
       (*rgba)[out] = image[in];
-      (*rgba)[out + 1] = image[in + 1];
-      (*rgba)[out + 2] = image[in + 2];
+      (*rgba)[out + 1] = image[in + 2];
+      (*rgba)[out + 2] = image[in + 4];
       (*rgba)[out + 3] = 255;
+    }
+    return 0;
+  }
+
+  if (colorType == LCT_GREY) {
+    rgba->resize(outputBytes);
+    const std::size_t pixels = static_cast<std::size_t>(width) * height;
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+      const unsigned char grey = bitDepth < 8
+                                     ? readPackedSample(image, pixel, bitDepth)
+                                     : image[pixel * (bitDepth / 8)];
+      const std::size_t out = pixel * 4;
+      (*rgba)[out] = grey;
+      (*rgba)[out + 1] = grey;
+      (*rgba)[out + 2] = grey;
+      (*rgba)[out + 3] = 255;
+    }
+    return 0;
+  }
+
+  if (colorType == LCT_GREY_ALPHA) {
+    rgba->resize(outputBytes);
+    const std::size_t pixels = static_cast<std::size_t>(width) * height;
+    const std::size_t bytesPerPixel = bitDepth == 8 ? 2 : 4;
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+      const std::size_t in = pixel * bytesPerPixel;
+      const std::size_t out = pixel * 4;
+      (*rgba)[out] = image[in];
+      (*rgba)[out + 1] = image[in];
+      (*rgba)[out + 2] = image[in];
+      (*rgba)[out + 3] = image[in + bitDepth / 8];
     }
     return 0;
   }
@@ -313,6 +455,16 @@ unsigned lodepng_encode32(
   return lodepng_encode_memory(out, outsize, image, w, h, LCT_RGBA, 8);
 }
 
+unsigned lodepng_encode24(
+    unsigned char** out,
+    size_t* outsize,
+    const unsigned char* image,
+    unsigned w,
+    unsigned h)
+{
+  return lodepng_encode_memory(out, outsize, image, w, h, LCT_RGB, 8);
+}
+
 unsigned lodepng_encode_file(
     const char* filename,
     const unsigned char* image,
@@ -351,6 +503,12 @@ unsigned lodepng_encode32_file(
   return lodepng_encode_file(filename, image, w, h, LCT_RGBA, 8);
 }
 
+unsigned lodepng_encode24_file(
+    const char* filename, const unsigned char* image, unsigned w, unsigned h)
+{
+  return lodepng_encode_file(filename, image, w, h, LCT_RGB, 8);
+}
+
 void lodepng_free(void* ptr)
 {
   std::free(ptr);
@@ -363,10 +521,16 @@ const char* lodepng_error_text(unsigned code)
       return "No error";
     case kErrorInvalidInput:
       return "Invalid PNG input or output argument";
+    case kErrorInvalidColorType:
+      return "Invalid lodepng color type";
+    case kErrorInvalidBitDepth:
+      return "Invalid bit depth for lodepng color type";
+    case kErrorInvalidPalette:
+      return "Palette encoding requires explicit palette state";
     case kErrorFileOpen:
       return "Failed to open PNG output file";
     case kErrorUnsupportedColor:
-      return "Only 8-bit RGB and RGBA PNG encoding is supported";
+      return "Unsupported lodepng compatibility color mode";
     case kErrorAllocation:
       return "Failed to allocate PNG output buffer";
     case kErrorFileWrite:

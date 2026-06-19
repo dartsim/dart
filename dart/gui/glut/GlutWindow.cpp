@@ -51,6 +51,7 @@
 #include <vector>
 
 #include <cstdio>
+#include <cstring>
 
 namespace dart {
 namespace gui {
@@ -234,7 +235,7 @@ bool Window::screenshot()
 
   // reverse temp2 temp1
   for (int row = 0; row < th; row++) {
-    memcpy(
+    std::memcpy(
         &mScreenshotTemp2[row * tw * 4],
         &mScreenshotTemp[(th - row - 1) * tw * 4],
         tw * 4);
