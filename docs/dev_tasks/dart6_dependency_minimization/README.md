@@ -154,7 +154,7 @@ Default Pixi/package metadata for optional components
 - Validation: default configure/build with system ImGui, explicit fetched-ImGui
   fallback configure/build, OSG GUI target build, install-tree headers, and
   package smoke proving ImGui headers are found through `find_package(DART
-  COMPONENTS external-imgui gui-osg)` for the fallback component path.
+  COMPONENTS external-imgui gui-osg)` in both system and fallback modes.
 
 `dart/external/lodepng`
 
