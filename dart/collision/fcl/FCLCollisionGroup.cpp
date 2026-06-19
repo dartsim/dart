@@ -65,6 +65,14 @@ void eraseObject(
       std::remove(objects.begin(), objects.end(), object), objects.end());
 }
 
+//==============================================================================
+bool containsObject(
+    const std::vector<fcl::CollisionObject*>& objects,
+    fcl::CollisionObject* object)
+{
+  return std::find(objects.begin(), objects.end(), object) != objects.end();
+}
+
 } // namespace
 
 //==============================================================================
@@ -123,12 +131,11 @@ void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
   auto casted = static_cast<FCLCollisionObject*>(object);
   auto fclObject = casted->getFCLCollisionObject();
 
-  if (isUnboundedObject(casted)) {
-    eraseObject(mUnboundedObjects, fclObject);
-  } else {
+  if (containsObject(mFiniteObjects, fclObject))
     mBroadPhaseAlg->unregisterObject(fclObject);
-    eraseObject(mFiniteObjects, fclObject);
-  }
+
+  eraseObject(mFiniteObjects, fclObject);
+  eraseObject(mUnboundedObjects, fclObject);
 
   initializeEngineData();
 }

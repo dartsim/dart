@@ -950,9 +950,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 {
   FCLCollisionObject* fcl = static_cast<FCLCollisionObject*>(object);
 
-  fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
-      new fcl::CollisionObject(claimFCLCollisionGeometry(object->getShape())));
-  fcl->mFCLCollisionObject->setUserData(fcl);
+  fcl->setFCLCollisionGeometry(claimFCLCollisionGeometry(object->getShape()));
 }
 
 //==============================================================================
