@@ -1,0 +1,9 @@
+// This compatibility header is generated into the build and install trees.
+// Keep source includes on <dart/dynamics/ikfast.h>.
+
+#ifndef DART_EXTERNAL_IKFAST_IKFAST_H_
+#define DART_EXTERNAL_IKFAST_IKFAST_H_
+
+#include <dart/dynamics/ikfast.h>
+
+#endif // DART_EXTERNAL_IKFAST_IKFAST_H_

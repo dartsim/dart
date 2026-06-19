@@ -8,8 +8,8 @@
 
   * Move the IKFast support header to the DART-owned
     `dart/dynamics/ikfast.h` path while keeping the old installed
-    `dart/external/ikfast/ikfast.h` include path available for DART 6 source
-    compatibility.
+    and build-tree `dart/external/ikfast/ikfast.h` include path available for
+    DART 6 source compatibility.
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 

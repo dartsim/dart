@@ -137,9 +137,9 @@ Default Pixi/package metadata for optional components
 - Risk: medium because the old installed include path may be source-visible.
 - Status: in progress on `chore/replace-ikfast-release-6.20`.
 - Plan: move the header to the DART-owned `dart/dynamics/ikfast.h` path, update
-  in-repo includes, remove the source `dart/external/ikfast` tree, and install
-  the new DART-owned header to the old `include/dart/external/ikfast` path for
-  DART 6 source compatibility.
+  in-repo includes, remove the source `dart/external/ikfast` tree, and generate
+  a forwarding header at the old `dart/external/ikfast` path for build-tree and
+  installed DART 6 source compatibility.
 - Validation: IKFast integration tests, generated WAM example builds, and an
   installed-header smoke if the old include path changes.
 
@@ -256,6 +256,6 @@ Select gates by touched surface:
 - Which gz-physics lane is the authoritative DART 6.20 downstream gate?
 - For IKFast, can the old installed `dart/external/ikfast/ikfast.h` path be
   removed in a future major release after DART 6 keeps compatibility by
-  installing `dart/dynamics/ikfast.h` to both include destinations?
+  forwarding it to `dart/dynamics/ikfast.h` in the build and install trees?
 - For ImGui and GUI screenshots, should DART 6 prefer system dependencies,
   FetchContent fallbacks, or feature-only GUI environments?
