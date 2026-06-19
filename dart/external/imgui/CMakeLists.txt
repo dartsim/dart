@@ -56,7 +56,13 @@ function(dart_find_imgui_source out_var source_name)
         "${search_dir}/../share/imgui"
         "${search_dir}/../share/imgui/backends"
         "${search_dir}/../share/imgui/examples"
-        "${search_dir}/../share/doc/imgui/examples")
+        "${search_dir}/../share/imgui/examples/backends"
+        "${search_dir}/../share/doc/imgui/examples"
+        "${search_dir}/../share/doc/imgui/examples/backends"
+        "${search_dir}/../share/doc/libimgui-dev/examples/backends"
+        "${search_dir}/../../share/doc/imgui/examples"
+        "${search_dir}/../../share/doc/imgui/examples/backends"
+        "${search_dir}/../../share/doc/libimgui-dev/examples/backends")
       if(EXISTS "${candidate_dir}/${source_name}")
         set(${out_var} "${candidate_dir}/${source_name}" PARENT_SCOPE)
         return()
@@ -73,10 +79,20 @@ function(dart_find_imgui_source out_var source_name)
       imgui
       imgui/backends
       backends
+      share/imgui/examples/backends
+      share/doc/imgui/examples
+      share/doc/imgui/examples/backends
+      share/doc/libimgui-dev/examples/backends
       ../share/imgui
       ../share/imgui/backends
       ../share/imgui/examples
+      ../share/imgui/examples/backends
       ../share/doc/imgui/examples
+      ../share/doc/imgui/examples/backends
+      ../share/doc/libimgui-dev/examples/backends
+      ../../share/doc/imgui/examples
+      ../../share/doc/imgui/examples/backends
+      ../../share/doc/libimgui-dev/examples/backends
   )
   if(NOT ${resolved_source_var})
     message(
