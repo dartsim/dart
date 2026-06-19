@@ -1,4 +1,3 @@
-add_subdirectory(convhull_3d)
 if(DART_BUILD_GUI_OSG)
   add_subdirectory(imgui)
 endif()

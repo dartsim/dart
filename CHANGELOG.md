@@ -4,12 +4,27 @@
 
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 
+* Breaking Changes
+
+  * Remove the previously installed `dart/external/convhull_3d` C headers
+    (`convhull_3d.h` and `safe_convhull_3d.h`) as part of replacing the
+    vendored dependency. Downstream code should include
+    `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
+    [#3076](https://github.com/dartsim/dart/pull/3076)
+
 * Build
+
+  * Replace the vendored `dart/external/convhull_3d` implementation with a
+    DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
+    `math::computeConvexHull3D`, while keeping the legacy implementation only
+    as a unit-test fixture:
+    [#3076](https://github.com/dartsim/dart/pull/3076)
 
   * Replace the vendored `dart/external/imgui` source tree with the existing
     system ImGui path for default GUI builds, a system-backed DART 6
     `external-imgui` compatibility component for default packages, and an
-    explicit DART-patched FetchContent target when `DART_USE_SYSTEM_IMGUI=OFF`.
+    explicit DART-patched FetchContent target when `DART_USE_SYSTEM_IMGUI=OFF`:
+    [#3081](https://github.com/dartsim/dart/pull/3081)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
