@@ -33,11 +33,11 @@ its own line so status updates remain git-history friendly.
   recorded maintainer direction.
   WP-091.13 and WP-091.24 still have partial landed evidence under
   `[claimed]` headings, so they require orchestrator release or split
-  follow-up packets before executor pickup; the one-PR remaining branch adds
-  the WP-091.24 standalone cross-family metrics harness/packet slice while
-  leaving the risky contact/iteration and multibody-momentum metric semantics
-  explicit. WP-091.33e is claimed on the same remaining branch for the batched
-  precision/transfer packet-reporting checker.
+  follow-up packets before executor pickup; PR #3083 adds the WP-091.24
+  standalone cross-family metrics harness/packet slice while leaving the risky
+  contact/iteration and multibody-momentum metric semantics explicit.
+  WP-091.33e is claimed in PR #3083 for the batched precision/transfer
+  packet-reporting checker.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies

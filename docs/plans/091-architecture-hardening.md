@@ -999,8 +999,8 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   integration families are genuinely distinct paths (final energy −18.2298 vs
   −18.2052). `test_cross_family_corpus` 1/1, golden 3/3, lint +
   `check-api-boundaries` green; pure-additive (no library change).
-  **Standalone harness + packet slice (implemented in the one-PR remaining
-  branch):** `tests/benchmark/simulation/bm_plan091_cross_family_corpus.cpp`
+  **Standalone harness + packet slice (pending acceptance in PR #3083):**
+  `tests/benchmark/simulation/bm_plan091_cross_family_corpus.cpp`
   runs the same registered cross-family row set as a standalone Google
   Benchmark target,
   `docs/plans/091-architecture-hardening/cross-family-metrics-corpus.json`
@@ -1307,9 +1307,9 @@ scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
   is included and what double-reference tolerance applies.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
 - Dependencies: WP-091.24, WP-091.33a.
-- Evidence (pending acceptance in the one-PR remaining branch): batched packet
-  rows now carry the resolved backend, precision, transfer-inclusion flag, lane
-  count, step count, and resolved execution shape through shared
+- Evidence (pending acceptance in PR #3083): batched packet rows now carry the
+  resolved backend, precision, transfer-inclusion flag, lane count, step count,
+  and resolved execution shape through shared
   `benchmark_packet_utils.batched_benchmark_row_schema_errors(...)`;
   `scripts/check_phase5_gpu_packet.py` rejects missing fields on the Phase 5
   CUDA representative CPU/GPU rows; `scripts/write_phase5_cuda_packet.py`
