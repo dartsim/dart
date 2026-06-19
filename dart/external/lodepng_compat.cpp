@@ -477,7 +477,7 @@ unsigned encode(
   if (error)
     return error;
 
-  out.assign(png, png + static_cast<std::ptrdiff_t>(pngSize));
+  out.insert(out.end(), png, png + static_cast<std::ptrdiff_t>(pngSize));
   std::free(png);
   return 0;
 }

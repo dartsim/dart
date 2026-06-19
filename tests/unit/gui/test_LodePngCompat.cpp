@@ -82,6 +82,22 @@ TEST(LodePngCompat, EncodesRgbaVectorThroughLegacyHeader)
   EXPECT_STREQ("No error", lodepng_error_text(0));
 }
 
+TEST(LodePngCompat, AppendsToExistingOutputVector)
+{
+  const std::vector<unsigned char> rgba = {255, 0, 0, 255};
+
+  std::vector<unsigned char> png = {0xde, 0xad, 0xbe, 0xef};
+  ASSERT_EQ(0u, lodepng::encode(png, rgba, 1, 1));
+
+  ASSERT_GT(png.size(), 4u + kPngSignature.size());
+  EXPECT_EQ(0xde, png[0]);
+  EXPECT_EQ(0xad, png[1]);
+  EXPECT_EQ(0xbe, png[2]);
+  EXPECT_EQ(0xef, png[3]);
+  EXPECT_TRUE(
+      std::equal(kPngSignature.begin(), kPngSignature.end(), png.begin() + 4));
+}
+
 TEST(LodePngCompat, EncodesRgbMemoryThroughLegacyHeader)
 {
   const std::array<unsigned char, 3> rgb = {{0, 255, 0}};
