@@ -251,12 +251,24 @@ def test_phase5_cuda_packet_writer_annotates_representative_batched_rows():
         phase5_benchmark_contract_passed = True
 
     rows = [
+        {
+            "run_name": "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100/repeats:3",
+            "cpu_time": 4.1,
+            "real_time": 4.1,
+            "time_unit": "ms",
+        },
         aggregate_row(
             "BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100_median",
             "median",
             4.0,
             time_unit="ms",
         ),
+        {
+            "run_name": "BM_Phase5RigidBodyBatchGpu/4096/128/100/repeats:3",
+            "cpu_time": 2.1,
+            "real_time": 2.1,
+            "time_unit": "ms",
+        },
         aggregate_row(
             "BM_Phase5RigidBodyBatchGpu/4096/128/100_median",
             "median",
@@ -264,18 +276,22 @@ def test_phase5_cuda_packet_writer_annotates_representative_batched_rows():
             time_unit="ms",
         )
         | {"max_final_state_abs_error": 1e-12},
+        aggregate_row("BM_Unrelated/1_median", "median", 8.0, time_unit="ms"),
     ]
 
     packet = writer.make_packet({"benchmarks": rows}, Args())
 
-    cpu_row, gpu_row = packet["benchmarks"]
+    cpu_raw, cpu_row, gpu_raw, gpu_row, unrelated = packet["benchmarks"]
+    assert cpu_raw["backend"] == "cpu"
     assert cpu_row["backend"] == "cpu"
     assert cpu_row["includes_transfer_time"] is False
+    assert gpu_raw["backend"] == "cuda"
     assert gpu_row["backend"] == "cuda"
     assert gpu_row["precision"] == "double-reference"
     assert gpu_row["includes_transfer_time"] is True
     assert gpu_row["lane_count"] == 4096
     assert gpu_row["resolved_execution_shape"] == "homogeneous-batch"
+    assert "backend" not in unrelated
 
 
 def test_abd_packet_validator_uses_shared_row_validation(tmp_path, capsys):

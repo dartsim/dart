@@ -220,7 +220,7 @@ def annotate_representative_rows(
             annotated_rows.append(row)
             continue
         name = _canonical_name(_row_name(row))
-        if row.get("aggregate_name") == "median" and name == cpu_target:
+        if name == cpu_target:
             annotated_rows.append(
                 _annotate_batched_row(
                     row,
@@ -230,7 +230,7 @@ def annotate_representative_rows(
                     step_count=args.step_count,
                 )
             )
-        elif row.get("aggregate_name") == "median" and name == gpu_target:
+        elif name == gpu_target:
             annotated_rows.append(
                 _annotate_batched_row(
                     row,
