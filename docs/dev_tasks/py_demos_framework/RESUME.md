@@ -29,11 +29,18 @@ pixi run py-demos -- --scene rigid_body --headless --frames 4 \
 The fix hardens both debug-line generation and the Filament renderable factory
 against degenerate debug primitives.
 
+The next M1 slice added scriptable capture-state restoration:
+`py-demo-capture -- --scene-state-json '{"controls":{"contact_method_index":1}}'`
+restores scene-owned replay state before the viewer starts. The `rigid_body`
+workflow panel now advertises the boxed-LCP baseline capture command, and
+default/CUDA captures resolved `contact_solver_method=BOXED_LCP` in their
+manifests.
+
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
-set, verify the contact-baseline increment, then capture the rigid-body SI vs
-boxed-LCP visual evidence and curate the AVBD constraint showcase.
+set, use the scripted capture-state path for rigid-body SI vs boxed-LCP visual
+packets, then curate the AVBD constraint showcase.
 
 Re-run any M0 guard:
 
@@ -51,6 +58,9 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 - First M1 increment: enhance the existing `rigid_body` scene before creating a
   new comparison scene. This keeps the baseline path visible in the flagship
   scene while AVBD showcase curation proceeds separately.
+- Capture-state overrides belong to scenes that already expose
+  `replay_restore_state`; unsupported scenes should fail clearly rather than
+  silently pretending a panel state was applied.
 - M0 triage: **quarantine to green** — non-runnable/planned scenes are marked
   skipped (tracked as deferred), not crashed and not force-fixed.
 - Sibling worktrees (`task_6` memory allocator, `task_7` WP-091 enum) keep
@@ -84,4 +94,5 @@ ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo 
 ```
 
 Then: run focused C++/dartpy verification for the writable contact solver
-method, run the py-demos panel/smoke guards, and proceed with M1 visual capture.
+method, run the py-demos panel/smoke guards, and proceed with the AVBD showcase
+curation or reviewer-facing M1 visual packet capture.

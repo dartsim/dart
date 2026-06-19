@@ -210,7 +210,8 @@ compatibility remains on the active DART 6 LTS branch._
   ([#3043](https://github.com/dartsim/dart/pull/3043))
 - Exposed the rigid-body Python demo's contact-solver method in its live panel
   and capture metadata, giving py-demos a direct SI versus boxed-LCP inspection
-  path for the DART 6 contact baseline.
+  path for the DART 6 contact baseline, including scriptable capture-state
+  overrides for reproducible A/B packets.
 - Hardened `dart::gui` debug overlays so zero-motion selection and force-drag
   gestures in `py-demos` skip degenerate primitives instead of tripping
   Filament's empty-AABB precondition.

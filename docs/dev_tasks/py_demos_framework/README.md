@@ -42,6 +42,11 @@ and replay metadata.
         keep the rigid-body solver fixed to the Sequential Impulse path; use
         `rigid_solver_compare` and the explicit IPC shelf scenes for SI-vs-IPC
         visual inspection.
+  - [x] Scriptable contact-policy capture: `py-demo-capture` can restore
+        scene-owned replay state before launch via `--scene-state-json`, and
+        the `rigid_body` workflow panel now advertises the boxed-LCP baseline
+        capture command. Verified in default and CUDA environments with
+        manifests resolving `contact_solver_method=BOXED_LCP`.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -81,8 +86,10 @@ repeatable operation.
    `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
-3. Capture a visual A/B packet for `rigid_body` with Sequential Impulse and
-   boxed-LCP contacts so reviewers can inspect the DART 6 baseline behavior.
+3. Capture a longer visual A/B packet for `rigid_body` with Sequential Impulse
+   and boxed-LCP contacts when the PR needs reviewer-facing image/video
+   artifacts; the scripted boxed-LCP command is now:
+   `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui --scene-state-json '{"controls":{"contact_method_index":1}}'`.
 4. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
    decide whether the final M1 experience remains two complementary scenes or
    grows into one unified comparison scene.

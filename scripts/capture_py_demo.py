@@ -656,6 +656,18 @@ def _assignment_dict(values: list[str], option_name: str) -> dict[str, str]:
     return assignments
 
 
+def _json_object(value: str, option_name: str) -> dict[str, object] | None:
+    if not value:
+        return None
+    try:
+        payload = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"{option_name} expects a JSON object: {exc.msg}") from exc
+    if not isinstance(payload, dict):
+        raise SystemExit(f"{option_name} expects a JSON object")
+    return payload
+
+
 def _run_demo_with_env(demo_args: list[str], scene_env: dict[str, str]) -> int:
     previous: dict[str, str | None] = {key: os.environ.get(key) for key in scene_env}
     try:
@@ -927,6 +939,9 @@ def build_demo_args(
         demo_args.append("--show-ui")
     if args.backend:
         demo_args.extend(["--backend", args.backend])
+    scene_state_json = getattr(args, "scene_state_json", "")
+    if scene_state_json:
+        demo_args.extend(["--scene-state-json", scene_state_json])
     capture_metrics_event_log = getattr(args, "capture_metrics_event_log", None)
     if capture_metrics_event_log:
         demo_args.extend(
@@ -1087,6 +1102,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--backend", default="")
     parser.add_argument("--allow-noop", action="store_true")
     parser.add_argument("--show-ui", action="store_true")
+    parser.add_argument(
+        "--scene-state-json",
+        default="",
+        help=(
+            "Restore a JSON scene state before rendering the selected scene. "
+            "Scenes opt in by exposing replay_restore_state."
+        ),
+    )
     parser.add_argument("--video", action="store_true")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--output-dir", type=pathlib.Path)
@@ -3244,6 +3267,8 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         raise SystemExit(
             "--rigid-workflow cannot be combined with scripted switch or force drag"
         )
+    if args.scene_state_json:
+        raise SystemExit("--rigid-workflow cannot be combined with --scene-state-json")
 
 
 def _run_rigid_workflow(args: argparse.Namespace) -> int:
@@ -3399,6 +3424,7 @@ def main(argv: list[str] | None = None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     scene_env = _assignment_dict(args.env, "--env")
     metadata = _assignment_dict(args.metadata, "--metadata")
+    scene_state = _json_object(args.scene_state_json, "--scene-state-json")
     capture_stem = _capture_stem(args)
     screenshot_ppm = output_dir / f"{capture_stem}.ppm"
     screenshot_png = output_dir / f"{capture_stem}.png"
@@ -3474,6 +3500,7 @@ def main(argv: list[str] | None = None) -> int:
         "scene_metadata": None,
         "show_ui": args.show_ui,
         "metadata": metadata,
+        "scene_state": scene_state,
         "scene_environment": scene_env,
         "ui_ready": None,
         "visual_evidence": visual_evidence,

@@ -15,13 +15,17 @@ from examples.demos.runner import (
     REPLAY_TIMELINE_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
+    SCENE_STATE_OVERRIDE_INFO_KEY,
     ScenePanel,
     SceneSetup,
+    _apply_scene_state_override,
     _attach_replay_controls,
     _capture_metadata_mapping,
     _default_initial_scene_args,
     _has_world_replay_api,
     _make_world_factory,
+    _parse_scene_state_json,
+    _rigid_workflow_capture_command,
     _rigid_workflow_packet_command,
     _rigid_workflow_row_packet_command,
     _rigid_workflow_row_video_packet_command,
@@ -193,6 +197,45 @@ def test_make_world_factory_returns_debug_provider() -> None:
     result = _make_world_factory(scene)()
 
     assert result == (None, None, None, None, debug_provider)
+
+
+def test_scene_state_override_uses_replay_restore_hook() -> None:
+    restored: list[dict[str, object]] = []
+
+    def restore_state(state: dict[str, object]) -> None:
+        restored.append(state)
+
+    scene = PythonDemoScene(
+        id="stateful",
+        title="Stateful",
+        category="Tests",
+        summary="Accepts scriptable state.",
+        build=lambda: SceneSetup(),
+    )
+    setup = SceneSetup(info={"replay_restore_state": restore_state})
+    state = {"controls": {"contact_method_index": 1}}
+
+    _apply_scene_state_override(scene, setup, state)
+    state["controls"]["contact_method_index"] = 0
+
+    assert restored == [{"controls": {"contact_method_index": 1}}]
+    assert setup.info[SCENE_STATE_OVERRIDE_INFO_KEY] == {
+        "controls": {"contact_method_index": 1}
+    }
+    assert _capture_metadata_mapping(setup)[SCENE_STATE_OVERRIDE_INFO_KEY] == {
+        "controls": {"contact_method_index": 1}
+    }
+
+
+def test_parse_scene_state_json_requires_object() -> None:
+    assert _parse_scene_state_json('{"controls":{"contact_method_index":1}}') == {
+        "controls": {"contact_method_index": 1}
+    }
+    assert _parse_scene_state_json("") is None
+    with pytest.raises(SystemExit):
+        _parse_scene_state_json("[1, 2]")
+    with pytest.raises(SystemExit):
+        _parse_scene_state_json("{")
 
 
 def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
@@ -3503,6 +3546,23 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         )
         assert f"text:{guide.capture_command}" in events
         assert "tooltip:Run from the repository root to regenerate this row." in events
+        if scene_id == "rigid_body":
+            assert "text:Boxed-LCP baseline variant" in events
+            assert (
+                "text:"
+                + _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json='{"controls":{"contact_method_index":1}}',
+                )
+            ) in events
+            assert (
+                "tooltip:Capture the same baseline row with the contact solver "
+                "set to Boxed LCP before the first frame."
+            ) in events
         assert "text:Review packet" in events
         assert (
             "text:"

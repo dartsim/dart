@@ -78,6 +78,17 @@ pixi run py-demo-capture -- --scene rigid_solver_compare --frames 72 \
     --width 960 --height 540 --show-ui --video --fps 24
 ```
 
+Scene-owned replay state can also be restored before capture with
+`--scene-state-json`. This is useful for reproducible visual A/B packets where a
+panel control would otherwise need to be clicked manually. For example, capture
+the `rigid_body` baseline with the boxed-LCP contact method selected:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_body --frames 180 \
+    --width 960 --height 540 --show-ui \
+    --scene-state-json '{"controls":{"contact_method_index":1}}'
+```
+
 The docked workspace has a top `Simulation` toolbar, a searchable `Demos`
 navigator, scene-specific panels on the right, bottom scene panels when a demo
 owns timeline controls, and a docked DART diagnostics panel. Use `Rebuild` to

@@ -34,6 +34,7 @@ import math
 import os
 import re
 import signal
+import shlex
 import sys
 import threading
 import time
@@ -52,6 +53,8 @@ REPLAY_TIMELINE_INFO_KEY = "replay_timeline"
 REPLAY_WORLD_INFO_KEYS = ("sx_world", "physics_world")
 CAPTURE_METRICS_INFO_KEY = "capture_metrics"
 CAPTURE_METADATA_EVENT_NAME = "scene_capture_metadata"
+SCENE_STATE_OVERRIDE_INFO_KEY = "scene_state_override"
+_RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
 CAPTURE_METRICS_EVENT_NAME = "scene_capture_metrics"
 _REPLAY_RATE_LABELS = (
     "1 frame/tick",
@@ -918,6 +921,7 @@ def _rigid_workflow_capture_command(
     width: int,
     height: int,
     show_ui: bool,
+    scene_state_json: str | None = None,
 ) -> str:
     command = (
         "pixi run py-demo-capture -- "
@@ -925,6 +929,8 @@ def _rigid_workflow_capture_command(
     )
     if show_ui:
         command = f"{command} --show-ui"
+    if scene_state_json is not None:
+        command = f"{command} --scene-state-json {shlex.quote(scene_state_json)}"
     return command
 
 
@@ -1968,10 +1974,51 @@ def _capture_metadata_mapping(setup: SceneSetup) -> dict[str, Any]:
     replay_timeline = _replay_timeline_capture_metadata(setup)
     if replay_timeline is not None:
         metadata[REPLAY_TIMELINE_INFO_KEY] = replay_timeline
+    scene_state_override = setup.info.get(SCENE_STATE_OVERRIDE_INFO_KEY)
+    if scene_state_override is not None:
+        metadata[SCENE_STATE_OVERRIDE_INFO_KEY] = scene_state_override
     skipped_reason = setup.info.get("shared_replay_skipped_reason")
     if isinstance(skipped_reason, str) and skipped_reason:
         metadata["shared_replay_skipped_reason"] = skipped_reason
     return metadata
+
+
+def _parse_scene_state_json(text: str) -> dict[str, Any] | None:
+    if not text:
+        return None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(
+            f"--scene-state-json must be a JSON object: {exc.msg}"
+        ) from exc
+    if not isinstance(payload, Mapping):
+        raise SystemExit("--scene-state-json must be a JSON object")
+    return dict(payload)
+
+
+def _apply_scene_state_override(
+    scene: PythonDemoScene, setup: SceneSetup, state: Mapping[str, Any] | None
+) -> SceneSetup:
+    if state is None:
+        return setup
+
+    restore = setup.info.get("replay_restore_state")
+    if not callable(restore):
+        raise RuntimeError(
+            f"Python demo scene '{scene.id}' does not support --scene-state-json"
+        )
+    state_copy = copy.deepcopy(dict(state))
+    try:
+        restore(state_copy)
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            f"Python demo scene '{scene.id}' rejected --scene-state-json: {exc}"
+        ) from exc
+    setup.info[SCENE_STATE_OVERRIDE_INFO_KEY] = _capture_metrics_json_value(
+        state_copy
+    )
+    return setup
 
 
 def _append_capture_metadata_event(
@@ -2489,6 +2536,22 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.item_tooltip("Open this row live in py-demos for interactive debugging.")
         builder.text(guide.capture_command)
         builder.item_tooltip("Run from the repository root to regenerate this row.")
+        if guide.scene_id == "rigid_body":
+            builder.text("Boxed-LCP baseline variant")
+            builder.text(
+                _rigid_workflow_capture_command(
+                    guide.scene_id,
+                    guide.capture_frames,
+                    guide.capture_width,
+                    guide.capture_height,
+                    guide.capture_show_ui,
+                    scene_state_json=_RIGID_BODY_BOXED_LCP_STATE_JSON,
+                )
+            )
+            builder.item_tooltip(
+                "Capture the same baseline row with the contact solver set to "
+                "Boxed LCP before the first frame."
+            )
         builder.separator()
         builder.text("Review packet")
         builder.text(
@@ -2631,6 +2694,7 @@ def _make_world_factory(
     scene: PythonDemoScene,
     gpu_panel: ScenePanel | None = None,
     capture_metrics_event_log: str = "",
+    scene_state_override: Mapping[str, Any] | None = None,
 ) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
@@ -2641,6 +2705,7 @@ def _make_world_factory(
     def factory() -> Any:
         with _bounded_scene_build(scene.id):
             setup = scene.build()
+        setup = _apply_scene_state_override(scene, setup, scene_state_override)
         setup = _attach_replay_controls(scene, setup)
         _append_capture_metadata_event(capture_metrics_event_log, scene.id, setup)
         setup = _attach_capture_metrics_recording(
@@ -2710,16 +2775,17 @@ def _strip_runner_local_flags(argv: list[str]) -> list[str]:
 
     stripped: list[str] = []
     skip_next = False
+    flags_with_values = {"--capture-metrics-event-log", "--scene-state-json"}
     for arg in argv:
         if skip_next:
             skip_next = False
             continue
         if arg in {"--gpu", "--no-gpu"}:
             continue
-        if arg == "--capture-metrics-event-log":
+        if arg in flags_with_values:
             skip_next = True
             continue
-        if arg.startswith("--capture-metrics-event-log="):
+        if any(arg.startswith(f"{flag}=") for flag in flags_with_values):
             continue
         stripped.append(arg)
     return stripped
@@ -2826,6 +2892,7 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     parser.add_argument("--gpu", dest="gpu", action="store_true", default=None)
     parser.add_argument("--no-gpu", dest="gpu", action="store_false")
     parser.add_argument("--capture-metrics-event-log", default="")
+    parser.add_argument("--scene-state-json", default="")
     known, _passthrough = parser.parse_known_args(argv)
 
     if known.list:
@@ -2838,6 +2905,19 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
     )
     if default_initial_scene_args:
         _validate_scene(DEFAULT_INITIAL_SCENE_ID, scenes)
+    scene_state_override = _parse_scene_state_json(known.scene_state_json)
+    scene_state_scene_id: str | None = None
+    if scene_state_override is not None:
+        if known.scene is not None:
+            scene_state_scene_id = _canonical_scene_id(known.scene)
+        elif default_initial_scene_args:
+            scene_state_scene_id = DEFAULT_INITIAL_SCENE_ID
+        else:
+            raise SystemExit(
+                "--scene-state-json requires a single selected scene; pass "
+                "--scene or omit --cycle-scenes so the default rigid_body "
+                "scene is selected"
+            )
 
     # Import dartpy.gui lazily so `--list` works even when the GUI
     # backend isn't built (e.g. on CI variants without filament).
@@ -2867,6 +2947,11 @@ def run(argv: Iterable[str], scenes: list[PythonDemoScene]) -> int:
                 scene,
                 gpu_panel,
                 capture_metrics_event_log=known.capture_metrics_event_log,
+                scene_state_override=(
+                    scene_state_override
+                    if scene.id == scene_state_scene_id
+                    else None
+                ),
             ),
         )
         for scene in scenes
