@@ -37,6 +37,11 @@
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online.
 
+* GUI
+
+  * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
+    route ImGui font/style scaling through `ImGuiHandler`.
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic

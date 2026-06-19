@@ -37,6 +37,8 @@
 
 #include <dart/dart.hpp>
 
+#include <iostream>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
@@ -278,8 +280,15 @@ protected:
   dart::gui::osg::Viewer* mViewer;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   dart::simulation::WorldPtr world(new dart::simulation::World);
   dart::utils::DartLoader loader;
 
@@ -323,7 +332,11 @@ int main()
   std::cout << viewer.getInstructions() << std::endl;
 
   // Set up the window to be 640x480 pixels
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(640, options.scale),
+      dart::gui::osg::scaleWindowExtent(480, options.scale));
 
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.57, 3.14, 1.64),

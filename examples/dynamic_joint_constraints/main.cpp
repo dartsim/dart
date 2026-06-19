@@ -49,23 +49,13 @@
 #include <memory>
 #include <string>
 
-#include <cstdlib>
-
 namespace {
 
 constexpr double kBodyMass = 1.0;
-constexpr double kDefaultGuiScale = 1.0;
-constexpr double kMinGuiScale = 0.75;
-constexpr double kMaxGuiScale = 4.0;
 constexpr int kViewerWidth = 960;
 constexpr int kViewerHeight = 640;
 constexpr float kPanelWidth = 430.0f;
 constexpr float kPanelHeight = 290.0f;
-
-struct Options
-{
-  double guiScale = kDefaultGuiScale;
-};
 
 struct DemoBody
 {
@@ -79,63 +69,6 @@ Eigen::Isometry3d makeTransform(const Eigen::Vector3d& translation)
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = translation;
   return transform;
-}
-
-void printUsage(const char* executable)
-{
-  std::cout << "Usage: " << executable << " [--gui-scale SCALE]\n"
-            << "\n"
-            << "Options:\n"
-            << "  --gui-scale SCALE   Scale the ImGui panel and initial "
-               "viewer window (default: 1.0).\n"
-            << "  -h, --help          Show this help message.\n";
-}
-
-double parseGuiScale(const std::string& value)
-{
-  char* end = nullptr;
-  const double parsed = std::strtod(value.c_str(), &end);
-  if (end == value.c_str() || *end != '\0') {
-    std::cerr << "Invalid --gui-scale value '" << value << "'. Falling back to "
-              << kDefaultGuiScale << ".\n";
-    return kDefaultGuiScale;
-  }
-
-  return std::max(kMinGuiScale, std::min(kMaxGuiScale, parsed));
-}
-
-Options parseOptions(int argc, char* argv[])
-{
-  Options options;
-
-  for (int i = 1; i < argc; ++i) {
-    const std::string arg = argv[i];
-    const std::string prefix = "--gui-scale=";
-
-    if (arg == "-h" || arg == "--help") {
-      printUsage(argv[0]);
-      std::exit(0);
-    } else if (arg == "--gui-scale") {
-      if (i + 1 >= argc) {
-        std::cerr << "--gui-scale requires a value. Falling back to "
-                  << kDefaultGuiScale << ".\n";
-        continue;
-      }
-
-      options.guiScale = parseGuiScale(argv[++i]);
-    } else if (arg.compare(0, prefix.size(), prefix) == 0) {
-      options.guiScale = parseGuiScale(arg.substr(prefix.size()));
-    } else {
-      std::cerr << "Ignoring unknown option '" << arg << "'.\n";
-    }
-  }
-
-  return options;
-}
-
-int scaleWindowExtent(int extent, double scale)
-{
-  return std::max(1, static_cast<int>(extent * scale + 0.5));
 }
 
 void setFreeJointVelocity(
@@ -451,12 +384,6 @@ public:
 
   void render() override
   {
-    if (!mStyleScaled) {
-      ImGui::GetStyle().ScaleAllSizes(mGuiScale);
-      mStyleScaled = true;
-    }
-
-    ImGui::GetIO().FontGlobalScale = mGuiScale;
     const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
     const float margin = 10.0f * mGuiScale;
     const ImVec2 windowSize = computeWindowSize(displaySize, margin);
@@ -527,14 +454,19 @@ private:
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   float mGuiScale;
-  bool mStyleScaled = false;
 };
 
 } // namespace
 
 int main(int argc, char* argv[])
 {
-  const Options options = parseOptions(argc, argv);
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   dart::simulation::WorldPtr world = createWorld();
 
   osg::ref_ptr<dart::gui::osg::WorldNode> node
@@ -543,9 +475,10 @@ int main(int argc, char* argv[])
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
-  viewer->getRootGroup()->addChild(createSceneLabels(options.guiScale));
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
+  viewer->getRootGroup()->addChild(createSceneLabels(options.scale));
   viewer->getImGuiHandler()->addWidget(
-      std::make_shared<DynamicJointWidget>(viewer, world, options.guiScale));
+      std::make_shared<DynamicJointWidget>(viewer, world, options.scale));
 
   viewer->addInstructionText(
       "\nThe scene shows Ball, Cylindrical, and Weld dynamic constraints.\n");
@@ -559,8 +492,8 @@ int main(int argc, char* argv[])
   viewer->setUpViewInWindow(
       0,
       0,
-      scaleWindowExtent(kViewerWidth, options.guiScale),
-      scaleWindowExtent(kViewerHeight, options.guiScale));
+      dart::gui::osg::scaleWindowExtent(kViewerWidth, options.scale),
+      dart::gui::osg::scaleWindowExtent(kViewerHeight, options.scale));
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.0, -7.0, 4.0),
       ::osg::Vec3(0.0, 0.0, 0.9),

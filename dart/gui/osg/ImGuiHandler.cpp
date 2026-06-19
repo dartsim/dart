@@ -42,12 +42,14 @@
 #include "dart/common/Macros.hpp"
 #include "dart/gui/osg/ImGuiWidget.hpp"
 #include "dart/gui/osg/IncludeImGui.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
 #include <osg/Camera>
 #include <osg/GLExtensions>
 #include <osg/RenderInfo>
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 namespace dart {
@@ -65,6 +67,27 @@ constexpr GLenum kGLClientActiveTexture = GL_CLIENT_ACTIVE_TEXTURE;
 #else
 constexpr GLenum kGLClientActiveTexture = 0x84E1;
 #endif
+
+namespace {
+
+struct GuiScaleState
+{
+  double scale = getDefaultGuiScale();
+  double appliedScale = getDefaultGuiScale();
+};
+
+std::unordered_map<const ImGuiHandler*, GuiScaleState>& getGuiScaleStates()
+{
+  static std::unordered_map<const ImGuiHandler*, GuiScaleState> states;
+  return states;
+}
+
+GuiScaleState& getGuiScaleState(const ImGuiHandler* handler)
+{
+  return getGuiScaleStates()[handler];
+}
+
+} // namespace
 
 #if IMGUI_VERSION_NUM < 19150
 
@@ -403,7 +426,19 @@ ImGuiHandler::ImGuiHandler()
 //==============================================================================
 ImGuiHandler::~ImGuiHandler()
 {
-  // Do nothing
+  getGuiScaleStates().erase(this);
+}
+
+//==============================================================================
+void ImGuiHandler::setGuiScale(double scale)
+{
+  getGuiScaleState(this).scale = sanitizeGuiScale(scale);
+}
+
+//==============================================================================
+double ImGuiHandler::getGuiScale() const
+{
+  return getGuiScaleState(this).scale;
 }
 
 //==============================================================================
@@ -617,6 +652,8 @@ bool ImGuiHandler::handle(
 void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
 {
   ImGui_ImplOpenGL2_NewFrame();
+  auto& guiScale = getGuiScaleState(this);
+  applyImGuiScale(guiScale.scale, &guiScale.appliedScale);
 
   auto& io = ImGui::GetIO();
   auto* viewport = renderInfo.getCurrentCamera()->getViewport();

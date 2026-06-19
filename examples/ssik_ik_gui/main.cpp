@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <array>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -49,6 +50,9 @@
 #include <cmath>
 
 namespace {
+
+constexpr int kViewerWidth = 980;
+constexpr int kViewerHeight = 720;
 
 constexpr double pi()
 {
@@ -206,7 +210,11 @@ struct ArmInfo
   std::string baseLink;
   std::string eeLink;
   int dof = 0;
-  Eigen::Isometry3d home = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d home = [] {
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
+    return tf;
+  }();
 };
 
 //==============================================================================
@@ -593,6 +601,15 @@ std::string formatVector(const Eigen::VectorXd& vector)
 }
 
 //==============================================================================
+Eigen::Isometry3d offsetPose(
+    const Eigen::Isometry3d& pose, const Eigen::Vector3d& offset)
+{
+  Eigen::Isometry3d out = pose;
+  out.translation() += offset;
+  return out;
+}
+
+//==============================================================================
 class SsikIkWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
@@ -610,8 +627,13 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(430, 640), ImGuiCond_FirstUseEver);
+    const auto guiScale
+        = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+    ImGui::SetNextWindowPos(
+        ImVec2(10 * guiScale, 20 * guiScale), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(
+        ImVec2(520 * guiScale, 700 * guiScale), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.85f);
 
     if (!ImGui::Begin(
             "ssik Analytical IK", nullptr, ImGuiWindowFlags_MenuBar)) {
@@ -666,7 +688,12 @@ private:
           "Chain: %s -> %s", mInfo.baseLink.c_str(), mInfo.eeLink.c_str());
       ImGui::Text("DOF: %d", mInfo.dof);
     } else {
+      ImGui::TextColored(
+          ImVec4(1.0f, 0.78f, 0.20f, 1.0f), "ssik is not available");
       ImGui::TextWrapped("%s", mStatus.c_str());
+      ImGui::TextWrapped(
+          "Install into this Pixi environment with: "
+          "pixi run python -m pip install ssik");
     }
   }
 
@@ -765,6 +792,11 @@ private:
     if (!mBridge.loadArm(mArms[mArmIndex].module, mInfo, error)) {
       mStatus = "Install ssik in this Python environment to use this example: "
                 + error;
+      mInfo = ArmInfo();
+      setTargetControlsFromTransform(mInfo.home, mTargetXyz, mTargetRpyDegrees);
+      syncTargetFrame();
+      mSolvedFrame->setTransform(
+          offsetPose(mInfo.home, Eigen::Vector3d(0.0, 0.25, 0.0)));
       return;
     }
 
@@ -772,6 +804,7 @@ private:
     mSeed = Eigen::VectorXd::Zero(mInfo.dof);
     setTargetControlsFromTransform(mInfo.home, mTargetXyz, mTargetRpyDegrees);
     syncTargetFrame();
+    mSolvedFrame->setTransform(mInfo.home);
     solveCurrent();
   }
 
@@ -862,23 +895,56 @@ public:
   }
 };
 
+//==============================================================================
+void addFrameMarker(
+    const dart::gui::osg::InteractiveFramePtr& frame,
+    const Eigen::Vector4d& color,
+    double radius)
+{
+  dart::dynamics::SimpleFrame* marker = frame->addShapeFrame(
+      std::make_shared<dart::dynamics::SphereShape>(radius));
+  marker->getVisualAspect(true)->setColor(color);
+}
+
 } // namespace
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   PythonSession python;
 
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
+  Eigen::Isometry3d defaultTarget = Eigen::Isometry3d::Identity();
+  defaultTarget.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
+
   dart::gui::osg::InteractiveFramePtr target(
-      new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
+      new dart::gui::osg::InteractiveFrame(
+          dart::dynamics::Frame::World(),
+          "ssik_target",
+          defaultTarget,
+          0.35,
+          4.0));
   target->setName("ssik_target");
+  addFrameMarker(target, Eigen::Vector4d(1.0, 0.80, 0.05, 0.95), 0.055);
   world->addSimpleFrame(target);
 
   dart::gui::osg::InteractiveFramePtr solvedFrame(
-      new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
+      new dart::gui::osg::InteractiveFrame(
+          dart::dynamics::Frame::World(),
+          "ssik_fk_solution",
+          offsetPose(defaultTarget, Eigen::Vector3d(0.0, 0.25, 0.0)),
+          0.28,
+          3.0));
   solvedFrame->setName("ssik_fk_solution");
+  addFrameMarker(solvedFrame, Eigen::Vector4d(0.15, 0.85, 1.0, 0.85), 0.045);
   world->addSimpleFrame(solvedFrame);
 
   osg::ref_ptr<SsikWorldNode> node = new SsikWorldNode(world);
@@ -886,21 +952,35 @@ int main()
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
 
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<SsikIkWidget>(viewer, target, solvedFrame));
 
   viewer->enableDragAndDrop(target.get());
+  viewer->enableDragAndDrop(solvedFrame.get());
+  viewer->addInstructionText(
+      "\nYellow marker: target transform. Cyan marker: selected FK "
+      "solution.\n");
+  viewer->addInstructionText(
+      "Install optional ssik with: pixi run python -m pip install ssik\n");
+  viewer->addInstructionText(
+      "Use --gui-scale <value> to scale the ImGui panel and viewer window.\n");
+  std::cout << viewer->getInstructions() << std::endl;
 
   osg::ref_ptr<dart::gui::osg::GridVisual> grid
       = new dart::gui::osg::GridVisual();
   grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
   viewer->addAttachment(grid);
 
-  viewer->setUpViewInWindow(0, 0, 980, 720);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(kViewerWidth, options.scale),
+      dart::gui::osg::scaleWindowExtent(kViewerHeight, options.scale));
   viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.5f, -3.0f, 1.8f),
-      ::osg::Vec3(0.0f, 0.0f, 0.5f),
+      ::osg::Vec3(1.8f, -2.2f, 1.4f),
+      ::osg::Vec3(0.35f, 0.05f, 0.25f),
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 

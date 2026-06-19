@@ -39,6 +39,8 @@
 
 #include <dart/dart.hpp>
 
+#include <iostream>
+
 #include <cmath>
 
 using namespace dart;
@@ -308,8 +310,10 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(360, 600));
+    const auto guiScale
+        = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+    ImGui::SetNextWindowPos(ImVec2(10 * guiScale, 20 * guiScale));
+    ImGui::SetNextWindowSize(ImVec2(360 * guiScale, 600 * guiScale));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Point Cloud & Voxel Grid Demo",
@@ -685,8 +689,15 @@ dynamics::SimpleFramePtr createSensorFrame()
   return sensorFrame;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   auto world = dart::simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
 
@@ -712,6 +723,7 @@ int main()
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
   viewer->simulate(true);
 
   // Create grid
@@ -727,7 +739,11 @@ int main()
   std::cout << viewer->getInstructions() << std::endl;
 
   // Set up the window to be 1280x720 pixels
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1280, options.scale),
+      dart::gui::osg::scaleWindowExtent(720, options.scale));
 
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.57f, 3.14f, 1.64f),

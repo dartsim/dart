@@ -848,12 +848,25 @@ bool parseArgs(int argc, char** argv, Options& opt)
     }
     return true;
   };
+  if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
+    opt.guiScale = static_cast<float>(dart::gui::osg::parseGuiScale(
+        envScale, dart::gui::osg::getDefaultGuiScale(), &std::cerr));
+  }
+
+  const std::string guiScalePrefix = "--gui-scale=";
   for (int i = 1; i < argc; ++i) {
     const char* a = argv[i];
     if (std::strcmp(a, "--gui-scale") == 0) {
       if (!needsValue(i))
         return false;
-      opt.guiScale = std::stof(argv[++i]);
+      opt.guiScale = static_cast<float>(
+          dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr));
+    } else if (
+        std::string(a).compare(0, guiScalePrefix.size(), guiScalePrefix) == 0) {
+      opt.guiScale = static_cast<float>(dart::gui::osg::parseGuiScale(
+          std::string(a).substr(guiScalePrefix.size()),
+          opt.guiScale,
+          &std::cerr));
     } else if (std::strcmp(a, "--headless") == 0) {
       opt.headless = true;
     } else if (std::strcmp(a, "--shot") == 0) {
@@ -928,53 +941,26 @@ void addProjectilePool(const WorldPtr& world)
 }
 
 //==============================================================================
-float sanitizeGuiScale(float scale)
-{
-  if (!std::isfinite(scale) || scale <= 0.0f)
-    return 1.0f;
-
-  return std::clamp(scale, 0.75f, 2.5f);
-}
-
-//==============================================================================
-int scaleWindowExtent(int extent, float scale)
-{
-  return std::max(1, static_cast<int>(std::lround(extent * scale)));
-}
-
-//==============================================================================
 int initialWindowWidth(const Options& opt)
 {
-  return opt.widthExplicit ? opt.width
-                           : scaleWindowExtent(opt.width, opt.guiScale);
+  return opt.widthExplicit
+             ? opt.width
+             : dart::gui::osg::scaleWindowExtent(opt.width, opt.guiScale);
 }
 
 //==============================================================================
 int initialWindowHeight(const Options& opt)
 {
-  return opt.heightExplicit ? opt.height
-                            : scaleWindowExtent(opt.height, opt.guiScale);
+  return opt.heightExplicit
+             ? opt.height
+             : dart::gui::osg::scaleWindowExtent(opt.height, opt.guiScale);
 }
 
 //==============================================================================
-void configureImGuiStyle(float scale)
+void configureImGuiStyle()
 {
-  ImGuiIO& io = ImGui::GetIO();
-  io.FontGlobalScale = 1.0f;
-  io.Fonts->Clear();
-  ImFontConfig fontConfig;
-  fontConfig.SizePixels = 13.0f * scale;
-#if IMGUI_VERSION_NUM >= 19200
-  io.Fonts->AddFontDefaultBitmap(&fontConfig);
-#else
-  io.Fonts->AddFontDefault(&fontConfig);
-#endif
-
   ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
-#if IMGUI_VERSION_NUM >= 19200
-  style.FontScaleMain = 1.0f;
-#endif
   style.WindowRounding = 4.0f;
   style.ChildRounding = 3.0f;
   style.FrameRounding = 3.0f;
@@ -986,7 +972,6 @@ void configureImGuiStyle(float scale)
   style.FramePadding = ImVec2(8.0f, 5.0f);
   style.ItemSpacing = ImVec2(8.0f, 7.0f);
   style.ScrollbarSize = 14.0f;
-  style.ScaleAllSizes(scale);
 
   auto& colors = style.Colors;
   colors[ImGuiCol_Text] = ImVec4(0.93f, 0.95f, 0.97f, 1.0f);
@@ -1271,7 +1256,8 @@ int main(int argc, char** argv)
   Options opt;
   if (!parseArgs(argc, argv, opt))
     return 0;
-  opt.guiScale = sanitizeGuiScale(opt.guiScale);
+  opt.guiScale
+      = static_cast<float>(dart::gui::osg::sanitizeGuiScale(opt.guiScale));
 
   auto world = World::create();
   // This example prioritizes interactive real-time playback over high-frequency
@@ -1328,10 +1314,8 @@ int main(int argc, char** argv)
   viewer->addWorldNode(node);
   configureViewerAppearance(viewer.get());
 
-  // Scale the ImGui panel for HiDPI displays (the default 13px font is tiny on
-  // a 4K screen). Scale both style metrics and font rendering from the same
-  // value so controls and labels grow together.
-  configureImGuiStyle(opt.guiScale);
+  configureImGuiStyle();
+  viewer->getImGuiHandler()->setGuiScale(opt.guiScale);
 
   // Soft shadows for depth without the blocky, over-dark default demo look.
   node->setShadowTechnique(createDemoShadowTechnique(viewer.get()));
