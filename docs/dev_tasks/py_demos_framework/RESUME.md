@@ -110,20 +110,19 @@ default `pixi run py-demos-smoke --json-out
 `fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
 selection debug-overlay fix, scriptable capture-state restoration, labeled
 stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
-packet. Local follow-up work may be ahead of the remote PR branch until the
-phase-map, stateful open-live command, boxed-LCP workflow-panel UI, and
-rigid-body contact preset fixes plus full-catalog smoke evidence are pushed.
+packet. The remote PR branch also includes the phase-map, stateful open-live
+command, boxed-LCP workflow-panel UI, rigid-body contact preset, and
+full-catalog smoke evidence follow-ups. The PR body has been refreshed with the
+default and CUDA before/after launch timings plus the full-catalog smoke
+results.
 
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
 set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
 visual evidence, and use the dedicated AVBD showcase packet for the modern
-rigid-constraint track. The next useful slice is PR management: push the local
-phase-map/open-live command, workflow-panel UI, contact preset, and smoke
-evidence fixes after explicit approval, refresh the PR body with the full-packet
-and full-catalog smoke evidence if pushing, then watch CI/Codex review for
-actionable feedback.
+rigid-constraint track. The next useful slice is PR management: watch hosted CI
+and the fresh Codex review request on PR #3084 for actionable feedback.
 
 Re-run any M0 guard:
 

@@ -35,9 +35,9 @@ and replay metadata.
         into Filament's AABB precondition path.
   - [x] Local full-catalog regression pass on PR #3084 local head `bd0b8e7`:
         default `pixi run py-demos-smoke --json-out
-    /tmp/py_demos_smoke_default_pr3084_local.json` passed **155/155** in
+/tmp/py_demos_smoke_default_pr3084_local.json` passed **155/155** in
         `real 47.96s`; CUDA `pixi run -e cuda py-demos-smoke --json-out
-    /tmp/py_demos_smoke_cuda_pr3084_local.json` passed **155/155** in
+/tmp/py_demos_smoke_cuda_pr3084_local.json` passed **155/155** in
         `real 76.18s`.
 - [ ] **M1 — Best domain + solver**: pick the flagship domain (rigid body) and
       solver, and make that path excellent end-to-end (visual + panels + replay + capture + docs). **In progress**.
