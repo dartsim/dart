@@ -256,7 +256,35 @@ def _default_output_dir(scene: str) -> pathlib.Path:
     return pathlib.Path(tempfile.gettempdir()) / "dart_py_demo_capture" / safe
 
 
-RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+WorkflowCaptureSpec = (
+    tuple[str, int, int, int, bool] | tuple[str, int, int, int, bool, str, str | None]
+)
+
+
+def _workflow_spec_fields(
+    spec: WorkflowCaptureSpec,
+) -> tuple[str, int, int, int, bool, str, str | None]:
+    if len(spec) not in (5, 7):
+        raise ValueError(f"expected 5- or 7-field workflow spec, got {len(spec)}")
+    scene, frames, width, height, show_ui = spec[:5]
+    scene_state_json = str(spec[5]) if len(spec) == 7 else ""
+    capture_label = spec[6] if len(spec) == 7 else None
+    if capture_label is not None:
+        capture_label = str(capture_label)
+    return (
+        str(scene),
+        int(frames),
+        int(width),
+        int(height),
+        bool(show_ui),
+        scene_state_json,
+        capture_label,
+    )
+
+
+_RIGID_BODY_BOXED_LCP_STATE_JSON = '{"controls":{"contact_method_index":1}}'
+
+RIGID_WORKFLOW_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("rigid_body", 180, 960, 540, True),
     ("rigid_body_modes", 72, 960, 540, True),
     ("rigid_free_flight", 96, 960, 540, True),
@@ -296,7 +324,7 @@ RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
 )
 
 
-RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("deactivation_sleeping", 72, 960, 540, True),
     ("floating_base", 72, 960, 540, True),
     ("articulated", 72, 960, 540, True),
@@ -307,9 +335,21 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...
 )
 
 
-RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS: tuple[
-    tuple[str, int, int, int, bool], ...
-] = (
+RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
+    ("rigid_body", 180, 960, 540, True, "", "sequential_impulse"),
+    (
+        "rigid_body",
+        180,
+        960,
+        540,
+        True,
+        _RIGID_BODY_BOXED_LCP_STATE_JSON,
+        "boxed_lcp",
+    ),
+)
+
+
+RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
     ("avbd_rigid_breakable_joint", 72, 960, 540, True),
     ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),
@@ -318,7 +358,7 @@ RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS: tuple[
 )
 
 
-RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("rigid_ipc", 72, 960, 540, True),
     ("rigid_ipc_slide", 72, 960, 540, True),
     ("rigid_ipc_incline", 72, 960, 540, True),
@@ -326,7 +366,7 @@ RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], .
 )
 
 
-RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("rigid_ipc_stack_packet", 24, 960, 540, True),
     ("rigid_ipc_heavy_stack_packet", 12, 960, 540, True),
 )
@@ -559,6 +599,65 @@ _RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = 
     },
 }
 
+_RIGID_WORKFLOW_CONTACT_BASELINE_GUIDANCE_BY_LABEL: dict[str, dict[str, object]] = {
+    "sequential_impulse": {
+        "workflow_label": "Contact baseline",
+        "workflow_phase": "M1 contact-policy baseline",
+        "focus_axis": "Sequential Impulse vs boxed-LCP contact method",
+        "user_question": (
+            "What does the flagship rigid_body scene show with the default "
+            "Sequential Impulse contact path?"
+        ),
+        "try_first": (
+            "Use this row as the live DART 7 contact-policy baseline before "
+            "inspecting the boxed-LCP variant."
+        ),
+        "inspect": [
+            "contact solver method",
+            "contact count",
+            "body motion",
+            "controls",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The scene renders with docked diagnostics and reports the default "
+            "Sequential Impulse contact method."
+        ),
+        "scope": (
+            "World rigid-body contact-policy baseline for M1; complementary to "
+            "the AVBD rigid-constraint showcase."
+        ),
+    },
+    "boxed_lcp": {
+        "workflow_label": "Contact baseline",
+        "workflow_phase": "M1 contact-policy baseline",
+        "focus_axis": "Sequential Impulse vs boxed-LCP contact method",
+        "user_question": (
+            "How does the same rigid_body scene behave with the DART 6-style "
+            "boxed-LCP contact baseline selected before launch?"
+        ),
+        "try_first": (
+            "Use this row when reviewer evidence needs the known-good boxed-LCP "
+            "contact baseline without manual panel setup."
+        ),
+        "inspect": [
+            "contact solver method",
+            "capture state",
+            "contact count",
+            "body motion",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The manifest resolves contact_solver_method=BOXED_LCP and keeps "
+            "the docked visual evidence distinct from the SI row."
+        ),
+        "scope": (
+            "World contact-policy baseline using boxed-LCP contacts; not an "
+            "AVBD solver-enum or rigid-body solver-family comparison."
+        ),
+    },
+}
+
 _RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     "rigid_ipc_stack_packet": {
         "workflow_label": "Capture-first packet",
@@ -627,31 +726,27 @@ _RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
 }
 
 
-def rigid_workflow_capture_specs() -> tuple[tuple[str, int, int, int, bool], ...]:
+def rigid_workflow_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_CAPTURE_SPECS
 
 
-def rigid_workflow_related_capture_specs() -> (
-    tuple[tuple[str, int, int, int, bool], ...]
-):
+def rigid_workflow_related_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
 
 
-def rigid_workflow_avbd_showcase_capture_specs() -> (
-    tuple[tuple[str, int, int, int, bool], ...]
-):
+def rigid_workflow_contact_baseline_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
+    return RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS
+
+
+def rigid_workflow_avbd_showcase_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS
 
 
-def rigid_workflow_ipc_shelf_capture_specs() -> (
-    tuple[tuple[str, int, int, int, bool], ...]
-):
+def rigid_workflow_ipc_shelf_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS
 
 
-def rigid_workflow_packet_capture_specs() -> (
-    tuple[tuple[str, int, int, int, bool], ...]
-):
+def rigid_workflow_packet_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_PACKET_CAPTURE_SPECS
 
 
@@ -1227,6 +1322,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--contact-baseline-only",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, capture only the SI versus boxed-LCP "
+            "rigid_body contact-baseline packet."
+        ),
+    )
+    parser.add_argument(
         "--include-ipc-shelf",
         action="store_true",
         help=(
@@ -1364,6 +1467,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def _workflow_output_dir(args: argparse.Namespace) -> pathlib.Path:
     if args.output_dir:
         return args.output_dir
+    if getattr(args, "contact_baseline_only", False):
+        return _default_output_dir("rigid_contact_baseline")
     if getattr(args, "avbd_showcase_only", False):
         return _default_output_dir("rigid_avbd_showcase")
     return _default_output_dir("rigid_workflow")
@@ -1377,7 +1482,9 @@ def _workflow_scene_output_dir(
 
 def _workflow_capture_specs(
     args: argparse.Namespace,
-) -> tuple[tuple[str, int, int, int, bool], ...]:
+) -> tuple[WorkflowCaptureSpec, ...]:
+    if getattr(args, "contact_baseline_only", False):
+        return rigid_workflow_contact_baseline_capture_specs()
     if getattr(args, "avbd_showcase_only", False):
         return rigid_workflow_avbd_showcase_capture_specs()
     specs = list(rigid_workflow_capture_specs())
@@ -1394,6 +1501,7 @@ def _workflow_requested_include_flags(
     args: argparse.Namespace,
 ) -> dict[str, bool]:
     return {
+        "include_contact_baseline": bool(getattr(args, "contact_baseline_only", False)),
         "include_avbd_showcase": bool(getattr(args, "avbd_showcase_only", False)),
         "include_related": bool(getattr(args, "include_related", False)),
         "include_ipc_shelf": bool(getattr(args, "include_ipc_shelf", False)),
@@ -1424,10 +1532,12 @@ def _workflow_row_bounds(args: argparse.Namespace, total_count: int) -> tuple[in
 def _workflow_scene_argv(
     args: argparse.Namespace,
     order: int,
-    spec: tuple[str, int, int, int, bool],
+    spec: WorkflowCaptureSpec,
     output_dir: pathlib.Path,
 ) -> list[str]:
-    scene, frames, width, height, show_ui = spec
+    scene, frames, width, height, show_ui, scene_state_json, capture_label = (
+        _workflow_spec_fields(spec)
+    )
     scene_output = _workflow_scene_output_dir(output_dir, order, scene)
     scene_argv = [
         "--scene",
@@ -1443,6 +1553,10 @@ def _workflow_scene_argv(
     ]
     if show_ui:
         scene_argv.append("--show-ui")
+    if scene_state_json:
+        scene_argv.extend(["--scene-state-json", scene_state_json])
+    if capture_label:
+        scene_argv.extend(["--capture-label", capture_label])
     if args.backend:
         scene_argv.extend(["--backend", args.backend])
     if args.allow_noop:
@@ -1465,6 +1579,8 @@ def _workflow_row_rerun_argv(
     output_dir: pathlib.Path,
 ) -> list[str]:
     rerun_argv = ["--rigid-workflow"]
+    if getattr(args, "contact_baseline_only", False):
+        rerun_argv.append("--contact-baseline-only")
     if getattr(args, "avbd_showcase_only", False):
         rerun_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
@@ -1502,6 +1618,8 @@ def _workflow_command_argv(
     args: argparse.Namespace, output_dir: pathlib.Path
 ) -> list[str]:
     workflow_argv = ["--rigid-workflow"]
+    if getattr(args, "contact_baseline_only", False):
+        workflow_argv.append("--contact-baseline-only")
     if getattr(args, "avbd_showcase_only", False):
         workflow_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
@@ -1546,16 +1664,25 @@ def _workflow_plan_entries(
 ) -> list[dict[str, object]]:
     entries: list[dict[str, object]] = []
     specs = _workflow_capture_specs(args)
+    contact_baseline_only = bool(getattr(args, "contact_baseline_only", False))
     avbd_showcase_only = bool(getattr(args, "avbd_showcase_only", False))
-    numbered_count = 0 if avbd_showcase_only else len(rigid_workflow_capture_specs())
+    numbered_count = (
+        0
+        if contact_baseline_only or avbd_showcase_only
+        else len(rigid_workflow_capture_specs())
+    )
     related_count = (
         len(rigid_workflow_related_capture_specs())
-        if not avbd_showcase_only and getattr(args, "include_related", False)
+        if not contact_baseline_only
+        and not avbd_showcase_only
+        and getattr(args, "include_related", False)
         else 0
     )
     ipc_shelf_count = (
         len(rigid_workflow_ipc_shelf_capture_specs())
-        if not avbd_showcase_only and getattr(args, "include_ipc_shelf", False)
+        if not contact_baseline_only
+        and not avbd_showcase_only
+        and getattr(args, "include_ipc_shelf", False)
         else 0
     )
     count = len(specs)
@@ -1564,10 +1691,14 @@ def _workflow_plan_entries(
     for order, spec in enumerate(specs, start=1):
         if order < start_row or order > end_row:
             continue
-        scene, frames, width, height, show_ui = spec
+        scene, frames, width, height, show_ui, scene_state_json, capture_label = (
+            _workflow_spec_fields(spec)
+        )
         scene_output = _workflow_scene_output_dir(output_dir, order, scene)
         argv = _workflow_scene_argv(args, order, spec, output_dir)
-        if avbd_showcase_only:
+        if contact_baseline_only:
+            workflow_group = "contact_baseline"
+        elif avbd_showcase_only:
             workflow_group = "avbd_constraint_showcase"
         elif order <= numbered_count:
             workflow_group = "numbered"
@@ -1587,6 +1718,8 @@ def _workflow_plan_entries(
                 "width": width,
                 "height": height,
                 "show_ui": show_ui,
+                "scene_state_json": scene_state_json,
+                "capture_label": capture_label,
                 "output_dir": str(scene_output),
                 "manifest": str(scene_output / "manifest.json"),
                 "command": _public_command(argv),
@@ -1598,6 +1731,12 @@ def _workflow_plan_entries(
             }
         )
         entries[-1].update(guidance_by_scene.get(scene, {}))
+        if contact_baseline_only and capture_label:
+            entries[-1].update(
+                _RIGID_WORKFLOW_CONTACT_BASELINE_GUIDANCE_BY_LABEL.get(
+                    capture_label, {}
+                )
+            )
     return entries
 
 
@@ -2234,6 +2373,7 @@ def _workflow_metric_highlights(metrics: dict[str, object]) -> list[str]:
 
 _WORKFLOW_GROUP_LABELS = {
     "numbered": "numbered",
+    "contact_baseline": "contact baseline",
     "avbd_constraint_showcase": "avbd showcase",
     "related_evidence": "related",
     "rigid_ipc_shelf": "ipc shelf",
@@ -2273,6 +2413,8 @@ def _workflow_requested_group_labels(
 ) -> str:
     if requested_include_flags is None:
         return fallback
+    if requested_include_flags.get("include_contact_baseline", False):
+        return "contact baseline"
     if requested_include_flags.get("include_avbd_showcase", False):
         return "avbd showcase"
     labels = ["numbered"]
@@ -2631,6 +2773,12 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
         ),
         _workflow_detail("ui", "docked" if capture.get("show_ui") else "headless"),
     ]
+    capture_label = capture.get("capture_label")
+    if isinstance(capture_label, str) and capture_label:
+        details.append(_workflow_detail("capture label", capture_label))
+    scene_state_json = capture.get("scene_state_json")
+    if isinstance(scene_state_json, str) and scene_state_json:
+        details.append(_workflow_detail("scene state", scene_state_json))
     workflow_label = capture.get("workflow_label")
     if isinstance(workflow_label, str) and workflow_label:
         details.insert(0, _workflow_detail("role", workflow_label))
@@ -3348,6 +3496,9 @@ def _write_workflow_manifest(
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
+    selected_include_contact_baseline = any(
+        capture.get("workflow_group") == "contact_baseline" for capture in captures
+    )
     selected_include_avbd_showcase = any(
         capture.get("workflow_group") == "avbd_constraint_showcase"
         for capture in captures
@@ -3362,6 +3513,7 @@ def _write_workflow_manifest(
         capture.get("workflow_group") == "capture_first_packet" for capture in captures
     )
     requested_include_flags = requested_include_flags or {
+        "include_contact_baseline": selected_include_contact_baseline,
         "include_avbd_showcase": selected_include_avbd_showcase,
         "include_related": selected_include_related,
         "include_ipc_shelf": selected_include_ipc_shelf,
@@ -3406,10 +3558,18 @@ def _write_workflow_manifest(
         {
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
-            "include_avbd_showcase": requested_include_flags["include_avbd_showcase"],
-            "include_related": requested_include_flags["include_related"],
-            "include_ipc_shelf": requested_include_flags["include_ipc_shelf"],
-            "include_packets": requested_include_flags["include_packets"],
+            "include_contact_baseline": requested_include_flags.get(
+                "include_contact_baseline", False
+            ),
+            "include_avbd_showcase": requested_include_flags.get(
+                "include_avbd_showcase", False
+            ),
+            "include_related": requested_include_flags.get("include_related", False),
+            "include_ipc_shelf": requested_include_flags.get(
+                "include_ipc_shelf", False
+            ),
+            "include_packets": requested_include_flags.get("include_packets", False),
+            "selected_include_contact_baseline": selected_include_contact_baseline,
             "selected_include_avbd_showcase": selected_include_avbd_showcase,
             "selected_include_related": selected_include_related,
             "selected_include_ipc_shelf": selected_include_ipc_shelf,
@@ -3481,6 +3641,19 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         raise SystemExit("--rigid-workflow cannot be combined with --scene-state-json")
     if args.capture_label:
         raise SystemExit("--rigid-workflow cannot be combined with --capture-label")
+    exclusive_packets = int(bool(args.contact_baseline_only)) + int(
+        bool(args.avbd_showcase_only)
+    )
+    if exclusive_packets > 1:
+        raise SystemExit(
+            "--contact-baseline-only cannot be combined with --avbd-showcase-only"
+        )
+    if args.contact_baseline_only and (
+        args.include_related or args.include_ipc_shelf or args.include_packets
+    ):
+        raise SystemExit(
+            "--contact-baseline-only cannot be combined with other workflow groups"
+        )
     if args.avbd_showcase_only and (
         args.include_related or args.include_ipc_shelf or args.include_packets
     ):
@@ -3592,6 +3765,8 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.contact_baseline_only and not args.rigid_workflow:
+        raise SystemExit("--contact-baseline-only requires --rigid-workflow")
     if args.avbd_showcase_only and not args.rigid_workflow:
         raise SystemExit("--avbd-showcase-only requires --rigid-workflow")
     if args.include_related and not args.rigid_workflow:

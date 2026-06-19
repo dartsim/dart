@@ -211,8 +211,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Exposed the rigid-body Python demo's contact-solver method in its live panel
   and capture metadata, giving py-demos a direct SI versus boxed-LCP inspection
   path for the DART 6 contact baseline, including scriptable capture-state
-  overrides, labeled capture artifacts for reproducible A/B packets, and a
-  dedicated AVBD rigid-constraint showcase packet for M1 visual review.
+  overrides, labeled capture artifacts, a dedicated SI/boxed-LCP contact
+  baseline packet, and a dedicated AVBD rigid-constraint showcase packet for M1
+  visual review.
 - Hardened `dart::gui` debug overlays so zero-motion selection and force-drag
   gestures in `py-demos` skip degenerate primitives instead of tripping
   Filament's empty-AABB precondition.

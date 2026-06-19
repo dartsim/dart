@@ -154,9 +154,11 @@ So the M1 flagship is **two complementary showcases**, both reference-grade:
 
 **Current M1 scoping:** keep the completed M1 experience as complementary
 contact-policy / boxed-LCP and AVBD constraint-showcase packets for now. The
-dedicated AVBD packet is curated from the existing `avbd_*` scenes; a unified
-comparison scene remains a possible follow-up only if the two packets do not
-produce enough reviewer-facing visual evidence.
+dedicated contact-baseline packet captures the `rigid_body` Sequential Impulse
+and boxed-LCP variants with state/label metadata; the dedicated AVBD packet is
+curated from the existing `avbd_*` scenes. A unified comparison scene remains a
+possible follow-up only if the two packets do not produce enough
+reviewer-facing visual evidence.
 
 ---
 

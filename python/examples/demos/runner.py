@@ -943,6 +943,7 @@ def _rigid_workflow_viewer_command(scene_id: str, width: int, height: int) -> st
 
 def _rigid_workflow_packet_command(
     *,
+    contact_baseline_only: bool = False,
     avbd_showcase_only: bool = False,
     include_related: bool = False,
     include_ipc_shelf: bool = False,
@@ -955,6 +956,8 @@ def _rigid_workflow_packet_command(
     output_dir: str | None = None,
 ) -> str:
     command = "pixi run py-demo-capture -- --rigid-workflow"
+    if contact_baseline_only:
+        command = f"{command} --contact-baseline-only"
     if avbd_showcase_only:
         command = f"{command} --avbd-showcase-only"
     if include_related:
@@ -2567,6 +2570,15 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
             )
         )
         builder.item_tooltip("Capture all numbered rows and write review_index.html.")
+        builder.text(
+            _rigid_workflow_packet_command(
+                contact_baseline_only=True,
+                output_dir="/tmp/dart_capture_rigid_contact_baseline",
+            )
+        )
+        builder.item_tooltip(
+            "Capture the SI and boxed-LCP rigid_body contact-baseline packet."
+        )
         builder.text(
             _rigid_workflow_packet_command(
                 avbd_showcase_only=True,

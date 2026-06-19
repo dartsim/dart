@@ -930,11 +930,12 @@ writes a top-level manifest that points at every per-scene manifest and a
 questions, try-first guidance, scope notes, live open commands, capture
 commands, workflow-row rerun commands, and metric summaries from one page: the
 in-viewer `Rigid Workflow` panel also shows the full numbered packet,
-current-row rerun, AVBD showcase, and extended related/IPC-shelf/packet
-commands.
+current-row rerun, contact-baseline, AVBD showcase, and extended
+related/IPC-shelf/packet commands.
 Numbered rows carry their workflow phase and focus axis in the manifest and
-review card, while the AVBD showcase and optional related, direct IPC shelf,
-and capture-first packet rows carry the same row-guidance fields in the
+review card, while the contact-baseline packet, AVBD showcase, and optional
+related, direct IPC shelf, and capture-first packet rows carry row-guidance
+fields in the
 manifest and review index, so non-numbered packets remain readable without
 opening the live GUI. The same outputs also include a guidance-completeness
 audit and the exact top-level workflow command for the selected packet.
@@ -987,6 +988,18 @@ shelf rows when those groups are requested:
 pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
     --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
+```
+
+Use `--contact-baseline-only` when the target is the M1 World contact-policy
+baseline. The packet captures the flagship `rigid_body` scene twice: the
+default Sequential Impulse contact path and the same scene restored with the
+boxed-LCP contact method before the first frame. Both rows keep stable capture
+labels and state metadata in the workflow manifest and review index.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --dry-run
+pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
+    --output-dir /tmp/dart_capture_rigid_contact_baseline
 ```
 
 Use `--avbd-showcase-only` when the target is the curated AVBD

@@ -3578,6 +3578,17 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert (
             "text:"
             + _rigid_workflow_packet_command(
+                contact_baseline_only=True,
+                output_dir="/tmp/dart_capture_rigid_contact_baseline",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the SI and boxed-LCP rigid_body "
+            "contact-baseline packet."
+        ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
                 avbd_showcase_only=True,
                 output_dir="/tmp/dart_capture_rigid_avbd_showcase",
             )

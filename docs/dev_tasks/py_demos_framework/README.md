@@ -49,6 +49,10 @@ and replay metadata.
         advertises the boxed-LCP baseline capture command. Verified in default
         and CUDA environments with manifests resolving
         `contact_solver_method=BOXED_LCP`.
+  - [x] Dedicated contact-baseline packet: the `--contact-baseline-only`
+        workflow captures the `rigid_body` Sequential Impulse and boxed-LCP
+        contact-policy variants as one review-indexed packet, with per-row
+        state/label metadata and rerun commands.
   - [x] AVBD rigid-constraint showcase packet: the dedicated
         `--avbd-showcase-only` workflow packet now captures the curated
         fixed-joint/contact, breakable-joint, spherical breakable-joint,
@@ -97,10 +101,9 @@ repeatable operation.
    `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
-3. Capture a longer visual A/B packet for `rigid_body` with Sequential Impulse
-   and boxed-LCP contacts when the PR needs reviewer-facing image/video
-   artifacts; the scripted boxed-LCP command is now:
-   `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui --scene-state-json '{"controls":{"contact_method_index":1}}' --capture-label boxed_lcp`.
+3. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
+   evidence:
+   `pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --output-dir /tmp/dart_capture_rigid_contact_baseline`.
 4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence:
    `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
    M1 remains two complementary showcases for now: World contact-policy /

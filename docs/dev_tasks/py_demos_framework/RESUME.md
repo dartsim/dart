@@ -37,6 +37,17 @@ workflow panel now advertises the boxed-LCP baseline capture command with
 output directories and artifact stems. Default/CUDA captures resolved
 `contact_solver_method=BOXED_LCP` in their manifests.
 
+The contact-baseline path is now also a first-class workflow packet:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
+  --output-dir /tmp/dart_capture_rigid_contact_baseline
+```
+
+It captures the `rigid_body` Sequential Impulse and boxed-LCP contact-policy
+variants as one review-indexed packet with per-row capture labels, state
+metadata, and row rerun commands.
+
 The current M1 slice curates the AVBD rigid-constraint showcase from the
 existing `avbd_*` scenes instead of creating a new unified scene. The dedicated
 packet command is:
@@ -56,17 +67,18 @@ row captures for `avbd_rigid_revolute_motor` completed with
 
 `fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
 selection debug-overlay fix, scriptable capture-state restoration, labeled
-stateful captures, and the AVBD showcase packet.
+stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
+packet.
 
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
-set, use the labeled scripted capture-state path for rigid-body SI vs boxed-LCP
-visual packets, and use the dedicated AVBD showcase packet for the modern
-rigid-constraint track. The next useful slice is a reviewer-facing visual packet
-pass: capture full SI/boxed-LCP and AVBD packets, inspect screenshots/review
-indexes, then decide whether M1 needs a unified comparison scene or whether the
-two complementary packets are enough for review.
+set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
+visual evidence, and use the dedicated AVBD showcase packet for the modern
+rigid-constraint track. The next useful slice is a reviewer-facing visual
+packet pass: capture the full contact-baseline and AVBD packets, inspect
+screenshots/review indexes, then decide whether M1 needs a unified comparison
+scene or whether the two complementary packets are enough for review.
 
 Re-run any M0 guard:
 
@@ -123,4 +135,4 @@ ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo 
 ```
 
 Then: run the py-demos panel/smoke guards, and proceed with reviewer-facing M1
-visual packet capture for the boxed-LCP contact baseline and AVBD showcase.
+visual packet capture for the contact baseline and AVBD showcase.
