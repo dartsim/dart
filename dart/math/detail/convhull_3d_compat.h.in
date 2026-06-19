@@ -33,9 +33,10 @@
 #ifndef CONVHULL_3D_INCLUDED
 #define CONVHULL_3D_INCLUDED
 
-#include <dart/math/detail/convhull.hpp>
+// Compatibility template installed at dart/external/convhull_3d/convhull_3d.h.
+// The implementation delegates to DART's native convex-hull implementation.
 
-#include <Eigen/Core>
+#include <dart/math/detail/convhull.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -75,10 +76,13 @@ inline void convhull_3d_build(
     return;
   }
 
-  std::vector<Eigen::Matrix<CH_FLOAT, 3, 1>> vertices;
+  std::vector<dart::math::detail::ConvexHullVertex<CH_FLOAT>> vertices;
   vertices.reserve(static_cast<std::size_t>(nVert));
   for (int i = 0; i < nVert; ++i) {
-    vertices.emplace_back(in_vertices[i].x, in_vertices[i].y, in_vertices[i].z);
+    vertices.push_back({});
+    vertices.back().x = in_vertices[i].x;
+    vertices.back().y = in_vertices[i].y;
+    vertices.back().z = in_vertices[i].z;
   }
 
   std::vector<int> faces;

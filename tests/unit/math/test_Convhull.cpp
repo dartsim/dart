@@ -38,7 +38,6 @@
 
 #include <array>
 #include <set>
-#include <type_traits>
 #include <unordered_set>
 #include <vector>
 
@@ -210,15 +209,14 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
 
   std::unordered_set<int> usedVertices(faces.begin(), faces.end());
 
+  EXPECT_EQ(numFaces, 12);
   for (int i = 0; i < 8; ++i) {
     EXPECT_TRUE(usedVertices.count(i) > 0)
         << "Cube vertex " << i << " should be on the convex hull";
   }
 
-  if (std::is_same<Scalar, double>::value) {
-    EXPECT_TRUE(usedVertices.count(8) == 0)
-        << "Internal point should not be on the convex hull";
-  }
+  EXPECT_TRUE(usedVertices.count(8) == 0)
+      << "Internal point should not be on the convex hull";
 }
 
 //==============================================================================

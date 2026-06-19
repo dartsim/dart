@@ -32,6 +32,9 @@
 
 #pragma once
 
+// Compatibility template installed at
+// dart/external/convhull_3d/safe_convhull_3d.h.
+
 #if defined(__GNUC__)
 #pragma GCC system_header
 #elif defined(_MSC_VER)

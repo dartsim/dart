@@ -776,14 +776,18 @@ inline void convexHull3dBuild(
     std::vector<int>& outFaces,
     int& numOutputTriangles)
 {
-  // Convert Eigen vectors to legacy format
+  // Convert Eigen vectors to the native scalar format. The historical DART 6
+  // path computed with double precision unless callers explicitly used the
+  // legacy CONVHULL_3D_USE_SINGLE_PRECISION header path.
   // This thin wrapper provides modern C++ API while using the fastest
   // implementation underneath (compiler auto-vectorized scalar code)
-  std::vector<ConvexHullVertex<S>> legacyVertices(inVertices.size());
+  using ComputationScalar = double;
+  std::vector<ConvexHullVertex<ComputationScalar>> legacyVertices(
+      inVertices.size());
   for (size_t i = 0; i < inVertices.size(); ++i) {
-    legacyVertices[i].x = inVertices[i](0);
-    legacyVertices[i].y = inVertices[i](1);
-    legacyVertices[i].z = inVertices[i](2);
+    legacyVertices[i].x = static_cast<ComputationScalar>(inVertices[i](0));
+    legacyVertices[i].y = static_cast<ComputationScalar>(inVertices[i](1));
+    legacyVertices[i].z = static_cast<ComputationScalar>(inVertices[i](2));
   }
 
   convexHull3dBuild(legacyVertices, outFaces, numOutputTriangles);
