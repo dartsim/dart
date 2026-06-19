@@ -574,6 +574,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
+NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
 cmake \
   -G Ninja \
   -S . \
@@ -605,6 +606,7 @@ cmake \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
+  -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -1187,7 +1189,7 @@ test-no-plane = { cmd = [
 test-simulation = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L simulation",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L '^simulation$'",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1209,7 +1211,11 @@ test-cuda = { cmd = [
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-cuda
+# CUDA test selection is small and GPU-bound. Use bounded parallelism without
+# the stale one-minute load-average guard so a just-finished build does not
+# delay the smoke path; the long CUDA LCP corpus remains one scheduled test.
+DART_BUILD_LOAD_LIMIT=0 python scripts/ctest_tier.py \
+  --build-type "${BUILD_TYPE}" --jobs 2 -L simulation-cuda
 # Benchmark smoke runs go through run_benchmark_smoke.py because Google Benchmark
 # exits 0 even when a --benchmark_filter matches nothing; the wrapper fails loudly
 # so a renamed or dropped benchmark cannot silently stop being exercised.
@@ -2262,7 +2268,7 @@ test-core = { cmd = "python scripts/ctest_tier.py -LE simulation", depends-on = 
     "Release",
   ] },
 ] }
-test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --exclude-long-poles", depends-on = [
+test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L '^simulation$' --exclude-long-poles", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2275,10 +2281,10 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --ex
 # Tier 2 simulation scope — every simulation test INCLUDING the long poles,
 # run parallel + load-aware. This is what the authoritative verify-full gate
 # (scripts/test_all.py) uses for its simulation phase so the
-# test_rigid_ipc_paper_experiments long pole overlaps the rest of the suite
-# instead of bounding a serial run (runtimes:
+# long-pole CTest shards overlap the rest of the suite instead of one
+# monolithic GTest binary bounding a worker (runtimes:
 # docs/design/local_verification_pipeline.md).
-test-simulation-full = { cmd = "python scripts/ctest_tier.py -L simulation", depends-on = [
+test-simulation-full = { cmd = "python scripts/ctest_tier.py -L '^simulation$'", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2678,7 +2684,7 @@ test-no-plane = { cmd = [
 test-simulation = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L simulation",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L '^simulation$'",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
