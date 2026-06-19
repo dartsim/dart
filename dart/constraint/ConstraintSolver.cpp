@@ -844,6 +844,18 @@ void ConstraintSolver::buildConstrainedGroups()
 void ConstraintSolver::setNumThreads(std::size_t numThreads)
 {
   mNumThreads = (numThreads == 0) ? 1 : numThreads;
+
+  if (mIslandSolveExecutor)
+    return;
+
+  if (mNumThreads <= 1) {
+    mOwnedIslandSolveExecutor.reset();
+  } else if (
+      !mOwnedIslandSolveExecutor
+      || mOwnedIslandSolveExecutor->getNumThreads() != mNumThreads) {
+    mOwnedIslandSolveExecutor
+        = std::make_unique<detail::IslandSolveExecutor>(mNumThreads);
+  }
 }
 
 //==============================================================================
@@ -851,6 +863,10 @@ void ConstraintSolver::setIslandSolveExecutor(
     detail::IslandSolveExecutor* executor)
 {
   mIslandSolveExecutor = executor;
+  if (mIslandSolveExecutor)
+    mOwnedIslandSolveExecutor.reset();
+  else
+    setNumThreads(mNumThreads);
 }
 
 //==============================================================================
@@ -935,8 +951,9 @@ void ConstraintSolver::solveConstrainedGroups()
 
   // Serial path (default, or whenever parallelism is unavailable/unsafe): this
   // is byte-for-byte identical to the historical loop.
-  if (mNumThreads <= 1 || !mIslandSolveExecutor
-      || !isConstrainedGroupSolveThreadSafe()) {
+  auto* executor = mIslandSolveExecutor ? mIslandSolveExecutor
+                                        : mOwnedIslandSolveExecutor.get();
+  if (mNumThreads <= 1 || !executor || !isConstrainedGroupSolveThreadSafe()) {
     for (std::size_t idx : active)
       solveActiveGroup(idx);
     freezeSolvedGroups();
@@ -969,9 +986,8 @@ void ConstraintSolver::solveConstrainedGroups()
   // its skeleton, so no pre-warm is required. Each worker reuses its own
   // thread_local LCP scratch across steps (see
   // BoxedLcpConstraintSolver/PgsBoxedLcpSolver).
-  mIslandSolveExecutor->run(active.size(), [&](std::size_t k) {
-    solveActiveGroup(active[k]);
-  });
+  executor->run(
+      active.size(), [&](std::size_t k) { solveActiveGroup(active[k]); });
   freezeSolvedGroups();
 }
 

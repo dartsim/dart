@@ -31,18 +31,235 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+
 using namespace dart;
+
+namespace {
+
+class FakeConstraint final : public constraint::ConstraintBase
+{
+public:
+  explicit FakeConstraint(std::size_t dimension)
+  {
+    mDim = dimension;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo*) override {}
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double*, bool) override {}
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+};
+
+class ExposedThreadedConstraintSolver final
+  : public constraint::ConstraintSolver
+{
+public:
+  bool hasOwnedIslandSolveExecutor() const
+  {
+    return mOwnedIslandSolveExecutor != nullptr;
+  }
+
+  bool hasInjectedIslandSolveExecutor() const
+  {
+    return mIslandSolveExecutor != nullptr;
+  }
+
+  void addFakeConstrainedGroups(std::size_t numGroups, std::size_t dimension)
+  {
+    for (std::size_t i = 0; i < numGroups; ++i) {
+      constraint::ConstrainedGroup group;
+      group.addConstraint(std::make_shared<FakeConstraint>(dimension));
+      mConstrainedGroups.push_back(group);
+    }
+  }
+
+  void solveGroupsForTest()
+  {
+    solveConstrainedGroups();
+  }
+
+  int getNumSolvedGroups() const
+  {
+    return mNumSolvedGroups.load(std::memory_order_relaxed);
+  }
+
+  int getMaxConcurrentSolves() const
+  {
+    return mMaxConcurrentSolves.load(std::memory_order_relaxed);
+  }
+
+protected:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    const int concurrent
+        = mConcurrentSolves.fetch_add(1, std::memory_order_relaxed) + 1;
+    int observed = mMaxConcurrentSolves.load(std::memory_order_relaxed);
+    while (concurrent > observed
+           && !mMaxConcurrentSolves.compare_exchange_weak(
+               observed, concurrent, std::memory_order_relaxed)) {
+      // Keep trying with the updated observed value.
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    mNumSolvedGroups.fetch_add(1, std::memory_order_relaxed);
+    mConcurrentSolves.fetch_sub(1, std::memory_order_relaxed);
+  }
+
+  bool isConstrainedGroupSolveThreadSafe() const override
+  {
+    return true;
+  }
+
+private:
+  std::atomic<int> mConcurrentSolves{0};
+  std::atomic<int> mMaxConcurrentSolves{0};
+  std::atomic<int> mNumSolvedGroups{0};
+};
+
+} // namespace
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
 {
   return simulation::World::create();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DirectThreadSettingCreatesOwnedExecutor)
+{
+  ExposedThreadedConstraintSolver solver;
+
+  EXPECT_EQ(1u, solver.getNumThreads());
+  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+  EXPECT_FALSE(solver.hasInjectedIslandSolveExecutor());
+
+  solver.setNumThreads(0);
+  EXPECT_EQ(1u, solver.getNumThreads());
+  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+
+  solver.setNumThreads(4);
+  EXPECT_EQ(4u, solver.getNumThreads());
+  EXPECT_TRUE(solver.hasOwnedIslandSolveExecutor());
+
+  constraint::detail::IslandSolveExecutor externalExecutor(2);
+  solver.setIslandSolveExecutor(&externalExecutor);
+  EXPECT_TRUE(solver.hasInjectedIslandSolveExecutor());
+  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+
+  solver.setNumThreads(3);
+  EXPECT_EQ(3u, solver.getNumThreads());
+  EXPECT_TRUE(solver.hasInjectedIslandSolveExecutor());
+  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+
+  solver.setIslandSolveExecutor(nullptr);
+  EXPECT_FALSE(solver.hasInjectedIslandSolveExecutor());
+  EXPECT_TRUE(solver.hasOwnedIslandSolveExecutor());
+
+  solver.setNumThreads(1);
+  EXPECT_EQ(1u, solver.getNumThreads());
+  EXPECT_FALSE(solver.hasOwnedIslandSolveExecutor());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addFakeConstrainedGroups(8, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, IslandSolveExecutorRunsAllItems)
+{
+  constraint::detail::IslandSolveExecutor executor(4);
+  EXPECT_EQ(4u, executor.getNumThreads());
+
+  std::vector<std::atomic<int>> counts(128);
+  executor.run(counts.size(), [&](std::size_t i) {
+    counts[i].fetch_add(1, std::memory_order_relaxed);
+  });
+
+  for (const auto& count : counts)
+    EXPECT_EQ(1, count.load(std::memory_order_relaxed));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, IslandSolveExecutorSingleThreadRunsInline)
+{
+  constraint::detail::IslandSolveExecutor executor(0);
+  EXPECT_EQ(1u, executor.getNumThreads());
+
+  bool ranZeroCountBody = false;
+  executor.run(0, [&](std::size_t) { ranZeroCountBody = true; });
+  EXPECT_FALSE(ranZeroCountBody);
+
+  std::vector<int> values(8, 0);
+  executor.run(values.size(), [&](std::size_t i) {
+    values[i] = static_cast<int>(i + 1);
+  });
+
+  for (std::size_t i = 0; i < values.size(); ++i)
+    EXPECT_EQ(static_cast<int>(i + 1), values[i]);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, IslandSolveExecutorRethrowsAndCanRunAgain)
+{
+  constraint::detail::IslandSolveExecutor executor(3);
+
+  EXPECT_THROW(
+      executor.run(
+          16,
+          [](std::size_t i) {
+            if (i == 7)
+              throw std::runtime_error("expected test exception");
+          }),
+      std::runtime_error);
+
+  std::atomic<int> count{0};
+  executor.run(
+      16, [&](std::size_t) { count.fetch_add(1, std::memory_order_relaxed); });
+
+  EXPECT_EQ(16, count.load(std::memory_order_relaxed));
 }
 
 //==============================================================================

@@ -229,7 +229,8 @@ public:
   /// solvers are known-reentrant built-ins (Dantzig primary with a
   /// default-option PGS or no secondary); otherwise the solve falls back to
   /// serial. Parallel results are deterministic and independent of the thread
-  /// count.
+  /// count. When no World-owned executor is injected, the solver owns a private
+  /// worker pool so direct ConstraintSolver users get the requested behavior.
   void setNumThreads(std::size_t numThreads);
 
   /// Returns the number of worker threads used for the constraint solve.
@@ -237,8 +238,9 @@ public:
 
   /// Injects the (caller-owned) worker pool used for parallel island solving.
   /// The owning World shares a single pool between step()'s per-skeleton loops
-  /// and this solver. Passing nullptr restores serial island solving. The pool
-  /// must outlive this solver's use of it.
+  /// and this solver. Passing nullptr returns to the solver-owned pool implied
+  /// by setNumThreads(). The injected pool must outlive this solver's use of
+  /// it.
   void setIslandSolveExecutor(detail::IslandSolveExecutor* executor);
 
   /// Sets this constraint solver using other constraint solver. All the
@@ -372,9 +374,14 @@ protected:
   /// (default). See setNumThreads().
   std::size_t mNumThreads = 1;
 
+  /// Solver-owned worker pool used when this solver is configured directly
+  /// rather than through World::setNumThreads().
+  std::unique_ptr<detail::IslandSolveExecutor> mOwnedIslandSolveExecutor;
+
   /// Non-owning worker pool used for parallel island solving. It is owned by
   /// the World, which shares one pool between step()'s per-skeleton loops and
-  /// this solver, and injected via setIslandSolveExecutor(). Null => serial.
+  /// this solver, and injected via setIslandSolveExecutor(). Null means the
+  /// solver-owned pool is used instead.
   detail::IslandSolveExecutor* mIslandSolveExecutor = nullptr;
 };
 
