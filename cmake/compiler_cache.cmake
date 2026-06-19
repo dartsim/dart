@@ -88,17 +88,26 @@ function(dart_configure_compiler_cache)
     return()
   endif()
 
+  set(_dart_cuda_compiler_launcher_preconfigured OFF)
+  if(DEFINED CMAKE_CUDA_COMPILER_LAUNCHER)
+    set(_dart_cuda_compiler_launcher_preconfigured ON)
+  endif()
+
   if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
+    if(CMAKE_CUDA_COMPILER AND NOT _dart_cuda_compiler_launcher_preconfigured)
+      set(
+        CMAKE_CUDA_COMPILER_LAUNCHER
+        ""
+        CACHE STRING
+        "CUDA compiler launcher used for caching"
+        FORCE
+      )
+    endif()
     message(
       STATUS
       "Compiler cache already configured (C: ${CMAKE_C_COMPILER_LAUNCHER} | CXX: ${CMAKE_CXX_COMPILER_LAUNCHER})"
     )
     return()
-  endif()
-
-  set(_dart_cuda_compiler_launcher_preconfigured OFF)
-  if(DEFINED CMAKE_CUDA_COMPILER_LAUNCHER)
-    set(_dart_cuda_compiler_launcher_preconfigured ON)
   endif()
 
   _dart_collect_compiler_cache_candidates(_dart_cache_candidates)
@@ -124,7 +133,7 @@ function(dart_configure_compiler_cache)
       if(CMAKE_CUDA_COMPILER AND NOT _dart_cuda_compiler_launcher_preconfigured)
         set(
           CMAKE_CUDA_COMPILER_LAUNCHER
-          "${_cache_executable}"
+          ""
           CACHE STRING
           "CUDA compiler launcher used for caching"
           FORCE

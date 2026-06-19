@@ -914,19 +914,23 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
     cached_cxx_compiler=
     cached_cuda_compiler=
     cached_cuda_host_compiler=
+    cached_cuda_compiler_launcher=
     while IFS='=' read -r cache_key cache_value; do
       case "${cache_key}" in
         CMAKE_C_COMPILER:*) cached_c_compiler=${cache_value} ;;
         CMAKE_CXX_COMPILER:*) cached_cxx_compiler=${cache_value} ;;
         CMAKE_CUDA_COMPILER:*) cached_cuda_compiler=${cache_value} ;;
         CMAKE_CUDA_HOST_COMPILER:*) cached_cuda_host_compiler=${cache_value} ;;
+        CMAKE_CUDA_COMPILER_LAUNCHER:*) cached_cuda_compiler_launcher=${cache_value} ;;
       esac
     done < "${CMAKE_CACHE}"
     if [ "${cached_c_compiler}" != "${DART_CUDA_HOST_CC_VALUE}" ] \
       || [ "${cached_cxx_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ] \
       || [ "${cached_cuda_compiler}" != "${CONDA_PREFIX}/bin/nvcc" ] \
       || { [ -n "${cached_cuda_host_compiler}" ] \
-        && [ "${cached_cuda_host_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ]; }; then
+        && [ "${cached_cuda_host_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ]; } \
+      || { [ -z "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ] \
+        && [ -n "${cached_cuda_compiler_launcher}" ]; }; then
       echo "CMake compiler cache changed for ${CMAKE_BUILD_DIR}; resetting cache metadata."
       rm -f "${CMAKE_CACHE}"
       rm -rf "${CMAKE_BUILD_DIR}/CMakeFiles"
