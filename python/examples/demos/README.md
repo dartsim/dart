@@ -351,10 +351,10 @@ solver comparisons.
 
 The **`rigid_body`** scene is the default front door for DART 7 rigid-body
 `World` dynamics. It keeps the first run simple: falling spheres and a box,
-static ground, live replay, viewport force drag, fixed-solver context, material
-controls, an
-explicit reset path, and a compact panel for baseline speed, height, energy,
-contact, and step-timing state. Use the focused rows below when a material,
+static ground, live replay, viewport force drag, fixed-solver context, named
+material presets, an explicit reset path, and a compact panel for baseline
+speed, height, energy, contact, material, and step-timing state. Use the
+focused rows below when a material,
 contact-query, solver, executor, friction, stacking, manipulation, body-mode,
 kinematic, external-load, point-load, time-step, or joint behavior needs deeper
 inspection.
@@ -1006,7 +1006,8 @@ pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
 Use `--material-examples-only` when the target is the M1 `rigid_body`
 front-door material examples. The packet captures Default, Slide, and Bounce
 variants of the same scene, preserving friction/restitution state and capture
-labels in the manifest and review index.
+labels in the manifest and review index, plus the resolved material-preset name
+in the latest scene metrics.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --material-examples-only --dry-run

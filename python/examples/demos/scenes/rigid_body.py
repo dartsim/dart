@@ -248,6 +248,7 @@ class _RigidBodyBaseline:
             "step_ms": step_ms,
             "solver": self._solver_label(),
             "contact_solver": self._contact_method_label(),
+            "material_preset": self._active_material_label(),
             "executor": "World.step default",
         }
 
@@ -298,6 +299,9 @@ class _RigidBodyBaseline:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
+        material_preset = self._active_material_label()
+        metrics = dict(self._last_metrics)
+        metrics["material_preset"] = material_preset
         speed_values = list(self._speed_history)
         height_values = list(self._min_height_history)
         energy_values = list(self._energy_history)
@@ -307,6 +311,7 @@ class _RigidBodyBaseline:
             "row": "rigid_body",
             "solver": self._solver_label(),
             "contact_solver": self._contact_method_label(),
+            "material_preset": material_preset,
             "executor": "World.step default",
             "solver_enum": self._solver().name,
             "contact_solver_method": self._contact_method().name,
@@ -325,8 +330,9 @@ class _RigidBodyBaseline:
                 "restitution": float(self.restitution),
                 "solver_index": float(self.solver_index),
                 "contact_method_index": float(self.contact_method_index),
+                "material_preset": material_preset,
             },
-            "metrics": dict(self._last_metrics),
+            "metrics": metrics,
             "history": {
                 "samples": float(len(speed_values)),
                 "max_speed": max(speed_values, default=0.0),
@@ -344,6 +350,7 @@ class _RigidBodyBaseline:
                 "contact_method_index": int(self.contact_method_index),
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),
+                "material_preset": self._active_material_label(),
             },
             "speed_history": list(self._speed_history),
             "min_height_history": list(self._min_height_history),
@@ -369,6 +376,21 @@ class _RigidBodyBaseline:
                 len(_CONTACT_METHODS) - 1,
             ),
         )
+        material_preset = controls.get("material_preset")
+        if (
+            isinstance(material_preset, str)
+            and (
+                "friction" not in controls
+                or "restitution" not in controls
+            )
+        ):
+            for preset in _MATERIAL_PRESETS:
+                if preset.label == material_preset:
+                    if "friction" not in controls:
+                        self.friction = float(preset.friction)
+                    if "restitution" not in controls:
+                        self.restitution = float(preset.restitution)
+                    break
         self.friction = float(controls.get("friction", self.friction))
         self.restitution = float(controls.get("restitution", self.restitution))
         self.world.rigid_body_solver = self._solver()

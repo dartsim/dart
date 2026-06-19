@@ -155,6 +155,11 @@ active material preset (or `Custom`) beside the live friction/restitution values
 and adds an `Open material mixing` route to `rigid_material_mixing`, matching
 the existing contact-comparison route pattern.
 
+The newest material-evidence slice also records the active material preset name
+in `rigid_body` capture metrics and replay state, and replay restore accepts a
+`material_preset` control name so packet rows can preserve the same
+Default/Slide/Bounce/Custom label shown in the live panel.
+
 The next local M1 bridge adds an `Open AVBD showcase` route from the same
 `rigid_body` front-door panel to `avbd_rigid_fixed_joint_contact`. This keeps
 the AVBD rigid-constraint track discoverable from the flagship baseline scene
@@ -171,9 +176,10 @@ rigid solver as fixed baseline context and points users to
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
 the #3084 merge. It currently contains the scripted-selection integration guard
 plus the `rigid_body` material-example preset, packet, full-packet evidence, and
-material/AVBD-route/fixed-solver-context UI increments. Keep any remaining edits
-narrow, keep the dev-task handoff current, and validate the exact default/CUDA
-py-demos front doors before publishing a follow-up PR.
+material/AVBD-route/fixed-solver-context UI increments, plus material-preset
+labels in replay/capture metrics. Keep any remaining edits narrow, keep the
+dev-task handoff current, and validate the exact default/CUDA py-demos front
+doors before publishing a follow-up PR.
 
 ## Immediate Next Step
 
@@ -196,8 +202,10 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   -m pytest \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_status_tracks_custom_sliders \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_replay_restore_accepts_material_preset_name \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_material_mixing \
   python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_routes_to_avbd_showcase \
+  python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_include_material_preset \
   -q
 ```
 

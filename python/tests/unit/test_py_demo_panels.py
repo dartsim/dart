@@ -3450,10 +3450,16 @@ def test_rigid_body_panel_material_example_presets_reset_scene(
     assert len(controller._speed_history) == 1
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == preset.label
     assert capture_metrics["controls"]["friction"] == pytest.approx(preset.friction)
     assert capture_metrics["controls"]["restitution"] == pytest.approx(
         preset.restitution
     )
+    assert capture_metrics["controls"]["material_preset"] == preset.label
+    assert capture_metrics["metrics"]["material_preset"] == preset.label
+
+    replay_state = controller.capture_replay_state()
+    assert replay_state["controls"]["material_preset"] == preset.label
 
 
 def test_rigid_body_panel_material_status_tracks_custom_sliders() -> None:
@@ -3485,8 +3491,26 @@ def test_rigid_body_panel_material_status_tracks_custom_sliders() -> None:
     )
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == "Custom"
     assert capture_metrics["controls"]["friction"] == pytest.approx(0.33)
     assert capture_metrics["controls"]["restitution"] == pytest.approx(0.44)
+    assert capture_metrics["controls"]["material_preset"] == "Custom"
+    assert capture_metrics["metrics"]["material_preset"] == "Custom"
+
+
+def test_rigid_body_replay_restore_accepts_material_preset_name() -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+
+    controller.restore_replay_state({"controls": {"material_preset": "Bounce"}})
+
+    assert controller.friction == pytest.approx(0.45)
+    assert controller.restitution == pytest.approx(0.65)
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["material_preset"] == "Bounce"
+    assert capture_metrics["controls"]["material_preset"] == "Bounce"
 
 
 def test_rigid_body_panel_routes_to_material_mixing() -> None:

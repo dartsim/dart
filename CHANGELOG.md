@@ -211,7 +211,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Exposed the rigid-body Python demo's fixed rigid-solver context,
   contact-solver method, and material presets in its live panel and capture
   metadata, giving py-demos direct SI versus boxed-LCP and
-  friction/restitution inspection paths, including scriptable capture-state
+  named material-preset inspection paths, including scriptable capture-state
   overrides, labeled capture artifacts, a dedicated SI/boxed-LCP
   contact-baseline packet, a material-example packet, and a dedicated AVBD
   rigid-constraint showcase packet for M1 visual review.

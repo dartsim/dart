@@ -2088,6 +2088,7 @@ _WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
     "baseline_scene_contact_count",
     "baseline_step_ms",
     "dynamic_body_count",
+    "material_preset",
     "drift_position_error",
     "drift_momentum_drift",
     "drift_speed",

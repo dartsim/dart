@@ -1952,6 +1952,22 @@ def test_rigid_workflow_latest_signals_prioritize_baseline_values() -> None:
     )
 
 
+def test_rigid_workflow_latest_signals_include_material_preset() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "baseline_max_speed": 2.1,
+            "dynamic_body_count": 5,
+            "material_preset": "Bounce",
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert "material preset: Bounce" in highlights
+    assert highlights.index("dynamic body count: 5") < highlights.index(
+        "material preset: Bounce"
+    )
+
+
 def test_rigid_workflow_latest_signals_prioritize_free_flight_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {

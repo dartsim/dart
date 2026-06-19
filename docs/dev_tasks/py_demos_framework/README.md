@@ -90,8 +90,9 @@ and replay metadata.
         one-click Default, Slide, and Bounce material presets that reset the scene
         and flow through the same friction/restitution replay and capture
         controls as the manual sliders. The panel also reports the active
-        material preset or custom friction/restitution state and routes directly
-        to the dedicated material-mixing row for deeper inspection.
+        material preset or custom friction/restitution state, preserves that
+        label in replay/capture metrics, and routes directly to the dedicated
+        material-mixing row for deeper inspection.
   - [x] Front-door AVBD bridge: the flagship `rigid_body` panel now links
         directly to `avbd_rigid_fixed_joint_contact`, giving the baseline World
         contact/material scene a live path into the curated AVBD rigid-constraint
@@ -108,7 +109,7 @@ and replay metadata.
         `/tmp/dart_capture_rigid_material_examples_full_cuda_2b887338002`
         completed in `real 94.86s`. Both manifests report `status=complete`,
         three captured material rows, complete guidance, solver identity, and
-        scene metrics.
+        material scene metrics.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
