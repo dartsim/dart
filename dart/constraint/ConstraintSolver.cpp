@@ -57,6 +57,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
+#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -970,6 +971,29 @@ void ConstraintSolver::solveConstrainedGroups()
     return;
   }
 
+  auto hasCustomContactConstraint = [&]() {
+    for (std::size_t idx : active) {
+      const auto& group = mConstrainedGroups[idx];
+      for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+        const auto* constraint = group.getConstraint(i).get();
+        if (const auto* contact
+            = dynamic_cast<const ContactConstraint*>(constraint)) {
+          if (typeid(*contact) != typeid(ContactConstraint))
+            return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  if (hasCustomContactConstraint()) {
+    for (std::size_t idx : active)
+      solveActiveGroup(idx);
+    freezeSolvedGroups();
+    return;
+  }
+
   auto hasSharedNonReactiveDependency = [&]() {
     std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
     std::unordered_map<const dynamics::Skeleton*, std::size_t>
@@ -1041,6 +1065,24 @@ void ConstraintSolver::solveConstrainedGroups()
               || touchesSharedDependency(dynamicJoint->getBodyNode2(), idx)) {
             return true;
           }
+        }
+
+        if (const auto* joint
+            = dynamic_cast<const JointConstraint*>(constraint)) {
+          if (touchesSharedDependency(joint->mBodyNode, idx))
+            return true;
+        }
+
+        if (const auto* mimicMotor
+            = dynamic_cast<const MimicMotorConstraint*>(constraint)) {
+          if (touchesSharedDependency(mimicMotor->mBodyNode, idx))
+            return true;
+        }
+
+        if (const auto* jointFriction
+            = dynamic_cast<const JointCoulombFrictionConstraint*>(constraint)) {
+          if (touchesSharedDependency(jointFriction->mBodyNode, idx))
+            return true;
         }
       }
     }

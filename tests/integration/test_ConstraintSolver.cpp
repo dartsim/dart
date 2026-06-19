@@ -38,8 +38,10 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
@@ -106,6 +108,12 @@ class DerivedDantzigBoxedLcpSolver final
 
 class DerivedPgsBoxedLcpSolver final : public constraint::PgsBoxedLcpSolver
 {
+};
+
+class CustomContactConstraint final : public constraint::ContactConstraint
+{
+public:
+  using ContactConstraint::ContactConstraint;
 };
 
 class FakeCollisionObject final : public collision::CollisionObject
@@ -327,6 +335,28 @@ std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
   return {rootPair.second, childPair.second};
 }
 
+collision::Contact createContact(
+    collision::CollisionObject* object1, collision::CollisionObject* object2)
+{
+  collision::Contact contact;
+  contact.collisionObject1 = object1;
+  contact.collisionObject2 = object2;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  return contact;
+}
+
+template <typename ConstraintT>
+std::shared_ptr<ConstraintT> createContactConstraint(
+    collision::Contact& contact)
+{
+  auto constraint = std::make_shared<ConstraintT>(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+  constraint::ConstraintBase& base = *constraint;
+  base.update();
+  return constraint;
+}
+
 std::shared_ptr<constraint::SoftContactConstraint> createSoftContactConstraint(
     collision::Contact& contact)
 {
@@ -428,6 +458,55 @@ TEST(ConstraintSolver, ManualConstraintsForceSerialGroupSolves)
   solver.solveGroupsForTest();
 
   EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, CustomContactConstraintsForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody1 = createFreeBody("fixed1", false, skeletons);
+  auto* fixedBody2 = createFreeBody("fixed2", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode1 = fixedBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* fixedShapeNode2 = fixedBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode1 = dynamicBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode2 = dynamicBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject1(&detector, fixedShapeNode1);
+  FakeCollisionObject fixedObject2(&detector, fixedShapeNode2);
+  FakeCollisionObject dynamicObject1(&detector, dynamicShapeNode1);
+  FakeCollisionObject dynamicObject2(&detector, dynamicShapeNode2);
+
+  auto contact1 = createContact(&dynamicObject1, &fixedObject1);
+  auto contact2 = createContact(&dynamicObject2, &fixedObject2);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createContactConstraint<CustomContactConstraint>(contact1),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createContactConstraint<CustomContactConstraint>(contact2),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
@@ -544,14 +623,8 @@ TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
   FakeCollisionObject dynamicObject1(&detector, dynamicShapeNode1);
   FakeCollisionObject dynamicObject2(&detector, dynamicShapeNode2);
 
-  collision::Contact contact1;
-  contact1.collisionObject1 = &dynamicObject1;
-  contact1.collisionObject2 = &softObject;
-  contact1.point = Eigen::Vector3d::Zero();
-  contact1.normal = Eigen::Vector3d::UnitZ();
-
-  collision::Contact contact2 = contact1;
-  contact2.collisionObject1 = &dynamicObject2;
+  auto contact1 = createContact(&dynamicObject1, &softObject);
+  auto contact2 = createContact(&dynamicObject2, &softObject);
 
   ExposedThreadedConstraintSolver solver;
   solver.setNumThreads(4);
@@ -562,6 +635,48 @@ TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       createSoftContactConstraint(contact2),
+  });
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, FixedSkeletonJointConstraintsForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto fixedSkeleton = dynamics::Skeleton::create("fixed");
+  auto fixedPair
+      = fixedSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  fixedSkeleton->setMobile(false);
+  skeletons.push_back(fixedSkeleton);
+
+  auto* fixedJoint = fixedPair.first;
+  auto* fixedBody = fixedPair.second;
+  fixedJoint->setCoulombFriction(0, 1.0);
+  fixedJoint->setVelocity(0, 1.0);
+
+  auto jointFriction
+      = std::make_shared<constraint::JointCoulombFrictionConstraint>(
+          fixedJoint);
+  constraint::ConstraintBase& jointFrictionBase = *jointFriction;
+  jointFrictionBase.update();
+  ASSERT_TRUE(jointFrictionBase.isActive());
+
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      jointFriction,
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody, fixedBody, Eigen::Vector3d::Zero()),
   });
 
   solver.solveGroupsForTest();
