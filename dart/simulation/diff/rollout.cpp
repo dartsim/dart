@@ -33,6 +33,7 @@
 #include "dart/simulation/diff/rollout.hpp"
 
 #include "dart/simulation/common/exceptions.hpp"
+#include "dart/simulation/detail/world_storage.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <utility>
@@ -42,15 +43,37 @@ namespace dart::simulation::diff {
 namespace {
 
 //==============================================================================
+std::size_t countNonzeroMultibodies(const detail::BakedWorldModel& model)
+{
+  std::size_t count = 0;
+  for (const auto& multibody : model.multibodies) {
+    if (multibody.dofCount != 0) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
 void validateSupportedDifferentiableRolloutLayout(const World& world)
 {
-  const std::size_t rigidDofs = world.getNumRigidBodyDofs();
+  const auto& model = detail::ensureBakedWorldModelCurrent(world);
+  const bool hasRigidDofs = !model.dynamicRigidBodyEntities.empty();
+  const std::size_t nonzeroMultibodyCount = countNonzeroMultibodies(model);
+
   DART_SIMULATION_THROW_T_IF(
-      rigidDofs != 0 && rigidDofs != world.getNumDofs(),
+      hasRigidDofs && nonzeroMultibodyCount != 0,
       NotImplementedException,
       "diff::rollout(): mixed rigid-body plus multibody differentiable "
       "rollouts are not supported until full-world step Jacobians are "
       "assembled; use a rigid-only or multibody-only differentiable World");
+
+  DART_SIMULATION_THROW_T_IF(
+      nonzeroMultibodyCount > 1,
+      NotImplementedException,
+      "diff::rollout(): multiple multibody differentiable rollouts are not "
+      "supported until full-world step Jacobians are assembled; use a "
+      "rigid-only or single-multibody differentiable World");
 }
 
 } // namespace

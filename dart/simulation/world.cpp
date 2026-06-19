@@ -1276,6 +1276,19 @@ std::size_t countMultibodyDofs(const detail::BakedWorldModel& model)
   return dofs;
 }
 
+#ifdef DART_HAS_DIFF
+std::size_t countNonzeroMultibodies(const detail::BakedWorldModel& model)
+{
+  std::size_t count = 0;
+  for (const auto& multibody : model.multibodies) {
+    if (multibody.dofCount != 0) {
+      ++count;
+    }
+  }
+  return count;
+}
+#endif
+
 std::size_t countWorldDofs(const detail::BakedWorldModel& model)
 {
   return countRigidBodyDofs(model) + countMultibodyDofs(model);
@@ -6664,13 +6677,21 @@ void World::captureStepDerivatives()
 
 #ifdef DART_HAS_DIFF
   const auto& bakedModel = detail::ensureBakedWorldModelCurrent(*this);
+  const std::size_t nonzeroMultibodyCount = countNonzeroMultibodies(bakedModel);
+
   DART_SIMULATION_THROW_T_IF(
-      countRigidBodyDofs(bakedModel) != 0
-          && countMultibodyDofs(bakedModel) != 0,
+      countRigidBodyDofs(bakedModel) != 0 && nonzeroMultibodyCount != 0,
       NotImplementedException,
       "World::step(): differentiable mixed rigid-body plus multibody worlds "
       "are not supported until full-world step Jacobians are assembled; use a "
       "rigid-only or multibody-only differentiable World");
+
+  DART_SIMULATION_THROW_T_IF(
+      nonzeroMultibodyCount > 1,
+      NotImplementedException,
+      "World::step(): differentiable worlds with multiple nonzero-DOF "
+      "multibodies are not supported until full-world step Jacobians are "
+      "assembled; use a rigid-only or single-multibody differentiable World");
 
   // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
   // selected, the differentiable step Jacobian must include the analytic

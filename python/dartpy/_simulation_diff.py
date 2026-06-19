@@ -87,8 +87,8 @@ def timestep(world, state, action):
       with ``differentiable=True``). The world's general state/control vector
       layout must match the active differentiable family for that step.
       Rigid-only and single-multibody scenes satisfy this today; mixed
-      rigid-body + multibody differentiable rollouts are rejected until
-      full-world Jacobians are assembled.
+      rigid-body + multibody and multiple-multibody differentiable rollouts are
+      rejected until full-world Jacobians are assembled.
     state: Torch tensor ``x = [q; q̇]`` of size ``2 * world.num_dofs``.
     action: Torch tensor ``u = τ`` of size ``world.num_efforts``.
 
