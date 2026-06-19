@@ -131,6 +131,9 @@ ConstraintSolver::ConstraintSolver()
 ConstraintSolver::~ConstraintSolver() = default;
 
 //==============================================================================
+thread_local bool ConstraintSolver::mSolvingConstrainedGroupsInParallel = false;
+
+//==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 {
   DART_ASSERT(
@@ -1143,10 +1146,11 @@ void ConstraintSolver::solveConstrainedGroups()
   // its body, so no pre-warm is required. Each worker reuses its own
   // thread_local LCP scratch across steps (see
   // BoxedLcpConstraintSolver/PgsBoxedLcpSolver).
-  const ParallelConstrainedGroupSolveScope parallelSolveScope(
-      mSolvingConstrainedGroupsInParallel);
-  executor->run(
-      active.size(), [&](std::size_t k) { solveActiveGroup(active[k]); });
+  executor->run(active.size(), [&](std::size_t k) {
+    const ParallelConstrainedGroupSolveScope parallelSolveScope(
+        mSolvingConstrainedGroupsInParallel);
+    solveActiveGroup(active[k]);
+  });
   freezeSolvedGroups();
 }
 

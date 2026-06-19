@@ -379,10 +379,10 @@ protected:
   /// (default). See setNumThreads().
   std::size_t mNumThreads = 1;
 
-  /// True only while solveConstrainedGroups() is dispatching groups on the
-  /// island executor. Derived solvers use this to choose thread-private scratch
-  /// only for actual concurrent solves.
-  bool mSolvingConstrainedGroupsInParallel = false;
+  /// True only while the current thread is solving a constrained group through
+  /// the island executor. Derived solvers use this to choose thread-private
+  /// scratch only for actual concurrent solves.
+  static thread_local bool mSolvingConstrainedGroupsInParallel;
 
   /// Solver-owned worker pool used when this solver is configured directly
   /// rather than through World::setNumThreads().
