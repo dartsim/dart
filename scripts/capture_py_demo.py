@@ -1665,8 +1665,16 @@ def _public_command(argv: list[str]) -> str:
     return "pixi run py-demo-capture -- " + " ".join(shlex.quote(arg) for arg in argv)
 
 
-def _viewer_command(scene: str, width: int, height: int, backend: str = "") -> str:
+def _viewer_command(
+    scene: str,
+    width: int,
+    height: int,
+    backend: str = "",
+    scene_state_json: str = "",
+) -> str:
     argv = ["--scene", scene, "--width", str(width), "--height", str(height)]
+    if scene_state_json:
+        argv.extend(["--scene-state-json", scene_state_json])
     if backend:
         argv.extend(["--backend", backend])
     return "pixi run py-demos -- " + " ".join(shlex.quote(arg) for arg in argv)
@@ -1739,7 +1747,13 @@ def _workflow_plan_entries(
                 "workflow_rerun_command": _public_command(
                     _workflow_row_rerun_argv(args, order, scene, output_dir)
                 ),
-                "viewer_command": _viewer_command(scene, width, height, args.backend),
+                "viewer_command": _viewer_command(
+                    scene,
+                    width,
+                    height,
+                    args.backend,
+                    scene_state_json,
+                ),
                 "status": "planned",
             }
         )

@@ -820,6 +820,11 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
         "--workflow-start-row 2 --workflow-end-row 2 --output-dir "
         f"{output}/reruns/02_rigid_body"
     )
+    assert "--scene-state-json" not in manifest["captures"][0]["viewer_command"]
+    assert (
+        "--scene-state-json '{\"controls\":{\"contact_method_index\":1}}'"
+        in manifest["captures"][1]["viewer_command"]
+    )
     assert manifest["captures"][0]["workflow_label"] == "Contact baseline"
     assert manifest["captures"][0]["workflow_phase"] == "M1 contact-policy baseline"
     assert (
@@ -865,6 +870,10 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
     assert "<dt>capture label</dt><dd>sequential_impulse</dd>" in review_html
     assert "<dt>capture label</dt><dd>boxed_lcp</dd>" in review_html
     assert "<dt>scene state</dt><dd>{&quot;controls&quot;" in review_html
+    assert (
+        "pixi run py-demos -- --scene rigid_body --width 960 --height 540 "
+        "--scene-state-json &#x27;{&quot;controls&quot;:"
+    ) in review_html
 
 
 def test_rigid_workflow_dry_run_can_include_related_evidence(
