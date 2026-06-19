@@ -60,6 +60,36 @@ class _InitialBodyState:
     angular_velocity: np.ndarray
 
 
+@dataclass(frozen=True)
+class _MaterialPreset:
+    label: str
+    friction: float
+    restitution: float
+    tooltip: str
+
+
+_MATERIAL_PRESETS: tuple[_MaterialPreset, ...] = (
+    _MaterialPreset(
+        "Default",
+        _DEFAULT_FRICTION,
+        _DEFAULT_RESTITUTION,
+        "Reset to the default high-friction falling-stack material.",
+    ),
+    _MaterialPreset(
+        "Slide",
+        0.08,
+        0.02,
+        "Reset with low friction and low bounce for sliding contact inspection.",
+    ),
+    _MaterialPreset(
+        "Bounce",
+        0.45,
+        0.65,
+        "Reset with moderate friction and high restitution for rebound inspection.",
+    ),
+)
+
+
 class _RigidBodyBaseline:
     def __init__(self) -> None:
         self.solver_index = 0
@@ -368,6 +398,11 @@ class _RigidBodyBaseline:
         )
         self.reset(clear_replay=True)
 
+    def _apply_material_preset(self, preset: _MaterialPreset) -> None:
+        self.friction = float(preset.friction)
+        self.restitution = float(preset.restitution)
+        self.reset(clear_replay=True)
+
     def _request_contact_policy_compare(self, context: object) -> None:
         request_scene_switch = getattr(context, "request_scene_switch", None)
         if callable(request_scene_switch):
@@ -408,6 +443,13 @@ class _RigidBodyBaseline:
         if builder.button("Boxed LCP"):
             self._set_contact_method_index(_CONTACT_METHOD_BOXED_LCP_INDEX)
         builder.item_tooltip("Reset to the DART 6-style boxed-LCP baseline.")
+        builder.text("Material examples")
+        for index, preset in enumerate(_MATERIAL_PRESETS):
+            if index > 0:
+                builder.same_line()
+            if builder.button(preset.label):
+                self._apply_material_preset(preset)
+            builder.item_tooltip(preset.tooltip)
         if builder.button("Open contact comparison"):
             self._request_contact_policy_compare(context)
         builder.item_tooltip(

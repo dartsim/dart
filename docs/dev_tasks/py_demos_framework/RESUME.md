@@ -124,12 +124,19 @@ branch adds a durable real-viewer regression guard for the original
 zero-motion `rigid_body` scripted force-drag crash path, so the crash is covered
 by pytest instead of relying only on manual PR evidence.
 
+The same follow-up branch also advances the M1 `rigid_body` front door with
+one-click material examples. The panel now has Default, Slide, and Bounce
+presets that set friction/restitution and reset through the existing replay and
+capture state path, giving reviewers quick rigid-body material cases without
+leaving the flagship scene.
+
 ## Current Branch
 
 `fix/py-demos-selection-regression-guard` - branched from current `main` after
-the #3084 merge. This branch should stay narrow: add the scripted-selection
-integration guard, keep the dev-task handoff current, and validate the exact
-default/CUDA py-demos front doors before publishing a follow-up PR.
+the #3084 merge. It currently contains the scripted-selection integration guard
+plus the small `rigid_body` material-example preset increment. Keep any
+remaining edits narrow, keep the dev-task handoff current, and validate the
+exact default/CUDA py-demos front doors before publishing a follow-up PR.
 
 ## Immediate Next Step
 
@@ -144,6 +151,15 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
 Then keep the direct default and CUDA front-door commands in the validation set:
 `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`
 and the matching `pixi run -e cuda py-demos` command.
+
+For the material-preset panel increment, also run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
+  -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene \
+  -q
+```
 
 After this follow-up, continue M1 by using the dedicated contact-baseline packet
 for rigid-body SI vs boxed-LCP visual evidence and the dedicated AVBD showcase

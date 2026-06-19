@@ -85,6 +85,10 @@ and replay metadata.
         identity, and metrics in the review index are the key evidence. A
         unified comparison scene is not required for the current PR evidence;
         keep it as a follow-up only if review finds the two packets insufficient.
+  - [x] Front-door material examples: the flagship `rigid_body` panel now has
+        one-click Default, Slide, and Bounce material presets that reset the scene
+        and flow through the same friction/restitution replay and capture
+        controls as the manual sliders.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -126,10 +130,13 @@ repeatable operation.
    `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.
-3. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
+3. Keep the `rigid_body` material example presets covered by
+   `python/tests/unit/test_py_demo_panels.py::test_rigid_body_panel_material_example_presets_reset_scene`
+   when touching the flagship panel or material controls.
+4. Use the dedicated contact-baseline packet for reviewer-facing SI/boxed-LCP
    evidence when refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only --output-dir /tmp/dart_capture_rigid_contact_baseline`.
-4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
+5. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence when
    refreshing artifacts:
    `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
    M1 remains two complementary showcases for now: World contact-policy /

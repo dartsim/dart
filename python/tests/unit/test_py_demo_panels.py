@@ -3402,6 +3402,51 @@ def test_rigid_body_panel_contact_baseline_presets_reset_scene() -> None:
     assert len(controller._speed_history) == 1
 
 
+@pytest.mark.parametrize("preset", rigid_body._MATERIAL_PRESETS)
+def test_rigid_body_panel_material_example_presets_reset_scene(
+    preset: rigid_body._MaterialPreset,
+) -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = rigid_body.build()
+    controller = setup.info["rigid_body_controller"]
+    world = setup.info["sx_world"]
+    assert setup.pre_step is not None
+
+    for _ in range(3):
+        setup.pre_step()
+    assert world.time > 0.0
+
+    builder = _ScriptedPanelBuilder(clicked_buttons={preset.label})
+    setup.panels[0].build(builder, object())
+
+    assert "text:Material examples" in builder.events
+    assert all(
+        f"button:{candidate.label}" in builder.events
+        for candidate in rigid_body._MATERIAL_PRESETS
+    )
+    assert f"tooltip:{preset.tooltip}" in builder.events
+    assert controller.friction == pytest.approx(preset.friction)
+    assert controller.restitution == pytest.approx(preset.restitution)
+    assert world.time == pytest.approx(0.0)
+    assert controller.ground.friction == pytest.approx(preset.friction)
+    assert all(
+        body.friction == pytest.approx(preset.friction)
+        for body in controller.dynamic_bodies
+    )
+    assert all(
+        body.restitution == pytest.approx(preset.restitution)
+        for body in controller.dynamic_bodies
+    )
+    assert len(controller._speed_history) == 1
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["controls"]["friction"] == pytest.approx(preset.friction)
+    assert capture_metrics["controls"]["restitution"] == pytest.approx(
+        preset.restitution
+    )
+
+
 def test_rigid_body_panel_routes_to_contact_policy_comparison() -> None:
     _require_simulation_symbols("World")
 
