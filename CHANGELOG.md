@@ -247,6 +247,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Sharded the heaviest simulation CTest binaries and tightened CUDA environment
+  label selection so `pixi run test-all` and `pixi run -e cuda test-all` spend
+  less time tail-bound by monolithic DART 7 simulation tests.
 - Added first-post-bake no-allocation gates for DART 7 simulation loops,
   including differentiable contact-free stepping, large rigid IPC equality KKT
   rows, and the default above-dense deformable sparse iterative path.

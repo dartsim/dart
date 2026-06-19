@@ -68,6 +68,60 @@ if(DART_SIMULATION_BUILD_TESTS)
   dart_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
+  function(
+    _dart_add_simulation_gtest_shard
+    SHARD_NAME
+    BASE_TEST
+    FILTER
+    COST
+    TIMEOUT
+  )
+    if(NOT TEST ${BASE_TEST} OR NOT TARGET ${BASE_TEST})
+      return()
+    endif()
+
+    add_test(
+      NAME ${SHARD_NAME}
+      COMMAND $<TARGET_FILE:${BASE_TEST}> "--gtest_filter=${FILTER}"
+    )
+
+    get_property(_dart_base_labels TEST ${BASE_TEST} PROPERTY LABELS)
+    if(NOT _dart_base_labels)
+      set(_dart_base_labels "simulation")
+    endif()
+
+    set_tests_properties(
+      ${SHARD_NAME}
+      PROPERTIES LABELS "${_dart_base_labels}" COST ${COST} TIMEOUT ${TIMEOUT}
+    )
+
+    get_property(
+      _dart_base_env_mods
+      TEST ${BASE_TEST}
+      PROPERTY ENVIRONMENT_MODIFICATION
+    )
+    if(_dart_base_env_mods)
+      set_tests_properties(
+        ${SHARD_NAME}
+        PROPERTIES ENVIRONMENT_MODIFICATION "${_dart_base_env_mods}"
+      )
+    endif()
+
+    get_property(_dart_base_env TEST ${BASE_TEST} PROPERTY ENVIRONMENT)
+    if(_dart_base_env)
+      set_tests_properties(
+        ${SHARD_NAME}
+        PROPERTIES ENVIRONMENT "${_dart_base_env}"
+      )
+    endif()
+  endfunction()
+
+  function(_dart_disable_monolithic_simulation_test TEST_NAME)
+    if(TEST ${TEST_NAME})
+      set_tests_properties(${TEST_NAME} PROPERTIES DISABLED TRUE)
+    endif()
+  endfunction()
+
   # test_variational_integration runs a long linear-time variational-integrator
   # convergence sweep. It is comfortably fast in Release, but under coverage
   # (gcov) instrumentation it -- like its integration-test siblings test_world
@@ -90,15 +144,16 @@ if(DART_SIMULATION_BUILD_TESTS)
   # verify-full / test-all gate). Per-test runtimes live in
   # docs/design/local_verification_pipeline.md (the single source of truth):
   # test_rigid_ipc_paper_experiments and test_world dominate the Release suite,
-  # so they get two properties:
+  # so their monolithic CTest entries are disabled and replaced by filtered
+  # CTest shards that run the same built executable:
   #   * COST -- ctest's -j scheduler launches the highest-COST tests first, so
-  #     these two overlap the cheap bulk instead of stranding cores at the tail
-  #     of a cold run that has no CTestCostData.txt yet.
+  #     these shards overlap the cheap bulk instead of stranding cores at the
+  #     tail of a cold run that has no CTestCostData.txt yet.
   #   * TIMEOUT -- the runners pass a 600 s default --timeout as a hung-test
-  #     guard; these poles legitimately exceed it under CPU contention (concurrent
-  #     clones plus the rest of the parallel suite), so they get explicit
-  #     headroom. A per-test TIMEOUT property overrides the command-line --timeout
-  #     default, so the guard still protects every other test.
+  #     guard; these shards legitimately exceed it under CPU contention
+  #     (concurrent clones plus the rest of the parallel suite), so they get
+  #     explicit headroom. A per-test TIMEOUT property overrides the command-line
+  #     --timeout default, so the guard still protects every other test.
   # The block is ungated (COST/TIMEOUT are harmless in every configuration, and
   # CI never runs these two under a -L simulation selection). The DART_CODECOV
   # block below runs after it and wins under coverage instrumentation. The other
@@ -106,11 +161,120 @@ if(DART_SIMULATION_BUILD_TESTS)
   # already gets TIMEOUT 3600 above, while test_rigid_ipc_fixture and
   # test_deformable_body run in ~3 s in Release and are only long under coverage,
   # which the DART_CODECOV block handles.
-  foreach(_dart_long_pole test_rigid_ipc_paper_experiments test_world)
-    if(TEST ${_dart_long_pole})
-      set_tests_properties(${_dart_long_pole} PROPERTIES COST 360 TIMEOUT 3600)
+  if(TEST test_rigid_ipc_paper_experiments)
+    set_tests_properties(
+      test_rigid_ipc_paper_experiments
+      PROPERTIES COST 360 TIMEOUT 3600
+    )
+    _dart_disable_monolithic_simulation_test(test_rigid_ipc_paper_experiments)
+
+    if(NOT DART_CODECOV)
+      set(
+        _dart_rigid_ipc_paper_friction_filter
+        "RigidIpcPaperExperiments.Friction*:RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction:RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact:RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction:RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_friction
+        test_rigid_ipc_paper_experiments
+        "${_dart_rigid_ipc_paper_friction_filter}"
+        130
+        1200
+      )
+
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_turntable
+        test_rigid_ipc_paper_experiments
+        "RigidIpcPaperExperiments.Turntable*"
+        170
+        1200
+      )
+
+      set(
+        _dart_rigid_ipc_paper_contact_filter
+        "RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall:RigidIpcPaperExperiments.Cube*:RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated:RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration:RigidIpcPaperExperiments.FaceVertexFixtureRowStaysSeparated:RigidIpcPaperExperiments.Vertex*:RigidIpcPaperExperiments.TetCorner*:RigidIpcPaperExperiments.Erleben*"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_contact_fixtures
+        test_rigid_ipc_paper_experiments
+        "${_dart_rigid_ipc_paper_contact_filter}"
+        120
+        1200
+      )
+
+      set(
+        _dart_rigid_ipc_paper_free_motion_filter
+        "RigidIpcPaperExperiments.Rotating*:RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely:RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody:RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely:RigidIpcPaperExperiments.Degenerate*"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_free_motion
+        test_rigid_ipc_paper_experiments
+        "${_dart_rigid_ipc_paper_free_motion_filter}"
+        40
+        600
+      )
+
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_arches
+        test_rigid_ipc_paper_experiments
+        "RigidIpcPaperExperiments.FiveVoussoirFrictionArchStandsInEquilibrium:RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands"
+        50
+        600
+      )
     endif()
-  endforeach()
+  endif()
+
+  if(TEST test_world)
+    set_tests_properties(test_world PROPERTIES COST 360 TIMEOUT 3600)
+    _dart_disable_monolithic_simulation_test(test_world)
+
+    set(_dart_world_no_growth_filter "World.*DoNotGrowWorldBaseAllocator*")
+    set(_dart_world_global_heap_filter "World.*DoNotAllocateGlobalHeap")
+    set(_dart_world_malloc_filter "World.*DoNotMallocOnHeap")
+    set(
+      _dart_world_rigid_ipc_filter
+      "World.RigidIpc*:World.StepUsesSelectedRigidIpcSolver"
+    )
+    set(
+      _dart_world_long_tail_filter
+      "${_dart_world_no_growth_filter}:${_dart_world_global_heap_filter}:${_dart_world_malloc_filter}:${_dart_world_rigid_ipc_filter}"
+    )
+
+    _dart_add_simulation_gtest_shard(
+      test_world_allocator_no_growth
+      test_world
+      "${_dart_world_no_growth_filter}"
+      90
+      1200
+    )
+    _dart_add_simulation_gtest_shard(
+      test_world_global_heap
+      test_world
+      "${_dart_world_global_heap_filter}"
+      150
+      1200
+    )
+    _dart_add_simulation_gtest_shard(
+      test_world_raw_malloc
+      test_world
+      "${_dart_world_malloc_filter}"
+      90
+      1200
+    )
+    _dart_add_simulation_gtest_shard(
+      test_world_rigid_ipc
+      test_world
+      "${_dart_world_rigid_ipc_filter}"
+      100
+      1200
+    )
+    _dart_add_simulation_gtest_shard(
+      test_world_rest
+      test_world
+      "-${_dart_world_long_tail_filter}"
+      100
+      1200
+    )
+  endif()
 
   # These rigid IPC and deformable gates remain active in normal CI, but
   # coverage instrumentation can make their long runtime corpora exceed the
@@ -137,6 +301,18 @@ if(DART_SIMULATION_BUILD_TESTS)
       set_tests_properties(test_world PROPERTIES TIMEOUT 3600)
       target_compile_definitions(test_world PRIVATE DART_CODECOV=1)
     endif()
+    foreach(
+      _dart_world_shard
+      test_world_allocator_no_growth
+      test_world_global_heap
+      test_world_raw_malloc
+      test_world_rigid_ipc
+      test_world_rest
+    )
+      if(TEST ${_dart_world_shard})
+        set_tests_properties(${_dart_world_shard} PROPERTIES TIMEOUT 3600)
+      endif()
+    endforeach()
     if(TARGET test_compute_graph)
       target_compile_definitions(test_compute_graph PRIVATE DART_CODECOV=1)
     endif()
@@ -241,7 +417,15 @@ if(DART_SIMULATION_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-cuda
       LABEL simulation-cuda
     )
-    set_tests_properties(test_lcp_jacobi_batch_cuda PROPERTIES TIMEOUT 3600)
+    if(TEST test_lcp_jacobi_batch_cuda)
+      # Keep this CUDA LCP corpus monolithic. It is a long-pole watchlist test,
+      # but filtered CTest shards contend for the same GPU path and ran slower
+      # than the single executable on the 2026-06-19 local profile.
+      set_tests_properties(
+        test_lcp_jacobi_batch_cuda
+        PROPERTIES COST 240 TIMEOUT 600
+      )
+    endif()
   endif()
 
   # In-tree tests that poke ECS internals include <entt/entt.hpp> directly.

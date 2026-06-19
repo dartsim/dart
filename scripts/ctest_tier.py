@@ -37,13 +37,24 @@ except ImportError:  # pragma: no cover - defensive fallback
 # Experimental tests are fast on average but have a long tail; the Tier-1 quick
 # subset skips these so it stays inside its budget. They run at the full tier.
 # These mirror the heavy tests the build itself special-cases under DART_CODECOV
-# (tests/unit/simulation/experimental/CMakeLists.txt) — test_rigid_ipc_paper_
-# experiments alone runs ~350s and otherwise bounds the whole parallel suite.
+# (tests/unit/simulation/CMakeLists.txt). The heaviest monolithic test binaries
+# are split into filtered CTest shards for the full tier, so exclude both the
+# disabled monolith names and the full-tier shard names from the quick tier.
 EXPERIMENTAL_LONG_POLES = (
     "^test_world$",
+    "^test_world_allocator_no_growth$",
+    "^test_world_global_heap$",
+    "^test_world_raw_malloc$",
+    "^test_world_rigid_ipc$",
+    "^test_world_rest$",
     "^test_variational_integration$",
     "^test_rigid_ipc_fixture$",
     "^test_rigid_ipc_paper_experiments$",
+    "^test_rigid_ipc_paper_experiments_arches$",
+    "^test_rigid_ipc_paper_experiments_contact_fixtures$",
+    "^test_rigid_ipc_paper_experiments_free_motion$",
+    "^test_rigid_ipc_paper_experiments_friction$",
+    "^test_rigid_ipc_paper_experiments_turntable$",
     "^test_deformable_body$",
 )
 
