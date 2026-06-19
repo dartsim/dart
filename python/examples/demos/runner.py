@@ -192,7 +192,10 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
 ] = {
     "rigid_body": (
         "What is the baseline DART 7 World rigid-body path?",
-        ("Solver/material controls", "Contacts, energy, step timing"),
+        (
+            "Fixed Sequential Impulse solver context",
+            "Material/contact controls, energy, step timing",
+        ),
         "Baseline front door; focused edge cases stay in the specialized verifier rows.",
     ),
     "rigid_body_modes": (
@@ -380,7 +383,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
 
 _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
     "rigid_body": (
-        "Try solver/material controls, then reset the baseline.",
+        "Try material/contact controls, then reset the fixed Sequential Impulse baseline.",
         "Healthy: contacts settle while energy, speed, and step timing remain bounded.",
     ),
     "rigid_body_modes": (

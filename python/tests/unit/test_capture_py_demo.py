@@ -191,7 +191,10 @@ def test_visual_capture_manifest_records_image_evidence(
         "workflow_phase": "1. Foundations: state, frames, and loads",
         "focus_axis": "DART 7 World rigid-body baseline",
         "try_first": "Start here before moving to specialized rows.",
-        "inspect": ["Solver/material controls", "Contacts, energy, step timing"],
+        "inspect": [
+            "Fixed Sequential Impulse solver context",
+            "Material/contact controls, energy, step timing",
+        ],
         "healthy_signal": "Contacts settle and energy remains bounded.",
         "scope": "Baseline front door; focused edge cases stay specialized.",
     }
@@ -581,7 +584,14 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         manifest["captures"][0]["user_question"]
         == "What is the baseline DART 7 World rigid-body path?"
     )
-    assert "Solver/material controls" in manifest["captures"][0]["inspect"]
+    assert (
+        "Fixed Sequential Impulse solver context"
+        in manifest["captures"][0]["inspect"]
+    )
+    assert (
+        "Material/contact controls, energy, step timing"
+        in manifest["captures"][0]["inspect"]
+    )
     assert manifest["captures"][1]["workflow_label"] == "Solver family"
     assert manifest["captures"][1]["workflow_phase"] == "4. Solver decision path"
     assert manifest["captures"][1]["focus_axis"] == "rigid-body solver family"
