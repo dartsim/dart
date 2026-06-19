@@ -271,9 +271,15 @@ double ConstraintSolver::getTimeStep() const
 }
 
 //==============================================================================
-void ConstraintSolver::setDeactivationActive(bool _active)
+void ConstraintSolver::setAutomaticSleepingEnabled(bool _enabled)
 {
-  mDeactivationActive = _active;
+  mSleepingEnabled = _enabled;
+}
+
+//==============================================================================
+void ConstraintSolver::setDeactivationActive(bool _enabled)
+{
+  setAutomaticSleepingEnabled(_enabled);
 }
 
 //==============================================================================
@@ -711,7 +717,7 @@ void ConstraintSolver::buildConstrainedGroups()
     // With no active constraints, no island can be frozen. Clear any stale
     // freeze flags so a body that just lost all of its contacts resumes
     // simulating (e.g. a stack member that was kicked away).
-    if (mDeactivationActive && mHadDeactivationGroups) {
+    if (mSleepingEnabled && mHadSleepingGroups) {
       for (auto& skeleton : mSkeletons) {
         if (skeleton->isResting() || skeleton->isSleepCandidate()
             || skeleton->getIslandIndex() >= 0) {
@@ -721,7 +727,7 @@ void ConstraintSolver::buildConstrainedGroups()
         }
       }
     }
-    mHadDeactivationGroups = false;
+    mHadSleepingGroups = false;
     return;
   }
 
@@ -777,8 +783,8 @@ void ConstraintSolver::buildConstrainedGroups()
   // constraint-coupled neighbour is still moving, so gravity is never skipped
   // for a body whose island LCP still runs.
   //----------------------------------------------------------------------------
-  if (mDeactivationActive) {
-    mHadDeactivationGroups = !mConstrainedGroups.empty();
+  if (mSleepingEnabled) {
+    mHadSleepingGroups = !mConstrainedGroups.empty();
     mGroupResting.assign(mConstrainedGroups.size(), true);
 
     // Only rigid contact islands whose penetration correction has essentially
@@ -896,7 +902,7 @@ void ConstraintSolver::solveConstrainedGroups()
   static thread_local std::vector<char> groupSolvedToRest;
   groupSolvedToRest.assign(numGroups, 0);
 
-  if (mDeactivationActive) {
+  if (mSleepingEnabled) {
     for (const auto& skeleton : mSkeletons) {
       const int island = skeleton->getIslandIndex();
       if (island < 0)
