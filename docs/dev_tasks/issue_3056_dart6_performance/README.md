@@ -36,12 +36,12 @@ speedup.
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
 - PR2 current default-on Bullet run, same 120-object/9000-step generated drop
-  command: RTF `6.50174`, final contacts `0`, final resting `120 / 120`,
+  command: RTF `6.13047`, final contacts `0`, final resting `120 / 120`,
   finite state true, final hash `0x5a46e38c66967e04`. The zero-contact final
   state is expected only after all mobile skeletons are resting and the
   all-resting fast path is active.
 - PR2 current explicit `--disable-deactivation` run on the same command: RTF
-  `0.977486`, final contacts `360`, final resting `0 / 120`, finite state
+  `1.01079`, final contacts `360`, final resting `0 / 120`, finite state
   true, final hash `0x40e36d5812803d4`.
 - PR2 current final-scene comparison, default-on vs disabled, 121 dumped shapes:
   max position delta `8.5907e-4` m, mean position delta `5.6539e-5` m, max
