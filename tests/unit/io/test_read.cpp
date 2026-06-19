@@ -140,13 +140,18 @@ io::ReadOptions optionsWithContent(std::string content)
 } // namespace
 
 //==============================================================================
-TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
+TEST(ReadUnit, ReadsConvertedSinglePendulumSdfFixture)
 {
+#if DART_HAS_SDFORMAT
   io::ReadOptions options;
-  options.format = io::ModelFormat::Skel;
-  const auto skeleton = io::readSkeleton(
-      "dart://sample/skel/test/single_pendulum.skel", options);
-  EXPECT_NE(skeleton, nullptr);
+  options.format = io::ModelFormat::Sdf;
+  const auto skeleton
+      = io::readSkeleton("dart://sample/sdf/test/single_pendulum.sdf", options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "single_pendulum");
+  EXPECT_NE(skeleton->getBodyNode("link 1"), nullptr);
+  EXPECT_NE(skeleton->getJoint("joint 1"), nullptr);
+#endif
 }
 
 //==============================================================================
@@ -209,7 +214,7 @@ TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
 
   const std::array cases
       = {InvalidXmlCase{"empty", ""},
-         InvalidXmlCase{"invalid", "<skel>"},
+         InvalidXmlCase{"invalid", "<sdf>"},
          InvalidXmlCase{"rootless", "<?xml version=\"1.0\"?>"},
          InvalidXmlCase{"unknown_root", "<unknown />"}};
 
@@ -222,13 +227,23 @@ TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
 }
 
 //==============================================================================
-TEST(ReadUnit, InfersSkelXmlRootBeforeReturningNullForEmptyWorld)
+TEST(ReadUnit, InfersSdfXmlRootForAmbiguousXmlUri)
 {
+#if DART_HAS_SDFORMAT
   const auto options = optionsWithContent(
-      "<skel version=\"1.0\"><world name=\"empty_world\" /></skel>");
-  const common::Uri uri("memory://empty_skel.xml");
+      R"(<sdf version="1.7">
+           <model name="memory_sdf">
+             <link name="link">
+               <inertial><mass>1.0</mass></inertial>
+             </link>
+           </model>
+         </sdf>)");
+  const common::Uri uri("memory://single_pendulum.xml");
 
-  EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
+  const auto skeleton = io::readSkeleton(uri, options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "memory_sdf");
+#endif
 }
 
 //==============================================================================
@@ -251,19 +266,25 @@ TEST(ReadUnit, TryReadSkeletonReturnsErrorForInvalidPath)
 //==============================================================================
 TEST(ReadUnit, TryReadSkeletonReturnsOkForValidFile)
 {
+#if DART_HAS_SDFORMAT
   const auto result
-      = io::tryReadSkeleton("dart://sample/skel/test/single_pendulum.skel");
+      = io::tryReadSkeleton("dart://sample/sdf/test/single_pendulum.sdf");
   EXPECT_TRUE(result.isOk());
   EXPECT_FALSE(result.isErr());
   EXPECT_NE(result.value(), nullptr);
+#endif
 }
 
 //==============================================================================
-TEST(ReadUnit, InfersFormatFromSkelExtension)
+TEST(ReadUnit, InfersFormatFromSdfExtension)
 {
   const auto skeleton
-      = io::readSkeleton("dart://sample/skel/test/single_pendulum.skel");
+      = io::readSkeleton("dart://sample/sdf/test/single_pendulum.sdf");
+#if DART_HAS_SDFORMAT
   EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
 }
 
 //==============================================================================
@@ -287,14 +308,16 @@ TEST(ReadUnit, InfersFormatFromMjcfExtension)
 }
 
 //==============================================================================
-TEST(ReadUnit, SkelWorldWithMultipleSkeletonsReturnsFirst)
+TEST(ReadUnit, ReadsConvertedTestShapesSdfFixture)
 {
+#if DART_HAS_SDFORMAT
   io::ReadOptions options;
-  options.format = io::ModelFormat::Skel;
+  options.format = io::ModelFormat::Sdf;
   const auto skeleton
-      = io::readSkeleton("dart://sample/skel/test/test_shapes.skel", options);
+      = io::readSkeleton("dart://sample/sdf/test/test_shapes.sdf", options);
   ASSERT_NE(skeleton, nullptr);
   EXPECT_EQ(skeleton->getName(), "ground skeleton");
+#endif
 }
 
 //==============================================================================
@@ -324,7 +347,7 @@ TEST(ReadUnit, PassesExplicitRetrieverThrough)
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
   io::ReadOptions options;
   options.resourceRetriever = retriever;
-  options.format = io::ModelFormat::Skel;
-  const auto skeleton = io::readSkeleton("/nonexistent/robot.skel", options);
+  options.format = io::ModelFormat::Sdf;
+  const auto skeleton = io::readSkeleton("/nonexistent/robot.sdf", options);
   EXPECT_EQ(skeleton, nullptr);
 }

@@ -49,8 +49,8 @@ namespace utils {
 ///
 /// Example of a sample data URI:
 /// @code
-/// "dart://sample/skel/shapes.skel"
-///                \______________/
+/// "dart://sample/sdf/test/shapes.sdf"
+///                \_________________/
 ///                       |
 ///            file path with respect to
 ///            the sample data directory

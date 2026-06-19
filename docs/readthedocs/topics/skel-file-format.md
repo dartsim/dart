@@ -1,25 +1,24 @@
-# SKEL File Format
+# Legacy SKEL File Format
 
-SKEL is DART's native XML format for describing worlds, skeletons, robots, and
+SKEL is DART's legacy XML format for describing worlds, skeletons, robots, and
 environments. Its structure is based on [SDFormat](http://sdformat.org/) with a
 few DART-specific extensions.
 
-DART can also load URDF, SDFormat, and MJCF files — prefer those when you need to
-interchange models with other tools. SKEL is convenient when you want a compact,
-DART-focused scene or want to exercise DART-specific options directly.
+DART 7 is removing SKEL support instead of redesigning SKEL as YAML. Use URDF,
+SDFormat, or MJCF for new models, and migrate existing SKEL assets before
+depending on DART 7. Use a `release-6.*` branch when you need compatibility with
+old SKEL assets.
 
-## Loading a SKEL file
+## Legacy loading (DART 6 / migration only)
 
-On `main`, the promoted DART 7 front door reads a single model as a `Skeleton`.
-Bundled sample files are addressable with the `dart://sample/...` URI scheme; you
-can also pass an ordinary file path. Whole-world SKEL loading through the old
-public DART 6 API remains available on `release-6.*` branches for parity work.
+On DART 6, `dart::io::readSkeleton` could load a SKEL file from a file path.
+Whole-world SKEL loading through the old public DART 6 API remains available on
+`release-6.*` branches for parity work.
 
 ```cpp
-#include <dart/io/read.hpp>
+#include <dart/io/Read.hpp>
 
-auto skeleton = dart::io::readSkeleton(
-    dart::common::Uri("dart://sample/skel/cubes.skel"));
+auto skeleton = dart::io::readSkeleton("path/to/legacy.skel");
 ```
 
 ## Document structure
@@ -128,8 +127,8 @@ A single free-floating box falling under gravity:
 
 ## More examples and the authoritative schema
 
-DART ships dozens of sample `.skel` files under
-[`data/skel/`](https://github.com/dartsim/dart/tree/main/data/skel); they are the
-best reference for real-world usage. For the exact set of recognized elements and
-attributes, the parser source is authoritative:
-[`dart/utils/skel_parser.cpp`](https://github.com/dartsim/dart/blob/main/dart/utils/skel_parser.cpp).
+Historical DART revisions and `release-6.*` branches include sample `.skel`
+files under `data/skel/`; treat them as migration references rather than
+templates for new models. For the exact set of recognized elements and
+attributes, the legacy parser source is authoritative:
+`dart/utils/skel_parser.cpp`.

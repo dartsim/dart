@@ -94,13 +94,13 @@ TEST(LocalResourceRetriever, exists_PathDoesNotExist_ReturnsFalse)
 TEST(LocalResourceRetriever, exists_FileUriDoesExists_ReturnsTrue)
 {
   LocalResourceRetriever retriever;
-  EXPECT_TRUE(retriever.exists(fileUri("skel/cube.skel")));
+  EXPECT_TRUE(retriever.exists(fileUri("sdf/test/cube.sdf")));
 }
 
 TEST(LocalResourceRetriever, exists_PathDoesExists_ReturnsTrue)
 {
   LocalResourceRetriever retriever;
-  EXPECT_TRUE(retriever.exists(localPath("skel/cube.skel")));
+  EXPECT_TRUE(retriever.exists(localPath("sdf/test/cube.sdf")));
 }
 
 TEST(LocalResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
@@ -125,16 +125,16 @@ TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
 {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
-      retriever.getFilePath(fileUri("skel/cube.skel")),
-      localPathString("skel/cube.skel"));
+      retriever.getFilePath(fileUri("sdf/test/cube.sdf")),
+      localPathString("sdf/test/cube.sdf"));
 }
 
 TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
 {
   LocalResourceRetriever retriever;
   EXPECT_EQ(
-      retriever.getFilePath(localPath("skel/cube.skel")),
-      localPathString("skel/cube.skel"));
+      retriever.getFilePath(localPath("sdf/test/cube.sdf")),
+      localPathString("sdf/test/cube.sdf"));
 }
 
 TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)

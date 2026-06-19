@@ -569,13 +569,14 @@ TEST(SkeletonLoader, LoadedPendulumAdvancesOneStep)
 
 TEST(SkeletonLoader, LoadsSkeletonFromUri)
 {
+#if DART_HAS_SDFORMAT
   sx::World world;
   sx::io::SkeletonLoadOptions options;
   options.rootAnchorPrefix = "uri_anchor_";
 
   const sx::Multibody multibody = sx::io::addSkeleton(
       world,
-      dart::common::Uri("dart://sample/skel/test/single_pendulum.skel"),
+      dart::common::Uri("dart://sample/sdf/test/single_pendulum.sdf"),
       options);
 
   EXPECT_EQ(multibody.getName(), "single_pendulum");
@@ -591,6 +592,9 @@ TEST(SkeletonLoader, LoadsSkeletonFromUri)
   EXPECT_EQ(joint.getType(), sx::JointType::Revolute);
   EXPECT_TRUE(joint.getAxis().isApprox(Eigen::Vector3d::UnitZ()));
   expectBoxCollisionShape(*link, Eigen::Vector3d(0.05, 0.1, 0.15));
+#else
+  GTEST_SKIP() << "SDF support is disabled";
+#endif
 }
 
 TEST(SkeletonLoader, TranslatesMultipleSkeletonsIntoWorld)
@@ -683,10 +687,11 @@ TEST(SkeletonLoader, RejectsInvalidBodyInertiaBeforeCreatingMultibody)
 
 TEST(SkeletonLoader, LoadsUriWithReadOptions)
 {
-  const dart::common::Uri uri("dart://sample/skel/test/single_pendulum.skel");
+#if DART_HAS_SDFORMAT
+  const dart::common::Uri uri("dart://sample/sdf/test/single_pendulum.sdf");
 
   dart::io::ReadOptions readOptions;
-  readOptions.format = dart::io::ModelFormat::Skel;
+  readOptions.format = dart::io::ModelFormat::Sdf;
 
   sx::io::SkeletonLoadOptions loadOptions;
   loadOptions.rootAnchorPrefix = "read_options_anchor_";
@@ -698,12 +703,15 @@ TEST(SkeletonLoader, LoadsUriWithReadOptions)
   EXPECT_TRUE(multibody.getLink("read_options_anchor_link 1").has_value());
 
   dart::io::ReadOptions wrongFormat;
-  wrongFormat.format = dart::io::ModelFormat::Sdf;
+  wrongFormat.format = dart::io::ModelFormat::Urdf;
 
   sx::World rejectedWorld;
   EXPECT_THROW(
       sx::io::addSkeleton(rejectedWorld, uri, wrongFormat),
       sx::InvalidArgumentException);
+#else
+  GTEST_SKIP() << "SDF support is disabled";
+#endif
 }
 
 TEST(SkeletonLoader, TranslatesMeshCollisionShape)
@@ -764,7 +772,8 @@ TEST(SkeletonLoader, RejectsUnreadableUri)
   sx::World world;
   EXPECT_THROW(
       sx::io::addSkeleton(
-          world, dart::common::Uri("dart://sample/skel/does_not_exist.skel")),
+          world,
+          dart::common::Uri("dart://sample/sdf/test/does_not_exist.sdf")),
       sx::InvalidArgumentException);
 }
 

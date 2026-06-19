@@ -115,21 +115,21 @@ TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
   EXPECT_FALSE(retriever->exists("unknown://sample/test"));
   EXPECT_FALSE(retriever->exists("dart://unknown/test"));
   EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
-  EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
+  EXPECT_TRUE(retriever->exists("dart://sample/sdf/test/shapes.sdf"));
 
   EXPECT_EQ(retriever->getFilePath("unknown://test"), "");
   EXPECT_EQ(retriever->getFilePath("unknown://sample/test"), "");
   EXPECT_EQ(retriever->getFilePath("dart://unknown/test"), "");
   EXPECT_EQ(retriever->getFilePath("dart://sample/does/not/exist"), "");
   EXPECT_EQ(
-      retriever->getFilePath("dart://sample/skel/shapes.skel"),
-      dart::config::dataPath("skel/shapes.skel"));
+      retriever->getFilePath("dart://sample/sdf/test/shapes.sdf"),
+      dart::config::dataPath("sdf/test/shapes.sdf"));
 
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
   EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
   EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
-  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
+  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/sdf/test/shapes.sdf"));
 }
 
 //==============================================================================

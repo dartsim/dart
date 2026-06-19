@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="single_pendulum">
+    <link name="link 1">
+      <pose>0.1 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>5</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>2</iyy>
+          <iyz>0</iyz>
+          <izz>3</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual 1">
+        <geometry>
+          <box>
+            <size>0.1 0.2 0.3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="collision 1">
+        <geometry>
+          <box>
+            <size>0.1 0.2 0.3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="joint 1" type="revolute">
+      <pose>-0.1 0 0 0 0 0</pose>
+      <parent>world</parent>
+      <child>link 1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <dynamics>
+          <damping>10</damping>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>

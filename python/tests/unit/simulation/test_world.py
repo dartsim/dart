@@ -3,11 +3,15 @@ from __future__ import annotations
 import gc
 import importlib
 import math
+import os
 from pathlib import Path
 
 import dartpy as dart
 import numpy as np
 import pytest
+
+
+SDF_PENDULUM_URI = "dart://sample/sdf/test/single_pendulum.sdf"
 
 
 def _simulation():
@@ -20,6 +24,37 @@ def _simulation():
     if not hasattr(module, "World"):
         raise AssertionError("dartpy imported but did not expose World")
     return module
+
+
+def _dart_build_config_header():
+    candidates = []
+    runtime_dir = os.environ.get("DARTPY_RUNTIME_DIR")
+    if runtime_dir:
+        candidates.append(Path(runtime_dir).resolve())
+    if dart.__file__:
+        candidates.append(Path(dart.__file__).resolve().parent)
+
+    for path in candidates:
+        for parent in (path, *path.parents):
+            config_header = parent / "dart" / "config.hpp"
+            if config_header.exists():
+                return config_header
+    return None
+
+
+def _dart_build_has_sdf_support():
+    config_header = _dart_build_config_header()
+    if config_header is None:
+        return True
+    return "#define DART_HAVE_SDFORMAT 0" not in config_header.read_text(
+        encoding="utf-8"
+    )
+
+
+def _add_sdf_fixture_skeleton_or_skip(sx, world, *args):
+    if not _dart_build_has_sdf_support():
+        pytest.skip("DART SDF support is disabled")
+    return sx.add_skeleton(world, SDF_PENDULUM_URI, *args)
 
 
 def _translation_transform(x: float, y: float, z: float):
@@ -5681,9 +5716,7 @@ def test_simulation_add_skeleton_loads_uri():
     options.root_anchor_prefix = "py_uri_anchor_"
 
     world = sx.World()
-    multibody = sx.add_skeleton(
-        world, "dart://sample/skel/test/single_pendulum.skel", options
-    )
+    multibody = _add_sdf_fixture_skeleton_or_skip(sx, world, options)
 
     assert multibody.name == "single_pendulum"
     assert multibody.num_links == 2
@@ -5710,7 +5743,7 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     read_options = sx.ReadOptions()
     assert read_options.format == sx.ModelFormat.AUTO
     assert read_options.sdf_default_root_joint_type == sx.RootJointType.FLOATING
-    read_options.format = sx.ModelFormat.SKEL
+    read_options.format = sx.ModelFormat.SDF
     read_options.sdf_default_root_joint_type = sx.RootJointType.FIXED
     read_options.add_package_directory("unused", "/tmp")
 
@@ -5718,9 +5751,9 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     load_options.root_anchor_prefix = "py_read_options_anchor_"
 
     world = sx.World()
-    multibody = sx.add_skeleton(
+    multibody = _add_sdf_fixture_skeleton_or_skip(
+        sx,
         world,
-        "dart://sample/skel/test/single_pendulum.skel",
         read_options,
         load_options,
     )
@@ -5729,13 +5762,9 @@ def test_simulation_add_skeleton_uri_accepts_read_options():
     assert multibody.get_link("py_read_options_anchor_link 1") is not None
 
     wrong_format = sx.ReadOptions()
-    wrong_format.format = sx.ModelFormat.SDF
+    wrong_format.format = sx.ModelFormat.URDF
     with pytest.raises(Exception, match="Failed to read Skeleton"):
-        sx.add_skeleton(
-            sx.World(),
-            "dart://sample/skel/test/single_pendulum.skel",
-            wrong_format,
-        )
+        sx.add_skeleton(sx.World(), SDF_PENDULUM_URI, wrong_format)
 
 
 def test_simulation_api_does_not_expose_add_world_bridge():

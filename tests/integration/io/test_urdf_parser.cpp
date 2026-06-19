@@ -207,7 +207,7 @@ TEST(UrdfParser, parseSkeleton_NonExistantPathReturnsNull)
   UrdfParser parser;
   EXPECT_EQ(
       nullptr,
-      parser.parseSkeleton("dart://sample/skel/test/does_not_exist.urdf"));
+      parser.parseSkeleton("dart://sample/urdf/test/does_not_exist.urdf"));
 }
 
 //==============================================================================
