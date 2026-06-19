@@ -70,7 +70,8 @@ struct LcpWorkspace
 template <typename Solver>
 bool isExactSolverType(const BoxedLcpSolverPtr& solver)
 {
-  return solver && typeid(*solver) == typeid(Solver);
+  const auto* rawSolver = solver.get();
+  return rawSolver && typeid(*rawSolver) == typeid(Solver);
 }
 
 } // namespace
