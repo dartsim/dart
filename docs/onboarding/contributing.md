@@ -25,7 +25,7 @@ For C++ or Python changes, also run `pixi run build` and focused tests. For
 Gazebo/gz-physics compatibility surfaces, run:
 
 ```bash
-N=${DART_SAFE_JOBS:-$(python scripts/parallel_jobs.py)}
+N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 

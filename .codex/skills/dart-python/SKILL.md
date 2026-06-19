@@ -40,11 +40,9 @@ pixi run generate-stubs  # Generate type stubs
 
 ## Wheel Building
 
-```bash
-pixi run -e py314-wheel wheel-build
-pixi run -e py314-wheel wheel-repair  # Linux only
-pixi run -e py314-wheel wheel-test
-```
+This release branch does not define local Pixi wheel tasks. Before changing
+wheel packaging, inspect the current CI/package workflow and add or document
+release-branch wheel tasks in the same PR that introduces them.
 
 ## Key Patterns
 

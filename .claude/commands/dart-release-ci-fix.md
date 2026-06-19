@@ -19,10 +19,16 @@ Fix release-branch CI: $ARGUMENTS
    gh run view <RUN_ID> --job <JOB_ID> --log
    ```
 2. Check whether an equivalent fix already exists on `main`.
-3. If continuing an existing PR, fetch and checkout that branch. Otherwise branch from the release branch:
+3. If continuing an existing PR, fetch and checkout that branch. Otherwise
+   branch from the release branch without resetting an existing local branch:
    ```bash
    git fetch origin <RELEASE_BRANCH>
-   git switch --no-track -C fix/<issue>-<release-branch> origin/<RELEASE_BRANCH>
+   BRANCH=fix/<issue>-<release-branch>
+   if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+     git switch "$BRANCH"
+   else
+     git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
+   fi
    ```
 4. Prefer cherry-picking a proven `main` fix. If a new fix is required, keep it release-scoped and minimal.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.

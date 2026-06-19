@@ -43,9 +43,15 @@ Backport PR or commits: $ARGUMENTS
    git fetch origin <RELEASE_BRANCH> main
    git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
    ```
-3. Create a release branch from the release target:
+3. Create a release branch from the release target without resetting an
+   existing local branch:
    ```bash
-   git switch --no-track -C backport/<SOURCE_PR>-to-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
+   BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>
+   if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+     git switch "$BRANCH"
+   else
+     git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
+   fi
    ```
 4. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
 5. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
