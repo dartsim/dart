@@ -124,11 +124,40 @@ function(dart_configure_imgui_compat_headers out_var)
   set(${out_var} ${compat_headers} PARENT_SCOPE)
 endfunction()
 
+macro(dart_try_find_system_imgui)
+  find_package(imgui QUIET CONFIG)
+  if(NOT imgui_FOUND)
+    find_package(imgui QUIET MODULE)
+  endif()
+
+  if(imgui_FOUND AND NOT TARGET imgui::imgui)
+    add_library(imgui::imgui INTERFACE IMPORTED)
+    set_target_properties(imgui::imgui PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
+    )
+  endif()
+endmacro()
+
 if(DART_USE_SYSTEM_IMGUI)
-  dart_find_package(imgui)
-  dart_check_required_package(imgui "imgui")
+  if(DART_BUILD_GUI_OSG)
+    dart_find_package(imgui)
+    dart_check_required_package(imgui "imgui")
+  else()
+    dart_try_find_system_imgui()
+    if(NOT imgui_FOUND OR NOT TARGET imgui::imgui)
+      message(STATUS "Skipping dart-external-imgui: system ImGui was not found")
+      return()
+    endif()
+  endif()
+
   dart_find_package(OpenGL)
-  dart_check_required_package(OpenGL "OpenGL")
+  if(DART_BUILD_GUI_OSG)
+    dart_check_required_package(OpenGL "OpenGL")
+  elseif((NOT OPENGL_FOUND AND NOT OpenGL_FOUND) OR NOT TARGET OpenGL::GL)
+    message(STATUS "Skipping dart-external-imgui: OpenGL was not found")
+    return()
+  endif()
 
   set(imgui_header_search_dirs ${imgui_INCLUDE_DIRS})
   get_target_property(

@@ -1,4 +1,4 @@
-if(DART_BUILD_GUI_OSG)
+if(DART_BUILD_GUI_OSG OR DART_USE_SYSTEM_IMGUI)
   add_subdirectory(imgui)
 endif()
 add_subdirectory(ikfast)
