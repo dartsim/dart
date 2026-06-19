@@ -176,8 +176,10 @@ the approved follow-up push addressed Codex review comments, or when the first
 trigger has a concrete timeout/blocker.
 
 After Codex returns no actionable issues and local validation passes on the
-current head (default `pixi run test-all`, plus the Gazebo gate when package or
-downstream compatibility could be affected), a draft PR is ready to mark ready
-for human review after explicit approval even if hosted CI is still pending. Do
-not merge until branch protection and required checks pass unless a maintainer
-explicitly approves a policy bypass.
+current head (`pixi run test-all` for build coverage, `pixi run test` when C++
+runtime behavior could be affected, `pixi run test-py` when Python behavior
+could be affected, plus the Gazebo gate when package or downstream compatibility
+could be affected), a draft PR is ready to mark ready for human review after
+explicit approval even if hosted CI is still pending. Do not merge until branch
+protection and required checks pass unless a maintainer explicitly approves a
+policy bypass.
