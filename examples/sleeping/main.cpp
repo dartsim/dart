@@ -966,7 +966,7 @@ void configureImGuiStyle(float scale)
   io.Fonts->Clear();
   ImFontConfig fontConfig;
   fontConfig.SizePixels = 13.0f * scale;
-#if IMGUI_VERSION_NUM >= 19200
+#if IMGUI_VERSION_NUM >= 19261
   io.Fonts->AddFontDefaultBitmap(&fontConfig);
 #else
   io.Fonts->AddFontDefault(&fontConfig);
