@@ -47,6 +47,7 @@
 // entry point is marked DART_SIMULATION_API so a test/diff layer can link it
 // across the experimental .so (DART applies strict symbol visibility).
 
+#include <dart/simulation/compute/rigid_body_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
@@ -61,7 +62,6 @@
 #include <entt/fwd.hpp>
 
 #include <span>
-#include <unordered_map>
 #include <vector>
 
 #include <cstddef>
@@ -123,49 +123,17 @@ struct DART_SIMULATION_API BoxedLcpContactSnapshot
   }
 };
 
-// Per-contact constraint, mirroring the sequential-impulse stage so the two
-// paths assemble the same physics: a normal row plus two tangential friction
-// rows spanning the contact plane (box Coulomb model).
-struct BoxedLcpContactNormal
-{
-  entt::entity bodyA{entt::null};
-  entt::entity bodyB{entt::null};
-  bool staticA = false;
-  bool staticB = false;
-  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
-  Eigen::Vector3d tangent1 = Eigen::Vector3d::UnitX();
-  Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
-  Eigen::Vector3d armA = Eigen::Vector3d::Zero();
-  Eigen::Vector3d armB = Eigen::Vector3d::Zero();
-  double bias = 0.0; // Baumgarte/restitution bias as a target normal velocity.
-  double friction = 0.0; // Combined Coulomb friction coefficient mu.
-};
-
 struct DART_SIMULATION_API BoxedLcpContactScratch
 {
-  using NormalAllocator = dart::common::StlAllocator<BoxedLcpContactNormal>;
   using DoubleAllocator = dart::common::StlAllocator<double>;
   using IntAllocator = dart::common::StlAllocator<int>;
   using DoubleVector = std::vector<double, DoubleAllocator>;
   using IntVector = std::vector<int, IntAllocator>;
-  using BodyColumnPair = std::pair<const entt::entity, std::size_t>;
-  using BodyColumnAllocator = dart::common::StlAllocator<BodyColumnPair>;
-  using BodyColumnMap = std::unordered_map<
-      entt::entity,
-      std::size_t,
-      std::hash<entt::entity>,
-      std::equal_to<entt::entity>,
-      BodyColumnAllocator>;
 
   BoxedLcpContactScratch() = default;
 
   explicit BoxedLcpContactScratch(dart::common::MemoryAllocator& allocator)
-    : normals(NormalAllocator{allocator}),
-      bodyColumn(
-          0u,
-          std::hash<entt::entity>{},
-          std::equal_to<entt::entity>{},
-          BodyColumnAllocator{allocator}),
+    : problem(allocator),
       systemA(DoubleAllocator{allocator}),
       systemB(DoubleAllocator{allocator}),
       systemLo(DoubleAllocator{allocator}),
@@ -185,8 +153,7 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
   void reserve(std::size_t contactCapacity, std::size_t bodyCapacity);
   void clearProblem();
 
-  std::vector<BoxedLcpContactNormal, NormalAllocator> normals;
-  BodyColumnMap bodyColumn;
+  compute::RigidBodyContactProblem problem;
   BoxedLcpContactSnapshot snapshot;
   DoubleVector systemA;
   DoubleVector systemB;

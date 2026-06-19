@@ -241,26 +241,27 @@ struct DART_SIMULATION_API StepMetrics
   /// Total angular momentum about the world origin (world frame).
   Eigen::Vector3d angularMomentum = Eigen::Vector3d::Zero();
 
-  /// Number of active rigid contacts at the current state.
+  /// Number of active rigid contacts processed by the last mutating rigid
+  /// contact stage.
   ///
-  /// Populating this requires a narrow-phase contact pass, which mutates the
-  /// World's collision-query cache and so cannot run from the read-only
-  /// `computeStepMetrics()` query. This foundational WP-091.24 slice therefore
-  /// leaves it at 0; a later slice adds an explicit contact-metrics path.
+  /// `computeStepMetrics()` is a read-only query and does not run narrow phase
+  /// itself; this is the cached value from `World::step()` (0 before any
+  /// contact stage has run, or when the active stage reported no rigid-rigid
+  /// contacts).
   std::size_t activeContactCount = 0;
 
-  /// Maximum penetration depth over active rigid contacts (meters). Left at 0
-  /// for the same read-only reason as `activeContactCount`.
+  /// Maximum penetration depth over active rigid contacts processed by the last
+  /// mutating rigid contact stage (meters). Cached for the same reason as
+  /// `activeContactCount`.
   double maxPenetrationDepth = 0.0;
 
-  /// RIQN/solver iterations performed on the last step, when the active solver
-  /// exposes it; 0 otherwise. The default step profile records per-stage timing
-  /// only, so this is 0 until a later slice threads solver-iteration data
-  /// through the profile rather than inventing a value here.
+  /// Solver iterations performed by the stages that expose an iteration count
+  /// during the last `World::step()`. Direct solves and stages without a public
+  /// iteration count contribute 0.
   std::size_t lastStepIterations = 0;
 
-  /// Final solver residual norm on the last step, when available; 0 otherwise
-  /// (same provenance caveat as `lastStepIterations`).
+  /// Maximum final solver residual norm reported by stages during the last
+  /// `World::step()`. Stages without a comparable residual contribute 0.
   double lastStepResidual = 0.0;
 };
 
