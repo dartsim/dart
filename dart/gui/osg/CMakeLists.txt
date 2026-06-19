@@ -42,7 +42,16 @@ add_subdirectory(render)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-target_link_libraries(${target_name} dart-gui osg::osg ${link_libraries})
+if(NOT DART_USE_SYSTEM_IMGUI)
+  target_include_directories(${target_name}
+    BEFORE
+    PUBLIC
+      $<BUILD_INTERFACE:${DART_BINARY_DIR}/_deps/imgui-src>
+      $<BUILD_INTERFACE:${DART_BINARY_DIR}/_deps/imgui-src/backends>
+      $<INSTALL_INTERFACE:include/dart/external/imgui>
+  )
+endif()
+target_link_libraries(${target_name} dart-gui ${link_libraries} osg::osg)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

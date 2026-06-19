@@ -16,13 +16,12 @@ Evidence was collected on 2026-06-19 after fetching `origin/main`,
 
 ## Current Branch State
 
-- `origin/release-6.20` currently points at `6543bcc37ce` (`Packaging
-  6.19.2`) and is tagged `v6.19.2`.
+- `origin/release-6.20` currently points at `b94cd16f6eb` (`Plan DART 6.20
+  dependency minimization (#3074)`).
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report version
   `6.19.2`.
-- Before any implementation PR, confirm whether the branch is intentionally the
-  6.20 lane with pending version metadata, or whether a packaging/version bump
-  must land first.
+- DART 6.20 is intentionally using the release lane before the package version
+  metadata bump lands.
 
 ## DART 6 Dependency Inventory
 
@@ -144,11 +143,14 @@ Default Pixi/package metadata for optional components
 `dart/external/imgui`
 
 - Risk: medium because the OSG GUI path remains part of DART 6.
-- Plan: prefer system ImGui for packaged builds and replace the vendored tree
-  with either a FetchContent fallback or a documented GUI feature dependency.
-  Do not remove OSG GUI compatibility in this slice.
-- Validation: GUI configure/build on Linux and macOS lanes, OSG regression or
-  screenshot smoke, and package smoke proving ImGui headers are found.
+- Status: in progress on `chore/replace-imgui-release-6.20`.
+- Plan: keep the packaged/system ImGui path for normal builds, replace the
+  source-tree vendored copy with a FetchContent fallback when
+  `DART_USE_SYSTEM_IMGUI=OFF`, and preserve the `external-imgui` component plus
+  old installed `dart/external/imgui` include path for DART 6 compatibility.
+- Validation: GUI configure/build with system ImGui and fetched ImGui, OSG GUI
+  target build, install-tree headers, and package smoke proving ImGui headers
+  are found through `find_package(DART COMPONENTS external-imgui gui-osg)`.
 
 `dart/external/lodepng`
 

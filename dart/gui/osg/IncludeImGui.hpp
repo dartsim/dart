@@ -35,12 +35,7 @@
 
 #include <dart/config.hpp>
 
-#if DART_USE_SYSTEM_IMGUI
-  #include <imgui.h>
-  #include <imgui_impl_opengl2.h>
-#else
-  #include <dart/external/imgui/imgui.h>
-  #include <dart/external/imgui/imgui_impl_opengl2.h>
-#endif
+#include <imgui.h>
+#include <imgui_impl_opengl2.h>
 
 #endif // DART_GUI_OSG_INCLUDEIMGUI_HPP_
