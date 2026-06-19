@@ -15,11 +15,133 @@ testing found realtime workflow rows should stay on the Sequential Impulse
 rigid-body solver; SI-vs-IPC inspection belongs in `rigid_solver_compare` and
 explicit IPC shelf scenes.
 
+Interactive selection found one M0 gap: a click/force-drag with no cursor motion
+could enqueue a zero-length debug overlay segment, trip Filament's empty-AABB
+precondition, and then fail shutdown while destroying `dartDebugColor`.
+Reproducer:
+
+```bash
+pixi run py-demos -- --scene rigid_body --headless --frames 4 \
+  --width 640 --height 480 --screenshot /tmp/rigid_body.ppm \
+  --scripted-force-drag 1:sphere_0_visual:0,0,0:2
+```
+
+The fix hardens both debug-line generation and the Filament renderable factory
+against degenerate debug primitives.
+
+The next M1 slice added scriptable capture-state restoration:
+`py-demo-capture -- --scene-state-json '{"controls":{"contact_method_index":1}}'`
+restores scene-owned replay state before the viewer starts. The `rigid_body`
+workflow panel now advertises the boxed-LCP baseline capture command with
+`--capture-label boxed_lcp`, so stateful A/B captures use distinct default
+output directories and artifact stems. Default/CUDA captures resolved
+`contact_solver_method=BOXED_LCP` in their manifests.
+
+The contact-baseline path is now also a first-class workflow packet:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only \
+  --output-dir /tmp/dart_capture_rigid_contact_baseline
+```
+
+It captures the `rigid_body` Sequential Impulse and boxed-LCP contact-policy
+variants as one review-indexed packet with per-row capture labels, state
+metadata, and row rerun commands.
+
+The current M1 slice curates the AVBD rigid-constraint showcase from the
+existing `avbd_*` scenes instead of creating a new unified scene. The dedicated
+packet command is:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only \
+  --output-dir /tmp/dart_capture_rigid_avbd_showcase
+```
+
+It captures fixed-joint/contact, breakable-joint, spherical breakable-joint,
+revolute-motor, and prismatic-motor AVBD rows as a complementary M1 showcase
+beside the World contact-policy / boxed-LCP baseline. Default and CUDA packet
+row captures for `avbd_rigid_revolute_motor` completed with
+`solver=avbd_rigid_joints` in the workflow manifests.
+
+The full reviewer-facing packet pass completed on PR #3084 head `fd8db58`:
+
+- Default contact-baseline packet:
+  `/tmp/dart_capture_rigid_contact_baseline_full_default_3084_fd8db58`
+  (`real 32.58s`).
+- CUDA contact-baseline packet:
+  `/tmp/dart_capture_rigid_contact_baseline_full_cuda_3084_fd8db58`
+  (`real 33.50s`).
+- Default AVBD showcase packet:
+  `/tmp/dart_capture_rigid_avbd_showcase_full_default_3084_fd8db58`
+  (`real 35.37s`).
+- CUDA AVBD showcase packet:
+  `/tmp/dart_capture_rigid_avbd_showcase_full_cuda_3084_fd8db58`
+  (`real 36.40s`).
+
+All four workflow manifests report `status=complete`; the review indexes report
+complete guidance, solver identity, and scene metrics with zero failed rows.
+Visual inspection found the AVBD rows readable as docked visual evidence. The
+contact-baseline screenshots are intentionally similar, so the review-index
+labels, scene-state metadata, `contact_solver_method` solver identity, and
+metrics are the distinguishing evidence. This is enough for the current PR
+evidence; a unified comparison scene is deferred unless review asks for a
+stronger single-scene visual.
+
+A follow-up local improvement makes packet review pages report their M1 phase
+maps for contact-baseline and AVBD-only packets instead of showing `phases 0`.
+It also preserves `scene_state_json` in each row's `open live` command, so the
+boxed-LCP contact-baseline row opens the same state that the capture used.
+The live rigid workflow panel now advertises the matching boxed-LCP `py-demos`
+command beside the boxed-LCP capture command, so the panel opens and captures
+the same stateful baseline.
+The `rigid_body` scene panel also has one-click Sequential Impulse and boxed-LCP
+baseline preset buttons that set the contact solver and reset the scene through
+the same replay/capture state path.
+
+The next local UI follow-up adds an `Open contact comparison` button to the
+`rigid_body` front-door panel. It routes through the existing panel
+`request_scene_switch` hook to `rigid_contact_solver_compare`, giving users a
+direct path from the baseline scene to the side-by-side Sequential
+Impulse/boxed-LCP comparison row.
+
+The fresh Codex review on PR #3084 head `e9ef404` found a valid state-override
+edge case: `DART_DEMOS_SCENE=rigid_body pixi run py-demos --
+--scene-state-json ...` rejected the override even though the environment
+variable selects a single supported scene. The local fix resolves the
+state-override target from explicit `--scene`, then `DART_DEMOS_SCENE`, then the
+injected default `rigid_body` scene, while still rejecting true multi-scene
+cycle runs.
+
+A broad local M0 regression recheck completed on PR #3084 local head `bd0b8e7`:
+default `pixi run py-demos-smoke --json-out
+/tmp/py_demos_smoke_default_pr3084_local.json` passed 155/155 scenes in
+`real 47.96s`, and CUDA `pixi run -e cuda py-demos-smoke --json-out
+/tmp/py_demos_smoke_cuda_pr3084_local.json` passed 155/155 scenes in
+`real 76.18s`.
+
+## Current Branch
+
+`fix/py-demos-selection-crash` - published as PR #3084. The PR includes the
+selection debug-overlay fix, scriptable capture-state restoration, labeled
+stateful captures, the dedicated contact-baseline packet, and the AVBD showcase
+packet. The remote PR branch also includes the phase-map, stateful open-live
+command, boxed-LCP workflow-panel UI, rigid-body contact preset, and
+full-catalog smoke evidence follow-ups. The PR body has been refreshed with the
+default and CUDA before/after launch timings plus the full-catalog smoke
+results. A local UI follow-up for the `rigid_body` contact-comparison route may
+be ahead of the remote PR branch until explicitly pushed. A local follow-up also
+addresses the Codex `DART_DEMOS_SCENE` / `--scene-state-json` review finding.
+
 ## Immediate Next Step
 
-**M1 is in progress.** Verify the contact-baseline increment, then capture the
-rigid-body SI vs boxed-LCP visual evidence and curate the AVBD constraint
-showcase.
+**M1 is in progress.** Keep the scripted selection repro above in the validation
+set, use the dedicated contact-baseline packet for rigid-body SI vs boxed-LCP
+visual evidence, and use the dedicated AVBD showcase packet for the modern
+rigid-constraint track. The next useful slice is PR management: watch hosted CI
+and the fresh Codex review request on PR #3084 for actionable feedback. If the
+local contact-comparison route and `DART_DEMOS_SCENE` state-override fix are
+included in PR #3084, refresh the PR body and rerun/retrigger the same review
+loop after the approved push.
 
 Re-run any M0 guard:
 
@@ -37,6 +159,12 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 - First M1 increment: enhance the existing `rigid_body` scene before creating a
   new comparison scene. This keeps the baseline path visible in the flagship
   scene while AVBD showcase curation proceeds separately.
+- AVBD showcase curation: keep M1 as two complementary packets for now. The
+  AVBD packet is scoped to the existing `sx` rigid-constraint scenes and does
+  not claim solver-enum parity with the World contact-policy baseline.
+- Capture-state overrides belong to scenes that already expose
+  `replay_restore_state`; unsupported scenes should fail clearly rather than
+  silently pretending a panel state was applied.
 - M0 triage: **quarantine to green** — non-runnable/planned scenes are marked
   skipped (tracked as deferred), not crashed and not force-fixed.
 - Sibling worktrees (`task_6` memory allocator, `task_7` WP-091 enum) keep
@@ -63,11 +191,12 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 ## How to Resume
 
 ```bash
-git checkout py-demos-framework
+git checkout fix/py-demos-selection-crash
 git status && git log -3 --oneline
 # Verify build state:
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: run focused C++/dartpy verification for the writable contact solver
-method, run the py-demos panel/smoke guards, and proceed with M1 visual capture.
+Then: run the py-demos panel/smoke guards if changing runtime behavior; for the
+current reporting-only follow-up, focused capture tests plus `pixi run lint` are
+the relevant local gates before any approved push.

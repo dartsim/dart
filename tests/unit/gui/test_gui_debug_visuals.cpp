@@ -65,6 +65,16 @@ using dart::dynamics::BoxShape;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::Skeleton;
 
+void expectFiniteNonZeroLines(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
+{
+  for (const auto& line : lines) {
+    EXPECT_TRUE(line.from.allFinite()) << line.label;
+    EXPECT_TRUE(line.to.allFinite()) << line.label;
+    EXPECT_GT((line.to - line.from).norm(), 1e-12) << line.label;
+  }
+}
+
 TEST(GuiDebugVisuals, JointAxisDebugLinesFollowRevoluteAxis)
 {
   auto skeleton = Skeleton::create("joint_axis");
@@ -105,6 +115,30 @@ TEST(GuiDebugVisuals, VelocityDebugLinesRespectOptions)
   // Zero velocity produces no arrow even when the option is on.
   pair.first->setVelocities(Eigen::VectorXd::Zero(6));
   EXPECT_TRUE(dart::gui::makeVelocityDebugLines(*body, options).empty());
+}
+
+TEST(GuiDebugVisuals, SelectionDebugLinesSkipFlatBoundsDegenerateEdges)
+{
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.material.visible = true;
+  descriptor.geometry.hasLocalBounds = true;
+  descriptor.geometry.localBoundsMin = Eigen::Vector3d(-1.0, -2.0, 0.0);
+  descriptor.geometry.localBoundsMax = Eigen::Vector3d(1.0, 2.0, 0.0);
+
+  const auto lines = dart::gui::makeSelectionDebugLines(descriptor);
+  ASSERT_FALSE(lines.empty());
+  expectFiniteNonZeroLines(lines);
+}
+
+TEST(GuiDebugVisuals, SelectionDebugLinesSkipZeroVolumeBounds)
+{
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.material.visible = true;
+  descriptor.geometry.hasLocalBounds = true;
+  descriptor.geometry.localBoundsMin = Eigen::Vector3d::Ones();
+  descriptor.geometry.localBoundsMax = Eigen::Vector3d::Ones();
+
+  EXPECT_TRUE(dart::gui::makeSelectionDebugLines(descriptor).empty());
 }
 
 TEST(GuiDebugVisuals, PerShapePbrOverridesFlowThroughDescriptor)

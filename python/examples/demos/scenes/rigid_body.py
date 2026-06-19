@@ -37,6 +37,9 @@ _CONTACT_METHODS: tuple[tuple[str, sx.ContactSolverMethod], ...] = (
     ("Sequential impulse", sx.ContactSolverMethod.SEQUENTIAL_IMPULSE),
     ("Boxed LCP", sx.ContactSolverMethod.BOXED_LCP),
 )
+_CONTACT_METHOD_SEQUENTIAL_INDEX = 0
+_CONTACT_METHOD_BOXED_LCP_INDEX = 1
+_CONTACT_POLICY_COMPARE_SCENE_ID = "rigid_contact_solver_compare"
 
 
 def _visual_for(
@@ -355,6 +358,21 @@ class _RigidBodyBaseline:
         history.clear()
         history.extend(float(value) for value in values)
 
+    def _set_contact_method_index(self, index: int) -> None:
+        self.contact_method_index = max(
+            0,
+            min(
+                int(index),
+                len(_CONTACT_METHODS) - 1,
+            ),
+        )
+        self.reset(clear_replay=True)
+
+    def _request_contact_policy_compare(self, context: object) -> None:
+        request_scene_switch = getattr(context, "request_scene_switch", None)
+        if callable(request_scene_switch):
+            request_scene_switch(_CONTACT_POLICY_COMPARE_SCENE_ID)
+
     def build_panel(self, builder: object, context: object) -> None:
         changed_solver, solver_index = builder.select(
             "Solver", int(self.solver_index), [label for label, _solver in _SOLVERS]
@@ -375,14 +393,26 @@ class _RigidBodyBaseline:
             self.solver_index = int(solver_index)
             self.reset(clear_replay=True)
         if changed_contact_method:
-            self.contact_method_index = int(contact_method_index)
-            self.reset(clear_replay=True)
+            self._set_contact_method_index(contact_method_index)
         if changed_friction:
             self.friction = float(friction)
             self._apply_materials()
         if changed_restitution:
             self.restitution = float(restitution)
             self._apply_materials()
+        builder.text("Contact baseline preset")
+        if builder.button("Sequential impulse"):
+            self._set_contact_method_index(_CONTACT_METHOD_SEQUENTIAL_INDEX)
+        builder.item_tooltip("Reset to the default contact baseline.")
+        builder.same_line()
+        if builder.button("Boxed LCP"):
+            self._set_contact_method_index(_CONTACT_METHOD_BOXED_LCP_INDEX)
+        builder.item_tooltip("Reset to the DART 6-style boxed-LCP baseline.")
+        if builder.button("Open contact comparison"):
+            self._request_contact_policy_compare(context)
+        builder.item_tooltip(
+            "Open the side-by-side Sequential Impulse and boxed-LCP policy row."
+        )
         if builder.button("Reset baseline scene"):
             self.reset(clear_replay=True)
 

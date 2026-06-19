@@ -494,9 +494,11 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["workflow"] == "rigid_visual_verification"
+    assert manifest["include_avbd_showcase"] is False
     assert manifest["include_related"] is False
     assert manifest["include_ipc_shelf"] is False
     assert manifest["include_packets"] is False
+    assert manifest["selected_include_avbd_showcase"] is False
     assert manifest["selected_include_related"] is False
     assert manifest["selected_include_ipc_shelf"] is False
     assert manifest["selected_include_packets"] is False
@@ -629,6 +631,249 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         review_html
     )
     assert "pixi run py-demo-capture -- --scene rigid_body" in review_html
+
+
+def test_rigid_workflow_dry_run_can_capture_avbd_showcase_only(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_avbd_showcase"
+    avbd_specs = (
+        ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
+        ("avbd_rigid_prismatic_motor", 72, 960, 540, True),
+    )
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS",
+        avbd_specs,
+    )
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--avbd-showcase-only",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_avbd_showcase"] is True
+    assert manifest["include_related"] is False
+    assert manifest["include_ipc_shelf"] is False
+    assert manifest["include_packets"] is False
+    assert manifest["selected_include_avbd_showcase"] is True
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is False
+    assert manifest["selected_include_packets"] is False
+    assert manifest["capture_count"] == len(avbd_specs)
+    assert manifest["workflow_total_count"] == len(avbd_specs)
+    assert manifest["workflow_row_start"] == 1
+    assert manifest["workflow_row_end"] == len(avbd_specs)
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "avbd_rigid_fixed_joint_contact",
+        "avbd_rigid_prismatic_motor",
+    ]
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "avbd_constraint_showcase",
+        "avbd_constraint_showcase",
+    ]
+    assert (
+        manifest["captures"][0]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only "
+        "--workflow-start-row 1 --workflow-end-row 1 --output-dir "
+        f"{output}/reruns/01_avbd_rigid_fixed_joint_contact"
+    )
+    assert (
+        manifest["captures"][0]["workflow_label"]
+        == "AVBD constraint showcase"
+    )
+    assert (
+        manifest["captures"][0]["workflow_phase"]
+        == "M1 AVBD constraint showcase"
+    )
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "AVBD rigid constraint track"
+    )
+    assert "fixed joint coherent" in manifest["captures"][0]["user_question"]
+    assert "boxed-LCP baseline" in manifest["captures"][0]["scope"]
+    assert manifest["captures"][1]["workflow_label"] == "AVBD constraint showcase"
+    assert manifest["captures"][1]["workflow_phase"] == (
+        "M1 AVBD constraint showcase"
+    )
+    assert manifest["captures"][1]["focus_axis"] == "AVBD rigid constraint track"
+    assert "slider motor" in manifest["captures"][1]["user_question"]
+    assert "slider travel" in manifest["captures"][1]["inspect"]
+    assert manifest["captures"][1]["manifest"].endswith(
+        "scenes/02_avbd_rigid_prismatic_motor/manifest.json"
+    )
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "M1 AVBD constraint showcase",
+            "focus_axes": ["AVBD rigid constraint track"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": len(avbd_specs),
+            "row_count": len(avbd_specs),
+            "row_span": "1-2",
+            "rows": [1, 2],
+            "scenes": [
+                "avbd_rigid_fixed_joint_contact",
+                "avbd_rigid_prismatic_motor",
+            ],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": len(avbd_specs),
+            },
+        }
+    ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "AVBD constraint showcase" in review_html
+    assert "<strong>phases</strong> 1" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "M1 AVBD constraint showcase" in review_html
+    assert "AVBD rigid constraint track" in review_html
+    assert "avbd showcase" in review_html
+    assert "avbd_constraint_showcase" in review_html
+    assert "fixed joint coherent" in review_html
+    assert "slider motor" in review_html
+    assert "--avbd-showcase-only" in review_html
+
+
+def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_contact_baseline"
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--contact-baseline-only",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_contact_baseline"] is True
+    assert manifest["include_avbd_showcase"] is False
+    assert manifest["include_related"] is False
+    assert manifest["include_ipc_shelf"] is False
+    assert manifest["include_packets"] is False
+    assert manifest["selected_include_contact_baseline"] is True
+    assert manifest["selected_include_avbd_showcase"] is False
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is False
+    assert manifest["selected_include_packets"] is False
+    assert manifest["capture_count"] == 2
+    assert manifest["workflow_total_count"] == 2
+    assert manifest["workflow_row_start"] == 1
+    assert manifest["workflow_row_end"] == 2
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_body",
+        "rigid_body",
+    ]
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "contact_baseline",
+        "contact_baseline",
+    ]
+    assert [capture["capture_label"] for capture in manifest["captures"]] == [
+        "sequential_impulse",
+        "boxed_lcp",
+    ]
+    assert manifest["captures"][0]["scene_state_json"] == ""
+    assert (
+        manifest["captures"][1]["scene_state_json"]
+        == '{"controls":{"contact_method_index":1}}'
+    )
+    assert "--capture-label sequential_impulse" in manifest["captures"][0]["command"]
+    assert "--capture-label boxed_lcp" in manifest["captures"][1]["command"]
+    assert "--scene-state-json" not in manifest["captures"][0]["command"]
+    assert (
+        "--scene-state-json '{\"controls\":{\"contact_method_index\":1}}'"
+        in manifest["captures"][1]["command"]
+    )
+    assert (
+        manifest["captures"][0]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only "
+        "--workflow-start-row 1 --workflow-end-row 1 --output-dir "
+        f"{output}/reruns/01_rigid_body"
+    )
+    assert (
+        manifest["captures"][1]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --contact-baseline-only "
+        "--workflow-start-row 2 --workflow-end-row 2 --output-dir "
+        f"{output}/reruns/02_rigid_body"
+    )
+    assert "--scene-state-json" not in manifest["captures"][0]["viewer_command"]
+    assert (
+        "--scene-state-json '{\"controls\":{\"contact_method_index\":1}}'"
+        in manifest["captures"][1]["viewer_command"]
+    )
+    assert manifest["captures"][0]["workflow_label"] == "Contact baseline"
+    assert manifest["captures"][0]["workflow_phase"] == "M1 contact-policy baseline"
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "Sequential Impulse vs boxed-LCP contact method"
+    )
+    assert "Sequential Impulse contact path" in manifest["captures"][0]["user_question"]
+    assert manifest["captures"][1]["workflow_label"] == "Contact baseline"
+    assert manifest["captures"][1]["workflow_phase"] == "M1 contact-policy baseline"
+    assert (
+        manifest["captures"][1]["focus_axis"]
+        == "Sequential Impulse vs boxed-LCP contact method"
+    )
+    assert "boxed-LCP contact baseline" in manifest["captures"][1]["user_question"]
+    assert "contact_solver_method=BOXED_LCP" in manifest["captures"][1][
+        "healthy_signal"
+    ]
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "M1 contact-policy baseline",
+            "focus_axes": ["Sequential Impulse vs boxed-LCP contact method"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": 2,
+            "row_count": 2,
+            "row_span": "1-2",
+            "rows": [1, 2],
+            "scenes": ["rigid_body", "rigid_body"],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": 2,
+            },
+        }
+    ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "contact baseline" in review_html
+    assert "<strong>phases</strong> 1" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "M1 contact-policy baseline" in review_html
+    assert "Sequential Impulse vs boxed-LCP contact method" in review_html
+    assert "--contact-baseline-only" in review_html
+    assert "<dt>capture label</dt><dd>sequential_impulse</dd>" in review_html
+    assert "<dt>capture label</dt><dd>boxed_lcp</dd>" in review_html
+    assert "<dt>scene state</dt><dd>{&quot;controls&quot;" in review_html
+    assert (
+        "pixi run py-demos -- --scene rigid_body --width 960 --height 540 "
+        "--scene-state-json &#x27;{&quot;controls&quot;:"
+    ) in review_html
 
 
 def test_rigid_workflow_dry_run_can_include_related_evidence(
@@ -2970,6 +3215,14 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
     ("flag", "message"),
     (
         ("--include-related", "--include-related requires --rigid-workflow"),
+        (
+            "--contact-baseline-only",
+            "--contact-baseline-only requires --rigid-workflow",
+        ),
+        (
+            "--avbd-showcase-only",
+            "--avbd-showcase-only requires --rigid-workflow",
+        ),
         ("--include-ipc-shelf", "--include-ipc-shelf requires --rigid-workflow"),
         ("--include-packets", "--include-packets requires --rigid-workflow"),
         (
@@ -2988,6 +3241,63 @@ def test_rigid_workflow_extra_groups_require_workflow(flag: str, message: str) -
         args.insert(1, "1")
     with pytest.raises(SystemExit, match=message):
         capture_py_demo.main(args)
+
+
+def test_rigid_workflow_contact_baseline_rejects_other_groups(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--contact-baseline-only cannot be combined with other workflow groups",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--contact-baseline-only",
+                "--include-related",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+
+
+def test_rigid_workflow_contact_baseline_rejects_avbd_showcase(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--contact-baseline-only cannot be combined with --avbd-showcase-only",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--contact-baseline-only",
+                "--avbd-showcase-only",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+
+
+def test_rigid_workflow_avbd_showcase_rejects_other_groups(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--avbd-showcase-only cannot be combined with other workflow groups",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--avbd-showcase-only",
+                "--include-related",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
 
 
 @pytest.mark.parametrize(
@@ -3050,6 +3360,57 @@ def test_visual_capture_default_scene_matches_py_demos_front_door() -> None:
 
     assert capture_py_demo.parse_args([]).scene == DEFAULT_INITIAL_SCENE_ID
     assert DEFAULT_INITIAL_SCENE_ID == "rigid_body"
+
+
+def test_visual_capture_label_uses_distinct_default_dir_and_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake_default_output_dir(scene: str) -> pathlib.Path:
+        return tmp_path / scene
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
+        frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
+        screenshot.parent.mkdir(parents=True, exist_ok=True)
+        frames.mkdir(parents=True, exist_ok=True)
+        _write_ppm(screenshot, bytes([255, 0, 0, 0, 255, 0]))
+        _write_ppm(frames / "frame_000001.ppm", bytes([255, 0, 0, 0, 255, 0]))
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_default_output_dir", fake_default_output_dir)
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_body",
+            "--frames",
+            "1",
+            "--width",
+            "2",
+            "--height",
+            "1",
+            "--scene-state-json",
+            '{"controls":{"contact_method_index":1}}',
+            "--capture-label",
+            "boxed_lcp",
+        ]
+    )
+
+    assert rc == 0
+    output = tmp_path / "rigid_body_boxed_lcp"
+    assert (output / "rigid_body_boxed_lcp.png").is_file()
+    manifest = capture_py_demo.json.loads((output / "manifest.json").read_text())
+    assert manifest["capture_label"] == "boxed_lcp"
+    assert manifest["scene_state"] == {"controls": {"contact_method_index": 1}}
+    assert manifest["artifacts"]["screenshot"] == str(
+        output / "rigid_body_boxed_lcp.png"
+    )
+
+
+def test_visual_capture_label_requires_artifact_safe_text() -> None:
+    with pytest.raises(SystemExit):
+        capture_py_demo.parse_args(["--capture-label", "boxed lcp"])
 
 
 def test_visual_capture_rejects_noop_backend(tmp_path: pathlib.Path) -> None:
