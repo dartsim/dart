@@ -86,8 +86,13 @@ def build() -> SceneSetup:
     payload.linear_velocity = (0.45, 0.0, -0.25)
     payload.angular_velocity = (0.0, 0.0, 1.1)
 
-    breakable_joint = world.add_rigid_body_spherical_joint(
-        "avbd_spherical_breakable_base_to_payload", base, payload
+    breakable_joint = world.add_joint(
+        base,
+        payload,
+                sx.JointSpec(
+            name="avbd_spherical_breakable_base_to_payload",
+            type=sx.JointType.SPHERICAL,
+        )
     )
     breakable_joint.break_force = _BREAK_FORCE
     payload.transform = _transform(payload_position + _PAYLOAD_PRESTRAIN, _INITIAL_YAW)

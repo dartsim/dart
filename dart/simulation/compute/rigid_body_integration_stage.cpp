@@ -37,7 +37,7 @@
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/compute_graph.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/detail/world_storage.hpp"

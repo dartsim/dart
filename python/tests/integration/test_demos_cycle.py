@@ -386,6 +386,18 @@ def _require_simulation_experimental_symbols(*names: str):
     return _require_simulation_symbols(*names)
 
 
+def _fixed_joint_count(world) -> int:
+    def type_name(joint) -> str:
+        name = getattr(joint.type, "name", None)
+        if callable(name):
+            name = name()
+        if name is None:
+            name = str(joint.type)
+        return str(name).rsplit(".", 1)[-1]
+
+    return sum(1 for joint in world.joints if type_name(joint) == "FIXED")
+
+
 def _deformable_bindings_available() -> bool:
     """True when the experimental deformable bindings are compiled in.
 
@@ -680,7 +692,9 @@ def test_ipc_deformable_rod_friction_decelerates_sliding_strip() -> None:
         rod.set_collision_shape(
             scene.sx.CollisionShape.capsule(scene._ROD_RADIUS, scene._ROD_HALF_HEIGHT)
         )
-        rod.is_deformable_surface_ccd_obstacle = True
+        policy = rod.deformable_obstacle_policy
+        policy.surface_obstacle = True
+        rod.deformable_obstacle_policy = policy
         body = world.add_deformable_body("strip", options)
         y0 = float(np.mean([body.node_position(i)[1] for i in range(body.node_count)]))
         for _ in range(200):
@@ -723,8 +737,12 @@ def test_ipc_deformable_barrier_only_box_friction_decelerates_strip() -> None:
         plate = world.add_rigid_body("plate", position=scene._PLATE_CENTER)
         plate.is_static = True
         plate.set_collision_shape(scene.sx.CollisionShape.box(scene._PLATE_HALF))
-        plate.is_deformable_surface_ccd_obstacle = True
-        plate.is_deformable_obstacle_barrier_only = True
+        policy = plate.deformable_obstacle_policy
+        policy.surface_obstacle = True
+        plate.deformable_obstacle_policy = policy
+        policy = plate.deformable_obstacle_policy
+        policy.barrier_only = True
+        plate.deformable_obstacle_policy = policy
         body = world.add_deformable_body("strip", options)
         x0 = float(np.mean([body.node_position(i)[0] for i in range(body.node_count)]))
         for _ in range(200):
@@ -5492,7 +5510,7 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     payload = setup.info["payload"]
     break_force = float(setup.info["break_force"])
 
-    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert _fixed_joint_count(sx_world) == 1
     assert joint.break_force == pytest.approx(break_force)
     assert not joint.is_broken
     assert [panel.title for panel in setup.panels] == ["Rigid Joint Breakage"]
@@ -8082,7 +8100,7 @@ def test_avbd_empty_baseline_demo_steps_empty_world() -> None:
 
     assert sx_world.num_rigid_bodies == 0
     assert sx_world.num_multibodies == 0
-    assert sx_world.num_articulated_joints == 0
+    assert sx_world.num_joints == 0
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert setup.info["source_demo_rows"] == (
         "avbd-demo2d empty",
@@ -8154,7 +8172,7 @@ def test_avbd_demo2d_motor_scene_matches_source_row() -> None:
         "max_torque": 50.0,
     }
     assert sx_world.num_rigid_bodies == 2
-    assert sx_world.num_rigid_body_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
@@ -8224,7 +8242,7 @@ def test_avbd_demo2d_dynamic_friction_scene_matches_source_row() -> None:
         "initial_velocity": (10.0, 0.0, 0.0),
     }
     assert sx_world.num_rigid_bodies == 12
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(ground.collision_shapes) == 1
@@ -8394,7 +8412,7 @@ def test_avbd_demo2d_static_friction_scene_matches_source_row() -> None:
         "y_spacing": 1.0,
     }
     assert sx_world.num_rigid_bodies == 12
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(ground.collision_shapes) == 1
@@ -8490,7 +8508,7 @@ def test_avbd_demo2d_pyramid_scene_matches_source_row() -> None:
         "base_y": 0.0,
     }
     assert sx_world.num_rigid_bodies == 211
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(ground.collision_shapes) == 1
@@ -8571,7 +8589,7 @@ def test_avbd_demo2d_cards_scene_matches_source_row() -> None:
     assert cards_shape["last_position"][:2] == pytest.approx((0.875, 1.62))
     assert cards_shape["last_position"][2] == pytest.approx(25.0 * 3.14159 / 180.0)
     assert sx_world.num_rigid_bodies == 41
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert ground.is_static
@@ -8636,7 +8654,7 @@ def test_avbd_demo2d_ground_scene_matches_source_row() -> None:
         "position": (0.0, 0.0, 0.0),
     }
     assert sx_world.num_rigid_bodies == 1
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert ground.is_static
@@ -8699,7 +8717,7 @@ def test_avbd_demo2d_stack_scene_matches_source_row() -> None:
         "y_spacing": 2.0,
     }
     assert sx_world.num_rigid_bodies == 21
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(ground.collision_shapes) == 1
@@ -8780,7 +8798,7 @@ def test_avbd_demo2d_stack_ratio_scene_matches_source_row() -> None:
         ),
     }
     assert sx_world.num_rigid_bodies == 7
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(ground.collision_shapes) == 1
@@ -8869,8 +8887,8 @@ def test_avbd_demo2d_rod_scene_matches_source_row() -> None:
         "parent_anchor": (0.5, 0.0),
     }
     assert sx_world.num_rigid_bodies == 20
-    assert sx_world.num_rigid_body_joints == 19
-    assert sx_world.num_rigid_body_fixed_joints == 19
+    assert sx_world.num_joints == 19
+    assert _fixed_joint_count(sx_world) == 19
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 20
@@ -8986,8 +9004,8 @@ def test_avbd_demo2d_joint_grid_scene_matches_source_row() -> None:
         "diagonal_ignore_collision_pairs": 1152,
     }
     assert sx_world.num_rigid_bodies == 625
-    assert sx_world.num_rigid_body_joints == 1200
-    assert sx_world.num_rigid_body_fixed_joints == 1200
+    assert sx_world.num_joints == 1200
+    assert _fixed_joint_count(sx_world) == 1200
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(cells) == 625
@@ -9143,8 +9161,8 @@ def test_avbd_demo2d_soft_body_scene_matches_source_row() -> None:
         "diagonal_ignore_collision_pairs": 224,
     }
     assert sx_world.num_rigid_bodies == 151
-    assert sx_world.num_rigid_body_joints == 260
-    assert sx_world.num_rigid_body_fixed_joints == 260
+    assert sx_world.num_joints == 260
+    assert _fixed_joint_count(sx_world) == 260
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(cells) == 150
@@ -9161,10 +9179,10 @@ def test_avbd_demo2d_soft_body_scene_matches_source_row() -> None:
     assert not sx_world.is_collision_pair_ignored(grids[0][0][0], grids[0][1][0])
     assert all(joint.type == sx.JointType.FIXED for joint in joints)
     assert [joint.num_dofs for joint in joints[:10]] == [0] * 10
-    assert [joint.avbd_linear_stiffness for joint in joints[:10]] == pytest.approx(
+    assert [joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]] == pytest.approx(
         [1000.0] * 10
     )
-    assert [joint.avbd_angular_stiffness for joint in joints[:10]] == pytest.approx(
+    assert [joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]] == pytest.approx(
         [100.0] * 10
     )
     assert [len(cell.collision_shapes) for cell in cells] == [1] * 150
@@ -9252,8 +9270,8 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
         "source_initial_last_endpoint_gap": 0.5,
     }
     assert sx_world.num_rigid_bodies == 50
-    assert sx_world.num_rigid_body_joints == 49
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 49
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 50
@@ -9261,7 +9279,7 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
     assert len(joints) == 49
     assert all(joint.type == sx.JointType.SPHERICAL for joint in joints)
     assert [joint.num_dofs for joint in joints] == [3] * 49
-    assert [joint.avbd_start_stiffness for joint in joints] == pytest.approx(
+    assert [joint.constraint_projection_policy.start_stiffness for joint in joints] == pytest.approx(
         [1.0e6] * 49
     )
     assert [len(link.collision_shapes) for link in links] == [1] * 50
@@ -9359,8 +9377,8 @@ def test_avbd_demo2d_rope_scene_matches_source_row() -> None:
         "parent_anchor": (0.5, 0.0),
     }
     assert sx_world.num_rigid_bodies == 20
-    assert sx_world.num_rigid_body_joints == 19
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 19
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 20
@@ -9461,7 +9479,7 @@ def test_avbd_demo2d_spring_scene_matches_source_row() -> None:
         "stiffness": 100.0,
     }
     assert sx_world.num_rigid_bodies == 2
-    assert sx_world.num_rigid_body_joints == 0
+    assert sx_world.num_joints == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert anchor.is_static
@@ -9542,7 +9560,7 @@ def test_avbd_demo2d_spring_ratio_scene_matches_source_row() -> None:
         "rest_length": 0.1,
     }
     assert sx_world.num_rigid_bodies == 8
-    assert sx_world.num_rigid_body_joints == 0
+    assert sx_world.num_joints == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 8
@@ -9653,7 +9671,7 @@ def test_avbd_demo3d_spring_scene_matches_source_row() -> None:
         "stiffness": 100.0,
     }
     assert sx_world.num_rigid_bodies == 3
-    assert sx_world.num_rigid_body_joints == 0
+    assert sx_world.num_joints == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert ground.is_static
@@ -9749,7 +9767,7 @@ def test_avbd_demo3d_spring_ratio_scene_matches_source_row() -> None:
         "rest_length": 3.0,
     }
     assert sx_world.num_rigid_bodies == 9
-    assert sx_world.num_rigid_body_joints == 0
+    assert sx_world.num_joints == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert ground.is_static
@@ -9859,8 +9877,8 @@ def test_avbd_demo2d_heavy_rope_scene_matches_source_row() -> None:
         "source_initial_last_endpoint_gap": 0.5,
     }
     assert sx_world.num_rigid_bodies == 20
-    assert sx_world.num_rigid_body_joints == 19
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 19
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert len(links) == 20
@@ -9984,8 +10002,8 @@ def test_avbd_demo2d_net_scene_matches_source_row() -> None:
         "parent_anchor": (0.5, 0.0),
     }
     assert sx_world.num_rigid_bodies == 91
-    assert sx_world.num_rigid_body_joints == 39
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 39
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert ground.is_static
@@ -10117,8 +10135,8 @@ def test_avbd_demo2d_fracture_scene_matches_source_row() -> None:
         "joint_connected_collision_pairs": 10,
     }
     assert sx_world.num_rigid_bodies == 29
-    assert sx_world.num_rigid_body_joints == 10
-    assert sx_world.num_rigid_body_fixed_joints == 10
+    assert sx_world.num_joints == 10
+    assert _fixed_joint_count(sx_world) == 10
     assert sx_world.num_ignored_collision_pairs == 0
     assert not sx_world.is_collision_pair_ignored(chain[0], chain[1])
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
@@ -10219,7 +10237,7 @@ def test_avbd_demo3d_breakable_scene_matches_source_row() -> None:
         "break_force": 90.0,
     }
     assert sx_world.num_rigid_bodies == 19
-    assert sx_world.num_rigid_body_fixed_joints == 10
+    assert _fixed_joint_count(sx_world) == 10
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(chain) == 11
@@ -10353,7 +10371,7 @@ def test_avbd_demo3d_ground_scene_matches_source_row() -> None:
         "collision_shapes": 2,
     }
     assert sx_world.num_rigid_bodies == 2
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10416,7 +10434,7 @@ def test_avbd_demo3d_dynamic_friction_scene_matches_source_row() -> None:
         "size": (1.0, 1.0, 0.5),
     }
     assert sx_world.num_rigid_bodies == 12
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10502,7 +10520,7 @@ def test_avbd_demo3d_static_friction_scene_matches_source_row() -> None:
         "size": (1.0, 1.0, 1.0),
     }
     assert sx_world.num_rigid_bodies == 13
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10589,7 +10607,7 @@ def test_avbd_demo3d_pyramid_scene_matches_source_row() -> None:
         "z_spacing": 0.85,
     }
     assert sx_world.num_rigid_bodies == 137
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10656,7 +10674,7 @@ def test_avbd_demo3d_stack_scene_matches_source_row() -> None:
         "z_spacing": 1.5,
     }
     assert sx_world.num_rigid_bodies == 11
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10739,8 +10757,8 @@ def test_avbd_demo3d_rope_scene_matches_source_row() -> None:
         "parent_anchor": (0.5, 0.0, 0.0),
     }
     assert sx_world.num_rigid_bodies == 21
-    assert sx_world.num_rigid_body_joints == 19
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 19
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10853,8 +10871,8 @@ def test_avbd_demo3d_heavy_rope_scene_matches_source_row() -> None:
         "source_initial_last_endpoint_gap": 0.5,
     }
     assert sx_world.num_rigid_bodies == 21
-    assert sx_world.num_rigid_body_joints == 19
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 19
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -10959,7 +10977,7 @@ def test_avbd_demo3d_stack_ratio_scene_matches_source_row() -> None:
         ),
     }
     assert sx_world.num_rigid_bodies == 5
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -11071,8 +11089,8 @@ def test_avbd_demo3d_soft_body_scene_matches_source_row() -> None:
         "diagonal_ignore_collision_pairs": 648,
     }
     assert sx_world.num_rigid_bodies == 193
-    assert sx_world.num_rigid_body_joints == 432
-    assert sx_world.num_rigid_body_fixed_joints == 432
+    assert sx_world.num_joints == 432
+    assert _fixed_joint_count(sx_world) == 432
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(cells) == 192
@@ -11097,10 +11115,10 @@ def test_avbd_demo3d_soft_body_scene_matches_source_row() -> None:
     )
     assert all(joint.type == sx.JointType.FIXED for joint in joints)
     assert [joint.num_dofs for joint in joints[:10]] == [0] * 10
-    assert [joint.avbd_linear_stiffness for joint in joints[:10]] == pytest.approx(
+    assert [joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]] == pytest.approx(
         [1000.0] * 10
     )
-    assert [joint.avbd_angular_stiffness for joint in joints[:10]] == pytest.approx(
+    assert [joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]] == pytest.approx(
         [250.0] * 10
     )
     assert [len(cell.collision_shapes) for cell in cells] == [1] * 192
@@ -11196,8 +11214,8 @@ def test_avbd_demo3d_bridge_scene_matches_source_row() -> None:
         "parent_anchors": ((0.5, 2.0, 0.0), (0.5, -2.0, 0.0)),
     }
     assert sx_world.num_rigid_bodies == 91
-    assert sx_world.num_rigid_body_joints == 78
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 78
+    assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])
     assert len(ground.collision_shapes) == 1
@@ -11270,7 +11288,7 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     payload = setup.info["payload"]
     connector = setup.info["connector"]
 
-    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert _fixed_joint_count(sx_world) == 1
     assert len(sx_world.collide()) > 0
     assert not base.is_static
 
@@ -11335,7 +11353,7 @@ def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     target_speed = float(setup.info["target_speed"])
     max_torque = float(setup.info["max_torque"])
 
-    assert sx_world.num_rigid_body_joints == 1
+    assert sx_world.num_joints == 1
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
         0
@@ -11399,7 +11417,7 @@ def test_avbd_prismatic_motor_demo_drives_slider() -> None:
     max_force = float(setup.info["max_force"])
     base_position = np.asarray(setup.info["base_position"], dtype=float).reshape(3)
 
-    assert sx_world.num_rigid_body_joints == 1
+    assert sx_world.num_joints == 1
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
         0
@@ -11471,7 +11489,7 @@ def test_avbd_articulated_revolute_motor_demo_reverses_command() -> None:
     target_speed = float(setup.info["target_speed"])
     switch_time = float(setup.info["command_switch_time"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
@@ -11515,7 +11533,7 @@ def test_avbd_articulated_prismatic_motor_demo_reverses_command() -> None:
     target_speed = float(setup.info["target_speed"])
     switch_time = float(setup.info["command_switch_time"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
@@ -11559,7 +11577,7 @@ def test_avbd_articulated_motor_breakable_joint_demo_resets_motor_rows() -> None
     joint = setup.info["joint"]
     target_speed = float(setup.info["target_speed"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
@@ -11630,7 +11648,7 @@ def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> 
     axis = np.asarray(setup.info["axis"], dtype=float).reshape(3)
     target_speed = float(setup.info["target_speed"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.num_dofs == 1
@@ -11705,7 +11723,7 @@ def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows(
     axis = np.asarray(setup.info["axis"], dtype=float).reshape(3)
     target_speed = float(setup.info["target_speed"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
@@ -11775,7 +11793,7 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
     joint = setup.info["joint"]
     target_speed = float(setup.info["target_speed"])
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.num_dofs == 1
@@ -11853,7 +11871,7 @@ def test_avbd_articulated_high_ratio_chain_demo_swings_and_resets() -> None:
     initial_tip = np.asarray(setup.info["initial_tip"], dtype=float).reshape(3)
 
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
-    assert sx_world.num_articulated_joints == 0
+    assert sx_world.num_joints == 0
     assert multibody.num_dofs == len(joints)
     assert len(links) == 5
     assert setup.info["mass_ratio"] == pytest.approx(200.0)
@@ -11936,8 +11954,8 @@ def test_avbd_breakable_joint_demo_marks_and_resets_joint() -> None:
     )
     break_force = float(setup.info["break_force"])
 
-    assert sx_world.num_rigid_body_joints == 1
-    assert sx_world.num_rigid_body_fixed_joints == 1
+    assert sx_world.num_joints == 1
+    assert _fixed_joint_count(sx_world) == 1
     assert joint.parent_rigid_body == base
     assert joint.child_rigid_body == payload
     assert joint.break_force == pytest.approx(break_force)
@@ -12009,8 +12027,8 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
         setup.info["captured_payload_rotation"], dtype=float
     )
 
-    assert sx_world.num_rigid_body_joints == 1
-    assert sx_world.num_rigid_body_fixed_joints == 0
+    assert sx_world.num_joints == 1
+    assert _fixed_joint_count(sx_world) == 0
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
     assert joint.parent_rigid_body == base
@@ -12105,7 +12123,7 @@ def test_avbd_articulated_breakable_joint_demo_marks_and_resets_joint() -> None:
         dtype=float,
     ).reshape(3)
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
     assert not joint.is_broken
@@ -12160,7 +12178,7 @@ def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose()
     captured_relative = np.asarray(setup.info["captured_relative"], dtype=float)
     relative_transform = setup.info["relative_transform"]
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
@@ -12229,7 +12247,7 @@ def test_avbd_articulated_spherical_breakable_joint_demo_resets_anchor_only() ->
         dtype=float,
     )
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
@@ -12295,7 +12313,7 @@ def test_avbd_articulated_spherical_pair_breakable_joint_demo_resets_anchor_only
         dtype=float,
     )
 
-    assert sx_world.num_articulated_joints == 1
+    assert sx_world.num_joints == 1
     assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3

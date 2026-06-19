@@ -39,6 +39,7 @@
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/multibody/joint.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <Eigen/Core>
@@ -48,6 +49,7 @@
 #include <algorithm>
 #include <array>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -58,6 +60,18 @@ namespace compute = dart::simulation::compute;
 namespace cuda = dart::simulation::compute::cuda;
 
 namespace {
+
+sx::Joint addFixedJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::RigidBody& parent,
+    const sx::RigidBody& child)
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = sx::JointType::Fixed;
+  return world.addJoint(parent, child, spec);
+}
 
 constexpr std::array<double, 4> kBridgeBoardX{-0.45, -0.15, 0.15, 0.45};
 constexpr std::size_t kSceneBodyCount = 7;
@@ -103,7 +117,8 @@ void populateReducedHangingBridgeWorld(sx::World& world)
     board.setFriction(0.7);
     board.setCollisionShape(
         sx::CollisionShape::makeBox(kBridgeBoardHalfExtents));
-    world.addRigidBodyFixedJoint(
+    addFixedJoint(
+        world,
         "plan083_bridge_point_connection_" + std::to_string(index),
         parent,
         board);

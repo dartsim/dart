@@ -206,6 +206,8 @@ set(
 )
 set(
   dart_simulation_public_headers_compute
+  # Custom-stage extension contract only. Built-in family stages and their
+  # internal stats live under compute/detail and are intentionally not installed.
   compute/compute_executor.hpp
   compute/compute_stage_metadata.hpp
   compute/execution_profile.hpp

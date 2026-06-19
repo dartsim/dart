@@ -276,7 +276,9 @@ void addGround(ExampleState& state)
   auto ground = state.physicsWorld.addRigidBody("ground", groundOptions);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(2.4, 1.2, 0.04)));
-  ground.setDeformableGroundBarrier(true);
+  sx::DeformableObstaclePolicy groundPolicy;
+  groundPolicy.groundBarrier = true;
+  ground.setDeformableObstaclePolicy(groundPolicy);
 
   auto frame = dynamics::SimpleFrame::createShared(
       dynamics::Frame::World(),
@@ -447,7 +449,9 @@ void addObstacleBox(ExampleState& state)
   auto obstacle
       = state.physicsWorld.addRigidBody("drape_obstacle", obstacleOptions);
   obstacle.setCollisionShape(sx::CollisionShape::makeBox(halfExtents));
-  obstacle.setDeformableGroundBarrier(true);
+  sx::DeformableObstaclePolicy obstaclePolicy;
+  obstaclePolicy.groundBarrier = true;
+  obstacle.setDeformableObstaclePolicy(obstaclePolicy);
 
   auto frame = dynamics::SimpleFrame::createShared(
       dynamics::Frame::World(), "drape_obstacle_visual", makeTransform(center));

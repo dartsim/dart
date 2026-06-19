@@ -40,6 +40,7 @@
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
+#include <dart/simulation/frame/frame.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/multibody/link.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
@@ -53,13 +54,200 @@
 
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace sx = dart::simulation;
 namespace vbd = dart::simulation::detail::deformable_vbd;
 
 namespace {
+
+sx::JointSpec makePointJointSpec(
+    std::string_view name,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
+
+sx::Joint addPointJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& parent,
+    const sx::Frame& child,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return world.addJoint(
+      parent,
+      child,
+      makePointJointSpec(name, type, axis, parentAnchor, childAnchor));
+}
+
+sx::Joint addPointJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& child,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return world.addJoint(
+      child, makePointJointSpec(name, type, axis, parentAnchor, childAnchor));
+}
+
+sx::Joint addFixedJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& parent,
+    const sx::Frame& child,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      parent,
+      child,
+      sx::JointType::Fixed,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addRevoluteJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& parent,
+    const sx::Frame& child,
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      parent,
+      child,
+      sx::JointType::Revolute,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addRevoluteJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& child,
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      child,
+      sx::JointType::Revolute,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addPrismaticJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& parent,
+    const sx::Frame& child,
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      parent,
+      child,
+      sx::JointType::Prismatic,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addPrismaticJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& child,
+    const Eigen::Vector3d& axis,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      child,
+      sx::JointType::Prismatic,
+      axis,
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addSphericalJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& parent,
+    const sx::Frame& child,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      parent,
+      child,
+      sx::JointType::Spherical,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+sx::Joint addSphericalJoint(
+    sx::World& world,
+    std::string_view name,
+    const sx::Frame& child,
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  return addPointJoint(
+      world,
+      name,
+      child,
+      sx::JointType::Spherical,
+      Eigen::Vector3d::UnitZ(),
+      parentAnchor,
+      childAnchor);
+}
+
+void setProjectionStiffness(
+    sx::Joint& joint, double linearStiffness, double angularStiffness)
+{
+  auto policy = joint.getConstraintProjectionPolicy();
+  policy.linearStiffness = linearStiffness;
+  policy.angularStiffness = angularStiffness;
+  joint.setConstraintProjectionPolicy(policy);
+}
 
 std::unique_ptr<sx::World> makeAvbdEmptyWorld()
 {
@@ -96,7 +284,7 @@ std::unique_ptr<sx::World> makeRigidFixedJointWorld(std::size_t linkCount)
     bodyOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 0.2);
 
     auto child = world->addRigidBody("link_" + std::to_string(i), bodyOptions);
-    world->addRigidBodyFixedJoint("fixed_" + std::to_string(i), parent, child);
+    addFixedJoint(*world, "fixed_" + std::to_string(i), parent, child);
     parent = child;
     links.push_back(child);
   }
@@ -130,7 +318,8 @@ std::unique_ptr<sx::World> makeRigidRevoluteMotorWorld(std::size_t motorCount)
 
     auto child
         = world->addRigidBody("motor_link_" + std::to_string(i), bodyOptions);
-    auto joint = world->addRigidBodyRevoluteJoint(
+    auto joint = addRevoluteJoint(
+        *world,
         "motor_hinge_" + std::to_string(i),
         parent,
         child,
@@ -177,7 +366,8 @@ std::unique_ptr<sx::World> makeRigidPrismaticMotorWorld(std::size_t motorCount)
 
     auto child = world->addRigidBody(
         "prismatic_motor_link_" + std::to_string(i), bodyOptions);
-    auto joint = world->addRigidBodyPrismaticJoint(
+    auto joint = addPrismaticJoint(
+        *world,
         "prismatic_motor_axis_" + std::to_string(i),
         parent,
         child,
@@ -216,8 +406,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dMotorWorld()
   barOptions.position = Eigen::Vector3d::Zero();
   auto bar = world->addRigidBody("demo2d_motor_bar", barOptions);
 
-  auto joint = world->addRigidBodyRevoluteJoint(
-      "demo2d_motor_pin", ground, bar, Eigen::Vector3d::UnitZ());
+  auto joint = addRevoluteJoint(
+      *world, "demo2d_motor_pin", ground, bar, Eigen::Vector3d::UnitZ());
   joint.setActuatorType(sx::ActuatorType::Velocity);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 20.0));
   joint.setEffortLimits(
@@ -608,7 +798,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dRodWorld()
   }
 
   for (int i = 0; i + 1 < kRodLinks; ++i) {
-    joints.push_back(world->addRigidBodyFixedJoint(
+    joints.push_back(addFixedJoint(
+        *world,
         "demo2d_rod_fixed_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)]));
@@ -658,7 +849,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dJointGridWorld()
 
   for (int x = 1; x < kGridWidth; ++x) {
     for (int y = 0; y < kGridHeight; ++y) {
-      joints.push_back(world->addRigidBodyFixedJoint(
+      joints.push_back(addFixedJoint(
+          *world,
           "demo2d_joint_grid_fixed_h_" + std::to_string(x - 1) + "_"
               + std::to_string(y),
           cells[cellIndex(x - 1, y)],
@@ -667,7 +859,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dJointGridWorld()
   }
   for (int x = 0; x < kGridWidth; ++x) {
     for (int y = 1; y < kGridHeight; ++y) {
-      joints.push_back(world->addRigidBodyFixedJoint(
+      joints.push_back(addFixedJoint(
+          *world,
           "demo2d_joint_grid_fixed_v_" + std::to_string(x) + "_"
               + std::to_string(y - 1),
           cells[cellIndex(x, y - 1)],
@@ -744,9 +937,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSoftBodyWorld()
   auto addFiniteFixedJoint = [&](const std::string& name,
                                  const sx::RigidBody& parent,
                                  const sx::RigidBody& child) {
-    auto joint = world->addRigidBodyFixedJoint(name, parent, child);
-    joint.setAvbdLinearStiffness(kLinearStiffness);
-    joint.setAvbdAngularStiffness(kAngularStiffness);
+    auto joint = addFixedJoint(*world, name, parent, child);
+    setProjectionStiffness(joint, kLinearStiffness, kAngularStiffness);
     joints.push_back(joint);
   };
 
@@ -813,7 +1005,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dRopeWorld()
   }
 
   for (int i = 0; i + 1 < kRopeLinks; ++i) {
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo2d_rope_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -936,7 +1129,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dNetWorld()
   }
 
   for (int i = 0; i + 1 < kNetLinks; ++i) {
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo2d_net_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -998,7 +1192,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dHeavyRopeWorld()
 
   for (int i = 0; i + 1 < kRopeLinks; ++i) {
     const bool childIsHeavy = i == kRopeLinks - 2;
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo2d_heavy_rope_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -1042,7 +1237,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dHangingRopeWorld()
 
   for (int i = 0; i + 1 < kRopeLinks; ++i) {
     const bool childIsHeavy = i == kRopeLinks - 2;
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo2d_hanging_rope_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -1090,7 +1286,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dFractureWorld()
   std::vector<sx::Joint> joints;
   joints.reserve(kBreakableJoints);
   for (int i = 0; i < kBreakableJoints; ++i) {
-    auto joint = world->addRigidBodyFixedJoint(
+    auto joint = addFixedJoint(
+        *world,
         "demo2d_fracture_joint_" + std::to_string(i),
         chain[static_cast<std::size_t>(i)],
         chain[static_cast<std::size_t>(i + 1)]);
@@ -1312,7 +1509,8 @@ std::unique_ptr<sx::World> makeAvbdDemo3dRopeWorld()
   }
 
   for (int i = 0; i + 1 < kRopeLinks; ++i) {
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo3d_rope_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -1364,7 +1562,8 @@ std::unique_ptr<sx::World> makeAvbdDemo3dHeavyRopeWorld()
 
   for (int i = 0; i + 1 < kRopeLinks; ++i) {
     const bool childIsHeavy = i == kRopeLinks - 2;
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo3d_heavy_rope_point_joint_" + std::to_string(i),
         links[static_cast<std::size_t>(i)],
         links[static_cast<std::size_t>(i + 1)],
@@ -1608,9 +1807,8 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSoftBodyWorld()
   auto addFiniteFixedJoint = [&](const std::string& name,
                                  const sx::RigidBody& parent,
                                  const sx::RigidBody& child) {
-    auto joint = world->addRigidBodyFixedJoint(name, parent, child);
-    joint.setAvbdLinearStiffness(kLinearStiffness);
-    joint.setAvbdAngularStiffness(kAngularStiffness);
+    auto joint = addFixedJoint(*world, name, parent, child);
+    setProjectionStiffness(joint, kLinearStiffness, kAngularStiffness);
     joints.push_back(joint);
   };
 
@@ -1739,13 +1937,15 @@ std::unique_ptr<sx::World> makeAvbdDemo3dBridgeWorld()
   }
 
   for (int i = 0; i + 1 < kPlanks; ++i) {
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo3d_bridge_joint_" + std::to_string(i) + "_0",
         planks[static_cast<std::size_t>(i)],
         planks[static_cast<std::size_t>(i + 1)],
         Eigen::Vector3d(kHalfLength, kHalfWidth, 0.0),
         Eigen::Vector3d(-kHalfLength, kHalfWidth, 0.0)));
-    joints.push_back(world->addRigidBodySphericalJoint(
+    joints.push_back(addSphericalJoint(
+        *world,
         "demo3d_bridge_joint_" + std::to_string(i) + "_1",
         planks[static_cast<std::size_t>(i)],
         planks[static_cast<std::size_t>(i + 1)],
@@ -1809,7 +2009,8 @@ std::unique_ptr<sx::World> makeAvbdDemo3dBreakableWorld()
   std::vector<sx::Joint> joints;
   joints.reserve(kBreakableJoints);
   for (int i = 0; i < kBreakableJoints; ++i) {
-    auto joint = world->addRigidBodyFixedJoint(
+    auto joint = addFixedJoint(
+        *world,
         "demo3d_breakable_joint_" + std::to_string(i),
         chain[static_cast<std::size_t>(i)],
         chain[static_cast<std::size_t>(i + 1)]);
@@ -1874,8 +2075,8 @@ std::unique_ptr<sx::World> makeRigidBreakableJointWorld(std::size_t jointCount)
 
     auto child = world->addRigidBody(
         "breakable_link_" + std::to_string(i), bodyOptions);
-    auto joint = world->addRigidBodyFixedJoint(
-        "breakable_fixed_" + std::to_string(i), parent, child);
+    auto joint = addFixedJoint(
+        *world, "breakable_fixed_" + std::to_string(i), parent, child);
     joint.setBreakForce(1.0e12);
 
     parent = child;
@@ -1914,8 +2115,11 @@ std::unique_ptr<sx::World> makeRigidSphericalBreakableJointWorld(
 
     auto child = world->addRigidBody(
         "spherical_breakable_link_" + std::to_string(i), bodyOptions);
-    auto joint = world->addRigidBodySphericalJoint(
-        "spherical_breakable_socket_" + std::to_string(i), parent, child);
+    auto joint = addSphericalJoint(
+        *world,
+        "spherical_breakable_socket_" + std::to_string(i),
+        parent,
+        child);
     joint.setBreakForce(1.0e12);
 
     parent = child;
@@ -1965,7 +2169,8 @@ std::unique_ptr<sx::World> makeArticulatedRevoluteMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedRevoluteJoint(
+    auto joint = addRevoluteJoint(
+        *world,
         "articulated_revolute_motor_" + std::to_string(i),
         base,
         link,
@@ -2028,7 +2233,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedRevoluteJoint(
+    auto joint = addRevoluteJoint(
+        *world,
         "articulated_breakable_motor_" + std::to_string(i),
         base,
         link,
@@ -2089,7 +2295,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedPrismaticJoint(
+    auto joint = addPrismaticJoint(
+        *world,
         "articulated_prismatic_motor_" + std::to_string(i),
         base,
         link,
@@ -2153,7 +2360,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticBreakableMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedPrismaticJoint(
+    auto joint = addPrismaticJoint(
+        *world,
         "articulated_prismatic_breakable_motor_" + std::to_string(i),
         base,
         link,
@@ -2218,7 +2426,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldPrismaticBreakableMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedPrismaticJoint(
+    auto joint = addPrismaticJoint(
+        *world,
         "articulated_world_prismatic_breakable_motor_" + std::to_string(i),
         link,
         Eigen::Vector3d::UnitX(),
@@ -2282,7 +2491,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldRevoluteBreakableMotorWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedRevoluteJoint(
+    auto joint = addRevoluteJoint(
+        *world,
         "articulated_world_revolute_breakable_motor_" + std::to_string(i),
         link,
         Eigen::Vector3d::UnitZ(),
@@ -2342,7 +2552,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableJointWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedFixedJoint(
+    auto joint = addFixedJoint(
+        *world,
         "articulated_breakable_fixed_" + std::to_string(i),
         base,
         link,
@@ -2400,7 +2611,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldSphericalBreakableJointWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedSphericalJoint(
+    auto joint = addSphericalJoint(
+        *world,
         "articulated_world_spherical_breakable_socket_" + std::to_string(i),
         link,
         anchor,
@@ -2457,7 +2669,8 @@ std::unique_ptr<sx::World> makeArticulatedSphericalPairBreakableJointWorld(
     pose.head<3>() = anchor;
     link.getParentJoint().setPosition(pose);
 
-    auto joint = world->addArticulatedSphericalJoint(
+    auto joint = addSphericalJoint(
+        *world,
         "articulated_spherical_pair_breakable_socket_" + std::to_string(i),
         base,
         link,
@@ -2612,8 +2825,8 @@ std::vector<sx::Joint> makeRigidFixedJoints(
         = Eigen::Vector3d(static_cast<double>(i + 1), 0.0, 0.0);
     auto child
         = world.addRigidBody("endpoint_link_" + std::to_string(i), bodyOptions);
-    joints.push_back(world.addRigidBodyFixedJoint(
-        "endpoint_fixed_" + std::to_string(i), parent, child));
+    joints.push_back(addFixedJoint(
+        world, "endpoint_fixed_" + std::to_string(i), parent, child));
     parent = child;
   }
 
@@ -2716,14 +2929,14 @@ static void BM_AvbdRigidFixedJointWorldLookup(benchmark::State& state)
 
   for (auto _ : state) {
     for (const std::string& name : names) {
-      auto joint = world.getRigidBodyFixedJoint(name);
+      auto joint = world.getJoint(name);
       benchmark::DoNotOptimize(joint.has_value());
       if (joint.has_value()) {
         benchmark::DoNotOptimize(joint->getParentRigidBody().isValid());
         benchmark::DoNotOptimize(joint->getChildRigidBody().isValid());
       }
     }
-    benchmark::DoNotOptimize(world.getRigidBodyFixedJointCount());
+    benchmark::DoNotOptimize(world.getJointCount());
   }
   state.counters["fixed_joints"] = static_cast<double>(jointCount);
 }
@@ -2737,7 +2950,7 @@ static void BM_AvbdRigidFixedJointWorldList(benchmark::State& state)
   (void)makeRigidFixedJoints(world, jointCount);
 
   for (auto _ : state) {
-    const auto joints = world.getRigidBodyFixedJoints();
+    const auto joints = world.getJoints();
     benchmark::DoNotOptimize(joints.data());
     benchmark::DoNotOptimize(joints.size());
   }

@@ -533,9 +533,11 @@ TEST(WorldStepProfileIntegration, WarmedNestedGraphProfileDoesNotAllocate)
   }
 
   sx::compute::ParallelExecutor executor(2);
-  // Keep the no-allocation assertion focused on reusable profiling snapshots;
-  // Taskflow's scheduling future allocates on each non-inline run.
-  executor.setInlineThreshold(9);
+  // This guard is about the World-step snapshot reusing nested graph-profile
+  // storage. The taskflow profiler path owns separate worker bookkeeping and
+  // can allocate in CUDA profile builds, so keep this focused on the warmed
+  // inline graph profiling path.
+  executor.setInlineThreshold(16);
 
   world.setStepProfilingEnabled(true);
   world.step(executor);

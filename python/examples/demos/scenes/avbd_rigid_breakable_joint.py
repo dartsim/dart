@@ -106,8 +106,13 @@ def build_breakable_joint_scene(
     payload.friction = 0.6
     payload.linear_velocity = (0.65, 0.0, -0.35)
 
-    breakable_joint = world.add_rigid_body_fixed_joint(
-        "avbd_breakable_joint_base_to_payload", base, payload
+    breakable_joint = world.add_joint(
+        base,
+        payload,
+                sx.JointSpec(
+            name="avbd_breakable_joint_base_to_payload",
+            type=sx.JointType.FIXED,
+        )
     )
     breakable_joint.break_force = _BREAK_FORCE
     payload.transform = _translation(payload_position + _PAYLOAD_PRESTRAIN)

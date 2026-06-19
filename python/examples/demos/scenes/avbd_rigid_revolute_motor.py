@@ -40,11 +40,14 @@ def build() -> SceneSetup:
     rotor = world.add_rigid_body("avbd_motor_rotor", position=tuple(_ROTOR_POS))
     rotor.mass = 1.0
 
-    motor_joint = world.add_rigid_body_revolute_joint(
-        "avbd_motor_hinge",
+    motor_joint = world.add_joint(
         hub,
         rotor,
-        axis=(0.0, 0.0, 1.0),
+                sx.JointSpec(
+            name="avbd_motor_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     motor_joint.actuator_type = sx.ActuatorType.VELOCITY
     motor_joint.command_velocity = [_TARGET_SPEED]

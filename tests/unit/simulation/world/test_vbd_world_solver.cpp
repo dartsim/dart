@@ -35,9 +35,9 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/comps/deformable_body.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
-#include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -50,6 +50,20 @@ namespace sx = dart::simulation;
 namespace compute = dart::simulation::compute;
 
 namespace {
+
+void setGroundBarrierPolicy(sx::RigidBody& body)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.groundBarrier = true;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+void setSurfaceObstaclePolicy(sx::RigidBody& body)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.surfaceObstacle = true;
+  body.setDeformableObstaclePolicy(policy);
+}
 
 // A spring chain hanging along -z from a pinned top node.
 sx::DeformableBodyOptions makeChainOptions(int count, double spacing)
@@ -157,7 +171,7 @@ void addGroundBarrier(sx::World& world)
   auto ground = world.addRigidBody("ground", options);
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.5)));
-  ground.setDeformableGroundBarrier(true);
+  setGroundBarrierPolicy(ground);
 }
 
 // A small free (un-pinned) spring patch in the xy plane at height z0, with an
@@ -1647,7 +1661,7 @@ TEST(VbdWorldSolver, VbdBodyRestsOnSphereObstacle)
   sphereOptions.position = sphereCenter;
   auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
 
   // A free spring patch released just above the top of the sphere.
   world.addDeformableBody("patch", makeFallingPatchOptions(0.28, 0.0));
@@ -1707,7 +1721,7 @@ TEST(VbdWorldSolver, VbdSphereObstacleRepelsCenterEmbeddedNode)
   sphereOptions.isStatic = true;
   auto sphere = world.addRigidBody("obstacle_sphere", sphereOptions);
   sphere.setCollisionShape(sx::CollisionShape::makeSphere(sphereRadius));
-  sphere.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(sphere);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d::Zero()};
@@ -1748,7 +1762,7 @@ TEST(VbdWorldSolver, VbdBodyRestsOnBoxObstacle)
   boxOptions.position = boxCenter;
   auto box = world.addRigidBody("obstacle_box", boxOptions);
   box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
-  box.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(box);
 
   world.addDeformableBody("patch", makeFallingPatchOptions(0.38, 0.0));
   sx::comps::DeformableVbdConfig cfg;
@@ -1811,7 +1825,7 @@ TEST(VbdWorldSolver, VbdBoxObstacleRepelsInitiallyEmbeddedNode)
   boxOptions.isStatic = true;
   auto box = world.addRigidBody("obstacle_box", boxOptions);
   box.setCollisionShape(sx::CollisionShape::makeBox(boxHalf));
-  box.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(box);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(0.45, 0.0, 0.0)};
@@ -1851,7 +1865,7 @@ TEST(VbdWorldSolver, VbdStaticRigidSurfaceCcdLimitsFastCrossing)
   auto box = world.addRigidBody("static_box", boxOptions);
   box.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-  box.setDeformableSurfaceCcdObstacle(true);
+  setSurfaceObstaclePolicy(box);
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d(-1.0, 0.0, 0.0)};

@@ -156,8 +156,12 @@ def _add_source_box(
 
 
 def _configure_finite_joint(joint: sx.Joint) -> sx.Joint:
-    joint.avbd_linear_stiffness = _LINEAR_STIFFNESS
-    joint.avbd_angular_stiffness = _ANGULAR_STIFFNESS
+    policy = joint.constraint_projection_policy
+    policy.linear_stiffness = _LINEAR_STIFFNESS
+    joint.constraint_projection_policy = policy
+    policy = joint.constraint_projection_policy
+    policy.angular_stiffness = _ANGULAR_STIFFNESS
+    joint.constraint_projection_policy = policy
     return joint
 
 
@@ -239,11 +243,14 @@ def build() -> SceneSetup:
             for y in range(_GRID_HEIGHT):
                 horizontal_joints.append(
                     _configure_finite_joint(
-                        world.add_rigid_body_fixed_joint(
-                            f"avbd_demo2d_soft_body_fixed_h_"
-                            f"{stack:02d}_{x - 1:02d}_{y:02d}",
+                        world.add_joint(
                             grid[x - 1][y],
                             grid[x][y],
+                                                        sx.JointSpec(
+                                name=f"avbd_demo2d_soft_body_fixed_h_"
+                            f"{stack:02d}_{x - 1:02d}_{y:02d}",
+                                type=sx.JointType.FIXED,
+                            )
                         )
                     )
                 )
@@ -251,11 +258,14 @@ def build() -> SceneSetup:
             for y in range(1, _GRID_HEIGHT):
                 vertical_joints.append(
                     _configure_finite_joint(
-                        world.add_rigid_body_fixed_joint(
-                            f"avbd_demo2d_soft_body_fixed_v_"
-                            f"{stack:02d}_{x:02d}_{y - 1:02d}",
+                        world.add_joint(
                             grid[x][y - 1],
                             grid[x][y],
+                                                        sx.JointSpec(
+                                name=f"avbd_demo2d_soft_body_fixed_v_"
+                            f"{stack:02d}_{x:02d}_{y - 1:02d}",
+                                type=sx.JointType.FIXED,
+                            )
                         )
                     )
                 )

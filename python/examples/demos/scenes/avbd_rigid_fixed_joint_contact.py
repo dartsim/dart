@@ -81,8 +81,13 @@ def build() -> SceneSetup:
     payload.linear_velocity = (0.45, 0.0, 0.0)
     payload.angular_velocity = (0.0, 0.0, 0.6)
 
-    fixed_joint = world.add_rigid_body_fixed_joint(
-        "avbd_fixed_joint_base_to_payload", base, payload
+    fixed_joint = world.add_joint(
+        base,
+        payload,
+                sx.JointSpec(
+            name="avbd_fixed_joint_base_to_payload",
+            type=sx.JointType.FIXED,
+        )
     )
     world.enter_simulation_mode()
 
@@ -176,7 +181,7 @@ def build() -> SceneSetup:
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(world.time),
             "joint_name": str(fixed_joint.name),
-            "fixed_joint_count": float(world.num_rigid_body_fixed_joints),
+            "fixed_joint_count": float(world.num_joints),
             "captured_offset_error": float(_last_metrics["captured_offset_error"]),
             "payload_ground_clearance": float(
                 _last_metrics["payload_ground_clearance"]
@@ -210,10 +215,10 @@ def build() -> SceneSetup:
         clearance = float(metrics["payload_ground_clearance"])
         speed = float(metrics["payload_speed"])
 
-        found_joint = world.get_rigid_body_fixed_joint(fixed_joint.name) or fixed_joint
+        found_joint = world.get_joint(fixed_joint.name) or fixed_joint
         builder.text("solver: rigid AVBD fixed joint + default contact")
         builder.text(f"joint: {found_joint.name}")
-        builder.text(f"fixed joints: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"fixed joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"captured-offset error: {offset_error:.4f} m")
         builder.text(f"payload-ground clearance: {clearance:.4f} m")

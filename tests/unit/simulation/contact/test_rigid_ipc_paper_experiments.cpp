@@ -33,8 +33,8 @@
 #include <dart/simulation/body/contact.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
-#include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <Eigen/Geometry>

@@ -77,11 +77,14 @@ class _RigidOneDofJointVerifier:
         )
         self.hinge_payload.mass = 1.0
         self.hinge_payload.angular_velocity = (0.0, 0.0, 1.4)
-        self.hinge_joint = self.world.add_rigid_body_revolute_joint(
-            "hinge_base_to_payload",
+        self.hinge_joint = self.world.add_joint(
             self.hinge_base,
             self.hinge_payload,
-            axis=tuple(_AXIS_Z),
+                        sx.JointSpec(
+                name="hinge_base_to_payload",
+                type=sx.JointType.REVOLUTE,
+                axis=tuple(_AXIS_Z),
+            )
         )
 
         self.slider_base = self.world.add_rigid_body(
@@ -94,11 +97,14 @@ class _RigidOneDofJointVerifier:
         )
         self.slider_payload.mass = 1.0
         self.slider_payload.linear_velocity = (0.0, 0.0, 0.45)
-        self.slider_joint = self.world.add_rigid_body_prismatic_joint(
-            "slider_base_to_payload",
+        self.slider_joint = self.world.add_joint(
             self.slider_base,
             self.slider_payload,
-            axis=tuple(_AXIS_Z),
+                        sx.JointSpec(
+                name="slider_base_to_payload",
+                type=sx.JointType.PRISMATIC,
+                axis=tuple(_AXIS_Z),
+            )
         )
 
         self.world.enter_simulation_mode()
@@ -307,7 +313,7 @@ class _RigidOneDofJointVerifier:
             "constraint": "revolute_prismatic_one_dof",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
-            "joint_count": float(self.world.num_rigid_body_joints),
+            "joint_count": float(self.world.num_joints),
             "held_fixed": {
                 "base": "static",
                 "joint_axes": "z-axis revolute and prismatic",
@@ -493,7 +499,7 @@ class _RigidOneDofJointVerifier:
             f"slider axis travel: {float(metrics.get('slider_axis_travel', 0.0)):.3f} m | "
             f"axis speed {float(metrics.get('slider_axis_speed', 0.0)):.3f} m/s"
         )
-        builder.text(f"rigid-body joints: {self.world.num_rigid_body_joints}")
+        builder.text(f"rigid-body joints: {self.world.num_joints}")
         builder.text(f"world time: {float(metrics.get('world_time', 0.0)):.3f} s")
         builder.plot_lines("Hinge radius error", list(self._hinge_radius_error_history))
         builder.plot_lines("Hinge z error", list(self._hinge_z_error_history))

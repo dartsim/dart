@@ -54,8 +54,12 @@ def build() -> SceneSetup:
     plate = world.add_rigid_body("plate", position=_PLATE_CENTER)
     plate.is_static = True
     plate.set_collision_shape(sx.CollisionShape.box(_PLATE_HALF))
-    plate.is_deformable_surface_ccd_obstacle = True
-    plate.is_deformable_obstacle_barrier_only = True
+    policy = plate.deformable_obstacle_policy
+    policy.surface_obstacle = True
+    plate.deformable_obstacle_policy = policy
+    policy = plate.deformable_obstacle_policy
+    policy.barrier_only = True
+    plate.deformable_obstacle_policy = policy
 
     body = world.add_deformable_body("plate_strip", options)
     world.enter_simulation_mode()

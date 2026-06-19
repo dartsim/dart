@@ -33,6 +33,7 @@
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/io/deformable_scene_io.hpp>
@@ -54,6 +55,22 @@
 namespace sx = dart::simulation;
 
 namespace {
+
+//==============================================================================
+void setGroundBarrierPolicy(sx::RigidBody& body)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.groundBarrier = true;
+  body.setDeformableObstaclePolicy(policy);
+}
+
+//==============================================================================
+void setSurfaceObstaclePolicy(sx::RigidBody& body)
+{
+  auto policy = body.getDeformableObstaclePolicy();
+  policy.surfaceObstacle = true;
+  body.setDeformableObstaclePolicy(policy);
+}
 
 //==============================================================================
 constexpr std::string_view kBenchmarkCubeMsh = R"msh($MeshFormat
@@ -365,7 +382,7 @@ struct DeformableGridWorld
       auto ground = world.addRigidBody("ground", groundOptions);
       ground.setCollisionShape(
           sx::CollisionShape::makeBox(Eigen::Vector3d(4.0, 4.0, 0.05)));
-      ground.setDeformableGroundBarrier(true);
+      setGroundBarrierPolicy(ground);
     }
 
     body = world.addDeformableBody("grid", options);
@@ -444,7 +461,7 @@ struct DeformableDrapeWorld
     auto ground = world.addRigidBody("ground", groundOptions);
     ground.setCollisionShape(
         sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
-    ground.setDeformableGroundBarrier(true);
+    setGroundBarrierPolicy(ground);
 
     sx::RigidBodyOptions boxOptions;
     boxOptions.isStatic = true;
@@ -453,7 +470,7 @@ struct DeformableDrapeWorld
     box.setCollisionShape(
         sx::CollisionShape::makeBox(
             Eigen::Vector3d(boxHalf, boxHalf, 0.5 * boxTop)));
-    box.setDeformableGroundBarrier(true);
+    setGroundBarrierPolicy(box);
 
     body = world.addDeformableBody("drape", options);
     nodeCount = body.getNodeCount();
@@ -667,7 +684,7 @@ struct DeformableStaticGroundBarrierCcdWorld
           = world.addRigidBody("ground_" + std::to_string(i), groundOptions);
       ground.setCollisionShape(
           sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 1.0, 0.05)));
-      ground.setDeformableGroundBarrier(true);
+      setGroundBarrierPolicy(ground);
       groundBodies.push_back(ground);
     }
 
@@ -728,7 +745,7 @@ struct DeformableStaticRigidSurfaceCcdWorld
             "surface_ccd_box_" + std::to_string(i), boxOptions);
         box.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-        box.setDeformableSurfaceCcdObstacle(true);
+        setSurfaceObstaclePolicy(box);
         boxes.push_back(box);
       }
     }
@@ -792,7 +809,7 @@ struct DeformableMovingRigidSurfaceCcdWorld
             "moving_surface_ccd_box_" + std::to_string(i), boxOptions);
         box.setCollisionShape(
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.05, 1.0, 1.0)));
-        box.setDeformableSurfaceCcdObstacle(true);
+        setSurfaceObstaclePolicy(box);
         box.setLinearVelocity(Eigen::Vector3d(crossing ? -2.0 : 2.0, 0.0, 0.0));
         boxes.push_back(box);
       }

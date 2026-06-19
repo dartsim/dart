@@ -39,7 +39,7 @@
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/rigid_contact/boxed_lcp_contact.hpp"

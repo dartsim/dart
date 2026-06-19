@@ -39,7 +39,7 @@
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/detail/deformable_contact/barrier_kernel.hpp"
 #include "dart/simulation/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/detail/deformable_contact/continuous_collision_step.hpp"

@@ -86,6 +86,19 @@ def _full(half_extents: np.ndarray) -> np.ndarray:
     return 2.0 * np.asarray(half_extents, dtype=float)
 
 
+def _joint_type_name(joint: object) -> str:
+    name = getattr(joint.type, "name", None)
+    if callable(name):
+        name = name()
+    if name is None:
+        name = str(joint.type)
+    return str(name).rsplit(".", 1)[-1]
+
+
+def _fixed_joint_count(world: object) -> int:
+    return sum(1 for joint in world.joints if _joint_type_name(joint) == "FIXED")
+
+
 def _quat_x(angle: float) -> tuple[float, float, float, float]:
     half = 0.5 * angle
     return (float(np.cos(half)), float(np.sin(half)), 0.0, 0.0)
@@ -166,10 +179,13 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
         board.mass = 0.25
         board.friction = 0.7
         board.set_collision_shape(dart.CollisionShape.box(_BRIDGE_BOARD_HALF_EXTENTS))
-        world.add_rigid_body_fixed_joint(
-            f"plan083_bridge_point_connection_{index}",
+        world.add_joint(
             parent,
             board,
+                        dart.JointSpec(
+                name=f"plan083_bridge_point_connection_{index}",
+                type=dart.JointType.FIXED,
+            )
         )
         boards.append(board)
         parent = board
@@ -236,7 +252,7 @@ def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text("solver: rigid IPC World.step")
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
-        builder.text(f"point connections: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"point connections: {_fixed_joint_count(world)}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"traveler x: {traveler_position[0]:.3f} m")
         builder.text(f"traveler height: {traveler_position[2]:.3f} m")
@@ -301,11 +317,14 @@ def _build_nunchaku_runtime(target: Plan083SceneTarget) -> SceneSetup:
             _translation(float(_NUNCHAKU_HANDLE_HALF_EXTENTS[0]), 0.0, 0.0),
         )
     )
-    world.add_rigid_body_revolute_joint(
-        "plan083_nunchaku_hinge",
+    world.add_joint(
         anchor,
         swinging,
-        axis=(0.0, 0.0, 1.0),
+                dart.JointSpec(
+            name="plan083_nunchaku_hinge",
+            type=dart.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
 
     world.enter_simulation_mode()
@@ -344,7 +363,7 @@ def _build_nunchaku_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text("solver: rigid IPC World.step")
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
-        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"revolute joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"swinging tip radius: {tip_radius:.3f} m")
         builder.text(f"free-axis angular velocity: {angular_velocity:.3f} rad/s")
@@ -412,21 +431,30 @@ def _build_pulley_runtime(target: Plan083SceneTarget) -> SceneSetup:
     right_load.mass = 0.18
     right_load.set_collision_shape(dart.CollisionShape.box(_PULLEY_LOAD_HALF_EXTENTS))
 
-    world.add_rigid_body_revolute_joint(
-        "plan083_pulley_hinge",
+    world.add_joint(
         support,
         wheel,
-        axis=(0.0, 1.0, 0.0),
+                dart.JointSpec(
+            name="plan083_pulley_hinge",
+            type=dart.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
-    world.add_rigid_body_fixed_joint(
-        "plan083_pulley_left_point_connection",
+    world.add_joint(
         wheel,
         left_load,
+                dart.JointSpec(
+            name="plan083_pulley_left_point_connection",
+            type=dart.JointType.FIXED,
+        )
     )
-    world.add_rigid_body_fixed_joint(
-        "plan083_pulley_right_point_connection",
+    world.add_joint(
         wheel,
         right_load,
+                dart.JointSpec(
+            name="plan083_pulley_right_point_connection",
+            type=dart.JointType.FIXED,
+        )
     )
 
     world.enter_simulation_mode()
@@ -474,7 +502,7 @@ def _build_pulley_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text("solver: rigid IPC World.step")
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
-        builder.text(f"joints: {world.num_rigid_body_joints}")
+        builder.text(f"joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"left load height: {left_height:.3f} m")
         builder.text(f"right load height: {right_height:.3f} m")
@@ -544,21 +572,30 @@ def _build_umbrella_runtime(target: Plan083SceneTarget) -> SceneSetup:
     right_rib.mass = 0.08
     right_rib.set_collision_shape(dart.CollisionShape.box(_UMBRELLA_RIB_HALF_EXTENTS))
 
-    world.add_rigid_body_revolute_joint(
-        "plan083_umbrella_canopy_hinge",
+    world.add_joint(
         mast,
         hub,
-        axis=(0.0, 1.0, 0.0),
+                dart.JointSpec(
+            name="plan083_umbrella_canopy_hinge",
+            type=dart.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
-    world.add_rigid_body_fixed_joint(
-        "plan083_umbrella_left_rib_point_connection",
+    world.add_joint(
         hub,
         left_rib,
+                dart.JointSpec(
+            name="plan083_umbrella_left_rib_point_connection",
+            type=dart.JointType.FIXED,
+        )
     )
-    world.add_rigid_body_fixed_joint(
-        "plan083_umbrella_right_rib_point_connection",
+    world.add_joint(
         hub,
         right_rib,
+                dart.JointSpec(
+            name="plan083_umbrella_right_rib_point_connection",
+            type=dart.JointType.FIXED,
+        )
     )
 
     world.enter_simulation_mode()
@@ -606,7 +643,7 @@ def _build_umbrella_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text("revolute joints: 1")
-        builder.text(f"point connections: {world.num_rigid_body_fixed_joints}")
+        builder.text(f"point connections: {_fixed_joint_count(world)}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"canopy span: {span:.3f} m")
         builder.text(f"hinge velocity: {hinge_velocity:.3f} rad/s")
@@ -677,8 +714,12 @@ def _build_lying_flat_runtime(target: Plan083SceneTarget) -> SceneSetup:
         body = world.add_rigid_body(name, position=center)
         body.is_static = True
         body.set_collision_shape(shape)
-        body.is_deformable_surface_ccd_obstacle = True
-        body.is_deformable_obstacle_barrier_only = True
+        policy = body.deformable_obstacle_policy
+        policy.surface_obstacle = True
+        body.deformable_obstacle_policy = policy
+        policy = body.deformable_obstacle_policy
+        policy.barrier_only = True
+        body.deformable_obstacle_policy = policy
         return body
 
     ground = add_obstacle(
@@ -814,8 +855,12 @@ def _build_candy_runtime(target: Plan083SceneTarget) -> SceneSetup:
     shell = world.add_rigid_body("plan083_candy_reduced_shell", position=(0.0, 0.0, 0.025))
     shell.is_static = True
     shell.set_collision_shape(dart.CollisionShape.box(_CANDY_SHELL_HALF_EXTENTS))
-    shell.is_deformable_surface_ccd_obstacle = True
-    shell.is_deformable_obstacle_barrier_only = True
+    policy = shell.deformable_obstacle_policy
+    policy.surface_obstacle = True
+    shell.deformable_obstacle_policy = policy
+    policy = shell.deformable_obstacle_policy
+    policy.barrier_only = True
+    shell.deformable_obstacle_policy = policy
     cloth = world.add_deformable_body("plan083_candy_deformable_cloth", options)
     world.enter_simulation_mode()
 
@@ -914,11 +959,14 @@ def _build_windmill_runtime(target: Plan083SceneTarget) -> SceneSetup:
     striker.friction = 0.6
     striker.set_collision_shape(dart.CollisionShape.box(_WINDMILL_STRIKER_HALF_EXTENTS))
 
-    world.add_rigid_body_revolute_joint(
-        "plan083_windmill_hinge",
+    world.add_joint(
         hub,
         blade,
-        axis=(0.0, 1.0, 0.0),
+                dart.JointSpec(
+            name="plan083_windmill_hinge",
+            type=dart.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
 
     world.enter_simulation_mode()
@@ -962,7 +1010,7 @@ def _build_windmill_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text("solver: rigid IPC World.step")
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
-        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"revolute joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"blade tip radius: {tip_radius:.3f} m")
         builder.text(f"striker height: {striker_position[2]:.3f} m")
@@ -1030,11 +1078,14 @@ def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
         wheel.mass = 0.08
         wheel.friction = 0.9
         wheel.set_collision_shape(dart.CollisionShape.sphere(_TERRAIN_WHEEL_RADIUS))
-        world.add_rigid_body_revolute_joint(
-            f"plan083_vehicle_wheel_hinge_{index}",
+        world.add_joint(
             chassis,
             wheel,
-            axis=(0.0, 1.0, 0.0),
+                        dart.JointSpec(
+                name=f"plan083_vehicle_wheel_hinge_{index}",
+                type=dart.JointType.REVOLUTE,
+                axis=(0.0, 1.0, 0.0),
+            )
         )
         wheels.append(wheel)
 
@@ -1081,7 +1132,7 @@ def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"passive wheels: {len(wheels)}")
-        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"revolute joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"chassis height: {chassis_position[2]:.3f} m")
         builder.text(f"min wheel clearance: {min_clearance:.4f} m")
@@ -1253,11 +1304,14 @@ def _build_ragdoll_runtime(target: Plan083SceneTarget) -> SceneSetup:
             part.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_ARM_HALF_EXTENTS))
         else:
             part.set_collision_shape(dart.CollisionShape.box(_RAGDOLL_LEG_HALF_EXTENTS))
-        world.add_rigid_body_revolute_joint(
-            f"plan083_ragdoll_joint_{index}",
+        world.add_joint(
             torso,
             part,
-            axis=(0.0, 0.0, 1.0) if shape_kind == "sphere" else (0.0, 1.0, 0.0),
+                        dart.JointSpec(
+                name=f"plan083_ragdoll_joint_{index}",
+                type=dart.JointType.REVOLUTE,
+                axis=(0.0, 0.0, 1.0) if shape_kind == "sphere" else (0.0, 1.0, 0.0),
+            )
         )
         parts.append(part)
 
@@ -1311,7 +1365,7 @@ def _build_ragdoll_runtime(target: Plan083SceneTarget) -> SceneSetup:
         builder.text(f"row: {', '.join(target.row_ids)}")
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"reduced ragdoll bodies: {1 + len(parts)}")
-        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"revolute joints: {world.num_joints}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"torso height: {torso_position[2]:.3f} m")
         builder.text(f"min leg clearance: {min_clearance:.4f} m")

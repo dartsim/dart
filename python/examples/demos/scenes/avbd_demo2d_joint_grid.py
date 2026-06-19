@@ -201,19 +201,25 @@ def build() -> SceneSetup:
     for x in range(1, _GRID_WIDTH):
         for y in range(_GRID_HEIGHT):
             horizontal_joints.append(
-                world.add_rigid_body_fixed_joint(
-                    f"avbd_demo2d_joint_grid_fixed_h_{x - 1:02d}_{y:02d}",
+                world.add_joint(
                     grid[x - 1][y],
                     grid[x][y],
+                                        sx.JointSpec(
+                        name=f"avbd_demo2d_joint_grid_fixed_h_{x - 1:02d}_{y:02d}",
+                        type=sx.JointType.FIXED,
+                    )
                 )
             )
     for x in range(_GRID_WIDTH):
         for y in range(1, _GRID_HEIGHT):
             vertical_joints.append(
-                world.add_rigid_body_fixed_joint(
-                    f"avbd_demo2d_joint_grid_fixed_v_{x:02d}_{y - 1:02d}",
+                world.add_joint(
                     grid[x][y - 1],
                     grid[x][y],
+                                        sx.JointSpec(
+                        name=f"avbd_demo2d_joint_grid_fixed_v_{x:02d}_{y - 1:02d}",
+                        type=sx.JointType.FIXED,
+                    )
                 )
             )
 
