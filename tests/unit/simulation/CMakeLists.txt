@@ -173,6 +173,27 @@ if(DART_SIMULATION_BUILD_TESTS)
         _dart_rigid_ipc_paper_friction_filter
         "RigidIpcPaperExperiments.Friction*:RigidIpcPaperExperiments.SlidingCubeFixtureRowIsBrakedByFriction:RigidIpcPaperExperiments.RollingConeFixtureRowAdvancesWithContact:RigidIpcPaperExperiments.CardTentFixtureRowStaysUprightWithFriction:RigidIpcPaperExperiments.SpinningCoinIsBrakedByFrictionWithoutPenetration"
       )
+      set(
+        _dart_rigid_ipc_paper_turntable_filter
+        "RigidIpcPaperExperiments.Turntable*"
+      )
+      set(
+        _dart_rigid_ipc_paper_contact_filter
+        "RigidIpcPaperExperiments.HighSpeedCubeDoesNotTunnelThroughWall:RigidIpcPaperExperiments.Cube*:RigidIpcPaperExperiments.LargeMassRatioFixtureRowStaysSeparated:RigidIpcPaperExperiments.FiveCubesFixtureRowStacksWithoutPenetration:RigidIpcPaperExperiments.FaceVertexFixtureRowStaysSeparated:RigidIpcPaperExperiments.Vertex*:RigidIpcPaperExperiments.TetCorner*:RigidIpcPaperExperiments.Erleben*"
+      )
+      set(
+        _dart_rigid_ipc_paper_free_motion_filter
+        "RigidIpcPaperExperiments.Rotating*:RigidIpcPaperExperiments.SpinningCubeOverPlaneFixtureRowAdvancesSafely:RigidIpcPaperExperiments.TorqueFixtureRowAcceleratesFreeBody:RigidIpcPaperExperiments.DzhanibekovWingNutFixtureRowAdvancesSafely:RigidIpcPaperExperiments.Degenerate*"
+      )
+      set(
+        _dart_rigid_ipc_paper_arches_filter
+        "RigidIpcPaperExperiments.FiveVoussoirFrictionArchStandsInEquilibrium:RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands"
+      )
+      set(
+        _dart_rigid_ipc_paper_long_tail_filter
+        "${_dart_rigid_ipc_paper_friction_filter}:${_dart_rigid_ipc_paper_turntable_filter}:${_dart_rigid_ipc_paper_contact_filter}:${_dart_rigid_ipc_paper_free_motion_filter}:${_dart_rigid_ipc_paper_arches_filter}"
+      )
+
       _dart_add_simulation_gtest_shard(
         test_rigid_ipc_paper_experiments_friction
         test_rigid_ipc_paper_experiments
@@ -184,7 +205,7 @@ if(DART_SIMULATION_BUILD_TESTS)
       _dart_add_simulation_gtest_shard(
         test_rigid_ipc_paper_experiments_turntable
         test_rigid_ipc_paper_experiments
-        "RigidIpcPaperExperiments.Turntable*"
+        "${_dart_rigid_ipc_paper_turntable_filter}"
         170
         1200
       )
@@ -216,9 +237,17 @@ if(DART_SIMULATION_BUILD_TESTS)
       _dart_add_simulation_gtest_shard(
         test_rigid_ipc_paper_experiments_arches
         test_rigid_ipc_paper_experiments
-        "RigidIpcPaperExperiments.FiveVoussoirFrictionArchStandsInEquilibrium:RigidIpcPaperExperiments.TwentyFiveVoussoirFrictionArchFixtureRowStands"
+        "${_dart_rigid_ipc_paper_arches_filter}"
         50
         600
+      )
+
+      _dart_add_simulation_gtest_shard(
+        test_rigid_ipc_paper_experiments_rest
+        test_rigid_ipc_paper_experiments
+        "-${_dart_rigid_ipc_paper_long_tail_filter}"
+        30
+        1200
       )
     endif()
   endif()

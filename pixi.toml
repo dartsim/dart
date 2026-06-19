@@ -574,6 +574,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
     LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER="
   fi
 fi
+NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
 cmake \
   -G Ninja \
   -S . \
@@ -605,6 +606,7 @@ cmake \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
+  -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
