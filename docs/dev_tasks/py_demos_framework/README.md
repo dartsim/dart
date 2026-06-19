@@ -33,6 +33,10 @@ and replay metadata.
   - [x] Interactive selection/force-drag overlay hardening: a zero-motion
         click/drag on `rigid_body` no longer feeds degenerate debug primitives
         into Filament's AABB precondition path.
+  - [x] Selection crash regression guard: the real-viewer integration suite now
+        runs the original zero-motion `rigid_body` scripted force-drag path and
+        requires a valid headless screenshot, so the exact crash path is covered
+        beyond manual PR evidence.
   - [x] Local full-catalog regression pass on PR #3084 local head `bd0b8e7`:
         default `pixi run py-demos-smoke --json-out
 /tmp/py_demos_smoke_default_pr3084_local.json` passed **155/155** in
@@ -116,7 +120,9 @@ repeatable operation.
 ## Immediate Next Steps
 
 1. Keep the interactive selection repro in the validation set when touching
-   `dart::gui` debug overlays:
+   `dart::gui` debug overlays. The focused regression test is
+   `python/tests/integration/test_demos_cycle.py::test_rigid_body_scripted_selection_force_drag_is_stable`;
+   the direct manual command remains:
    `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`.
 2. Verify the M1 contact-baseline increment with focused C++/dartpy tests,
    `python/tests/unit/test_py_demo_panels.py`, and the M0 smoke guards.

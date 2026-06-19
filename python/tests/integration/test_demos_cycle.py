@@ -12396,6 +12396,40 @@ def test_runner_screenshot_writes_ppm(tmp_path: pathlib.Path) -> None:
         assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
 
 
+def test_rigid_body_scripted_selection_force_drag_is_stable(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Regression coverage for zero-motion selection/force-drag debug overlays."""
+
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    out = tmp_path / "rigid_body_force_drag.ppm"
+    rc = run(
+        [
+            "--scene",
+            "rigid_body",
+            "--headless",
+            "--frames",
+            "4",
+            "--width",
+            "640",
+            "--height",
+            "480",
+            "--screenshot",
+            str(out),
+            "--scripted-force-drag",
+            "1:sphere_0_visual:0,0,0:2",
+        ],
+        make_demo_scenes(),
+    )
+
+    assert rc == 0
+    data = out.read_bytes()
+    assert data.startswith(b"P6"), f"not a PPM: {data[:8]!r}"
+    assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
+
+
 def test_show_ui_uses_docked_workspace_regions(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
