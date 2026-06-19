@@ -689,6 +689,13 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
+  option.maxNumContactsPerPair = 2u;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+  EXPECT_LE(result.getNumContacts(), 2u);
+
+  option.maxNumContactsPerPair = 0u;
+  result.clear();
   option.maxNumContacts = 2u;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 2u);
@@ -2230,6 +2237,12 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
   option.maxNumContacts = 1u;
   CollisionResult result;
 
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+
+  option.maxNumContacts = 8u;
+  option.maxNumContactsPerPair = 1u;
+  result.clear();
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_EQ(1u, result.getNumContacts());
 

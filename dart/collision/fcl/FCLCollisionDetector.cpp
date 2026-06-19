@@ -61,6 +61,7 @@
 #include <limits>
 #include <string>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart {
@@ -84,6 +85,35 @@ bool distanceCallback(
     fcl::CollisionObject* o2,
     void* cdata,
     double& dist);
+
+struct FCLCollisionCallbackData;
+struct FCLDistanceCallbackData;
+
+void collideObjectPairs(
+    const std::vector<fcl::CollisionObject*>& objects1,
+    const std::vector<fcl::CollisionObject*>& objects2,
+    FCLCollisionCallbackData& collData,
+    bool skipDuplicatePairs);
+
+void distanceObjectPairs(
+    const std::vector<fcl::CollisionObject*>& objects1,
+    const std::vector<fcl::CollisionObject*>& objects2,
+    FCLDistanceCallbackData& distData,
+    bool skipDuplicatePairs);
+
+bool distanceHalfspaceObjectPair(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    FCLDistanceCallbackData& distData,
+    bool& handled);
+
+bool evaluateHalfspaceDistance(
+    fcl::CollisionObject* halfspaceObject,
+    fcl::CollisionObject* finiteObject,
+    const fcl::Halfspace* halfspace,
+    double& distance,
+    Eigen::Vector3d& nearestFinitePoint,
+    Eigen::Vector3d& nearestHalfspacePoint);
 
 void postProcessFCL(
     const fcl::CollisionResult& fclResult,
@@ -216,10 +246,14 @@ struct FCLCollisionCallbackData
   {
     convertOption(option, fclRequest);
 
-    fclRequest.num_max_contacts
-        = std::max(static_cast<std::size_t>(100u), option.maxNumContacts);
-    // Since some contact points can be filtered out in the post process, we ask
-    // more than the demend. 100 is randomly picked.
+    if (option.maxNumContactsPerPair > 0u) {
+      fclRequest.num_max_contacts = option.getEffectiveMaxNumContactsPerPair();
+    } else {
+      fclRequest.num_max_contacts
+          = std::max(static_cast<std::size_t>(100u), option.maxNumContacts);
+      // Since some contact points can be filtered out in the post process, we
+      // ask more than the demand. 100 is randomly picked.
+    }
   }
 };
 
@@ -693,6 +727,17 @@ bool FCLCollisionDetector::collide(
   DART_ASSERT(collMgr);
   collMgr->collide(&collData, collisionCallback);
 
+  collideObjectPairs(
+      casted->getUnboundedFCLCollisionObjects(),
+      casted->getFiniteFCLCollisionObjects(),
+      collData,
+      false);
+  collideObjectPairs(
+      casted->getUnboundedFCLCollisionObjects(),
+      casted->getUnboundedFCLCollisionObjects(),
+      collData,
+      true);
+
   return collData.isCollision();
 }
 
@@ -717,6 +762,9 @@ bool FCLCollisionDetector::collide(
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  if (casted1 == casted2)
+    return collide(group1, option, result);
+
   casted1->updateEngineData();
   casted2->updateEngineData();
 
@@ -727,6 +775,21 @@ bool FCLCollisionDetector::collide(
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
 
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
+  collideObjectPairs(
+      casted1->getUnboundedFCLCollisionObjects(),
+      casted2->getFiniteFCLCollisionObjects(),
+      collData,
+      false);
+  collideObjectPairs(
+      casted2->getUnboundedFCLCollisionObjects(),
+      casted1->getFiniteFCLCollisionObjects(),
+      collData,
+      false);
+  collideObjectPairs(
+      casted1->getUnboundedFCLCollisionObjects(),
+      casted2->getUnboundedFCLCollisionObjects(),
+      collData,
+      false);
 
   return collData.isCollision();
 }
@@ -747,6 +810,16 @@ double FCLCollisionDetector::distance(
   FCLDistanceCallbackData distData(option, result);
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
+  distanceObjectPairs(
+      casted->getUnboundedFCLCollisionObjects(),
+      casted->getFiniteFCLCollisionObjects(),
+      distData,
+      false);
+  distanceObjectPairs(
+      casted->getUnboundedFCLCollisionObjects(),
+      casted->getUnboundedFCLCollisionObjects(),
+      distData,
+      true);
 
   if (!distData.hasResult)
     distData.unclampedMinDistance = 0.0;
@@ -772,6 +845,9 @@ double FCLCollisionDetector::distance(
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  if (casted1 == casted2)
+    return distance(group1, option, result);
+
   casted1->updateEngineData();
   casted2->updateEngineData();
 
@@ -781,6 +857,21 @@ double FCLCollisionDetector::distance(
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
 
   broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
+  distanceObjectPairs(
+      casted1->getUnboundedFCLCollisionObjects(),
+      casted2->getFiniteFCLCollisionObjects(),
+      distData,
+      false);
+  distanceObjectPairs(
+      casted2->getUnboundedFCLCollisionObjects(),
+      casted1->getFiniteFCLCollisionObjects(),
+      distData,
+      false);
+  distanceObjectPairs(
+      casted1->getUnboundedFCLCollisionObjects(),
+      casted2->getUnboundedFCLCollisionObjects(),
+      distData,
+      false);
 
   if (!distData.hasResult)
     distData.unclampedMinDistance = 0.0;
@@ -1213,6 +1304,293 @@ bool distanceCallback(
 }
 
 //==============================================================================
+void collideObjectPairs(
+    const std::vector<fcl::CollisionObject*>& objects1,
+    const std::vector<fcl::CollisionObject*>& objects2,
+    FCLCollisionCallbackData& collData,
+    bool skipDuplicatePairs)
+{
+  for (std::size_t i = 0; i < objects1.size(); ++i) {
+    const std::size_t begin = skipDuplicatePairs ? i + 1 : 0;
+    for (std::size_t j = begin; j < objects2.size(); ++j) {
+      if (objects1[i] == objects2[j])
+        continue;
+
+      if (collisionCallback(objects1[i], objects2[j], &collData))
+        return;
+    }
+  }
+}
+
+//==============================================================================
+void distanceObjectPairs(
+    const std::vector<fcl::CollisionObject*>& objects1,
+    const std::vector<fcl::CollisionObject*>& objects2,
+    FCLDistanceCallbackData& distData,
+    bool skipDuplicatePairs)
+{
+  double dist = distData.unclampedMinDistance;
+  for (std::size_t i = 0; i < objects1.size(); ++i) {
+    const std::size_t begin = skipDuplicatePairs ? i + 1 : 0;
+    for (std::size_t j = begin; j < objects2.size(); ++j) {
+      if (objects1[i] == objects2[j])
+        continue;
+
+      bool handled = false;
+      if (distanceHalfspaceObjectPair(
+              objects1[i], objects2[j], distData, handled)) {
+        return;
+      }
+      if (handled)
+        continue;
+
+      if (distanceCallback(objects1[i], objects2[j], &distData, dist))
+        return;
+    }
+  }
+}
+
+//==============================================================================
+const fcl::Halfspace* asHalfspace(const fcl::CollisionObject* object)
+{
+  if (!object)
+    return nullptr;
+
+  return dynamic_cast<const fcl::Halfspace*>(object->collisionGeometry().get());
+}
+
+//==============================================================================
+Eigen::Vector3d transformFCLPoint(
+    const fcl::CollisionObject* object, const fcl::Vector3& localPoint)
+{
+  return FCLTypes::convertVector3(
+      fcl::transform(object->getTransform(), localPoint));
+}
+
+//==============================================================================
+void updateNearestLocalSupportPoint(
+    const fcl::Vector3& localNormal,
+    const fcl::Vector3& localPoint,
+    double& minLocalDistance,
+    fcl::Vector3& nearestLocalPoint)
+{
+  const double localDistance = localNormal.dot(localPoint);
+  if (localDistance < minLocalDistance) {
+    minLocalDistance = localDistance;
+    nearestLocalPoint = localPoint;
+  }
+}
+
+//==============================================================================
+bool findNearestLocalSupportPoint(
+    const fcl::CollisionObject* finiteObject,
+    const fcl::Vector3& localNormal,
+    double& minLocalDistance,
+    fcl::Vector3& nearestLocalPoint)
+{
+  const auto& geometry = finiteObject->collisionGeometry();
+  if (!geometry)
+    return false;
+
+  if (const auto* mesh
+      = dynamic_cast<const ::fcl::BVHModel<fcl::OBBRSS>*>(geometry.get())) {
+    if (!mesh->vertices || mesh->num_vertices <= 0)
+      return false;
+
+    for (int i = 0; i < mesh->num_vertices; ++i) {
+      updateNearestLocalSupportPoint(
+          localNormal, mesh->vertices[i], minLocalDistance, nearestLocalPoint);
+    }
+    return std::isfinite(minLocalDistance);
+  }
+
+  if (const auto* box = dynamic_cast<const fcl::Box*>(geometry.get())) {
+    const auto halfSide = 0.5 * box->side;
+    nearestLocalPoint = fcl::Vector3(
+        localNormal[0] >= 0.0 ? -halfSide[0] : halfSide[0],
+        localNormal[1] >= 0.0 ? -halfSide[1] : halfSide[1],
+        localNormal[2] >= 0.0 ? -halfSide[2] : halfSide[2]);
+    minLocalDistance = localNormal.dot(nearestLocalPoint);
+    return true;
+  }
+
+  if (const auto* sphere = dynamic_cast<const fcl::Sphere*>(geometry.get())) {
+    const double norm = localNormal.norm();
+    if (norm <= 0.0)
+      return false;
+
+    nearestLocalPoint = -sphere->radius * localNormal / norm;
+    minLocalDistance = localNormal.dot(nearestLocalPoint);
+    return true;
+  }
+
+  if (const auto* ellipsoid
+      = dynamic_cast<const fcl::Ellipsoid*>(geometry.get())) {
+    const fcl::Vector3 radiiSquared
+        = ellipsoid->radii.cwiseProduct(ellipsoid->radii);
+    const fcl::Vector3 weightedNormal = radiiSquared.cwiseProduct(localNormal);
+    const double denominator = std::sqrt(localNormal.dot(weightedNormal));
+    if (denominator <= 0.0)
+      return false;
+
+    nearestLocalPoint = -weightedNormal / denominator;
+    minLocalDistance = localNormal.dot(nearestLocalPoint);
+    return true;
+  }
+
+  if (const auto* cylinder
+      = dynamic_cast<const fcl::Cylinder*>(geometry.get())) {
+    const double radialNorm = std::hypot(localNormal[0], localNormal[1]);
+    nearestLocalPoint = fcl::Vector3::Zero();
+    if (radialNorm > 0.0) {
+      nearestLocalPoint[0] = -cylinder->radius * localNormal[0] / radialNorm;
+      nearestLocalPoint[1] = -cylinder->radius * localNormal[1] / radialNorm;
+    }
+    nearestLocalPoint[2]
+        = localNormal[2] >= 0.0 ? -0.5 * cylinder->lz : 0.5 * cylinder->lz;
+    minLocalDistance = localNormal.dot(nearestLocalPoint);
+    return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool evaluateHalfspaceDistance(
+    fcl::CollisionObject* halfspaceObject,
+    fcl::CollisionObject* finiteObject,
+    const fcl::Halfspace* halfspace,
+    double& distance,
+    Eigen::Vector3d& nearestFinitePoint,
+    Eigen::Vector3d& nearestHalfspacePoint)
+{
+  const auto worldHalfspace
+      = ::fcl::transform(*halfspace, halfspaceObject->getTransform());
+  const auto& finiteTransform = finiteObject->getTransform();
+  const fcl::Vector3 localNormal
+      = fcl::getRotation(finiteTransform).transpose() * worldHalfspace.n;
+
+  double minLocalDistance = std::numeric_limits<double>::infinity();
+  fcl::Vector3 nearestLocalPoint = fcl::Vector3::Zero();
+  if (!findNearestLocalSupportPoint(
+          finiteObject, localNormal, minLocalDistance, nearestLocalPoint)) {
+    return false;
+  }
+
+  nearestFinitePoint = transformFCLPoint(finiteObject, nearestLocalPoint);
+  const Eigen::Vector3d normal = FCLTypes::convertVector3(worldHalfspace.n);
+  const double offset = worldHalfspace.d;
+  const double signedDistance = normal.dot(nearestFinitePoint) - offset;
+  distance = std::max(0.0, signedDistance);
+  nearestHalfspacePoint = distance > 0.0
+                              ? nearestFinitePoint - signedDistance * normal
+                              : nearestFinitePoint;
+  return true;
+}
+
+//==============================================================================
+void updateAnalyticDistanceResult(
+    FCLDistanceCallbackData& distData,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    double distance,
+    const Eigen::Vector3d& nearestPoint1,
+    const Eigen::Vector3d& nearestPoint2)
+{
+  const auto& option = distData.option;
+  if (distData.hasResult && distance >= distData.unclampedMinDistance)
+    return;
+
+  distData.unclampedMinDistance = distance;
+  distData.hasResult = true;
+
+  if (distData.result) {
+    distData.result->unclampedMinDistance = distance;
+    distData.result->minDistance
+        = std::max(distance, option.distanceLowerBound);
+    distData.result->shapeFrame1
+        = static_cast<FCLCollisionObject*>(o1->getUserData())->getShapeFrame();
+    distData.result->shapeFrame2
+        = static_cast<FCLCollisionObject*>(o2->getUserData())->getShapeFrame();
+
+    if (option.enableNearestPoints) {
+      distData.result->nearestPoint1 = nearestPoint1;
+      distData.result->nearestPoint2 = nearestPoint2;
+    }
+  }
+
+  if (distData.unclampedMinDistance <= option.distanceLowerBound)
+    distData.done = true;
+}
+
+//==============================================================================
+bool distanceHalfspaceObjectPair(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    FCLDistanceCallbackData& distData,
+    bool& handled)
+{
+  const auto* halfspace1 = asHalfspace(o1);
+  const auto* halfspace2 = asHalfspace(o2);
+  handled = halfspace1 || halfspace2;
+  if (!handled)
+    return false;
+
+  if (distData.done)
+    return true;
+
+  const auto& filter = distData.option.distanceFilter;
+  if (filter) {
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+    DART_ASSERT(collisionObject1);
+    DART_ASSERT(collisionObject2);
+
+    if (!filter->needDistance(collisionObject2, collisionObject1))
+      return distData.done;
+  }
+
+  if (halfspace1 && halfspace2) {
+    updateAnalyticDistanceResult(
+        distData,
+        o1,
+        o2,
+        0.0,
+        Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero());
+    return distData.done;
+  }
+
+  auto* halfspaceObject = halfspace1 ? o1 : o2;
+  auto* finiteObject = halfspace1 ? o2 : o1;
+  const auto* halfspace = halfspace1 ? halfspace1 : halfspace2;
+
+  double distance = 0.0;
+  Eigen::Vector3d nearestFinitePoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d nearestHalfspacePoint = Eigen::Vector3d::Zero();
+  if (!evaluateHalfspaceDistance(
+          halfspaceObject,
+          finiteObject,
+          halfspace,
+          distance,
+          nearestFinitePoint,
+          nearestHalfspacePoint)) {
+    handled = false;
+    return distData.done;
+  }
+
+  updateAnalyticDistanceResult(
+      distData,
+      o1,
+      o2,
+      distance,
+      halfspace1 ? nearestHalfspacePoint : nearestFinitePoint,
+      halfspace1 ? nearestFinitePoint : nearestHalfspacePoint);
+
+  return distData.done;
+}
+
+//==============================================================================
 Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
 {
   return contact1.point - contact2.point;
@@ -1341,7 +1719,12 @@ void postProcessFCL(
       fcl::Contact,
       &fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol);
 
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t pairContacts = 0u;
   for (auto i = 0u; i < numContacts; ++i) {
+    if (pairContacts >= maxContactsPerPair)
+      return;
+
     if (markForDeletion[i])
       continue;
 
@@ -1353,6 +1736,7 @@ void postProcessFCL(
     }
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
+    ++pairContacts;
 
     if (result.getNumContacts() >= option.maxNumContacts)
       return;
@@ -1469,11 +1853,17 @@ void postProcessDART(
   markColinearPoints<std::vector<Contact>, Contact, &std::vector<Contact>::at>(
       markForDeletion, unfiltered, tol);
 
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t pairContacts = 0u;
   for (auto i = 0u; i < unfilteredSize; ++i) {
+    if (pairContacts >= maxContactsPerPair)
+      return;
+
     if (markForDeletion[i])
       continue;
 
     result.addContact(unfiltered[i]);
+    ++pairContacts;
 
     if (result.getNumContacts() >= option.maxNumContacts)
       return;

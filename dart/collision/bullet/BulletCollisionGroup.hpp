@@ -76,6 +76,9 @@ protected:
   /// Return Bullet collision world
   const btCollisionWorld* getBulletCollisionWorld() const;
 
+  /// Update Bullet collision objects and broadphase data before collision.
+  void updateEngineDataForCollide();
+
 protected:
   using CollisionGroup::updateEngineData;
 

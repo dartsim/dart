@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="plane_box_world">
+    <physics type="dart">
+      <max_step_size>0.001</max_step_size>
+      <gravity>0 0 -9.81</gravity>
+    </physics>
+
+    <model name="ground">
+      <static>true</static>
+      <link name="ground_link">
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <iyy>1</iyy>
+            <izz>1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="plane_collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>10 10</size>
+            </plane>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+
+    <model name="box">
+      <pose>0 0 0.35 0 0 0</pose>
+      <link name="box_link">
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.0066666667</ixx>
+            <iyy>0.0066666667</iyy>
+            <izz>0.0066666667</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="box_collision">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </world>
+</sdf>

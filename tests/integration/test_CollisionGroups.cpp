@@ -34,6 +34,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Group.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -434,6 +435,61 @@ TEST_P(CollisionGroupsTest, RemovedSkeletonSubscription)
   EXPECT_FALSE(group->hasShapeFrame(sn));
   EXPECT_FALSE(group->isSubscribedTo(skel_A_ptr));
   EXPECT_FALSE(group->isSubscribedTo(skel_B_ptr));
+}
+
+TEST(CollisionGroupsTest, FclPlaneShapeDoesNotEnterAabbTree)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate("fcl")) {
+    std::cout << "Skipping FCL PlaneShape test because FCL is not available"
+              << std::endl;
+    return;
+  }
+
+  auto cd = dart::collision::CollisionDetector::getFactory()->create("fcl");
+  auto group = cd->createCollisionGroup();
+
+  auto planeSkeleton = dart::dynamics::Skeleton::create("plane");
+  auto planePair
+      = planeSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto planeShape = std::make_shared<dart::dynamics::PlaneShape>(
+      Eigen::Vector3d::UnitZ(), 0.0);
+  auto* planeNode
+      = planePair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          planeShape);
+
+  auto boxSkeleton = dart::dynamics::Skeleton::create("box");
+  auto boxPair
+      = boxSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = 0.25 * Eigen::Vector3d::UnitZ();
+  boxPair.first->setTransform(transform);
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(1.0));
+  auto* boxNode
+      = boxPair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          boxShape);
+
+  group->addShapeFrame(planeNode);
+  group->addShapeFrame(boxNode);
+
+  dart::collision::CollisionOption option;
+  option.maxNumContacts = 8u;
+  dart::collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  transform.translation() = 2.0 * Eigen::Vector3d::UnitZ();
+  boxPair.first->setTransform(transform);
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  dart::collision::DistanceOption distanceOption;
+  dart::collision::DistanceResult distanceResult;
+  const double distance = group->distance(distanceOption, &distanceResult);
+  EXPECT_TRUE(distanceResult.found());
+  EXPECT_NEAR(distance, 1.5, 1e-12);
+  EXPECT_NEAR(distanceResult.minDistance, 1.5, 1e-12);
 }
 
 INSTANTIATE_TEST_SUITE_P(

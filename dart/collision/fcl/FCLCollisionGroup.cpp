@@ -35,8 +35,37 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace collision {
+
+namespace {
+
+//==============================================================================
+bool isUnboundedObject(const FCLCollisionObject* object)
+{
+  if (!object)
+    return false;
+
+  const auto* fclObject = object->getFCLCollisionObject();
+  if (!fclObject)
+    return false;
+
+  return dynamic_cast<const fcl::Halfspace*>(
+             fclObject->collisionGeometry().get())
+         != nullptr;
+}
+
+//==============================================================================
+void eraseObject(
+    std::vector<fcl::CollisionObject*>& objects, fcl::CollisionObject* object)
+{
+  objects.erase(
+      std::remove(objects.begin(), objects.end(), object), objects.end());
+}
+
+} // namespace
 
 //==============================================================================
 FCLCollisionGroup::FCLCollisionGroup(
@@ -57,7 +86,14 @@ void FCLCollisionGroup::initializeEngineData()
 void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
-  mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
+  auto fclObject = casted->getFCLCollisionObject();
+
+  if (isUnboundedObject(casted)) {
+    mUnboundedObjects.push_back(fclObject);
+  } else {
+    mFiniteObjects.push_back(fclObject);
+    mBroadPhaseAlg->registerObject(fclObject);
+  }
 
   initializeEngineData();
 }
@@ -68,8 +104,14 @@ void FCLCollisionGroup::addCollisionObjectsToEngine(
 {
   for (auto collObj : collObjects) {
     auto casted = static_cast<FCLCollisionObject*>(collObj);
+    auto fclObject = casted->getFCLCollisionObject();
 
-    mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
+    if (isUnboundedObject(casted)) {
+      mUnboundedObjects.push_back(fclObject);
+    } else {
+      mFiniteObjects.push_back(fclObject);
+      mBroadPhaseAlg->registerObject(fclObject);
+    }
   }
 
   initializeEngineData();
@@ -79,8 +121,14 @@ void FCLCollisionGroup::addCollisionObjectsToEngine(
 void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
+  auto fclObject = casted->getFCLCollisionObject();
 
-  mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
+  if (isUnboundedObject(casted)) {
+    eraseObject(mUnboundedObjects, fclObject);
+  } else {
+    mBroadPhaseAlg->unregisterObject(fclObject);
+    eraseObject(mFiniteObjects, fclObject);
+  }
 
   initializeEngineData();
 }
@@ -89,6 +137,8 @@ void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mBroadPhaseAlg->clear();
+  mFiniteObjects.clear();
+  mUnboundedObjects.clear();
 
   initializeEngineData();
 }
@@ -111,6 +161,20 @@ const FCLCollisionGroup::FCLCollisionManager*
 FCLCollisionGroup::getFCLCollisionManager() const
 {
   return mBroadPhaseAlg.get();
+}
+
+//==============================================================================
+const std::vector<fcl::CollisionObject*>&
+FCLCollisionGroup::getFiniteFCLCollisionObjects() const
+{
+  return mFiniteObjects;
+}
+
+//==============================================================================
+const std::vector<fcl::CollisionObject*>&
+FCLCollisionGroup::getUnboundedFCLCollisionObjects() const
+{
+  return mUnboundedObjects;
 }
 
 } // namespace collision
