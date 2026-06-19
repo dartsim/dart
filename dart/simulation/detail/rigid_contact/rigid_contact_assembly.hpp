@@ -62,6 +62,12 @@ inline constexpr double kRigidContactRestitutionThreshold = 1e-3;
 /// differentiable capture mirrors it to match the forward boxed-LCP step.
 inline constexpr double kRigidContactFrictionCfm = 1e-5;
 
+/// Penetration depth below this allowance is left unprojected (meters).
+inline constexpr double kRigidContactPositionAllowance = 1e-4;
+
+/// Fraction of penetration beyond the allowance removed by position projection.
+inline constexpr double kRigidContactPositionCorrectionFactor = 0.2;
+
 /// Reciprocal of a finite, positive body mass; zero for static/degenerate mass.
 inline double inverseMassOf(const comps::MassProperties& mass)
 {

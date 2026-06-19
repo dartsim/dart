@@ -622,6 +622,16 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `kRigidContactRestitutionThreshold`, so the restitution threshold is now
   defined once across all four contact paths (golden 3/3, contact parity 5/5,
   boxed-LCP 122/122 unchanged).
+  **Safe shared-helper cleanup (pending acceptance in PR #3083):** the remaining
+  sequential-impulse local copies of the shared rigid-contact helper seam
+  (`inverseMassOf`, `inverseWorldInertiaOf`, material accessors, and prescribed
+  response classification) now route through
+  `detail/rigid_contact/rigid_contact_assembly.hpp`. The two positional
+  projection constants (`1e-4` allowance, `0.2` correction factor) now live next
+  to the rigid-contact constants in that shared header, and both the standalone
+  projection helper and the sequential path call the same projection helper
+  instead of keeping duplicate loops. Behavior-preserving cleanup only; the
+  four assembler layouts still remain distinct.
   **Slice B (remaining):** converge the four contact-problem _assemblers_ (the
   canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
   differentiable-capture rebuild, and the sequential-impulse scratch in
