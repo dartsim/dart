@@ -44,6 +44,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <typeinfo>
 
 #include <cassert>
 #include <cmath>
@@ -65,6 +66,12 @@ struct LcpWorkspace
   Eigen::VectorXd X, XBackup, B, BBackup, W, Lo, LoBackup, Hi, HiBackup;
   Eigen::VectorXi FIndex, FIndexBackup, Offset;
 };
+
+template <typename Solver>
+bool isExactSolverType(const BoxedLcpSolverPtr& solver)
+{
+  return solver && typeid(*solver) == typeid(Solver);
+}
 
 } // namespace
 
@@ -167,17 +174,17 @@ bool BoxedLcpConstraintSolver::isConstrainedGroupSolveThreadSafe() const
   // global RNG, which is neither thread-safe nor deterministic. A custom
   // user-supplied solver may keep mutable per-instance state, so it is treated
   // as unsafe and forces the serial path.
-  if (!std::dynamic_pointer_cast<const DantzigBoxedLcpSolver>(mBoxedLcpSolver))
+  if (!isExactSolverType<DantzigBoxedLcpSolver>(mBoxedLcpSolver))
     return false;
 
   if (!mSecondaryBoxedLcpSolver)
     return true;
 
-  const auto pgs = std::dynamic_pointer_cast<const PgsBoxedLcpSolver>(
-      mSecondaryBoxedLcpSolver);
-  if (!pgs)
+  if (!isExactSolverType<PgsBoxedLcpSolver>(mSecondaryBoxedLcpSolver))
     return false;
 
+  const auto pgs = std::static_pointer_cast<const PgsBoxedLcpSolver>(
+      mSecondaryBoxedLcpSolver);
   return !pgs->getOption().mRandomizeConstraintOrder;
 }
 

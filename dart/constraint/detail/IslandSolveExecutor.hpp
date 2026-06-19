@@ -64,8 +64,21 @@ public:
   explicit IslandSolveExecutor(std::size_t numThreads)
     : mNumThreads(numThreads < 1 ? 1 : numThreads)
   {
-    for (std::size_t i = 1; i < mNumThreads; ++i)
-      mWorkers.emplace_back([this] { workerLoop(); });
+    try {
+      for (std::size_t i = 1; i < mNumThreads; ++i)
+        mWorkers.emplace_back([this] { workerLoop(); });
+    } catch (...) {
+      {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mStop = true;
+      }
+      mStartCv.notify_all();
+      for (std::thread& worker : mWorkers) {
+        if (worker.joinable())
+          worker.join();
+      }
+      throw;
+    }
   }
 
   ~IslandSolveExecutor()
@@ -75,8 +88,10 @@ public:
       mStop = true;
     }
     mStartCv.notify_all();
-    for (std::thread& worker : mWorkers)
-      worker.join();
+    for (std::thread& worker : mWorkers) {
+      if (worker.joinable())
+        worker.join();
+    }
   }
 
   IslandSolveExecutor(const IslandSolveExecutor&) = delete;

@@ -31,9 +31,12 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/detail/IslandSolveExecutor.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -81,6 +84,27 @@ public:
   dynamics::SkeletonPtr getRootSkeleton() const override
   {
     return nullptr;
+  }
+};
+
+class DerivedDantzigBoxedLcpSolver final
+  : public constraint::DantzigBoxedLcpSolver
+{
+};
+
+class DerivedPgsBoxedLcpSolver final : public constraint::PgsBoxedLcpSolver
+{
+};
+
+class ExposedBoxedLcpConstraintSolver final
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  using BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
+
+  bool isParallelSolveSafeForTest() const
+  {
+    return isConstrainedGroupSolveThreadSafe();
   }
 };
 
@@ -205,6 +229,36 @@ TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
 
   EXPECT_EQ(8, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelSolveRequiresExactBuiltInSolvers)
+{
+  ExposedBoxedLcpConstraintSolver defaultSolver;
+  EXPECT_TRUE(defaultSolver.isParallelSolveSafeForTest());
+
+  ExposedBoxedLcpConstraintSolver noSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
+  EXPECT_TRUE(noSecondarySolver.isParallelSolveSafeForTest());
+
+  ExposedBoxedLcpConstraintSolver derivedPrimarySolver(
+      std::make_shared<DerivedDantzigBoxedLcpSolver>(),
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  EXPECT_FALSE(derivedPrimarySolver.isParallelSolveSafeForTest());
+
+  ExposedBoxedLcpConstraintSolver derivedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
+      std::make_shared<DerivedPgsBoxedLcpSolver>());
+  EXPECT_FALSE(derivedSecondarySolver.isParallelSolveSafeForTest());
+
+  auto randomizedPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto option = randomizedPgs->getOption();
+  option.mRandomizeConstraintOrder = true;
+  randomizedPgs->setOption(option);
+
+  ExposedBoxedLcpConstraintSolver randomizedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
+  EXPECT_FALSE(randomizedSecondarySolver.isParallelSolveSafeForTest());
 }
 
 //==============================================================================
