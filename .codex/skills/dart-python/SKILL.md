@@ -16,9 +16,10 @@ Load this skill when working with Python bindings or dartpy.
 ```python
 import dartpy as dart
 
-world = dart.World()
-skel = dart.io.read_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-world.add_skeleton(skel)
+world = dart.simulation.World()
+loader = dart.utils.DartLoader()
+skel = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+world.addSkeleton(skel)
 
 for _ in range(100):
     world.step()
@@ -35,7 +36,6 @@ For module-specific details: `python/AGENTS.md`
 ```bash
 pixi run build-py-dev    # Build for development
 pixi run test-py         # Run Python tests
-pixi run generate-stubs  # Generate type stubs
 ```
 
 ## Wheel Building
@@ -46,7 +46,8 @@ release-branch wheel tasks in the same PR that introduces them.
 
 ## Key Patterns
 
-- **snake_case** preferred (camelCase emits DeprecationWarning)
+- Follow the existing DART 6 camelCase binding names used in `python/examples`
+  and `python/tests`.
 - NumPy arrays auto-convert to Eigen types
 - GUI requires `DART_BUILD_GUI=ON`
 
@@ -54,4 +55,3 @@ release-branch wheel tasks in the same PR that introduces them.
 
 - Package config: `pyproject.toml`
 - Build system: `python/dartpy/CMakeLists.txt`
-- Type stubs: `python/stubs/dartpy/`

@@ -1,30 +1,31 @@
 ---
 name: dart-io
-description: "DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading"
+description: "DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::utils loading"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-io/SKILL.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-# DART Model Loading (`dart::io`)
+# DART Model Loading (`dart::utils`)
 
 Load this skill when working with robot model files or parsers.
 
 ## Quick Start
 
 ```cpp
-#include <dart/io/Read.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
-// Format auto-detection
-auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+dart::utils::DartLoader loader;
+auto skel = loader.parseSkeleton(
+    "dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 ```
 
 ## Full Documentation
 
 For complete I/O guide: `docs/onboarding/io-parsing.md`
 
-For module-specific details: `dart/io/AGENTS.md`
+For repository-specific guidance: `AGENTS.md`
 
 ## Supported Formats
 
@@ -38,16 +39,21 @@ For module-specific details: `dart/io/AGENTS.md`
 ## Common Patterns
 
 ```cpp
+#include <dart/utils/sdf/SdfParser.hpp>
+
 // URDF with package resolution
-dart::io::ReadOptions options;
-options.addPackageDirectory("my_robot", "/path/to/my_robot");
-auto skel = dart::io::readSkeleton("package://my_robot/urdf/robot.urdf", options);
+dart::utils::DartLoader loader;
+loader.addPackageDirectory("my_robot", "/path/to/my_robot");
+auto skel = loader.parseSkeleton("package://my_robot/urdf/robot.urdf");
 
 // Force specific format
-options.format = dart::io::ModelFormat::Sdf;
+auto world = dart::utils::SdfParser::readWorld("dart://sample/sdf/world.sdf");
 ```
 
 ## Key Files
 
-- API: `dart/io/Read.hpp`
-- Tests: `tests/unit/io/test_Read.cpp`
+- URDF API: `dart/utils/urdf/DartLoader.hpp`
+- SDF API: `dart/utils/sdf/SdfParser.hpp`
+- SKEL API: `dart/utils/SkelParser.hpp`
+- Tests: `tests/integration/test_DartLoader.cpp`,
+  `tests/integration/test_SdfParser.cpp`, `tests/integration/test_SkelParser.cpp`
