@@ -127,6 +127,59 @@ function(dart_find_imgui_source out_var source_name)
   set(${out_var} "${${resolved_source_var}}" PARENT_SCOPE)
 endfunction()
 
+function(dart_patch_imgui_opengl2_backend out_var source_path)
+  file(READ "${source_path}" imgui_opengl2_contents)
+  string(FIND
+    "${imgui_opengl2_contents}"
+    "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
+    imgui_opengl2_push_marker
+  )
+  string(FIND
+    "${imgui_opengl2_contents}"
+    "glPopClientAttrib()"
+    imgui_opengl2_pop_marker
+  )
+
+  if(imgui_opengl2_push_marker EQUAL -1)
+    message(STATUS "Applying DART ImGui OpenGL2 client-state patch: ${source_path}")
+    string(REPLACE
+      "    glEnableClientState(GL_VERTEX_ARRAY);"
+      "    glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY);\n    glEnableClientState(GL_VERTEX_ARRAY);"
+      imgui_opengl2_contents
+      "${imgui_opengl2_contents}"
+    )
+  endif()
+  if(imgui_opengl2_pop_marker EQUAL -1)
+    string(REPLACE
+      "    glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);"
+      "    glPopClientAttrib();\n    glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);"
+      imgui_opengl2_contents
+      "${imgui_opengl2_contents}"
+    )
+  endif()
+
+  string(FIND
+    "${imgui_opengl2_contents}"
+    "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
+    imgui_opengl2_push_marker
+  )
+  string(FIND
+    "${imgui_opengl2_contents}"
+    "glPopClientAttrib()"
+    imgui_opengl2_pop_marker
+  )
+  if(imgui_opengl2_push_marker EQUAL -1 OR imgui_opengl2_pop_marker EQUAL -1)
+    message(
+      FATAL_ERROR
+      "Could not apply DART ImGui OpenGL2 client-state patch to ${source_path}"
+    )
+  endif()
+
+  set(patched_source "${CMAKE_CURRENT_BINARY_DIR}/imgui_impl_opengl2_dart.cpp")
+  file(WRITE "${patched_source}" "${imgui_opengl2_contents}")
+  set(${out_var} "${patched_source}" PARENT_SCOPE)
+endfunction()
+
 function(dart_configure_imgui_compat_headers out_var)
   set(imgui_compat_header_dir "${DART_BINARY_DIR}/dart/external/imgui")
   file(MAKE_DIRECTORY "${imgui_compat_header_dir}")
@@ -303,7 +356,11 @@ if(DART_USE_SYSTEM_IMGUI)
       imgui_impl_opengl2.cpp
       ${imgui_header_search_dirs}
     )
-    list(APPEND imgui_compat_sources "${imgui_opengl2_backend_source}")
+    dart_patch_imgui_opengl2_backend(
+      imgui_patched_opengl2_backend_source
+      "${imgui_opengl2_backend_source}"
+    )
+    list(APPEND imgui_compat_sources "${imgui_patched_opengl2_backend_source}")
   endif()
 
   dart_add_library(${target_name} ${imgui_compat_sources} ${imgui_compat_headers})
