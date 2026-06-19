@@ -221,7 +221,10 @@ config-coverage = { cmd = """
 
 build-coverage = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
-    && ctest --output-on-failure -j --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+    && ctest \
+        --output-on-failure \
+        --parallel 4 \
+        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """, depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
 
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
