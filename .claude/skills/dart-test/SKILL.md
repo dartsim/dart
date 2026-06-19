@@ -1,0 +1,64 @@
+---
+name: dart-test
+description: "DART Test: unit tests, integration tests, CI validation, and debugging"
+---
+
+# DART Testing
+
+Load this skill when writing or debugging tests.
+
+## Quick Commands
+
+```bash
+pixi run test         # Quick test run
+pixi run test-py      # Python tests
+pixi run test-all     # Full validation
+pixi run -e gazebo test-gz # Gazebo/gz-physics compatibility gate
+```
+
+## Full Documentation
+
+For complete testing guide: `docs/onboarding/testing.md`
+
+For CI/CD troubleshooting: `docs/onboarding/ci-cd.md`
+
+## Test Organization
+
+- Unit tests: `tests/unit/`
+- Integration tests: `tests/integration/`
+- Regression tests: Near the code they test
+
+## Writing Tests
+
+1. Follow existing patterns in the test directory
+2. Use GoogleTest framework
+3. Name tests descriptively: `TEST(ClassName, MethodName_Condition_ExpectedResult)`
+
+## CI Validation
+
+Before submitting PR:
+
+```bash
+pixi run lint         # Must pass
+pixi run test-all     # Must pass
+pixi run -e gazebo test-gz # Must pass when Gazebo/gz-physics compatibility could be affected
+```
+
+## Debugging Test Failures
+
+```bash
+# Run the smallest existing Pixi test task that covers the failure
+pixi run test
+
+# Get CI logs
+gh run view <RUN_ID> --log-failed
+```
+
+## Gotchas
+
+- `pixi run build` builds libraries only, NOT every test binary. If you run
+  `ctest` directly, build the relevant test target first; `pixi run build-tests`
+  builds the release-branch test targets.
+- `pixi run test-all` is the default full release-branch gate.
+- For package, collision, constraint, or dependency changes that could affect
+  downstream users, run `pixi run -e gazebo test-gz` when practical.
