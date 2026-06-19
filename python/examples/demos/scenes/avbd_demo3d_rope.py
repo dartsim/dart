@@ -163,12 +163,15 @@ def build() -> SceneSetup:
     joints = []
     for index, (parent, child) in enumerate(zip(links, links[1:])):
         joints.append(
-            world.add_rigid_body_spherical_joint(
-                f"avbd_demo3d_rope_point_joint_{index:02d}",
+            world.add_joint(
                 parent,
                 child,
-                parent_anchor=tuple(_PARENT_ANCHOR),
-                child_anchor=tuple(_CHILD_ANCHOR),
+                                sx.JointSpec(
+                    name=f"avbd_demo3d_rope_point_joint_{index:02d}",
+                    type=sx.JointType.SPHERICAL,
+                    parent_anchor=tuple(_PARENT_ANCHOR),
+                    child_anchor=tuple(_CHILD_ANCHOR),
+                )
             )
         )
 

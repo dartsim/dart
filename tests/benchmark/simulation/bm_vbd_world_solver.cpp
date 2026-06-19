@@ -37,6 +37,7 @@
 
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/comps/deformable_body.hpp>
+#include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>

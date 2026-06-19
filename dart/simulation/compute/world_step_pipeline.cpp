@@ -35,8 +35,8 @@
 #include "dart/simulation/compute/compute_graph.hpp"
 #include "dart/simulation/compute/deformable_psd_backend.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
+#include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/compute/world_kinematics_graph.hpp"
-#include "dart/simulation/compute/world_step_stage.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <dart/config.hpp>

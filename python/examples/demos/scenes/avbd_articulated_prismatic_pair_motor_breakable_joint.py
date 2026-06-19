@@ -56,11 +56,14 @@ def build() -> SceneSetup:
     carriage.inertia = ((0.12, 0.0, 0.0), (0.0, 0.18, 0.0), (0.0, 0.0, 0.18))
 
     axis = np.array([1.0, 0.0, 0.0])
-    motor_joint = world.add_articulated_prismatic_joint(
-        "avbd_articulated_prismatic_pair_breakable_axis",
+    motor_joint = world.add_joint(
         base,
         carriage,
-        axis=axis.tolist(),
+                sx.JointSpec(
+            name="avbd_articulated_prismatic_pair_breakable_axis",
+            type=sx.JointType.PRISMATIC,
+            axis=axis.tolist(),
+        )
     )
     motor_joint.actuator_type = sx.ActuatorType.VELOCITY
     motor_joint.command_velocity = [_TARGET_SPEED]

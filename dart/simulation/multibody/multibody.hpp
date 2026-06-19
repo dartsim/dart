@@ -88,6 +88,18 @@ struct JointSpec
   /// child link's center of mass is at the child link frame origin.
   Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
 
+  /// Optional parent endpoint anchor for World-owned point joints.
+  ///
+  /// The value is expressed in the parent endpoint frame. When one endpoint
+  /// anchor is provided, both endpoint anchors must be provided.
+  std::optional<Eigen::Vector3d> parentAnchor = std::nullopt;
+
+  /// Optional child endpoint anchor for World-owned point joints.
+  ///
+  /// The value is expressed in the child endpoint frame. When one endpoint
+  /// anchor is provided, both endpoint anchors must be provided.
+  std::optional<Eigen::Vector3d> childAnchor = std::nullopt;
+
   // Future: Add more joint-specific parameters.
   // double pitch;           // For Screw
 };

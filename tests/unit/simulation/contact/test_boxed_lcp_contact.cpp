@@ -74,6 +74,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -87,6 +88,22 @@ namespace sx = dart::simulation;
 namespace dvbd = dart::simulation::detail::deformable_vbd;
 
 namespace {
+
+sx::JointSpec makeJointSpec(
+    std::string_view name,
+    sx::JointType type,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    std::optional<Eigen::Vector3d> parentAnchor = std::nullopt,
+    std::optional<Eigen::Vector3d> childAnchor = std::nullopt)
+{
+  sx::JointSpec spec;
+  spec.name = std::string(name);
+  spec.type = type;
+  spec.axis = axis;
+  spec.parentAnchor = parentAnchor;
+  spec.childAnchor = childAnchor;
+  return spec;
+}
 
 //==============================================================================
 // Build a frictionless sphere-on-static-ground drop scene with the requested
@@ -6914,23 +6931,24 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyFixedJoint("base_to_link", base, link);
+  auto joint = world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
   EXPECT_EQ(joint.getName(), "base_to_link");
   EXPECT_EQ(joint.getType(), sx::JointType::Fixed);
   EXPECT_EQ(joint.getDOFCount(), 0u);
   EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
   EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
-  EXPECT_TRUE(world.hasRigidBodyFixedJoint("base_to_link"));
-  EXPECT_FALSE(world.hasRigidBodyFixedJoint("missing"));
-  EXPECT_EQ(world.getRigidBodyFixedJointCount(), 1u);
-  auto foundJoint = world.getRigidBodyFixedJoint("base_to_link");
+  EXPECT_TRUE(world.hasJoint("base_to_link"));
+  EXPECT_FALSE(world.hasJoint("missing"));
+  EXPECT_EQ(world.getJointCount(), 1u);
+  auto foundJoint = world.getJoint("base_to_link");
   ASSERT_TRUE(foundJoint.has_value());
   EXPECT_EQ(foundJoint->getParentRigidBody().getName(), "base");
   EXPECT_EQ(foundJoint->getChildRigidBody().getName(), "link");
-  EXPECT_FALSE(world.getRigidBodyFixedJoint("missing").has_value());
-  const auto fixedJoints = world.getRigidBodyFixedJoints();
-  ASSERT_EQ(fixedJoints.size(), 1u);
-  EXPECT_EQ(fixedJoints.front().getName(), "base_to_link");
+  EXPECT_FALSE(world.getJoint("missing").has_value());
+  const auto joints = world.getJoints();
+  ASSERT_EQ(joints.size(), 1u);
+  EXPECT_EQ(joints.front().getName(), "base_to_link");
   EXPECT_THROW(
       {
         auto parentLink = joint.getParentLink();
@@ -6944,7 +6962,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
       },
       sx::InvalidArgumentException);
   EXPECT_THROW(
-      world.addRigidBodyFixedJoint("base_to_link", base, link),
+      world.addJoint(
+          base, link, makeJointSpec("base_to_link", sx::JointType::Fixed)),
       sx::InvalidArgumentException);
 
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
@@ -6957,7 +6976,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_THROW(
-      world.addRigidBodyFixedJoint("late_joint", base, link),
+      world.addJoint(
+          base, link, makeJointSpec("late_joint", sx::JointType::Fixed)),
       sx::InvalidOperationException);
 }
 
@@ -6979,22 +6999,25 @@ TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyRevoluteJoint(
-      "base_to_link_hinge", base, link, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec(
+          "base_to_link_hinge",
+          sx::JointType::Revolute,
+          Eigen::Vector3d::UnitZ()));
   EXPECT_EQ(joint.getType(), sx::JointType::Revolute);
   EXPECT_EQ(joint.getDOFCount(), 1u);
   EXPECT_EQ(joint.getParentRigidBody().getName(), "base");
   EXPECT_EQ(joint.getChildRigidBody().getName(), "link");
-  EXPECT_TRUE(world.hasRigidBodyJoint("base_to_link_hinge"));
-  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_hinge"));
-  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
-  EXPECT_EQ(world.getRigidBodyFixedJointCount(), 0u);
-  auto foundJoint = world.getRigidBodyJoint("base_to_link_hinge");
+  EXPECT_TRUE(world.hasJoint("base_to_link_hinge"));
+  EXPECT_EQ(world.getJointCount(), 1u);
+  auto foundJoint = world.getJoint("base_to_link_hinge");
   ASSERT_TRUE(foundJoint.has_value());
   EXPECT_EQ(foundJoint->getType(), sx::JointType::Revolute);
-  const auto rigidBodyJoints = world.getRigidBodyJoints();
-  ASSERT_EQ(rigidBodyJoints.size(), 1u);
-  EXPECT_EQ(rigidBodyJoints.front().getName(), "base_to_link_hinge");
+  const auto joints = world.getJoints();
+  ASSERT_EQ(joints.size(), 1u);
+  EXPECT_EQ(joints.front().getName(), "base_to_link_hinge");
 
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
   driftedPose.translation() = Eigen::Vector3d(1.25, 0.25, 0.0);
@@ -7028,12 +7051,17 @@ TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
   linkOptions.position = Eigen::Vector3d::UnitZ();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyPrismaticJoint(
-      "base_to_link_slider", base, link, Eigen::Vector3d::UnitZ());
+  auto joint = world.addJoint(
+      base,
+      link,
+      makeJointSpec(
+          "base_to_link_slider",
+          sx::JointType::Prismatic,
+          Eigen::Vector3d::UnitZ()));
   EXPECT_EQ(joint.getType(), sx::JointType::Prismatic);
   EXPECT_EQ(joint.getDOFCount(), 1u);
-  EXPECT_EQ(world.getRigidBodyJointCount(), 1u);
-  EXPECT_FALSE(world.hasRigidBodyFixedJoint("base_to_link_slider"));
+  EXPECT_EQ(world.getJointCount(), 1u);
+  EXPECT_TRUE(world.hasJoint("base_to_link_slider"));
 
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
   driftedPose.translation() = Eigen::Vector3d(0.25, 0.0, 1.5);
@@ -7064,7 +7092,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   sx::RigidBodyOptions linkOptions;
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
-  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
 
   Eigen::Isometry3d designPose = Eigen::Isometry3d::Identity();
   designPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
@@ -7082,9 +7111,9 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   ASSERT_TRUE(restoredLink.has_value());
 
   auto& registry = dart::simulation::detail::registryOf(restored);
-  EXPECT_EQ(restored.getRigidBodyFixedJointCount(), 1u);
-  EXPECT_TRUE(restored.hasRigidBodyFixedJoint("base_to_link"));
-  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  EXPECT_EQ(restored.getJointCount(), 1u);
+  EXPECT_TRUE(restored.hasJoint("base_to_link"));
+  auto restoredJoint = restored.getJoint("base_to_link");
   ASSERT_TRUE(restoredJoint.has_value());
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(restoredJoint->getEntity());
@@ -7130,7 +7159,8 @@ TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
 
-  auto joint = world.addRigidBodyFixedJoint("base_to_link", base, link);
+  auto joint = world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
   joint.setBreakForce(7.5);
 
   auto& registry = dart::simulation::detail::registryOf(world);
@@ -7145,7 +7175,7 @@ TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
   sx::World restored;
   restored.loadBinary(data);
 
-  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  auto restoredJoint = restored.getJoint("base_to_link");
   ASSERT_TRUE(restoredJoint.has_value());
   EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 7.5);
   EXPECT_TRUE(restoredJoint->isBroken());
@@ -7172,7 +7202,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   sx::RigidBodyOptions linkOptions;
   linkOptions.position = Eigen::Vector3d::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
-  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
 
   world.enterSimulationMode();
 
@@ -7189,9 +7220,9 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   ASSERT_TRUE(restoredLink.has_value());
 
   auto& registry = dart::simulation::detail::registryOf(restored);
-  EXPECT_EQ(restored.getRigidBodyFixedJointCount(), 1u);
-  EXPECT_TRUE(restored.hasRigidBodyFixedJoint("base_to_link"));
-  auto restoredJoint = restored.getRigidBodyFixedJoint("base_to_link");
+  EXPECT_EQ(restored.getJointCount(), 1u);
+  EXPECT_TRUE(restored.hasJoint("base_to_link"));
+  auto restoredJoint = restored.getJoint("base_to_link");
   ASSERT_TRUE(restoredJoint.has_value());
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(restoredJoint->getEntity());
@@ -7245,7 +7276,8 @@ TEST(AvbdContact, PublicFixedJointProjectsWithDefaultContactOnFixedBody)
   ground.setCollisionShape(
       sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
 
-  (void)world.addRigidBodyFixedJoint("base_to_link", base, link);
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
   world.enterSimulationMode();
 
   auto& registry = dart::simulation::detail::registryOf(world);

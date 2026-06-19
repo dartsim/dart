@@ -155,10 +155,13 @@ def build() -> SceneSetup:
     joints = []
     for index, (parent, child) in enumerate(zip(links, links[1:])):
         joints.append(
-            world.add_rigid_body_fixed_joint(
-                f"avbd_demo2d_rod_fixed_joint_{index:02d}",
+            world.add_joint(
                 parent,
                 child,
+                                sx.JointSpec(
+                    name=f"avbd_demo2d_rod_fixed_joint_{index:02d}",
+                    type=sx.JointType.FIXED,
+                )
             )
         )
 

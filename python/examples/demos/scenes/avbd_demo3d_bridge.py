@@ -190,12 +190,15 @@ def build() -> SceneSetup:
             zip(parent_anchors, child_anchors)
         ):
             joints.append(
-                world.add_rigid_body_spherical_joint(
-                    f"avbd_demo3d_bridge_joint_{pair_index:02d}_{side_index}",
+                world.add_joint(
                     parent,
                     child,
-                    parent_anchor=tuple(parent_anchor),
-                    child_anchor=tuple(child_anchor),
+                                        sx.JointSpec(
+                        name=f"avbd_demo3d_bridge_joint_{pair_index:02d}_{side_index}",
+                        type=sx.JointType.SPHERICAL,
+                        parent_anchor=tuple(parent_anchor),
+                        child_anchor=tuple(child_anchor),
+                    )
                 )
             )
 

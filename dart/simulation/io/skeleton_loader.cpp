@@ -70,6 +70,7 @@
 #include <functional>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -508,6 +509,8 @@ JointSpec makeJointSpec(const dynamics::Joint& joint)
       .axis = mapJointAxis(joint),
       .axis2 = mapJointAxis2(joint),
       .transformFromParent = joint.getTransformFromChildBodyNode().inverse(),
+      .parentAnchor = std::nullopt,
+      .childAnchor = std::nullopt,
   };
 }
 

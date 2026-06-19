@@ -37,7 +37,7 @@ AI attribution). Net status by milestone:
 1e6)`; recovers the historical fixed κ=25 at unit mass, off is byte-identical.
 - **M5 obstacle friction — COMPLETE.** Capsule friction works (barrier-only → free
   tangential slide). Sphere/box friction unblocked by the opt-in **barrier-only
-  obstacle** mode (#2809): `RigidBody.setDeformableObstacleBarrierOnly` adds a
+  obstacle** mode (#2809): `DeformableObstaclePolicy::barrierOnly` maps to a
   `DeformableObstacleNoCcdTag` that `entt::exclude`s the obstacle from the
   surface-CCD collect view, so the clamped-log barrier alone prevents penetration
   while tangential sliding + friction survive (the CCD limiter no longer scales the
@@ -243,16 +243,16 @@ moving obstacle contact, IPC barrier-force assembly, projected Newton, or
 friction.
 
 The static rigid surface CCD sub-slice adds an explicit
-`RigidBody::setDeformableSurfaceCcdObstacle(true)` opt-in for static box
-collision shapes to become stationary surface obstacles for the deformable CCD
-line-search limiter. `DeformableDynamicsStage` collects stage-start box
-transforms into world-space 12-triangle snapshots with 12 physical box edges,
-then reuses the primitive point-triangle and edge-edge CCD reducer against
-point-only and surfaced deformables. The dartpy property
-`is_deformable_surface_ccd_obstacle` mirrors the C++ opt-in. It is still
-scaffolding: ordinary untagged boxes, non-static bodies, spheres, arbitrary
-meshes, moving obstacles, rigid collision response, barrier/contact forces,
-projected Newton, friction, and IPC parity are not implemented yet.
+`DeformableObstaclePolicy::surfaceObstacle` opt-in for static box collision
+shapes to become stationary surface obstacles for the deformable CCD line-search
+limiter. `DeformableDynamicsStage` collects stage-start box transforms into
+world-space 12-triangle snapshots with 12 physical box edges, then reuses the
+primitive point-triangle and edge-edge CCD reducer against point-only and
+surfaced deformables. The dartpy `RigidBody.deformable_obstacle_policy` property
+mirrors the C++ opt-in. It is still scaffolding: ordinary untagged boxes,
+non-static bodies, spheres, arbitrary meshes, moving obstacles, rigid collision
+response, barrier/contact forces, projected Newton, friction, and IPC parity are
+not implemented yet.
 
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,

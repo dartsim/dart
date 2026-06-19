@@ -107,6 +107,35 @@ def _floating_link_pair_world(sx, name: str):
     return world, parent, child
 
 
+_UNSET = object()
+
+
+def _set_constraint_projection_policy(
+    joint, *, start=_UNSET, linear=_UNSET, angular=_UNSET
+):
+    policy = joint.constraint_projection_policy
+    if start is not _UNSET:
+        policy.start_stiffness = start
+    if linear is not _UNSET:
+        policy.linear_stiffness = linear
+    if angular is not _UNSET:
+        policy.angular_stiffness = angular
+    joint.constraint_projection_policy = policy
+
+
+def _set_deformable_obstacle_policy(
+    body, *, ground_barrier=_UNSET, surface_obstacle=_UNSET, barrier_only=_UNSET
+):
+    policy = body.deformable_obstacle_policy
+    if ground_barrier is not _UNSET:
+        policy.ground_barrier = ground_barrier
+    if surface_obstacle is not _UNSET:
+        policy.surface_obstacle = surface_obstacle
+    if barrier_only is not _UNSET:
+        policy.barrier_only = barrier_only
+    body.deformable_obstacle_policy = policy
+
+
 def test_simulation_world_module_is_separate_from_legacy_simulation():
     sx = _simulation()
 
@@ -361,6 +390,8 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "WorldStepProfile",
         "WorldStepStageProfile",
         "DeactivationOptions",
+        "DeformableObstaclePolicy",
+        "JointConstraintProjectionPolicy",
         "AllocatorDebugDiagnostics",
         "MemoryManagerDebugDiagnostics",
         "WorldEcsStorageDiagnostics",
@@ -394,27 +425,23 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "shape_index_a",
         "local_point_a",
         "has_multibody",
-        "add_articulated_fixed_joint",
-        "add_articulated_revolute_joint",
-        "add_articulated_prismatic_joint",
-        "add_articulated_spherical_joint",
-        "get_articulated_joint",
-        "get_articulated_joints",
-        "has_articulated_joint",
-        "num_articulated_joints",
-        "add_rigid_body_revolute_joint",
-        "add_rigid_body_prismatic_joint",
-        "add_rigid_body_spherical_joint",
+        "add_joint",
+        "get_joint",
+        "has_joint",
+        "num_joints",
+        "joints",
+        "constraint_projection_policy",
+        "start_stiffness",
+        "linear_stiffness",
+        "angular_stiffness",
+        "deformable_obstacle_policy",
+        "ground_barrier",
+        "surface_obstacle",
+        "barrier_only",
         "add_rigid_body_distance_spring",
         "has_rigid_body_distance_spring",
         "get_rigid_body_distance_spring_parameters",
         "set_rigid_body_distance_spring_parameters",
-        "get_rigid_body_joint",
-        "get_rigid_body_joints",
-        "has_rigid_body_fixed_joint",
-        "has_rigid_body_joint",
-        "num_rigid_body_joints",
-        "num_rigid_body_fixed_joints",
         "memory_diagnostics",
         "deactivation_options",
         "deactivation_enabled",
@@ -464,6 +491,29 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "def hasRigidBodyFixedJoint(",
         "def getRigidBodyFixedJoints(",
         "def getRigidBodyFixedJointCount(",
+        "def add_articulated_fixed_joint(",
+        "def add_articulated_revolute_joint(",
+        "def add_articulated_prismatic_joint(",
+        "def add_articulated_spherical_joint(",
+        "def get_articulated_joint(",
+        "def has_articulated_joint(",
+        "def get_articulated_joints(",
+        "def add_rigid_body_fixed_joint(",
+        "def add_rigid_body_revolute_joint(",
+        "def add_rigid_body_prismatic_joint(",
+        "def add_rigid_body_spherical_joint(",
+        "def get_rigid_body_joint(",
+        "def has_rigid_body_joint(",
+        "def get_rigid_body_joints(",
+        "def get_rigid_body_fixed_joint(",
+        "def has_rigid_body_fixed_joint(",
+        "def get_rigid_body_fixed_joints(",
+        "def avbd_start_stiffness(",
+        "def avbd_linear_stiffness(",
+        "def avbd_angular_stiffness(",
+        "def is_deformable_surface_ccd_obstacle(",
+        "def is_deformable_obstacle_barrier_only(",
+        "def is_deformable_ground_barrier(",
         "def get_parent_rigid_body(",
         "def get_child_rigid_body(",
         "def has_multibody_count(",
@@ -488,22 +538,25 @@ def _stub_class_block(stub: str, class_name: str) -> str:
     return stub[start:end]
 
 
-def test_simulation_stub_places_rigid_surface_ccd_obstacle_on_rigid_body():
+def test_simulation_stub_places_deformable_obstacle_policy_on_rigid_body():
     sx = _simulation()
     repo_root = Path(__file__).resolve().parents[4]
     stub = (repo_root / "python" / "stubs" / "dartpy" / "simulation.pyi").read_text(
         encoding="utf-8"
     )
 
-    assert hasattr(sx.RigidBody, "is_deformable_surface_ccd_obstacle")
-    assert not hasattr(sx.Link, "is_deformable_surface_ccd_obstacle")
-    assert "is_deformable_surface_ccd_obstacle" in _stub_class_block(stub, "RigidBody")
-    assert "is_deformable_surface_ccd_obstacle" not in _stub_class_block(stub, "Link")
+    assert hasattr(sx.RigidBody, "deformable_obstacle_policy")
+    assert not hasattr(sx.Link, "deformable_obstacle_policy")
+    assert "deformable_obstacle_policy" in _stub_class_block(stub, "RigidBody")
+    assert "deformable_obstacle_policy" not in _stub_class_block(stub, "Link")
 
-    assert hasattr(sx.RigidBody, "is_deformable_ground_barrier")
-    assert not hasattr(sx.Link, "is_deformable_ground_barrier")
-    assert "is_deformable_ground_barrier" in _stub_class_block(stub, "RigidBody")
-    assert "is_deformable_ground_barrier" not in _stub_class_block(stub, "Link")
+    for old_member in (
+        "is_deformable_surface_ccd_obstacle",
+        "is_deformable_ground_barrier",
+        "is_deformable_obstacle_barrier_only",
+    ):
+        assert not hasattr(sx.RigidBody, old_member)
+        assert old_member not in _stub_class_block(stub, "RigidBody")
 
 
 def test_simulation_deactivation_options_and_sleep_state():
@@ -667,8 +720,13 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
         parent=base,
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
-    hinge = world.add_articulated_revolute_joint(
-        "clear_hinge", body, axis=(0.0, 0.0, 1.0)
+    hinge = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="clear_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     hinge.actuator_type = sx.ActuatorType.VELOCITY
     hinge_speed = 0.4
@@ -679,9 +737,9 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
     world.step()
     assert world.frame == 1
     assert world.time == pytest.approx(world.time_step)
-    assert world.num_articulated_joints == 1
-    assert world.has_articulated_joint("clear_hinge")
-    assert world.get_articulated_joint("clear_hinge").child_link == body
+    assert world.num_joints == 1
+    assert world.has_joint("clear_hinge")
+    assert world.get_joint("clear_hinge").child_link == body
 
     rotation = np.asarray(body.rotation, dtype=float)
     assert math.atan2(rotation[1, 0], rotation[0, 0]) == pytest.approx(
@@ -699,10 +757,10 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
     assert world.time == pytest.approx(0.0)
     assert world.time_step == pytest.approx(0.001)
     assert world.num_multibodies == 0
-    assert world.num_articulated_joints == 0
-    assert not world.has_articulated_joint("clear_hinge")
-    assert world.get_articulated_joint("clear_hinge") is None
-    assert len(world.get_articulated_joints()) == 0
+    assert world.num_joints == 0
+    assert not world.has_joint("clear_hinge")
+    assert world.get_joint("clear_hinge") is None
+    assert len(world.joints) == 0
 
     world.gravity = (0.0, 0.0, 0.0)
     world.time_step = 0.005
@@ -716,8 +774,13 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
         parent=rebuilt_base,
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
-    slider = world.add_articulated_prismatic_joint(
-        "clear_slider", rebuilt_body, axis=(1.0, 0.0, 0.0)
+    slider = world.add_joint(
+        rebuilt_body,
+                sx.JointSpec(
+            name="clear_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
     slider.actuator_type = sx.ActuatorType.VELOCITY
     slider_speed = 0.3
@@ -725,9 +788,9 @@ def test_simulation_world_clear_invalidates_articulated_joint_handles_from_pytho
     slider.set_effort_limits([-1000.0], [1000.0])
 
     assert slider.is_valid
-    assert world.num_articulated_joints == 1
-    assert world.has_articulated_joint("clear_slider")
-    assert world.get_articulated_joint("clear_slider").child_link == rebuilt_body
+    assert world.num_joints == 1
+    assert world.has_joint("clear_slider")
+    assert world.get_joint("clear_slider").child_link == rebuilt_body
 
     world.enter_simulation_mode()
     world.step()
@@ -746,7 +809,14 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     base.is_static = True
     link = world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
 
-    joint = world.add_rigid_body_fixed_joint("base_to_link", base, link)
+    joint = world.add_joint(
+        base,
+        link,
+                sx.JointSpec(
+            name="base_to_link",
+            type=sx.JointType.FIXED,
+        )
+    )
     assert joint.name == "base_to_link"
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
@@ -756,37 +826,37 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     assert joint.break_force == pytest.approx(12.5)
     joint.reset_breakage()
     assert not joint.is_broken
-    default_avbd_start_stiffness = joint.avbd_start_stiffness
-    assert default_avbd_start_stiffness > 0.0
-    assert math.isinf(joint.avbd_linear_stiffness)
-    assert math.isinf(joint.avbd_angular_stiffness)
-    joint.avbd_start_stiffness = 1.0
-    joint.avbd_linear_stiffness = 1000.0
-    joint.avbd_angular_stiffness = 100.0
-    assert joint.avbd_start_stiffness == pytest.approx(1.0)
-    assert joint.avbd_linear_stiffness == pytest.approx(1000.0)
-    assert joint.avbd_angular_stiffness == pytest.approx(100.0)
+    default_start_stiffness = joint.constraint_projection_policy.start_stiffness
+    assert default_start_stiffness > 0.0
+    assert math.isinf(joint.constraint_projection_policy.linear_stiffness)
+    assert math.isinf(joint.constraint_projection_policy.angular_stiffness)
+    joint.constraint_projection_policy.start_stiffness = 1.0
+    joint.constraint_projection_policy.linear_stiffness = 1000.0
+    joint.constraint_projection_policy.angular_stiffness = 100.0
+    assert joint.constraint_projection_policy.start_stiffness == pytest.approx(1.0)
+    assert joint.constraint_projection_policy.linear_stiffness == pytest.approx(1000.0)
+    assert joint.constraint_projection_policy.angular_stiffness == pytest.approx(100.0)
     with pytest.raises(Exception, match="finite and non-negative"):
         joint.break_force = -1.0
     with pytest.raises(Exception, match="finite and non-negative"):
         joint.break_force = math.inf
-    with pytest.raises(Exception, match="finite and non-negative"):
-        joint.avbd_start_stiffness = -1.0
     with pytest.raises(Exception, match="non-negative or infinity"):
-        joint.avbd_linear_stiffness = math.nan
+        _set_constraint_projection_policy(joint, start=-1.0)
     with pytest.raises(Exception, match="non-negative or infinity"):
-        joint.avbd_angular_stiffness = -1.0
-    joint.avbd_start_stiffness = default_avbd_start_stiffness
-    joint.avbd_linear_stiffness = math.inf
-    joint.avbd_angular_stiffness = math.inf
+        _set_constraint_projection_policy(joint, linear=math.nan)
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        _set_constraint_projection_policy(joint, angular=-1.0)
+    _set_constraint_projection_policy(joint, start=default_start_stiffness)
+    _set_constraint_projection_policy(joint, linear=math.inf)
+    _set_constraint_projection_policy(joint, angular=math.inf)
     assert joint.parent_rigid_body.name == "base"
     assert joint.child_rigid_body.name == "link"
-    assert world.has_rigid_body_fixed_joint("base_to_link")
-    assert not world.has_rigid_body_fixed_joint("missing")
-    assert world.num_rigid_body_fixed_joints == 1
-    assert world.get_rigid_body_fixed_joint("base_to_link").child_rigid_body == link
-    assert world.get_rigid_body_fixed_joint("missing") is None
-    fixed_joints = world.get_rigid_body_fixed_joints()
+    assert world.has_joint("base_to_link")
+    assert not world.has_joint("missing")
+    assert world.num_joints == 1
+    assert world.get_joint("base_to_link").child_rigid_body == link
+    assert world.get_joint("missing") is None
+    fixed_joints = world.joints
     assert len(fixed_joints) == 1
     assert fixed_joints[0].parent_rigid_body == base
     with pytest.raises(Exception, match="not a multibody Link"):
@@ -794,7 +864,14 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     with pytest.raises(Exception, match="not a multibody Link"):
         _ = joint.child_link
     with pytest.raises(Exception, match="already exists"):
-        world.add_rigid_body_fixed_joint("base_to_link", base, link)
+        world.add_joint(
+            base,
+            link,
+                        sx.JointSpec(
+                name="base_to_link",
+                type=sx.JointType.FIXED,
+            )
+        )
 
     drifted_pose = np.eye(4)
     drifted_pose[:3, 3] = (1.25, 0.0, 0.0)
@@ -806,7 +883,14 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
     assert float(link.linear_velocity[0]) < 0.0
     with pytest.raises(Exception, match="simulation mode"):
-        world.add_rigid_body_fixed_joint("late_joint", base, link)
+        world.add_joint(
+            base,
+            link,
+                        sx.JointSpec(
+                name="late_joint",
+                type=sx.JointType.FIXED,
+            )
+        )
 
 
 def test_simulation_world_rigid_body_one_dof_joints_project_supported_axes():
@@ -816,21 +900,25 @@ def test_simulation_world_rigid_body_one_dof_joints_project_supported_axes():
     hinge_base = hinge_world.add_rigid_body("base")
     hinge_base.is_static = True
     hinge_link = hinge_world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
-    hinge = hinge_world.add_rigid_body_revolute_joint(
-        "base_to_link_hinge", hinge_base, hinge_link, axis=(0.0, 0.0, 1.0)
+    hinge = hinge_world.add_joint(
+        hinge_base,
+        hinge_link,
+                sx.JointSpec(
+            name="base_to_link_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
     assert np.asarray(hinge.axis, dtype=float)[2] == pytest.approx(1.0)
-    assert hinge_world.has_rigid_body_joint("base_to_link_hinge")
-    assert not hinge_world.has_rigid_body_fixed_joint("base_to_link_hinge")
-    assert hinge_world.num_rigid_body_joints == 1
-    assert hinge_world.num_rigid_body_fixed_joints == 0
-    assert hinge_world.get_rigid_body_joint("base_to_link_hinge").type == (
+    assert hinge_world.has_joint("base_to_link_hinge")
+    assert hinge_world.num_joints == 1
+    assert hinge_world.get_joint("base_to_link_hinge").type == (
         sx.JointType.REVOLUTE
     )
-    assert hinge_world.get_rigid_body_joint("missing") is None
-    assert len(hinge_world.get_rigid_body_joints()) == 1
+    assert hinge_world.get_joint("missing") is None
+    assert len(hinge_world.joints) == 1
 
     drifted_hinge = np.eye(4)
     drifted_hinge[:3, 3] = (1.25, 0.25, 0.0)
@@ -844,8 +932,14 @@ def test_simulation_world_rigid_body_one_dof_joints_project_supported_axes():
     slider_base = slider_world.add_rigid_body("base")
     slider_base.is_static = True
     slider = slider_world.add_rigid_body("slider", position=(0.0, 0.0, 1.0))
-    joint = slider_world.add_rigid_body_prismatic_joint(
-        "base_to_slider", slider_base, slider, axis=(0.0, 0.0, 1.0)
+    joint = slider_world.add_joint(
+        slider_base,
+        slider,
+                sx.JointSpec(
+            name="base_to_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.num_dofs == 1
@@ -865,8 +959,14 @@ def test_simulation_world_rigid_body_prismatic_velocity_motor_steps_from_python(
     base = world.add_rigid_body("base")
     base.is_static = True
     slider = world.add_rigid_body("slider", position=(0.0, 0.0, 1.0))
-    joint = world.add_rigid_body_prismatic_joint(
-        "base_to_slider", base, slider, axis=(0.0, 0.0, 1.0)
+    joint = world.add_joint(
+        base,
+        slider,
+                sx.JointSpec(
+            name="base_to_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     joint.actuator_type = sx.ActuatorType.VELOCITY
     joint.command_velocity = [0.8]
@@ -895,14 +995,19 @@ def test_simulation_world_rigid_body_spherical_joint_projects_anchor_only():
     base.is_static = True
     link = world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
 
-    joint = world.add_rigid_body_spherical_joint("base_to_link_socket", base, link)
+    joint = world.add_joint(
+        base,
+        link,
+                sx.JointSpec(
+            name="base_to_link_socket",
+            type=sx.JointType.SPHERICAL,
+        )
+    )
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
-    assert world.has_rigid_body_joint("base_to_link_socket")
-    assert not world.has_rigid_body_fixed_joint("base_to_link_socket")
-    assert world.num_rigid_body_joints == 1
-    assert world.num_rigid_body_fixed_joints == 0
-    assert world.get_rigid_body_joint("base_to_link_socket").type == (
+    assert world.has_joint("base_to_link_socket")
+    assert world.num_joints == 1
+    assert world.get_joint("base_to_link_socket").type == (
         sx.JointType.SPHERICAL
     )
 
@@ -929,12 +1034,15 @@ def test_simulation_world_rigid_body_spherical_joint_projects_anchor_only():
     anchored_base = anchored_world.add_rigid_body("base")
     anchored_base.is_static = True
     anchored_link = anchored_world.add_rigid_body("link", position=(1.0, 0.0, 0.0))
-    anchored_world.add_rigid_body_spherical_joint(
-        "endpoint_socket",
+    anchored_world.add_joint(
         anchored_base,
         anchored_link,
-        parent_anchor=(0.5, 0.0, 0.0),
-        child_anchor=(-0.5, 0.0, 0.0),
+                sx.JointSpec(
+            name="endpoint_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=(0.5, 0.0, 0.0),
+            child_anchor=(-0.5, 0.0, 0.0),
+        )
     )
     drifted_endpoint = np.eye(4)
     drifted_endpoint[:3, 3] = (1.25, 0.25, 0.0)
@@ -1017,8 +1125,15 @@ def test_simulation_world_rigid_body_fixed_joint_list_keeps_world_alive():
         world = sx.World()
         base = world.add_rigid_body("base")
         link = world.add_rigid_body("link")
-        world.add_rigid_body_fixed_joint("base_to_link", base, link)
-        return world.get_rigid_body_fixed_joints()
+        world.add_joint(
+            base,
+            link,
+                        sx.JointSpec(
+                name="base_to_link",
+                type=sx.JointType.FIXED,
+            )
+        )
+        return world.joints
 
     fixed_joints = build_joints_from_temporary_world()
     gc.collect()
@@ -1044,11 +1159,23 @@ def test_simulation_world_articulated_joint_list_keeps_world_alive():
             parent=base,
             joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
         )
-        world.add_articulated_fixed_joint("base_hold", base, body)
-        world.add_articulated_revolute_joint(
-            "world_hinge", body, axis=(0.0, 1.0, 0.0)
+        world.add_joint(
+            base,
+            body,
+                        sx.JointSpec(
+                name="base_hold",
+                type=sx.JointType.FIXED,
+            )
         )
-        return world.get_articulated_joints()
+        world.add_joint(
+            body,
+                        sx.JointSpec(
+                name="world_hinge",
+                type=sx.JointType.REVOLUTE,
+                axis=(0.0, 1.0, 0.0),
+            )
+        )
+        return world.joints
 
     joints = build_joints_from_temporary_world()
     gc.collect()
@@ -1077,162 +1204,232 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
 
-    fixed = world.add_articulated_fixed_joint("base_hold", base, body)
+    fixed = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="base_hold",
+            type=sx.JointType.FIXED,
+        )
+    )
     assert fixed.type == sx.JointType.FIXED
     assert fixed.num_dofs == 0
     assert fixed.parent_link == base
     assert fixed.child_link == body
-    assert math.isinf(fixed.avbd_start_stiffness)
-    assert math.isinf(fixed.avbd_linear_stiffness)
-    assert math.isinf(fixed.avbd_angular_stiffness)
-    fixed.avbd_start_stiffness = 2.0
-    fixed.avbd_linear_stiffness = 200.0
-    fixed.avbd_angular_stiffness = 300.0
-    assert fixed.avbd_start_stiffness == pytest.approx(2.0)
-    assert fixed.avbd_linear_stiffness == pytest.approx(200.0)
-    assert fixed.avbd_angular_stiffness == pytest.approx(300.0)
-    assert world.has_articulated_joint("base_hold")
-    assert world.get_articulated_joint("base_hold").child_link == body
-    assert world.get_articulated_joint("missing") is None
-    assert world.get_rigid_body_joint("base_hold") is None
+    assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
+    assert math.isinf(fixed.constraint_projection_policy.linear_stiffness)
+    assert math.isinf(fixed.constraint_projection_policy.angular_stiffness)
+    fixed.constraint_projection_policy.linear_stiffness = 200.0
+    assert math.isinf(fixed.constraint_projection_policy.start_stiffness)
+    assert fixed.constraint_projection_policy.linear_stiffness == pytest.approx(200.0)
+    _set_constraint_projection_policy(fixed, start=2.0)
+    _set_constraint_projection_policy(fixed, angular=300.0)
+    assert fixed.constraint_projection_policy.start_stiffness == pytest.approx(2.0)
+    assert fixed.constraint_projection_policy.linear_stiffness == pytest.approx(200.0)
+    assert fixed.constraint_projection_policy.angular_stiffness == pytest.approx(300.0)
+    assert world.has_joint("base_hold")
+    assert world.get_joint("base_hold").child_link == body
+    assert world.get_joint("missing") is None
 
-    hinge = world.add_articulated_revolute_joint(
-        "base_hinge", base, body, axis=(0.0, 0.0, 2.0)
+    hinge = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="base_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 2.0),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
     assert np.asarray(hinge.axis, dtype=float)[2] == pytest.approx(1.0)
-    assert math.isinf(hinge.avbd_start_stiffness)
-    hinge.avbd_start_stiffness = 3.0
-    hinge.avbd_linear_stiffness = 400.0
-    hinge.avbd_angular_stiffness = 500.0
-    assert hinge.avbd_start_stiffness == pytest.approx(3.0)
-    assert hinge.avbd_linear_stiffness == pytest.approx(400.0)
-    assert hinge.avbd_angular_stiffness == pytest.approx(500.0)
+    assert math.isinf(hinge.constraint_projection_policy.start_stiffness)
+    _set_constraint_projection_policy(hinge, start=3.0)
+    _set_constraint_projection_policy(hinge, linear=400.0)
+    _set_constraint_projection_policy(hinge, angular=500.0)
+    assert hinge.constraint_projection_policy.start_stiffness == pytest.approx(3.0)
+    assert hinge.constraint_projection_policy.linear_stiffness == pytest.approx(400.0)
+    assert hinge.constraint_projection_policy.angular_stiffness == pytest.approx(500.0)
 
-    slider = world.add_articulated_prismatic_joint(
-        "base_slider", base, body, axis=(1.0, 0.0, 0.0)
+    slider = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="base_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
-    assert math.isinf(slider.avbd_start_stiffness)
-    slider.avbd_start_stiffness = 4.0
-    slider.avbd_linear_stiffness = 600.0
-    slider.avbd_angular_stiffness = 700.0
-    assert slider.avbd_start_stiffness == pytest.approx(4.0)
-    assert slider.avbd_linear_stiffness == pytest.approx(600.0)
-    assert slider.avbd_angular_stiffness == pytest.approx(700.0)
+    assert math.isinf(slider.constraint_projection_policy.start_stiffness)
+    _set_constraint_projection_policy(slider, start=4.0)
+    _set_constraint_projection_policy(slider, linear=600.0)
+    _set_constraint_projection_policy(slider, angular=700.0)
+    assert slider.constraint_projection_policy.start_stiffness == pytest.approx(4.0)
+    assert slider.constraint_projection_policy.linear_stiffness == pytest.approx(600.0)
+    assert slider.constraint_projection_policy.angular_stiffness == pytest.approx(700.0)
 
-    socket = world.add_articulated_spherical_joint("base_socket", base, body)
-    assert socket.type == sx.JointType.SPHERICAL
-    assert socket.num_dofs == 3
-    assert math.isinf(socket.avbd_start_stiffness)
-    socket.avbd_start_stiffness = 5.0
-    socket.avbd_linear_stiffness = 800.0
-    socket.avbd_angular_stiffness = 900.0
-    assert socket.avbd_start_stiffness == pytest.approx(5.0)
-    assert socket.avbd_linear_stiffness == pytest.approx(800.0)
-    assert socket.avbd_angular_stiffness == pytest.approx(900.0)
-
-    offset_socket = world.add_articulated_spherical_joint(
-        "offset_socket",
+    socket = world.add_joint(
         base,
         body,
-        parent_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="base_socket",
+            type=sx.JointType.SPHERICAL,
+        )
+    )
+    assert socket.type == sx.JointType.SPHERICAL
+    assert socket.num_dofs == 3
+    assert math.isinf(socket.constraint_projection_policy.start_stiffness)
+    _set_constraint_projection_policy(socket, start=5.0)
+    _set_constraint_projection_policy(socket, linear=800.0)
+    _set_constraint_projection_policy(socket, angular=900.0)
+    assert socket.constraint_projection_policy.start_stiffness == pytest.approx(5.0)
+    assert socket.constraint_projection_policy.linear_stiffness == pytest.approx(800.0)
+    assert socket.constraint_projection_policy.angular_stiffness == pytest.approx(900.0)
+
+    offset_socket = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="offset_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert offset_socket.type == sx.JointType.SPHERICAL
     assert offset_socket.num_dofs == 3
 
-    offset_hinge = world.add_articulated_revolute_joint(
-        "offset_hinge",
+    offset_hinge = world.add_joint(
         base,
         body,
-        axis=(0.0, 0.0, 2.0),
-        parent_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="offset_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 2.0),
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert offset_hinge.type == sx.JointType.REVOLUTE
 
-    offset_slider = world.add_articulated_prismatic_joint(
-        "offset_slider",
+    offset_slider = world.add_joint(
         base,
         body,
-        axis=(1.0, 0.0, 0.0),
-        parent_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="offset_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert offset_slider.type == sx.JointType.PRISMATIC
 
-    world_hold = world.add_articulated_fixed_joint("world_hold", body)
+    world_hold = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="world_hold",
+            type=sx.JointType.FIXED,
+        )
+    )
     assert world_hold.type == sx.JointType.FIXED
     assert world_hold.child_link == body
-    assert math.isinf(world_hold.avbd_start_stiffness)
-    world_hold.avbd_start_stiffness = 6.0
-    world_hold.avbd_linear_stiffness = 1000.0
-    world_hold.avbd_angular_stiffness = 1100.0
-    assert world_hold.avbd_start_stiffness == pytest.approx(6.0)
-    assert world_hold.avbd_linear_stiffness == pytest.approx(1000.0)
-    assert world_hold.avbd_angular_stiffness == pytest.approx(1100.0)
+    assert math.isinf(world_hold.constraint_projection_policy.start_stiffness)
+    _set_constraint_projection_policy(world_hold, start=6.0)
+    _set_constraint_projection_policy(world_hold, linear=1000.0)
+    _set_constraint_projection_policy(world_hold, angular=1100.0)
+    assert world_hold.constraint_projection_policy.start_stiffness == pytest.approx(6.0)
+    assert world_hold.constraint_projection_policy.linear_stiffness == pytest.approx(1000.0)
+    assert world_hold.constraint_projection_policy.angular_stiffness == pytest.approx(1100.0)
     with pytest.raises(Exception, match="parent endpoint"):
         _ = world_hold.parent_link
 
-    world_offset = world.add_articulated_fixed_joint(
-        "world_offset",
+    world_offset = world.add_joint(
         body,
-        world_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="world_offset",
+            type=sx.JointType.FIXED,
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert world_offset.type == sx.JointType.FIXED
 
-    world_hinge = world.add_articulated_revolute_joint(
-        "world_hinge", body, axis=(0.0, 0.0, 2.0)
+    world_hinge = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 2.0),
+        )
     )
     assert world_hinge.type == sx.JointType.REVOLUTE
     assert world_hinge.num_dofs == 1
     assert np.asarray(world_hinge.axis, dtype=float)[2] == pytest.approx(1.0)
 
-    world_slider = world.add_articulated_prismatic_joint(
-        "world_slider", body, axis=(0.0, 1.0, 0.0)
+    world_slider = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="world_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
     assert world_slider.type == sx.JointType.PRISMATIC
     assert world_slider.num_dofs == 1
 
-    world_offset_hinge = world.add_articulated_revolute_joint(
-        "world_offset_hinge",
+    world_offset_hinge = world.add_joint(
         body,
-        axis=(0.0, 0.0, 2.0),
-        world_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="world_offset_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 2.0),
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert world_offset_hinge.type == sx.JointType.REVOLUTE
 
-    world_offset_slider = world.add_articulated_prismatic_joint(
-        "world_offset_slider",
+    world_offset_slider = world.add_joint(
         body,
-        axis=(0.0, 1.0, 0.0),
-        world_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="world_offset_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(0.0, 1.0, 0.0),
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert world_offset_slider.type == sx.JointType.PRISMATIC
 
-    world_socket = world.add_articulated_spherical_joint("world_socket", body)
+    world_socket = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="world_socket",
+            type=sx.JointType.SPHERICAL,
+        )
+    )
     assert world_socket.type == sx.JointType.SPHERICAL
     assert world_socket.num_dofs == 3
     with pytest.raises(Exception, match="parent endpoint"):
         _ = world_socket.parent_link
 
-    world_offset_socket = world.add_articulated_spherical_joint(
-        "world_offset_socket",
+    world_offset_socket = world.add_joint(
         body,
-        world_anchor=(0.2, 0.0, 0.0),
-        child_anchor=(-0.1, 0.0, 0.0),
+                sx.JointSpec(
+            name="world_offset_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=(0.2, 0.0, 0.0),
+            child_anchor=(-0.1, 0.0, 0.0),
+        )
     )
     assert world_offset_socket.type == sx.JointType.SPHERICAL
     assert world_offset_socket.num_dofs == 3
 
-    assert world.num_articulated_joints == 15
-    assert len(world.get_articulated_joints()) == 15
+    assert world.num_joints == 15
+    assert len(world.joints) == 15
 
     other_arm = world.add_multibody("other_arm")
     other_base = other_arm.add_link("other_base")
@@ -1249,48 +1446,99 @@ def test_simulation_world_articulated_point_joint_facade_exposes_link_endpoints(
     foreign_base = foreign_arm.add_link("foreign_base")
 
     with pytest.raises(Exception, match="already exists"):
-        world.add_articulated_fixed_joint("base_hold", base, body)
+        world.add_joint(
+            base,
+            body,
+                        sx.JointSpec(
+                name="base_hold",
+                type=sx.JointType.FIXED,
+            )
+        )
     with pytest.raises(Exception, match="distinct"):
-        world.add_articulated_fixed_joint("same_link", base, base)
+        world.add_joint(
+            base,
+            base,
+                        sx.JointSpec(
+                name="same_link",
+                type=sx.JointType.FIXED,
+            )
+        )
     with pytest.raises(Exception, match="same multibody"):
-        world.add_articulated_revolute_joint(
-            "cross_multibody", base, other_body, axis=(0.0, 0.0, 1.0)
+        world.add_joint(
+            base,
+            other_body,
+                        sx.JointSpec(
+                name="cross_multibody",
+                type=sx.JointType.REVOLUTE,
+                axis=(0.0, 0.0, 1.0),
+            )
         )
     with pytest.raises(Exception, match="this World"):
-        world.add_articulated_prismatic_joint(
-            "cross_world", base, foreign_base, axis=(1.0, 0.0, 0.0)
+        world.add_joint(
+            base,
+            foreign_base,
+                        sx.JointSpec(
+                name="cross_world",
+                type=sx.JointType.PRISMATIC,
+                axis=(1.0, 0.0, 0.0),
+            )
         )
     with pytest.raises(Exception, match="this World"):
-        world.add_articulated_spherical_joint("world_cross_world", foreign_base)
-    with pytest.raises(Exception, match="finite and non-zero"):
-        world.add_articulated_revolute_joint(
-            "bad_axis", base, body, axis=(0.0, 0.0, 0.0)
+        world.add_joint(
+            foreign_base,
+                        sx.JointSpec(
+                name="world_cross_world",
+                type=sx.JointType.SPHERICAL,
+            )
+        )
+    with pytest.raises(Exception, match="JointSpec.axis must be non-zero"):
+        world.add_joint(
+            base,
+            body,
+                        sx.JointSpec(
+                name="bad_axis",
+                type=sx.JointType.REVOLUTE,
+                axis=(0.0, 0.0, 0.0),
+            )
         )
     with pytest.raises(Exception, match="both endpoints"):
-        world.add_articulated_fixed_joint(
-            "missing_anchor",
+        world.add_joint(
             base,
             body,
-            parent_anchor=(0.0, 0.0, 0.0),
+                        sx.JointSpec(
+                name="missing_anchor",
+                type=sx.JointType.FIXED,
+                parent_anchor=(0.0, 0.0, 0.0),
+            )
         )
     with pytest.raises(Exception, match="anchors must be finite"):
-        world.add_articulated_fixed_joint(
-            "bad_anchor",
+        world.add_joint(
             base,
             body,
-            parent_anchor=(math.nan, 0.0, 0.0),
-            child_anchor=(0.0, 0.0, 0.0),
+                        sx.JointSpec(
+                name="bad_anchor",
+                type=sx.JointType.FIXED,
+                parent_anchor=(math.nan, 0.0, 0.0),
+                child_anchor=(0.0, 0.0, 0.0),
+            )
         )
-    with pytest.raises(Exception, match="finite and non-negative"):
-        fixed.avbd_start_stiffness = math.inf
     with pytest.raises(Exception, match="non-negative or infinity"):
-        hinge.avbd_linear_stiffness = math.nan
+        _set_constraint_projection_policy(fixed, start=math.nan)
     with pytest.raises(Exception, match="non-negative or infinity"):
-        slider.avbd_angular_stiffness = -1.0
+        _set_constraint_projection_policy(hinge, linear=math.nan)
+    with pytest.raises(Exception, match="non-negative or infinity"):
+        _set_constraint_projection_policy(slider, angular=-1.0)
 
     world.enter_simulation_mode()
     with pytest.raises(Exception, match="simulation mode"):
-        world.add_articulated_fixed_joint("late_joint", base, body)
+        world.add_joint(
+            base,
+            body,
+                        sx.JointSpec(
+                name="late_joint",
+                type=sx.JointType.FIXED,
+            )
+        )
 
 
 def test_simulation_world_articulated_point_joints_generate_unique_names():
@@ -1308,23 +1556,48 @@ def test_simulation_world_articulated_point_joints_generate_unique_names():
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
 
-    explicit_joint = world.add_articulated_fixed_joint("joint_001", base, body)
-    generated_fixed = world.add_articulated_fixed_joint("", base, body)
-    generated_world_hinge = world.add_articulated_revolute_joint(
-        "", body, axis=(0.0, 1.0, 0.0)
+    explicit_joint = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="joint_001",
+            type=sx.JointType.FIXED,
+        )
     )
-    generated_slider = world.add_articulated_prismatic_joint(
-        "", base, body, axis=(1.0, 0.0, 0.0)
+    generated_fixed = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.FIXED,
+        )
+    )
+    generated_world_hinge = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
+    )
+    generated_slider = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
 
     assert explicit_joint.name == "joint_001"
     assert generated_fixed.name == "joint_002"
     assert generated_world_hinge.name == "joint_003"
     assert generated_slider.name == "joint_004"
-    assert world.num_articulated_joints == 4
+    assert world.num_joints == 4
 
     joints_by_name = {
-        joint.name: joint.type for joint in world.get_articulated_joints()
+        joint.name: joint.type for joint in world.joints
     }
     assert joints_by_name == {
         "joint_001": sx.JointType.FIXED,
@@ -1332,11 +1605,18 @@ def test_simulation_world_articulated_point_joints_generate_unique_names():
         "joint_003": sx.JointType.REVOLUTE,
         "joint_004": sx.JointType.PRISMATIC,
     }
-    assert world.get_articulated_joint("joint_002").child_link == body
-    assert world.has_articulated_joint("joint_003")
-    assert world.get_articulated_joint("joint_005") is None
+    assert world.get_joint("joint_002").child_link == body
+    assert world.has_joint("joint_003")
+    assert world.get_joint("joint_005") is None
     with pytest.raises(Exception, match="already exists"):
-        world.add_articulated_spherical_joint("joint_004", base, body)
+        world.add_joint(
+            base,
+            body,
+                        sx.JointSpec(
+                name="joint_004",
+                type=sx.JointType.SPHERICAL,
+            )
+        )
 
 
 def test_simulation_world_articulated_generated_names_resume_after_binary_roundtrip(
@@ -1356,9 +1636,21 @@ def test_simulation_world_articulated_generated_names_resume_after_binary_roundt
         joint=sx.JointSpec(name="tree", type=sx.JointType.FLOATING),
     )
 
-    explicit_joint = world.add_articulated_fixed_joint("joint_001", base, body)
-    generated_joint = world.add_articulated_revolute_joint(
-        "", body, axis=(0.0, 1.0, 0.0)
+    explicit_joint = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="joint_001",
+            type=sx.JointType.FIXED,
+        )
+    )
+    generated_joint = world.add_joint(
+        body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
     assert explicit_joint.name == "joint_001"
     assert generated_joint.name == "joint_002"
@@ -1374,15 +1666,21 @@ def test_simulation_world_articulated_generated_names_resume_after_binary_roundt
     restored_body = restored_arm.get_link("body")
     assert restored_base is not None
     assert restored_body is not None
-    assert restored_world.has_articulated_joint("joint_001")
-    assert restored_world.has_articulated_joint("joint_002")
-    assert restored_world.num_articulated_joints == 2
+    assert restored_world.has_joint("joint_001")
+    assert restored_world.has_joint("joint_002")
+    assert restored_world.num_joints == 2
 
-    generated_after_load = restored_world.add_articulated_prismatic_joint(
-        "", restored_base, restored_body, axis=(1.0, 0.0, 0.0)
+    generated_after_load = restored_world.add_joint(
+        restored_base,
+        restored_body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
     assert generated_after_load.name == "joint_004"
-    assert restored_world.num_articulated_joints == 3
+    assert restored_world.num_joints == 3
 
 
 def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
@@ -1415,59 +1713,101 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
     world_slider_body = add_body("world_slider_body")
     world_socket_body = add_body("world_socket_body")
 
-    fixed = world.add_articulated_fixed_joint("stiff_fixed", base, fixed_body)
-    fixed.avbd_start_stiffness = 3.0
-    fixed.avbd_linear_stiffness = 234.0
-    fixed.avbd_angular_stiffness = 567.0
-
-    hinge = world.add_articulated_revolute_joint(
-        "stiff_hinge", base, hinge_body, axis=(0.0, 1.0, 0.0)
+    fixed = world.add_joint(
+        base,
+        fixed_body,
+                sx.JointSpec(
+            name="stiff_fixed",
+            type=sx.JointType.FIXED,
+        )
     )
-    hinge.avbd_start_stiffness = 4.0
-    hinge.avbd_linear_stiffness = 345.0
-    hinge.avbd_angular_stiffness = 678.0
+    _set_constraint_projection_policy(fixed, start=3.0)
+    _set_constraint_projection_policy(fixed, linear=234.0)
+    _set_constraint_projection_policy(fixed, angular=567.0)
 
-    slider = world.add_articulated_prismatic_joint(
-        "stiff_slider", base, slider_body, axis=(1.0, 0.0, 0.0)
+    hinge = world.add_joint(
+        base,
+        hinge_body,
+                sx.JointSpec(
+            name="stiff_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
-    slider.avbd_start_stiffness = 5.0
-    slider.avbd_linear_stiffness = 456.0
-    slider.avbd_angular_stiffness = 789.0
+    _set_constraint_projection_policy(hinge, start=4.0)
+    _set_constraint_projection_policy(hinge, linear=345.0)
+    _set_constraint_projection_policy(hinge, angular=678.0)
 
-    socket = world.add_articulated_spherical_joint(
-        "stiff_socket", base, socket_body
+    slider = world.add_joint(
+        base,
+        slider_body,
+                sx.JointSpec(
+            name="stiff_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
-    socket.avbd_start_stiffness = 6.0
-    socket.avbd_linear_stiffness = 567.0
-    socket.avbd_angular_stiffness = 890.0
+    _set_constraint_projection_policy(slider, start=5.0)
+    _set_constraint_projection_policy(slider, linear=456.0)
+    _set_constraint_projection_policy(slider, angular=789.0)
 
-    world_fixed = world.add_articulated_fixed_joint(
-        "stiff_world_fixed", world_fixed_body
+    socket = world.add_joint(
+        base,
+        socket_body,
+                sx.JointSpec(
+            name="stiff_socket",
+            type=sx.JointType.SPHERICAL,
+        )
     )
-    world_fixed.avbd_start_stiffness = 7.0
-    world_fixed.avbd_linear_stiffness = 678.0
-    world_fixed.avbd_angular_stiffness = 901.0
+    _set_constraint_projection_policy(socket, start=6.0)
+    _set_constraint_projection_policy(socket, linear=567.0)
+    _set_constraint_projection_policy(socket, angular=890.0)
 
-    world_hinge = world.add_articulated_revolute_joint(
-        "stiff_world_hinge", world_hinge_body, axis=(0.0, 1.0, 0.0)
+    world_fixed = world.add_joint(
+        world_fixed_body,
+                sx.JointSpec(
+            name="stiff_world_fixed",
+            type=sx.JointType.FIXED,
+        )
     )
-    world_hinge.avbd_start_stiffness = 8.0
-    world_hinge.avbd_linear_stiffness = 789.0
-    world_hinge.avbd_angular_stiffness = 1012.0
+    _set_constraint_projection_policy(world_fixed, start=7.0)
+    _set_constraint_projection_policy(world_fixed, linear=678.0)
+    _set_constraint_projection_policy(world_fixed, angular=901.0)
 
-    world_slider = world.add_articulated_prismatic_joint(
-        "stiff_world_slider", world_slider_body, axis=(1.0, 0.0, 0.0)
+    world_hinge = world.add_joint(
+        world_hinge_body,
+                sx.JointSpec(
+            name="stiff_world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+        )
     )
-    world_slider.avbd_start_stiffness = 9.0
-    world_slider.avbd_linear_stiffness = 890.0
-    world_slider.avbd_angular_stiffness = 1123.0
+    _set_constraint_projection_policy(world_hinge, start=8.0)
+    _set_constraint_projection_policy(world_hinge, linear=789.0)
+    _set_constraint_projection_policy(world_hinge, angular=1012.0)
 
-    world_socket = world.add_articulated_spherical_joint(
-        "stiff_world_socket", world_socket_body
+    world_slider = world.add_joint(
+        world_slider_body,
+                sx.JointSpec(
+            name="stiff_world_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        )
     )
-    world_socket.avbd_start_stiffness = 10.0
-    world_socket.avbd_linear_stiffness = 901.0
-    world_socket.avbd_angular_stiffness = 1234.0
+    _set_constraint_projection_policy(world_slider, start=9.0)
+    _set_constraint_projection_policy(world_slider, linear=890.0)
+    _set_constraint_projection_policy(world_slider, angular=1123.0)
+
+    world_socket = world.add_joint(
+        world_socket_body,
+                sx.JointSpec(
+            name="stiff_world_socket",
+            type=sx.JointType.SPHERICAL,
+        )
+    )
+    _set_constraint_projection_policy(world_socket, start=10.0)
+    _set_constraint_projection_policy(world_socket, linear=901.0)
+    _set_constraint_projection_policy(world_socket, angular=1234.0)
 
     binary_path = tmp_path / "articulated_avbd_stiffness.bin"
     world.save_binary(binary_path)
@@ -1491,13 +1831,13 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
         "stiff_world_socket": (sx.JointType.SPHERICAL, 3, 10.0, 901.0, 1234.0),
     }
     for name, (joint_type, num_dofs, start, linear, angular) in expected.items():
-        restored = restored_world.get_articulated_joint(name)
+        restored = restored_world.get_joint(name)
         assert restored is not None
         assert restored.type == joint_type
         assert restored.num_dofs == num_dofs
-        assert restored.avbd_start_stiffness == pytest.approx(start)
-        assert restored.avbd_linear_stiffness == pytest.approx(linear)
-        assert restored.avbd_angular_stiffness == pytest.approx(angular)
+        assert restored.constraint_projection_policy.start_stiffness == pytest.approx(start)
+        assert restored.constraint_projection_policy.linear_stiffness == pytest.approx(linear)
+        assert restored.constraint_projection_policy.angular_stiffness == pytest.approx(angular)
 
     restored_updates = {
         "stiff_fixed": (432.0, 765.0),
@@ -1510,19 +1850,19 @@ def test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python(
         "stiff_world_socket": (1209.0, 1542.0),
     }
     for name, (linear, angular) in restored_updates.items():
-        restored = restored_world.get_articulated_joint(name)
+        restored = restored_world.get_joint(name)
         assert restored is not None
-        restored.avbd_linear_stiffness = linear
-        restored.avbd_angular_stiffness = angular
+        _set_constraint_projection_policy(restored, linear=linear)
+        _set_constraint_projection_policy(restored, angular=angular)
 
     restored_world.enter_simulation_mode()
     for name, (_, _, start, _, _) in expected.items():
         linear, angular = restored_updates[name]
-        restored = restored_world.get_articulated_joint(name)
+        restored = restored_world.get_joint(name)
         assert restored is not None
-        assert restored.avbd_start_stiffness == pytest.approx(start)
-        assert restored.avbd_linear_stiffness == pytest.approx(linear)
-        assert restored.avbd_angular_stiffness == pytest.approx(angular)
+        assert restored.constraint_projection_policy.start_stiffness == pytest.approx(start)
+        assert restored.constraint_projection_policy.linear_stiffness == pytest.approx(linear)
+        assert restored.constraint_projection_policy.angular_stiffness == pytest.approx(angular)
 
 
 def test_simulation_world_clear_resets_articulated_generated_names():
@@ -1540,16 +1880,23 @@ def test_simulation_world_clear_resets_articulated_generated_names():
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
 
-    first_generated = world.add_articulated_fixed_joint("", base, body)
+    first_generated = world.add_joint(
+        base,
+        body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.FIXED,
+        )
+    )
     assert first_generated.name == "joint_001"
-    assert world.num_articulated_joints == 1
+    assert world.num_joints == 1
     assert base.is_valid
     assert body.is_valid
     assert first_generated.is_valid
 
     world.clear()
-    assert world.num_articulated_joints == 0
-    assert not world.has_articulated_joint("joint_001")
+    assert world.num_joints == 0
+    assert not world.has_joint("joint_001")
     assert not base.is_valid
     assert not body.is_valid
     assert not first_generated.is_valid
@@ -1562,12 +1909,17 @@ def test_simulation_world_clear_resets_articulated_generated_names():
         joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
 
-    regenerated = world.add_articulated_revolute_joint(
-        "", rebuilt_body, axis=(0.0, 0.0, 1.0)
+    regenerated = world.add_joint(
+        rebuilt_body,
+                sx.JointSpec(
+            name="",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        )
     )
     assert regenerated.name == "joint_001"
     assert regenerated.type == sx.JointType.REVOLUTE
-    assert world.num_articulated_joints == 1
+    assert world.num_joints == 1
 
 
 def test_simulation_world_articulated_motor_breakage_steps_from_python():
@@ -1582,13 +1934,16 @@ def test_simulation_world_articulated_motor_breakage_steps_from_python():
         np.asarray(hinge_body.translation, dtype=float)
         + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
     )
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "breakable_hinge",
+    hinge = hinge_world.add_joint(
         hinge_base,
         hinge_body,
-        axis=(0.0, 0.0, 1.0),
-        parent_anchor=hinge_parent_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="breakable_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+            parent_anchor=hinge_parent_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -1635,12 +1990,15 @@ def test_simulation_world_articulated_motor_breakage_steps_from_python():
         np.asarray(slider_body.translation, dtype=float)
         + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
     )
-    slider = slider_world.add_articulated_prismatic_joint(
-        "world_breakable_slider",
+    slider = slider_world.add_joint(
         slider_body,
-        axis=slider_axis,
-        world_anchor=slider_world_anchor.tolist(),
-        child_anchor=slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="world_breakable_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis,
+            parent_anchor=slider_world_anchor.tolist(),
+            child_anchor=slider_child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -1699,13 +2057,16 @@ def test_simulation_world_articulated_motor_breakage_reset_reengages_from_python
         np.asarray(hinge_body.translation, dtype=float)
         + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
     )
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "resettable_hinge",
+    hinge = hinge_world.add_joint(
         hinge_base,
         hinge_body,
-        axis=(0.0, 0.0, 1.0),
-        parent_anchor=hinge_parent_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+            parent_anchor=hinge_parent_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -1789,12 +2150,15 @@ def test_simulation_world_articulated_motor_breakage_reset_reengages_from_python
         np.asarray(slider_body.translation, dtype=float)
         + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
     )
-    slider = slider_world.add_articulated_prismatic_joint(
-        "resettable_world_slider",
+    slider = slider_world.add_joint(
         slider_body,
-        axis=slider_axis,
-        world_anchor=slider_world_anchor.tolist(),
-        child_anchor=slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_world_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis,
+            parent_anchor=slider_world_anchor.tolist(),
+            child_anchor=slider_child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -1892,13 +2256,16 @@ def test_simulation_world_articulated_complementary_motor_breakage_reset_from_py
         np.asarray(slider_body.translation, dtype=float)
         + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
     )
-    slider = slider_world.add_articulated_prismatic_joint(
-        "resettable_same_slider",
+    slider = slider_world.add_joint(
         slider_base,
         slider_body,
-        axis=slider_axis,
-        parent_anchor=slider_parent_anchor.tolist(),
-        child_anchor=slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_same_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis,
+            parent_anchor=slider_parent_anchor.tolist(),
+            child_anchor=slider_child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -1983,12 +2350,15 @@ def test_simulation_world_articulated_complementary_motor_breakage_reset_from_py
         np.asarray(hinge_body.translation, dtype=float)
         + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
     )
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "resettable_world_hinge",
+    hinge = hinge_world.add_joint(
         hinge_body,
-        axis=(0.0, 0.0, 1.0),
-        world_anchor=hinge_world_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+            parent_anchor=hinge_world_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -2077,12 +2447,15 @@ def test_simulation_world_articulated_non_cardinal_prismatic_reset_from_python()
         np.asarray(body.translation, dtype=float)
         + np.asarray(body.rotation, dtype=float) @ child_anchor
     )
-    slider = world.add_articulated_prismatic_joint(
-        "non_cardinal_world_slider",
+    slider = world.add_joint(
         body,
-        axis=slider_axis.tolist(),
-        world_anchor=world_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_world_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis.tolist(),
+            parent_anchor=world_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -2181,12 +2554,15 @@ def test_simulation_world_articulated_non_cardinal_revolute_reset_from_python():
         np.asarray(body.translation, dtype=float)
         + np.asarray(body.rotation, dtype=float) @ child_anchor
     )
-    hinge = world.add_articulated_revolute_joint(
-        "non_cardinal_world_hinge",
+    hinge = world.add_joint(
         body,
-        axis=hinge_axis.tolist(),
-        world_anchor=world_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis.tolist(),
+            parent_anchor=world_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -2294,13 +2670,16 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
     slider_axis /= np.linalg.norm(slider_axis)
     parent_anchor = np.array([0.2, 0.1, 0.0])
     child_anchor = np.array([-0.1, 0.1, 0.0])
-    slider = slider_world.add_articulated_prismatic_joint(
-        "non_cardinal_pair_slider",
+    slider = slider_world.add_joint(
         slider_parent,
         slider_child,
-        axis=slider_axis.tolist(),
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_pair_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis.tolist(),
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -2408,13 +2787,16 @@ def test_simulation_world_articulated_non_cardinal_pair_motors_reset_from_python
 
     hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     hinge_axis /= np.linalg.norm(hinge_axis)
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "non_cardinal_pair_hinge",
+    hinge = hinge_world.add_joint(
         hinge_parent,
         hinge_child,
-        axis=hinge_axis.tolist(),
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_pair_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis.tolist(),
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -2551,12 +2933,15 @@ def test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors
         np.asarray(slider_body.translation, dtype=float)
         + np.asarray(slider_body.rotation, dtype=float) @ slider_child_anchor
     )
-    slider = slider_world.add_articulated_prismatic_joint(
-        "non_cardinal_world_tiny_slider",
+    slider = slider_world.add_joint(
         slider_body,
-        axis=slider_axis.tolist(),
-        world_anchor=slider_world_anchor.tolist(),
-        child_anchor=slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_world_tiny_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis.tolist(),
+            parent_anchor=slider_world_anchor.tolist(),
+            child_anchor=slider_child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -2618,12 +3003,15 @@ def test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors
         np.asarray(world_hinge_body.translation, dtype=float)
         + np.asarray(world_hinge_body.rotation, dtype=float) @ world_hinge_child_anchor
     )
-    world_hinge = world_hinge_world.add_articulated_revolute_joint(
-        "non_cardinal_world_tiny_hinge",
+    world_hinge = world_hinge_world.add_joint(
         world_hinge_body,
-        axis=world_hinge_axis.tolist(),
-        world_anchor=world_hinge_anchor.tolist(),
-        child_anchor=world_hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_world_tiny_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=world_hinge_axis.tolist(),
+            parent_anchor=world_hinge_anchor.tolist(),
+            child_anchor=world_hinge_child_anchor.tolist(),
+        )
     )
     assert world_hinge.type == sx.JointType.REVOLUTE
     assert world_hinge.num_dofs == 1
@@ -2700,13 +3088,16 @@ def test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors
 
     pair_slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     pair_slider_axis /= np.linalg.norm(pair_slider_axis)
-    pair_slider = pair_slider_world.add_articulated_prismatic_joint(
-        "non_cardinal_pair_tiny_slider",
+    pair_slider = pair_slider_world.add_joint(
         pair_slider_parent,
         pair_slider_child,
-        axis=pair_slider_axis.tolist(),
-        parent_anchor=pair_slider_parent_anchor.tolist(),
-        child_anchor=pair_slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_pair_tiny_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=pair_slider_axis.tolist(),
+            parent_anchor=pair_slider_parent_anchor.tolist(),
+            child_anchor=pair_slider_child_anchor.tolist(),
+        )
     )
     assert pair_slider.type == sx.JointType.PRISMATIC
     assert pair_slider.num_dofs == 1
@@ -2781,13 +3172,16 @@ def test_simulation_world_articulated_non_cardinal_off_origin_tiny_effort_motors
 
     hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     hinge_axis /= np.linalg.norm(hinge_axis)
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "non_cardinal_pair_tiny_hinge",
+    hinge = hinge_world.add_joint(
         hinge_parent,
         hinge_child,
-        axis=hinge_axis.tolist(),
-        parent_anchor=hinge_parent_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="non_cardinal_pair_tiny_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis.tolist(),
+            parent_anchor=hinge_parent_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -2874,13 +3268,16 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
 
     pair_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     pair_axis /= np.linalg.norm(pair_axis)
-    pair_slider = pair_world.add_articulated_prismatic_joint(
-        "serialized_pair_slider",
+    pair_slider = pair_world.add_joint(
         pair_parent,
         pair_child,
-        axis=pair_axis.tolist(),
-        parent_anchor=pair_parent_anchor.tolist(),
-        child_anchor=pair_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_pair_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=pair_axis.tolist(),
+            parent_anchor=pair_parent_anchor.tolist(),
+            child_anchor=pair_child_anchor.tolist(),
+        )
     )
     pair_slider.actuator_type = sx.ActuatorType.VELOCITY
     pair_speed = 0.3
@@ -2906,7 +3303,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
     assert restored_pair_arm is not None
     restored_pair_parent = restored_pair_arm.get_link("parent")
     restored_pair_child = restored_pair_arm.get_link("child")
-    restored_pair_slider = restored_pair_world.get_articulated_joint(
+    restored_pair_slider = restored_pair_world.get_joint(
         "serialized_pair_slider"
     )
     assert restored_pair_parent is not None
@@ -3015,12 +3412,15 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
         np.asarray(hinge_body.translation, dtype=float)
         + np.asarray(hinge_body.rotation, dtype=float) @ hinge_child_anchor
     )
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "serialized_world_hinge",
+    hinge = hinge_world.add_joint(
         hinge_body,
-        axis=hinge_axis.tolist(),
-        world_anchor=hinge_world_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis.tolist(),
+            parent_anchor=hinge_world_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     hinge.actuator_type = sx.ActuatorType.VELOCITY
     hinge_speed = 0.4
@@ -3045,7 +3445,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python(tmp_path: Pat
     )
     assert restored_hinge_arm is not None
     restored_hinge_body = restored_hinge_arm.get_link("body")
-    restored_hinge = restored_hinge_world.get_articulated_joint(
+    restored_hinge = restored_hinge_world.get_joint(
         "serialized_world_hinge"
     )
     assert restored_hinge_body is not None
@@ -3157,13 +3557,16 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
     ).tolist() + [0.0, 0.0, 0.0]
     pair_hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     pair_hinge_axis /= np.linalg.norm(pair_hinge_axis)
-    pair_hinge = pair_hinge_world.add_articulated_revolute_joint(
-        "serialized_pair_hinge_broken",
+    pair_hinge = pair_hinge_world.add_joint(
         pair_hinge_parent,
         pair_hinge_child,
-        axis=pair_hinge_axis.tolist(),
-        parent_anchor=pair_hinge_parent_anchor.tolist(),
-        child_anchor=pair_hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_pair_hinge_broken",
+            type=sx.JointType.REVOLUTE,
+            axis=pair_hinge_axis.tolist(),
+            parent_anchor=pair_hinge_parent_anchor.tolist(),
+            child_anchor=pair_hinge_child_anchor.tolist(),
+        )
     )
     pair_hinge.actuator_type = sx.ActuatorType.VELOCITY
     pair_hinge_speed = 0.35
@@ -3189,7 +3592,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
     assert restored_pair_hinge_arm is not None
     restored_pair_hinge_parent = restored_pair_hinge_arm.get_link("parent")
     restored_pair_hinge_child = restored_pair_hinge_arm.get_link("child")
-    restored_pair_hinge = restored_pair_hinge_world.get_articulated_joint(
+    restored_pair_hinge = restored_pair_hinge_world.get_joint(
         "serialized_pair_hinge_broken"
     )
     assert restored_pair_hinge_parent is not None
@@ -3340,12 +3743,15 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
         + np.asarray(world_slider_body.rotation, dtype=float)
         @ world_slider_child_anchor
     )
-    world_slider = world_slider_world.add_articulated_prismatic_joint(
-        "serialized_world_slider_broken",
+    world_slider = world_slider_world.add_joint(
         world_slider_body,
-        axis=world_slider_axis.tolist(),
-        world_anchor=world_slider_anchor.tolist(),
-        child_anchor=world_slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_world_slider_broken",
+            type=sx.JointType.PRISMATIC,
+            axis=world_slider_axis.tolist(),
+            parent_anchor=world_slider_anchor.tolist(),
+            child_anchor=world_slider_child_anchor.tolist(),
+        )
     )
     world_slider.actuator_type = sx.ActuatorType.VELOCITY
     world_slider_speed = 0.3
@@ -3370,7 +3776,7 @@ def test_simulation_world_articulated_binary_roundtrip_from_python_completes_one
     )
     assert restored_world_slider_arm is not None
     restored_world_slider_body = restored_world_slider_arm.get_link("body")
-    restored_world_slider = restored_world_slider_world.get_articulated_joint(
+    restored_world_slider = restored_world_slider_world.get_joint(
         "serialized_world_slider_broken"
     )
     assert restored_world_slider_body is not None
@@ -3498,12 +3904,15 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     fixed_child.parent_joint.position = (
         fixed_parent_anchor - fixed_child_anchor
     ).tolist() + [0.0, 0.0, 0.0]
-    fixed_hold = fixed_world.add_articulated_fixed_joint(
-        "serialized_pair_fixed",
+    fixed_hold = fixed_world.add_joint(
         fixed_parent,
         fixed_child,
-        parent_anchor=fixed_parent_anchor.tolist(),
-        child_anchor=fixed_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_pair_fixed",
+            type=sx.JointType.FIXED,
+            parent_anchor=fixed_parent_anchor.tolist(),
+            child_anchor=fixed_child_anchor.tolist(),
+        )
     )
     fixed_hold.break_force = 1e-18
     captured_fixed_relative_rotation = (
@@ -3537,7 +3946,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     assert restored_fixed_arm is not None
     restored_fixed_parent = restored_fixed_arm.get_link("parent")
     restored_fixed_child = restored_fixed_arm.get_link("child")
-    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+    restored_fixed_hold = restored_fixed_world.get_joint(
         "serialized_pair_fixed"
     )
     assert restored_fixed_parent is not None
@@ -3627,11 +4036,14 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
         np.asarray(socket_body.translation, dtype=float)
         + captured_socket_rotation @ socket_child_anchor
     )
-    socket = socket_world.add_articulated_spherical_joint(
-        "serialized_world_socket",
+    socket = socket_world.add_joint(
         socket_body,
-        world_anchor=socket_world_anchor.tolist(),
-        child_anchor=socket_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_world_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=socket_world_anchor.tolist(),
+            child_anchor=socket_child_anchor.tolist(),
+        )
     )
     socket.break_force = 1e-18
 
@@ -3656,7 +4068,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     )
     assert restored_socket_arm is not None
     restored_socket_body = restored_socket_arm.get_link("body")
-    restored_socket = restored_socket_world.get_articulated_joint(
+    restored_socket = restored_socket_world.get_joint(
         "serialized_world_socket"
     )
     assert restored_socket_body is not None
@@ -3737,11 +4149,14 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
         np.asarray(fixed_body.translation, dtype=float)
         + captured_fixed_rotation @ fixed_child_anchor
     )
-    fixed_hold = fixed_world.add_articulated_fixed_joint(
-        "serialized_world_fixed",
+    fixed_hold = fixed_world.add_joint(
         fixed_body,
-        world_anchor=fixed_world_anchor.tolist(),
-        child_anchor=fixed_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_world_fixed",
+            type=sx.JointType.FIXED,
+            parent_anchor=fixed_world_anchor.tolist(),
+            child_anchor=fixed_child_anchor.tolist(),
+        )
     )
     fixed_hold.break_force = 1e-18
 
@@ -3766,7 +4181,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     )
     assert restored_fixed_arm is not None
     restored_fixed_body = restored_fixed_arm.get_link("body")
-    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+    restored_fixed_hold = restored_fixed_world.get_joint(
         "serialized_world_fixed"
     )
     assert restored_fixed_body is not None
@@ -3844,12 +4259,15 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
         np.asarray(socket_parent.rotation, dtype=float).T
         @ np.asarray(socket_child.rotation, dtype=float)
     )
-    socket = socket_world.add_articulated_spherical_joint(
-        "serialized_pair_socket",
+    socket = socket_world.add_joint(
         socket_parent,
         socket_child,
-        parent_anchor=socket_parent_anchor.tolist(),
-        child_anchor=socket_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_pair_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=socket_parent_anchor.tolist(),
+            child_anchor=socket_child_anchor.tolist(),
+        )
     )
     socket.break_force = 1e-18
 
@@ -3879,7 +4297,7 @@ def test_simulation_world_articulated_fixed_spherical_binary_roundtrip_from_pyth
     assert restored_socket_arm is not None
     restored_socket_parent = restored_socket_arm.get_link("parent")
     restored_socket_child = restored_socket_arm.get_link("child")
-    restored_socket = restored_socket_world.get_articulated_joint(
+    restored_socket = restored_socket_world.get_joint(
         "serialized_pair_socket"
     )
     assert restored_socket_parent is not None
@@ -3972,12 +4390,15 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     fixed_child.parent_joint.position = (
         fixed_parent_anchor - fixed_child_anchor
     ).tolist() + [0.0, 0.0, 0.0]
-    fixed_world.add_articulated_fixed_joint(
-        "serialized_design_pair_fixed",
+    fixed_world.add_joint(
         fixed_parent,
         fixed_child,
-        parent_anchor=fixed_parent_anchor.tolist(),
-        child_anchor=fixed_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_pair_fixed",
+            type=sx.JointType.FIXED,
+            parent_anchor=fixed_parent_anchor.tolist(),
+            child_anchor=fixed_child_anchor.tolist(),
+        )
     )
 
     fixed_path = tmp_path / "articulated_design_pair_fixed.bin"
@@ -3995,7 +4416,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     assert restored_fixed_arm is not None
     restored_fixed_parent = restored_fixed_arm.get_link("parent")
     restored_fixed_child = restored_fixed_arm.get_link("child")
-    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+    restored_fixed_hold = restored_fixed_world.get_joint(
         "serialized_design_pair_fixed"
     )
     assert restored_fixed_parent is not None
@@ -4072,13 +4493,16 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     ).tolist() + [0.0, 0.0, 0.0]
     slider_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     slider_axis /= np.linalg.norm(slider_axis)
-    slider = slider_world.add_articulated_prismatic_joint(
-        "serialized_design_pair_slider",
+    slider = slider_world.add_joint(
         slider_parent,
         slider_child,
-        axis=slider_axis.tolist(),
-        parent_anchor=slider_parent_anchor.tolist(),
-        child_anchor=slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_pair_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis.tolist(),
+            parent_anchor=slider_parent_anchor.tolist(),
+            child_anchor=slider_child_anchor.tolist(),
+        )
     )
     slider.actuator_type = sx.ActuatorType.VELOCITY
     slider_speed = 0.3
@@ -4100,7 +4524,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     assert restored_slider_arm is not None
     restored_slider_parent = restored_slider_arm.get_link("parent")
     restored_slider_child = restored_slider_arm.get_link("child")
-    restored_slider = restored_slider_world.get_articulated_joint(
+    restored_slider = restored_slider_world.get_joint(
         "serialized_design_pair_slider"
     )
     assert restored_slider_parent is not None
@@ -4185,13 +4609,16 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     ).tolist() + [0.0, 0.0, 0.0]
     hinge_axis = np.array([1.0, 2.0, 0.5], dtype=float)
     hinge_axis /= np.linalg.norm(hinge_axis)
-    hinge = hinge_world.add_articulated_revolute_joint(
-        "serialized_design_pair_hinge",
+    hinge = hinge_world.add_joint(
         hinge_parent,
         hinge_child,
-        axis=hinge_axis.tolist(),
-        parent_anchor=hinge_parent_anchor.tolist(),
-        child_anchor=hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_pair_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis.tolist(),
+            parent_anchor=hinge_parent_anchor.tolist(),
+            child_anchor=hinge_child_anchor.tolist(),
+        )
     )
     hinge.actuator_type = sx.ActuatorType.VELOCITY
     hinge_speed = 0.4
@@ -4213,7 +4640,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     assert restored_hinge_arm is not None
     restored_hinge_parent = restored_hinge_arm.get_link("parent")
     restored_hinge_child = restored_hinge_arm.get_link("child")
-    restored_hinge = restored_hinge_world.get_articulated_joint(
+    restored_hinge = restored_hinge_world.get_joint(
         "serialized_design_pair_hinge"
     )
     assert restored_hinge_parent is not None
@@ -4309,12 +4736,15 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
         + np.asarray(world_slider_body.rotation, dtype=float)
         @ world_slider_child_anchor
     )
-    world_slider = world_slider_world.add_articulated_prismatic_joint(
-        "serialized_design_world_slider",
+    world_slider = world_slider_world.add_joint(
         world_slider_body,
-        axis=world_slider_axis.tolist(),
-        world_anchor=world_slider_anchor.tolist(),
-        child_anchor=world_slider_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_world_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=world_slider_axis.tolist(),
+            parent_anchor=world_slider_anchor.tolist(),
+            child_anchor=world_slider_child_anchor.tolist(),
+        )
     )
     world_slider.actuator_type = sx.ActuatorType.VELOCITY
     world_slider_speed = 0.3
@@ -4335,7 +4765,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     )
     assert restored_world_slider_arm is not None
     restored_world_slider_body = restored_world_slider_arm.get_link("body")
-    restored_world_slider = restored_world_slider_world.get_articulated_joint(
+    restored_world_slider = restored_world_slider_world.get_joint(
         "serialized_design_world_slider"
     )
     assert restored_world_slider_body is not None
@@ -4432,12 +4862,15 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
         + np.asarray(world_hinge_body.rotation, dtype=float)
         @ world_hinge_child_anchor
     )
-    world_hinge = world_hinge_world.add_articulated_revolute_joint(
-        "serialized_design_world_hinge",
+    world_hinge = world_hinge_world.add_joint(
         world_hinge_body,
-        axis=world_hinge_axis.tolist(),
-        world_anchor=world_hinge_anchor.tolist(),
-        child_anchor=world_hinge_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_world_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=world_hinge_axis.tolist(),
+            parent_anchor=world_hinge_anchor.tolist(),
+            child_anchor=world_hinge_child_anchor.tolist(),
+        )
     )
     world_hinge.actuator_type = sx.ActuatorType.VELOCITY
     world_hinge_speed = 0.4
@@ -4458,7 +4891,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     )
     assert restored_world_hinge_arm is not None
     restored_world_hinge_body = restored_world_hinge_arm.get_link("body")
-    restored_world_hinge = restored_world_hinge_world.get_articulated_joint(
+    restored_world_hinge = restored_world_hinge_world.get_joint(
         "serialized_design_world_hinge"
     )
     assert restored_world_hinge_body is not None
@@ -4543,11 +4976,14 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
         np.asarray(socket_body.translation, dtype=float)
         + np.asarray(socket_body.rotation, dtype=float) @ socket_child_anchor
     )
-    socket_world.add_articulated_spherical_joint(
-        "serialized_design_world_socket",
+    socket_world.add_joint(
         socket_body,
-        world_anchor=socket_world_anchor.tolist(),
-        child_anchor=socket_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_world_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=socket_world_anchor.tolist(),
+            child_anchor=socket_child_anchor.tolist(),
+        )
     )
 
     socket_path = tmp_path / "articulated_design_world_socket.bin"
@@ -4564,7 +5000,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python(
     )
     assert restored_socket_arm is not None
     restored_socket_body = restored_socket_arm.get_link("body")
-    restored_socket = restored_socket_world.get_articulated_joint(
+    restored_socket = restored_socket_world.get_joint(
         "serialized_design_world_socket"
     )
     assert restored_socket_body is not None
@@ -4635,11 +5071,14 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
         np.asarray(fixed_body.translation, dtype=float)
         + fixed_rotation @ fixed_child_anchor
     )
-    fixed_world.add_articulated_fixed_joint(
-        "serialized_design_world_fixed",
+    fixed_world.add_joint(
         fixed_body,
-        world_anchor=fixed_world_anchor.tolist(),
-        child_anchor=fixed_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_world_fixed",
+            type=sx.JointType.FIXED,
+            parent_anchor=fixed_world_anchor.tolist(),
+            child_anchor=fixed_child_anchor.tolist(),
+        )
     )
 
     fixed_path = tmp_path / "articulated_design_world_fixed.bin"
@@ -4656,7 +5095,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
     )
     assert restored_fixed_arm is not None
     restored_fixed_body = restored_fixed_arm.get_link("body")
-    restored_fixed_hold = restored_fixed_world.get_articulated_joint(
+    restored_fixed_hold = restored_fixed_world.get_joint(
         "serialized_design_world_fixed"
     )
     assert restored_fixed_body is not None
@@ -4720,12 +5159,15 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
         np.asarray(socket_parent.rotation, dtype=float).T
         @ np.asarray(socket_child.rotation, dtype=float)
     )
-    socket_world.add_articulated_spherical_joint(
-        "serialized_design_pair_socket",
+    socket_world.add_joint(
         socket_parent,
         socket_child,
-        parent_anchor=socket_parent_anchor.tolist(),
-        child_anchor=socket_child_anchor.tolist(),
+                sx.JointSpec(
+            name="serialized_design_pair_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=socket_parent_anchor.tolist(),
+            child_anchor=socket_child_anchor.tolist(),
+        )
     )
 
     socket_path = tmp_path / "articulated_design_pair_socket.bin"
@@ -4743,7 +5185,7 @@ def test_simulation_world_articulated_design_binary_rebuild_from_python_complete
     assert restored_socket_arm is not None
     restored_socket_parent = restored_socket_arm.get_link("parent")
     restored_socket_child = restored_socket_arm.get_link("child")
-    restored_socket = restored_socket_world.get_articulated_joint(
+    restored_socket = restored_socket_world.get_joint(
         "serialized_design_pair_socket"
     )
     assert restored_socket_parent is not None
@@ -4818,13 +5260,16 @@ def test_simulation_world_articulated_pair_motor_breakage_reset_from_python():
     slider_axis = np.array([1.0, 0.0, 0.0])
     parent_anchor = np.array([0.2, 0.1, 0.0])
     child_anchor = np.array([-0.1, 0.1, 0.0])
-    slider = world.add_articulated_prismatic_joint(
-        "resettable_pair_slider",
+    slider = world.add_joint(
         parent,
         child,
-        axis=slider_axis,
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_pair_slider",
+            type=sx.JointType.PRISMATIC,
+            axis=slider_axis,
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert slider.type == sx.JointType.PRISMATIC
     assert slider.num_dofs == 1
@@ -4920,13 +5365,16 @@ def test_simulation_world_articulated_pair_revolute_breakage_reset_from_python()
     hinge_axis = np.array([0.0, 0.0, 1.0])
     parent_anchor = np.array([0.2, 0.1, 0.0])
     child_anchor = np.array([-0.1, 0.1, 0.0])
-    hinge = world.add_articulated_revolute_joint(
-        "resettable_pair_hinge",
+    hinge = world.add_joint(
         parent,
         child,
-        axis=hinge_axis,
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_pair_hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=hinge_axis,
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert hinge.type == sx.JointType.REVOLUTE
     assert hinge.num_dofs == 1
@@ -5030,12 +5478,15 @@ def test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python
         np.asarray(same_body.translation, dtype=float)
         + np.asarray(same_body.rotation, dtype=float) @ same_child_anchor
     )
-    same_hold = same_world.add_articulated_fixed_joint(
-        "resettable_hold",
+    same_hold = same_world.add_joint(
         same_base,
         same_body,
-        parent_anchor=same_parent_anchor.tolist(),
-        child_anchor=same_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_hold",
+            type=sx.JointType.FIXED,
+            parent_anchor=same_parent_anchor.tolist(),
+            child_anchor=same_child_anchor.tolist(),
+        )
     )
     assert same_hold.type == sx.JointType.FIXED
     assert same_hold.num_dofs == 0
@@ -5120,11 +5571,14 @@ def test_simulation_world_articulated_fixed_breakage_reset_reengages_from_python
         np.asarray(world_anchor_body.translation, dtype=float)
         + captured_world_rotation @ world_child_anchor
     )
-    world_hold = world_anchor_world.add_articulated_fixed_joint(
-        "resettable_world_hold",
+    world_hold = world_anchor_world.add_joint(
         world_anchor_body,
-        world_anchor=world_anchor.tolist(),
-        child_anchor=world_child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_world_hold",
+            type=sx.JointType.FIXED,
+            parent_anchor=world_anchor.tolist(),
+            child_anchor=world_child_anchor.tolist(),
+        )
     )
     assert world_hold.type == sx.JointType.FIXED
     assert world_hold.num_dofs == 0
@@ -5228,12 +5682,15 @@ def test_simulation_world_articulated_fixed_pair_breakage_reset_from_python():
 
     parent_anchor = np.array([0.15, 0.05, 0.0])
     child_anchor = np.array([-0.15, 0.05, 0.0])
-    hold = world.add_articulated_fixed_joint(
-        "resettable_pair_hold",
+    hold = world.add_joint(
         parent,
         child,
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_pair_hold",
+            type=sx.JointType.FIXED,
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert hold.type == sx.JointType.FIXED
     assert hold.num_dofs == 0
@@ -5317,12 +5774,15 @@ def test_simulation_world_articulated_spherical_pair_breakage_reset_reengages_fr
         np.asarray(same_body.translation, dtype=float)
         + np.asarray(same_body.rotation, dtype=float) @ child_anchor
     )
-    same_socket = same_world.add_articulated_spherical_joint(
-        "resettable_socket",
+    same_socket = same_world.add_joint(
         same_base,
         same_body,
-        parent_anchor=parent_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="resettable_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=parent_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert same_socket.type == sx.JointType.SPHERICAL
     assert same_socket.num_dofs == 3
@@ -5396,8 +5856,13 @@ def test_simulation_world_articulated_spherical_breakage_steps_from_python():
     same_world, same_base, same_body = _floating_link_world(
         sx, "python_breakable_socket"
     )
-    same_socket = same_world.add_articulated_spherical_joint(
-        "breakable_socket", same_base, same_body
+    same_socket = same_world.add_joint(
+        same_base,
+        same_body,
+                sx.JointSpec(
+            name="breakable_socket",
+            type=sx.JointType.SPHERICAL,
+        )
     )
     assert same_socket.type == sx.JointType.SPHERICAL
     assert same_socket.num_dofs == 3
@@ -5436,11 +5901,14 @@ def test_simulation_world_articulated_spherical_breakage_steps_from_python():
         np.asarray(world_anchor_body.translation, dtype=float)
         + captured_rotation @ child_anchor
     )
-    world_socket = world_anchor_world.add_articulated_spherical_joint(
-        "world_breakable_socket",
+    world_socket = world_anchor_world.add_joint(
         world_anchor_body,
-        world_anchor=world_anchor.tolist(),
-        child_anchor=child_anchor.tolist(),
+                sx.JointSpec(
+            name="world_breakable_socket",
+            type=sx.JointType.SPHERICAL,
+            parent_anchor=world_anchor.tolist(),
+            child_anchor=child_anchor.tolist(),
+        )
     )
     assert world_socket.type == sx.JointType.SPHERICAL
     assert world_socket.num_dofs == 3
@@ -7261,16 +7729,16 @@ def test_simulation_collision_query():
     assert body_a.has_collision_shape
     assert body_a.collision_shape.type == sx.CollisionShapeType.SPHERE
     assert body_b.collision_shape.type == sx.CollisionShapeType.BOX
-    assert not body_b.is_deformable_surface_ccd_obstacle
-    body_b.is_deformable_surface_ccd_obstacle = True
-    assert body_b.is_deformable_surface_ccd_obstacle
-    body_b.is_deformable_surface_ccd_obstacle = False
-    assert not body_b.is_deformable_surface_ccd_obstacle
-    assert not body_b.is_deformable_ground_barrier
-    body_b.is_deformable_ground_barrier = True
-    assert body_b.is_deformable_ground_barrier
-    body_b.is_deformable_ground_barrier = False
-    assert not body_b.is_deformable_ground_barrier
+    assert not body_b.deformable_obstacle_policy.surface_obstacle
+    body_b.deformable_obstacle_policy.surface_obstacle = True
+    assert body_b.deformable_obstacle_policy.surface_obstacle
+    body_b.deformable_obstacle_policy.surface_obstacle = False
+    assert not body_b.deformable_obstacle_policy.surface_obstacle
+    assert not body_b.deformable_obstacle_policy.ground_barrier
+    body_b.deformable_obstacle_policy.ground_barrier = True
+    assert body_b.deformable_obstacle_policy.ground_barrier
+    body_b.deformable_obstacle_policy.ground_barrier = False
+    assert not body_b.deformable_obstacle_policy.ground_barrier
     assert world.add_rigid_body("c").collision_shape is None
 
     contacts = world.collide()
@@ -8264,7 +8732,7 @@ def test_simulation_adaptive_barrier_stiffness_holds_heavy_node_higher():
         ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
         ground.is_static = True
         ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
-        ground.is_deformable_ground_barrier = True
+        _set_deformable_obstacle_policy(ground, ground_barrier=True)
 
         options = sx.DeformableBodyOptions()
         options.positions = [np.array([0.0, 0.0, 0.015])]
@@ -8452,7 +8920,7 @@ def test_simulation_world_matrix_free_solver_matches_direct_ground_contact():
         ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
         ground.is_static = True
         ground.set_collision_shape(sx.CollisionShape.box((10.0, 10.0, 0.5)))
-        ground.is_deformable_ground_barrier = True
+        _set_deformable_obstacle_policy(ground, ground_barrier=True)
 
         options = sx.DeformableBodyOptions()
         options.positions = [np.array([0.0, 0.0, 0.015])]

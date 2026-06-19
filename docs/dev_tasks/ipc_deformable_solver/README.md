@@ -91,9 +91,9 @@
         conservatively circumscribes the analytic sphere (vertices at a slightly
         inflated radius so every flat face stays outside the true surface),
         reusing the same point-triangle / edge-edge CCD limiter with no new
-        primitive. Same `setDeformableSurfaceCcdObstacle` opt-in (untagged
-        shapes unaffected); `staticRigidSurfaceCcdSphereCount` stat and
-        opted-in/untagged regressions.
+        primitive. Same `DeformableObstaclePolicy::surfaceObstacle` opt-in
+        (untagged shapes unaffected); `staticRigidSurfaceCcdSphereCount` stat
+        and opted-in/untagged regressions.
   - [x] Internal moving rigid box surface CCD line-search sub-slice: free
         (non-static) opted-in box obstacles whose end-of-step transform is
         predicted from velocity (mirroring the rigid position integrator that
@@ -188,13 +188,14 @@
         `selfContactBarrierActiveContacts`). Behavior-preserving (diagnostic
         only); feeds the Fig. 23 / Table 1 contact statistics.
   - [x] Static sphere obstacle barrier force: a static rigid sphere opted in via
-        `setDeformableSurfaceCcdObstacle` now exerts a full radial clamped-log
-        barrier (energy + gradient) that pushes deformable nodes out along the
-        outward radial normal -- a 3D contact force, unlike the vertical-only
-        ground barrier. Additive (surface-CCD-obstacle spheres were previously a
-        no-op; boxes and non-opted scenes unchanged); the surface CCD limiter is
-        the tunnelling guard for fast motion. Box obstacles, the projected-Newton
-        Hessian, and codimensional obstacles are later increments.
+        `DeformableObstaclePolicy::surfaceObstacle` now exerts a full radial
+        clamped-log barrier (energy + gradient) that pushes deformable nodes out
+        along the outward radial normal -- a 3D contact force, unlike the
+        vertical-only ground barrier. Additive (surface-CCD-obstacle spheres were
+        previously a no-op; boxes and non-opted scenes unchanged); the surface
+        CCD limiter is the tunnelling guard for fast motion. Box obstacles, the
+        projected-Newton Hessian, and codimensional obstacles are later
+        increments.
   - [ ] Remaining Phase 3 work: a fully resident GPU solve path (the per-batch
         host<->device copies remain; keeping the assembly/solve on-device is a
         follow-up), automatic large-mesh selection for the explicit matrix-free
@@ -511,7 +512,7 @@ language precise: it covers point-mass deformable nodes sweeping against
 existing explicitly opted-in static rigid ground barriers via the current
 analytic box/sphere top-height barrier semantics in `DeformableDynamicsStage`.
 It shortens line-search trials before objective evaluation and preserves the
-`setDeformableGroundBarrier(true)` opt-in boundary. It does not implement
+`DeformableObstaclePolicy::groundBarrier` opt-in boundary. It does not implement
 deformable-rigid contact, rigid collision response, side-face collision, moving
 obstacles, mesh/codimensional contact, IPC barrier-force assembly, projected
 Newton, adaptive barrier stiffness, friction, no-intersection/no-inversion
@@ -526,7 +527,7 @@ world-space surface snapshots with 12 physical box edges. The deformable
 line-search limiter reuses the primitive point-triangle and edge-edge CCD
 reducers for point-only deformables, deformable surface edges, rotated boxes,
 and stage-start rigid transforms. It preserves the
-`setDeformableSurfaceCcdObstacle(true)` opt-in boundary and ignores ordinary
+`DeformableObstaclePolicy::surfaceObstacle` opt-in boundary and ignores ordinary
 static boxes, non-static bodies, and non-box collision shapes. It does not
 implement rigid collision response, moving obstacle contact, arbitrary mesh
 obstacles, barrier/contact forces, friction, projected Newton, adaptive

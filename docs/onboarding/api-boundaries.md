@@ -98,11 +98,16 @@ plumbing just because the surrounding module is experimental.
 For `dart::simulation::compute`, keep the stable-looking surface
 small and backend-neutral. The supported compute concepts are graph nodes,
 explicit graph dependencies, executor injection, profiles, domain/acceleration
-metadata, DOT visualization, and stage/pipeline composition. Do not expose
-Taskflow types, GPU devices, streams, memory pools, SIMD storage requirements,
-solver registries, or rendering backends until a later plan and benchmark gate
-justify them. Future resource read/write declarations should start as
-diagnostic metadata and validation inputs before becoming scheduler contracts.
+metadata, DOT visualization, and the custom-stage/pipeline composition
+contract (`WorldStepStage`, `WorldStepPipeline`). Built-in family stages and
+their per-family solver stats are implementation internals: keep them under
+`compute/detail/` or another internal owner and expose user-facing observations
+through curated `World` diagnostics, profiles, or public policy values instead.
+Do not expose Taskflow types, GPU devices, streams, memory pools, SIMD storage
+requirements, solver registries, or rendering backends until a later plan and
+benchmark gate justify them. Future resource read/write declarations should
+start as diagnostic metadata and validation inputs before becoming scheduler
+contracts.
 
 DART 7 deformable simulation follows the same boundary: public handles
 and options describe model topology, initial state, fixed nodes, and physical

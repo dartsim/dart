@@ -203,8 +203,13 @@ def build() -> SceneSetup:
 
     joints = []
     for index, (parent, child) in enumerate(zip(chain, chain[1:])):
-        joint = world.add_rigid_body_fixed_joint(
-            f"avbd_demo2d_fracture_joint_{index:02d}", parent, child
+        joint = world.add_joint(
+            parent,
+            child,
+                        sx.JointSpec(
+                name=f"avbd_demo2d_fracture_joint_{index:02d}",
+                type=sx.JointType.FIXED,
+            )
         )
         joint.break_force = _BREAK_FORCE
         joints.append(joint)

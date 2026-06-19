@@ -1172,14 +1172,17 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (variational_chain, "Variational Chain"),
         (variational_tumbler, "Variational Tumbler"),
     ]
-    if hasattr(sx.World(), "add_rigid_body_fixed_joint"):
+    has_unified_joints = (
+        hasattr(sx.World(), "add_joint")
+        and hasattr(sx, "JointSpec")
+        and hasattr(sx, "JointType")
+    )
+    if has_unified_joints:
         cases.insert(4, (rigid_fixed_joint, "Rigid Fixed Joint"))
         cases.insert(5, (rigid_joint_breakage, "Rigid Joint Breakage"))
     if hasattr(sx.World(), "add_rigid_body_distance_spring"):
         cases.insert(6, (rigid_distance_spring, "Rigid Distance Spring"))
-    if hasattr(sx.World(), "add_rigid_body_revolute_joint") and hasattr(
-        sx.World(), "add_rigid_body_prismatic_joint"
-    ):
+    if has_unified_joints:
         cases.insert(7, (rigid_limited_joints, "Rigid One-DOF Joints"))
     if hasattr(sx, "ActuatorType") and hasattr(sx, "JointSpec"):
         cases.insert(8, (rigid_joint_motor_limits, "Rigid Joint Motors & Limits"))

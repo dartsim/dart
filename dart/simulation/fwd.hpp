@@ -69,8 +69,10 @@ struct StepGradient;
 struct DeformableDirichletBoundaryCondition;
 struct DeformableMaterialProperties;
 struct DeformableNeumannBoundaryCondition;
+struct DeformableObstaclePolicy;
 struct DeformableSurfaceTriangle;
 struct DeformableTetrahedron;
+struct JointConstraintProjectionPolicy;
 
 // Options structs
 struct CollisionQueryOptions;

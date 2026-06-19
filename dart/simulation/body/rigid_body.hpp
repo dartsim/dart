@@ -44,6 +44,23 @@
 
 namespace dart::simulation {
 
+/// Family policy for a rigid body participating in deformable contact.
+///
+/// This policy describes how a rigid body is interpreted by deformable-body
+/// contact and sweep limiting without exposing solver implementation toggles
+/// as separate shared-handle booleans.
+struct DeformableObstaclePolicy
+{
+  /// Treat the body as a one-sided z-up ground barrier.
+  bool groundBarrier = false;
+
+  /// Treat the body's surface as an obstacle for deformable sweep limiting.
+  bool surfaceObstacle = false;
+
+  /// Keep barrier contact while excluding this obstacle from sweep limiting.
+  bool barrierOnly = false;
+};
+
 //==============================================================================
 /// RigidBody handle class
 ///
@@ -260,40 +277,16 @@ public:
   /// with each other.
   void addCollisionShape(const CollisionShape& shape);
 
-  /// Set whether this static collision shape acts as a one-sided z-up ground
-  /// barrier for experimental deformable bodies.
+  /// Set this body's deformable-contact obstacle policy.
   ///
-  /// This does not change rigid-body collision behavior. It is an explicit
-  /// opt-in for the first deformable solver slice so ordinary static fixtures,
-  /// shelves, ceilings, or obstacles are not silently treated as ground.
-  void setDeformableGroundBarrier(bool enabled);
+  /// This does not change rigid-body collision behavior. Ground barriers are
+  /// one-sided z-up barriers; surface obstacles contribute a triangulated
+  /// static surface for deformable sweep limiting; barrier-only obstacles keep
+  /// barrier contact while skipping sweep limiting.
+  void setDeformableObstaclePolicy(const DeformableObstaclePolicy& policy);
 
-  /// Return whether this body is opted in as a deformable ground barrier.
-  [[nodiscard]] bool isDeformableGroundBarrier() const;
-
-  /// Set whether this static box acts as a stationary surface obstacle for the
-  /// experimental deformable CCD line-search limiter.
-  ///
-  /// Only static bodies with box collision shapes contribute. The body-space
-  /// box is triangulated into world-space triangles for conservative primitive
-  /// CCD. This does not change rigid-body collision behavior, apply contact or
-  /// barrier forces, provide friction, support moving obstacles, or support
-  /// non-box collision shapes.
-  void setDeformableSurfaceCcdObstacle(bool enabled);
-
-  /// Return whether this body is opted in as a deformable surface CCD obstacle.
-  [[nodiscard]] bool isDeformableSurfaceCcdObstacle() const;
-
-  /// Opt this deformable obstacle into barrier-only mode: it keeps its
-  /// clamped-log contact barrier (and so participates in friction) but is
-  /// excluded from the surface-CCD line-search limiter, which otherwise scales
-  /// the whole step and masks tangential sliding. Intended for quasi-static
-  /// contact where the barrier alone prevents penetration; only meaningful when
-  /// the body is also a deformable surface CCD obstacle.
-  void setDeformableObstacleBarrierOnly(bool enabled);
-
-  /// Return whether this obstacle is in barrier-only (no surface CCD) mode.
-  [[nodiscard]] bool isDeformableObstacleBarrierOnly() const;
+  /// Return this body's deformable-contact obstacle policy.
+  [[nodiscard]] DeformableObstaclePolicy getDeformableObstaclePolicy() const;
 
   /// Get this body's collision shape, if one is attached.
   ///
