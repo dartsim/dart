@@ -55,6 +55,20 @@ void expectPngSignature(const std::vector<unsigned char>& png)
       std::equal(kPngSignature.begin(), kPngSignature.end(), png.begin()));
 }
 
+void expectIhdr(
+    const std::vector<unsigned char>& png,
+    unsigned bitDepth,
+    LodePNGColorType colorType)
+{
+  ASSERT_GE(png.size(), 29u);
+  EXPECT_EQ('I', png[12]);
+  EXPECT_EQ('H', png[13]);
+  EXPECT_EQ('D', png[14]);
+  EXPECT_EQ('R', png[15]);
+  EXPECT_EQ(bitDepth, png[24]);
+  EXPECT_EQ(static_cast<unsigned>(colorType), png[25]);
+}
+
 } // namespace
 
 TEST(LodePngCompat, EncodesRgbaVectorThroughLegacyHeader)
@@ -80,6 +94,7 @@ TEST(LodePngCompat, EncodesRgbMemoryThroughLegacyHeader)
   const std::vector<unsigned char> pngVector(png, png + pngSize);
   lodepng_free(png);
   expectPngSignature(pngVector);
+  expectIhdr(pngVector, 8, LCT_RGB);
 }
 
 TEST(LodePngCompat, EncodesRgb24HelperThroughLegacyHeader)
@@ -93,6 +108,7 @@ TEST(LodePngCompat, EncodesRgb24HelperThroughLegacyHeader)
   const std::vector<unsigned char> pngVector(png, png + pngSize);
   lodepng_free(png);
   expectPngSignature(pngVector);
+  expectIhdr(pngVector, 8, LCT_RGB);
 }
 
 TEST(LodePngCompat, EncodesLegacyRawColorModes)
@@ -110,6 +126,7 @@ TEST(LodePngCompat, EncodesLegacyRawColorModes)
   std::vector<unsigned char> pngVector(png, png + pngSize);
   lodepng_free(png);
   expectPngSignature(pngVector);
+  expectIhdr(pngVector, 1, LCT_GREY);
 
   png = nullptr;
   pngSize = 0;
@@ -120,6 +137,7 @@ TEST(LodePngCompat, EncodesLegacyRawColorModes)
   pngVector.assign(png, png + pngSize);
   lodepng_free(png);
   expectPngSignature(pngVector);
+  expectIhdr(pngVector, 16, LCT_GREY_ALPHA);
 
   png = nullptr;
   pngSize = 0;
@@ -129,6 +147,19 @@ TEST(LodePngCompat, EncodesLegacyRawColorModes)
   pngVector.assign(png, png + pngSize);
   lodepng_free(png);
   expectPngSignature(pngVector);
+  expectIhdr(pngVector, 16, LCT_RGBA);
+}
+
+TEST(LodePngCompat, RejectsTooSmallVectorInput)
+{
+  const std::vector<unsigned char> tooSmall = {255, 0, 0};
+
+  std::vector<unsigned char> png = {1, 2, 3};
+  EXPECT_EQ(84u, lodepng::encode(png, tooSmall, 1, 1, LCT_RGBA, 8));
+  EXPECT_EQ((std::vector<unsigned char>{1, 2, 3}), png);
+  EXPECT_STREQ(
+      "PNG input buffer is too small or file write failed",
+      lodepng_error_text(84));
 }
 
 TEST(LodePngCompat, RejectsPaletteModeWithoutPaletteState)

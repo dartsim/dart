@@ -124,24 +124,6 @@ void appendChunk(
   appendUint32Big(png, crc32(&png[crcStart], type.size() + data.size()));
 }
 
-bool checkedPixelBytes(
-    unsigned width, unsigned height, std::size_t channels, std::size_t* bytes)
-{
-  const std::size_t max = std::numeric_limits<std::size_t>::max();
-  const std::size_t widthSize = width;
-  const std::size_t heightSize = height;
-
-  if (width == 0 || height == 0 || channels == 0)
-    return false;
-  if (widthSize > max / channels)
-    return false;
-  if (heightSize > max / (widthSize * channels))
-    return false;
-
-  *bytes = widthSize * heightSize * channels;
-  return true;
-}
-
 unsigned bitsPerPixel(LodePNGColorType colorType, unsigned bitDepth)
 {
   switch (colorType) {
@@ -187,11 +169,12 @@ unsigned validateColorMode(LodePNGColorType colorType, unsigned bitDepth)
   }
 }
 
-bool checkedRawBytes(
+bool checkedRawScanlineBytes(
     unsigned width,
     unsigned height,
     LodePNGColorType colorType,
     unsigned bitDepth,
+    std::size_t* rowBytes,
     std::size_t* bytes)
 {
   const unsigned bpp = bitsPerPixel(colorType, bitDepth);
@@ -201,140 +184,77 @@ bool checkedRawBytes(
   const std::size_t max = std::numeric_limits<std::size_t>::max();
   const std::size_t widthSize = width;
   const std::size_t heightSize = height;
-  if (widthSize > max / heightSize)
+  if (widthSize > max / bpp)
     return false;
 
-  const std::size_t pixels = widthSize * heightSize;
-  if (pixels > (max - 7) / bpp)
+  const std::size_t rowBits = widthSize * bpp;
+  if (rowBits > max - 7)
     return false;
 
-  *bytes = (pixels * bpp + 7) / 8;
+  const std::size_t rowByteCount = (rowBits + 7) / 8;
+  if (heightSize > max / rowByteCount)
+    return false;
+
+  *rowBytes = rowByteCount;
+  *bytes = rowByteCount * heightSize;
   return true;
 }
 
-unsigned char expandSample(unsigned value, unsigned bitDepth)
-{
-  if (bitDepth == 8 || bitDepth == 16)
-    return static_cast<unsigned char>(value);
-
-  const unsigned maxValue = (1u << bitDepth) - 1u;
-  return static_cast<unsigned char>((value * 255u + maxValue / 2u) / maxValue);
-}
-
-unsigned char readPackedSample(
-    const unsigned char* image, std::size_t index, unsigned bitDepth)
-{
-  const std::size_t bitOffset = index * bitDepth;
-  const unsigned shift = 8u - bitDepth - static_cast<unsigned>(bitOffset % 8);
-  const unsigned mask = (1u << bitDepth) - 1u;
-  return expandSample((image[bitOffset / 8] >> shift) & mask, bitDepth);
-}
-
-unsigned makeRgba(
+unsigned validateRawInput(
     const unsigned char* image,
     unsigned width,
     unsigned height,
     LodePNGColorType colorType,
     unsigned bitDepth,
-    std::vector<unsigned char>* rgba)
+    std::size_t* rowBytes,
+    std::size_t* inputBytes)
 {
-  if (!image || !rgba)
+  if (!image || !rowBytes || !inputBytes)
     return kErrorInvalidInput;
 
-  std::size_t inputBytes = 0;
   const unsigned validationError = validateColorMode(colorType, bitDepth);
   if (validationError)
     return validationError;
-  if (!checkedRawBytes(width, height, colorType, bitDepth, &inputBytes))
+  if (!checkedRawScanlineBytes(
+          width, height, colorType, bitDepth, rowBytes, inputBytes)) {
     return kErrorOverflow;
+  }
 
-  std::size_t outputBytes = 0;
-  if (!checkedPixelBytes(width, height, 4, &outputBytes))
+  return 0;
+}
+
+unsigned validateVectorInputSize(
+    const std::vector<unsigned char>& image,
+    unsigned width,
+    unsigned height,
+    LodePNGColorType colorType,
+    unsigned bitDepth)
+{
+  std::size_t rowBytes = 0;
+  std::size_t inputBytes = 0;
+
+  const unsigned validationError = validateColorMode(colorType, bitDepth);
+  if (validationError)
+    return validationError;
+  if (!checkedRawScanlineBytes(
+          width, height, colorType, bitDepth, &rowBytes, &inputBytes)) {
     return kErrorOverflow;
-
-  if (colorType == LCT_RGBA) {
-    if (bitDepth == 8) {
-      rgba->assign(image, image + static_cast<std::ptrdiff_t>(inputBytes));
-      return 0;
-    }
-
-    rgba->resize(outputBytes);
-    for (std::size_t in = 0, out = 0; in < inputBytes; in += 8, out += 4) {
-      (*rgba)[out] = image[in];
-      (*rgba)[out + 1] = image[in + 2];
-      (*rgba)[out + 2] = image[in + 4];
-      (*rgba)[out + 3] = image[in + 6];
-    }
-    return 0;
   }
+  if (image.size() < inputBytes)
+    return kErrorFileWrite;
 
-  if (colorType == LCT_RGB) {
-    rgba->resize(outputBytes);
-    if (bitDepth == 8) {
-      for (std::size_t in = 0, out = 0; in < inputBytes; in += 3, out += 4) {
-        (*rgba)[out] = image[in];
-        (*rgba)[out + 1] = image[in + 1];
-        (*rgba)[out + 2] = image[in + 2];
-        (*rgba)[out + 3] = 255;
-      }
-      return 0;
-    }
-
-    for (std::size_t in = 0, out = 0; in < inputBytes; in += 6, out += 4) {
-      (*rgba)[out] = image[in];
-      (*rgba)[out + 1] = image[in + 2];
-      (*rgba)[out + 2] = image[in + 4];
-      (*rgba)[out + 3] = 255;
-    }
-    return 0;
-  }
-
-  if (colorType == LCT_GREY) {
-    rgba->resize(outputBytes);
-    const std::size_t pixels = static_cast<std::size_t>(width) * height;
-    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
-      const unsigned char grey = bitDepth < 8
-                                     ? readPackedSample(image, pixel, bitDepth)
-                                     : image[pixel * (bitDepth / 8)];
-      const std::size_t out = pixel * 4;
-      (*rgba)[out] = grey;
-      (*rgba)[out + 1] = grey;
-      (*rgba)[out + 2] = grey;
-      (*rgba)[out + 3] = 255;
-    }
-    return 0;
-  }
-
-  if (colorType == LCT_GREY_ALPHA) {
-    rgba->resize(outputBytes);
-    const std::size_t pixels = static_cast<std::size_t>(width) * height;
-    const std::size_t bytesPerPixel = bitDepth == 8 ? 2 : 4;
-    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
-      const std::size_t in = pixel * bytesPerPixel;
-      const std::size_t out = pixel * 4;
-      (*rgba)[out] = image[in];
-      (*rgba)[out + 1] = image[in];
-      (*rgba)[out + 2] = image[in];
-      (*rgba)[out + 3] = image[in + bitDepth / 8];
-    }
-    return 0;
-  }
-
-  return kErrorUnsupportedColor;
+  return 0;
 }
 
 std::vector<unsigned char> createScanlines(
-    const std::vector<unsigned char>& rgba, unsigned width, unsigned height)
+    const unsigned char* image, std::size_t rowBytes, unsigned height)
 {
-  const std::size_t rowBytes = static_cast<std::size_t>(width) * 4;
   std::vector<unsigned char> scanlines;
   scanlines.reserve((rowBytes + 1) * static_cast<std::size_t>(height));
 
   for (unsigned row = 0; row < height; ++row) {
     scanlines.push_back(0);
-    const auto rowStart = rgba.begin()
-                          + static_cast<std::ptrdiff_t>(
-                              static_cast<std::size_t>(row) * rowBytes);
+    const auto* rowStart = image + static_cast<std::size_t>(row) * rowBytes;
     scanlines.insert(scanlines.end(), rowStart, rowStart + rowBytes);
   }
 
@@ -373,20 +293,23 @@ std::vector<unsigned char> createStoredZlibStream(
   return stream;
 }
 
-unsigned encodeRgbaPng(
-    const std::vector<unsigned char>& rgba,
+unsigned encodeRawPng(
+    const unsigned char* image,
     unsigned width,
     unsigned height,
+    LodePNGColorType colorType,
+    unsigned bitDepth,
     std::vector<unsigned char>* png)
 {
   if (!png)
     return kErrorInvalidInput;
 
-  std::size_t expectedSize = 0;
-  if (!checkedPixelBytes(width, height, 4, &expectedSize))
-    return kErrorOverflow;
-  if (rgba.size() != expectedSize)
-    return kErrorInvalidInput;
+  std::size_t rowBytes = 0;
+  std::size_t inputBytes = 0;
+  const unsigned validationError = validateRawInput(
+      image, width, height, colorType, bitDepth, &rowBytes, &inputBytes);
+  if (validationError)
+    return validationError;
 
   png->clear();
   png->insert(png->end(), kPngSignature.begin(), kPngSignature.end());
@@ -395,15 +318,15 @@ unsigned encodeRgbaPng(
   ihdr.reserve(13);
   appendUint32Big(ihdr, width);
   appendUint32Big(ihdr, height);
-  ihdr.push_back(8);
-  ihdr.push_back(6);
+  ihdr.push_back(static_cast<unsigned char>(bitDepth));
+  ihdr.push_back(static_cast<unsigned char>(colorType));
   ihdr.push_back(0);
   ihdr.push_back(0);
   ihdr.push_back(0);
   appendChunk(*png, {{'I', 'H', 'D', 'R'}}, ihdr);
 
   const std::vector<unsigned char> scanlines
-      = createScanlines(rgba, width, height);
+      = createScanlines(image, rowBytes, height);
   appendChunk(*png, {{'I', 'D', 'A', 'T'}}, createStoredZlibStream(scanlines));
   appendChunk(*png, {{'I', 'E', 'N', 'D'}}, {});
 
@@ -425,13 +348,8 @@ unsigned lodepng_encode_memory(
   if (!out || !outsize)
     return kErrorInvalidInput;
 
-  std::vector<unsigned char> rgba;
-  unsigned error = makeRgba(image, w, h, colortype, bitdepth, &rgba);
-  if (error)
-    return error;
-
   std::vector<unsigned char> png;
-  error = encodeRgbaPng(rgba, w, h, &png);
+  unsigned error = encodeRawPng(image, w, h, colortype, bitdepth, &png);
   if (error)
     return error;
 
@@ -534,7 +452,7 @@ const char* lodepng_error_text(unsigned code)
     case kErrorAllocation:
       return "Failed to allocate PNG output buffer";
     case kErrorFileWrite:
-      return "Failed to write PNG output file";
+      return "PNG input buffer is too small or file write failed";
     case kErrorOverflow:
       return "PNG dimensions overflow the buffer size";
     default:
@@ -572,6 +490,11 @@ unsigned encode(
     LodePNGColorType colortype,
     unsigned bitdepth)
 {
+  const unsigned validationError
+      = validateVectorInputSize(in, w, h, colortype, bitdepth);
+  if (validationError)
+    return validationError;
+
   return encode(out, in.data(), w, h, colortype, bitdepth);
 }
 
@@ -594,6 +517,11 @@ unsigned encode(
     LodePNGColorType colortype,
     unsigned bitdepth)
 {
+  const unsigned validationError
+      = validateVectorInputSize(in, w, h, colortype, bitdepth);
+  if (validationError)
+    return validationError;
+
   return encode(filename, in.data(), w, h, colortype, bitdepth);
 }
 
