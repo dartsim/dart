@@ -52,7 +52,6 @@
 #include <dart/common/memory_manager.hpp>
 #include <dart/common/stl_allocator.hpp>
 
-#include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -71,18 +70,6 @@ namespace dart::simulation::compute {
 namespace dvbd = dart::simulation::detail::deformable_vbd;
 
 namespace {
-
-Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
-{
-  const auto norm = orientation.norm();
-  if (norm <= 0.0 || !std::isfinite(norm)) {
-    return Eigen::Quaterniond::Identity();
-  }
-
-  auto normalized = orientation;
-  normalized.coeffs() /= norm;
-  return normalized;
-}
 
 const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
     const detail::WorldRegistry& registry, entt::entity entity)
@@ -140,31 +127,6 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
 
   return merged;
 }
-double inverseMass(const comps::MassProperties& mass)
-{
-  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
-}
-
-//==============================================================================
-Eigen::Matrix3d inverseWorldInertia(
-    const comps::MassProperties& mass, const comps::Transform& transform)
-{
-  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
-    return Eigen::Matrix3d::Zero();
-  }
-
-  const Eigen::Matrix3d rotation
-      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-  const Eigen::Matrix3d worldInertia
-      = rotation * mass.inertia * rotation.transpose();
-  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    return Eigen::Matrix3d::Zero();
-  }
-  return solver.solve(Eigen::Matrix3d::Identity());
-}
-
-//==============================================================================
 bool hasContactNormalAngularTerm(const Eigen::Vector3d& normalArmCross)
 {
   return normalArmCross.x() != 0.0 || normalArmCross.y() != 0.0
@@ -176,32 +138,6 @@ bool needsContactInverseInertia(
     const Eigen::Vector3d& normalArmCross, const double friction)
 {
   return friction > 0.0 || hasContactNormalAngularTerm(normalArmCross);
-}
-
-//==============================================================================
-double restitutionOf(const comps::ContactMaterial* material)
-{
-  if (material != nullptr) {
-    return material->restitution;
-  }
-  return 0.0;
-}
-
-//==============================================================================
-double frictionOf(const comps::ContactMaterial* material)
-{
-  if (material != nullptr) {
-    return material->friction;
-  }
-  return 1.0;
-}
-
-//==============================================================================
-bool hasPrescribedRigidBodyContactResponse(
-    const detail::WorldRegistry& registry, entt::entity entity)
-{
-  return registry.all_of<comps::StaticBodyTag>(entity)
-         || registry.all_of<comps::KinematicBodyTag>(entity);
 }
 
 //==============================================================================
@@ -257,7 +193,7 @@ bool shouldSkipRigidBodyContactQuery(const World& world)
     }
 
     const bool prescribedResponse
-        = hasPrescribedRigidBodyContactResponse(registry, entity);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entity);
     if (!prescribedResponse) {
       if (!hasIgnoredCollisionPairs) {
         return false;
@@ -308,8 +244,9 @@ void resolveRigidBodyContactPositions(
     std::span<const Contact> contacts,
     double /*timeStep*/)
 {
-  constexpr double allowance = 1e-4;
-  constexpr double correctionFactor = 0.2;
+  constexpr double allowance = detail::kRigidContactPositionAllowance;
+  constexpr double correctionFactor
+      = detail::kRigidContactPositionCorrectionFactor;
   for (const auto& contact : contacts) {
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
     const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
@@ -324,15 +261,17 @@ void resolveRigidBodyContactPositions(
     }
 
     const bool staticA
-        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityA);
     const bool staticB
-        = hasPrescribedRigidBodyContactResponse(registry, entityB);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityB);
     const double invMassA
         = staticA ? 0.0
-                  : inverseMass(registry.get<comps::MassProperties>(entityA));
+                  : detail::inverseMassOf(
+                        registry.get<comps::MassProperties>(entityA));
     const double invMassB
         = staticB ? 0.0
-                  : inverseMass(registry.get<comps::MassProperties>(entityB));
+                  : detail::inverseMassOf(
+                        registry.get<comps::MassProperties>(entityB));
     const double totalInverseMass = invMassA + invMassB;
     if (totalInverseMass <= 0.0) {
       continue;
@@ -443,8 +382,6 @@ struct RigidBodyContactStage::ContactScratch
   {
     entt::entity bodyA;
     entt::entity bodyB;
-    comps::Transform* transformA;
-    comps::Transform* transformB;
     comps::Velocity* velocityA;
     comps::Velocity* velocityB;
     Eigen::Vector3d normal;
@@ -949,21 +886,19 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       continue;
     }
 
-    auto& transformA = registry.get<comps::Transform>(entityA);
-    auto& transformB = registry.get<comps::Transform>(entityB);
+    const auto& transformA = registry.get<comps::Transform>(entityA);
+    const auto& transformB = registry.get<comps::Transform>(entityB);
     const auto& massA = registry.get<comps::MassProperties>(entityA);
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
     const bool staticA
-        = hasPrescribedRigidBodyContactResponse(registry, entityA);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityA);
     const bool staticB
-        = hasPrescribedRigidBodyContactResponse(registry, entityB);
+        = detail::hasPrescribedRigidBodyContactResponse(registry, entityB);
 
     ContactScratch::NormalConstraint constraint;
     constraint.bodyA = entityA;
     constraint.bodyB = entityB;
-    constraint.transformA = &transformA;
-    constraint.transformB = &transformB;
     constraint.normal = contact.normal;
     constraint.depth = contact.depth;
     constraint.staticA = staticA;
@@ -976,12 +911,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     if (!staticB) {
       constraint.armB = contact.point - transformB.position;
     }
-    constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
-    constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
-    const auto* materialA = registry.try_get<comps::ContactMaterial>(entityA);
-    const auto* materialB = registry.try_get<comps::ContactMaterial>(entityB);
-    const double frictionProduct
-        = frictionOf(materialA) * frictionOf(materialB);
+    constraint.invMassA = staticA ? 0.0 : detail::inverseMassOf(massA);
+    constraint.invMassB = staticB ? 0.0 : detail::inverseMassOf(massB);
+    const double frictionProduct = detail::frictionOf(registry, entityA)
+                                   * detail::frictionOf(registry, entityB);
     constraint.friction
         = frictionProduct == 0.0 ? 0.0 : std::sqrt(frictionProduct);
 
@@ -1003,12 +936,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         = !staticB
           && needsContactInverseInertia(
               constraint.normalArmCrossB, constraint.friction);
-    constraint.invInertiaA = needsInverseInertiaA
-                                 ? inverseWorldInertia(massA, transformA)
-                                 : Eigen::Matrix3d::Zero();
-    constraint.invInertiaB = needsInverseInertiaB
-                                 ? inverseWorldInertia(massB, transformB)
-                                 : Eigen::Matrix3d::Zero();
+    constraint.invInertiaA
+        = needsInverseInertiaA
+              ? detail::inverseWorldInertiaOf(massA, transformA)
+              : Eigen::Matrix3d::Zero();
+    constraint.invInertiaB
+        = needsInverseInertiaB
+              ? detail::inverseWorldInertiaOf(massB, transformB)
+              : Eigen::Matrix3d::Zero();
     constraint.normalLinearDeltaA = -constraint.invMassA * constraint.normal;
     constraint.normalLinearDeltaB = constraint.invMassB * constraint.normal;
     constraint.normalAngularDeltaA = Eigen::Vector3d::Zero();
@@ -1039,8 +974,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     // Restitution target from the pre-solve approach velocity (the impact
     // speed). Combine the two materials by taking the larger bounce.
-    const double restitution
-        = std::max(restitutionOf(materialA), restitutionOf(materialB));
+    const double restitution = std::max(
+        detail::restitutionOf(registry, entityA),
+        detail::restitutionOf(registry, entityB));
     auto& velocityA = registry.get<comps::Velocity>(entityA);
     auto& velocityB = registry.get<comps::Velocity>(entityB);
     constraint.velocityA = &velocityA;
@@ -1209,31 +1145,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     }
   }
 
-  // Positional correction (projection) removes residual penetration beyond a
-  // small allowance without injecting velocity, so resting stacks do not sink.
-  constexpr double allowance = 1e-4;
-  constexpr double correctionFactor = 0.2;
-  for (const auto& constraint : constraints) {
-    const double penetration = constraint.depth - allowance;
-    if (penetration <= 0.0) {
-      continue;
-    }
-
-    const double totalInverseMass = constraint.invMassA + constraint.invMassB;
-    if (totalInverseMass <= 0.0) {
-      continue;
-    }
-
-    const Eigen::Vector3d correction
-        = (correctionFactor * penetration / totalInverseMass)
-          * constraint.normal;
-    if (!constraint.staticA) {
-      constraint.transformA->position -= constraint.invMassA * correction;
-    }
-    if (!constraint.staticB) {
-      constraint.transformB->position += constraint.invMassB * correction;
-    }
-  }
+  resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
 }
 
 //==============================================================================

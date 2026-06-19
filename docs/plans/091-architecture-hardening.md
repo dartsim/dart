@@ -622,6 +622,16 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `kRigidContactRestitutionThreshold`, so the restitution threshold is now
   defined once across all four contact paths (golden 3/3, contact parity 5/5,
   boxed-LCP 122/122 unchanged).
+  **Safe shared-helper cleanup (pending acceptance in PR #3083):** the remaining
+  sequential-impulse local copies of the shared rigid-contact helper seam
+  (`inverseMassOf`, `inverseWorldInertiaOf`, material accessors, and prescribed
+  response classification) now route through
+  `detail/rigid_contact/rigid_contact_assembly.hpp`. The two positional
+  projection constants (`1e-4` allowance, `0.2` correction factor) now live next
+  to the rigid-contact constants in that shared header, and both the standalone
+  projection helper and the sequential path call the same projection helper
+  instead of keeping duplicate loops. Behavior-preserving cleanup only; the
+  four assembler layouts still remain distinct.
   **Slice B (remaining):** converge the four contact-problem _assemblers_ (the
   canonical `RigidBodyContactProblem` producer, the boxed-LCP assembly, the
   differentiable-capture rebuild, and the sequential-impulse scratch in
@@ -998,12 +1008,28 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `pendulum_2link` (integration axis); the 2-link case confirms the two
   integration families are genuinely distinct paths (final energy −18.2298 vs
   −18.2052). `test_cross_family_corpus` 1/1, golden 3/3, lint +
-  `check-api-boundaries` green; pure-additive (no library change). **Remaining:**
-  a standalone harness binary + manifest-driven packet writer (replacing the
-  per-scene script fleet) and the cross-family dashboard row set,
-  contact/iteration metric population (needs a non-const narrow-phase pass),
-  world-frame multibody-link momentum aggregation, and a corpus-wide
-  order-of-convergence sweep (this seeds it for one scene).
+  `check-api-boundaries` green; pure-additive (no library change).
+  **Standalone harness + packet slice (pending acceptance in PR #3083):**
+  `tests/benchmark/simulation/bm_plan091_cross_family_corpus.cpp`
+  runs the same registered cross-family row set as a standalone Google
+  Benchmark target,
+  `docs/plans/091-architecture-hardening/cross-family-metrics-corpus.json`
+  records the manifest of scene/family/invariant rows, and
+  `scripts/write_plan091_cross_family_metrics_packet.py` validates the
+  benchmark JSON into an evidence packet tagged with scene ID, resolved solver
+  identity, and public `World::computeStepMetrics()` counters. Focused
+  validation: `pixi run python -m pytest
+tests/test_plan091_cross_family_metrics_packet.py
+tests/test_benchmark_packet_utils.py -q` green; actual benchmark packet smoke:
+  `pixi run bm --target bm_plan091_cross_family_corpus -- ...` emitted all 8
+  rows and `pixi run python
+scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
+.benchmark_results/plan091/cross_family_metrics_benchmark.json --output
+.benchmark_results/plan091/cross_family_metrics_packet.json` accepted them.
+  **Remaining:** contact/iteration metric population (needs a non-const
+  narrow-phase pass), world-frame multibody-link momentum aggregation, and a
+  corpus-wide order-of-convergence sweep (the current convergence seed covers
+  one scene).
   NOTE: independent of this
   slice, the branch carries one **pre-existing** red test
   (`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`, an exact
@@ -1276,7 +1302,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   row `BM_CudaResidentRigidBodyStateBatchLinearRollout/4/256/1`) passed.
   Accepted by maintainer merge of PR #3061.
 
-#### WP-091.33e Precision and packet reporting
+#### WP-091.33e Precision and packet reporting [claimed]
 
 - Objective: batched benchmark and diagnostic packets report backend,
   precision, transfer inclusion, lane count, and resolved execution shape.
@@ -1291,6 +1317,17 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   is included and what double-reference tolerance applies.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
 - Dependencies: WP-091.24, WP-091.33a.
+- Evidence (pending acceptance in PR #3083): batched packet rows now carry the
+  resolved backend, precision, transfer-inclusion flag, lane count, step count,
+  and resolved execution shape through shared
+  `benchmark_packet_utils.batched_benchmark_row_schema_errors(...)`;
+  `scripts/check_phase5_gpu_packet.py` rejects missing fields on the Phase 5
+  CUDA representative CPU/GPU rows; `scripts/write_phase5_cuda_packet.py`
+  annotates those rows from the resolved workload shape; and
+  `docs/design/batched_world_device_residency.md` records the policy that
+  timing claims cannot be separated from precision or transfer accounting.
+  Focused validation: `pixi run python -m pytest
+tests/test_benchmark_packet_utils.py -q` green.
 
 #### WP-091.34 Graph granularity policy [done — PR #3061, merged 2026-06-18]
 
@@ -1319,7 +1356,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
 
 ### WS4 — Facade and public API
 
-#### WP-091.40 Reserve general state-vector semantics [claimed]
+#### WP-091.40 Reserve general state-vector semantics [done — PR #3077, merged 2026-06-19]
 
 - Objective: the general names (`getNumDofs`, `getStateVector`,
   `getControlVector`) stop carrying a translational-rigid-only slice; the

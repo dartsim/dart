@@ -34,7 +34,7 @@ def benchmark_timing_ns(row: Mapping[str, Any]) -> float:
         return math.nan
     try:
         return timing_to_ns(float(value), str(row.get("time_unit", "ns")))
-    except TypeError, ValueError:
+    except (TypeError, ValueError):  # fmt: skip
         return math.nan
 
 
@@ -115,4 +115,43 @@ def benchmark_packet_timing_schema_errors(
                 f"{packet_name}.{SOLVER_SUBPHASE_TIMINGS_KEY}.{subphase} "
                 f"must be finite and non-negative"
             )
+    return errors
+
+
+def batched_benchmark_row_schema_errors(
+    row: Mapping[str, Any], packet_name: str
+) -> list[str]:
+    """Return schema errors for a PLAN-091 batched benchmark packet row."""
+
+    errors: list[str] = []
+    backend = row.get("backend")
+    if not isinstance(backend, str) or not backend:
+        errors.append(f"{packet_name}.backend must be a non-empty string")
+
+    precision = row.get("precision")
+    if not isinstance(precision, str) or not precision:
+        errors.append(f"{packet_name}.precision must be a non-empty string")
+
+    includes_transfer_time = row.get("includes_transfer_time")
+    if not isinstance(includes_transfer_time, bool):
+        errors.append(f"{packet_name}.includes_transfer_time must be a boolean")
+
+    lane_count = row.get("lane_count")
+    if not isinstance(lane_count, int) or isinstance(lane_count, bool):
+        errors.append(f"{packet_name}.lane_count must be an integer")
+    elif lane_count <= 0:
+        errors.append(f"{packet_name}.lane_count must be positive")
+
+    execution_shape = row.get("resolved_execution_shape")
+    if not isinstance(execution_shape, str) or not execution_shape:
+        errors.append(
+            f"{packet_name}.resolved_execution_shape must be a non-empty string"
+        )
+
+    step_count = row.get("step_count")
+    if not isinstance(step_count, int) or isinstance(step_count, bool):
+        errors.append(f"{packet_name}.step_count must be an integer")
+    elif step_count <= 0:
+        errors.append(f"{packet_name}.step_count must be positive")
+
     return errors
