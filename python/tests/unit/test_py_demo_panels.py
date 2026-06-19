@@ -3557,6 +3557,7 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
                     guide.capture_height,
                     guide.capture_show_ui,
                     scene_state_json='{"controls":{"contact_method_index":1}}',
+                    capture_label="boxed_lcp",
                 )
             ) in events
             assert (

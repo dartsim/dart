@@ -32,15 +32,23 @@ against degenerate debug primitives.
 The next M1 slice added scriptable capture-state restoration:
 `py-demo-capture -- --scene-state-json '{"controls":{"contact_method_index":1}}'`
 restores scene-owned replay state before the viewer starts. The `rigid_body`
-workflow panel now advertises the boxed-LCP baseline capture command, and
-default/CUDA captures resolved `contact_solver_method=BOXED_LCP` in their
-manifests.
+workflow panel now advertises the boxed-LCP baseline capture command with
+`--capture-label boxed_lcp`, so stateful A/B captures use distinct default
+output directories and artifact stems. Default/CUDA captures resolved
+`contact_solver_method=BOXED_LCP` in their manifests.
+
+## Current Branch
+
+`fix/py-demos-selection-crash` - clean after two local follow-up commits:
+`Add scriptable py-demos capture state` and
+`Label py-demos stateful captures`. Neither commit has been pushed to PR #3084
+yet.
 
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
-set, use the scripted capture-state path for rigid-body SI vs boxed-LCP visual
-packets, then curate the AVBD constraint showcase.
+set, use the labeled scripted capture-state path for rigid-body SI vs boxed-LCP
+visual packets, then curate the AVBD constraint showcase.
 
 Re-run any M0 guard:
 

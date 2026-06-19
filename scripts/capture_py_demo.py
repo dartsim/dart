@@ -594,18 +594,47 @@ def _safe_stem(value: str) -> str:
     return safe or "scene"
 
 
+def _parse_capture_label(text: str) -> str:
+    if not text:
+        raise argparse.ArgumentTypeError("expected non-empty capture label")
+    safe = _safe_stem(text)
+    if safe != text:
+        raise argparse.ArgumentTypeError(
+            "expected capture label using only letters, digits, '-' or '_'"
+        )
+    return text
+
+
 def _capture_stem(args: argparse.Namespace) -> str:
+    scene_stem = _safe_stem(args.scene)
     switch_scene = getattr(args, "switch_scene", "")
     if switch_scene:
-        return f"{_safe_stem(args.scene)}_to_{_safe_stem(switch_scene)}"
-    force_drag_target = getattr(args, "force_drag_target", "")
-    if force_drag_target:
-        return f"{_safe_stem(args.scene)}_force_{_safe_stem(force_drag_target)}"
-    force_drag_pixel = getattr(args, "force_drag_pixel", None)
-    if force_drag_pixel is not None:
+        stem = f"{scene_stem}_to_{_safe_stem(switch_scene)}"
+    elif force_drag_target := getattr(args, "force_drag_target", ""):
+        stem = f"{scene_stem}_force_{_safe_stem(force_drag_target)}"
+    elif (force_drag_pixel := getattr(args, "force_drag_pixel", None)) is not None:
         x, y = force_drag_pixel
-        return f"{_safe_stem(args.scene)}_force_pixel_{x:g}_{y:g}"
-    return _safe_stem(args.scene)
+        stem = f"{scene_stem}_force_pixel_{x:g}_{y:g}"
+    else:
+        stem = scene_stem
+
+    capture_label = getattr(args, "capture_label", "")
+    if capture_label:
+        stem = f"{stem}_{capture_label}"
+    return stem
+
+
+def _single_capture_output_dir(args: argparse.Namespace) -> pathlib.Path:
+    if args.output_dir is not None:
+        return args.output_dir
+    if args.capture_label:
+        return _default_output_dir(f"{args.scene}_{args.capture_label}")
+    return _default_output_dir(args.scene)
+
+
+def _capture_label(args: argparse.Namespace) -> str | None:
+    label = getattr(args, "capture_label", "")
+    return label or None
 
 
 def _parse_vector3(text: str) -> tuple[float, float, float]:
@@ -1108,6 +1137,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help=(
             "Restore a JSON scene state before rendering the selected scene. "
             "Scenes opt in by exposing replay_restore_state."
+        ),
+    )
+    parser.add_argument(
+        "--capture-label",
+        default=None,
+        type=_parse_capture_label,
+        help=(
+            "Append a stable label to single-capture artifact names and, when "
+            "--output-dir is omitted, use a label-specific default directory."
         ),
     )
     parser.add_argument("--video", action="store_true")
@@ -3269,6 +3307,8 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         )
     if args.scene_state_json:
         raise SystemExit("--rigid-workflow cannot be combined with --scene-state-json")
+    if args.capture_label:
+        raise SystemExit("--rigid-workflow cannot be combined with --capture-label")
 
 
 def _run_rigid_workflow(args: argparse.Namespace) -> int:
@@ -3420,7 +3460,7 @@ def main(argv: list[str] | None = None) -> int:
             "--frames must be greater than --force-drag-frame + --force-drag-frames"
         )
 
-    output_dir = args.output_dir or _default_output_dir(args.scene)
+    output_dir = _single_capture_output_dir(args)
     output_dir.mkdir(parents=True, exist_ok=True)
     scene_env = _assignment_dict(args.env, "--env")
     metadata = _assignment_dict(args.metadata, "--metadata")
@@ -3500,6 +3540,7 @@ def main(argv: list[str] | None = None) -> int:
         "scene_metadata": None,
         "show_ui": args.show_ui,
         "metadata": metadata,
+        "capture_label": _capture_label(args),
         "scene_state": scene_state,
         "scene_environment": scene_env,
         "ui_ready": None,

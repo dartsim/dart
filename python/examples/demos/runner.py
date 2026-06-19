@@ -922,6 +922,7 @@ def _rigid_workflow_capture_command(
     height: int,
     show_ui: bool,
     scene_state_json: str | None = None,
+    capture_label: str | None = None,
 ) -> str:
     command = (
         "pixi run py-demo-capture -- "
@@ -931,6 +932,8 @@ def _rigid_workflow_capture_command(
         command = f"{command} --show-ui"
     if scene_state_json is not None:
         command = f"{command} --scene-state-json {shlex.quote(scene_state_json)}"
+    if capture_label is not None:
+        command = f"{command} --capture-label {shlex.quote(capture_label)}"
     return command
 
 
@@ -2546,6 +2549,7 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
                     guide.capture_height,
                     guide.capture_show_ui,
                     scene_state_json=_RIGID_BODY_BOXED_LCP_STATE_JSON,
+                    capture_label="boxed_lcp",
                 )
             )
             builder.item_tooltip(

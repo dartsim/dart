@@ -3052,6 +3052,57 @@ def test_visual_capture_default_scene_matches_py_demos_front_door() -> None:
     assert DEFAULT_INITIAL_SCENE_ID == "rigid_body"
 
 
+def test_visual_capture_label_uses_distinct_default_dir_and_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake_default_output_dir(scene: str) -> pathlib.Path:
+        return tmp_path / scene
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
+        frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
+        screenshot.parent.mkdir(parents=True, exist_ok=True)
+        frames.mkdir(parents=True, exist_ok=True)
+        _write_ppm(screenshot, bytes([255, 0, 0, 0, 255, 0]))
+        _write_ppm(frames / "frame_000001.ppm", bytes([255, 0, 0, 0, 255, 0]))
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_default_output_dir", fake_default_output_dir)
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_body",
+            "--frames",
+            "1",
+            "--width",
+            "2",
+            "--height",
+            "1",
+            "--scene-state-json",
+            '{"controls":{"contact_method_index":1}}',
+            "--capture-label",
+            "boxed_lcp",
+        ]
+    )
+
+    assert rc == 0
+    output = tmp_path / "rigid_body_boxed_lcp"
+    assert (output / "rigid_body_boxed_lcp.png").is_file()
+    manifest = capture_py_demo.json.loads((output / "manifest.json").read_text())
+    assert manifest["capture_label"] == "boxed_lcp"
+    assert manifest["scene_state"] == {"controls": {"contact_method_index": 1}}
+    assert manifest["artifacts"]["screenshot"] == str(
+        output / "rigid_body_boxed_lcp.png"
+    )
+
+
+def test_visual_capture_label_requires_artifact_safe_text() -> None:
+    with pytest.raises(SystemExit):
+        capture_py_demo.parse_args(["--capture-label", "boxed lcp"])
+
+
 def test_visual_capture_rejects_noop_backend(tmp_path: pathlib.Path) -> None:
     args = argparse.Namespace(
         backend="noop",

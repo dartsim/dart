@@ -44,9 +44,11 @@ and replay metadata.
         visual inspection.
   - [x] Scriptable contact-policy capture: `py-demo-capture` can restore
         scene-owned replay state before launch via `--scene-state-json`, and
-        the `rigid_body` workflow panel now advertises the boxed-LCP baseline
-        capture command. Verified in default and CUDA environments with
-        manifests resolving `contact_solver_method=BOXED_LCP`.
+        `--capture-label` gives stateful A/B captures distinct artifact stems
+        and default output directories. The `rigid_body` workflow panel now
+        advertises the boxed-LCP baseline capture command. Verified in default
+        and CUDA environments with manifests resolving
+        `contact_solver_method=BOXED_LCP`.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -89,7 +91,7 @@ repeatable operation.
 3. Capture a longer visual A/B packet for `rigid_body` with Sequential Impulse
    and boxed-LCP contacts when the PR needs reviewer-facing image/video
    artifacts; the scripted boxed-LCP command is now:
-   `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui --scene-state-json '{"controls":{"contact_method_index":1}}'`.
+   `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui --scene-state-json '{"controls":{"contact_method_index":1}}' --capture-label boxed_lcp`.
 4. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
    decide whether the final M1 experience remains two complementary scenes or
    grows into one unified comparison scene.
