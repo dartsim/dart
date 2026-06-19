@@ -7,8 +7,8 @@ git fetch origin release-6.20
 git switch --no-track -c <type>/<topic> origin/release-6.20
 ```
 
-Do not push directly to `release-*`. Push topic branches with matching local and
-remote names:
+Do not push directly to `release-*`. After explicit maintainer or user approval,
+push topic branches with matching local and remote names:
 
 ```bash
 branch=$(git branch --show-current)

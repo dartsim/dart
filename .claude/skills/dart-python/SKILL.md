@@ -25,7 +25,7 @@ for _ in range(100):
 
 For complete Python bindings guide: `docs/onboarding/python-bindings.md`
 
-For module-specific details: `python/AGENTS.md`
+For current examples and test patterns: `python/examples/` and `python/tests/`
 
 ## Quick Commands
 
