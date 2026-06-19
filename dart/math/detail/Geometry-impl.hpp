@@ -33,9 +33,8 @@
 #ifndef DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 #define DART_MATH_DETAIL_GEOMETRY_IMPL_HPP_
 
-#include "dart/external/convhull_3d/safe_convhull_3d.h"
-
 #include <dart/math/Geometry.hpp>
+#include <dart/math/detail/ConvexHull.hpp>
 
 #include <unordered_map>
 
@@ -85,20 +84,10 @@ std::tuple<
 computeConvexHull3D(
     const std::vector<Eigen::Matrix<S, 3, 1>>& inputVertices, bool optimize)
 {
-  ch_vertex* vertices = new ch_vertex[inputVertices.size()];
-
-  for (auto i = 0u; i < inputVertices.size(); ++i) {
-    const Eigen::Matrix<S, 3, 1>& inputV = inputVertices[i];
-    ch_vertex& v = vertices[i];
-    v.x = inputV[0];
-    v.y = inputV[1];
-    v.z = inputV[2];
-  }
-
-  int* faces = nullptr;
+  std::vector<int> faces;
   int numFaces = 0;
 
-  convhull_3d_build(vertices, inputVertices.size(), &faces, &numFaces);
+  detail::computeConvexHull3D(inputVertices, faces, numFaces);
 
   std::vector<Eigen::Matrix<Index, 3, 1>> eigenFaces;
   eigenFaces.reserve(numFaces);
@@ -110,9 +99,6 @@ computeConvexHull3D(
 
     eigenFaces.emplace_back(index1, index2, index3);
   }
-
-  free(faces);
-  delete[] vertices;
 
   if (optimize)
     return discardUnusedVertices<S, Index>(inputVertices, eigenFaces);
