@@ -156,9 +156,8 @@ std::size_t stepUntil(World* world, std::size_t maxSteps, Predicate pred)
 constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
-// Creates a world with automatic deactivation enabled. The DART 6 LTS library
-// default stays OFF for downstream behavior compatibility, so tests opt in
-// explicitly.
+// Creates a world with automatic deactivation enabled. Keep this explicit so
+// tests stay robust if callers locally override the default options.
 WorldPtr makeSleepWorld()
 {
   auto world = World::create();
@@ -168,14 +167,62 @@ WorldPtr makeSleepWorld()
   return world;
 }
 
+WorldPtr makeSettlingComparisonWorld(bool deactivationEnabled)
+{
+  auto world = World::create();
+  auto opts = world->getDeactivationOptions();
+  opts.mEnabled = deactivationEnabled;
+  world->setDeactivationOptions(opts);
+
+  world->addSkeleton(createFloor());
+  world->addSkeleton(createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.2)));
+
+  return world;
+}
+
 } // namespace
 
 //==============================================================================
-// DART 6 LTS keeps automatic deactivation opt-in so existing downstream
-// integrations get byte-identical stepping unless they explicitly enable it.
-TEST(IslandDeactivation, DisabledByDefault)
+// Automatic deactivation is enabled by default so users get resting-scene
+// acceleration by upgrading. The opt-out path is covered by DisabledIsNoOp.
+TEST(IslandDeactivation, EnabledByDefault)
 {
-  EXPECT_FALSE(World::create()->getDeactivationOptions().mEnabled);
+  EXPECT_TRUE(World::create()->getDeactivationOptions().mEnabled);
+}
+
+//==============================================================================
+// Default-on sleeping must not trade physics fidelity for speed. After the same
+// drop-and-settle scenario, the sleeping result should match the always-active
+// solver path within contact-solver tolerance and land at the expected support
+// height.
+TEST(IslandDeactivation, DefaultEnabledSettlesCloseToAlwaysActivePath)
+{
+  auto enabledWorld = makeSettlingComparisonWorld(true);
+  auto activeWorld = makeSettlingComparisonWorld(false);
+  auto enabledBox = enabledWorld->getSkeleton("box");
+  auto activeBox = activeWorld->getSkeleton("box");
+  ASSERT_TRUE(enabledBox);
+  ASSERT_TRUE(activeBox);
+
+  constexpr std::size_t steps = 6000;
+  for (std::size_t i = 0; i < steps; ++i) {
+    enabledWorld->step();
+    activeWorld->step();
+  }
+
+  ASSERT_TRUE(enabledBox->isResting());
+  EXPECT_FALSE(activeBox->isResting());
+
+  const auto enabledTransform = enabledBox->getBodyNode(0)->getTransform();
+  const auto activeTransform = activeBox->getBodyNode(0)->getTransform();
+  EXPECT_TRUE(enabledTransform.translation().isApprox(
+      activeTransform.translation(), 1e-4));
+  EXPECT_TRUE(
+      enabledTransform.linear().isApprox(activeTransform.linear(), 1e-6));
+  EXPECT_NEAR(enabledTransform.translation().z(), kHalf, 1e-5);
 }
 
 //==============================================================================

@@ -115,6 +115,15 @@ bool evaluateHalfspaceDistance(
     Eigen::Vector3d& nearestFinitePoint,
     Eigen::Vector3d& nearestHalfspacePoint);
 
+bool evaluateHalfspaceHalfspaceDistance(
+    fcl::CollisionObject* object1,
+    fcl::CollisionObject* object2,
+    const fcl::Halfspace* halfspace1,
+    const fcl::Halfspace* halfspace2,
+    double& distance,
+    Eigen::Vector3d& nearestPoint1,
+    Eigen::Vector3d& nearestPoint2);
+
 void postProcessFCL(
     const fcl::CollisionResult& fclResult,
     fcl::CollisionObject* o1,
@@ -950,9 +959,7 @@ void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
 {
   FCLCollisionObject* fcl = static_cast<FCLCollisionObject*>(object);
 
-  fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
-      new fcl::CollisionObject(claimFCLCollisionGeometry(object->getShape())));
-  fcl->mFCLCollisionObject->setUserData(fcl);
+  fcl->setFCLCollisionGeometry(claimFCLCollisionGeometry(object->getShape()));
 }
 
 //==============================================================================
@@ -1489,6 +1496,68 @@ bool evaluateHalfspaceDistance(
 }
 
 //==============================================================================
+bool getWorldHalfspace(
+    fcl::CollisionObject* object,
+    const fcl::Halfspace* halfspace,
+    Eigen::Vector3d& normal,
+    double& offset)
+{
+  const auto worldHalfspace
+      = ::fcl::transform(*halfspace, object->getTransform());
+  normal = FCLTypes::convertVector3(worldHalfspace.n);
+
+  const double norm = normal.norm();
+  if (norm <= std::numeric_limits<double>::epsilon())
+    return false;
+
+  normal /= norm;
+  offset = worldHalfspace.d / norm;
+  return true;
+}
+
+//==============================================================================
+bool evaluateHalfspaceHalfspaceDistance(
+    fcl::CollisionObject* object1,
+    fcl::CollisionObject* object2,
+    const fcl::Halfspace* halfspace1,
+    const fcl::Halfspace* halfspace2,
+    double& distance,
+    Eigen::Vector3d& nearestPoint1,
+    Eigen::Vector3d& nearestPoint2)
+{
+  Eigen::Vector3d normal1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal2 = Eigen::Vector3d::Zero();
+  double offset1 = 0.0;
+  double offset2 = 0.0;
+  if (!getWorldHalfspace(object1, halfspace1, normal1, offset1)
+      || !getWorldHalfspace(object2, halfspace2, normal2, offset2)) {
+    return false;
+  }
+
+  constexpr double kParallelTolerance = 1e-9;
+  if (normal1.dot(normal2) > -1.0 + kParallelTolerance) {
+    distance = 0.0;
+    nearestPoint1 = Eigen::Vector3d::Zero();
+    nearestPoint2 = Eigen::Vector3d::Zero();
+    return true;
+  }
+
+  const double separation = -(offset1 + offset2);
+  if (separation > 0.0) {
+    distance = separation;
+    nearestPoint1 = offset1 * normal1;
+    nearestPoint2 = -offset2 * normal1;
+    return true;
+  }
+
+  distance = 0.0;
+  const Eigen::Vector3d point = 0.5 * (offset1 - offset2) * normal1;
+  nearestPoint1 = point;
+  nearestPoint2 = point;
+  return true;
+}
+
+//==============================================================================
 void updateAnalyticDistanceResult(
     FCLDistanceCallbackData& distData,
     fcl::CollisionObject* o1,
@@ -1551,13 +1620,23 @@ bool distanceHalfspaceObjectPair(
   }
 
   if (halfspace1 && halfspace2) {
+    double distance = 0.0;
+    Eigen::Vector3d nearestPoint1 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d nearestPoint2 = Eigen::Vector3d::Zero();
+    if (!evaluateHalfspaceHalfspaceDistance(
+            o1,
+            o2,
+            halfspace1,
+            halfspace2,
+            distance,
+            nearestPoint1,
+            nearestPoint2)) {
+      handled = false;
+      return distData.done;
+    }
+
     updateAnalyticDistanceResult(
-        distData,
-        o1,
-        o2,
-        0.0,
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero());
+        distData, o1, o2, distance, nearestPoint1, nearestPoint2);
     return distData.done;
   }
 

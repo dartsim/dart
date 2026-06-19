@@ -492,6 +492,58 @@ TEST(CollisionGroupsTest, FclPlaneShapeDoesNotEnterAabbTree)
   EXPECT_NEAR(distanceResult.minDistance, 1.5, 1e-12);
 }
 
+TEST(CollisionGroupsTest, FclRemovesSharedObjectAfterOtherGroupRefresh)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate("fcl")) {
+    std::cout << "Skipping FCL shared object refresh test because FCL is not "
+              << "available" << std::endl;
+    return;
+  }
+
+  auto cd = dart::collision::CollisionDetector::getFactory()->create("fcl");
+  auto groupA = cd->createCollisionGroup();
+  auto groupB = cd->createCollisionGroup();
+
+  auto sharedSkeleton = dart::dynamics::Skeleton::create("shared");
+  auto sharedPair
+      = sharedSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto sharedShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(1.0));
+  auto* sharedNode
+      = sharedPair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          sharedShape);
+
+  auto obstacleSkeleton = dart::dynamics::Skeleton::create("obstacle");
+  auto obstaclePair
+      = obstacleSkeleton
+            ->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto obstacleShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(1.0));
+  auto* obstacleNode
+      = obstaclePair.second
+            ->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+                obstacleShape);
+
+  groupA->addShapeFrame(sharedNode);
+  groupA->addShapeFrame(obstacleNode);
+  groupB->addShapeFrame(sharedNode);
+
+  dart::collision::CollisionOption option;
+  option.maxNumContacts = 8u;
+  dart::collision::CollisionResult result;
+  EXPECT_TRUE(groupA->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  sharedNode->setShape(std::make_shared<dart::dynamics::PlaneShape>(
+      Eigen::Vector3d::UnitZ(), 0.0));
+  groupB->collide();
+
+  groupA->removeShapeFrame(sharedNode);
+  result.clear();
+  EXPECT_FALSE(groupA->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     CollisionEngine,
     CollisionGroupsTest,

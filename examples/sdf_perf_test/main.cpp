@@ -279,6 +279,9 @@ bool isHelpRequest(int argc, char* argv[])
 std::size_t parseSize(const std::string& value, const std::string& name)
 {
   try {
+    if (!value.empty() && (value.front() == '-' || value.front() == '+'))
+      throw std::invalid_argument("signed value");
+
     std::size_t consumed = 0;
     const auto parsed = std::stoull(value, &consumed);
     if (consumed != value.size())
@@ -455,27 +458,61 @@ Options parseOptions(int argc, char* argv[])
   if (options.useSdfPlaneShapes
       && options.collisionEngine != CollisionEngine::Fcl
       && options.collisionEngine != CollisionEngine::Bullet
-      && options.collisionEngine != CollisionEngine::Ode) {
+      && options.collisionEngine != CollisionEngine::Ode
+      && !(
+          options.primitiveShapes
+          && options.collisionEngine == CollisionEngine::Default)) {
     throw std::invalid_argument(
         "--sdf-plane-shapes requires --collision fcl, bullet, or ode");
+  }
+
+  if (options.primitiveShapes
+      && options.collisionEngine != CollisionEngine::Default
+      && options.collisionEngine != CollisionEngine::Fcl) {
+    throw std::invalid_argument(
+        "--primitive-shapes requires the FCL collision detector");
+  }
+
+  if (options.generatedObjects.has_value()
+      && options.collisionEngine == CollisionEngine::Dart) {
+    throw std::invalid_argument(
+        "--generate-objects uses generated cylinder and plane geometry that "
+        "is unsupported by --collision dart");
   }
 
   return options;
 }
 
 dart::collision::CollisionDetectorPtr makeCollisionDetector(
-    CollisionEngine engine)
+    const Options& options)
 {
-  if (engine == CollisionEngine::Dart)
+  if (options.collisionEngine == CollisionEngine::Dart)
     return dart::collision::DARTCollisionDetector::create();
-  if (engine == CollisionEngine::Bullet)
+  if (options.collisionEngine == CollisionEngine::Bullet)
     return dart::collision::BulletCollisionDetector::create();
-  if (engine == CollisionEngine::Fcl)
-    return dart::collision::FCLCollisionDetector::create();
-  if (engine == CollisionEngine::Ode)
+  if (options.collisionEngine == CollisionEngine::Fcl
+      || (options.primitiveShapes
+          && options.collisionEngine == CollisionEngine::Default)) {
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    if (options.primitiveShapes) {
+      detector->setPrimitiveShapeType(
+          dart::collision::FCLCollisionDetector::PRIMITIVE);
+    }
+    return detector;
+  }
+  if (options.collisionEngine == CollisionEngine::Ode)
     return dart::collision::OdeCollisionDetector::create();
 
   return nullptr;
+}
+
+bool generatedWorldUsesCollisionPlane(const Options& options)
+{
+  return options.collisionEngine == CollisionEngine::Fcl
+         || options.collisionEngine == CollisionEngine::Bullet
+         || options.collisionEngine == CollisionEngine::Ode
+         || (options.primitiveShapes
+             && options.collisionEngine == CollisionEngine::Default);
 }
 
 struct GeneratedShapeSpec
@@ -529,7 +566,7 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
 
   auto world = dart::simulation::World::create("generated_3lane_shapes");
   world->setTimeStep(0.001);
-  if (auto detector = makeCollisionDetector(options.collisionEngine))
+  if (auto detector = makeCollisionDetector(options))
     world->getConstraintSolver()->setCollisionDetector(detector);
 
   const std::size_t rows = (numObjects + kLanes - 1u) / kLanes;
@@ -545,10 +582,7 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
       = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
             .second;
 
-  const bool useCollisionPlane
-      = options.collisionEngine == CollisionEngine::Fcl
-        || options.collisionEngine == CollisionEngine::Bullet
-        || options.collisionEngine == CollisionEngine::Ode;
+  const bool useCollisionPlane = generatedWorldUsesCollisionPlane(options);
   if (useCollisionPlane) {
     groundBody->createShapeNodeWith<
         dart::dynamics::CollisionAspect,
@@ -1175,8 +1209,10 @@ void applyOptions(
               << replaced << "\n";
   }
 
-  if (auto detector = makeCollisionDetector(options.collisionEngine)) {
-    world->getConstraintSolver()->setCollisionDetector(detector);
+  if (!options.generatedObjects.has_value()) {
+    if (auto detector = makeCollisionDetector(options)) {
+      world->getConstraintSolver()->setCollisionDetector(detector);
+    }
   }
 
   if (options.maxContacts.has_value()) {
@@ -1195,19 +1231,6 @@ void applyOptions(
            "--max-contacts cap. Dense scenes can still be truncated at "
         << world->getConstraintSolver()->getCollisionOption().maxNumContacts
         << " contacts.\n";
-  }
-
-  if (options.primitiveShapes) {
-    const auto detector = world->getConstraintSolver()->getCollisionDetector();
-    auto fclDetector
-        = std::dynamic_pointer_cast<dart::collision::FCLCollisionDetector>(
-            detector);
-    if (!fclDetector) {
-      throw std::runtime_error(
-          "--primitive-shapes requires the FCL collision detector");
-    }
-    fclDetector->setPrimitiveShapeType(
-        dart::collision::FCLCollisionDetector::PRIMITIVE);
   }
 }
 
@@ -1242,9 +1265,13 @@ void printWorldSummary(
   std::cout << "  Collision detector requested: "
             << collisionEngineName(options.collisionEngine) << "\n";
   std::cout << "  Physics pipeline: DART 6 dynamics, constraints, and solver";
-  if (options.collisionEngine != CollisionEngine::Default)
+  if (options.collisionEngine != CollisionEngine::Default
+      || options.primitiveShapes) {
     std::cout << " with only collision detection delegated";
+  }
   std::cout << "\n";
+  std::cout << "  FCL primitive shapes: "
+            << (options.primitiveShapes ? "true" : "false") << "\n";
   std::cout << "  Simulation worker threads: "
             << world->getNumSimulationThreads() << "\n";
   if (options.generatedObjects.has_value()) {
@@ -1862,8 +1889,7 @@ int main(int argc, char* argv[])
     dart::utils::SdfParser::Options parserOptions;
     parserOptions.mUsePlaneShapeForPlane = options.useSdfPlaneShapes;
     if (options.useSdfPlaneShapes)
-      parserOptions.mCollisionDetector
-          = makeCollisionDetector(options.collisionEngine);
+      parserOptions.mCollisionDetector = makeCollisionDetector(options);
 
     world = dart::utils::SdfParser::readWorld(absoluteSdfPath, parserOptions);
   }

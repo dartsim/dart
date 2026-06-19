@@ -30,59 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#include "legacy_convhull_3d/convhull_3d.h"
 
-#include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/fcl/BackwardCompatibility.hpp>
-
-#include <string>
-
-namespace dart {
-namespace collision {
-
-class FCLCollisionObject : public CollisionObject
+void dart_convhull_c_compat_smoke(void)
 {
-public:
-  friend class FCLCollisionDetector;
+  ch_vertex vertex = {{{0.0, 0.0, 0.0}}};
+  ch_vertex* vertices = &vertex;
+  int* faces = 0;
+  int numFaces = 0;
+  CH_FLOAT* coefficients = 0;
+  CH_FLOAT* offsets = 0;
+  int* mesh = 0;
+  int numMesh = 0;
 
-  /// Return FCL collision object
-  dart::collision::fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
-
-  /// Deterministic key based on the attached ShapeFrame hierarchy.
-  const std::string& getKey() const
-  {
-    return mKey;
-  }
-
-protected:
-  /// Constructor
-  FCLCollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
-          fclCollGeom);
-
-  /// Replace the FCL geometry while preserving the FCL object pointer.
-  void setFCLCollisionGeometry(
-      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
-          fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  /// FCL collision object
-  std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
-
-  /// Stable identifier for deterministic ordering.
-  std::string mKey;
-};
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+  convhull_3d_build(vertices, 1, &faces, &numFaces);
+  convhull_nd_build(vertex.v, 1, 3, &faces, &coefficients, &offsets, &numFaces);
+  delaunay_nd_mesh((const float*)vertex.v, 1, 3, &mesh, &numMesh);
+}

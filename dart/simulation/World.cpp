@@ -724,7 +724,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // support, let it sleep instead of requiring a non-zero LCP island on that
   // exact frame. Moving or disturbed candidates are cleared before this point
   // by the wake-band checks above and in the pre-solve velocity pass.
-  constexpr double kSleepContactPenetrationTolerance = 1e-3;
+  constexpr double kSleepContactPenetrationTolerance = 1e-5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
     const auto& contact = contacts.getContact(i);
