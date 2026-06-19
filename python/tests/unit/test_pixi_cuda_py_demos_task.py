@@ -1,4 +1,4 @@
-"""Regression checks for the CUDA py-demos Pixi build path."""
+"""Regression checks for the default and CUDA py-demos Pixi build paths."""
 
 from __future__ import annotations
 
@@ -42,11 +42,14 @@ def test_config_py_resets_stale_cuda_compiler_cache_before_cmake() -> None:
     assert "CMAKE_CXX_COMPILER:*)" in script
     assert "CMAKE_CUDA_COMPILER:*)" in script
     assert "CMAKE_CUDA_HOST_COMPILER:*)" in script
+    assert "CMAKE_CUDA_COMPILER_LAUNCHER:*)" in script
+    assert '[ -z "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]' in script
+    assert '[ -n "${cached_cuda_compiler_launcher}" ]' in script
     assert 'rm -f "${CMAKE_CACHE}"' in script
     assert 'rm -rf "${CMAKE_BUILD_DIR}/CMakeFiles"' in script
 
 
-def test_config_py_keeps_host_compiler_cache_for_cuda_py_demos() -> None:
+def test_config_py_keeps_compiler_cache_for_default_and_cuda_py_demos() -> None:
     script = _task_script("config-py")
 
     disable_assignment = script.index(
@@ -67,9 +70,12 @@ def test_cmake_compiler_cache_respects_empty_cuda_launcher() -> None:
     script = CMAKE_COMPILER_CACHE.read_text(encoding="utf-8")
 
     preconfigured_check = script.index("DEFINED CMAKE_CUDA_COMPILER_LAUNCHER")
-    cuda_launcher_set = script.index("CMAKE_CUDA_COMPILER_LAUNCHER\n          ")
-    assert preconfigured_check < cuda_launcher_set
+    cuda_launcher_clear = script.index(
+        'CMAKE_CUDA_COMPILER_LAUNCHER\n          ""'
+    )
+    assert preconfigured_check < cuda_launcher_clear
     assert "NOT _dart_cuda_compiler_launcher_preconfigured" in script
+    assert 'CMAKE_CUDA_COMPILER_LAUNCHER\n          "${_cache_executable}"' not in script
 
 
 def test_py_demos_depends_on_docking_dartpy_build() -> None:

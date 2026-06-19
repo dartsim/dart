@@ -240,6 +240,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Moved local development and CI toward Pixi-owned tasks, tiered verification,
   load-aware parallelism, generated docs checks, CMake formatting, and
   reproducible benchmark/dashboard commands.
+- Kept Pixi `py-demos` builds on host compiler caching while preventing stale
+  CUDA launcher metadata from wrapping `nvcc`, so default and CUDA demo
+  workflows rebuild predictably.
 - Added AI-native docs, synced Claude/OpenCode/Codex workflow adapters, planning
   dashboards, and a changelog guide so future release notes stay curated for
   humans. ([#2446](https://github.com/dartsim/dart/pull/2446),
