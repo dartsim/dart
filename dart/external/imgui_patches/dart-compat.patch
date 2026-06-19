@@ -1,0 +1,74 @@
+diff --git a/imgui_draw.cpp b/imgui_draw.cpp
+index 84d81492..f1cfc453 100644
+--- a/imgui_draw.cpp
++++ b/imgui_draw.cpp
+@@ -2685,6 +2685,9 @@ ImFont* ImFontAtlas::AddFontFromFileTTF(const char* filename, float size_pixels,
+ ImFont* ImFontAtlas::AddFontFromMemoryTTF(void* font_data, int font_data_size, float size_pixels, const ImFontConfig* font_cfg_template, const ImWchar* glyph_ranges)
+ {
+     IM_ASSERT(!Locked && "Cannot modify a locked ImFontAtlas between NewFrame() and EndFrame/Render()!");
++    // [DART patch] Guard against null/empty input (issue #2516)
++    if (font_data == NULL || font_data_size <= 0)
++        return NULL;
+     ImFontConfig font_cfg = font_cfg_template ? *font_cfg_template : ImFontConfig();
+     IM_ASSERT(font_cfg.FontData == NULL);
+     IM_ASSERT(font_data_size > 100 && "Incorrect value for font_data_size!"); // Heuristic to prevent accidentally passing a wrong value to font_data_size.
+@@ -2697,6 +2700,10 @@ ImFont* ImFontAtlas::AddFontFromMemoryTTF(void* font_data, int font_data_size, f
+ 
+ ImFont* ImFontAtlas::AddFontFromMemoryCompressedTTF(const void* compressed_ttf_data, int compressed_ttf_size, float size_pixels, const ImFontConfig* font_cfg_template, const ImWchar* glyph_ranges)
+ {
++    // [DART patch] Guard against null/empty input to prevent SEGV in stb_decompress (issue #2516)
++    if (compressed_ttf_data == NULL || compressed_ttf_size <= 0)
++        return NULL;
++
+     const unsigned int buf_decompressed_size = stb_decompress_length((const unsigned char*)compressed_ttf_data);
+     unsigned char* buf_decompressed_data = (unsigned char*)IM_ALLOC(buf_decompressed_size);
+     stb_decompress(buf_decompressed_data, (const unsigned char*)compressed_ttf_data, (unsigned int)compressed_ttf_size);
+@@ -2709,6 +2716,10 @@ ImFont* ImFontAtlas::AddFontFromMemoryCompressedTTF(const void* compressed_ttf_d
+ 
+ ImFont* ImFontAtlas::AddFontFromMemoryCompressedBase85TTF(const char* compressed_ttf_data_base85, float size_pixels, const ImFontConfig* font_cfg, const ImWchar* glyph_ranges)
+ {
++    // [DART patch] Guard against null input (issue #2516)
++    if (compressed_ttf_data_base85 == NULL)
++        return NULL;
++
+     int compressed_ttf_size = (((int)ImStrlen(compressed_ttf_data_base85) + 4) / 5) * 4;
+     void* compressed_ttf = IM_ALLOC((size_t)compressed_ttf_size);
+     Decode85((const unsigned char*)compressed_ttf_data_base85, (unsigned char*)compressed_ttf);
+diff --git a/imgui_internal.h b/imgui_internal.h
+index 5e346dd4..5a8882a2 100644
+--- a/imgui_internal.h
++++ b/imgui_internal.h
+@@ -396,8 +396,16 @@ static inline bool      ImCharIsXdigitA(char c)         { return (c >= '0' && c
+ IM_MSVC_RUNTIME_CHECKS_RESTORE
+ 
+ // Helpers: Formatting
+-IMGUI_API int           ImFormatString(char* buf, size_t buf_size, const char* fmt, ...) IM_FMTARGS(3);
+-IMGUI_API int           ImFormatStringV(char* buf, size_t buf_size, const char* fmt, va_list args) IM_FMTLIST(3);
++#ifndef IMGUI_INTERNAL_FORMAT_API
++#if defined(__GNUC__) || defined(__clang__)
++#define IMGUI_INTERNAL_FORMAT_API __attribute__((visibility("hidden")))
++#else
++#define IMGUI_INTERNAL_FORMAT_API IMGUI_API
++#endif
++#endif
++
++IMGUI_INTERNAL_FORMAT_API int ImFormatString(char* buf, size_t buf_size, const char* fmt, ...) IM_FMTARGS(3);
++IMGUI_INTERNAL_FORMAT_API int ImFormatStringV(char* buf, size_t buf_size, const char* fmt, va_list args) IM_FMTLIST(3);
+ IMGUI_API void          ImFormatStringToTempBuffer(const char** out_buf, const char** out_buf_end, const char* fmt, ...) IM_FMTARGS(3);
+ IMGUI_API void          ImFormatStringToTempBufferV(const char** out_buf, const char** out_buf_end, const char* fmt, va_list args) IM_FMTLIST(3);
+ IMGUI_API const char*   ImParseFormatFindStart(const char* format);
+diff --git a/imgui_widgets.cpp b/imgui_widgets.cpp
+index 17a62692..b23ac956 100644
+--- a/imgui_widgets.cpp
++++ b/imgui_widgets.cpp
+@@ -5771,6 +5771,10 @@ static void RenderArrowsForVerticalBar(ImDrawList* draw_list, ImVec2 pos, ImVec2
+ // FIXME: this is trying to be aware of style.Alpha but not fully correct. Also, the color wheel will have overlapping glitches with (style.Alpha < 1.0)
+ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags flags, const float* ref_col)
+ {
++    // [DART patch] Guard against missing context/window before GetCurrentWindow() (issue #2668)
++    if (GImGui == NULL || GImGui->CurrentWindow == NULL)
++        return false;
++
+     ImGuiContext& g = *GImGui;
+     ImGuiWindow* window = GetCurrentWindow();
+     if (window->SkipItems)
