@@ -20977,6 +20977,22 @@ TEST(World, RigidBodyPointJointsExposeAvbdFiniteStiffness)
   EXPECT_DOUBLE_EQ(policy.linearStiffness, 1000.0);
   EXPECT_DOUBLE_EQ(policy.angularStiffness, 100.0);
 
+  auto& registry = sx::detail::registryOf(world);
+  const auto jointEntity = sx::detail::toRegistryEntity(joint.getEntity());
+  ASSERT_TRUE(registry.all_of<sx::comps::AvbdJointStiffness>(jointEntity));
+  ASSERT_TRUE(
+      registry
+          .all_of<sx::detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+              jointEntity));
+  registry.remove<sx::comps::AvbdJointStiffness>(jointEntity);
+  registry.remove<sx::detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+      jointEntity);
+
+  const auto fallbackPolicy = joint.getConstraintProjectionPolicy();
+  EXPECT_GT(fallbackPolicy.startStiffness, 0.0);
+  EXPECT_TRUE(std::isinf(fallbackPolicy.linearStiffness));
+  EXPECT_TRUE(std::isinf(fallbackPolicy.angularStiffness));
+
   EXPECT_THROW(
       joint.setConstraintProjectionPolicy(
           makeConstraintProjectionPolicy(-1.0, 1000.0, 100.0)),
@@ -21221,6 +21237,13 @@ TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
       world.addJoint(
           foreignBase,
           makeJointSpec("world_cross_world", sx::JointType::Spherical)),
+      sx::InvalidArgumentException);
+  auto unsupportedParent = world.addFreeFrame("unsupported_parent");
+  EXPECT_THROW(
+      world.addJoint(
+          unsupportedParent,
+          child,
+          makeJointSpec("unsupported_endpoint", sx::JointType::Fixed)),
       sx::InvalidArgumentException);
 
   auto valid = world.addJoint(
