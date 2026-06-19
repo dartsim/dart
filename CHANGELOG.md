@@ -2,6 +2,23 @@
 
 ## DART 6
 
+### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
+
+DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
+sleeping enabled while adding regression coverage for the gz-sim wheel-command
+path and extending Gazebo validation to cover the downstream gz-sim failure
+reported against DART 6.19.1.
+
+* Tests
+
+  * Cover servo-commanded sleeping bodies against an always-awake baseline, and
+    extend the Gazebo validation task to apply the gz-physics
+    `ChangedWorldPoses` root-cause patch before running gz-sim's
+    `INTEGRATION_entity_system` regression against the source-built DART 6
+    plugin:
+    [#3068](https://github.com/dartsim/dart/pull/3068),
+    [gazebosim/gz-sim#3697](https://github.com/gazebosim/gz-sim/issues/3697)
+
 ### [DART 6.19.1 (2026-06-17)](https://github.com/dartsim/dart/milestone/98?closed=1)
 
 * Simulation

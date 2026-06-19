@@ -163,11 +163,16 @@ public:
   /// Get time step
   double getTimeStep() const;
 
-  /// Enables/disables the solver's automatic body-deactivation work (island
-  /// rest detection and frozen-island LCP skipping). Mirrors the World's
-  /// DeactivationOptions::mEnabled. When disabled, the solver does no rest
-  /// work.
-  void setDeactivationActive(bool _active);
+  /// Enables/disables the solver-side automatic sleeping work (island rest
+  /// detection and frozen-island LCP skipping). Mirrors the World's
+  /// DeactivationOptions::mEnabled.
+  void setAutomaticSleepingEnabled(bool _enabled);
+
+  /// Backward-compatible spelling for setAutomaticSleepingEnabled().
+  ///
+  /// The legacy "active" name means this solver work is active; it is not a
+  /// skeleton awake/asleep state.
+  void setDeactivationActive(bool _enabled);
 
   /// Set collision detector. This function acquires ownership of the
   /// CollisionDetector passed as an argument. This method is deprecated in
@@ -326,15 +331,15 @@ protected:
   /// skipped entirely, so every entry is false and no group is ever skipped.
   std::vector<bool> mGroupResting;
 
-  /// Whether automatic body deactivation is active (mirrors the World's
+  /// Whether automatic sleeping is enabled in the solver (mirrors the World's
   /// DeactivationOptions::mEnabled). When false, the solver performs no
   /// rest-detection work and behaves exactly as before the feature.
-  bool mDeactivationActive = false;
+  bool mSleepingEnabled = false;
 
-  /// Whether the previous deactivation-active solve built at least one
-  /// constrained group. Used to avoid clearing per-skeleton sleep state every
-  /// step in unconstrained scenes.
-  bool mHadDeactivationGroups = false;
+  /// Whether the previous sleeping-enabled solve built at least one constrained
+  /// group. Used to avoid clearing per-skeleton sleep state every step in
+  /// unconstrained scenes.
+  bool mHadSleepingGroups = false;
 
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
