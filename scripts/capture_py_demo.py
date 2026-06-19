@@ -304,6 +304,12 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...
     ("rigid_ipc_edge_drop", 72, 960, 540, True),
     ("diff_drone_liftoff", 96, 960, 540, True),
     ("diff_pre_contact_surrogate", 24, 960, 540, True),
+)
+
+
+RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS: tuple[
+    tuple[str, int, int, int, bool], ...
+] = (
     ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
     ("avbd_rigid_breakable_joint", 72, 960, 540, True),
     ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),
@@ -426,6 +432,133 @@ _RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     },
 }
 
+_RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
+    "avbd_rigid_fixed_joint_contact": {
+        "workflow_label": "AVBD constraint showcase",
+        "user_question": (
+            "Can AVBD keep a fixed joint coherent while contact is active?"
+        ),
+        "try_first": (
+            "Use this showcase packet when M1 needs modern AVBD rigid-constraint "
+            "evidence beside the World contact baseline."
+        ),
+        "inspect": [
+            "joint error",
+            "contact count",
+            "payload height",
+            "constraint status",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "The fixed relation stays finite while contact remains visible."
+        ),
+        "scope": (
+            "AVBD sx rigid-constraint showcase; complementary to the World "
+            "contact-policy and boxed-LCP baseline, not a head-to-head solver "
+            "enum comparison."
+        ),
+    },
+    "avbd_rigid_breakable_joint": {
+        "workflow_label": "AVBD constraint showcase",
+        "user_question": (
+            "Can AVBD show fixed-joint breakage and reset lifecycle evidence?"
+        ),
+        "try_first": (
+            "Use this row for the fixed break/reset lifecycle before treating "
+            "AVBD as a broader rigid-body default."
+        ),
+        "inspect": [
+            "break threshold",
+            "broken state",
+            "connector color",
+            "payload release",
+            "reset behavior",
+        ],
+        "healthy_signal": (
+            "Breakage, visual connector state, and payload release agree."
+        ),
+        "scope": (
+            "AVBD fixed-joint breakage row; not sequential-impulse, IPC, or "
+            "boxed-LCP parity evidence."
+        ),
+    },
+    "avbd_rigid_spherical_breakable_joint": {
+        "workflow_label": "AVBD constraint showcase",
+        "user_question": (
+            "Can AVBD show spherical anchor breakage while orientation stays free?"
+        ),
+        "try_first": (
+            "Use this row after fixed breakage when the constraint question is "
+            "positional anchoring with free orientation."
+        ),
+        "inspect": [
+            "anchor error",
+            "break threshold",
+            "broken state",
+            "orientation freedom",
+            "reset behavior",
+        ],
+        "healthy_signal": (
+            "Anchor break/reset state is visible while free orientation is not "
+            "over-constrained."
+        ),
+        "scope": (
+            "AVBD spherical breakage row; not a World multibody joint API "
+            "comparison."
+        ),
+    },
+    "avbd_rigid_revolute_motor": {
+        "workflow_label": "AVBD constraint showcase",
+        "user_question": (
+            "Can AVBD drive a free-rigid hinge motor with finite diagnostics?"
+        ),
+        "try_first": (
+            "Use this row for AVBD angular motor behavior before comparing "
+            "World multibody motor/limit rows."
+        ),
+        "inspect": [
+            "hinge angle",
+            "target speed",
+            "measured speed",
+            "constraint error",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "Hinge motion follows the command while constraint error and timing "
+            "stay finite."
+        ),
+        "scope": (
+            "AVBD free-rigid revolute motor row; not a World multibody motor "
+            "or limit comparison."
+        ),
+    },
+    "avbd_rigid_prismatic_motor": {
+        "workflow_label": "AVBD constraint showcase",
+        "user_question": (
+            "Can AVBD drive a free-rigid slider motor with finite diagnostics?"
+        ),
+        "try_first": (
+            "Use this row for AVBD translational motor behavior before "
+            "comparing World multibody motor/limit rows."
+        ),
+        "inspect": [
+            "slider travel",
+            "target speed",
+            "measured speed",
+            "constraint error",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "Slider travel follows the command while constraint error and "
+            "timing stay finite."
+        ),
+        "scope": (
+            "AVBD free-rigid prismatic motor row; not a World multibody motor "
+            "or limit comparison."
+        ),
+    },
+}
+
 _RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
     "rigid_ipc_stack_packet": {
         "workflow_label": "Capture-first packet",
@@ -502,6 +635,12 @@ def rigid_workflow_related_capture_specs() -> (
     tuple[tuple[str, int, int, int, bool], ...]
 ):
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
+
+
+def rigid_workflow_avbd_showcase_capture_specs() -> (
+    tuple[tuple[str, int, int, int, bool], ...]
+):
+    return RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS
 
 
 def rigid_workflow_ipc_shelf_capture_specs() -> (
@@ -584,6 +723,7 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
                     "related_source_label": source_label,
                     "related_shelf": entry.shelf,
                 }
+    guidance.update(_RIGID_WORKFLOW_AVBD_SHOWCASE_GUIDANCE_BY_SCENE)
     guidance.update(_RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE)
     guidance.update(_RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE)
     return guidance
@@ -1079,6 +1219,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--avbd-showcase-only",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, capture only the curated AVBD rigid-constraint "
+            "showcase packet."
+        ),
+    )
+    parser.add_argument(
         "--include-ipc-shelf",
         action="store_true",
         help=(
@@ -1214,7 +1362,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def _workflow_output_dir(args: argparse.Namespace) -> pathlib.Path:
-    return args.output_dir or _default_output_dir("rigid_workflow")
+    if args.output_dir:
+        return args.output_dir
+    if getattr(args, "avbd_showcase_only", False):
+        return _default_output_dir("rigid_avbd_showcase")
+    return _default_output_dir("rigid_workflow")
 
 
 def _workflow_scene_output_dir(
@@ -1226,6 +1378,8 @@ def _workflow_scene_output_dir(
 def _workflow_capture_specs(
     args: argparse.Namespace,
 ) -> tuple[tuple[str, int, int, int, bool], ...]:
+    if getattr(args, "avbd_showcase_only", False):
+        return rigid_workflow_avbd_showcase_capture_specs()
     specs = list(rigid_workflow_capture_specs())
     if getattr(args, "include_related", False):
         specs.extend(rigid_workflow_related_capture_specs())
@@ -1240,6 +1394,7 @@ def _workflow_requested_include_flags(
     args: argparse.Namespace,
 ) -> dict[str, bool]:
     return {
+        "include_avbd_showcase": bool(getattr(args, "avbd_showcase_only", False)),
         "include_related": bool(getattr(args, "include_related", False)),
         "include_ipc_shelf": bool(getattr(args, "include_ipc_shelf", False)),
         "include_packets": bool(getattr(args, "include_packets", False)),
@@ -1310,6 +1465,8 @@ def _workflow_row_rerun_argv(
     output_dir: pathlib.Path,
 ) -> list[str]:
     rerun_argv = ["--rigid-workflow"]
+    if getattr(args, "avbd_showcase_only", False):
+        rerun_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
         rerun_argv.append("--include-related")
     if getattr(args, "include_ipc_shelf", False):
@@ -1345,6 +1502,8 @@ def _workflow_command_argv(
     args: argparse.Namespace, output_dir: pathlib.Path
 ) -> list[str]:
     workflow_argv = ["--rigid-workflow"]
+    if getattr(args, "avbd_showcase_only", False):
+        workflow_argv.append("--avbd-showcase-only")
     if getattr(args, "include_related", False):
         workflow_argv.append("--include-related")
     if getattr(args, "include_ipc_shelf", False):
@@ -1387,15 +1546,16 @@ def _workflow_plan_entries(
 ) -> list[dict[str, object]]:
     entries: list[dict[str, object]] = []
     specs = _workflow_capture_specs(args)
-    numbered_count = len(rigid_workflow_capture_specs())
+    avbd_showcase_only = bool(getattr(args, "avbd_showcase_only", False))
+    numbered_count = 0 if avbd_showcase_only else len(rigid_workflow_capture_specs())
     related_count = (
         len(rigid_workflow_related_capture_specs())
-        if getattr(args, "include_related", False)
+        if not avbd_showcase_only and getattr(args, "include_related", False)
         else 0
     )
     ipc_shelf_count = (
         len(rigid_workflow_ipc_shelf_capture_specs())
-        if getattr(args, "include_ipc_shelf", False)
+        if not avbd_showcase_only and getattr(args, "include_ipc_shelf", False)
         else 0
     )
     count = len(specs)
@@ -1407,7 +1567,9 @@ def _workflow_plan_entries(
         scene, frames, width, height, show_ui = spec
         scene_output = _workflow_scene_output_dir(output_dir, order, scene)
         argv = _workflow_scene_argv(args, order, spec, output_dir)
-        if order <= numbered_count:
+        if avbd_showcase_only:
+            workflow_group = "avbd_constraint_showcase"
+        elif order <= numbered_count:
             workflow_group = "numbered"
         elif order <= numbered_count + related_count:
             workflow_group = "related_evidence"
@@ -2072,6 +2234,7 @@ def _workflow_metric_highlights(metrics: dict[str, object]) -> list[str]:
 
 _WORKFLOW_GROUP_LABELS = {
     "numbered": "numbered",
+    "avbd_constraint_showcase": "avbd showcase",
     "related_evidence": "related",
     "rigid_ipc_shelf": "ipc shelf",
     "capture_first_packet": "packets",
@@ -2110,6 +2273,8 @@ def _workflow_requested_group_labels(
 ) -> str:
     if requested_include_flags is None:
         return fallback
+    if requested_include_flags.get("include_avbd_showcase", False):
+        return "avbd showcase"
     labels = ["numbered"]
     if requested_include_flags.get("include_related", False):
         labels.append("related")
@@ -3183,6 +3348,10 @@ def _write_workflow_manifest(
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
+    selected_include_avbd_showcase = any(
+        capture.get("workflow_group") == "avbd_constraint_showcase"
+        for capture in captures
+    )
     selected_include_related = any(
         capture.get("workflow_group") == "related_evidence" for capture in captures
     )
@@ -3193,6 +3362,7 @@ def _write_workflow_manifest(
         capture.get("workflow_group") == "capture_first_packet" for capture in captures
     )
     requested_include_flags = requested_include_flags or {
+        "include_avbd_showcase": selected_include_avbd_showcase,
         "include_related": selected_include_related,
         "include_ipc_shelf": selected_include_ipc_shelf,
         "include_packets": selected_include_packets,
@@ -3236,9 +3406,11 @@ def _write_workflow_manifest(
         {
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
+            "include_avbd_showcase": requested_include_flags["include_avbd_showcase"],
             "include_related": requested_include_flags["include_related"],
             "include_ipc_shelf": requested_include_flags["include_ipc_shelf"],
             "include_packets": requested_include_flags["include_packets"],
+            "selected_include_avbd_showcase": selected_include_avbd_showcase,
             "selected_include_related": selected_include_related,
             "selected_include_ipc_shelf": selected_include_ipc_shelf,
             "selected_include_packets": selected_include_packets,
@@ -3309,6 +3481,12 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         raise SystemExit("--rigid-workflow cannot be combined with --scene-state-json")
     if args.capture_label:
         raise SystemExit("--rigid-workflow cannot be combined with --capture-label")
+    if args.avbd_showcase_only and (
+        args.include_related or args.include_ipc_shelf or args.include_packets
+    ):
+        raise SystemExit(
+            "--avbd-showcase-only cannot be combined with other workflow groups"
+        )
 
 
 def _run_rigid_workflow(args: argparse.Namespace) -> int:
@@ -3414,6 +3592,8 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.avbd_showcase_only and not args.rigid_workflow:
+        raise SystemExit("--avbd-showcase-only requires --rigid-workflow")
     if args.include_related and not args.rigid_workflow:
         raise SystemExit("--include-related requires --rigid-workflow")
     if args.include_ipc_shelf and not args.rigid_workflow:

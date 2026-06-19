@@ -494,9 +494,11 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["workflow"] == "rigid_visual_verification"
+    assert manifest["include_avbd_showcase"] is False
     assert manifest["include_related"] is False
     assert manifest["include_ipc_shelf"] is False
     assert manifest["include_packets"] is False
+    assert manifest["selected_include_avbd_showcase"] is False
     assert manifest["selected_include_related"] is False
     assert manifest["selected_include_ipc_shelf"] is False
     assert manifest["selected_include_packets"] is False
@@ -629,6 +631,84 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         review_html
     )
     assert "pixi run py-demo-capture -- --scene rigid_body" in review_html
+
+
+def test_rigid_workflow_dry_run_can_capture_avbd_showcase_only(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_avbd_showcase"
+    avbd_specs = (
+        ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
+        ("avbd_rigid_prismatic_motor", 72, 960, 540, True),
+    )
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_AVBD_SHOWCASE_CAPTURE_SPECS",
+        avbd_specs,
+    )
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--avbd-showcase-only",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_avbd_showcase"] is True
+    assert manifest["include_related"] is False
+    assert manifest["include_ipc_shelf"] is False
+    assert manifest["include_packets"] is False
+    assert manifest["selected_include_avbd_showcase"] is True
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is False
+    assert manifest["selected_include_packets"] is False
+    assert manifest["capture_count"] == len(avbd_specs)
+    assert manifest["workflow_total_count"] == len(avbd_specs)
+    assert manifest["workflow_row_start"] == 1
+    assert manifest["workflow_row_end"] == len(avbd_specs)
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "avbd_rigid_fixed_joint_contact",
+        "avbd_rigid_prismatic_motor",
+    ]
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "avbd_constraint_showcase",
+        "avbd_constraint_showcase",
+    ]
+    assert (
+        manifest["captures"][0]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only "
+        "--workflow-start-row 1 --workflow-end-row 1 --output-dir "
+        f"{output}/reruns/01_avbd_rigid_fixed_joint_contact"
+    )
+    assert (
+        manifest["captures"][0]["workflow_label"]
+        == "AVBD constraint showcase"
+    )
+    assert "fixed joint coherent" in manifest["captures"][0]["user_question"]
+    assert "boxed-LCP baseline" in manifest["captures"][0]["scope"]
+    assert manifest["captures"][1]["workflow_label"] == "AVBD constraint showcase"
+    assert "slider motor" in manifest["captures"][1]["user_question"]
+    assert "slider travel" in manifest["captures"][1]["inspect"]
+    assert manifest["captures"][1]["manifest"].endswith(
+        "scenes/02_avbd_rigid_prismatic_motor/manifest.json"
+    )
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "AVBD constraint showcase" in review_html
+    assert "avbd showcase" in review_html
+    assert "avbd_constraint_showcase" in review_html
+    assert "fixed joint coherent" in review_html
+    assert "slider motor" in review_html
+    assert "--avbd-showcase-only" in review_html
 
 
 def test_rigid_workflow_dry_run_can_include_related_evidence(
@@ -2970,6 +3050,10 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
     ("flag", "message"),
     (
         ("--include-related", "--include-related requires --rigid-workflow"),
+        (
+            "--avbd-showcase-only",
+            "--avbd-showcase-only requires --rigid-workflow",
+        ),
         ("--include-ipc-shelf", "--include-ipc-shelf requires --rigid-workflow"),
         ("--include-packets", "--include-packets requires --rigid-workflow"),
         (
@@ -2988,6 +3072,25 @@ def test_rigid_workflow_extra_groups_require_workflow(flag: str, message: str) -
         args.insert(1, "1")
     with pytest.raises(SystemExit, match=message):
         capture_py_demo.main(args)
+
+
+def test_rigid_workflow_avbd_showcase_rejects_other_groups(
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(
+        SystemExit,
+        match="--avbd-showcase-only cannot be combined with other workflow groups",
+    ):
+        capture_py_demo.main(
+            [
+                "--rigid-workflow",
+                "--avbd-showcase-only",
+                "--include-related",
+                "--dry-run",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
 
 
 @pytest.mark.parametrize(

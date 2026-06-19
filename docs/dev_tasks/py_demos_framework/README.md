@@ -49,6 +49,15 @@ and replay metadata.
         advertises the boxed-LCP baseline capture command. Verified in default
         and CUDA environments with manifests resolving
         `contact_solver_method=BOXED_LCP`.
+  - [x] AVBD rigid-constraint showcase packet: the dedicated
+        `--avbd-showcase-only` workflow packet now captures the curated
+        fixed-joint/contact, breakable-joint, spherical breakable-joint,
+        revolute-motor, and prismatic-motor AVBD rows as a complementary M1
+        packet. The manifest and review index label these rows as
+        `avbd_constraint_showcase` and keep the scope explicit: this is the
+        AVBD `sx` rigid-constraint track beside the World contact-policy /
+        boxed-LCP baseline, not a head-to-head solver enum comparison. Verified
+        with default and CUDA packet row captures.
 - [ ] **Beyond M1**: repeat M1 outward — expand solvers and domains
       incrementally, each with sufficient testing and verification.
 
@@ -92,8 +101,11 @@ repeatable operation.
    and boxed-LCP contacts when the PR needs reviewer-facing image/video
    artifacts; the scripted boxed-LCP command is now:
    `pixi run py-demo-capture -- --scene rigid_body --frames 180 --width 960 --height 540 --show-ui --scene-state-json '{"controls":{"contact_method_index":1}}' --capture-label boxed_lcp`.
-4. Curate the AVBD constraint showcase from the existing `avbd_*` scenes and
-   decide whether the final M1 experience remains two complementary scenes or
-   grows into one unified comparison scene.
+4. Use the dedicated AVBD showcase packet for reviewer-facing M1 evidence:
+   `pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --output-dir /tmp/dart_capture_rigid_avbd_showcase`.
+   M1 remains two complementary showcases for now: World contact-policy /
+   boxed-LCP baseline packets plus the AVBD `sx` rigid-constraint showcase.
+   Revisit a unified comparison scene only after those two packets have enough
+   reviewer-facing visual evidence.
 
 See `01-milestones.md` for the detailed milestone criteria and solver analysis.

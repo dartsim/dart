@@ -930,13 +930,14 @@ writes a top-level manifest that points at every per-scene manifest and a
 questions, try-first guidance, scope notes, live open commands, capture
 commands, workflow-row rerun commands, and metric summaries from one page: the
 in-viewer `Rigid Workflow` panel also shows the full numbered packet,
-current-row rerun, and extended related/IPC-shelf/packet commands.
+current-row rerun, AVBD showcase, and extended related/IPC-shelf/packet
+commands.
 Numbered rows carry their workflow phase and focus axis in the manifest and
-review card, while optional related, direct IPC shelf, and capture-first packet
-rows carry the same row-guidance fields in the manifest and review index, so
-extended packets remain readable without opening the live GUI. The same outputs
-also include a guidance-completeness audit and the exact top-level workflow
-command for the selected packet.
+review card, while the AVBD showcase and optional related, direct IPC shelf,
+and capture-first packet rows carry the same row-guidance fields in the
+manifest and review index, so non-numbered packets remain readable without
+opening the live GUI. The same outputs also include a guidance-completeness
+audit and the exact top-level workflow command for the selected packet.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run
@@ -988,6 +989,19 @@ pixi run py-demo-capture -- --rigid-workflow --include-related \
     --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
+Use `--avbd-showcase-only` when the target is the curated AVBD
+rigid-constraint showcase rather than the numbered World rigid workflow. The
+packet captures the current fixed-joint/contact, breakable-joint, spherical
+breakable-joint, revolute-motor, and prismatic-motor AVBD rows as a
+complementary M1 showcase beside the World contact-policy and boxed-LCP
+baseline; it is not a head-to-head solver enum comparison.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only --dry-run
+pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only \
+    --output-dir /tmp/dart_capture_rigid_avbd_showcase
+```
+
 Capture the direct Rigid IPC shelf routes with the docked UI visible:
 
 These commands are also included after the numbered rows, and after related
@@ -1008,21 +1022,22 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 \
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 49-50 are the two
+`--include-related --include-packets`, rows 44-45 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 53-54.
+packet rows become 48-49.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow \
     --workflow-start-row 15 --workflow-end-row 17 --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
-    --include-packets --workflow-start-row 49 --workflow-end-row 50 \
+    --include-packets --workflow-start-row 44 --workflow-end-row 45 \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
 For row-range packets, manifest fields such as `include_related`,
-`include_ipc_shelf`, and `include_packets` record the requested packet shape;
-`selected_include_related`, `selected_include_ipc_shelf`, and
+`include_avbd_showcase`, `include_ipc_shelf`, and `include_packets` record the
+requested packet shape; `selected_include_related`,
+`selected_include_avbd_showcase`, `selected_include_ipc_shelf`, and
 `selected_include_packets` record which optional groups are present in the
 selected row range. The generated `review_index.html` header mirrors this with
 row-span, requested-groups, and selected-groups badges.
@@ -1145,10 +1160,11 @@ differentiable contact-gradient routes use it for target/rest height, analytic
 versus complementarity-aware thrust/final-height/loss values, height and
 target-error gaps, pre-contact counts, identical forward-state evidence,
 analytic-freefall error, surrogate block magnitude, vertical sensitivity,
-fallback status, and compact history summaries. The AVBD related routes use it
-for fixed-joint contact offset/clearance/contact counts, spherical breakage
-anchor/orientation drift, and free-rigid revolute/prismatic motor tracking. The
-early numbered rigid workflow rows use it for body-mode flags, free-flight
+fallback status, and compact history summaries. The AVBD showcase routes use it
+for fixed-joint contact offset/clearance/contact counts, breakable fixed and
+spherical-joint state, anchor/orientation drift, and free-rigid
+revolute/prismatic motor tracking. The early numbered rigid workflow rows use
+it for body-mode flags, free-flight
 momentum/energy residuals, frame-transform residuals,
 force/torque accumulator response, point-load lever-arm response,
 time-step error ratios, restitution rebound, and pair-material mixing fields,
@@ -1195,6 +1211,14 @@ pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 \
     --width 960 --height 540 --show-ui
+```
+
+Capture every AVBD showcase route with the docked UI visible:
+
+These commands are also included in the dedicated AVBD packet by
+`py-demo-capture -- --rigid-workflow --avbd-showcase-only`.
+
+```bash
 pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 \

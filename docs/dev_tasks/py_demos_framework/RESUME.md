@@ -37,18 +37,37 @@ workflow panel now advertises the boxed-LCP baseline capture command with
 output directories and artifact stems. Default/CUDA captures resolved
 `contact_solver_method=BOXED_LCP` in their manifests.
 
+The current M1 slice curates the AVBD rigid-constraint showcase from the
+existing `avbd_*` scenes instead of creating a new unified scene. The dedicated
+packet command is:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --avbd-showcase-only \
+  --output-dir /tmp/dart_capture_rigid_avbd_showcase
+```
+
+It captures fixed-joint/contact, breakable-joint, spherical breakable-joint,
+revolute-motor, and prismatic-motor AVBD rows as a complementary M1 showcase
+beside the World contact-policy / boxed-LCP baseline. Default and CUDA packet
+row captures for `avbd_rigid_revolute_motor` completed with
+`solver=avbd_rigid_joints` in the workflow manifests.
+
 ## Current Branch
 
-`fix/py-demos-selection-crash` - clean after two local follow-up commits:
+`fix/py-demos-selection-crash` - clean after three local follow-up commits:
 `Add scriptable py-demos capture state` and
-`Label py-demos stateful captures`. Neither commit has been pushed to PR #3084
-yet.
+`Label py-demos stateful captures`, followed by the AVBD showcase packet commit.
+These commits have not been pushed to PR #3084 yet.
 
 ## Immediate Next Step
 
 **M1 is in progress.** Keep the scripted selection repro above in the validation
 set, use the labeled scripted capture-state path for rigid-body SI vs boxed-LCP
-visual packets, then curate the AVBD constraint showcase.
+visual packets, and use the dedicated AVBD showcase packet for the modern
+rigid-constraint track. The next useful slice is a reviewer-facing visual packet
+pass: capture full SI/boxed-LCP and AVBD packets, inspect screenshots/review
+indexes, then decide whether M1 needs a unified comparison scene or whether the
+two complementary packets are enough for review.
 
 Re-run any M0 guard:
 
@@ -66,6 +85,9 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 - First M1 increment: enhance the existing `rigid_body` scene before creating a
   new comparison scene. This keeps the baseline path visible in the flagship
   scene while AVBD showcase curation proceeds separately.
+- AVBD showcase curation: keep M1 as two complementary packets for now. The
+  AVBD packet is scoped to the existing `sx` rigid-constraint scenes and does
+  not claim solver-enum parity with the World contact-policy baseline.
 - Capture-state overrides belong to scenes that already expose
   `replay_restore_state`; unsupported scenes should fail clearly rather than
   silently pretending a panel state was applied.
@@ -95,12 +117,11 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 ## How to Resume
 
 ```bash
-git checkout py-demos-framework
+git checkout fix/py-demos-selection-crash
 git status && git log -3 --oneline
 # Verify build state:
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: run focused C++/dartpy verification for the writable contact solver
-method, run the py-demos panel/smoke guards, and proceed with the AVBD showcase
-curation or reviewer-facing M1 visual packet capture.
+Then: run the py-demos panel/smoke guards, and proceed with reviewer-facing M1
+visual packet capture for the boxed-LCP contact baseline and AVBD showcase.

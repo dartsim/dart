@@ -3575,6 +3575,17 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             "tooltip:Capture all numbered rows and write review_index.html."
             in events
         )
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                avbd_showcase_only=True,
+                output_dir="/tmp/dart_capture_rigid_avbd_showcase",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the curated AVBD rigid-constraint showcase packet."
+            in events
+        )
         assert f"text:{_rigid_workflow_row_packet_command(guide)}" in events
         assert (
             "tooltip:Capture only this workflow row in a review packet."

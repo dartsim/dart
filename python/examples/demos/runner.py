@@ -943,6 +943,7 @@ def _rigid_workflow_viewer_command(scene_id: str, width: int, height: int) -> st
 
 def _rigid_workflow_packet_command(
     *,
+    avbd_showcase_only: bool = False,
     include_related: bool = False,
     include_ipc_shelf: bool = False,
     include_packets: bool = False,
@@ -954,6 +955,8 @@ def _rigid_workflow_packet_command(
     output_dir: str | None = None,
 ) -> str:
     command = "pixi run py-demo-capture -- --rigid-workflow"
+    if avbd_showcase_only:
+        command = f"{command} --avbd-showcase-only"
     if include_related:
         command = f"{command} --include-related"
     if include_ipc_shelf:
@@ -2564,6 +2567,15 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
             )
         )
         builder.item_tooltip("Capture all numbered rows and write review_index.html.")
+        builder.text(
+            _rigid_workflow_packet_command(
+                avbd_showcase_only=True,
+                output_dir="/tmp/dart_capture_rigid_avbd_showcase",
+            )
+        )
+        builder.item_tooltip(
+            "Capture the curated AVBD rigid-constraint showcase packet."
+        )
         builder.text(_rigid_workflow_row_packet_command(guide))
         builder.item_tooltip("Capture only this workflow row in a review packet.")
         builder.text(_rigid_workflow_row_video_packet_command(guide))
