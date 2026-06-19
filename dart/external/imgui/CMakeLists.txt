@@ -246,6 +246,13 @@ if(DART_USE_SYSTEM_IMGUI)
   unset(_dart_saved_required_quiet)
 
   if(NOT DART_SYSTEM_IMGUI_HAS_OPENGL2_BACKEND)
+    if(NOT DART_BUILD_GUI_OSG)
+      message(STATUS
+        "Skipping dart-external-imgui: system ImGui OpenGL2 backend was not found"
+      )
+      return()
+    endif()
+
     dart_find_imgui_source(
       imgui_opengl2_backend_source
       imgui_impl_opengl2.cpp
