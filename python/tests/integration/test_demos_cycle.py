@@ -111,6 +111,15 @@ def _read_rigid_visual_workflow_capture_metric_docs() -> dict[str, str]:
     return rows
 
 
+def _last_solver_index(scene_module: object) -> int:
+    module = scene_module
+    module_name = getattr(scene_module, "__module__", "")
+    if module_name:
+        module = sys.modules.get(module_name, scene_module)
+    solvers = getattr(module, "_SOLVERS", ())
+    return max(0, len(solvers) - 1)
+
+
 def _read_rigid_visual_related_evidence_rows() -> list[RelatedEvidenceSpec]:
     root = pathlib.Path(__file__).resolve().parents[3]
     sidecar = (
@@ -4326,7 +4335,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert casts.capsule_height == pytest.approx(1.05)
 
     baseline = rigid_body_build().info["rigid_body_controller"]
-    baseline.solver_index = 1
+    baseline_solver_index = _last_solver_index(rigid_body_build)
+    baseline.solver_index = baseline_solver_index
     baseline.friction = 0.37
     baseline.restitution = 0.42
     baseline_state = baseline.capture_replay_state()
@@ -4334,7 +4344,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     baseline.friction = 0.91
     baseline.restitution = 0.05
     baseline.restore_replay_state(baseline_state)
-    assert baseline.solver_index == 1
+    assert baseline.solver_index == baseline_solver_index
     assert baseline.friction == pytest.approx(0.37)
     assert baseline.restitution == pytest.approx(0.42)
     assert baseline.world.rigid_body_solver == baseline._solver()
@@ -4432,7 +4442,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert frame_hierarchy.local_yaw_deg == pytest.approx(62.0)
 
     body_modes = body_modes_build().info["rigid_body_modes_controller"]
-    body_modes.solver_index = 1
+    body_modes_solver_index = _last_solver_index(body_modes_build)
+    body_modes.solver_index = body_modes_solver_index
     body_modes.executor_index = len(body_modes._executors) - 1
     body_modes.gravity_scale = 0.72
     body_modes.force_magnitude = 5.5
@@ -4444,7 +4455,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     body_modes.force_magnitude = 1.0
     body_modes.drive_speed = 0.12
     body_modes.restore_replay_state(body_modes_state)
-    assert body_modes.solver_index == 1
+    assert body_modes.solver_index == body_modes_solver_index
     assert body_modes.executor_index == len(body_modes._executors) - 1
     assert body_modes.gravity_scale == pytest.approx(0.72)
     assert body_modes.force_magnitude == pytest.approx(5.5)
@@ -4456,7 +4467,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert body_modes._lane("dynamic").body.force[0] == pytest.approx(5.5)
 
     timestep = timestep_build().info["rigid_timestep_sensitivity_controller"]
-    timestep.solver_index = 1
+    timestep_solver_index = _last_solver_index(timestep_build)
+    timestep.solver_index = timestep_solver_index
     timestep.executor_index = len(timestep._executors) - 1
     timestep.base_time_step = 0.003
     timestep.gravity_scale = 0.55
@@ -4466,7 +4478,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     timestep.base_time_step = 0.001
     timestep.gravity_scale = 1.8
     timestep.restore_replay_state(timestep_state)
-    assert timestep.solver_index == 1
+    assert timestep.solver_index == timestep_solver_index
     assert timestep.executor_index == len(timestep._executors) - 1
     assert timestep.base_time_step == pytest.approx(0.003)
     assert timestep.gravity_scale == pytest.approx(0.55)
@@ -4480,13 +4492,14 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     step_diagnostics = step_diagnostics_build().info[
         "rigid_step_diagnostics_controller"
     ]
-    step_diagnostics.solver_index = 1
+    step_diagnostics_solver_index = _last_solver_index(step_diagnostics_build)
+    step_diagnostics.solver_index = step_diagnostics_solver_index
     step_diagnostics.executor_index = len(step_diagnostics._executors) - 1
     step_state = step_diagnostics.capture_replay_state()
     step_diagnostics.solver_index = 0
     step_diagnostics.executor_index = 0
     step_diagnostics.restore_replay_state(step_state)
-    assert step_diagnostics.solver_index == 1
+    assert step_diagnostics.solver_index == step_diagnostics_solver_index
     assert step_diagnostics.executor_index == len(step_diagnostics._executors) - 1
     for lane in step_diagnostics.lanes:
         assert lane.world.rigid_body_solver == step_diagnostics._solver()
@@ -4495,7 +4508,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     contact_scale = contact_scale_budget_build().info[
         "rigid_contact_scale_budget_controller"
     ]
-    contact_scale.solver_index = 1
+    contact_scale_solver_index = _last_solver_index(contact_scale_budget_build)
+    contact_scale.solver_index = contact_scale_solver_index
     contact_scale.executor_index = len(contact_scale._executors) - 1
     contact_scale.budget_ms = 2.75
     contact_scale.friction = 0.44
@@ -4505,7 +4519,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     contact_scale.budget_ms = 0.25
     contact_scale.friction = 0.91
     contact_scale.restore_replay_state(contact_scale_state)
-    assert contact_scale.solver_index == 1
+    assert contact_scale.solver_index == contact_scale_solver_index
     assert contact_scale.executor_index == len(contact_scale._executors) - 1
     assert contact_scale.budget_ms == pytest.approx(2.75)
     assert contact_scale.friction == pytest.approx(0.44)
@@ -4534,7 +4548,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
         assert case.box.restitution == pytest.approx(0.17)
 
     restitution = restitution_build().info["rigid_restitution_ladder_controller"]
-    restitution.solver_index = 1
+    restitution_solver_index = _last_solver_index(restitution_build)
+    restitution.solver_index = restitution_solver_index
     restitution.executor_index = len(restitution._executors) - 1
     restitution.launch_height = 0.91
     restitution.restitution_scale = 0.77
@@ -4544,7 +4559,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     restitution.launch_height = 0.35
     restitution.restitution_scale = 0.25
     restitution.restore_replay_state(restitution_state)
-    assert restitution.solver_index == 1
+    assert restitution.solver_index == restitution_solver_index
     assert restitution.executor_index == len(restitution._executors) - 1
     assert restitution.launch_height == pytest.approx(0.91)
     assert restitution.restitution_scale == pytest.approx(0.77)
@@ -4686,7 +4701,8 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
         assert case.target.mass == pytest.approx(expected_mass)
 
     executor = executor_build().info["rigid_executor_equivalence_controller"]
-    executor.solver_index = 1
+    executor_solver_index = _last_solver_index(executor_build)
+    executor.solver_index = executor_solver_index
     executor.launch_speed = 0.72
     executor.friction = 0.34
     executor.restitution = 0.21
@@ -4696,7 +4712,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     executor.friction = 0.9
     executor.restitution = 0.7
     executor.restore_replay_state(executor_state)
-    assert executor.solver_index == 1
+    assert executor.solver_index == executor_solver_index
     assert executor.launch_speed == pytest.approx(0.72)
     assert executor.friction == pytest.approx(0.34)
     assert executor.restitution == pytest.approx(0.21)

@@ -5600,6 +5600,43 @@ TEST(World, SetContactGradientModeRejectsInvalidEnum)
   EXPECT_EQ(world.getContactGradientMode(), sx::ContactGradientMode::Analytic);
 }
 
+TEST(World, SetContactSolverMethodUpdatesPolicy)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  EXPECT_EQ(
+      world.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+
+  world.setContactSolverMethod(sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(
+      world.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+
+  world.setContactSolverMethod(sx::ContactSolverMethod::BoxedLcp);
+  EXPECT_EQ(world.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
+
+  world.enterSimulationMode();
+  world.setContactSolverMethod(sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(
+      world.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+}
+
+TEST(World, SetContactSolverMethodRejectsInvalidEnum)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  EXPECT_THROW(
+      world.setContactSolverMethod(static_cast<sx::ContactSolverMethod>(99)),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(
+      world.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+}
+
 TEST(World, SetComputeAcceleratorPolicyRejectsInvalidEnum)
 {
   namespace sx = dart::simulation;
@@ -21312,6 +21349,17 @@ TEST(World, SetRigidBodySolverRejectsInvalidEnum)
   EXPECT_THROW(
       world.setRigidBodySolver(static_cast<sx::RigidBodySolver>(99)),
       sx::InvalidArgumentException);
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+}
+
+TEST(World, SetRigidBodySolverNoopsWhenAlreadySelected)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+
+  world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
   EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
 }
 

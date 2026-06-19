@@ -140,6 +140,12 @@ compatibility remains on the active DART 6 LTS branch._
   revolute-arm boxed-LCP contact regressions, direct CUDA red-black
   Gauss-Seidel batch coverage, and `lcp_physics` metadata that points reviewers
   at the new correctness and benchmark contracts.
+- Made the DART 7 `World` contact solver method writable after construction in
+  C++ and dartpy so visual tools can switch between Sequential Impulse and the
+  boxed-LCP contact baseline at runtime, while realtime py-demos workflow rows
+  stay on the Sequential Impulse rigid-body path and route SI-vs-IPC inspection
+  to the dedicated solver-comparison scenes.
+  ([#3063](https://github.com/dartsim/dart/pull/3063))
 
 #### Collision and Geometry
 
@@ -194,6 +200,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Added and tuned Atlas/G1/Hubo puppet and SIMBICON Python demos, including a
   reusable pose-window comparison utility for locomotion evidence.
   ([#3043](https://github.com/dartsim/dart/pull/3043))
+- Exposed the rigid-body Python demo's contact-solver method in its live panel
+  and capture metadata, giving py-demos a direct SI versus boxed-LCP inspection
+  path for the DART 6 contact baseline.
 
 #### Gazebo Integration
 

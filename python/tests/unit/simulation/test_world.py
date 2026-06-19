@@ -6059,6 +6059,14 @@ def test_simulation_multibody_options_selector():
         compute_accelerator_policy=sx.ComputeAcceleratorPolicy.PREFER_ACCELERATED,
     )
     assert policy_configured.contact_solver_method == sx.ContactSolverMethod.BOXED_LCP
+    policy_configured.contact_solver_method = sx.ContactSolverMethod.SEQUENTIAL_IMPULSE
+    assert (
+        policy_configured.contact_solver_method
+        == sx.ContactSolverMethod.SEQUENTIAL_IMPULSE
+    )
+    with pytest.raises(TypeError):
+        policy_configured.contact_solver_method = 99
+
     assert (
         policy_configured.contact_gradient_mode
         == sx.ContactGradientMode.PRE_CONTACT_SURROGATE

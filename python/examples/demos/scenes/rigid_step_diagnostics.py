@@ -28,9 +28,10 @@ _LANE_X = {
     "contact": 0.0,
     "stack": 1.25,
 }
+# Keep live diagnostics on the realtime SI rigid-body path; the dedicated
+# rigid_solver_compare scene owns SI-vs-IPC visual inspection.
 _SOLVERS: tuple[tuple[str, sx.RigidBodySolver], ...] = (
     ("Sequential impulse", sx.RigidBodySolver.SEQUENTIAL_IMPULSE),
-    ("IPC barrier", sx.RigidBodySolver.IPC),
 )
 
 

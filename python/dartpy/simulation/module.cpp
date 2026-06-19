@@ -3899,7 +3899,10 @@ void defSimulationModule(nb::module_& m)
           "num_rigid_body_fixed_joints",
           &sim::World::getRigidBodyFixedJointCount)
       .def_prop_ro("is_differentiable", &sim::World::isDifferentiable)
-      .def_prop_ro("contact_solver_method", &sim::World::getContactSolverMethod)
+      .def_prop_rw(
+          "contact_solver_method",
+          &sim::World::getContactSolverMethod,
+          &sim::World::setContactSolverMethod)
       .def_prop_rw(
           "contact_gradient_mode",
           &sim::World::getContactGradientMode,

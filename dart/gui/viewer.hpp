@@ -99,6 +99,13 @@ struct ViewerLifecycleState
   /// viewer lifetime. Kept outside per-scene state so user-resized dock splits
   /// survive demo switches until Reset Layout is requested.
   bool dockLayoutInitialized = false;
+  /// Titles/sides that were present the last time the dock layout saw the
+  /// current application panel set. Used to dock panels introduced by a later
+  /// demo switch without rebuilding the user's resized dock tree.
+  std::vector<std::string> dockedPanelLayoutSignature;
+  /// One remembered panel per recently-used dock side. This preserves a dock
+  /// node target when a side temporarily has no scene panels.
+  std::vector<std::string> dockedPanelLayoutSideHistory;
   /// Set by the demos sidebar to ask the application loop to swap the active
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;
