@@ -1,16 +1,16 @@
 /*
  Copyright (c) 2017-2021 Leo McCormack
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -80,7 +80,7 @@ void convhull_3d_build(/* input arguments */
                        /* output arguments */
                        int** out_faces,                         /* & of empty int*, output face indices; flat: nOut_faces x 3 */
                        int* nOut_faces);                        /* & of int, number of output face indices */
-    
+
 /* exports the vertices, face indices, and face normals, as an 'obj' file, ready for GPU (for 3d convexhulls only) */
 void convhull_3d_export_obj(/* input arguments */
                             ch_vertex* const vertices,          /* vector of input vertices; nVert x 1 */
@@ -89,7 +89,7 @@ void convhull_3d_export_obj(/* input arguments */
                             const int nFaces,                   /* number of faces in hull */
                             const int keepOnlyUsedVerticesFLAG, /* 0: exports in_vertices, 1: exports only used vertices  */
                             char* const obj_filename);          /* obj filename, WITHOUT extension */
-    
+
 /* exports the vertices, face indices, and face normals, as an 'm' file, for MatLab verification (for 3d convexhulls only) */
 void convhull_3d_export_m(/* input arguments */
                           ch_vertex* const vertices,            /* vector of input vertices; nVert x 1 */
@@ -97,7 +97,7 @@ void convhull_3d_export_m(/* input arguments */
                           int* const faces,                     /* face indices; flat: nFaces x 3 */
                           const int nFaces,                     /* number of faces in hull */
                           char* const m_filename);              /* m filename, WITHOUT extension */
-    
+
 /* reads an 'obj' file and extracts only the vertices (for 3d convexhulls only) */
 void extract_vertices_from_obj_file(/* input arguments */
                                     char* const obj_filename,       /* obj filename, WITHOUT extension */
@@ -188,7 +188,7 @@ void extract_vertices_from_obj_file_alloc(/* input arguments */
 #include <float.h>
 #include <ctype.h>
 #include <string.h>
-#include <errno.h> 
+#include <errno.h>
 #include <assert.h>
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
   #define CV_STRNCPY(a,b,c) strncpy_s(a,c+1,b,c);
@@ -312,7 +312,7 @@ static void sort_float
 {
     int i;
     struct float_w_idx *data;
-    
+
     data = (float_w_idx*)ch_stateful_malloc(allocator, len*sizeof(float_w_idx));
     for(i=0;i<len;i++) {
         data[i].val=in_vec[i];
@@ -395,7 +395,7 @@ static CH_FLOAT det_NxN
     CH_FLOAT sum;
     CH_FLOAT sub_m[CONVHULL_ND_MAX_DIMENSIONS*CONVHULL_ND_MAX_DIMENSIONS];
     int sign;
-    
+
     if (d == 0)
         return 1.0;
     sum = 0.0;
@@ -423,7 +423,7 @@ static void plane_3d
     int r[3];
     CH_FLOAT sign, det, norm_c;
     CH_FLOAT pdiff[2][3], pdiff_s[2][2];
-    
+
     for(i=0; i<2; i++)
         for(j=0; j<3; j++)
             pdiff[i][j] = p[(i+1)*3+j] - p[i*3+j];
@@ -590,13 +590,13 @@ inline void convhull_3d_build_alloc
     CH_FLOAT cfi[CONVHULL_3D_MAX_DIMENSIONS];
     CH_FLOAT p_s[CONVHULL_3D_MAX_DIMENSIONS*CONVHULL_3D_MAX_DIMENSIONS];
     CH_FLOAT* points, *cf, *df;
-    
+
     if(nVert<=3 || in_vertices==NULL){
         (*out_faces) = NULL;
         (*nOut_faces) = 0;
         return;
     }
-    
+
     /* 3 dimensions. The code should theoretically work for >=2 dimensions, but "plane_3d" and "det_4x4" are hardcoded for 3,
      * so would need to be rewritten */
     d = 3;
@@ -624,14 +624,14 @@ inline void convhull_3d_build_alloc
         assert(span[j]>0.000000001);
 #endif
     }
-    
+
     /* The initial convex hull is a simplex with (d+1) facets, where d is the number of dimensions */
     nFaces = (d+1);
     faces = (int*)ch_stateful_calloc(allocator, nFaces*d, sizeof(int));
     aVec = (int*)ch_stateful_malloc(allocator, nFaces*sizeof(int));
     for(i=0; i<nFaces; i++)
         aVec[i] = i;
-    
+
     /* Each column of cf contains the coefficients of a plane */
     cf = (CH_FLOAT*)ch_stateful_malloc(allocator, nFaces*d*sizeof(CH_FLOAT));
     df = (CH_FLOAT*)ch_stateful_malloc(allocator, nFaces*sizeof(CH_FLOAT));
@@ -643,12 +643,12 @@ inline void convhull_3d_build_alloc
                 k++;
             }
         }
-        
+
         /* Calculate and store the plane coefficients of the face */
         for(j=0; j<d; j++)
             for(k=0; k<d; k++)
                 p_s[j*d+k] = points[(faces[i*d+j])*(d+1) + k];
-        
+
         /* Calculate and store the plane coefficients of the face */
         plane_3d(p_s, cfi, &dfi);
         for(j=0; j<d; j++)
@@ -658,12 +658,12 @@ inline void convhull_3d_build_alloc
     CH_FLOAT A[(CONVHULL_3D_MAX_DIMENSIONS+1)*(CONVHULL_3D_MAX_DIMENSIONS+1)];
     int fVec[CONVHULL_3D_MAX_DIMENSIONS+1];
     int face_tmp[2];
-    
+
     /* Check to make sure that faces are correctly oriented */
     int bVec[CONVHULL_3D_MAX_DIMENSIONS+1];
     for(i=0; i<d+1; i++)
         bVec[i] = i;
-    
+
     /* A contains the coordinates of the points forming a simplex */
     memset(A, 0, sizeof(A));
     for(k=0; k<(d+1); k++){
@@ -678,10 +678,10 @@ inline void convhull_3d_build_alloc
         for(; i<(d+1); i++)
             for(j=0; j<(d+1); j++)
                 A[i*(d+1)+j] = points[p*(d+1)+j];
-        
+
         /* det(A) determines the orientation of the face */
         v = det_4x4(A);
-        
+
         /* Orient so that each point on the original simplex can't see the opposite face */
         if(v<0){
             /* Reverse the order of the last two vertices to change the volume */
@@ -689,7 +689,7 @@ inline void convhull_3d_build_alloc
                 face_tmp[j] = faces[k*d+d-j-1];
             for(j=0; j<2; j++)
                 faces[k*d+d-j-1] = face_tmp[1-j];
-            
+
             /* Modify the plane coefficients of the properly oriented faces */
             for(j=0; j<d; j++)
                 cf[k*d+j] = -cf[k*d+j];
@@ -702,7 +702,7 @@ inline void convhull_3d_build_alloc
                     A[i*(d+1)+j] = points[p*(d+1)+j];
         }
     }
-    
+
     /* Coordinates of the center of the point set */
     CH_FLOAT meanp[CONVHULL_3D_MAX_DIMENSIONS];
     CH_FLOAT* absdist, *reldist, *desReldist;
@@ -712,33 +712,33 @@ inline void convhull_3d_build_alloc
             meanp[j] += points[i*(d+1)+j];
     for(j=0; j<d; j++)
         meanp[j] = meanp[j]/(CH_FLOAT)(nVert-d-1);
-    
+
     /* Absolute distance of points from the center */
     absdist = (CH_FLOAT*)ch_stateful_malloc(allocator, (nVert-d-1)*d * sizeof(CH_FLOAT));
     for(i=d+1, k=0; i<nVert; i++, k++)
         for(j=0; j<d; j++)
             absdist[k*d+j] = (points[i*(d+1)+j] -  meanp[j])/span[j];
-    
+
     /* Relative distance of points from the center */
     reldist = (CH_FLOAT*)ch_stateful_calloc(allocator, (nVert-d-1), sizeof(CH_FLOAT));
     desReldist = (CH_FLOAT*)ch_stateful_malloc(allocator, (nVert-d-1) * sizeof(CH_FLOAT));
     for(i=0; i<(nVert-d-1); i++)
         for(j=0; j<d; j++)
             reldist[i] += ch_pow(absdist[i*d+j], (CH_FLOAT)2.0);
-    
+
     /* Sort from maximum to minimum relative distance */
     int num_pleft, cnt;
     int* ind, *pleft;
     ind = (int*)ch_stateful_malloc(allocator, (nVert-d-1) * sizeof(int));
     pleft = (int*)ch_stateful_malloc(allocator, (nVert-d-1) * sizeof(int));
     sort_float(reldist, desReldist, ind, (nVert-d-1), 1, allocator);
-    
+
     /* Initialize the vector of points left. The points with the larger relative
      distance from the center are scanned first. */
     num_pleft = (nVert-d-1);
     for(i=0; i<num_pleft; i++)
         pleft[i] = ind[i]+d+1;
-    
+
     /* Loop over all remaining points that are not deleted. Deletion of points
      occurs every #iter2del# iterations of this while loop */
     memset(A, 0, sizeof(A));
@@ -746,7 +746,7 @@ inline void convhull_3d_build_alloc
     /* cnt is equal to the points having been selected without deletion of
      nonvisible points (i.e. points inside the current convex hull) */
     cnt=0;
-    
+
     /* The main loop for the quickhull algorithm */
     CH_FLOAT detA;
     CH_FLOAT* points_cf;
@@ -766,7 +766,7 @@ inline void convhull_3d_build_alloc
     while( (num_pleft>0) ){
         /* i is the first point of the points left */
         i = pleft[0];
-        
+
         /* Delete the point selected */
         for(j=0; j<num_pleft-1; j++)
             pleft[j] = pleft[j+1];
@@ -775,10 +775,10 @@ inline void convhull_3d_build_alloc
             ch_stateful_free(allocator, pleft);
         else
             pleft = (int*)ch_stateful_realloc(allocator, pleft, num_pleft*sizeof(int));
-        
+
         /* Update point selection counter */
         cnt++;
-        
+
         /* find visible faces */
         for(j=0; j<d; j++)
             points_s[j] = points[i*(d+1)+j];
@@ -813,7 +813,7 @@ inline void convhull_3d_build_alloc
                 visible_ind[j] = 0;
         }
         num_nonvisible_faces = nFaces - num_visible_ind;
-        
+
         /* proceed if there are any visible faces */
         if(num_visible_ind!=0){
             /* Find visible face indices */
@@ -824,7 +824,7 @@ inline void convhull_3d_build_alloc
                     k++;
                 }
             }
-            
+
             /* Find nonvisible faces */
             nonvisible_faces = (int*)ch_stateful_resize(allocator, nonvisible_faces, num_nonvisible_faces*d*sizeof(int));
             f0 = (int*)ch_stateful_resize(allocator, f0, num_nonvisible_faces*d*sizeof(int));
@@ -835,7 +835,7 @@ inline void convhull_3d_build_alloc
                     k++;
                 }
             }
-            
+
             /* Create horizon (count is the number of the edges of the horizon) */
             count=0;
             for(j=0; j<num_visible_ind; j++){
@@ -846,7 +846,7 @@ inline void convhull_3d_build_alloc
                 sort_int(face_s, d);
                 ismember(nonvisible_faces, face_s, f0, num_nonvisible_faces*d, d);
                 u_len = 0;
-                
+
                 /* u are the nonvisible faces connected to the face v, if any */
                 for(k=0; k<num_nonvisible_faces; k++){
                     f0_sum = 0;
@@ -884,7 +884,7 @@ inline void convhull_3d_build_alloc
                     /* Delete visible faces */
                     for(k=0; k<d; k++)
                         faces[l*d+k] = faces[j*d+k];
-                    
+
                     /* Delete the corresponding plane coefficients of the faces */
                     for(k=0; k<d; k++)
                         cf[l*d+k] = cf[j*d+k];
@@ -892,13 +892,13 @@ inline void convhull_3d_build_alloc
                     l++;
                 }
             }
-            
+
             /* Update the number of faces */
             nFaces = nFaces-num_visible_ind;
-            
+
             /* start is the first row of the new faces */
             start=nFaces;
-            
+
             /* Add faces connecting horizon to the new point */
             n_newfaces = horizon_size1;
             n_realloc_faces = nFaces + n_newfaces;
@@ -907,13 +907,13 @@ inline void convhull_3d_build_alloc
             faces = (int*)ch_stateful_realloc(allocator, faces, n_realloc_faces*d*sizeof(int));
             cf = (CH_FLOAT*)ch_stateful_realloc(allocator, cf, n_realloc_faces*d*sizeof(CH_FLOAT));
             df = (CH_FLOAT*)ch_stateful_realloc(allocator, df, n_realloc_faces*sizeof(CH_FLOAT));
-        
+
             for(j=0; j<n_newfaces; j++){
                 nFaces++;
                 for(k=0; k<d-1; k++)
                     faces[(nFaces-1)*d+k] = horizon[j*(d-1)+k];
                 faces[(nFaces-1)*d+(d-1)] = i;
-                
+
                 /* Calculate and store appropriately the plane coefficients of the faces */
                 for(k=0; k<d; k++)
                     for(l=0; l<d; l++)
@@ -928,7 +928,7 @@ inline void convhull_3d_build_alloc
                     break;
                 }
             }
-            
+
             /* Orient each new face properly */
             hVec = (int*)ch_stateful_resize(allocator, hVec, nFaces*sizeof(int));
             hVec_mem_face = (int*)ch_stateful_resize(allocator, hVec_mem_face, nFaces*sizeof(int));
@@ -952,7 +952,7 @@ inline void convhull_3d_build_alloc
                 }
                 index = 0;
                 detA = 0.0;
-                
+
                 /* While new point is coplanar, choose another point */
                 while(detA==0.0){
                     for(j=0;j<d; j++)
@@ -964,7 +964,7 @@ inline void convhull_3d_build_alloc
                     index++;
                     detA = det_4x4(A);
                 }
-                
+
                 /* Orient faces so that each point on the original simplex can't see the opposite face */
                 if (detA<0.0){
                     /* If orientation is improper, reverse the order to change the volume sign */
@@ -972,7 +972,7 @@ inline void convhull_3d_build_alloc
                         face_tmp[j] = faces[k*d+d-j-1];
                     for(j=0; j<2; j++)
                         faces[k*d+d-j-1] = face_tmp[1-j];
-                    
+
                     /* Modify the plane coefficients of the properly oriented faces */
                     for(j=0; j<d; j++)
                         cf[k*d+j] = -cf[k*d+j];
@@ -996,7 +996,7 @@ inline void convhull_3d_build_alloc
             break;
         }
     }
-    
+
     /* output */
     if(FUCKED){
         (*out_faces) = NULL;
@@ -1007,7 +1007,7 @@ inline void convhull_3d_build_alloc
         memcpy((*out_faces),faces, nFaces*d*sizeof(int));
         (*nOut_faces) = nFaces;
     }
-    
+
     /* clean-up */
     ch_stateful_free(allocator, u);
     ch_stateful_free(allocator, pp);
@@ -1071,7 +1071,7 @@ inline void convhull_3d_export_obj
             fprintf(obj_file, "v %f %f %f\n", vertices[i].x,
                     vertices[i].y, vertices[i].z);
     }
-    
+
     /* export the face normals */
     for (i = 0; i < nFaces; i++){
         /* calculate cross product between v1-v0 and v2-v0 */
@@ -1084,7 +1084,7 @@ inline void convhull_3d_export_obj
         v2.y -= vertices[faces[i*3]].y;
         v2.z -= vertices[faces[i*3]].z;
         normal = cross(&v1, &v2);
-        
+
         /* normalise to unit length */
         scale = ((CH_FLOAT)1.0)/(ch_sqrt(ch_pow(normal.x, (CH_FLOAT)2.0)+ch_pow(normal.y, (CH_FLOAT)2.0)+ch_pow(normal.z, (CH_FLOAT)2.0))+(CH_FLOAT)2.23e-9);
         normal.x *= scale;
@@ -1092,7 +1092,7 @@ inline void convhull_3d_export_obj
         normal.z *= scale;
         fprintf(obj_file, "vn %f %f %f\n", normal.x, normal.y, normal.z);
     }
-    
+
     /* export the face indices */
     if(keepOnlyUsedVerticesFLAG){
         for (i = 0; i < nFaces; i++){
@@ -1134,7 +1134,7 @@ inline void convhull_3d_export_m
 #else
     m_file = fopen(strcat(path, ".m"), "wt");
 #endif
-    
+
     /* save face indices and vertices for verification in matlab: */
     fprintf(m_file, "vertices = [\n");
     for (i = 0; i < nVert; i++)
@@ -1174,8 +1174,8 @@ inline void extract_vertices_from_obj_file_alloc
     fopen_s(&obj_file, obj_filename, "r");
 #else
     obj_file = fopen(strcat(obj_filename, ".obj"), "r");
-#endif 
-    
+#endif
+
     /* determine number of vertices */
     unsigned int nVert = 0;
     char line[256];
@@ -1186,12 +1186,12 @@ inline void extract_vertices_from_obj_file_alloc
     }
     (*out_nVert) = nVert;
     (*out_vertices) = (ch_vertex*)ch_stateful_malloc(allocator, nVert*sizeof(ch_vertex));
-    
+
     /* extract the vertices */
     rewind(obj_file);
     int i=0;
     int vertID, prev_char_isDigit, current_char_isDigit;
-    char vert_char[256] = { 0 }; 
+    char vert_char[256] = { 0 };
     while (fgets(line, sizeof(line), obj_file)) {
         char* vexists = strstr(line, "v ");
         if(vexists!=NULL){
@@ -1782,7 +1782,7 @@ inline void delaunay_nd_mesh_alloc
         ch_stateful_free(allocator, projpoints);
         return;
     }
-    
+
     /* Find the coordinates of the point with the maximum (N+1 dimension) coordinate (i.e. the w vector) */
 #ifdef CONVHULL_3D_USE_CBLAS
     if(sizeof(CH_FLOAT)==sizeof(double))
