@@ -36,18 +36,18 @@
 #ifdef __GNUC__
   #pragma GCC system_header
   #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
+  #include "convhull_3d.h"
 
 // Check if we are using MSVC
 #elif defined(_MSC_VER)
   #pragma warning(push, 0)
   #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
+  #include "convhull_3d.h"
   #pragma warning(pop)
 
 // For other compilers, you might just include it normally or
 // add specific pragmas for those compilers
 #else
   #define CONVHULL_3D_ENABLE
-  #include <dart/external/convhull_3d/convhull_3d.h>
+  #include "convhull_3d.h"
 #endif
