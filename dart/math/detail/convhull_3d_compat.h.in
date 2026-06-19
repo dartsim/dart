@@ -39,8 +39,20 @@
 #include <dart/math/detail/convhull.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <string>
 #include <vector>
+
+#ifndef ch_malloc
+#define ch_malloc(size) std::malloc(size)
+#endif
+
+#ifndef ch_stateful_malloc
+#define ch_stateful_malloc(allocator, size) ch_malloc(size)
+#endif
 
 #ifdef CONVHULL_3D_USE_SINGLE_PRECISION
 typedef float CH_FLOAT;
@@ -62,27 +74,83 @@ typedef struct _ch_vertex
 
 typedef ch_vertex ch_vec3;
 
-inline void convhull_3d_build(
-    ch_vertex* const in_vertices, const int nVert, int** out_faces, int* nOut_faces)
+inline void convhull_3d_build_alloc(
+    ch_vertex* const in_vertices,
+    const int nVert,
+    int** out_faces,
+    int* nOut_faces,
+    void* allocator);
+
+inline void extract_vertices_from_obj_file_alloc(
+    char* const obj_filename,
+    ch_vertex** out_vertices,
+    int* out_nVert,
+    void* allocator);
+
+inline void convhull_nd_build_alloc(
+    CH_FLOAT* const in_points,
+    const int nPoints,
+    const int d,
+    int** out_faces,
+    CH_FLOAT** out_cf,
+    CH_FLOAT** out_df,
+    int* nOut_faces,
+    void* allocator);
+
+inline void delaunay_nd_mesh_alloc(
+    const float* points,
+    const int nPoints,
+    const int nd,
+    int** Mesh,
+    int* nMesh,
+    void* allocator);
+
+namespace dart_convhull_3d_compat {
+
+inline void clearFaceOutput(int** outFaces, int* numOutFaces)
 {
-  if (out_faces != nullptr) {
-    *out_faces = nullptr;
+  if (outFaces != nullptr) {
+    *outFaces = nullptr;
   }
-  if (nOut_faces != nullptr) {
-    *nOut_faces = 0;
+  if (numOutFaces != nullptr) {
+    *numOutFaces = 0;
   }
-  if (in_vertices == nullptr || nVert <= 0 || out_faces == nullptr
-      || nOut_faces == nullptr) {
+}
+
+inline std::string pathWithExtension(const char* stem, const char* extension)
+{
+  std::string path = stem != nullptr ? stem : "";
+  const std::string suffix = extension != nullptr ? extension : "";
+  if (!suffix.empty()
+      && (path.size() < suffix.size()
+          || path.compare(path.size() - suffix.size(), suffix.size(), suffix)
+                 != 0)) {
+    path += suffix;
+  }
+
+  return path;
+}
+
+inline void build3dWithAllocator(
+    ch_vertex* const inVertices,
+    const int numVertices,
+    int** outFaces,
+    int* numOutFaces,
+    void* allocator)
+{
+  clearFaceOutput(outFaces, numOutFaces);
+  if (inVertices == nullptr || numVertices <= 0 || outFaces == nullptr
+      || numOutFaces == nullptr) {
     return;
   }
 
   std::vector<dart::math::detail::ConvexHullVertex<CH_FLOAT>> vertices;
-  vertices.reserve(static_cast<std::size_t>(nVert));
-  for (int i = 0; i < nVert; ++i) {
+  vertices.reserve(static_cast<std::size_t>(numVertices));
+  for (int i = 0; i < numVertices; ++i) {
     vertices.push_back({});
-    vertices.back().x = in_vertices[i].x;
-    vertices.back().y = in_vertices[i].y;
-    vertices.back().z = in_vertices[i].z;
+    vertices.back().x = inVertices[i].x;
+    vertices.back().y = inVertices[i].y;
+    vertices.back().z = inVertices[i].z;
   }
 
   std::vector<int> faces;
@@ -93,14 +161,65 @@ inline void convhull_3d_build(
   }
 
   const auto bytes = faces.size() * sizeof(int);
-  *out_faces = static_cast<int*>(std::malloc(bytes));
-  if (*out_faces == nullptr) {
-    *nOut_faces = 0;
+  *outFaces = static_cast<int*>(ch_stateful_malloc(allocator, bytes));
+  if (*outFaces == nullptr) {
+    *numOutFaces = 0;
     return;
   }
 
-  std::copy(faces.begin(), faces.end(), *out_faces);
-  *nOut_faces = numFaces;
+  std::copy(faces.begin(), faces.end(), *outFaces);
+  *numOutFaces = numFaces;
+}
+
+inline void clearNdOutput(
+    int** outFaces, CH_FLOAT** outCf, CH_FLOAT** outDf, int* numOutFaces)
+{
+  clearFaceOutput(outFaces, numOutFaces);
+  if (outCf != nullptr) {
+    *outCf = nullptr;
+  }
+  if (outDf != nullptr) {
+    *outDf = nullptr;
+  }
+}
+
+inline void normalForFace(
+    const ch_vertex* vertices, const int* faces, int face, CH_FLOAT normal[3])
+{
+  const auto& a = vertices[faces[3 * face]];
+  const auto& b = vertices[faces[3 * face + 1]];
+  const auto& c = vertices[faces[3 * face + 2]];
+  const CH_FLOAT ux = b.x - a.x;
+  const CH_FLOAT uy = b.y - a.y;
+  const CH_FLOAT uz = b.z - a.z;
+  const CH_FLOAT vx = c.x - a.x;
+  const CH_FLOAT vy = c.y - a.y;
+  const CH_FLOAT vz = c.z - a.z;
+
+  normal[0] = uy * vz - uz * vy;
+  normal[1] = uz * vx - ux * vz;
+  normal[2] = ux * vy - uy * vx;
+
+  const double norm = std::sqrt(
+      static_cast<double>(normal[0]) * static_cast<double>(normal[0])
+      + static_cast<double>(normal[1]) * static_cast<double>(normal[1])
+      + static_cast<double>(normal[2]) * static_cast<double>(normal[2]));
+  if (norm > 0.0) {
+    normal[0] = static_cast<CH_FLOAT>(static_cast<double>(normal[0]) / norm);
+    normal[1] = static_cast<CH_FLOAT>(static_cast<double>(normal[1]) / norm);
+    normal[2] = static_cast<CH_FLOAT>(static_cast<double>(normal[2]) / norm);
+  }
+}
+
+} // namespace dart_convhull_3d_compat
+
+inline void convhull_3d_build(
+    ch_vertex* const in_vertices,
+    const int nVert,
+    int** out_faces,
+    int* nOut_faces)
+{
+  convhull_3d_build_alloc(in_vertices, nVert, out_faces, nOut_faces, nullptr);
 }
 
 inline void convhull_3d_build_alloc(
@@ -110,8 +229,253 @@ inline void convhull_3d_build_alloc(
     int* nOut_faces,
     void* allocator)
 {
+  dart_convhull_3d_compat::build3dWithAllocator(
+      in_vertices, nVert, out_faces, nOut_faces, allocator);
+}
+
+inline void convhull_3d_export_obj(
+    ch_vertex* const vertices,
+    const int nVert,
+    int* const faces,
+    const int nFaces,
+    const int keepOnlyUsedVerticesFLAG,
+    char* const obj_filename)
+{
+  if (vertices == nullptr || faces == nullptr || obj_filename == nullptr
+      || nVert <= 0 || nFaces <= 0) {
+    return;
+  }
+
+  const std::string path
+      = dart_convhull_3d_compat::pathWithExtension(obj_filename, ".obj");
+  std::FILE* file = std::fopen(path.c_str(), "wt");
+  if (file == nullptr) {
+    return;
+  }
+
+  std::fprintf(file, "o\n");
+  if (keepOnlyUsedVerticesFLAG != 0) {
+    for (int face = 0; face < nFaces; ++face) {
+      for (int corner = 0; corner < 3; ++corner) {
+        const auto& vertex = vertices[faces[3 * face + corner]];
+        std::fprintf(
+            file,
+            "v %.17g %.17g %.17g\n",
+            static_cast<double>(vertex.x),
+            static_cast<double>(vertex.y),
+            static_cast<double>(vertex.z));
+      }
+    }
+  } else {
+    for (int i = 0; i < nVert; ++i) {
+      std::fprintf(
+          file,
+          "v %.17g %.17g %.17g\n",
+          static_cast<double>(vertices[i].x),
+          static_cast<double>(vertices[i].y),
+          static_cast<double>(vertices[i].z));
+    }
+  }
+
+  for (int face = 0; face < nFaces; ++face) {
+    CH_FLOAT normal[3] = {};
+    dart_convhull_3d_compat::normalForFace(vertices, faces, face, normal);
+    std::fprintf(
+        file,
+        "vn %.17g %.17g %.17g\n",
+        static_cast<double>(normal[0]),
+        static_cast<double>(normal[1]),
+        static_cast<double>(normal[2]));
+  }
+
+  for (int face = 0; face < nFaces; ++face) {
+    if (keepOnlyUsedVerticesFLAG != 0) {
+      std::fprintf(
+          file,
+          "f %d//%d %d//%d %d//%d\n",
+          3 * face + 1,
+          face + 1,
+          3 * face + 2,
+          face + 1,
+          3 * face + 3,
+          face + 1);
+    } else {
+      std::fprintf(
+          file,
+          "f %d//%d %d//%d %d//%d\n",
+          faces[3 * face] + 1,
+          face + 1,
+          faces[3 * face + 1] + 1,
+          face + 1,
+          faces[3 * face + 2] + 1,
+          face + 1);
+    }
+  }
+
+  std::fclose(file);
+}
+
+inline void convhull_3d_export_m(
+    ch_vertex* const vertices,
+    const int nVert,
+    int* const faces,
+    const int nFaces,
+    char* const m_filename)
+{
+  if (vertices == nullptr || faces == nullptr || m_filename == nullptr
+      || nVert <= 0 || nFaces <= 0) {
+    return;
+  }
+
+  const std::string path
+      = dart_convhull_3d_compat::pathWithExtension(m_filename, ".m");
+  std::FILE* file = std::fopen(path.c_str(), "wt");
+  if (file == nullptr) {
+    return;
+  }
+
+  std::fprintf(file, "vertices = [\n");
+  for (int i = 0; i < nVert; ++i) {
+    std::fprintf(
+        file,
+        "%.17g, %.17g, %.17g;\n",
+        static_cast<double>(vertices[i].x),
+        static_cast<double>(vertices[i].y),
+        static_cast<double>(vertices[i].z));
+  }
+  std::fprintf(file, "];\n\nfaces = [\n");
+  for (int i = 0; i < nFaces; ++i) {
+    std::fprintf(
+        file,
+        "%d, %d, %d;\n",
+        faces[3 * i] + 1,
+        faces[3 * i + 1] + 1,
+        faces[3 * i + 2] + 1);
+  }
+  std::fprintf(file, "];\n");
+  std::fclose(file);
+}
+
+inline void extract_vertices_from_obj_file(
+    char* const obj_filename, ch_vertex** out_vertices, int* out_nVert)
+{
+  extract_vertices_from_obj_file_alloc(
+      obj_filename, out_vertices, out_nVert, nullptr);
+}
+
+inline void extract_vertices_from_obj_file_alloc(
+    char* const obj_filename,
+    ch_vertex** out_vertices,
+    int* out_nVert,
+    void* allocator)
+{
+  if (out_vertices != nullptr) {
+    *out_vertices = nullptr;
+  }
+  if (out_nVert != nullptr) {
+    *out_nVert = 0;
+  }
+  if (obj_filename == nullptr || out_vertices == nullptr || out_nVert == nullptr) {
+    return;
+  }
+
+  const std::string path
+      = dart_convhull_3d_compat::pathWithExtension(obj_filename, ".obj");
+  std::FILE* file = std::fopen(path.c_str(), "rt");
+  if (file == nullptr) {
+    return;
+  }
+
+  std::vector<ch_vertex> vertices;
+  char line[256] = {};
+  while (std::fgets(line, sizeof(line), file) != nullptr) {
+    double x = 0.0;
+    double y = 0.0;
+    double z = 0.0;
+    if (std::sscanf(line, " v %lf %lf %lf", &x, &y, &z) == 3) {
+      ch_vertex vertex = {};
+      vertex.x = static_cast<CH_FLOAT>(x);
+      vertex.y = static_cast<CH_FLOAT>(y);
+      vertex.z = static_cast<CH_FLOAT>(z);
+      vertices.push_back(vertex);
+    }
+  }
+  std::fclose(file);
+
+  if (vertices.empty()) {
+    return;
+  }
+
+  const auto bytes = vertices.size() * sizeof(ch_vertex);
+  *out_vertices = static_cast<ch_vertex*>(ch_stateful_malloc(allocator, bytes));
+  if (*out_vertices == nullptr) {
+    return;
+  }
+
+  std::copy(vertices.begin(), vertices.end(), *out_vertices);
+  *out_nVert = static_cast<int>(vertices.size());
+}
+
+inline void convhull_nd_build(
+    CH_FLOAT* const in_points,
+    const int nPoints,
+    const int d,
+    int** out_faces,
+    CH_FLOAT** out_cf,
+    CH_FLOAT** out_df,
+    int* nOut_faces)
+{
+  convhull_nd_build_alloc(
+      in_points, nPoints, d, out_faces, out_cf, out_df, nOut_faces, nullptr);
+}
+
+inline void convhull_nd_build_alloc(
+    CH_FLOAT* const in_points,
+    const int nPoints,
+    const int d,
+    int** out_faces,
+    CH_FLOAT** out_cf,
+    CH_FLOAT** out_df,
+    int* nOut_faces,
+    void* allocator)
+{
+  dart_convhull_3d_compat::clearNdOutput(
+      out_faces, out_cf, out_df, nOut_faces);
+  if (in_points == nullptr || nPoints <= 0 || d != 3 || out_faces == nullptr
+      || nOut_faces == nullptr) {
+    return;
+  }
+
+  std::vector<ch_vertex> vertices(static_cast<std::size_t>(nPoints));
+  for (int i = 0; i < nPoints; ++i) {
+    vertices[static_cast<std::size_t>(i)].x = in_points[i * d];
+    vertices[static_cast<std::size_t>(i)].y = in_points[i * d + 1];
+    vertices[static_cast<std::size_t>(i)].z = in_points[i * d + 2];
+  }
+
+  dart_convhull_3d_compat::build3dWithAllocator(
+      vertices.data(), nPoints, out_faces, nOut_faces, allocator);
+}
+
+inline void delaunay_nd_mesh(
+    const float* points, const int nPoints, const int nd, int** Mesh, int* nMesh)
+{
+  delaunay_nd_mesh_alloc(points, nPoints, nd, Mesh, nMesh, nullptr);
+}
+
+inline void delaunay_nd_mesh_alloc(
+    const float* points,
+    const int nPoints,
+    const int nd,
+    int** Mesh,
+    int* nMesh,
+    void* allocator)
+{
+  (void)points;
+  (void)nPoints;
+  (void)nd;
   (void)allocator;
-  convhull_3d_build(in_vertices, nVert, out_faces, nOut_faces);
+  dart_convhull_3d_compat::clearFaceOutput(Mesh, nMesh);
 }
 
 #endif /* CONVHULL_3D_INCLUDED */

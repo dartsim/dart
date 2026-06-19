@@ -41,6 +41,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include <cstdio>
 #include <cstdlib>
 
 using dart::math::detail::convexHull3dBuild;
@@ -97,6 +98,98 @@ TEST(ConvhullCompatibility, BuildThroughInstalledHeader)
   EXPECT_EQ(numFaces, 4);
 
   std::free(faces);
+}
+
+//==============================================================================
+TEST(ConvhullCompatibility, ExposesLegacyHelperApis)
+{
+  std::array<ch_vertex, 4> vertices{};
+  vertices[0].x = 0.0;
+  vertices[0].y = 0.0;
+  vertices[0].z = 0.0;
+  vertices[1].x = 1.0;
+  vertices[1].y = 0.0;
+  vertices[1].z = 0.0;
+  vertices[2].x = 0.0;
+  vertices[2].y = 1.0;
+  vertices[2].z = 0.0;
+  vertices[3].x = 0.0;
+  vertices[3].y = 0.0;
+  vertices[3].z = 1.0;
+
+  int* faces = nullptr;
+  int numFaces = 0;
+  convhull_3d_build_alloc(
+      vertices.data(),
+      static_cast<int>(vertices.size()),
+      &faces,
+      &numFaces,
+      nullptr);
+  ASSERT_NE(faces, nullptr);
+  EXPECT_EQ(numFaces, 4);
+
+  char objStem[] = "UNIT_math_ConvhullCompat";
+  convhull_3d_export_obj(
+      vertices.data(),
+      static_cast<int>(vertices.size()),
+      faces,
+      numFaces,
+      0,
+      objStem);
+  std::FILE* objFile = std::fopen("UNIT_math_ConvhullCompat.obj", "rt");
+  ASSERT_NE(objFile, nullptr);
+  std::fclose(objFile);
+  std::remove("UNIT_math_ConvhullCompat.obj");
+
+  char mStem[] = "UNIT_math_ConvhullCompat";
+  convhull_3d_export_m(
+      vertices.data(),
+      static_cast<int>(vertices.size()),
+      faces,
+      numFaces,
+      mStem);
+  std::FILE* mFile = std::fopen("UNIT_math_ConvhullCompat.m", "rt");
+  ASSERT_NE(mFile, nullptr);
+  std::fclose(mFile);
+  std::remove("UNIT_math_ConvhullCompat.m");
+
+  std::free(faces);
+
+  CH_FLOAT points[]
+      = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+  CH_FLOAT* coefficients = reinterpret_cast<CH_FLOAT*>(0x1);
+  CH_FLOAT* offsets = reinterpret_cast<CH_FLOAT*>(0x1);
+  faces = nullptr;
+  numFaces = 0;
+  convhull_nd_build(points, 4, 3, &faces, &coefficients, &offsets, &numFaces);
+  ASSERT_NE(faces, nullptr);
+  EXPECT_EQ(numFaces, 4);
+  EXPECT_EQ(coefficients, nullptr);
+  EXPECT_EQ(offsets, nullptr);
+  std::free(faces);
+
+  int* mesh = reinterpret_cast<int*>(0x1);
+  int numMesh = 1;
+  delaunay_nd_mesh(nullptr, 0, 0, &mesh, &numMesh);
+  EXPECT_EQ(mesh, nullptr);
+  EXPECT_EQ(numMesh, 0);
+
+  std::FILE* output = std::fopen("UNIT_math_ConvhullCompatExtract.obj", "wt");
+  ASSERT_NE(output, nullptr);
+  std::fprintf(output, "v 1 2 3\nv 4 5 6\n");
+  std::fclose(output);
+
+  char extractStem[] = "UNIT_math_ConvhullCompatExtract";
+  ch_vertex* extractedVertices = nullptr;
+  int numExtractedVertices = 0;
+  extract_vertices_from_obj_file(
+      extractStem, &extractedVertices, &numExtractedVertices);
+  ASSERT_NE(extractedVertices, nullptr);
+  EXPECT_EQ(numExtractedVertices, 2);
+  EXPECT_EQ(extractedVertices[0].x, static_cast<CH_FLOAT>(1));
+  EXPECT_EQ(extractedVertices[1].z, static_cast<CH_FLOAT>(6));
+  std::free(extractedVertices);
+  std::remove("UNIT_math_ConvhullCompatExtract.obj");
 }
 
 //==============================================================================
