@@ -6,6 +6,16 @@
 Welcome to DART documentation!
 ==============================
 
+.. admonition:: You are reading the DART 7 documentation
+   :class: important
+
+   This site documents **DART 7**, an in-progress redesign that is **not yet
+   recommended for production use**. If you need a stable release, use
+   **DART 6 LTS**: see the `DART 6 documentation
+   <https://dart.readthedocs.io/en/stable/>`_ and the `release-6.19 branch
+   <https://github.com/dartsim/dart/tree/release-6.19>`_. New to DART 7? Start
+   with the :doc:`user_guide/index`.
+
 Introduction
 ------------
 
@@ -139,6 +149,13 @@ If you use DART in an academic publication, please consider citing this
    Architecture <architecture>
    gallery
    papers
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: User Guide
+
+   User Guide <user_guide/index>
 
 .. toctree::
    :maxdepth: 2

@@ -563,6 +563,9 @@ html_theme_options = {
 }
 html_extra_path = ["_generated"]
 
+# Site-local stylesheet: version-notice banner and User Guide card grid.
+html_css_files = ["css/custom.css"]
+
 # Setting for multi language
 source_encoding = "utf-8"
 locale_dirs = ["locales/"]
