@@ -30,6 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/osg/ImGuiHandler.hpp>
+#include <dart/gui/osg/ImGuiViewer.hpp>
+#include <dart/gui/osg/ImGuiWidget.hpp>
+#include <dart/gui/osg/IncludeImGui.hpp>
 #include <dart/gui/osg/Utils.hpp>
 #include <dart/gui/osg/osg.hpp>
 
@@ -67,23 +71,31 @@
 #include <osgViewer/ViewerBase>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 
 namespace {
+
+constexpr std::size_t kDefaultGeneratedObjects = 30;
+constexpr double kDefaultGeneratedSpacing = 1.1;
+constexpr double kDefaultDropHeight = 0.2;
 
 enum class CollisionEngine
 {
@@ -114,6 +126,8 @@ struct Options
   bool disableDeactivation = false;
   bool disableSecondaryLcp = false;
   bool sleepStateColors = false;
+  bool guiStart = false;
+  bool guiCaptureExerciseWidget = false;
   double guiTargetRtf = 1.0;
   std::optional<std::string> guiCapturePath;
   std::size_t guiCaptureSteps = 0;
@@ -122,7 +136,7 @@ struct Options
   std::optional<double> sleepAngularThreshold;
   std::optional<double> sleepTimeUntilSleep;
   std::optional<std::size_t> generatedObjects;
-  double generatedSpacing = 1.25;
+  double generatedSpacing = kDefaultGeneratedSpacing;
   std::optional<std::string> dumpFinalScenePath;
   std::optional<std::size_t> maxContacts;
   std::optional<std::size_t> maxContactsPerPair;
@@ -206,8 +220,10 @@ struct FinalStateDigest
 void printUsage(const std::string& programName)
 {
   std::cout
-      << "Usage: " << programName << " <sdf_file_path> [num_steps] [options]\n"
+      << "Usage: " << programName << " [options]\n"
+      << "       " << programName << " <sdf_file_path> [num_steps] [options]\n"
       << "       " << programName << " --generate-objects N [options]\n"
+      << "With no scene arguments, opens a paused generated contact scene.\n"
       << "Options:\n"
       << "  --steps N                 Number of simulation steps.\n"
       << "  --warmup N                Steps to run before timed measurement.\n"
@@ -233,10 +249,16 @@ void printUsage(const std::string& programName)
       << "  --sleep-state-colors      In GUI mode, color mobile objects by "
          "sleep state.\n"
       << "  --gui-target-rtf N        Target GUI playback RTF; default 1.0.\n"
+      << "  --gui-start               Start GUI simulation immediately; "
+         "default is paused.\n"
       << "  --gui-capture PATH        Run the OSG GUI path, save a PNG, and "
          "exit.\n"
       << "  --gui-capture-steps N     Simulation steps before --gui-capture; "
          "default uses --steps.\n"
+      << "  --gui-capture-exercise-widget\n"
+      << "                            With --gui-capture, rebuild the "
+         "generated "
+         "scene once before capture.\n"
       << "  --drop-height Z           Raise mobile objects by Z meters before "
          "simulation.\n"
       << "  --sleep-linear-threshold V\n"
@@ -249,7 +271,7 @@ void printUsage(const std::string& programName)
       << "  --generate-objects N      Generate an in-memory 3-lane "
          "sphere/box/cylinder scene instead of loading SDF.\n"
       << "  --generated-spacing X     Center spacing for generated objects; "
-         "default 1.25 m.\n"
+         "default 1.1 m.\n"
       << "  --dump-final-scene PATH   Write final collision geometry JSONL "
          "for visual verification.\n";
 }
@@ -375,10 +397,14 @@ Options parseOptions(int argc, char* argv[])
       options.sleepStateColors = true;
     } else if (arg == "--gui-target-rtf") {
       options.guiTargetRtf = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--gui-start") {
+      options.guiStart = true;
     } else if (arg == "--gui-capture") {
       options.guiCapturePath = needValue(arg);
     } else if (arg == "--gui-capture-steps") {
       options.guiCaptureSteps = parseSize(needValue(arg), arg);
+    } else if (arg == "--gui-capture-exercise-widget") {
+      options.guiCaptureExerciseWidget = true;
     } else if (arg == "--drop-height") {
       options.dropHeight = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--sleep-linear-threshold") {
@@ -418,17 +444,29 @@ Options parseOptions(int argc, char* argv[])
   if (options.guiCapturePath.has_value() && options.guiCaptureSteps == 0)
     options.guiCaptureSteps = options.steps;
 
-  if (options.generatedObjects.has_value() && *options.generatedObjects == 0) {
-    throw std::invalid_argument("--generate-objects must be positive");
+  const bool usingDefaultScene
+      = !options.generatedObjects.has_value() && !options.sdfPath.has_value();
+  if (usingDefaultScene) {
+    options.generatedObjects = kDefaultGeneratedObjects;
+    options.sleepStateColors = true;
+    if (options.dropHeight == 0.0)
+      options.dropHeight = kDefaultDropHeight;
+    if (!options.quiet && !options.guiCapturePath.has_value())
+      options.gui = true;
   }
 
-  if (!options.generatedObjects.has_value() && !options.sdfPath.has_value()) {
-    throw std::invalid_argument("Missing SDF path or --generate-objects");
+  if (options.generatedObjects.has_value() && *options.generatedObjects == 0) {
+    throw std::invalid_argument("--generate-objects must be positive");
   }
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
         "--generate-objects cannot be combined with an SDF path");
+  }
+
+  if (options.guiCaptureExerciseWidget && !options.guiCapturePath.has_value()) {
+    throw std::invalid_argument(
+        "--gui-capture-exercise-widget requires --gui-capture");
   }
 
   if (options.primitiveShapes
@@ -951,7 +989,8 @@ std::size_t wakeMobileObjects(const dart::simulation::WorldPtr& world)
   return awake;
 }
 
-void enableDynamicVisualColors(const dart::simulation::WorldPtr& world)
+void setDynamicVisualColors(
+    const dart::simulation::WorldPtr& world, bool enabled)
 {
   if (!world)
     return;
@@ -967,14 +1006,63 @@ void enableDynamicVisualColors(const dart::simulation::WorldPtr& world)
         continue;
 
       body->eachShapeNodeWith<dart::dynamics::VisualAspect>(
-          [](dart::dynamics::ShapeNode* shapeNode) {
+          [enabled](dart::dynamics::ShapeNode* shapeNode) {
             if (!shapeNode || !shapeNode->getShape())
               return;
 
-            shapeNode->getShape()->addDataVariance(
-                dart::dynamics::Shape::DYNAMIC_COLOR);
+            if (enabled) {
+              shapeNode->getShape()->addDataVariance(
+                  dart::dynamics::Shape::DYNAMIC_COLOR);
+            } else {
+              shapeNode->getShape()->removeDataVariance(
+                  dart::dynamics::Shape::DYNAMIC_COLOR);
+            }
           });
     }
+  }
+}
+
+void enableDynamicVisualColors(const dart::simulation::WorldPtr& world)
+{
+  setDynamicVisualColors(world, true);
+}
+
+void applySleepStateVisualColors(const dart::simulation::WorldPtr& world)
+{
+  if (!world)
+    return;
+
+  const Eigen::Vector4d staticColor(0.55, 0.55, 0.55, 1.0);
+  const Eigen::Vector4d awakeColor(1.0, 0.1, 0.05, 1.0);
+  const Eigen::Vector4d candidateColor(1.0, 0.85, 0.05, 1.0);
+  const Eigen::Vector4d restingColor(0.05, 0.35, 1.0, 1.0);
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto skel = world->getSkeleton(i);
+    if (!skel)
+      continue;
+
+    const Eigen::Vector4d* color = &awakeColor;
+    if (!skel->isMobile())
+      color = &staticColor;
+    else if (skel->isResting())
+      color = &restingColor;
+    else if (skel->isSleepCandidate())
+      color = &candidateColor;
+
+    skel->eachBodyNode([&](dart::dynamics::BodyNode* bodyNode) {
+      if (!bodyNode)
+        return;
+
+      bodyNode->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+          [&](dart::dynamics::ShapeNode* shapeNode) {
+            auto* visual = shapeNode->getVisualAspect();
+            if (!visual || visual->getRGBA().isApprox(*color, 0.0))
+              return;
+
+            visual->setColor(*color);
+          });
+    });
   }
 }
 
@@ -1174,10 +1262,89 @@ void printWorldSummary(
   std::cout << "  Total Degrees of Freedom (DOFs): " << totalDofs << "\n";
 }
 
-class SdfPerfGuiWorldNode final : public dart::gui::osg::RealTimeWorldNode
+struct CameraPose
+{
+  ::osg::Vec3 eye;
+  ::osg::Vec3 center;
+  ::osg::Vec3 up;
+};
+
+CameraPose computeCameraPose(const dart::simulation::WorldPtr& world)
+{
+  if (!world) {
+    return {
+        ::osg::Vec3(0.0f, -20.0f, 10.0f),
+        ::osg::Vec3(0.0f, 0.0f, 0.0f),
+        ::osg::Vec3(0.0f, 0.0f, 1.0f)};
+  }
+
+  bool hasMobileBody = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto skel = world->getSkeleton(i);
+    if (!skel || !skel->isMobile())
+      continue;
+
+    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
+      const auto* body = skel->getBodyNode(j);
+      if (!body)
+        continue;
+
+      const Eigen::Vector3d translation = body->getTransform().translation();
+      if (!hasMobileBody) {
+        min = max = translation;
+        hasMobileBody = true;
+      } else {
+        min = min.cwiseMin(translation);
+        max = max.cwiseMax(translation);
+      }
+    }
+  }
+
+  if (!hasMobileBody) {
+    return {
+        ::osg::Vec3(0.0f, -20.0f, 10.0f),
+        ::osg::Vec3(0.0f, 0.0f, 0.0f),
+        ::osg::Vec3(0.0f, 0.0f, 1.0f)};
+  }
+
+  const Eigen::Vector3d center = 0.5 * (min + max);
+  const Eigen::Vector3d extent = max - min;
+  const double horizontalSpan = std::max(extent.x(), extent.y());
+  const double distance = std::max(10.0, horizontalSpan * 0.9 + 8.0);
+  const double height = std::max(6.0, distance * 0.42);
+
+  return {
+      ::osg::Vec3(
+          static_cast<float>(center.x()),
+          static_cast<float>(center.y() - distance),
+          static_cast<float>(center.z() + height)),
+      ::osg::Vec3(
+          static_cast<float>(center.x()),
+          static_cast<float>(center.y()),
+          static_cast<float>(std::max(0.0, center.z()))),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f)};
+}
+
+void applyCameraPose(
+    dart::gui::osg::Viewer& viewer, const dart::simulation::WorldPtr& world)
+{
+  const CameraPose cameraPose = computeCameraPose(world);
+  viewer.getCameraManipulator()->setHomePosition(
+      cameraPose.eye, cameraPose.center, cameraPose.up);
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  viewer.getCameraManipulator()->home(0.0);
+  viewer.getCamera()->setViewMatrixAsLookAt(
+      cameraPose.eye, cameraPose.center, cameraPose.up);
+}
+
+class ContactBenchmarkGuiWorldNode final
+  : public dart::gui::osg::RealTimeWorldNode
 {
 public:
-  SdfPerfGuiWorldNode(
+  ContactBenchmarkGuiWorldNode(
       const dart::simulation::WorldPtr& world, const Options& options)
     : dart::gui::osg::RealTimeWorldNode(
         world, nullptr, 60.0, options.guiTargetRtf),
@@ -1189,6 +1356,51 @@ public:
       enableDynamicVisualColors(world);
 
     createHud();
+    refreshVisualAids();
+  }
+
+  const Options& getOptions() const
+  {
+    return mOptions;
+  }
+
+  bool getSleepStateColors() const
+  {
+    return mSleepStateColors;
+  }
+
+  void setSleepStateColors(bool enabled)
+  {
+    mSleepStateColors = enabled;
+    mOptions.sleepStateColors = enabled;
+    if (enabled)
+      enableDynamicVisualColors(getWorld());
+    refreshVisualAids();
+  }
+
+  void setGuiTargetRtf(double targetRtf)
+  {
+    setTargetRealTimeFactor(targetRtf);
+    mOptions.guiTargetRtf = targetRtf;
+  }
+
+  void replaceWorld(
+      const dart::simulation::WorldPtr& world, const Options& options)
+  {
+    simulate(false);
+    setWorld(world);
+    mInitialStates = captureInitialStates(world);
+    mOptions = options;
+    mSleepStateColors = options.sleepStateColors;
+    if (mSleepStateColors)
+      enableDynamicVisualColors(world);
+
+    resetTimingStats();
+    clearChildUtilizationFlags();
+    refreshSkeletons();
+    refreshSimpleFrames();
+    clearUnusedNodes();
+    dirtyBound();
     refreshVisualAids();
   }
 
@@ -1214,12 +1426,7 @@ public:
     }
 
     world->reset();
-    mFirstRefresh = true;
-    mSimTimeBudget = 0.0;
-    mLastRealTimeFactor = 0.0;
-    mLowestRealTimeFactor = std::numeric_limits<double>::infinity();
-    mHighestRealTimeFactor = 0.0;
-    mRefreshTimer.setStartTick();
+    resetTimingStats();
 
     refreshSkeletons();
     refreshVisualAids();
@@ -1293,6 +1500,16 @@ private:
     return true;
   }
 
+  void resetTimingStats()
+  {
+    mFirstRefresh = true;
+    mSimTimeBudget = 0.0;
+    mLastRealTimeFactor = 0.0;
+    mLowestRealTimeFactor = std::numeric_limits<double>::infinity();
+    mHighestRealTimeFactor = 0.0;
+    mRefreshTimer.setStartTick();
+  }
+
   void createHud()
   {
     mHudCamera = dart::gui::osg::createHudCamera(0.0, 1360.0, 0.0, 768.0);
@@ -1323,42 +1540,7 @@ private:
 
   void applySleepStateColors()
   {
-    const auto world = getWorld();
-    if (!world)
-      return;
-
-    const Eigen::Vector4d staticColor(0.55, 0.55, 0.55, 1.0);
-    const Eigen::Vector4d awakeColor(1.0, 0.1, 0.05, 1.0);
-    const Eigen::Vector4d candidateColor(1.0, 0.85, 0.05, 1.0);
-    const Eigen::Vector4d restingColor(0.05, 0.35, 1.0, 1.0);
-
-    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
-      const auto skel = world->getSkeleton(i);
-      if (!skel)
-        continue;
-
-      const Eigen::Vector4d* color = &awakeColor;
-      if (!skel->isMobile())
-        color = &staticColor;
-      else if (skel->isResting())
-        color = &restingColor;
-      else if (skel->isSleepCandidate())
-        color = &candidateColor;
-
-      skel->eachBodyNode([&](dart::dynamics::BodyNode* bodyNode) {
-        if (!bodyNode)
-          return;
-
-        bodyNode->eachShapeNodeWith<dart::dynamics::VisualAspect>(
-            [&](dart::dynamics::ShapeNode* shapeNode) {
-              auto* visual = shapeNode->getVisualAspect();
-              if (!visual || visual->getRGBA().isApprox(*color, 0.0))
-                return;
-
-              visual->setColor(*color);
-            });
-      });
-    }
+    applySleepStateVisualColors(getWorld());
   }
 
   void updateHud()
@@ -1408,10 +1590,57 @@ private:
   ::osg::ref_ptr<::osgText::Text> mHudText;
 };
 
-class SdfPerfGuiEventHandler final : public ::osgGA::GUIEventHandler
+int collisionEngineToIndex(CollisionEngine engine)
+{
+  switch (engine) {
+    case CollisionEngine::Default:
+      return 0;
+    case CollisionEngine::Dart:
+      return 1;
+    case CollisionEngine::Fcl:
+      return 2;
+    case CollisionEngine::Bullet:
+      return 3;
+    case CollisionEngine::Ode:
+      return 4;
+  }
+
+  return 0;
+}
+
+CollisionEngine collisionEngineFromIndex(int index)
+{
+  switch (index) {
+    case 1:
+      return CollisionEngine::Dart;
+    case 2:
+      return CollisionEngine::Fcl;
+    case 3:
+      return CollisionEngine::Bullet;
+    case 4:
+      return CollisionEngine::Ode;
+    default:
+      return CollisionEngine::Default;
+  }
+}
+
+bool collisionEngineAllowsPrimitiveShapes(int index)
+{
+  return index == 0 || index == 2;
+}
+
+class ContactBenchmarkGuiEventHandler final : public ::osgGA::GUIEventHandler
 {
 public:
-  explicit SdfPerfGuiEventHandler(SdfPerfGuiWorldNode* node) : mNode(node) {}
+  explicit ContactBenchmarkGuiEventHandler(ContactBenchmarkGuiWorldNode* node)
+    : mNode(node)
+  {
+  }
+
+  void setNode(ContactBenchmarkGuiWorldNode* node)
+  {
+    mNode = node;
+  }
 
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
@@ -1430,67 +1659,262 @@ public:
   }
 
 private:
-  SdfPerfGuiWorldNode* mNode;
+  ContactBenchmarkGuiWorldNode* mNode;
 };
 
-struct CameraPose
+class ContactBenchmarkGuiWidget final : public dart::gui::osg::ImGuiWidget
 {
-  ::osg::Vec3 eye;
-  ::osg::Vec3 center;
-  ::osg::Vec3 up;
-};
+public:
+  ContactBenchmarkGuiWidget(
+      dart::gui::osg::ImGuiViewer* viewer,
+      ContactBenchmarkGuiWorldNode* node,
+      ContactBenchmarkGuiEventHandler* eventHandler)
+    : mViewer(viewer), mNode(node), mEventHandler(eventHandler)
+  {
+    syncFromNode();
+  }
 
-CameraPose computeCameraPose(const dart::simulation::WorldPtr& world)
-{
-  bool hasMobileBody = false;
-  Eigen::Vector3d min = Eigen::Vector3d::Zero();
-  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+  void render() override
+  {
+    if (!mViewer || !mNode)
+      return;
 
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
-    const auto skel = world->getSkeleton(i);
-    if (!skel || !skel->isMobile())
-      continue;
+    const ImGuiIO& io = ImGui::GetIO();
+    const float margin = 12.0f;
+    const float width = std::min(360.0f, std::max(280.0f, io.DisplaySize.x));
+    const float height = std::min(560.0f, std::max(240.0f, io.DisplaySize.y));
+    ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.94f);
 
-    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
-      const auto* body = skel->getBodyNode(j);
-      if (!body)
-        continue;
+    if (!ImGui::Begin("Contact Benchmark")) {
+      ImGui::End();
+      return;
+    }
 
-      const Eigen::Vector3d translation = body->getTransform().translation();
-      if (!hasMobileBody) {
-        min = max = translation;
-        hasMobileBody = true;
+    renderStatus();
+    renderSimulationControls();
+    renderSceneControls();
+
+    if (!mStatusMessage.empty()) {
+      ImGui::Separator();
+      ImGui::TextWrapped("%s", mStatusMessage.c_str());
+    }
+
+    ImGui::End();
+  }
+
+  bool exerciseSceneRebuildForTest(std::string* error)
+  {
+    if (!mNode || !mNode->getOptions().generatedObjects.has_value()) {
+      if (error)
+        *error = "generated scene is required";
+      return false;
+    }
+
+    const auto original = mNode->getOptions();
+    Options changed = original;
+    changed.generatedObjects = std::min<std::size_t>(
+        original.generatedObjects.value_or(kDefaultGeneratedObjects) + 3u,
+        2u * kDefaultGeneratedObjects);
+    changed.generatedSpacing = original.generatedSpacing + 0.05;
+    changed.dropHeight = std::max(original.dropHeight, kDefaultDropHeight);
+    const bool rebuilt = replaceGeneratedScene(changed, error);
+    if (rebuilt)
+      syncFromNode();
+    return rebuilt;
+  }
+
+  ContactBenchmarkGuiWorldNode* getNode() const
+  {
+    return mNode;
+  }
+
+private:
+  void syncFromNode()
+  {
+    if (!mNode)
+      return;
+
+    const Options& options = mNode->getOptions();
+    mGeneratedObjects = static_cast<int>(
+        options.generatedObjects.value_or(kDefaultGeneratedObjects));
+    mGeneratedSpacing = static_cast<float>(options.generatedSpacing);
+    mDropHeight = static_cast<float>(options.dropHeight);
+    mTargetRtf = static_cast<float>(options.guiTargetRtf);
+    mSleepStateColors = options.sleepStateColors;
+    mPrimitiveShapes = options.primitiveShapes;
+    mCollisionIndex = collisionEngineToIndex(options.collisionEngine);
+    if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
+      mPrimitiveShapes = false;
+  }
+
+  Options makePendingOptions() const
+  {
+    Options options = mNode->getOptions();
+    options.sdfPath.reset();
+    options.generatedObjects
+        = static_cast<std::size_t>(std::max(1, mGeneratedObjects));
+    options.generatedSpacing
+        = std::max(0.05, static_cast<double>(mGeneratedSpacing));
+    options.dropHeight = std::max(0.0, static_cast<double>(mDropHeight));
+    options.guiTargetRtf = std::max(0.05, static_cast<double>(mTargetRtf));
+    options.sleepStateColors = mSleepStateColors;
+    options.collisionEngine = collisionEngineFromIndex(mCollisionIndex);
+    options.primitiveShapes
+        = mPrimitiveShapes
+          && collisionEngineAllowsPrimitiveShapes(mCollisionIndex);
+    return options;
+  }
+
+  bool replaceGeneratedScene(const Options& options, std::string* error)
+  {
+    if (!mViewer || !mNode || !mEventHandler) {
+      if (error)
+        *error = "GUI viewer is not available";
+      return false;
+    }
+
+    try {
+      auto newWorld = createGeneratedWorld(options);
+      applyOptions(newWorld, options);
+      if (options.dropHeight > 0.0)
+        raiseMobileObjects(newWorld, options.dropHeight);
+      wakeMobileObjects(newWorld);
+      replaceGuiPlaneVisualsWithFloorBoxes(newWorld);
+      if (options.sleepStateColors)
+        enableDynamicVisualColors(newWorld);
+
+      const bool wasSimulating = mViewer->isSimulating();
+      mViewer->simulate(false);
+      mNode->replaceWorld(newWorld, options);
+      mEventHandler->setNode(mNode);
+      applyCameraPose(*mViewer, newWorld);
+      if (wasSimulating)
+        mViewer->simulate(true);
+    } catch (const std::exception& e) {
+      if (error)
+        *error = e.what();
+      return false;
+    }
+
+    if (error)
+      error->clear();
+    return true;
+  }
+
+  void renderStatus()
+  {
+    const auto world = mNode->getWorld();
+    const auto contacts = world ? collectContactStats(world) : ContactStats();
+    const auto sleep = world ? collectSleepStats(world) : SleepStats();
+
+    if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text(
+          "Time %.3f s   Frame %d",
+          world ? world->getTime() : 0.0,
+          world ? world->getSimFrames() : 0);
+      ImGui::Text(
+          "RTF %.3f / target %.3f",
+          mNode->getLastRealTimeFactor(),
+          mNode->getTargetRealTimeFactor());
+      ImGui::Text(
+          "Contacts %zu   Pairs %zu", contacts.contacts, contacts.pairs);
+      ImGui::Text(
+          "Resting %zu / %zu   Candidates %zu",
+          sleep.resting,
+          sleep.mobile,
+          sleep.candidates);
+    }
+  }
+
+  void renderSimulationControls()
+  {
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool simulating = mViewer->isSimulating();
+      if (ImGui::Checkbox("Run simulation", &simulating))
+        mViewer->simulate(simulating);
+
+      ImGui::SameLine();
+      if (ImGui::Button("Reset"))
+        mNode->resetWorld();
+
+      ImGui::SetNextItemWidth(-1.0f);
+      if (ImGui::SliderFloat("Target RTF", &mTargetRtf, 0.05f, 4.0f, "%.2f"))
+        mNode->setGuiTargetRtf(std::max(0.05, static_cast<double>(mTargetRtf)));
+
+      if (ImGui::Checkbox("Sleep-state colors", &mSleepStateColors))
+        mNode->setSleepStateColors(mSleepStateColors);
+
+      if (ImGui::Button("Recenter camera"))
+        applyCameraPose(*mViewer, mNode->getWorld());
+    }
+  }
+
+  void renderSceneControls()
+  {
+    if (!ImGui::CollapsingHeader(
+            "Generated Scene", ImGuiTreeNodeFlags_DefaultOpen))
+      return;
+
+    if (!mNode->getOptions().generatedObjects.has_value()) {
+      ImGui::TextWrapped(
+          "Loaded SDF scenes cannot be rebuilt from this panel.");
+      return;
+    }
+
+    mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::SliderInt("Objects", &mGeneratedObjects, 3, 300);
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::InputInt("Object count", &mGeneratedObjects, 3, 30);
+    mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
+
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::SliderFloat("Spacing", &mGeneratedSpacing, 0.6f, 3.0f, "%.2f m");
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 2.0f, "%.2f m");
+
+    static const char* kCollisionItems[]
+        = {"default", "dart", "fcl", "bullet", "ode"};
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 5)
+        && !collisionEngineAllowsPrimitiveShapes(mCollisionIndex)) {
+      mPrimitiveShapes = false;
+    }
+
+    if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
+      ImGui::BeginDisabled();
+    ImGui::Checkbox("FCL primitive shapes", &mPrimitiveShapes);
+    if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex)) {
+      mPrimitiveShapes = false;
+      ImGui::EndDisabled();
+    }
+
+    if (ImGui::Button("Apply scene")) {
+      std::string error;
+      Options pending = makePendingOptions();
+      if (replaceGeneratedScene(pending, &error)) {
+        syncFromNode();
+        mStatusMessage = "Scene rebuilt.";
       } else {
-        min = min.cwiseMin(translation);
-        max = max.cwiseMax(translation);
+        mStatusMessage = "Scene rebuild failed: " + error;
       }
     }
   }
 
-  if (!hasMobileBody) {
-    return {
-        ::osg::Vec3(0.0f, -20.0f, 10.0f),
-        ::osg::Vec3(0.0f, 0.0f, 0.0f),
-        ::osg::Vec3(0.0f, 0.0f, 1.0f)};
-  }
-
-  const Eigen::Vector3d center = 0.5 * (min + max);
-  const Eigen::Vector3d extent = max - min;
-  const double horizontalSpan = std::max(extent.x(), extent.y());
-  const double distance = std::max(12.0, horizontalSpan * 1.8 + 8.0);
-  const double height = std::max(8.0, distance * 0.45);
-
-  return {
-      ::osg::Vec3(
-          static_cast<float>(center.x()),
-          static_cast<float>(center.y() - distance),
-          static_cast<float>(center.z() + height)),
-      ::osg::Vec3(
-          static_cast<float>(center.x()),
-          static_cast<float>(center.y()),
-          static_cast<float>(std::max(0.0, center.z()))),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f)};
-}
+  dart::gui::osg::ImGuiViewer* mViewer = nullptr;
+  ContactBenchmarkGuiWorldNode* mNode = nullptr;
+  ContactBenchmarkGuiEventHandler* mEventHandler = nullptr;
+  int mGeneratedObjects = static_cast<int>(kDefaultGeneratedObjects);
+  float mGeneratedSpacing = static_cast<float>(kDefaultGeneratedSpacing);
+  float mDropHeight = static_cast<float>(kDefaultDropHeight);
+  float mTargetRtf = 1.0f;
+  int mCollisionIndex = 0;
+  bool mPrimitiveShapes = false;
+  bool mSleepStateColors = true;
+  std::string mStatusMessage;
+};
 
 void runGui(const dart::simulation::WorldPtr& world, const Options& options)
 {
@@ -1501,27 +1925,32 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
         << replacedPlaneVisuals << "\n";
   }
 
-  ::osg::ref_ptr<SdfPerfGuiWorldNode> node
-      = new SdfPerfGuiWorldNode(world, options);
+  ::osg::ref_ptr<ContactBenchmarkGuiWorldNode> node
+      = new ContactBenchmarkGuiWorldNode(world, options);
 
   std::cout << "GUI HUD: RTF, simulation time, contacts, and sleep state. "
                "Press r to reset to t=0/drop state.\n";
   std::cout << "GUI target RTF: " << options.guiTargetRtf << "\n";
+  std::cout << "GUI starts " << (options.guiStart ? "running" : "paused")
+            << ".\n";
   if (options.sleepStateColors) {
     std::cout << "Sleep-state GUI colors: awake=red, candidate=yellow, "
                  "resting=blue, static=gray.\n";
   }
 
-  auto viewer = dart::gui::osg::Viewer();
-  const CameraPose cameraPose = computeCameraPose(world);
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new SdfPerfGuiEventHandler(node.get()));
-  viewer.simulate(true);
-  viewer.setUpViewInWindow(0, 0, 1360, 768);
-  viewer.getCameraManipulator()->setHomePosition(
-      cameraPose.eye, cameraPose.center, cameraPose.up);
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-  viewer.run();
+  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
+      = new ContactBenchmarkGuiEventHandler(node.get());
+  viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->addWidget(
+      std::make_shared<ContactBenchmarkGuiWidget>(
+          viewer.get(), node.get(), eventHandler.get()));
+  viewer->addEventHandler(eventHandler);
+  viewer->simulate(options.guiStart);
+  viewer->setUpViewInWindow(0, 0, 1360, 768);
+  applyCameraPose(*viewer, world);
+  viewer->run();
 }
 
 int runGuiCapture(
@@ -1541,62 +1970,96 @@ int runGuiCapture(
         << replacedPlaneVisuals << "\n";
   }
 
-  ::osg::ref_ptr<SdfPerfGuiWorldNode> node
-      = new SdfPerfGuiWorldNode(world, options);
+  // Keep offscreen captures on static shape colors; the live GUI path owns
+  // dynamic sleep-state recoloring.
+  Options captureNodeOptions = options;
+  captureNodeOptions.sleepStateColors = false;
+  ::osg::ref_ptr<ContactBenchmarkGuiWorldNode> node
+      = new ContactBenchmarkGuiWorldNode(world, captureNodeOptions);
 
-  auto viewer = dart::gui::osg::Viewer();
-  const CameraPose cameraPose = computeCameraPose(world);
-  viewer.setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new SdfPerfGuiEventHandler(node.get()));
-  viewer.simulate(true);
-  viewer.setUpViewInWindow(0, 0, 1360, 768);
-  viewer.getCameraManipulator()->setHomePosition(
-      cameraPose.eye, cameraPose.center, cameraPose.up);
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-  viewer.realize();
-  if (!viewer.isRealized()) {
+  ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
+      = new ContactBenchmarkGuiEventHandler(node.get());
+  auto widget = std::make_shared<ContactBenchmarkGuiWidget>(
+      viewer.get(), node.get(), eventHandler.get());
+  viewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
+  viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->addWidget(widget);
+  viewer->addEventHandler(eventHandler);
+  viewer->simulate(false);
+  viewer->setUpViewInWindow(0, 0, 1360, 768);
+  applyCameraPose(*viewer, world);
+  viewer->realize();
+  if (!viewer->isRealized()) {
     std::cerr << "GUI capture failed: viewer was not realized.\n";
     return 1;
   }
-  viewer.getCamera()->setViewMatrixAsLookAt(
-      cameraPose.eye, cameraPose.center, cameraPose.up);
 
-  const int startFrame = world->getSimFrames();
-  const int targetFrame
-      = startFrame + static_cast<int>(options.guiCaptureSteps);
+  applyCameraPose(*viewer, world);
+  viewer->frame();
+  if (options.guiCaptureExerciseWidget) {
+    std::string error;
+    if (!widget->exerciseSceneRebuildForTest(&error)) {
+      std::cerr << "GUI capture widget exercise failed: " << error << "\n";
+      return 1;
+    }
+    if (auto* currentNode = widget->getNode())
+      node = currentNode;
+    applyCameraPose(*viewer, node->getWorld());
+    for (int i = 0; i < 3; ++i)
+      viewer->frame();
+  }
+
+  viewer->simulate(false);
+  const auto activeWorld = node->getWorld();
+  if (!activeWorld) {
+    std::cerr << "GUI capture failed: world was not available.\n";
+    return 1;
+  }
+
+  const int startFrame = activeWorld->getSimFrames();
+  const double worldTimeBefore = activeWorld->getTime();
+  const auto startWallTime = std::chrono::steady_clock::now();
   std::size_t nextCheckpoint = options.checkpoint;
-  auto printGuiCaptureCheckpoint = [&]() {
+  auto printGuiCaptureCheckpoint = [&](std::size_t done) {
     if (options.quiet || options.checkpoint == 0)
       return;
 
-    const auto frameDelta = static_cast<std::size_t>(
-        std::max(0, world->getSimFrames() - startFrame));
-    while (frameDelta >= nextCheckpoint
+    const auto currentWallTime = std::chrono::steady_clock::now();
+    const std::chrono::duration<double> elapsed
+        = currentWallTime - startWallTime;
+    const double currentSimTime = activeWorld->getTime() - worldTimeBefore;
+    const double currentRtf
+        = elapsed.count() > 0.0 ? currentSimTime / elapsed.count() : 0.0;
+    while (done >= nextCheckpoint
            && nextCheckpoint <= options.guiCaptureSteps) {
       printDiagnostics(
           nextCheckpoint,
-          node->getLastRealTimeFactor(),
-          collectContactStats(world),
-          collectSleepStats(world));
+          currentRtf,
+          collectContactStats(activeWorld),
+          collectSleepStats(activeWorld));
       nextCheckpoint += options.checkpoint;
     }
   };
 
-  while (!viewer.done() && world->getSimFrames() < targetFrame) {
-    viewer.frame();
-    printGuiCaptureCheckpoint();
+  for (std::size_t step = 0; step < options.guiCaptureSteps; ++step) {
+    activeWorld->step();
+    printGuiCaptureCheckpoint(step + 1);
   }
 
-  viewer.frame();
-  viewer.captureScreen(*options.guiCapturePath);
-  viewer.frame();
+  viewer->simulate(false);
+  widget->hide();
+  viewer->frame();
+  viewer->captureScreen(*options.guiCapturePath);
+  viewer->frame();
 
-  const auto contacts = collectContactStats(world);
-  const auto sleep = collectSleepStats(world);
+  const auto contacts = collectContactStats(activeWorld);
+  const auto sleep = collectSleepStats(activeWorld);
   std::cout << "GUI capture wrote: " << *options.guiCapturePath << "\n";
-  std::cout << "GUI capture frames: " << (world->getSimFrames() - startFrame)
-            << " / " << options.guiCaptureSteps << "\n";
+  std::cout << "GUI capture frames: "
+            << (activeWorld->getSimFrames() - startFrame) << " / "
+            << options.guiCaptureSteps << "\n";
   std::cout << "GUI capture state: contacts " << contacts.contacts << ", pairs "
             << contacts.pairs << ", resting " << sleep.resting << "/"
             << sleep.mobile << ", candidates " << sleep.candidates
