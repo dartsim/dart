@@ -1,143 +1,145 @@
+#include "DantzigProblemCases.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/DantzigLCPSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/lcpsolver/ODELCPSolver.hpp"
 #include "dart/lcpsolver/dantzig/DantzigCommon.hpp"
-#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 #include "dart/lcpsolver/dantzig/DantzigPivotMatrix.hpp"
 #include "dart/lcpsolver/dantzig/lcp.h"
-#include "tests/baseline/odelcpsolver/lcp.h"
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <chrono>
+#include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
+
+#include <cmath>
+#include <ctime>
 
 namespace {
 
 using dart::lcpsolver::dantzig::DantzigLcpScratch;
-using dart::lcpsolver::dantzig::Infinity;
-using dart::lcpsolver::dantzig::Multiply0;
-using dart::lcpsolver::dantzig::Multiply1;
-using dart::lcpsolver::dantzig::Multiply2;
-using dart::lcpsolver::dantzig::Padding;
+using dart::lcpsolver::dantzig::kInfinity;
+using dart::lcpsolver::dantzig::multiply0;
+using dart::lcpsolver::dantzig::multiply1;
+using dart::lcpsolver::dantzig::multiply2;
+using dart::lcpsolver::dantzig::padding;
+using dart::test::DantzigProblemCase;
+using dart::test::DantzigProblemWorkspace;
+using dart::test::makeDantzigCorrectnessCases;
+using dart::test::makeDantzigPerformanceCases;
+using dart::test::solutionChecksum;
+using dart::test::solveDantzigBaseline;
+using dart::test::solveDantzigBaselineWorkspace;
+using dart::test::solveDantzigNative;
+using dart::test::solveDantzigNativeWorkspace;
 
-struct DantzigProblem
+volatile double gDantzigChecksumSink = 0.0;
+
+class SingleDofConstraint final : public dart::constraint::ConstraintBase
 {
-  int n = 0;
-  int nub = 0;
-  std::vector<double> A;
-  std::vector<double> b;
-  std::vector<double> lo;
-  std::vector<double> hi;
-  std::vector<int> findex;
+public:
+  SingleDofConstraint(double matrixValue, double rhs)
+    : mMatrixValue(matrixValue), mRhs(rhs)
+  {
+    mDim = 1;
+  }
+
+  void update() override {}
+
+  void getInformation(dart::constraint::ConstraintInfo* info) override
+  {
+    info->x[0] = 0.0;
+    info->lo[0] = -kInfinity;
+    info->hi[0] = kInfinity;
+    info->b[0] = mRhs;
+    info->w[0] = 0.0;
+    info->findex[0] = -1;
+  }
+
+  void applyUnitImpulse(std::size_t index) override
+  {
+    mLastUnitImpulse = index;
+  }
+
+  void getVelocityChange(double* vel, bool /*withCfm*/) override
+  {
+    ASSERT_EQ(0u, mLastUnitImpulse);
+    vel[0] = mMatrixValue;
+  }
+
+  void excite() override
+  {
+    mExcited = true;
+  }
+
+  void unexcite() override
+  {
+    mExcited = false;
+  }
+
+  void applyImpulse(double* lambda) override
+  {
+    mAppliedImpulse = lambda[0];
+  }
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dart::dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  double getAppliedImpulse() const
+  {
+    return mAppliedImpulse;
+  }
+
+  bool isExcited() const
+  {
+    return mExcited;
+  }
+
+private:
+  double mMatrixValue;
+  double mRhs;
+  std::size_t mLastUnitImpulse = 0;
+  double mAppliedImpulse = 0.0;
+  bool mExcited = false;
 };
 
-DantzigProblem makeUnboundedProblem()
-{
-  DantzigProblem problem;
-  problem.n = 1;
-  problem.nub = 1;
-  problem.A = {2.0};
-  problem.b = {4.0};
-  problem.lo = {-Infinity};
-  problem.hi = {Infinity};
-  problem.findex = {-1};
-  return problem;
-}
-
-DantzigProblem makeBoxedProblem()
-{
-  DantzigProblem problem;
-  problem.n = 2;
-  problem.nub = 0;
-  const int nskip = Padding(problem.n);
-  problem.A.assign(static_cast<std::size_t>(problem.n * nskip), 0.0);
-  problem.A[0 * nskip + 0] = 2.0;
-  problem.A[1 * nskip + 1] = 3.0;
-  problem.b = {1.0, 3.0};
-  problem.lo = {0.0, 0.0};
-  problem.hi = {10.0, 10.0};
-  problem.findex = {-1, -1};
-  return problem;
-}
-
-std::vector<double> solveNative(DantzigProblem problem)
-{
-  std::vector<double> x(static_cast<std::size_t>(problem.n), 0.0);
-  std::vector<double> w(static_cast<std::size_t>(problem.n), 0.0);
-
-  EXPECT_TRUE(dart::lcpsolver::dantzig::SolveLCP<double>(
-      problem.n,
-      problem.A.data(),
-      x.data(),
-      problem.b.data(),
-      w.data(),
-      problem.nub,
-      problem.lo.data(),
-      problem.hi.data(),
-      problem.findex.data()));
-
-  return x;
-}
-
-std::vector<double> solveNativeCompat(DantzigProblem problem)
-{
-  std::vector<double> x(static_cast<std::size_t>(problem.n), 0.0);
-  std::vector<double> w(static_cast<std::size_t>(problem.n), 0.0);
-
-  EXPECT_TRUE(dart::lcpsolver::dantzig::dSolveLCP(
-      problem.n,
-      problem.A.data(),
-      x.data(),
-      problem.b.data(),
-      w.data(),
-      problem.nub,
-      problem.lo.data(),
-      problem.hi.data(),
-      problem.findex.data()));
-
-  return x;
-}
-
-std::vector<double> solveBaseline(DantzigProblem problem)
-{
-  std::vector<double> x(static_cast<std::size_t>(problem.n), 0.0);
-  std::vector<double> w(static_cast<std::size_t>(problem.n), 0.0);
-
-  EXPECT_TRUE(dart::baseline::ode::dSolveLCP(
-      problem.n,
-      problem.A.data(),
-      x.data(),
-      problem.b.data(),
-      w.data(),
-      problem.nub,
-      problem.lo.data(),
-      problem.hi.data(),
-      problem.findex.data()));
-
-  return x;
-}
-
 void expectNear(
-    const std::vector<double>& actual, const std::vector<double>& expected)
+    const std::vector<double>& actual,
+    const std::vector<double>& expected,
+    double tolerance)
 {
   ASSERT_EQ(actual.size(), expected.size());
   for (std::size_t i = 0; i < actual.size(); ++i) {
-    EXPECT_NEAR(actual[i], expected[i], 1e-12);
+    EXPECT_NEAR(actual[i], expected[i], tolerance) << "index " << i;
   }
 }
 
 void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
 {
-  const int pskip = Padding(p);
-  const int qskip = Padding(q);
-  const int rskip = Padding(r);
+  const int pskip = padding(p);
+  const int qskip = padding(q);
+  const int rskip = padding(r);
 
   std::vector<double> b0(static_cast<std::size_t>(p * qskip), -1.0);
   std::vector<double> b1(static_cast<std::size_t>(q * pskip), -1.0);
   for (int i = 0; i < p; ++i) {
     for (int k = 0; k < q; ++k) {
       const double value = static_cast<double>(i * q + k + 1);
-      b0[i * qskip + k] = value;
-      b1[k * pskip + i] = value;
+      b0[static_cast<std::size_t>(i * qskip + k)] = value;
+      b1[static_cast<std::size_t>(k * pskip + i)] = value;
     }
   }
 
@@ -146,8 +148,8 @@ void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
   for (int k = 0; k < q; ++k) {
     for (int j = 0; j < r; ++j) {
       const double value = static_cast<double>((k + 1) * (j + 2));
-      c0[k * rskip + j] = value;
-      c2[j * qskip + k] = value;
+      c0[static_cast<std::size_t>(k * rskip + j)] = value;
+      c2[static_cast<std::size_t>(j * qskip + k)] = value;
     }
   }
 
@@ -155,7 +157,9 @@ void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
   for (int i = 0; i < p; ++i) {
     for (int j = 0; j < r; ++j) {
       for (int k = 0; k < q; ++k) {
-        expected[i * r + j] += b0[i * qskip + k] * c0[k * rskip + j];
+        expected[static_cast<std::size_t>(i * r + j)]
+            += b0[static_cast<std::size_t>(i * qskip + k)]
+               * c0[static_cast<std::size_t>(k * rskip + j)];
       }
     }
   }
@@ -164,44 +168,101 @@ void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
       = [p, r, rskip, &expected](const std::vector<double>& actual) {
           for (int i = 0; i < p; ++i) {
             for (int j = 0; j < r; ++j) {
-              EXPECT_DOUBLE_EQ(expected[i * r + j], actual[i * rskip + j]);
+              EXPECT_DOUBLE_EQ(
+                  expected[static_cast<std::size_t>(i * r + j)],
+                  actual[static_cast<std::size_t>(i * rskip + j)]);
             }
             for (int j = r; j < rskip; ++j) {
-              EXPECT_EQ(-1.0, actual[i * rskip + j]);
+              EXPECT_EQ(-1.0, actual[static_cast<std::size_t>(i * rskip + j)]);
             }
           }
         };
 
   std::vector<double> a(static_cast<std::size_t>(p * rskip), -1.0);
-  Multiply0(a.data(), b0.data(), c0.data(), p, q, r);
+  multiply0(a.data(), b0.data(), c0.data(), p, q, r);
   expectProduct(a);
 
   std::fill(a.begin(), a.end(), -1.0);
-  Multiply1(a.data(), b1.data(), c0.data(), p, q, r);
+  multiply1(a.data(), b1.data(), c0.data(), p, q, r);
   expectProduct(a);
 
   std::fill(a.begin(), a.end(), -1.0);
-  Multiply2(a.data(), b0.data(), c2.data(), p, q, r);
+  multiply2(a.data(), b0.data(), c2.data(), p, q, r);
   expectProduct(a);
+}
+
+template <typename Solver>
+double bestElapsedCpuSeconds(const Solver& solver, int iterations)
+{
+  constexpr int trials = 3;
+  double best = std::numeric_limits<double>::infinity();
+
+  for (int trial = 0; trial < trials; ++trial) {
+    double checksum = 0.0;
+    const std::clock_t start = std::clock();
+    for (int i = 0; i < iterations; ++i) {
+      checksum += solver();
+    }
+    const std::clock_t end = std::clock();
+    gDantzigChecksumSink += checksum;
+    best = std::min(
+        best,
+        static_cast<double>(end - start) / static_cast<double>(CLOCKS_PER_SEC));
+  }
+
+  return best;
+}
+
+double solveNativeForTiming(
+    const DantzigProblemCase& problem,
+    DantzigProblemWorkspace& workspace,
+    DantzigLcpScratch<double>& scratch)
+{
+  EXPECT_TRUE(solveDantzigNativeWorkspace(problem, &workspace, &scratch));
+  return solutionChecksum(workspace.x);
+}
+
+double solveBaselineForTiming(
+    const DantzigProblemCase& problem, DantzigProblemWorkspace& workspace)
+{
+  EXPECT_TRUE(solveDantzigBaselineWorkspace(problem, &workspace));
+  return solutionChecksum(workspace.x);
 }
 
 } // namespace
 
-TEST(DantzigNative, SolvesUnboundedProblem)
+TEST(DantzigNative, MatchesLegacyBaselineAcrossRepresentativeProblems)
 {
-  expectNear(solveNative(makeUnboundedProblem()), {2.0});
+  for (const auto& problem : makeDantzigCorrectnessCases()) {
+    std::vector<double> native;
+    std::vector<double> baseline;
+
+    ASSERT_TRUE(solveDantzigNative(problem, &native)) << problem.name;
+    ASSERT_TRUE(solveDantzigBaseline(problem, &baseline)) << problem.name;
+    expectNear(native, baseline, 1e-10);
+  }
 }
 
 TEST(DantzigNative, CompatibilityHeaderForwardsToNativeKernel)
 {
-  expectNear(solveNativeCompat(makeUnboundedProblem()), {2.0});
-}
+  auto problem = makeDantzigCorrectnessCases().front();
+  std::vector<double> native;
+  std::vector<double> compat(static_cast<std::size_t>(problem.n), 0.0);
+  std::vector<double> w(static_cast<std::size_t>(problem.n), 0.0);
 
-TEST(DantzigNative, MatchesOdeBaselineOnBoxedProblem)
-{
-  const DantzigProblem problem = makeBoxedProblem();
+  ASSERT_TRUE(solveDantzigNative(problem, &native));
+  ASSERT_TRUE(dart::lcpsolver::dantzig::dSolveLCP(
+      problem.n,
+      problem.A.data(),
+      compat.data(),
+      problem.b.data(),
+      w.data(),
+      problem.nub,
+      problem.lo.data(),
+      problem.hi.data(),
+      problem.findex.data()));
 
-  expectNear(solveNative(problem), solveBaseline(problem));
+  expectNear(compat, native, 1e-12);
 }
 
 TEST(DantzigNative, RandomIntStaysInRangeAtMaximumRand)
@@ -209,11 +270,11 @@ TEST(DantzigNative, RandomIntStaysInRangeAtMaximumRand)
   constexpr unsigned long seedBeforeMaxRand = 0x0dbdbb1eUL;
   constexpr int range = 7;
 
-  dart::lcpsolver::dantzig::dRandSetSeed(seedBeforeMaxRand);
-  EXPECT_EQ(0xffffffffUL, dart::lcpsolver::dantzig::dRand());
+  dart::lcpsolver::dantzig::setRandomSeed(seedBeforeMaxRand);
+  EXPECT_EQ(0xffffffffUL, dart::lcpsolver::dantzig::random());
 
-  dart::lcpsolver::dantzig::dRandSetSeed(seedBeforeMaxRand);
-  const int actual = dart::lcpsolver::dantzig::dRandInt(range);
+  dart::lcpsolver::dantzig::setRandomSeed(seedBeforeMaxRand);
+  const int actual = dart::lcpsolver::dantzig::randomInt(range);
 
   EXPECT_GE(actual, 0);
   EXPECT_LT(actual, range);
@@ -223,7 +284,7 @@ TEST(DantzigNative, PivotMatrixExternalViewUsesActiveRowPointers)
 {
   constexpr int rows = 2;
   constexpr int cols = 2;
-  const int nskip = Padding(cols);
+  const int nskip = padding(cols);
   std::vector<double> data(static_cast<std::size_t>(rows * nskip), 0.0);
   data[0 * nskip + 0] = 1.0;
   data[0 * nskip + 1] = 2.0;
@@ -284,4 +345,96 @@ TEST(DantzigNative, ScratchMoveAssignmentKeepsStateAllocatorValid)
 
   target.reserveState(4);
   EXPECT_EQ(4u, target.stateCapacity);
+}
+
+TEST(DantzigNative, PgsBoxedLcpSolverCoversNativeLdltAndRandomPaths)
+{
+  {
+    auto problem = dart::test::makeUnboundedDantzigCase(3);
+    std::vector<double> x(static_cast<std::size_t>(problem.n), 0.0);
+    dart::constraint::PgsBoxedLcpSolver solver;
+
+    EXPECT_TRUE(solver.solve(
+        problem.n,
+        problem.A.data(),
+        x.data(),
+        problem.b.data(),
+        problem.nub,
+        problem.lo.data(),
+        problem.hi.data(),
+        problem.findex.data(),
+        false));
+    for (double value : x) {
+      EXPECT_TRUE(std::isfinite(value));
+    }
+  }
+
+  {
+    auto problem = dart::test::makeBoxedCoupledDantzigCase(5);
+    std::vector<double> x(static_cast<std::size_t>(problem.n), 0.0);
+    dart::constraint::PgsBoxedLcpSolver solver;
+    solver.setOption(
+        dart::constraint::PgsBoxedLcpSolver::Option(9, 0.0, -1.0, 1e-9, true));
+
+    solver.solve(
+        problem.n,
+        problem.A.data(),
+        x.data(),
+        problem.b.data(),
+        problem.nub,
+        problem.lo.data(),
+        problem.hi.data(),
+        problem.findex.data(),
+        false);
+    for (double value : x) {
+      EXPECT_TRUE(std::isfinite(value));
+    }
+  }
+}
+
+TEST(DantzigNative, DeprecatedOdeLcpSolverUsesNativeDantzigPath)
+{
+  const Eigen::MatrixXd A = (Eigen::MatrixXd(1, 1) << 2.0).finished();
+  const Eigen::VectorXd b = (Eigen::VectorXd(1) << -4.0).finished();
+  Eigen::VectorXd x;
+  dart::lcpsolver::ODELCPSolver solver;
+
+  ASSERT_TRUE(solver.Solve(A, b, &x, 0, 0.0, 4, true));
+  ASSERT_EQ(1, x.size());
+  EXPECT_NEAR(2.0, x[0], 1e-12);
+}
+
+TEST(DantzigNative, DeprecatedDantzigLcpSolverSolvesConstrainedGroup)
+{
+  auto constraint = std::make_shared<SingleDofConstraint>(2.0, 4.0);
+  dart::constraint::ConstrainedGroup group;
+  group.addConstraint(constraint);
+
+  dart::constraint::DantzigLCPSolver solver(0.001);
+  solver.solve(&group);
+
+  EXPECT_TRUE(constraint->isExcited());
+  EXPECT_NEAR(2.0, constraint->getAppliedImpulse(), 1e-12);
+}
+
+TEST(DantzigNative, NativeOutperformsLegacyBaselineOnPerformanceCases)
+{
+  for (const auto& problem : makeDantzigPerformanceCases()) {
+    DantzigLcpScratch<double> scratch;
+    DantzigProblemWorkspace nativeWorkspace(problem);
+    DantzigProblemWorkspace baselineWorkspace(problem);
+    constexpr int iterations = 512;
+    const double nativeSeconds = bestElapsedCpuSeconds(
+        [&]() {
+          return solveNativeForTiming(problem, nativeWorkspace, scratch);
+        },
+        iterations);
+    const double baselineSeconds = bestElapsedCpuSeconds(
+        [&]() { return solveBaselineForTiming(problem, baselineWorkspace); },
+        iterations);
+
+    EXPECT_LT(nativeSeconds, baselineSeconds)
+        << problem.name << " native=" << nativeSeconds
+        << " baseline=" << baselineSeconds;
+  }
 }

@@ -17,7 +17,7 @@ inline bool dSolveLCP(
     int* findex,
     bool earlyTermination = false)
 {
-  return SolveLCP<dReal>(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+  return solveLcp<dReal>(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
 }
 
 } // namespace dart::lcpsolver::dantzig

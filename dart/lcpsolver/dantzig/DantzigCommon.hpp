@@ -94,24 +94,29 @@ namespace dart::lcpsolver::dantzig {
 
 using Real = double;
 
-inline constexpr Real Infinity = std::numeric_limits<Real>::infinity();
+inline constexpr Real kInfinity = std::numeric_limits<Real>::infinity();
 
 /// Round an integer up to a multiple of 4, except that 0 and 1 are unmodified.
 ///
 /// This preserves the padded row-stride convention used by the Dantzig LCP
 /// kernel.
-constexpr int Padding(int a)
+constexpr int padding(int a)
 {
   return (a > 1) ? ((((a)-1) | 3) + 1) : a;
 }
 
 // Compatibility aliases for code that still includes the historical Dantzig
-// headers. New production code should use Real, Infinity, and Padding.
+// headers. New production code should use Real, kInfinity, and padding().
 using dReal = Real;
-inline constexpr dReal dInfinity = Infinity;
+inline constexpr dReal dInfinity = kInfinity;
+inline constexpr Real Infinity = kInfinity;
 constexpr int dPAD(int a)
 {
-  return Padding(a);
+  return padding(a);
+}
+constexpr int Padding(int a)
+{
+  return padding(a);
 }
 
 //==============================================================================
@@ -258,12 +263,12 @@ constexpr int MATRIX_MULTIPLY_SIMD_THRESHOLD = 10;
 /// Sizes: A:p×r B:p×q C:q×r (all row-major)
 /// Uses hybrid approach: raw pointers for small matrices, Eigen SIMD for larger
 template <typename Scalar>
-inline void Multiply0(
+inline void multiply0(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
-  const int qskip = Padding(q);
-  const int rskip = Padding(r);
+  const int qskip = padding(q);
+  const int rskip = padding(r);
 
   // Use Eigen SIMD for medium/large matrices
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
@@ -294,12 +299,12 @@ inline void Multiply0(
 /// Matrix multiplication: A = B' * C (B transposed)
 /// Sizes: A:p×r B:q×p C:q×r (all row-major, but B is logically transposed)
 template <typename Scalar>
-inline void Multiply1(
+inline void multiply1(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
-  const int pskip = Padding(p);
-  const int rskip = Padding(r);
+  const int pskip = padding(p);
+  const int rskip = padding(r);
 
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
       && r >= MATRIX_MULTIPLY_SIMD_THRESHOLD) {
@@ -329,12 +334,12 @@ inline void Multiply1(
 /// Matrix multiplication: A = B * C' (C transposed)
 /// Sizes: A:p×r B:p×q C:r×q (all row-major, but C is logically transposed)
 template <typename Scalar>
-inline void Multiply2(
+inline void multiply2(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
-  const int qskip = Padding(q);
-  const int rskip = Padding(r);
+  const int qskip = padding(q);
+  const int rskip = padding(r);
 
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
       && r >= MATRIX_MULTIPLY_SIMD_THRESHOLD) {
@@ -359,6 +364,27 @@ inline void Multiply2(
       }
     }
   }
+}
+
+template <typename Scalar>
+inline void Multiply0(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
+{
+  multiply0(A, B, C, p, q, r);
+}
+
+template <typename Scalar>
+inline void Multiply1(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
+{
+  multiply1(A, B, C, p, q, r);
+}
+
+template <typename Scalar>
+inline void Multiply2(
+    Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
+{
+  multiply2(A, B, C, p, q, r);
 }
 
 } // namespace dart::lcpsolver::dantzig

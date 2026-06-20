@@ -66,21 +66,21 @@ template <typename Scalar>
 void dMultiply0(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
-  Multiply0(A, B, C, p, q, r);
+  multiply0(A, B, C, p, q, r);
 }
 
 template <typename Scalar>
 void dMultiply1(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
-  Multiply1(A, B, C, p, q, r);
+  multiply1(A, B, C, p, q, r);
 }
 
 template <typename Scalar>
 void dMultiply2(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
-  Multiply2(A, B, C, p, q, r);
+  multiply2(A, B, C, p, q, r);
 }
 
 template <typename Scalar>
@@ -88,7 +88,7 @@ int dFactorCholesky(Scalar* A, int n, void* tmpbuf /*[n]*/)
 {
   DART_ASSERT(n > 0 && A);
   bool failure = false;
-  const int nskip = Padding(n);
+  const int nskip = padding(n);
   // Use heap allocation instead of alloca() to avoid stack corruption on arm64
   std::vector<Scalar> recip_storage;
   Scalar* recip;
@@ -134,7 +134,7 @@ template <typename Scalar>
 void dSolveCholesky(const Scalar* L, Scalar* b, int n, void* tmpbuf /*[n]*/)
 {
   DART_ASSERT(n > 0 && L && b);
-  const int nskip = Padding(n);
+  const int nskip = padding(n);
   std::vector<Scalar> y_storage;
   Scalar* y;
   if (tmpbuf) {
@@ -180,7 +180,7 @@ int dInvertPDMatrix(
                                 ? FactorCholesky_size
                                 : SolveCholesky_size;
   DART_ASSERT(MaxCholesky_size % sizeof(Scalar) == 0);
-  const int nskip = Padding(n);
+  const int nskip = padding(n);
   const size_t nSize = static_cast<size_t>(n);
   const size_t nskipSize = static_cast<size_t>(nskip);
   const size_t nskip_mul_n = nskipSize * nSize;
@@ -222,7 +222,7 @@ int dIsPositiveDefinite(const Scalar* A, int n, void* tmpbuf /*[nskip*(n+1)]*/)
   DART_ASSERT(n > 0 && A);
   size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
   DART_ASSERT(FactorCholesky_size % sizeof(Scalar) == 0);
-  const int nskip = Padding(n);
+  const int nskip = padding(n);
   const int nskip_mul_n = nskip * n;
   const size_t FactorCholesky_scalars = FactorCholesky_size / sizeof(Scalar);
   const size_t total_scalars = FactorCholesky_scalars + nskip_mul_n;

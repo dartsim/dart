@@ -216,15 +216,15 @@ void CylindricalJointConstraint::getInformation(ConstraintInfo* _lcp)
   DART_ASSERT(_lcp->findex[2] == -1);
   DART_ASSERT(_lcp->findex[3] == -1);
 
-  _lcp->lo[0] = -::dart::lcpsolver::dantzig::Infinity;
-  _lcp->lo[1] = -::dart::lcpsolver::dantzig::Infinity;
-  _lcp->lo[2] = -::dart::lcpsolver::dantzig::Infinity;
-  _lcp->lo[3] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[0] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[1] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[2] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[3] = -::dart::lcpsolver::dantzig::kInfinity;
 
-  _lcp->hi[0] = ::dart::lcpsolver::dantzig::Infinity;
-  _lcp->hi[1] = ::dart::lcpsolver::dantzig::Infinity;
-  _lcp->hi[2] = ::dart::lcpsolver::dantzig::Infinity;
-  _lcp->hi[3] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[0] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[1] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[2] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[3] = ::dart::lcpsolver::dantzig::kInfinity;
 
   _lcp->x[0] = mOldX[0];
   _lcp->x[1] = mOldX[1];

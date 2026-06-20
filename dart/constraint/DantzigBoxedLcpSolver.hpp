@@ -35,6 +35,8 @@
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
+#include <dart/lcpsolver/dantzig/DantzigLcp.hpp>
+
 namespace dart {
 namespace constraint {
 
@@ -63,6 +65,9 @@ public:
   // Documentation inherited.
   bool canSolve(int n, const double* A) override;
 #endif
+
+private:
+  ::dart::lcpsolver::dantzig::DantzigLcpScratch<double> mScratch;
 };
 
 } // namespace constraint

@@ -166,11 +166,56 @@ rows/columns and manipulate C.
 
 namespace dart::lcpsolver::dantzig {
 
+namespace {
+
+template <typename Scalar>
+bool trySolveDiagonalLcp(
+    int n,
+    const Scalar* A,
+    Scalar* x,
+    const Scalar* b,
+    Scalar* w,
+    const Scalar* lo,
+    const Scalar* hi,
+    const int* findex,
+    int nskip)
+{
+  for (int row = 0; row < n; ++row) {
+    if (findex && findex[row] >= 0) {
+      return false;
+    }
+
+    for (int col = 0; col < n; ++col) {
+      if (row != col && A[row * nskip + col] != Scalar(0.0)) {
+        return false;
+      }
+    }
+
+    if (A[row * nskip + row] == Scalar(0.0)) {
+      return false;
+    }
+  }
+
+  for (int row = 0; row < n; ++row) {
+    const Scalar diagonal = A[row * nskip + row];
+    Scalar value = b[row] / diagonal;
+    value = std::max(lo[row], std::min(hi[row], value));
+    x[row] = value;
+    if (w) {
+      w[row] = diagonal * value - b[row];
+    }
+  }
+
+  return true;
+}
+
+} // namespace
+
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
 template <typename Scalar>
-bool SolveLCPWithScratch(
+bool solveLcpWithScratch(
     int n,
     Scalar* A,
     Scalar* x,
@@ -185,7 +230,7 @@ bool SolveLCPWithScratch(
 {
   DART_ASSERT(n > 0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
   const Scalar kInfinity = ScalarTraits<Scalar>::inf();
-  const int nskip = Padding(n);
+  const int nskip = padding(n);
   const std::size_t nSize = static_cast<std::size_t>(n);
   const std::size_t nskipSize = static_cast<std::size_t>(nskip);
 #ifndef NDEBUG
@@ -197,14 +242,19 @@ bool SolveLCPWithScratch(
   }
 #endif
 
+  constexpr int kMaxDiagonalFastPathSize = 256;
+  if (n <= kMaxDiagonalFastPathSize
+      && trySolveDiagonalLcp(n, A, x, b, outer_w, lo, hi, findex, nskip)) {
+    return true;
+  }
+
   // if all the variables are unbounded then we can just factor, solve,
   // and return
   if (nub >= n) {
     scratch.d.resize(nSize);
-    SetZero(scratch.d.data(), n);
 
-    dFactorLDLT(A, scratch.d.data(), n, nskip);
-    dSolveLDLT(A, scratch.d.data(), b, n, nskip);
+    factorLdlt(A, scratch.d.data(), n, nskip);
+    solveLdlt(A, scratch.d.data(), b, n, nskip);
     memcpy(x, b, n * sizeof(Scalar));
 
     return true;
@@ -515,7 +565,7 @@ bool SolveLCPWithScratch(
 
 //==============================================================================
 template <typename Scalar>
-bool SolveLCP(
+bool solveLcp(
     int n,
     Scalar* A,
     Scalar* x,
@@ -528,12 +578,12 @@ bool SolveLCP(
     bool earlyTermination)
 {
   DantzigLcpScratch<Scalar> scratch;
-  return SolveLCPWithScratch(
+  return solveLcpWithScratch(
       n, A, x, b, outer_w, nub, lo, hi, findex, scratch, earlyTermination);
 }
 
 // Explicit template instantiations
-template bool SolveLCPWithScratch<float>(
+template bool solveLcpWithScratch<float>(
     int n,
     float* A,
     float* x,
@@ -546,7 +596,7 @@ template bool SolveLCPWithScratch<float>(
     DantzigLcpScratch<float>& scratch,
     bool earlyTermination);
 
-template bool SolveLCPWithScratch<double>(
+template bool solveLcpWithScratch<double>(
     int n,
     double* A,
     double* x,
@@ -559,7 +609,7 @@ template bool SolveLCPWithScratch<double>(
     DantzigLcpScratch<double>& scratch,
     bool earlyTermination);
 
-template bool SolveLCP<float>(
+template bool solveLcp<float>(
     int n,
     float* A,
     float* x,
@@ -571,7 +621,7 @@ template bool SolveLCP<float>(
     int* findex,
     bool earlyTermination);
 
-template bool SolveLCP<double>(
+template bool solveLcp<double>(
     int n,
     double* A,
     double* x,

@@ -269,10 +269,10 @@ private:
 /// constexpr int n = 6;
 /// double A[n*n], x[n], b[n], w[n], lo[n], hi[n];
 /// // ... initialize A, b, lo, hi ...
-/// bool success = SolveLCP<double>(n, A, x, b, w, 0, lo, hi, nullptr);
+/// bool success = solveLcp<double>(n, A, x, b, w, 0, lo, hi, nullptr);
 /// @endcode
 template <typename Scalar>
-bool SolveLCP(
+bool solveLcp(
     int n,
     Scalar* A,
     Scalar* x,
@@ -288,10 +288,10 @@ bool SolveLCP(
 /// scratch storage.
 ///
 /// `scratch` may retain capacity after the call. The input matrix uses the same
-/// padded row stride convention as `SolveLCP`: callers should allocate rows
-/// with `Padding(n)` entries.
+/// padded row stride convention as `solveLcp`: callers should allocate rows
+/// with `padding(n)` entries.
 template <typename Scalar>
-bool SolveLCPWithScratch(
+bool solveLcpWithScratch(
     int n,
     Scalar* A,
     Scalar* x,
@@ -303,6 +303,40 @@ bool SolveLCPWithScratch(
     int* findex,
     DantzigLcpScratch<Scalar>& scratch,
     bool earlyTermination = false);
+
+template <typename Scalar>
+inline bool SolveLCP(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    bool earlyTermination = false)
+{
+  return solveLcp(n, A, x, b, w, nub, lo, hi, findex, earlyTermination);
+}
+
+template <typename Scalar>
+inline bool SolveLCPWithScratch(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    DantzigLcpScratch<Scalar>& scratch,
+    bool earlyTermination = false)
+{
+  return solveLcpWithScratch(
+      n, A, x, b, w, nub, lo, hi, findex, scratch, earlyTermination);
+}
 
 } // namespace dart::lcpsolver::dantzig
 

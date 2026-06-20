@@ -66,25 +66,51 @@ namespace dart::lcpsolver::dantzig {
 //==============================================================================
 
 /// Return next 32-bit random number using linear congruential method
-unsigned long dRand();
+unsigned long random();
 
 /// Get current random number seed
-unsigned long dRandGetSeed();
+unsigned long getRandomSeed();
 
 /// Set random number seed
-void dRandSetSeed(unsigned long s);
+void setRandomSeed(unsigned long seed);
 
 /// Return a random integer between 0..n-1
-int dRandInt(int n);
+int randomInt(int n);
 
 /// Return a random real number between 0..1
-double dRandReal();
+double randomReal();
 
 /// Template version of random real number generation
 template <typename Scalar>
-inline Scalar RandReal()
+inline Scalar randomReal()
 {
-  return static_cast<Scalar>(dRandReal());
+  return static_cast<Scalar>(randomReal());
+}
+
+// Legacy compatibility wrappers for the historical Dantzig helper names.
+inline unsigned long dRand()
+{
+  return random();
+}
+
+inline unsigned long dRandGetSeed()
+{
+  return getRandomSeed();
+}
+
+inline void dRandSetSeed(unsigned long seed)
+{
+  setRandomSeed(seed);
+}
+
+inline int dRandInt(int n)
+{
+  return randomInt(n);
+}
+
+inline double dRandReal()
+{
+  return randomReal();
 }
 
 } // namespace dart::lcpsolver::dantzig

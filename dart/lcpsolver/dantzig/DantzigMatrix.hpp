@@ -252,20 +252,20 @@ void dRemoveRowCol(Scalar* A, int n, int nskip, int r);
 template <typename Scalar>
 inline constexpr size_t dEstimateFactorCholeskyTmpbufSize(int n)
 {
-  return Padding(n) * sizeof(Scalar);
+  return padding(n) * sizeof(Scalar);
 }
 
 template <typename Scalar>
 inline constexpr size_t dEstimateSolveCholeskyTmpbufSize(int n)
 {
-  return Padding(n) * sizeof(Scalar);
+  return padding(n) * sizeof(Scalar);
 }
 
 template <typename Scalar>
 inline constexpr size_t dEstimateInvertPDMatrixTmpbufSize(int n)
 {
   const size_t nSize = static_cast<size_t>(n);
-  const size_t nskipSize = static_cast<size_t>(Padding(n));
+  const size_t nskipSize = static_cast<size_t>(padding(n));
   size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
   size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize<Scalar>(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size
@@ -278,7 +278,7 @@ template <typename Scalar>
 inline constexpr size_t dEstimateIsPositiveDefiniteTmpbufSize(int n)
 {
   const size_t nSize = static_cast<size_t>(n);
-  const size_t nskipSize = static_cast<size_t>(Padding(n));
+  const size_t nskipSize = static_cast<size_t>(padding(n));
   return nskipSize * nSize * sizeof(Scalar)
          + dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
 }
@@ -466,6 +466,12 @@ inline void FactorLDLT(Scalar* A, Scalar* d, int n, int nskip)
   dFactorLDLT(A, d, n, nskip);
 }
 
+template <typename Scalar>
+inline void factorLdlt(Scalar* A, Scalar* d, int n, int nskip)
+{
+  dFactorLDLT(A, d, n, nskip);
+}
+
 /// Solve L*x=b where L is lower triangular (template version)
 /// @param L Lower triangular matrix (n×n) with ones on diagonal
 /// @param b Right-hand side vector (modified in place with solution)
@@ -473,6 +479,12 @@ inline void FactorLDLT(Scalar* A, Scalar* d, int n, int nskip)
 /// @param nskip Leading dimension of L
 template <typename Scalar>
 inline void SolveL1(const Scalar* L, Scalar* b, int n, int nskip)
+{
+  dSolveL1<Scalar>(L, b, n, nskip);
+}
+
+template <typename Scalar>
+inline void solveL1(const Scalar* L, Scalar* b, int n, int nskip)
 {
   dSolveL1<Scalar>(L, b, n, nskip);
 }
@@ -488,6 +500,12 @@ inline void SolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
   dSolveL1T<Scalar>(L, b, n, nskip);
 }
 
+template <typename Scalar>
+inline void solveL1T(const Scalar* L, Scalar* b, int n, int nskip)
+{
+  dSolveL1T<Scalar>(L, b, n, nskip);
+}
+
 /// Solve L*D*L'*x=b (template version)
 /// @param L Lower triangular matrix (n×n) with ones on diagonal
 /// @param d Diagonal reciprocal elements
@@ -496,6 +514,13 @@ inline void SolveL1T(const Scalar* L, Scalar* b, int n, int nskip)
 /// @param nskip Leading dimension of L
 template <typename Scalar>
 inline void SolveLDLT(
+    const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip)
+{
+  dSolveLDLT<Scalar>(L, d, b, n, nskip);
+}
+
+template <typename Scalar>
+inline void solveLdlt(
     const Scalar* L, const Scalar* d, Scalar* b, int n, int nskip)
 {
   dSolveLDLT<Scalar>(L, d, b, n, nskip);

@@ -64,8 +64,8 @@ bool DantzigBoxedLcpSolver::solve(
     bool earlyTermination)
 {
   DART_PROFILE_SCOPED;
-  return ::dart::lcpsolver::dantzig::SolveLCP<double>(
-      n, A, x, b, nullptr, 0, lo, hi, findex, earlyTermination);
+  return ::dart::lcpsolver::dantzig::solveLcpWithScratch<double>(
+      n, A, x, b, nullptr, 0, lo, hi, findex, mScratch, earlyTermination);
 }
 
 #if DART_BUILD_MODE_DEBUG

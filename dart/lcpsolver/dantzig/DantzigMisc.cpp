@@ -63,27 +63,27 @@ namespace dart::lcpsolver::dantzig {
 
 static unsigned long rng_seed = 0;
 
-unsigned long dRand()
+unsigned long random()
 {
   rng_seed = (rng_seed * 1103515245 + 12345) & 0xffffffff;
   return rng_seed;
 }
 
-unsigned long dRandGetSeed()
+unsigned long getRandomSeed()
 {
   return rng_seed;
 }
 
-void dRandSetSeed(unsigned long s)
+void setRandomSeed(unsigned long seed)
 {
-  rng_seed = s;
+  rng_seed = seed;
 }
 
-int dRandInt(int n)
+int randomInt(int n)
 {
   DART_ASSERT(n > 0);
   const unsigned long un = n;
-  volatile unsigned long rawR = dRand();
+  volatile unsigned long rawR = random();
   unsigned long r = rawR;
 
   if (un <= 0x00000010UL) {
@@ -106,9 +106,9 @@ int dRandInt(int n)
   return static_cast<int>(r % un);
 }
 
-double dRandReal()
+double randomReal()
 {
-  return static_cast<double>(dRand()) / static_cast<double>(0xffffffff);
+  return static_cast<double>(random()) / static_cast<double>(0xffffffff);
 }
 
 } // namespace dart::lcpsolver::dantzig

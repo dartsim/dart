@@ -74,7 +74,7 @@ bool ODELCPSolver::Solve(
     double *A, *b, *x, *w, *lo, *hi;
     int n = _A.rows();
 
-    int nSkip = ::dart::lcpsolver::dantzig::Padding(n);
+    int nSkip = ::dart::lcpsolver::dantzig::padding(n);
 
     A = new double[n * nSkip];
     b = new double[n];
@@ -93,7 +93,7 @@ bool ODELCPSolver::Solve(
     for (int i = 0; i < n; ++i) {
       b[i] = -_b[i];
       x[i] = w[i] = lo[i] = 0;
-      hi[i] = ::dart::lcpsolver::dantzig::Infinity;
+      hi[i] = ::dart::lcpsolver::dantzig::kInfinity;
       findex[i] = -1;
     }
     for (int i = 0; i < _numContacts; ++i) {
@@ -107,7 +107,7 @@ bool ODELCPSolver::Solve(
       hi[_numContacts + i * 2 + 1] = _mu;
     }
     // dClearUpperTriangle (A,n);
-    ::dart::lcpsolver::dantzig::SolveLCP<double>(
+    ::dart::lcpsolver::dantzig::solveLcp<double>(
         n, A, x, b, w, 0, lo, hi, findex);
 
     //    for (int i = 0; i < n; i++) {
