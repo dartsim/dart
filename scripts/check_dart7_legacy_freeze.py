@@ -479,7 +479,9 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             )
                         function_buffer = []
 
-                if not in_detail_namespace and in_namespace_scope:
+                if not in_detail_namespace and (
+                    in_namespace_scope or namespace_data_buffer
+                ):
                     namespace_data_code = code.strip()
                     if namespace_data_buffer:
                         namespace_data_buffer.append(namespace_data_code)
@@ -492,9 +494,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         namespace_data_buffer = [namespace_data_code]
                         namespace_data_start = index
 
-                    if namespace_data_buffer and (
-                        ";" in namespace_data_code or "{" in namespace_data_code
-                    ):
+                    if namespace_data_buffer and ";" in namespace_data_code:
                         namespace_data_signature = " ".join(namespace_data_buffer)
                         namespace_data_match = CPP_NAMESPACE_DATA_PATTERN.search(
                             namespace_data_signature

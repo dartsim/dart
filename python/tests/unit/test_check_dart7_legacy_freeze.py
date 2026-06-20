@@ -276,6 +276,33 @@ def test_new_legacy_namespace_constant_requires_bugfix_port_tag(tmp_path):
     assert any("NEW_VALUE" in m for m in messages)
 
 
+def test_new_legacy_multiline_namespace_constant_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "constraint" / "legacy_constants.hpp",
+        """
+#include <array>
+
+inline constexpr std::array<int, 2> OLD_VALUES{0, 1};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\ninline constexpr std::array<int, 2> NEW_VALUES{\n"
+        + "    1,\n"
+        + "    2,\n"
+        + "};\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NEW_VALUES" in m for m in messages)
+
+
 def test_new_legacy_inline_namespace_variable_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
