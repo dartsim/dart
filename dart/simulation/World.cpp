@@ -56,6 +56,7 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <typeinfo>
 #include <vector>
 
 #include <cmath>
@@ -1014,8 +1015,7 @@ bool World::isCollisionFilterSnapshotTrackable(
   if (filter == nullptr)
     return true;
 
-  return dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter)
-         != nullptr;
+  return typeid(*filter) == typeid(collision::BodyNodeCollisionFilter);
 }
 
 //==============================================================================

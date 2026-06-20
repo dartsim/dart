@@ -192,7 +192,7 @@ std::size_t stepUntil(World* world, std::size_t maxSteps, Predicate pred)
 constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
-class TogglePairCollisionFilter : public CollisionFilter
+class TogglePairCollisionFilter : public BodyNodeCollisionFilter
 {
 public:
   TogglePairCollisionFilter(
@@ -206,11 +206,23 @@ public:
     mIgnorePair = ignorePair;
   }
 
+  void resetNumCalls()
+  {
+    mNumCalls = 0u;
+  }
+
+  std::size_t getNumCalls() const
+  {
+    return mNumCalls;
+  }
+
   bool ignoresCollision(
       const CollisionObject* object1,
       const CollisionObject* object2) const override
   {
-    if (mBaseFilter.ignoresCollision(object1, object2))
+    ++mNumCalls;
+
+    if (BodyNodeCollisionFilter::ignoresCollision(object1, object2))
       return true;
 
     const auto* body1 = object1->getBodyNode();
@@ -221,10 +233,10 @@ public:
   }
 
 private:
-  BodyNodeCollisionFilter mBaseFilter;
   const BodyNode* mBody1;
   const BodyNode* mBody2;
   bool mIgnorePair;
+  mutable std::size_t mNumCalls = 0u;
 };
 
 // Creates a world with automatic deactivation enabled. Keep this explicit so
@@ -971,9 +983,11 @@ TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
   ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
 
   filter->setIgnorePair(false);
+  filter->resetNumCalls();
   world->step();
-  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
-      << "custom filter change was hidden by the all-resting fast path";
+  EXPECT_GT(filter->getNumCalls(), 0u)
+      << "custom BodyNodeCollisionFilter subclass was hidden by the "
+         "all-resting fast path";
 }
 
 //==============================================================================
@@ -1279,6 +1293,31 @@ TEST(IslandDeactivation, WakeOnCommand)
   box->setCommands(Eigen::Vector6d::Constant(1.0));
   world->step();
   EXPECT_FALSE(box->isResting()) << "a set command should wake the body";
+}
+
+//==============================================================================
+// A quiet command observed by step(false) is cached as non-disturbing, but a
+// later step(true) still must honor the resetCommand contract and clear it.
+TEST(IslandDeactivation, ResetCommandClearsCachedQuietCommand)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  const Eigen::Vector6d quietCommand = Eigen::Vector6d::Constant(1e-12);
+  box->setCommands(quietCommand);
+  world->step(false);
+  EXPECT_TRUE(box->getCommands().isApprox(quietCommand, 0.0));
+  ASSERT_TRUE(box->isResting());
+
+  world->step(true);
+  EXPECT_TRUE(box->getCommands().isZero(0.0))
+      << "step(true) should clear cached quiet commands";
 }
 
 //==============================================================================

@@ -3971,7 +3971,8 @@ bool Skeleton::hasExternalDisturbance() const
 //==============================================================================
 bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
 {
-  if (mLastQuietExternalDisturbanceVersion == mExternalDisturbanceVersion
+  if (!_resetCommand
+      && mLastQuietExternalDisturbanceVersion == mExternalDisturbanceVersion
       && !mSkelCache.mDirty.mExternalForces) {
     return false;
   }
