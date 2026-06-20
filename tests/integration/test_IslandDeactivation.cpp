@@ -308,6 +308,16 @@ void expectSleeperFallsAfterSupportEdit(
       << "unsupported body did not resume falling";
 }
 
+void expectSolverRunsAfterRestingConstraintEdit(
+    World* world, const SkeletonPtr& sleeper)
+{
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "automatic joint-constraint edit reused the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "automatic joint-constraint edit did not wake the sleeping body";
+}
+
 } // namespace
 
 //==============================================================================
@@ -923,6 +933,60 @@ TEST(IslandDeactivation, WakeOnSupportShapeChangeAfterSnapshotInvalidation)
   floorShapeNode->setRelativeTransform(moved);
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Enabling automatic joint constraints can make a previously resting body need
+// a solver pass even when its world pose has not otherwise changed.
+TEST(IslandDeactivation, WakeOnAutomaticJointConstraintEnforcementChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* joint = sleeper->getJoint(0);
+  ASSERT_GT(joint->getNumDofs(), 0u);
+  const double position = joint->getPosition(0);
+  joint->setPositionLowerLimit(0, position + 0.05);
+  joint->setPositionUpperLimit(0, position + 1.0);
+  joint->setLimitEnforcement(true);
+
+  expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Limit edits are automatic joint-constraint edits too: a joint that was
+// already limit-enforced can become newly constrained without changing
+// kinematics.
+TEST(IslandDeactivation, WakeOnAutomaticJointLimitChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  auto* joint = sleeper->getJoint(0);
+  ASSERT_GT(joint->getNumDofs(), 0u);
+  const double initialPosition = joint->getPosition(0);
+  joint->setPositionLowerLimit(0, initialPosition - 1.0);
+  joint->setPositionUpperLimit(0, initialPosition + 1.0);
+  joint->setLimitEnforcement(true);
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  joint->setPositionLowerLimit(0, joint->getPosition(0) + 0.05);
+
+  expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
 }
 
 //==============================================================================

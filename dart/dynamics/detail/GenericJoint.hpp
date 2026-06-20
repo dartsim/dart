@@ -607,6 +607,7 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits[index], position);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -632,6 +633,7 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits, lowerLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -652,6 +654,7 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits[index], position);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -677,6 +680,7 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits, upperLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -894,6 +898,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits[index], velocity);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -919,6 +924,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits, lowerLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -939,6 +945,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits[index], velocity);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -964,6 +971,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits, upperLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================

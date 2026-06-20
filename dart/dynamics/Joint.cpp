@@ -803,6 +803,9 @@ void Joint::notifyExternalDisturbanceUpdated()
 void Joint::notifyAutomaticConstraintPropertiesUpdated()
 {
   gAutomaticConstraintRevision.fetch_add(1, std::memory_order_relaxed);
+
+  if (const auto skel = getSkeleton())
+    skel->incrementDeactivationStateVersion();
 }
 
 } // namespace dynamics
