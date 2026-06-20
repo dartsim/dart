@@ -456,7 +456,11 @@ public:
       mStyleScaled = true;
     }
 
+#if IMGUI_VERSION_NUM >= 19200
+    ImGui::GetStyle().FontScaleMain = mGuiScale;
+#else
     ImGui::GetIO().FontGlobalScale = mGuiScale;
+#endif
     const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
     const float margin = 10.0f * mGuiScale;
     const ImVec2 windowSize = computeWindowSize(displaySize, margin);
