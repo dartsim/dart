@@ -34,10 +34,15 @@ its own line so status updates remain git-history friendly.
   and WP-091.24: one canonical rigid-contact assembly producer feeds
   sequential impulse, boxed-LCP, and differentiable capture, while
   `StepMetrics` now folds cached contact/iteration diagnostics, variational
-  residuals, multibody momentum, and a smooth-corpus convergence sweep. The
-  remaining WS0 packet is WP-091.4 legacy freeze, which stays **blocked**:
-  PLAN-042 Decision 5 has no recorded maintainer direction; it is the only
-  PLAN-091 item without executable closure.
+  residuals, multibody momentum, and a smooth-corpus convergence sweep. PR
+  #3095 is closing the remaining WS0 packet, WP-091.4 legacy freeze: PLAN-042
+  Decision 5 now records freeze/quarantine first, release-6.20+ and later
+  release-lane ports next, then DART 7 public-contract removal after those
+  needs settle. The freeze gate blocks untagged legacy surface growth while
+  current open release-6.20 PRs (#3071, #3086, #3088, and #3092) and any later
+  release-lane ports finish. Final deletion of DART 6 legacy is not a WP-091.4
+  prerequisite; track that in PLAN-042 follow-up work after the release lane is
+  settled.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
