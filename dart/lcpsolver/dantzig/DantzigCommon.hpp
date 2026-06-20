@@ -105,19 +105,9 @@ constexpr int padding(int a)
   return (a > 1) ? ((((a)-1) | 3) + 1) : a;
 }
 
-// Compatibility aliases for code that still includes the historical Dantzig
+// Compatibility alias for code that still includes the historical Dantzig
 // headers. New production code should use Real, kInfinity, and padding().
 using dReal = Real;
-inline constexpr dReal dInfinity = kInfinity;
-inline constexpr Real Infinity = kInfinity;
-constexpr int dPAD(int a)
-{
-  return padding(a);
-}
-constexpr int Padding(int a)
-{
-  return padding(a);
-}
 
 //==============================================================================
 // Template Type Traits for Scalar Types

@@ -294,7 +294,7 @@ void HumanLegJointLimitConstraint::update()
     mNegativeVel = -mJacobian.dot(q_d);
 
     mLowerBound = 0.0;
-    mUpperBound = ::dart::lcpsolver::dantzig::Infinity;
+    mUpperBound = ::dart::lcpsolver::dantzig::kInfinity;
     mDim = 1;
   }
 }
