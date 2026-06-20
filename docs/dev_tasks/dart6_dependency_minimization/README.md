@@ -18,13 +18,12 @@ Evidence was collected on 2026-06-19 after fetching `origin/main`,
 
 ## Current Branch State
 
-- `origin/release-6.20` currently points at `6543bcc37ce` (`Packaging
-  6.19.2`) and is tagged `v6.19.2`.
+- `origin/release-6.20` currently points at `b94cd16f6eb` (`Plan DART 6.20
+  dependency minimization (#3074)`).
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report version
   `6.19.2`.
-- Before any implementation PR, confirm whether the branch is intentionally the
-  6.20 lane with pending version metadata, or whether a packaging/version bump
-  must land first.
+- DART 6.20 is intentionally using the release lane before the package version
+  metadata bump lands.
 
 ## DART 6 Dependency Inventory
 
@@ -69,7 +68,9 @@ Usage summary:
   implementation slice replaces it with DART-owned native math detail code.
 - `ikfast` is included by DART's IKFast wrapper, generated WAM examples, and
   integration tests.
-- `imgui` is used by the OSG GUI path when `DART_USE_SYSTEM_IMGUI` is disabled.
+- `imgui` provides the DART 6 `external-imgui` compatibility component from
+  the system package by default, including headless package builds, and uses a
+  DART-patched fetched copy when `DART_USE_SYSTEM_IMGUI` is disabled.
 - `lodepng` is used by the GLUT screenshot path.
 - `odelcpsolver` is included by core constraint, contact, boxed LCP, Dantzig,
   PGS, and default `World` solver paths.
@@ -157,11 +158,17 @@ Default Pixi/package metadata for optional components
 `dart/external/imgui`
 
 - Risk: medium because the OSG GUI path remains part of DART 6.
-- Plan: prefer system ImGui for packaged builds and replace the vendored tree
-  with either a FetchContent fallback or a documented GUI feature dependency.
-  Do not remove OSG GUI compatibility in this slice.
-- Validation: GUI configure/build on Linux and macOS lanes, OSG regression or
-  screenshot smoke, and package smoke proving ImGui headers are found.
+- Status: in progress on `chore/replace-imgui-release-6.20`.
+- Plan: make the packaged/system ImGui path the default for normal GUI builds,
+  preserve the `external-imgui` component plus old installed
+  `dart/external/imgui` include path through a system-backed compatibility
+  target in default builds, and use an explicit DART-patched FetchContent
+  target when `DART_USE_SYSTEM_IMGUI=OFF`.
+- Validation: default configure/build with system ImGui, headless system-ImGui
+  build of `dart-external-imgui`, explicit fetched-ImGui fallback
+  configure/build, OSG GUI target build, install-tree headers, and package
+  smoke proving ImGui headers are found through `find_package(DART COMPONENTS
+  external-imgui gui-osg)`.
 
 `dart/external/lodepng`
 
@@ -272,5 +279,8 @@ Select gates by touched surface:
 - For IKFast, can the old installed `dart/external/ikfast/ikfast.h` path be
   removed in a future major release after DART 6 keeps compatibility by
   forwarding it to `dart/dynamics/ikfast.h` in the build and install trees?
-- For ImGui and GUI screenshots, should DART 6 prefer system dependencies,
-  FetchContent fallbacks, or feature-only GUI environments?
+- For ImGui, should DART 6 keep the DART-patched FetchContent compatibility
+  target as the default long-term, or require a patched system package path in a
+  future release?
+- For GUI screenshots, should DART 6 prefer a system image dependency or defer
+  dependency removal until the GLUT path is retired?

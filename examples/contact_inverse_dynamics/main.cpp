@@ -119,7 +119,11 @@ public:
       ImGui::GetStyle().ScaleAllSizes(mGuiScale);
       mStyleScaled = true;
     }
+#if IMGUI_VERSION_NUM >= 19200
+    ImGui::GetStyle().FontScaleMain = mGuiScale;
+#else
     ImGui::GetIO().FontGlobalScale = mGuiScale;
+#endif
 
     ImGui::SetNextWindowPos(ImVec2(10 * mGuiScale, 20 * mGuiScale));
     ImGui::SetNextWindowSize(ImVec2(420 * mGuiScale, 680 * mGuiScale));
