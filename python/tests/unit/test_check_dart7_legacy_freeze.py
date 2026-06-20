@@ -205,6 +205,28 @@ def test_bugfix_port_tag_allows_new_legacy_cpp_symbol(tmp_path):
     assert module.find_violations(tmp_path, baseline) == []
 
 
+def test_bugfix_port_tag_above_template_prefix_allows_new_legacy_cpp_symbol(
+    tmp_path,
+):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\n// dart7-legacy-freeze: bugfix-port release-6.* parity\n"
+        + "template <class T>\n"
+        + "class DART_API BugfixPortJoint {};\n",
+        encoding="utf-8",
+    )
+
+    assert module.find_violations(tmp_path, baseline) == []
+
+
 def test_trailing_bugfix_port_tag_does_not_allow_next_cpp_symbol(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -669,6 +691,35 @@ public:
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("LegacyJoint.newMethod" in m for m in messages)
+
+
+def test_new_legacy_protected_cpp_member_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+protected:
+  void oldHook();
+  int oldValue;
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "  int oldValue;",
+            "  int oldValue;\n  void newHook();\n  int newValue;",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyJoint.newHook" in m for m in messages)
+    assert any("LegacyJoint.newValue" in m for m in messages)
 
 
 def test_changed_legacy_cpp_member_signature_requires_bugfix_port_tag(tmp_path):

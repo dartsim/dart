@@ -219,7 +219,20 @@ def nearby_tag(lines: list[str], line_index: int) -> bool:
     if line_index == 0:
         return False
 
-    previous = lines[line_index - 1].strip()
+    previous_index = line_index - 1
+    while previous_index >= 0:
+        previous = code_without_comment(lines[previous_index]).strip()
+        if not (
+            CPP_NAMESPACE_FUNCTION_TEMPLATE_PREFIX_PATTERN.search(previous)
+            or CPP_NAMESPACE_FUNCTION_PREFIX_PATTERN.search(previous)
+        ):
+            break
+        previous_index -= 1
+
+    if previous_index < 0:
+        return False
+
+    previous = lines[previous_index].strip()
     return FREEZE_TAG in previous and previous.startswith(("//", "#", "/*", "*"))
 
 
@@ -652,7 +665,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                 if (
                     current_class is not None
                     and current_class["public_surface"]
-                    and current_class["access"] == "public"
+                    and current_class["access"] in {"public", "protected"}
                     and not type_match
                     and not typedef_match
                     and not access_match
