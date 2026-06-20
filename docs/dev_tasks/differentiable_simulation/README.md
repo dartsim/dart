@@ -54,7 +54,11 @@ PLAN-110, not landing the original WS1–WS5 surface.
   flags, and replay restores registered differentiable parameters. Parameter
   registrations are not yet serialized in the binary format; promotion must
   either serialize them or document them as a replay-only/runtime registration.
-- Worked trajectory-optimization / system-identification example programs.
+- A standalone trajectory-optimization example program. The
+  system-identification standalone example now ships as
+  `python/examples/diff_system_identification.py` (recovers an unknown mass via
+  `add_differentiable_parameter` + `get_step_derivatives`); GUI trajopt scenes
+  already ship, so only a standalone trajopt script remains.
 
 ## Goal
 
@@ -97,9 +101,12 @@ examples, promotion, and landing:
 
 1. **Run the torch path**: `pip install torch` in the pixi env and unskip the
    `sx.diff.timestep` autograd gradient test (the only test skipped in-env).
-2. **Worked examples**: a trajectory-optimization example (control via
-   `sx.diff.timestep` rollout) and a system-identification example (recover mass
-   via `add_differentiable_parameter`) — needed for the DART 8 promotion contract.
+2. **Worked examples**: the system-identification standalone example (recovers
+   mass via `add_differentiable_parameter`) now ships as
+   `python/examples/diff_system_identification.py`. A standalone
+   trajectory-optimization example (control via `sx.diff.timestep` rollout)
+   remains a follow-up (three GUI trajopt scenes already ship) — both are part
+   of the DART 8 promotion contract.
 3. **Promotion prep**: when promoting, document the contact-point-migration and
    make/break-instant subgradient limits, and the CENTER_OF_MASS exclusion.
 4. **Robustness**: harden the static-friction Dantzig degenerate-pivot

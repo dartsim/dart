@@ -129,10 +129,12 @@ in the dev-task roadmap.
    [`dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
    current, then run a minimal solver spike before any public API promise.
 
-Remaining follow-ups (not workstreams): worked trajectory-optimization /
-system-identification example programs, the torch-autograd end-to-end test (needs
-torch in-env), a `DART_BUILD_DIFF` CI job, and minor robustness/coverage items —
-tracked in `docs/dev_tasks/differentiable_simulation/`.
+Remaining follow-ups (not workstreams): a standalone worked
+trajectory-optimization example program (the system-identification example
+shipped as `python/examples/diff_system_identification.py`), the torch-autograd
+end-to-end test (needs torch in-env), a `DART_BUILD_DIFF` CI job, and minor
+robustness/coverage items — tracked in
+`docs/dev_tasks/differentiable_simulation/`.
 
 This plan must not add a public `World` precision selector as a differentiability
 shortcut. Autodiff-scalar templating may remain an internal smooth-term or spike
