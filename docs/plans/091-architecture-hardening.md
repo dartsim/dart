@@ -566,7 +566,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_variational_integration` 178/178; cross-family + corpus green;
   `pixi run test-py` green (1382 passed, 11 skipped).
 
-#### WP-091.13 Canonical contact assembly [claimed]
+#### WP-091.13 Canonical contact assembly [done — PR #3091, merged 2026-06-19]
 
 - Objective: sequential-impulse, boxed-LCP, and the gradient path consume the
   one canonical contact-problem assembly, and the populated snapshot is
@@ -622,7 +622,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `kRigidContactRestitutionThreshold`, so the restitution threshold is now
   defined once across all four contact paths (golden 3/3, contact parity 5/5,
   boxed-LCP 122/122 unchanged).
-  **Safe shared-helper cleanup (pending acceptance in PR #3083):** the remaining
+  **Safe shared-helper cleanup (landed via PR #3083):** the remaining
   sequential-impulse local copies of the shared rigid-contact helper seam
   (`inverseMassOf`, `inverseWorldInertiaOf`, material accessors, and prescribed
   response classification) now route through
@@ -632,8 +632,9 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   projection helper and the sequential path call the same projection helper
   instead of keeping duplicate loops. Behavior-preserving cleanup only; the
   four assembler layouts still remain distinct.
-  **Slice B (closeout packet):** the four rigid contact assemblers now route
-  through the canonical `compute::RigidBodyContactProblem` producer. The
+  **Slice B (closeout packet, landed via PR #3091):** the four rigid contact
+  assemblers now route through the canonical `compute::RigidBodyContactProblem`
+  producer. The
   producer records per-contact restitution/material data, dynamic-body ordering,
   optional Baumgarte velocity bias, optional friction-row regularization, and
   either contact-major or normal-then-tangents row layouts; callers can request
@@ -912,7 +913,7 @@ hasSubstitution()`. Python surface matches: nanobind exposes
   `test_avbd_rigid_block` 105/105; `pixi run lint` and
   `pixi run check-api-boundaries` green. 17 files changed.
 
-#### WP-091.24 Metrics contract, scene corpus, one harness [claimed]
+#### WP-091.24 Metrics contract, scene corpus, one harness [done — PR #3091, merged 2026-06-19]
 
 - Objective: apples-to-apples comparison has a substrate: a solver-agnostic
   step-metrics value object populated by every family, a registered-builder
@@ -1033,9 +1034,10 @@ tests/test_benchmark_packet_utils.py -q` green; actual benchmark packet smoke:
 scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
 .benchmark_results/plan091/cross_family_metrics_benchmark.json --output
 .benchmark_results/plan091/cross_family_metrics_packet.json` accepted them.
-  **Metrics closeout packet:** `WorldStorage` now caches last-step diagnostics
-  from mutating stages so `World::computeStepMetrics()` stays read-only while
-  still reporting contact and solver fields. The rigid contact stage records
+  **Metrics closeout packet (landed via PR #3091):** `WorldStorage` now caches
+  last-step diagnostics from mutating stages so `World::computeStepMetrics()`
+  stays read-only while still reporting contact and solver fields. The rigid
+  contact stage records
   active rigid-rigid contact count, maximum penetration depth, and the exposed
   sequential/AVBD iteration budget; the variational multibody stage records
   RIQN iterations plus final residual norm; direct solvers and stages without a
@@ -1326,7 +1328,7 @@ scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
   row `BM_CudaResidentRigidBodyStateBatchLinearRollout/4/256/1`) passed.
   Accepted by maintainer merge of PR #3061.
 
-#### WP-091.33e Precision and packet reporting [claimed]
+#### WP-091.33e Precision and packet reporting [done — PR #3083, merged 2026-06-19]
 
 - Objective: batched benchmark and diagnostic packets report backend,
   precision, transfer inclusion, lane count, and resolved execution shape.
@@ -1341,7 +1343,7 @@ scripts/write_plan091_cross_family_metrics_packet.py --benchmark-json
   is included and what double-reference tolerance applies.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`, packet checker tests.
 - Dependencies: WP-091.24, WP-091.33a.
-- Evidence (pending acceptance in PR #3083): batched packet rows now carry the
+- Evidence (landed via PR #3083): batched packet rows now carry the
   resolved backend, precision, transfer-inclusion flag, lane count, step count,
   and resolved execution shape through shared
   `benchmark_packet_utils.batched_benchmark_row_schema_errors(...)`;
