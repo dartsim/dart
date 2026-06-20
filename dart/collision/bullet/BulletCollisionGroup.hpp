@@ -81,6 +81,9 @@ protected:
   bool shouldFilterPersistentPairs(
       const CollisionFilter* filter, std::size_t revision);
 
+  /// Resets the cached persistent-pair filter state.
+  void resetPersistentPairFilterCache();
+
   /// Update Bullet collision objects and broadphase data before collision.
   void updateEngineDataForCollide();
 

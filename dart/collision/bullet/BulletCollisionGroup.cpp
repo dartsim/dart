@@ -179,5 +179,12 @@ bool BulletCollisionGroup::shouldFilterPersistentPairs(
   return true;
 }
 
+//==============================================================================
+void BulletCollisionGroup::resetPersistentPairFilterCache()
+{
+  mLastPersistentPairFilter = nullptr;
+  mLastPersistentPairFilterRevision = 0u;
+}
+
 } // namespace collision
 } // namespace dart

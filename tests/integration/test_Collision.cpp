@@ -1788,6 +1788,58 @@ TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterSubclass)
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(0u, result.getNumContacts());
 }
+
+//==============================================================================
+TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterAfterUntrackedQuery)
+{
+  auto detector = BulletCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  const Eigen::Vector3d size(1.0, 1.0, 1.0);
+  auto skeleton1 = createBox(size, Eigen::Vector3d::Zero());
+  auto skeleton2 = createBox(size, Eigen::Vector3d(0.25, 0.0, 0.0));
+  auto* body1 = skeleton1->getBodyNode(0u);
+  auto* body2 = skeleton2->getBodyNode(0u);
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  CollisionOption bodyNodeFilterOption;
+  bodyNodeFilterOption.enableContact = true;
+  bodyNodeFilterOption.maxNumContacts = 4u;
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  bodyNodeFilter->addBodyNodePairToBlackList(body1, body2);
+  bodyNodeFilterOption.collisionFilter = bodyNodeFilter;
+
+  CollisionResult result;
+  ASSERT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  ASSERT_EQ(0u, result.getNumContacts());
+
+  CollisionOption unfilteredOption;
+  unfilteredOption.enableContact = true;
+  unfilteredOption.maxNumContacts = 4u;
+  result.clear();
+  ASSERT_TRUE(group->collide(unfilteredOption, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  auto customFilter
+      = std::make_shared<ToggleBodyNodeCollisionFilter>(body1, body2, false);
+  CollisionOption customFilterOption;
+  customFilterOption.enableContact = true;
+  customFilterOption.maxNumContacts = 4u;
+  customFilterOption.collisionFilter = customFilter;
+
+  result.clear();
+  ASSERT_TRUE(group->collide(customFilterOption, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
 #endif
 
 //==============================================================================

@@ -254,16 +254,23 @@ bool BulletCollisionDetector::collide(
 
   auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
       collisionWorld->getDispatcher());
+  dispatcher->setDone(false);
   dispatcher->setFilter(option.collisionFilter);
 
   const std::size_t filterRevision
       = getPersistentPairFilterRevision(option.collisionFilter.get());
-  if (option.collisionFilter
-      && (filterRevision == (std::numeric_limits<std::size_t>::max)()
-          || castedGroup->shouldFilterPersistentPairs(
-              option.collisionFilter.get(), filterRevision))) {
-    DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
-    filterOutCollisions(collisionWorld);
+  if (option.collisionFilter) {
+    if (filterRevision == (std::numeric_limits<std::size_t>::max)()) {
+      castedGroup->resetPersistentPairFilterCache();
+      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
+      filterOutCollisions(collisionWorld);
+    } else if (castedGroup->shouldFilterPersistentPairs(
+                   option.collisionFilter.get(), filterRevision)) {
+      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
+      filterOutCollisions(collisionWorld);
+    }
+  } else {
+    castedGroup->resetPersistentPairFilterCache();
   }
 
   {
