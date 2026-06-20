@@ -861,6 +861,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       = mAllRestingSnapshotCollisionFilter == collisionFilter
         && mAllRestingSnapshotCollisionFilterRevision
                == collisionFilterRevision;
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  const bool collisionDetectorUnchanged
+      = mAllRestingSnapshotCollisionDetector == collisionDetector.get()
+        && mAllRestingSnapshotCollisionGroup == collisionGroup.get();
 
   if (mAllRestingSnapshotReady && mAllRestingSnapshotHasMobileSkeleton
       && mAllRestingSnapshotStructuralVersion
@@ -871,7 +876,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
       && mAllRestingSnapshotDeactivationStateVersion
              == dynamics::Skeleton::getGlobalDeactivationStateVersion()
-      && collisionFilterUnchanged) {
+      && collisionDetectorUnchanged && collisionFilterUnchanged) {
     for (const auto& skel : mSkeletons) {
       if (skel->isMobile() && restingSkeletonNeedsWake(skel))
         return false;
@@ -879,7 +884,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return true;
   }
 
-  if (!collisionFilterUnchanged) {
+  if (!collisionDetectorUnchanged || !collisionFilterUnchanged) {
     markSnapshotStale();
     return false;
   }
@@ -993,6 +998,10 @@ void World::updateAllRestingSnapshotGlobalVersions()
       = dynamics::Skeleton::getGlobalExternalDisturbanceVersion();
   mAllRestingSnapshotDeactivationStateVersion
       = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  mAllRestingSnapshotCollisionDetector = collisionDetector.get();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  mAllRestingSnapshotCollisionGroup = collisionGroup.get();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
   mAllRestingSnapshotCollisionFilterRevision
@@ -1027,6 +1036,8 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingKinematicSnapshotValid = false;
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
+  mAllRestingSnapshotCollisionDetector = nullptr;
+  mAllRestingSnapshotCollisionGroup = nullptr;
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
 }

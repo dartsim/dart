@@ -76,6 +76,8 @@ class ConstraintSolver;
 } // namespace constraint
 
 namespace collision {
+class CollisionDetector;
+class CollisionGroup;
 class CollisionResult;
 } // namespace collision
 
@@ -487,6 +489,9 @@ protected:
   std::size_t mAllRestingSnapshotKinematicVersion = 0;
   std::size_t mAllRestingSnapshotExternalDisturbanceVersion = 0;
   std::size_t mAllRestingSnapshotDeactivationStateVersion = 0;
+  const collision::CollisionDetector* mAllRestingSnapshotCollisionDetector
+      = nullptr;
+  const collision::CollisionGroup* mAllRestingSnapshotCollisionGroup = nullptr;
   const collision::CollisionFilter* mAllRestingSnapshotCollisionFilter
       = nullptr;
   std::size_t mAllRestingSnapshotCollisionFilterRevision = 0;

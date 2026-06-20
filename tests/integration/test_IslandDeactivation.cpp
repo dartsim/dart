@@ -40,6 +40,8 @@
 
 #include "dart/simulation/DeactivationOptions.hpp"
 
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+
 #include <dart/dart.hpp>
 
 #include <TestHelpers.hpp>
@@ -1083,6 +1085,34 @@ TEST(IslandDeactivation, PublicCollisionFilterReportsRestingContacts)
   CollisionResult result;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+// Replacing the solver collision detector rebuilds the collision group. The
+// all-resting snapshot must notice that identity change and run collision on
+// the next step instead of repeatedly taking the no-contact fast path.
+TEST(IslandDeactivation, CollisionDetectorChangeWakesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::FCLCollisionDetector::create());
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "collision detector swap reused the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "collision detector swap did not wake the sleeping body";
 }
 
 //==============================================================================
