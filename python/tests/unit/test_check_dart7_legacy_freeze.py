@@ -335,6 +335,25 @@ def test_new_root_legacy_reexport_requires_bugfix_port_tag(tmp_path):
     assert any("dynamics.NewLegacyJoint" in m for m in messages)
 
 
+def test_new_same_line_root_legacy_reexport_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    stub = _write(
+        tmp_path / "python" / "stubs" / "dartpy" / "__init__.pyi",
+        "from .dynamics import ExistingJoint\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    stub.write_text(
+        "from .dynamics import ExistingJoint, NewLegacyJoint\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("dynamics.NewLegacyJoint" in m for m in messages)
+
+
 def test_new_legacy_stub_alias_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

@@ -505,27 +505,40 @@ def stub_context(stack: list[tuple[int, str]], indent: int) -> str:
 def collect_stub_reexports(
     entries: list[LegacyEntry], rel: str, lines: list[str]
 ) -> None:
-    import_module = ""
-    for index, line in enumerate(lines):
-        import_match = STUB_LEGACY_IMPORT_PATTERN.search(line)
-        if import_match:
-            import_module = import_match.group("module")
-            continue
-
-        if import_module:
-            if line.strip() == ")":
-                import_module = ""
+    def add_reexport_names(module: str, text: str, index: int) -> bool:
+        closes_import = ")" in text
+        text = text.replace("(", "").replace(")", "")
+        for candidate in text.split(","):
+            name = candidate.strip().split(" as ", 1)[0].strip()
+            if not name:
                 continue
-            name_match = STUB_IMPORT_NAME_PATTERN.search(line)
+            name_match = STUB_IMPORT_NAME_PATTERN.search(name)
             if name_match:
                 entries.append(
                     LegacyEntry(
                         "stub-reexport",
                         rel,
-                        f"{import_module}.{name_match.group('name')}",
+                        f"{module}.{name_match.group('name')}",
                         nearby_tag(lines, index),
                     )
                 )
+        return closes_import
+
+    import_module = ""
+    for index, line in enumerate(lines):
+        import_match = STUB_LEGACY_IMPORT_PATTERN.search(line)
+        if import_match:
+            import_module = import_match.group("module")
+            tail = line[import_match.end() :]
+            closes_import = add_reexport_names(import_module, tail, index)
+            if closes_import or "(" not in tail:
+                import_module = ""
+            continue
+
+        if import_module:
+            if add_reexport_names(import_module, line, index):
+                import_module = ""
+                continue
 
 
 def collect_stub_entries(root: Path) -> list[LegacyEntry]:
