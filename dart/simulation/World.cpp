@@ -849,8 +849,15 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   };
 
-  if (!mAllRestingKinematicSnapshotValid)
+  if (!mAllRestingKinematicSnapshotValid) {
+    for (const auto& skel : mSkeletons) {
+      if (skel->isMobile() && skel->isResting()) {
+        markSnapshotStale();
+        break;
+      }
+    }
     return false;
+  }
 
   if (mAllRestingKinematicSnapshot.size() != mSkeletons.size()) {
     markSnapshotStale();

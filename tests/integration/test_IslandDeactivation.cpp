@@ -898,6 +898,34 @@ TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)
 }
 
 //==============================================================================
+// If the all-resting snapshot is invalidated before a new snapshot is built,
+// support edits must still wake resting bodies on the next step.
+TEST(IslandDeactivation, WakeOnSupportShapeChangeAfterSnapshotInvalidation)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->setTimeStep(world->getTimeStep());
+  ASSERT_TRUE(sleeper->isResting());
+
+  auto* floorShapeNode = floor->getBodyNode(0)->getShapeNode(0);
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floorShapeNode->setRelativeTransform(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Joint-frame edits can change world geometry without changing generalized
 // positions. The all-resting snapshot must invalidate on the kinematic version
 // change and run a real collision pass.
