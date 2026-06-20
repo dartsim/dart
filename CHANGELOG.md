@@ -62,7 +62,8 @@
 
   * Keep opt-in parallel constraint-island solving on the serial path for
     manual constraints, custom contact constraints, custom LCP solvers, and
-    groups that share non-reactive bodies or skeletons across islands.
+    groups that share non-reactive bodies or skeletons across islands:
+    [#3111](https://github.com/dartsim/dart/pull/3111)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
