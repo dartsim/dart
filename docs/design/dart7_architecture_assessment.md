@@ -4,15 +4,16 @@
 
 Living assessment record. This document owns the durable, evidence-backed
 findings of the June 2026 DART 7 architecture review and the standing
-architecture rules derived from them. PLAN-091 executed the hardening packets
-from this assessment and is complete in
-[`../plans/dashboard.md`](../plans/dashboard.md). When a finding is resolved
-in code, update or remove its entry here and record the evidence; this file
-should always describe the current verified state, not a historical snapshot.
+architecture rules derived from them. PLAN-091 closed its living work-packet
+plan in [`../plans/dashboard.md`](../plans/dashboard.md), but that closeout
+does not mark every verified architecture gap below as resolved in code. When
+a finding is resolved, update or remove its entry here and record the evidence;
+this file should always describe the current verified state, not a historical
+snapshot.
 
-PLAN-091 closeout folded the living plan into durable owner docs instead of
-keeping the numbered plan as an archive. The durable operating state is now:
-this assessment owns the verified findings and standing rule;
+PLAN-091 closeout folded the completed packet plan into durable owner docs
+instead of keeping the numbered plan as an archive. The durable operating
+state is now: this assessment owns the verified findings and standing rule;
 [`../plans/solver-family-intake.md`](../plans/solver-family-intake.md) owns the
 new-family gate; [`simulation_solver_architecture.md`](simulation_solver_architecture.md)
 and

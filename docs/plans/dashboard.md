@@ -41,18 +41,18 @@ its own line so status updates remain git-history friendly.
   surface growth while current open release-6.20 PRs (#3071, #3086, #3092,
   #3105, and #3107) and any later release-lane ports finish. Final deletion of
   DART 6 legacy is not a WP-091.4 prerequisite; track that in PLAN-042
-  follow-up work after the release lane is settled.
-  Packets are orchestrator-authored per
-  [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
-  `dart-execute-packet`; availability follows each packet's own Dependencies
-  line. The standing rule applies now: new solver-family work routes through
-  [`solver-family-intake.md`](solver-family-intake.md) and does not bypass the
-  contracts this plan is landing.
-- Gate: A packet is done only when its named acceptance evidence exists and
-  its listed `pixi run ...` gates pass, with availability governed by the
-  per-packet Dependencies lines; plan completion follows the acceptance
-  criteria in the owner doc, including one new solver-family intake exercised
-  through the strengthened checklist without bypass.
+  follow-up work after the release lane is settled. No active PLAN-091 packets
+  remain; new solver-family work routes through
+  [`solver-family-intake.md`](solver-family-intake.md), unresolved
+  architecture findings remain in
+  [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md),
+  and follow-up implementation belongs to the active owner plan that selects
+  the work.
+- Gate: Closed. Durable evidence is the merged packet PR list above, the
+  standing solver-family intake gate, the moved cross-family metrics manifest
+  in `docs/design/dart7_cross_family_metrics_corpus.json`, and PLAN-042
+  Decision 5 for DART 6 legacy quarantine/removal sequencing. Future work uses
+  the gates of its active owner plan instead of PLAN-091 packet gates.
 
 ### PLAN-122: DART 7 Simulation-Loop Allocation Hardening
 

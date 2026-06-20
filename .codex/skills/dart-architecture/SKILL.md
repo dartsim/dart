@@ -44,8 +44,8 @@ contract yet, conceptual-only Model/State split, executor seam unused by
 dynamics stages, missing apples-to-apples substrate) and owns the standing
 rule: new solver families enter only through
 `docs/plans/solver-family-intake.md`, including contract conformance and
-machine-recorded solver identity in all benchmark evidence. PLAN-091 completed
-the first hardening packet series; current follow-up work routes through
+machine-recorded solver identity in all benchmark evidence. PLAN-091 retired
+the first living hardening packet plan; current follow-up work routes through
 `docs/plans/dashboard.md`, the intake checklist, and the durable owner docs
 named in the assessment. Do not write new code that copies a pattern the
 assessment still lists as a verified finding.
