@@ -298,9 +298,10 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   2026-06-19:** the accepted direction is to completely remove DART 6 legacy
   from the DART 7 public contract, while waiting until DART 6.20+ and any later
   `release-6.*` maintenance branches have fully ported the capabilities they
-  still need. Current open DART 6.20+ work observed at closeout includes PRs
-  #3071, #3086, #3088, and #3092; this is a snapshot, not an exhaustive removal
-  precondition, and more release-lane PRs may appear before final removal.
+  still need. Current open DART 6.20+ work observed while refreshing closeout
+  includes PRs #3071, #3086, #3092, #3105, and #3107; this is a snapshot, not
+  an exhaustive removal precondition, and more release-lane PRs may appear
+  before final removal.
 - Evidence: PR [#3095](https://github.com/dartsim/dart/pull/3095) landed
   PLAN-042 Decision 5 in
   [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md):
