@@ -19,13 +19,15 @@ scene::
     PYTHONPATH=build/default/cpp/Release/python:python \\
         .pixi/envs/default/bin/python python/examples/diff_system_identification.py
 
-Graceful degradation: differentiable support is an opt-in build flag
-(``DART_BUILD_DIFF``), and the default pixi build ships with it OFF. When it is
-*not compiled* the script prints a clear message and exits 0 instead of raising.
-On a ``DART_BUILD_DIFF=ON`` build the example must actually run: a failure of the
-differentiable API (or non-convergence) is reported and exits *nonzero* rather
-than being masked as "unavailable", so a DIFF-ON smoke run cannot pass silently
-while the example is broken.
+Exit-code contract: the script exits 0 in exactly two cases -- (1) ``dartpy``
+imports successfully but differentiable support is not compiled
+(``DART_BUILD_DIFF=OFF``, the default pixi build), where it prints a clear
+message instead of raising; and (2) a successful mass recovery on a
+``DART_BUILD_DIFF=ON`` build. Every other outcome exits *nonzero*: a ``dartpy``
+import/setup failure (broken ``PYTHONPATH``, missing or ABI-mismatched
+extension), a failure of the differentiable API, a non-finite result, or
+non-convergence. This keeps a DIFF-ON smoke run from passing while the example
+never actually ran.
 """
 
 from __future__ import annotations
@@ -186,10 +188,16 @@ def _identify_mass(sx: Any) -> dict[str, Any]:
 def main() -> int:
     try:
         import dartpy as sx
-    except Exception as exc:  # noqa: BLE001 - missing dartpy -> graceful exit
-        print(f"[diff-unavailable] dartpy could not be imported: {exc}")
-        print("  Set PYTHONPATH to the built dartpy and retry. Exiting 0.")
-        return 0
+    except Exception as exc:  # noqa: BLE001 - a dartpy import/setup failure is real
+        # A failed import means the example never ran; that is an error, not the
+        # graceful "feature not compiled" path (which is reached only after a
+        # successful import, below). Exit nonzero so a smoke run cannot pass here.
+        print(f"[error] dartpy could not be imported: {exc}")
+        print(
+            "  Set PYTHONPATH to the built dartpy; the example cannot run "
+            "without it."
+        )
+        return 1
 
     if not _diff_built(sx):
         print(
