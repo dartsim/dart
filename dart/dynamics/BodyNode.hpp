@@ -1336,6 +1336,10 @@ private:
       ConstShapePtr oldShape,
       ConstShapePtr newShape);
 
+  /// Notify listeners when a collidable ShapeNode's collision geometry changed
+  /// without adding/removing the Shape itself.
+  void handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode);
+
   friend class CollisionAspect;
   friend class ShapeNode;
   friend class ShapeFrame;

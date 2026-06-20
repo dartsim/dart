@@ -527,6 +527,9 @@ void BodyNode::handleCollisionShapeStateChange(
   if (!shape)
     return;
 
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
   if (isCollidable && !wasCollidable) {
     mColShapeAddedSignal.raise(this, shape);
   } else if (wasCollidable && !isCollidable) {
@@ -548,11 +551,31 @@ void BodyNode::handleCollisionShapeUpdated(
   if (collision == nullptr || !collision->getCollidable())
     return;
 
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
   if (oldShape)
     mColShapeRemovedSignal.raise(this, oldShape);
 
   if (newShape)
     mColShapeAddedSignal.raise(this, newShape);
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
 }
 
 //==============================================================================

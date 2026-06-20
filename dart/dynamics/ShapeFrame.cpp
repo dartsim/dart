@@ -361,6 +361,11 @@ void ShapeFrame::setShape(const ShapePtr& shape)
                 shape == this->ShapeFrame::mAspectProperties.mShape.get());
             DART_UNUSED(shape);
             this->incrementVersion();
+
+            if (auto* shapeNode = this->asShapeNode()) {
+              if (auto* bodyNode = shapeNode->getBodyNodePtr().get())
+                bodyNode->handleCollisionShapeGeometryUpdated(shapeNode);
+            }
           });
   }
 

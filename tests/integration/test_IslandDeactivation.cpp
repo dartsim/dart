@@ -183,6 +183,48 @@ WorldPtr makeSettlingComparisonWorld(bool deactivationEnabled)
   return world;
 }
 
+void stepUntilRestingFastPathReady(
+    World* world, const SkeletonPtr& sleeper, std::size_t maxSteps = 5000)
+{
+  const std::size_t settled
+      = stepUntil(world, maxSteps, [&]() { return sleeper->isResting(); });
+  ASSERT_LT(settled, maxSteps);
+  ASSERT_TRUE(sleeper->isResting());
+
+  for (std::size_t i = 0; i < 1000; ++i) {
+    world->step();
+    if (world->getLastCollisionResult().getNumContacts() == 0)
+      break;
+  }
+
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(sleeper->isResting());
+
+  // Exercise the cached all-resting step once before mutating support geometry.
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(sleeper->isResting());
+}
+
+void expectSleeperFallsAfterSupportEdit(
+    World* world, const SkeletonPtr& sleeper)
+{
+  const double zBefore
+      = sleeper->getBodyNode(0)->getTransform().translation().z();
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "support edit did not wake the sleeping dynamic body";
+
+  for (std::size_t i = 0; i < 40; ++i)
+    world->step();
+
+  const double zAfter
+      = sleeper->getBodyNode(0)->getTransform().translation().z();
+  EXPECT_LT(zAfter, zBefore - 1e-4)
+      << "unsupported body did not resume falling";
+}
+
 } // namespace
 
 //==============================================================================
@@ -450,23 +492,7 @@ TEST(IslandDeactivation, WakeOnStaticPoseChange)
   blocker->setMobile(false);
   world->addSkeleton(blocker);
 
-  const std::size_t settled
-      = stepUntil(world.get(), 5000, [&]() { return sleeper->isResting(); });
-  ASSERT_LT(settled, 5000u);
-  ASSERT_TRUE(sleeper->isResting());
-
-  for (std::size_t i = 0; i < 1000; ++i) {
-    world->step();
-    if (world->getLastCollisionResult().getNumContacts() == 0)
-      break;
-  }
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
-  ASSERT_TRUE(sleeper->isResting());
-
-  // Exercise the cached all-resting step once before mutating the static body.
-  world->step();
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
-  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
 
   Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
   moved.translation() = Eigen::Vector3d(kBoxSize * 0.25, 0, kHalf);
@@ -477,6 +503,83 @@ TEST(IslandDeactivation, WakeOnStaticPoseChange)
       << "static pose edit was hidden by the all-resting fast path";
   EXPECT_FALSE(sleeper->isResting())
       << "static pose edit did not wake the sleeping dynamic body";
+}
+
+//==============================================================================
+// Removing a static support must wake sleeping bodies before the no-contact
+// solver path can preserve stale resting flags.
+TEST(IslandDeactivation, WakeOnSupportRemoved)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->removeSkeleton(floor);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Disabling collision on an immobile support changes the physical contact set
+// even though the support skeleton itself is not mobile.
+TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  floor->getBodyNode(0)->setCollidable(false);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Collision-shape edits under a static support must invalidate the all-resting
+// snapshot even when the static skeleton pose itself does not change.
+TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* floorShapeNode = floor->getBodyNode(0)->getShapeNode(0);
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floorShapeNode->setRelativeTransform(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(
+      stepUntilRestingFastPathReady(world.get(), sleeper, 8000));
+
+  auto floorBox
+      = std::dynamic_pointer_cast<BoxShape>(floorShapeNode->getShape());
+  ASSERT_TRUE(floorBox);
+  floorBox->setSize(Eigen::Vector3d(10.0, 10.0, 0.02));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
 }
 
 //==============================================================================

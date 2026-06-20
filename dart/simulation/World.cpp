@@ -820,6 +820,12 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return true;
   }
 
+  if (mAllRestingSnapshotDeactivationStateVersion
+      != dynamics::Skeleton::getGlobalDeactivationStateVersion()) {
+    markSnapshotStale();
+    return false;
+  }
+
   bool hasMobileSkeleton = false;
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
@@ -1092,6 +1098,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   // Remove _skeleton from constraint handler.
   mConstraintSolver->removeSkeleton(_skeleton);
   invalidateAllRestingKinematicSnapshot();
+  wakeRestingSkeletonsForWorldChange();
 
   // Remove _skeleton from mSkeletons
   mSkeletons.erase(

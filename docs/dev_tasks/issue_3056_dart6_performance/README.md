@@ -123,3 +123,10 @@ bug until proven otherwise.
   `test_IslandDeactivation`, `test_World`, and `test_ContactSurface`, ran those
   three focused tests through CTest, ran a 3-object `contact_benchmark` smoke,
   and ran `pixi run lint`.
+- For the PR2 Codex support-edit review, collision geometry/collidability
+  edits now invalidate the all-resting cache, support removal wakes remaining
+  sleepers, and `test_IslandDeactivation` covers support removal, support
+  collidability disable, and support shape transform/resize. Rebuilt
+  `contact_benchmark`, `test_IslandDeactivation`, `test_World`, and
+  `test_ContactSurface`; CTest passed the three focused tests; the 3-object
+  `contact_benchmark` smoke advanced time with finite final state.
