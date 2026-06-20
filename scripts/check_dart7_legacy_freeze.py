@@ -393,6 +393,8 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
             current_enum = ""
             declaration_buffer = ""
             declaration_start = 0
+            member_buffer = ""
+            member_start = 0
             for index, line in enumerate(lines):
                 code = code_without_comment(line).strip()
                 if "nb::class_" in code or "nb::enum_" in code:
@@ -434,6 +436,17 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                 if declaration_buffer and ";" in code:
                     declaration_buffer = ""
 
+                if re.search(
+                    r"\.(?:def|def_property|def_readwrite|def_readonly)", code
+                ):
+                    member_buffer = code
+                    member_start = index
+                elif member_buffer:
+                    member_buffer = f"{member_buffer} {code}".strip()
+
+                member_search_line = member_buffer or line
+                member_search_index = member_start if member_buffer else index
+
                 enum_value_match = BINDING_ENUM_VALUE_PATTERN.search(line)
                 if enum_value_match and current_enum:
                     entries.append(
@@ -467,16 +480,19 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                         )
                     )
 
-                member_match = BINDING_MEMBER_PATTERN.search(line)
+                member_match = BINDING_MEMBER_PATTERN.search(member_search_line)
                 if member_match:
                     entries.append(
                         LegacyEntry(
                             "binding-" + member_match.group("kind"),
                             rel_path,
                             f"{current_class}.{member_match.group('name')}",
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, member_search_index),
                         )
                     )
+                    member_buffer = ""
+                elif member_buffer and ";" in code:
+                    member_buffer = ""
     return entries
 
 

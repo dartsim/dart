@@ -247,6 +247,31 @@ void bind(nb::module_& m) {
     assert any("NewLegacyJoint.new_method" in m for m in messages)
 
 
+def test_new_legacy_multiline_binding_member_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+    _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::class_<NewLegacyJoint>(m, "NewLegacyJoint")
+      .def(
+          "new_method",
+          [] {});
+}
+""",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NewLegacyJoint.new_method" in m for m in messages)
+
+
 def test_new_legacy_enum_binding_and_attr_require_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
