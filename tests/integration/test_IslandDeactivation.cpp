@@ -1809,6 +1809,33 @@ TEST(IslandDeactivation, DisturbanceFalseForZeroDof)
 }
 
 //==============================================================================
+// A reset step must clear body-level external wrenches even when they have no
+// generalized-force projection. Otherwise quiet zero-DOF or constrained bodies
+// can carry a stale BodyNode::mFext after World::step(true).
+TEST(IslandDeactivation, ResetCommandClearsUnprojectedBodyExternalForce)
+{
+  auto world = World::create();
+  DeactivationOptions disabled;
+  disabled.mEnabled = false;
+  world->setDeactivationOptions(disabled);
+
+  auto floor = createFloor(); // WeldJoint to world => zero DOFs
+  floor->setMobile(true);
+  ASSERT_EQ(floor->getNumDofs(), 0u);
+  auto* body = floor->getBodyNode(0);
+  ASSERT_TRUE(body);
+  world->addSkeleton(floor);
+
+  body->setExtForce(Eigen::Vector3d::UnitZ());
+  ASSERT_FALSE(body->getExternalForceLocal().isZero(0.0));
+  EXPECT_FALSE(floor->hasExternalDisturbance());
+
+  world->step(true);
+  EXPECT_TRUE(body->getExternalForceLocal().isZero(0.0))
+      << "resetCommand should clear quiet body external forces";
+}
+
+//==============================================================================
 // Disabling deactivation must clear any existing resting state so subsequent
 // steps process every skeleton normally.
 TEST(IslandDeactivation, DisablingClearsRestState)

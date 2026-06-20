@@ -3989,6 +3989,7 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
   const std::size_t nDofs = getNumDofs();
   bool disturbed = false;
   bool hasResidualExternalForces = false;
+  bool hasResidualBodyExternalForces = false;
   bool hasResidualDofForces = false;
   bool hasResidualCommands = false;
 
@@ -3998,6 +3999,17 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
     if (externalForces.size() > 0) {
       hasResidualExternalForces = !externalForces.isZero(0.0);
       disturbed = externalForces.cwiseAbs().maxCoeff() > tolerance;
+    }
+  }
+
+  if (_resetCommand) {
+    // A body wrench can project to zero generalized force (for example on a
+    // zero-DOF or constrained body) but still needs to honor resetCommand.
+    for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+      if (!bodyNode->getExternalForceLocal().isZero(0.0)) {
+        hasResidualBodyExternalForces = true;
+        break;
+      }
     }
   }
 
@@ -4028,8 +4040,12 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
     return true;
 
   if (_resetCommand) {
-    if (hasResidualExternalForces)
+    if (hasResidualExternalForces || hasResidualBodyExternalForces) {
       clearExternalForces();
+      // Refresh the projection cache so the quiet version is recorded below,
+      // including zero-DOF skeletons whose projection is always empty.
+      getExternalForces();
+    }
     if (hasResidualDofForces)
       clearInternalForces();
     if (hasResidualCommands)
