@@ -247,6 +247,10 @@ python scripts/check_dart7_promotion_installed_package.py \
 check-dartpy-import-layout = { cmd = "python scripts/check_dartpy_import_layout.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
+lint-dart7-legacy-freeze = { cmd = [
+  "python",
+  "scripts/check_dart7_legacy_freeze.py",
+] }
 lint-compute-backend-boundaries = { cmd = [
   "python",
   "scripts/check_compute_backend_boundaries.py",
@@ -309,6 +313,7 @@ lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-native-collision-superset",
   "lint-api-boundaries",
+  "lint-dart7-legacy-freeze",
   "lint-compute-backend-boundaries",
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
@@ -367,6 +372,18 @@ check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 check-dart7-clean-break-policy = { cmd = [
   "python",
   "scripts/check_dart7_clean_break_policy.py",
+] }
+
+check-dart7-legacy-freeze = { cmd = [
+  "python",
+  "scripts/check_dart7_legacy_freeze.py",
+] }
+check-dart7-legacy-freeze-meta = { cmd = [
+  "python",
+  "-m",
+  "pytest",
+  "python/tests/unit/test_check_dart7_legacy_freeze.py",
+  "-q",
 ] }
 
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
@@ -435,6 +452,8 @@ check-lint = { depends-on = [
   "check-native-collision-superset",
   "check-docs-policy",
   "check-dart7-clean-break-policy",
+  "check-dart7-legacy-freeze",
+  "check-dart7-legacy-freeze-meta",
   "check-dart7-promotion-surface",
   "check-dart7-promotion-package-contract",
   "check-dart7-world-promotion-blockers",
@@ -2544,6 +2563,7 @@ lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "lint-api-boundaries",
+  "lint-dart7-legacy-freeze",
   "lint-lcp-solver-roster",
   "sync-ai-commands",
 ] }
@@ -2567,6 +2587,8 @@ check-lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-docs-policy",
   "check-dart7-clean-break-policy",
+  "check-dart7-legacy-freeze",
+  "check-dart7-legacy-freeze-meta",
   "check-api-boundaries",
   "check-lcp-solver-roster",
   "check-ai-commands",

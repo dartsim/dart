@@ -548,6 +548,8 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
+    # Reusable RST fragments pulled in via ``.. include::``; not standalone docs.
+    "_includes",
 ]
 
 
@@ -562,6 +564,9 @@ html_theme_options = {
     "logo_only": True,
 }
 html_extra_path = ["_generated"]
+
+# Site-local stylesheet: version-notice banner and User Guide card grid.
+html_css_files = ["css/custom.css"]
 
 # Setting for multi language
 source_encoding = "utf-8"

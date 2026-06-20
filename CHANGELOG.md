@@ -221,6 +221,11 @@ compatibility remains on the active DART 6 LTS branch._
 - Hardened `dart::gui` debug overlays so zero-motion selection and force-drag
   gestures in `py-demos` skip degenerate primitives instead of tripping
   Filament's empty-AABB precondition.
+- Added a DART 7 **User Guide** to the documentation site — a Python-first walk
+  from "Hello, DART" through the World, rigid bodies, articulated systems,
+  contacts, solvers, and visualization — and a site-wide version notice (plus a
+  README callout) that distinguishes the in-development DART 7 docs from the
+  stable DART 6 LTS site.
 - Added a standalone, torch-free differentiable system-identification example
   (`python/examples/diff_system_identification.py`) that recovers an unknown
   rigid-body mass by gradient descent on the mass parameter Jacobian from

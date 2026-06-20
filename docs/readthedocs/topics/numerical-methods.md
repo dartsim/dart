@@ -1,5 +1,14 @@
 # Numerical Methods Primer
 
+```{admonition} DART 6 code — DART 7 update pending
+:class: caution
+
+The concepts on this page are version-independent, but the **code examples use
+the DART 6 API** and have not yet been updated for DART 7. For DART 7 material
+that is ready today, see the {doc}`User Guide </user_guide/index>`. Porting is
+tracked in the [documentation migration plan](https://github.com/dartsim/dart/blob/main/docs/onboarding/dart7-docs-migration.md).
+```
+
 ## Why this exists
 
 If a simulation “explodes”, jitters, or drifts, the root cause is often
