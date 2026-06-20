@@ -45,6 +45,10 @@ CPP_TYPEDEF_ALIAS_PATTERN = re.compile(
     r"^\s*(?:template\s*<[^>]+>\s*)?typedef\b.*\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*;"
 )
+CPP_SMART_POINTER_MACRO_PATTERN = re.compile(
+    r"^\s*DART_COMMON_DECLARE_(?:SHARED_WEAK|SMART_POINTERS)"
+    r"\(\s*(?P<name>[A-Za-z_]\w*)\s*\)"
+)
 CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
@@ -413,6 +417,23 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                 if enum_stack and enum_stack[-1][2] and not in_detail_namespace:
                     add_cpp_enum_values(
                         entries, rel_path, enum_stack[-1][0], line, lines, index
+                    )
+
+                smart_pointer_macro_match = CPP_SMART_POINTER_MACRO_PATTERN.search(line)
+                if (
+                    smart_pointer_macro_match
+                    and not in_detail_namespace
+                    and not class_stack
+                    and not enum_stack
+                ):
+                    entries.append(
+                        LegacyEntry(
+                            "cpp-smart-pointer-macro",
+                            rel_path,
+                            smart_pointer_macro_match.group("name"),
+                            nearby_tag(lines, index),
+                            code.strip(),
+                        )
                     )
 
                 type_match = CPP_TYPE_PATTERN.search(line)
