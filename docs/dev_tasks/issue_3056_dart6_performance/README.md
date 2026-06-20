@@ -90,6 +90,14 @@ speedup.
 - Current PR2 custom-filter fix disables all-resting snapshot reuse for filters
   whose decision state is not revision-tracked, so stateful custom filters
   cannot hide changed contact decisions behind the cached fast path.
+- Parallel-safety follow-up: open PR #3071 is related but predates the current
+  `setNumSimulationThreads` / `ConstraintThreadPool` path from #3086 and now
+  conflicts heavily with `release-6.20`. The useful part is a correctness gate,
+  not the obsolete API: opt-in parallel island solving should stay serial when
+  manual constraints, custom contact constraints, custom LCP solvers, or shared
+  non-reactive bodies/skeletons make island independence uncertain. This
+  follow-up does not claim an RTF speedup; it protects fidelity before more
+  parallel performance work.
 
 ## Default-On Correctness Rule
 
@@ -111,7 +119,12 @@ bug until proven otherwise.
    separate review from PR1 because PR1's per-pair cap is a measurement and
    control knob, while this follow-up must preserve contact-patch fidelity well
    enough to justify default-on behavior.
-5. Later PRs: larger backend swaps or DART 7 native collision detector ports,
+5. Parallel-safety follow-up: keep #3086's opt-in independent-island solve on
+   the serial path when solver type, manual/custom constraints, or shared
+   non-reactive dependencies make parallel independence uncertain. This is a
+   correctness-preserving prerequisite for later parallel speedups, not a
+   performance-claim PR.
+6. Later PRs: larger backend swaps or DART 7 native collision detector ports,
    only after available collision-engine comparisons show the dependency and
    correctness tradeoffs clearly.
 
@@ -192,3 +205,8 @@ bug until proven otherwise.
   through focused CTest.
 - For the PR2 Codex custom-filter review, rebuilt `test_IslandDeactivation` and
   passed the focused CTest after adding a stateful custom-filter regression.
+- For the parallel-safety follow-up, built `test_ConstraintSolver` and
+  `test_World`, passed focused new tests covering exact built-in LCP solvers,
+  randomized PGS, manual constraints, custom contact constraints, and shared
+  non-reactive dependencies, then passed both integration test binaries through
+  focused CTest.

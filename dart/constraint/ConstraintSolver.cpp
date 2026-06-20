@@ -45,6 +45,8 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -63,6 +65,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -74,23 +77,29 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
-bool isExactDefaultContactSurfaceHandler(
-    const ContactSurfaceHandlerPtr& handler)
+template <typename ExactT, typename DynamicT>
+bool isExactDynamicType(const DynamicT* object)
 {
-  if (handler == nullptr)
+  if (object == nullptr)
     return false;
 
 #if defined(__clang__)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
 #endif
-  const bool isExactDefault
-      = typeid(*handler) == typeid(DefaultContactSurfaceHandler);
+  const bool isExact = typeid(*object) == typeid(ExactT);
 #if defined(__clang__)
   #pragma clang diagnostic pop
 #endif
 
-  return isExactDefault;
+  return isExact;
+}
+
+//==============================================================================
+bool isExactDefaultContactSurfaceHandler(
+    const ContactSurfaceHandlerPtr& handler)
+{
+  return isExactDynamicType<DefaultContactSurfaceHandler>(handler.get());
 }
 
 //==============================================================================
@@ -101,15 +110,40 @@ bool isRandomizedPgsSolver(const ConstBoxedLcpSolverPtr& solver)
 }
 
 //==============================================================================
-bool usesRandomizedPgsSolver(const ConstraintSolver& solver)
+template <typename Solver>
+bool isExactBoxedSolverType(const ConstBoxedLcpSolverPtr& solver)
+{
+  return isExactDynamicType<Solver>(solver.get());
+}
+
+//==============================================================================
+bool isParallelSafeBuiltInBoxedSolver(const ConstBoxedLcpSolverPtr& solver)
+{
+  if (isExactBoxedSolverType<DantzigBoxedLcpSolver>(solver))
+    return true;
+
+  if (!isExactBoxedSolverType<PgsBoxedLcpSolver>(solver))
+    return false;
+
+  return !isRandomizedPgsSolver(solver);
+}
+
+//==============================================================================
+bool canUseParallelBuiltInBoxedSolvers(const ConstraintSolver& solver)
 {
   const auto* boxedSolver
       = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
   if (boxedSolver == nullptr)
     return false;
 
-  return isRandomizedPgsSolver(boxedSolver->getBoxedLcpSolver())
-         || isRandomizedPgsSolver(boxedSolver->getSecondaryBoxedLcpSolver());
+  if (!isParallelSafeBuiltInBoxedSolver(boxedSolver->getBoxedLcpSolver()))
+    return false;
+
+  const auto secondarySolver = boxedSolver->getSecondaryBoxedLcpSolver();
+  if (secondarySolver == nullptr)
+    return true;
+
+  return isParallelSafeBuiltInBoxedSolver(secondarySolver);
 }
 
 //==============================================================================
@@ -1427,15 +1461,137 @@ void ConstraintSolver::solveConstrainedGroups()
       solveConstrainedGroup(mConstrainedGroups[i]);
     };
 
+    auto solveGroupsSerial = [&]() {
+      for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+        solveGroupAt(i);
+    };
+
+    auto hasCustomContactConstraint = [&]() {
+      for (const auto& group : mConstrainedGroups) {
+        for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+          const auto* constraint = group.getConstraint(i).get();
+          const auto* contact
+              = dynamic_cast<const ContactConstraint*>(constraint);
+          if (contact != nullptr
+              && !isExactDynamicType<ContactConstraint>(contact))
+            return true;
+        }
+      }
+
+      return false;
+    };
+
+    auto hasSharedNonReactiveDependency = [&]() {
+      std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
+      std::unordered_map<const dynamics::Skeleton*, std::size_t>
+          touchedSkeletonToGroup;
+      std::unordered_map<const dynamics::Skeleton*, std::size_t>
+          nonReactiveSkeletonToGroup;
+
+      auto touchesSharedDependency
+          = [&](const dynamics::BodyNode* body, std::size_t groupIndex) {
+              if (body == nullptr)
+                return false;
+
+              const auto skeleton = body->getSkeleton().get();
+              if (skeleton != nullptr) {
+                const auto nonReactiveSkeleton
+                    = nonReactiveSkeletonToGroup.find(skeleton);
+                if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
+                    && nonReactiveSkeleton->second != groupIndex) {
+                  return true;
+                }
+
+                const auto touchedSkeleton
+                    = touchedSkeletonToGroup.emplace(skeleton, groupIndex);
+                if (!body->isReactive() && !touchedSkeleton.second
+                    && touchedSkeleton.first->second != groupIndex) {
+                  return true;
+                }
+              }
+
+              if (body->isReactive())
+                return false;
+
+              const auto bodyResult = bodyToGroup.emplace(body, groupIndex);
+              if (!bodyResult.second && bodyResult.first->second != groupIndex)
+                return true;
+
+              if (skeleton == nullptr)
+                return false;
+
+              const auto skeletonResult
+                  = nonReactiveSkeletonToGroup.emplace(skeleton, groupIndex);
+              return !skeletonResult.second
+                     && skeletonResult.first->second != groupIndex;
+            };
+
+      for (std::size_t groupIndex = 0; groupIndex < mConstrainedGroups.size();
+           ++groupIndex) {
+        const auto& group = mConstrainedGroups[groupIndex];
+        for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+          const auto* constraint = group.getConstraint(i).get();
+
+          if (const auto* contact
+              = dynamic_cast<const ContactConstraint*>(constraint)) {
+            if (touchesSharedDependency(contact->mBodyNodeA, groupIndex)
+                || touchesSharedDependency(contact->mBodyNodeB, groupIndex)) {
+              return true;
+            }
+          }
+
+          if (const auto* softContact
+              = dynamic_cast<const SoftContactConstraint*>(constraint)) {
+            if (touchesSharedDependency(softContact->mBodyNode1, groupIndex)
+                || touchesSharedDependency(
+                    softContact->mBodyNode2, groupIndex)) {
+              return true;
+            }
+          }
+
+          if (const auto* dynamicJoint
+              = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
+            if (touchesSharedDependency(
+                    dynamicJoint->getBodyNode1(), groupIndex)
+                || touchesSharedDependency(
+                    dynamicJoint->getBodyNode2(), groupIndex)) {
+              return true;
+            }
+          }
+
+          if (const auto* joint
+              = dynamic_cast<const JointConstraint*>(constraint)) {
+            if (touchesSharedDependency(joint->mBodyNode, groupIndex))
+              return true;
+          }
+
+          if (const auto* mimicMotor
+              = dynamic_cast<const MimicMotorConstraint*>(constraint)) {
+            if (touchesSharedDependency(mimicMotor->mBodyNode, groupIndex))
+              return true;
+          }
+
+          if (const auto* jointFriction
+              = dynamic_cast<const JointCoulombFrictionConstraint*>(
+                  constraint)) {
+            if (touchesSharedDependency(jointFriction->mBodyNode, groupIndex))
+              return true;
+          }
+        }
+      }
+
+      return false;
+    };
+
     if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
-        && mConstrainedGroups.size() >= 128u
-        && !usesRandomizedPgsSolver(*this)) {
+        && mConstrainedGroups.size() >= 128u && mManualConstraints.empty()
+        && canUseParallelBuiltInBoxedSolvers(*this)
+        && !hasCustomContactConstraint() && !hasSharedNonReactiveDependency()) {
       DART_PROFILE_SCOPED_N("parallel solve groups");
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
     } else {
-      for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
-        solveGroupAt(i);
+      solveGroupsSerial();
     }
 
     return;
