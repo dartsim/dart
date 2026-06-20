@@ -241,19 +241,42 @@ def test_docs_ai_frontmatter_pilot_requires_type_and_owner(tmp_path):
     ai_dir.mkdir(parents=True)
     for filename in module.DOCS_AI_FRONTMATTER_FILES:
         (ai_dir / filename).write_text(
-            "---\ntype: ai-policy\nowner: self\n---\n# Title\n",
+            "---\ntype: ai-principles\nowner: self\n---\n# Title\n",
             encoding="utf-8",
         )
 
     assert module.check_ai_doc_frontmatter(tmp_path) == []
 
     (ai_dir / "principles.md").write_text(
-        "---\ntype: ai-policy\n---\n# Principles\n",
+        "---\ntype: ai-principles\n---\n# Principles\n",
         encoding="utf-8",
     )
     failures = module.check_ai_doc_frontmatter(tmp_path)
     assert any(
         "principles.md: missing frontmatter field `owner`" in f for f in failures
+    )
+
+
+def test_docs_ai_frontmatter_rejects_out_of_legend_type(tmp_path):
+    module = _load_module()
+    ai_dir = tmp_path / "docs" / "ai"
+    ai_dir.mkdir(parents=True)
+    for filename in module.DOCS_AI_FRONTMATTER_FILES:
+        (ai_dir / filename).write_text(
+            "---\ntype: ai-principles\nowner: self\n---\n# Title\n",
+            encoding="utf-8",
+        )
+
+    assert module.check_ai_doc_frontmatter(tmp_path) == []
+
+    (ai_dir / "principles.md").write_text(
+        "---\ntype: ai-bogus\nowner: self\n---\n# Principles\n",
+        encoding="utf-8",
+    )
+    failures = module.check_ai_doc_frontmatter(tmp_path)
+    assert any(
+        "principles.md: frontmatter `type` not in legend: `ai-bogus`" in f
+        for f in failures
     )
 
 
@@ -263,11 +286,11 @@ def test_docs_ai_frontmatter_rejects_extra_mutable_fields(tmp_path):
     ai_dir.mkdir(parents=True)
     for filename in module.DOCS_AI_FRONTMATTER_FILES:
         (ai_dir / filename).write_text(
-            "---\ntype: ai-policy\nowner: self\n---\n# Title\n",
+            "---\ntype: ai-principles\nowner: self\n---\n# Title\n",
             encoding="utf-8",
         )
     (ai_dir / "north-star.md").write_text(
-        "---\ntype: ai-policy\nowner: self\nstatus: active\n---\n# North Star\n",
+        "---\ntype: ai-principles\nowner: self\nstatus: active\n---\n# North Star\n",
         encoding="utf-8",
     )
 
@@ -285,7 +308,7 @@ def test_docs_ai_frontmatter_normalizes_quoted_owner_self(tmp_path):
     for filename in module.DOCS_AI_FRONTMATTER_FILES:
         owner = '"self"' if filename == "principles.md" else "self"
         (ai_dir / filename).write_text(
-            f"---\ntype: ai-policy\nowner: {owner}\n---\n# Title\n",
+            f"---\ntype: ai-principles\nowner: {owner}\n---\n# Title\n",
             encoding="utf-8",
         )
 
@@ -300,7 +323,7 @@ def test_docs_ai_frontmatter_resolves_owner_links(tmp_path):
     for filename in module.DOCS_AI_FRONTMATTER_FILES:
         owner = "README.md" if filename == "principles.md" else "self"
         (ai_dir / filename).write_text(
-            f"---\ntype: ai-policy\nowner: {owner}\n---\n# Title\n",
+            f"---\ntype: ai-principles\nowner: {owner}\n---\n# Title\n",
             encoding="utf-8",
         )
 
@@ -313,11 +336,11 @@ def test_docs_ai_frontmatter_roster_rejects_unlisted_markdown_doc(tmp_path):
     ai_dir.mkdir(parents=True)
     for filename in module.DOCS_AI_FRONTMATTER_FILES:
         (ai_dir / filename).write_text(
-            "---\ntype: ai-policy\nowner: self\n---\n# Title\n",
+            "---\ntype: ai-principles\nowner: self\n---\n# Title\n",
             encoding="utf-8",
         )
     (ai_dir / "extra.md").write_text(
-        "---\ntype: ai-policy\nowner: self\n---\n# Extra\n",
+        "---\ntype: ai-principles\nowner: self\n---\n# Extra\n",
         encoding="utf-8",
     )
 
