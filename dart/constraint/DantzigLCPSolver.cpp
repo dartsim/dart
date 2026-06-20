@@ -36,8 +36,8 @@
 #include "dart/common/Macros.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
 #include "dart/lcpsolver/Lemke.hpp"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -68,7 +68,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   if (0u == n)
     return;
 
-  int nSkip = dPAD(n);
+  int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   double* A = new double[n * nSkip];
   double* x = new double[n];
   double* b = new double[n];
@@ -154,8 +154,9 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   //  print(n, A, x, lo, hi, b, w, findex);
   //  std::cout << std::endl;
 
-  // Solve LCP using ODE's Dantzig algorithm
-  external::ode::dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
+  // Solve LCP using the DART-owned native Dantzig kernel.
+  ::dart::lcpsolver::dantzig::solveLcp<double>(
+      static_cast<int>(n), A, x, b, w, 0, lo, hi, findex);
 
   // Print LCP formulation
   //  dtdbg << "After solve:" << std::endl;
@@ -183,7 +184,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //==============================================================================
 bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
 {
-  std::size_t nSkip = dPAD(_n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(_n));
   for (std::size_t i = 0; i < _n; ++i) {
     for (std::size_t j = 0; j < _n; ++j) {
       if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
@@ -211,7 +212,7 @@ bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
 bool DantzigLCPSolver::isSymmetric(
     std::size_t _n, double* _A, std::size_t _begin, std::size_t _end)
 {
-  std::size_t nSkip = dPAD(_n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(_n));
   for (std::size_t i = _begin; i <= _end; ++i) {
     for (std::size_t j = _begin; j <= _end; ++j) {
       if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6) {
@@ -246,7 +247,7 @@ void DantzigLCPSolver::print(
     double* w,
     int* findex)
 {
-  std::size_t nSkip = dPAD(_n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(_n));
   std::cout << "A: " << std::endl;
   for (std::size_t i = 0; i < _n; ++i) {
     for (std::size_t j = 0; j < nSkip; ++j) {

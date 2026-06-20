@@ -32,11 +32,13 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "dart/lcpsolver/dantzig/DantzigMatrix.hpp"
+#include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 #include "dart/math/Constants.hpp"
 
 #include <Eigen/Dense>
+
+#include <algorithm>
 
 #include <cmath>
 #include <cstring>
@@ -87,7 +89,7 @@ bool PgsBoxedLcpSolver::solve(
     int* findex,
     bool /*earlyTermination*/)
 {
-  const int nskip = dPAD(n);
+  const int nskip = ::dart::lcpsolver::dantzig::padding(n);
   static thread_local std::vector<int> cacheOrder;
   static thread_local std::vector<double> cacheD;
 
@@ -97,8 +99,8 @@ bool PgsBoxedLcpSolver::solve(
     cacheD.resize(n);
     std::fill(cacheD.begin(), cacheD.end(), 0);
 
-    external::ode::dFactorLDLT(A, cacheD.data(), n, nskip);
-    external::ode::dSolveLDLT(A, cacheD.data(), b, n, nskip);
+    ::dart::lcpsolver::dantzig::factorLdlt(A, cacheD.data(), n, nskip);
+    ::dart::lcpsolver::dantzig::solveLdlt(A, cacheD.data(), b, n, nskip);
     std::memcpy(x, b, n * sizeof(double));
 
     return true;
@@ -175,7 +177,7 @@ bool PgsBoxedLcpSolver::solve(
       if ((iter & 7) == 0) {
         for (std::size_t i = 1; i < cacheOrder.size(); ++i) {
           const int tmp = cacheOrder[i];
-          const int swapi = external::ode::dRandInt(i + 1);
+          const int swapi = ::dart::lcpsolver::dantzig::randomInt(i + 1);
           cacheOrder[i] = cacheOrder[swapi];
           cacheOrder[swapi] = tmp;
         }
@@ -234,7 +236,7 @@ bool PgsBoxedLcpSolver::solve(
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {
-  const int nskip = dPAD(n);
+  const int nskip = ::dart::lcpsolver::dantzig::padding(n);
 
   // Return false if A has zero-diagonal or A is nonsymmetric matrix
   for (auto i = 0; i < n; ++i) {
