@@ -63,9 +63,9 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ sudo apt install \
-      coinor-libipopt-dev freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
+      freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
       libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
-      libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
+      libopenscenegraph-dev liboctomap-dev libode-dev \
       libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
       opencl-clhpp-headers
 
@@ -83,7 +83,7 @@ The following command will install the optional dependencies:
 
 .. code-block:: bash
 
-   $ brew install bullet freeglut ipopt nlopt octomap ode \
+   $ brew install bullet freeglut octomap ode \
       open-scene-graph --HEAD \
       spdlog tinyxml2 urdfdom yaml-cpp
 
@@ -102,8 +102,8 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ vcpkg install --triplet x64-windows \
-      assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 nlopt ode \
-      opencl opengl osg pagmo2 pybind11 tinyxml2 urdfdom yaml-cpp
+      assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 ode \
+      opencl opengl osg pybind11 tinyxml2 urdfdom yaml-cpp
 
 Arch Linux (experimental)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -120,8 +120,8 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ yay -S \
-      bullet coin-or-ipopt freeglut nlopt octomap ode opencl-clhpp \
-      opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
+      bullet freeglut octomap ode opencl-clhpp \
+      opencl-headers opencl-icd-loader openscenegraph spdlog tinyxml2 \
       urdfdom pybind11
 
 FreeBSD (experimental)
@@ -149,13 +149,9 @@ Here's a summary of the dependencies required to build DART (WIP):
 +----------------+----------+---------+--------------+-------+
 | Bullet         | No       | Runtime | 3.06         |       |
 +----------------+----------+---------+--------------+-------+
-| Ipopt          | No       | Runtime | 3.11.9       |       |
-+----------------+----------+---------+--------------+-------+
 | Octomap        | No       | Runtime | 1.9.7        |       |
 +----------------+----------+---------+--------------+-------+
 | ODE            | No       | Runtime | 0.16.2       |       |
-+----------------+----------+---------+--------------+-------+
-| Pagmo          | No       | Runtime | 2.18.0       |       |
 +----------------+----------+---------+--------------+-------+
 | spdlog         | No       | Runtime | 1.9.2        |       |
 +----------------+----------+---------+--------------+-------+
