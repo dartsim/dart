@@ -1,5 +1,27 @@
 # Resume: Differentiable Simulation (PLAN-110)
 
+## Current Reality (2026-06-19)
+
+The standalone, torch-free **system-identification** worked example shipped as
+`python/examples/diff_system_identification.py`. It recovers an unknown
+rigid-body mass by plain gradient descent on the mass parameter Jacobian from
+`World.get_step_derivatives()`, mirrors the adjoint reverse pass in
+`diff_cartpole_trajopt._optimize_cartpole`, and degrades gracefully (prints a
+message + `sys.exit(0)`) when differentiable support is not compiled
+(`DART_BUILD_DIFF=OFF`, the default pixi build). It is run directly, not via
+`-m examples.demos`.
+
+Verified: DIFF-OFF run exits 0 with the graceful message; a DIFF-ON build
+(`DART_BUILD_DIFF_OVERRIDE=ON pixi run build-py-dev`) recovers the planted
+2.0 kg mass from a 5.0 kg guess in 23 iters (relative error ~2e-7, final loss
+~4e-13); `pixi run lint` and `pixi run test-py` green (diff tests pass, torch
+autograd test still skipped — torch not in-env). The remaining promotion
+follow-ups are unchanged: a standalone **trajectory-optimization** example (the
+three GUI trajopt scenes already ship), the torch autograd end-to-end test in a
+torch-equipped env, binary serialization (or documented restart) for
+differentiable parameter registrations, the Dojo-style spike, and the
+static-friction Dantzig `s<=0` `DART_WARN_ONCE` hardening.
+
 ## Current Reality (2026-06-06)
 
 The WS1-W5 first-slice surface described in this resume landed on `main` via PR
