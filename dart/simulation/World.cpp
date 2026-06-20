@@ -675,16 +675,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   constexpr double kFinalSleepLinearSpeed = 1e-3;
   constexpr double kFinalSleepAngularSpeed = 1e-2;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
-  std::size_t numAwakeMovingSkeletons = 0;
-  for (const auto& skel : mSkeletons) {
-    if (!skel->isMobile() || skel->isResting())
-      continue;
-
-    const bool aboveWake = skel->computeMaxBodyLinearSpeed() > linWake
-                           || skel->computeMaxBodyAngularSpeed() > angWake;
-    if (aboveWake)
-      ++numAwakeMovingSkeletons;
-  }
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
@@ -733,13 +723,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         skel->setRestDwellTime(dwell);
         const bool finalQuiet = linSpeed < kFinalSleepLinearSpeed
                                 && angSpeed < kFinalSleepAngularSpeed;
-        const bool thisAwakeMoving
-            = !skel->isResting()
-              && (linInstant > linWake || angInstant > angWake);
-        const bool hasOtherAwakeMovingSkeleton
-            = numAwakeMovingSkeletons > (thisAwakeMoving ? 1u : 0u);
-        if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet
-            && !hasOtherAwakeMovingSkeleton) {
+        if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet) {
           skel->setSleepCandidate(true);
         }
       } else {

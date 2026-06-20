@@ -1240,6 +1240,47 @@ TEST(IslandDeactivation, StackSleepsAsIsland)
 }
 
 //==============================================================================
+// Resting is decided per independent contact island. A separate body in genuine
+// motion must not prevent an otherwise settled floor contact from sleeping.
+TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
+{
+  auto world = makeSleepWorld();
+  auto opts = world->getDeactivationOptions();
+  opts.mTimeUntilSleep = 0.05;
+  world->setDeactivationOptions(opts);
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  auto mover = createFreeBox(
+      "mover",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3.0, 0, kHalf + 0.02));
+  world->addSkeleton(mover);
+
+  Eigen::Vector6d movingVelocity = Eigen::Vector6d::Zero();
+  movingVelocity[3]
+      = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+
+  const std::size_t maxSteps = 5000;
+  std::size_t steps = 0;
+  for (; steps < maxSteps && !sleeper->isResting(); ++steps) {
+    mover->getJoint(0)->setVelocities(movingVelocity);
+    world->step();
+    ASSERT_FALSE(mover->isResting())
+        << "moving body slept before the quiet island at step " << steps;
+  }
+
+  EXPECT_LT(steps, maxSteps)
+      << "quiet independent island did not sleep while another body moved";
+  EXPECT_TRUE(sleeper->isResting());
+}
+
+//==============================================================================
 // A body kept in genuine slow motion (above the sleep thresholds) must NOT be
 // put to sleep within the test horizon. This is the "always beneficial"
 // correctness gate: we must never freeze a body that is actually moving.
