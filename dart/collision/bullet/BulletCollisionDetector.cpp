@@ -59,6 +59,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <typeinfo>
 #include <vector>
 
 namespace dart {
@@ -225,9 +226,8 @@ void filterOutCollisions(btCollisionWorld* world)
 //==============================================================================
 std::size_t getPersistentPairFilterRevision(const CollisionFilter* filter)
 {
-  if (const auto* bodyNodeFilter
-      = dynamic_cast<const BodyNodeCollisionFilter*>(filter)) {
-    return bodyNodeFilter->getRevision();
+  if (filter && typeid(*filter) == typeid(BodyNodeCollisionFilter)) {
+    return static_cast<const BodyNodeCollisionFilter*>(filter)->getRevision();
   }
 
   return (std::numeric_limits<std::size_t>::max)();
