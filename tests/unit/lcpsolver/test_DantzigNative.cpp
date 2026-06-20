@@ -1,6 +1,7 @@
 #include "DantzigProblemCases.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DantzigLCPSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/lcpsolver/ODELCPSolver.hpp"
@@ -353,6 +354,32 @@ TEST(DantzigNative, DeprecatedOdeLcpSolverUsesNativeDantzigPath)
   ASSERT_TRUE(solver.Solve(A, b, &x, 0, 0.0, 4, true));
   ASSERT_EQ(1, x.size());
   EXPECT_NEAR(2.0, x[0], 1e-12);
+}
+
+TEST(DantzigNative, DantzigBoxedLcpSolverKeepsPublicLayoutStable)
+{
+  EXPECT_EQ(
+      sizeof(dart::constraint::BoxedLcpSolver),
+      sizeof(dart::constraint::DantzigBoxedLcpSolver));
+
+  auto problem = dart::test::makeBoxedDiagonalDantzigCase(4);
+  std::vector<double> boxed(static_cast<std::size_t>(problem.n), 0.0);
+  std::vector<double> native;
+  dart::constraint::DantzigBoxedLcpSolver solver;
+
+  ASSERT_TRUE(solveDantzigNative(problem, &native));
+  ASSERT_TRUE(solver.solve(
+      problem.n,
+      problem.A.data(),
+      boxed.data(),
+      problem.b.data(),
+      problem.nub,
+      problem.lo.data(),
+      problem.hi.data(),
+      problem.findex.data(),
+      false));
+
+  expectNear(boxed, native, 1e-12);
 }
 
 TEST(DantzigNative, DeprecatedDantzigLcpSolverSolvesConstrainedGroup)
