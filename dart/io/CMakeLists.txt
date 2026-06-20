@@ -42,6 +42,16 @@ add_component_dependencies(
   ${component_dependencies}
 )
 
+# In a static build the USD loader's private pxr link is exported from the
+# installed dart-io target, so register pxr as a component dependency package.
+# The generated io component config then loads dart_find_pxr.cmake and resolves
+# OpenUSD for downstream static links. Shared builds resolve pxr at libdart-io
+# link time, so this is static-only (mirrors dart-simulation's EnTT/Taskflow/
+# spdlog registration).
+if(DART_BUILD_IO_USD AND NOT BUILD_SHARED_LIBS)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} pxr)
+endif()
+
 # Generate header for this namespace
 dart_get_filename_components(header_names "io headers" ${hdrs})
 dart_generate_component_headers(

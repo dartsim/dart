@@ -46,9 +46,11 @@ namespace dart::io::usd {
 ///
 /// Phase 1 maps a single USD primitive (the stage default prim, or the first
 /// Xformable prim in traversal order) into a one-link `dynamics::Skeleton` so a
-/// `.usd`/`.usda` asset can be added to a DART 7 `World` through
-/// `dart::simulation::io::addSkeleton`. Mapping richer USD/USDPhysics structure
-/// (joints, inertia, collision shapes) is later-phase work tracked in
+/// textual USD (`.usda`) asset can be added to a DART 7 `World` through
+/// `dart::simulation::io::addSkeleton`. The layer is imported from text, so
+/// binary Crate (`.usdc`) and packaged (`.usdz`) USD are not read yet. Mapping
+/// richer USD/USDPhysics structure (joints, inertia, collision shapes) and the
+/// remaining USD encodings is later-phase work tracked in
 /// `docs/dev_tasks/usd_scene_loader/`.
 ///
 /// This type is only compiled when DART is built with DART_BUILD_IO_USD=ON,

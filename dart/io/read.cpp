@@ -114,7 +114,11 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   if (ext == ".mjcf") {
     return Mjcf;
   }
-  if (ext == ".usd" || ext == ".usda" || ext == ".usdc" || ext == ".usdz") {
+  // Only textual USD (.usda) is auto-detected for now: the Phase 1 loader
+  // imports the layer from text, so it cannot read binary Crate (.usdc) or
+  // packaged (.usdz) USD yet. Broadening this to the rest of the USD family is
+  // deferred to the slice that opens stages through a real layer/stage path.
+  if (ext == ".usda") {
     return Usd;
   }
 

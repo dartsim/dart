@@ -4,8 +4,10 @@
 
 Landed the Phase 1 **scaffold**: a snake_case `dart/io/usd/` module behind a new
 OFF-by-default `DART_BUILD_IO_USD` CMake toggle. `dart::io::ModelFormat::Usd`,
-extension inference (`.usd`/`.usda`/`.usdc`/`.usdz`), and a guarded
-`readSkeleton` switch case now exist behind the DART 7 model-loading front door.
+auto-detection of textual USD (`.usda` only — the Phase 1 loader imports the
+layer from text, so binary Crate `.usdc` and packaged `.usdz` are deferred to a
+later slice), and a guarded `readSkeleton` switch case now exist behind the
+DART 7 model-loading front door.
 With the toggle OFF (default, no OpenUSD in the build env) the dormant USD code
 compiles and the front door returns a clean "USD support is not available"
 diagnostic instead of a link error — mirroring the existing SDF/URDF

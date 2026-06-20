@@ -67,9 +67,10 @@ enum class ModelFormat
   /// MJCF format (.xml / <mujoco>).
   Mjcf,
 
-  /// USD format (.usd / .usda / .usdc / .usdz). Requires building with
-  /// DART_BUILD_IO_USD=ON (OpenUSD/pxr); otherwise reads emit a clear
-  /// "USD support is not available" diagnostic.
+  /// USD format. Requires building with DART_BUILD_IO_USD=ON (OpenUSD/pxr);
+  /// otherwise reads emit a clear "USD support is not available" diagnostic.
+  /// Auto-detection currently recognizes only textual USD (.usda); binary
+  /// Crate (.usdc) and packaged (.usdz) USD arrive with a later loader slice.
   Usd,
 
 };
