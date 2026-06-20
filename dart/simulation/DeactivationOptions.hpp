@@ -50,10 +50,11 @@ namespace simulation {
 /// it does not depend on iteration or container order.
 struct DeactivationOptions
 {
-  /// Whether automatic deactivation is enabled. Defaults to true: resting
-  /// constrained islands sleep automatically for the resting-scene speedup.
-  /// Set this to false to opt out; when disabled, no skeleton is ever flagged
-  /// as resting and behavior is byte-identical to having the feature absent.
+  /// Whether automatic deactivation is enabled. Defaults to true so resting
+  /// scenes benefit from the performance path without application changes.
+  /// Downstream integrations that require legacy always-active stepping can
+  /// set this to false; when disabled, no skeleton is ever flagged as resting
+  /// and behavior is byte-identical to having the feature absent.
   bool mEnabled = true;
 
   /// Maximum linear speed (m/s) of any body in a skeleton for that skeleton to

@@ -43,6 +43,14 @@ namespace dynamics {
 class BodyNode;
 } // namespace dynamics
 
+namespace simulation {
+class World;
+} // namespace simulation
+
+namespace constraint {
+class ConstraintSolver;
+} // namespace constraint
+
 namespace collision {
 
 class CollisionObject;
@@ -104,20 +112,40 @@ public:
   /// Remove all the BodyNode pairs from the blacklist.
   void removeAllBodyNodePairsFromBlackList();
 
+  /// Returns a revision for state that can change this filter's decisions.
+  std::size_t getRevision() const;
+
   // Documentation inherited
   bool ignoresCollision(
       const CollisionObject* object1,
       const CollisionObject* object2) const override;
 
 private:
+  friend class constraint::ConstraintSolver;
+  friend class simulation::World;
+
+  /// Sets solver-only filtering for inactive resting pairs.
+  ///
+  /// Resting-vs-resting contacts can usually be skipped. During wakeup, though,
+  /// contacts between members of a frozen mobile island must be available so an
+  /// awake impact unites and wakes the full island atomically.
+  void setSolverRestingContactFilterActive(bool active, bool preserve);
+
   /// Returns true if the two BodyNodes are adjacent BodyNodes (i.e., the two
   /// BodyNodes are connected by a Joint).
   bool areAdjacentBodies(
       const dynamics::BodyNode* bodyNode1,
       const dynamics::BodyNode* bodyNode2) const;
 
+  /// Returns the blacklist-only revision for world-level rest snapshots.
+  std::size_t getBodyNodePairBlackListRevision() const;
+
   /// List of pairs to be ignored in the collision detection.
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
+
+  /// Revision for blacklist updates. Combined with global skeleton filter
+  /// state in getRevision().
+  std::size_t mRevision = 0u;
 };
 
 } // namespace collision

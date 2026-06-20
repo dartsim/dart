@@ -165,5 +165,26 @@ const btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
   return mBulletCollisionWorld.get();
 }
 
+//==============================================================================
+bool BulletCollisionGroup::shouldFilterPersistentPairs(
+    const CollisionFilter* filter, std::size_t revision)
+{
+  if (mLastPersistentPairFilter == filter
+      && mLastPersistentPairFilterRevision == revision) {
+    return false;
+  }
+
+  mLastPersistentPairFilter = filter;
+  mLastPersistentPairFilterRevision = revision;
+  return true;
+}
+
+//==============================================================================
+void BulletCollisionGroup::resetPersistentPairFilterCache()
+{
+  mLastPersistentPairFilter = nullptr;
+  mLastPersistentPairFilterRevision = 0u;
+}
+
 } // namespace collision
 } // namespace dart

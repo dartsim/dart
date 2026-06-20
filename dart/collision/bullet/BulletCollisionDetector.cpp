@@ -58,6 +58,8 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <algorithm>
+#include <limits>
+#include <typeinfo>
 #include <vector>
 
 namespace dart {
@@ -222,6 +224,16 @@ void filterOutCollisions(btCollisionWorld* world)
 }
 
 //==============================================================================
+std::size_t getPersistentPairFilterRevision(const CollisionFilter* filter)
+{
+  if (filter && typeid(*filter) == typeid(BodyNodeCollisionFilter)) {
+    return static_cast<const BodyNodeCollisionFilter*>(filter)->getRevision();
+  }
+
+  return (std::numeric_limits<std::size_t>::max)();
+}
+
+//==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group,
     const CollisionOption& option,
@@ -242,11 +254,23 @@ bool BulletCollisionDetector::collide(
 
   auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
       collisionWorld->getDispatcher());
+  dispatcher->setDone(false);
   dispatcher->setFilter(option.collisionFilter);
 
+  const std::size_t filterRevision
+      = getPersistentPairFilterRevision(option.collisionFilter.get());
   if (option.collisionFilter) {
-    DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
-    filterOutCollisions(collisionWorld);
+    if (filterRevision == (std::numeric_limits<std::size_t>::max)()) {
+      castedGroup->resetPersistentPairFilterCache();
+      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
+      filterOutCollisions(collisionWorld);
+    } else if (castedGroup->shouldFilterPersistentPairs(
+                   option.collisionFilter.get(), filterRevision)) {
+      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
+      filterOutCollisions(collisionWorld);
+    }
+  } else {
+    castedGroup->resetPersistentPairFilterCache();
   }
 
   {

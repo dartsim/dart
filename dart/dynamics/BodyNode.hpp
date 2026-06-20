@@ -450,6 +450,16 @@ public:
   // Documentation inherited
   ConstSkeletonPtr getSkeleton() const override;
 
+  /// Return the non-owning Skeleton pointer cached by this BodyNode.
+  ///
+  /// This avoids the atomic reference-count traffic of getSkeleton() in hot
+  /// internal loops. The owning Skeleton outlives its BodyNodes, so the pointer
+  /// is valid while this BodyNode is alive.
+  Skeleton* getSkeletonRawPtr();
+
+  /// Return the non-owning Skeleton pointer cached by this BodyNode.
+  const Skeleton* getSkeletonRawPtr() const;
+
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
 
@@ -1326,7 +1336,15 @@ private:
       ConstShapePtr oldShape,
       ConstShapePtr newShape);
 
+  /// Notify listeners when a collidable ShapeNode's collision geometry changed
+  /// without adding/removing the Shape itself.
+  void handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode);
+
+  /// Notify that a collidable ShapeNode's contact material properties changed.
+  void handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode);
+
   friend class CollisionAspect;
+  friend class DynamicsAspect;
   friend class ShapeNode;
   friend class ShapeFrame;
 };

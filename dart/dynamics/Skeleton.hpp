@@ -50,6 +50,12 @@
 #include <mutex>
 
 namespace dart {
+namespace collision {
+class BodyNodeCollisionFilter;
+} // namespace collision
+namespace simulation {
+class World;
+} // namespace simulation
 namespace dynamics {
 
 /// class Skeleton
@@ -171,6 +177,9 @@ public:
 
   /// Destructor
   virtual ~Skeleton();
+
+  /// Increments the structural version counter.
+  std::size_t incrementVersion() override;
 
   /// Remove copy operator
   Skeleton& operator=(const Skeleton& _other) = delete;
@@ -1067,6 +1076,8 @@ public:
   friend class Node;
   friend class ShapeNode;
   friend class EndEffector;
+  friend class collision::BodyNodeCollisionFilter;
+  friend class simulation::World;
 
 protected:
   struct DataCache;
@@ -1222,6 +1233,33 @@ protected:
 
   /// Compute the constraint force vector for a tree
   const Eigen::VectorXd& computeConstraintForces(DataCache& cache) const;
+
+  /// Returns whether user-applied actuation should wake this skeleton. If
+  /// requested and no wake-sized disturbance is present, this also clears exact
+  /// residual force/command state for World::step(resetCommand=true).
+  bool checkExternalDisturbanceAndReset(bool _resetCommand);
+
+  /// Increments when user-writable generalized forces or commands change.
+  void incrementExternalDisturbanceVersion();
+
+  /// Increments when deactivation state that affects all-resting fast paths
+  /// changes.
+  void incrementDeactivationStateVersion();
+
+  /// Increments when joint positions change. Used internally by World to
+  /// invalidate all-resting simulation fast paths after external pose edits.
+  std::size_t incrementKinematicVersion();
+
+  /// Returns the current kinematic version.
+  std::size_t getKinematicVersion() const;
+
+  /// Global generation counters used by World to avoid rescanning every
+  /// skeleton on steady all-resting steps. The per-skeleton validation path is
+  /// still used whenever any counter has changed.
+  static std::size_t getGlobalStructuralVersion();
+  static std::size_t getGlobalKinematicVersion();
+  static std::size_t getGlobalExternalDisturbanceVersion();
+  static std::size_t getGlobalDeactivationStateVersion();
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();
@@ -1415,6 +1453,19 @@ protected:
   double mSmoothedLinearSpeed = 0.0;
   double mSmoothedAngularSpeed = 0.0;
 
+  /// Monotonic counter for joint-position changes. This is separate from the
+  /// public structural VersionCounter because GenericJoint position setters do
+  /// not increment that counter.
+  std::size_t mKinematicVersion = 0;
+
+  /// Monotonic counter for user-writable generalized force/command changes.
+  std::size_t mExternalDisturbanceVersion = 0;
+
+  /// Last disturbance version that was scanned and found quiet. Initialized to
+  /// an impossible value so the first query always scans.
+  std::size_t mLastQuietExternalDisturbanceVersion
+      = static_cast<std::size_t>(-1);
+
 public:
   //--------------------------------------------------------------------------
   // Union finding
@@ -1424,6 +1475,7 @@ public:
   {
     mUnionRootSkeleton = mPtr;
     mUnionSize = 1;
+    mUnionIndex = static_cast<std::size_t>(-1);
   }
 
   ///
