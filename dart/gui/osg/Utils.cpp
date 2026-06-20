@@ -271,7 +271,15 @@ void applyImGuiScale(double scale, double* appliedScale)
     }
   }
 
+  // ImGui 1.92 moved the global font scale from `io.FontGlobalScale` to
+  // `style.FontScaleMain` and gates the legacy field behind
+  // IMGUI_DISABLE_OBSOLETE_FUNCTIONS, which the bundled `external-imgui` target
+  // enables. Use the new field where available and fall back for older ImGui.
+#if IMGUI_VERSION_NUM >= 19200
+  ImGui::GetStyle().FontScaleMain = static_cast<float>(sanitized);
+#else
   ImGui::GetIO().FontGlobalScale = static_cast<float>(sanitized);
+#endif
 }
 
 } // namespace dart::gui::osg

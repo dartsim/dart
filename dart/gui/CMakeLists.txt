@@ -6,6 +6,13 @@ set(component_name gui)
 dart_check_dependent_target(${target_name} dart-utils)
 
 dart_find_package(OpenGL)
+if(NOT DEFINED OPENGL_FOUND)
+  if(DEFINED OpenGL_FOUND)
+    set(OPENGL_FOUND ${OpenGL_FOUND})
+  else()
+    set(OPENGL_FOUND FALSE)
+  endif()
+endif()
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 dart_find_package(GLUT)

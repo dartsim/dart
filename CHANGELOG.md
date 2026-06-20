@@ -26,6 +26,11 @@
     DART 6 source compatibility:
     [#3078](https://github.com/dartsim/dart/pull/3078)
 
+  * Replace the vendored `dart/external/imgui` source tree with a DART-patched
+    FetchContent `external-imgui` compatibility target by default, while keeping
+    an explicit system ImGui opt-in path:
+    [#3081](https://github.com/dartsim/dart/pull/3081)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
