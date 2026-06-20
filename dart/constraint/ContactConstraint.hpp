@@ -111,6 +111,7 @@ public:
   //----------------------------------------------------------------------------
 
   friend class ConstraintSolver;
+  friend class BoxedLcpConstraintSolver;
   friend class ConstrainedGroup;
   friend class DefaultContactSurfaceHandler;
 
@@ -179,6 +180,27 @@ private:
   /// two colliding bodies.
   void getRelVelocity(double* relVel);
 
+  /// Returns the sole reactive body for contacts where exactly one side can
+  /// respond to impulses. Returns nullptr for self-collision, two-body dynamic
+  /// contacts, static-static contacts, and invalid contacts.
+  dynamics::BodyNode* getSingleReactiveBodyNode() const;
+
+  /// Returns the sole reactive skeleton for the same cases as
+  /// getSingleReactiveBodyNode().
+  dynamics::Skeleton* getSingleReactiveSkeleton() const;
+
+  /// Returns the spatial contact direction for the sole reactive body.
+  Eigen::Vector6d getSpatialNormalForSingleReactiveBody(
+      std::size_t index) const;
+
+  /// Projects a direct body velocity change onto this contact's constraint
+  /// basis.
+  void getVelocityChangeFromSingleBody(
+      const Eigen::Vector6d& bodyVelocityChange,
+      double* vel,
+      bool withCfm,
+      std::size_t appliedImpulseIndex) const;
+
   ///
   bool hasValidBodyNodes() const;
 
@@ -230,6 +252,10 @@ private:
   dynamics::Skeleton* mSkeletonB = nullptr;
   bool mIsReactiveA = false;
   bool mIsReactiveB = false;
+  bool mSkipRelVelocityA = false;
+  bool mSkipRelVelocityB = false;
+  dynamics::BodyNode* mSingleReactiveBodyNode = nullptr;
+  dynamics::Skeleton* mSingleReactiveSkeleton = nullptr;
 
   /// Contact between mBodyNode1 and mBodyNode2
   collision::Contact& mContact;
@@ -261,16 +287,12 @@ private:
   /// Whether this contact is self-collision.
   bool mIsSelfCollision;
 
-  /// Local body jacobians for mBodyNode1. The column count is dynamic (1 for a
-  /// frictionless contact, 3 with friction) but capped at 3, so the matrix uses
-  /// fixed inline storage and the per-contact resize() during construction
-  /// allocates no heap.
-  Eigen::Matrix<double, 6, Eigen::Dynamic, Eigen::ColMajor, 6, 3>
-      mSpatialNormalA;
+  /// Local body jacobians for mBodyNode1. Contacts use one normal direction and
+  /// optionally two friction directions, so fixed storage covers all cases.
+  Eigen::Matrix<double, 6, 3> mSpatialNormalA;
 
   /// Local body jacobians for mBodyNode2 (see mSpatialNormalA).
-  Eigen::Matrix<double, 6, Eigen::Dynamic, Eigen::ColMajor, 6, 3>
-      mSpatialNormalB;
+  Eigen::Matrix<double, 6, 3> mSpatialNormalB;
 
   ///
   bool mIsFrictionOn;

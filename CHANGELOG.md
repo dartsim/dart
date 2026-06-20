@@ -38,6 +38,13 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
+* Simulation
+
+  * Enable resting-world deactivation by default with wake-aware invalidation
+    and fidelity coverage against the always-active path, improving resting
+    contact-heavy scenes while preserving an explicit deactivation opt-out:
+    [#3086](https://github.com/dartsim/dart/pull/3086)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,

@@ -237,6 +237,10 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   std::size_t getNumShapeFrames() const;
 
+  /// Return a revision that changes when this group's collision contents
+  /// change.
+  std::size_t getContentVersion() const;
+
   /// Get the ShapeFrame corresponding to the given index
   const dynamics::ShapeFrame* getShapeFrame(std::size_t index) const;
 
@@ -457,6 +461,9 @@ private:
   void removeShapeFrameInternal(
       const dynamics::ShapeFrame* shapeFrame, const void* source);
 
+  /// Increments the collision-content revision.
+  void incrementContentVersion();
+
   friend class ShapeFrameObserver;
   void handleShapeFrameDestruction(const dynamics::ShapeFrame* shapeFrame);
 
@@ -545,6 +552,9 @@ private:
 
   /// The object that observes the Shape Frames that this group cares about
   ShapeFrameObserver mObserver;
+
+  /// Revision for ShapeFrame membership and collision-object content changes.
+  std::size_t mContentVersion = 0u;
 };
 
 } // namespace collision

@@ -35,9 +35,17 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace collision {
+
+namespace {
+
+thread_local bool gSolverRestingContactFilterActive = false;
+thread_local bool gPreserveRestingIslandContacts = false;
+
+} // namespace
 
 //==============================================================================
 CollisionFilter::~CollisionFilter()
@@ -92,6 +100,7 @@ void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
     const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
 {
   mBodyNodeBlackList.addPair(bodyNode1, bodyNode2);
+  ++mRevision;
 }
 
 //==============================================================================
@@ -99,12 +108,43 @@ void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
     const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
 {
   mBodyNodeBlackList.removePair(bodyNode1, bodyNode2);
+  ++mRevision;
 }
 
 //==============================================================================
 void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 {
   mBodyNodeBlackList.removeAllPairs();
+  ++mRevision;
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::setSolverRestingContactFilterActive(
+    bool active, bool preserve)
+{
+  gSolverRestingContactFilterActive = active;
+  gPreserveRestingIslandContacts = active && preserve;
+}
+
+//==============================================================================
+std::size_t BodyNodeCollisionFilter::getRevision() const
+{
+  std::size_t seed = mRevision;
+  auto mix = [](std::size_t& value, std::size_t input) {
+    value ^= input + 0x9e3779b97f4a7c15ULL + (value << 6) + (value >> 2);
+  };
+
+  mix(seed, dynamics::Skeleton::getGlobalStructuralVersion());
+  mix(seed, dynamics::Skeleton::getGlobalDeactivationStateVersion());
+  mix(seed, gSolverRestingContactFilterActive ? 1u : 0u);
+  mix(seed, gPreserveRestingIslandContacts ? 1u : 0u);
+  return seed;
+}
+
+//==============================================================================
+std::size_t BodyNodeCollisionFilter::getBodyNodePairBlackListRevision() const
+{
+  return mRevision;
 }
 
 //==============================================================================
@@ -115,24 +155,13 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (object1 == object2)
     return true;
 
-  const auto* shapeFrame1 = object1->getShapeFrame();
-  const auto* shapeFrame2 = object2->getShapeFrame();
-  if (!shapeFrame1 || !shapeFrame2)
-    return false;
-
-  auto shapeNode1 = shapeFrame1->asShapeNode();
-  auto shapeNode2 = shapeFrame2->asShapeNode();
-
   // We don't filter out for non-ShapeNode because this class shouldn't have the
   // authority to make decisions about filtering any ShapeFrames that aren't
   // attached to a BodyNode. So here we just return false. In order to decide
   // whether the non-ShapeNode should be ignored, please use other collision
   // filters.
-  if (!shapeNode1 || !shapeNode2)
-    return false;
-
-  auto bodyNode1 = shapeNode1->getBodyNodePtr();
-  auto bodyNode2 = shapeNode2->getBodyNodePtr();
+  const auto* bodyNode1 = object1->getBodyNode();
+  const auto* bodyNode2 = object2->getBodyNode();
   if (!bodyNode1 || !bodyNode2)
     return false;
 
@@ -142,8 +171,8 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return true;
 
-  const auto& skel1 = bodyNode1->getSkeleton();
-  const auto& skel2 = bodyNode2->getSkeleton();
+  const auto* skel1 = bodyNode1->getSkeletonRawPtr();
+  const auto* skel2 = bodyNode2->getSkeletonRawPtr();
   if (!skel1 || !skel2)
     return false;
 
@@ -160,8 +189,30 @@ bool BodyNodeCollisionFilter::ignoresCollision(
     }
   }
 
-  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2))
+  if (!mBodyNodeBlackList.empty()
+      && mBodyNodeBlackList.contains(bodyNode1, bodyNode2)) {
     return true;
+  }
+
+  const bool skel1Inactive = !skel1->isMobile() || skel1->isResting();
+  const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
+  if (gSolverRestingContactFilterActive && skel1Inactive && skel2Inactive) {
+    const bool sameFrozenMobileIsland
+        = gPreserveRestingIslandContacts && skel1->isMobile()
+          && skel2->isMobile() && skel1->isResting() && skel2->isResting()
+          && skel1->getIslandIndex() >= 0
+          && skel1->getIslandIndex() == skel2->getIslandIndex();
+    const bool restingMobileOnStaticSupport
+        = gPreserveRestingIslandContacts
+          && ((skel1->isMobile() && skel1->isResting()
+               && skel1->getIslandIndex() >= 0 && !skel2->isMobile())
+              || (skel2->isMobile() && skel2->isResting()
+                  && skel2->getIslandIndex() >= 0 && !skel1->isMobile()));
+    if (sameFrozenMobileIsland || restingMobileOnStaticSupport)
+      return false;
+
+    return true;
+  }
 
   return false;
 }
