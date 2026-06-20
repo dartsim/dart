@@ -226,6 +226,7 @@ compatibility remains on the active DART 6 LTS branch._
   rigid-body mass by gradient descent on the mass parameter Jacobian from
   `World.get_step_derivatives()`, and degrades gracefully (prints a message and
   exits 0) when differentiable support is not compiled (`DART_BUILD_DIFF=OFF`).
+  ([#3101](https://github.com/dartsim/dart/pull/3101))
 
 #### Gazebo Integration
 
