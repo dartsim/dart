@@ -147,12 +147,8 @@ rows/columns and manipulate C.
 
 #define dLCP_FAST // use fast dLCP object
 
-#define ROWPTRS // Keep for compatibility (but now uses PivotMatrix internally)
-#define AROW(i) (m_A[i])
-
-#define NUB_OPTIMIZATIONS
-
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
+#undef dLCP_FAST
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"

@@ -926,4 +926,8 @@ void LCP<Scalar>::unpermute()
 
 } // namespace dart::lcpsolver::dantzig
 
+#undef NUB_OPTIMIZATIONS
+#undef AROW
+#undef ROWPTRS
+
 #endif // DART_LCPSOLVER_DANTZIG_LCP_IMPL_HPP_

@@ -251,3 +251,12 @@ TEST(DantzigNative, MatrixMultiplyUsesPaddedStrides)
   expectMatrixMultiplyUsesPaddedStrides(2, 3, 2);
   expectMatrixMultiplyUsesPaddedStrides(2, 10, 10);
 }
+
+TEST(DantzigNative, PublicHeaderDoesNotLeakPrivateSolverMacros)
+{
+#if defined(ROWPTRS) || defined(AROW) || defined(NUB_OPTIMIZATIONS)
+  FAIL() << "DantzigLcp.hpp leaked private implementation macros";
+#else
+  SUCCEED();
+#endif
+}
