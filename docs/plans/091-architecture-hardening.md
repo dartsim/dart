@@ -301,6 +301,26 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   still need. Current open DART 6.20+ work observed at closeout includes PRs
   #3071, #3086, #3088, and #3092; this is a snapshot, not an exhaustive removal
   precondition, and more release-lane PRs may appear before final removal.
+- Evidence: PR [#3095](https://github.com/dartsim/dart/pull/3095) landed
+  PLAN-042 Decision 5 in
+  [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md):
+  DART 7 keeps DART 6 legacy only as a frozen compatibility quarantine while
+  DART 6.20+ and any later `release-6.*` ports finish, then removes that legacy
+  from the DART 7 public contract. The orphaned cylindrical joint constraint is
+  not revived under a DART 6 name; if release-lane evidence proves it is still
+  needed, it must return as a DART 7 loop-closure or multibody constraint
+  family, otherwise it retires with the legacy surface. The enforcement path is
+  `scripts/check_dart7_legacy_freeze.py` plus
+  `scripts/check_dart7_legacy_freeze_baseline.txt`, wired into
+  `check-dart7-legacy-freeze`, `check-dart7-legacy-freeze-meta`, `check-lint`,
+  and `pixi run lint`; the checker rejects new untagged legacy C++ declarations,
+  dartpy bindings, stubs, root re-exports, and protected legacy type surfaces,
+  with only local `dart7-legacy-freeze: bugfix-port` tags allowed for
+  justified release-6.\* parity fixes. The meta-test
+  `python/tests/unit/test_check_dart7_legacy_freeze.py` covers the freeze parser
+  and bypass cases. Gates recorded in #3095 were the Alt Linux py-compile
+  check, `pixi run lint`, `pixi run check-lint`, both legacy-freeze Pixi tasks,
+  and the focused pytest meta-test.
 
 #### WP-091.5 Renumber colliding plan IDs [done — PR #3003, merged 2026-06-14]
 
