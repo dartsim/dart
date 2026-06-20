@@ -72,6 +72,26 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
+bool isExactDefaultContactSurfaceHandler(
+    const ContactSurfaceHandlerPtr& handler)
+{
+  if (handler == nullptr)
+    return false;
+
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
+#endif
+  const bool isExactDefault
+      = typeid(*handler) == typeid(DefaultContactSurfaceHandler);
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
+
+  return isExactDefault;
+}
+
+//==============================================================================
 class ConstraintThreadPool
 {
 public:
@@ -790,9 +810,7 @@ void ConstraintSolver::updateConstraints()
   mSoftContactConstraints.clear();
 
   const bool useBuiltInDefaultContactActiveState
-      = mContactSurfaceHandler != nullptr
-        && typeid(*mContactSurfaceHandler)
-               == typeid(DefaultContactSurfaceHandler);
+      = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
   const auto* builtInDefaultContactHandler
       = useBuiltInDefaultContactActiveState
             ? static_cast<const DefaultContactSurfaceHandler*>(
