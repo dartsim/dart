@@ -111,6 +111,41 @@ SkeletonPtr createFreeBox(
 }
 
 //==============================================================================
+// Builds an articulated mobile skeleton with two intentionally overlapping
+// collision boxes. The solver resting-contact filter must still honor the
+// skeleton's ordinary self-collision settings when an awake body exists.
+SkeletonPtr createOverlappingTwoBodySkeleton(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+
+  GenericJoint<SE3Space>::Properties rootJointProps(name + "_root_joint");
+  BodyNode::Properties rootBodyProps(
+      BodyNode::AspectProperties(name + "_root_body"));
+  rootBodyProps.mInertia.setMass(1.0);
+
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, rootJointProps, rootBodyProps);
+  auto* rootBody = rootPair.second;
+  rootBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.2)));
+
+  WeldJoint::Properties childJointProps;
+  childJointProps.mName = name + "_child_joint";
+  BodyNode::Properties childBodyProps(
+      BodyNode::AspectProperties(name + "_child_body"));
+  childBodyProps.mInertia.setMass(1.0);
+
+  auto* childBody = skel->createJointAndBodyNodePair<WeldJoint>(
+                            rootBody, childJointProps, childBodyProps)
+                        .second;
+  childBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.2)));
+
+  skel->disableSelfCollisionCheck();
+  return skel;
+}
+
+//==============================================================================
 // Builds a one-link articulated body with a revolute root joint and a box link
 // whose bottom face rests on the floor. Unlike a single free body, this exposes
 // the solved contact load through BodyNode::getBodyForce(), matching the joint
@@ -644,6 +679,33 @@ TEST(IslandDeactivation, WakeOnContactPreservesRestingIsland)
     EXPECT_FALSE(b->isResting())
         << b->getName() << " stayed frozen after its island was hit";
   }
+}
+
+//==============================================================================
+// Preserving resting contacts inside a frozen mobile island is a solver-local
+// wakeup optimization; it must not bypass ordinary same-skeleton filtering.
+TEST(IslandDeactivation, RestingIslandPreservesSelfCollisionFilter)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto resting = createOverlappingTwoBodySkeleton("resting");
+  world->addSkeleton(resting);
+
+  auto awake = createFreeBox(
+      "awake", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(10, 0, 0));
+  world->addSkeleton(awake);
+
+  resting->setSleepCandidate(true);
+  resting->setIslandIndex(0);
+  resting->setResting(true);
+  ASSERT_TRUE(resting->isResting());
+  ASSERT_FALSE(resting->isEnabledSelfCollisionCheck());
+
+  world->getConstraintSolver()->solve();
+  EXPECT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
 }
 
 //==============================================================================

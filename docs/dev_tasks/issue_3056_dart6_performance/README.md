@@ -84,6 +84,9 @@ speedup.
   collision-filter pointer and BodyNode-pair blacklist revision. That wakes
   sleepers when support contacts are removed by a solver filter edit while
   preserving the GUI sleep-color/visual-only no-op path.
+- Current PR2 compatibility review fixes keep the legacy solver sleeping setter
+  as a source-compatible alias and preserve ordinary self-collision/blacklist
+  filtering before the solver-local resting-island contact preservation path.
 
 ## Default-On Correctness Rule
 
@@ -181,3 +184,6 @@ bug until proven otherwise.
 - Rebuilt gz-physics' test-enabled DART plugin tree against the current DART
   install and passed the focused downstream checks:
   `COMMON_TEST_joint_features_dartsim` and `UNIT_SDFFeatures_TEST`.
+- For the PR2 Codex compatibility/filter-order reviews, rebuilt
+  `test_IslandDeactivation` and `test_ConstraintSolver`, then passed both
+  through focused CTest.

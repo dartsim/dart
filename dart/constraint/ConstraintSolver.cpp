@@ -470,6 +470,12 @@ void ConstraintSolver::setDeactivationActive(bool _active)
 }
 
 //==============================================================================
+void ConstraintSolver::setAutomaticSleepingEnabled(bool _enabled)
+{
+  setDeactivationActive(_enabled);
+}
+
+//==============================================================================
 void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
 {
   if (numThreads == 0u) {

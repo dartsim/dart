@@ -179,20 +179,6 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   if (!skel1->isMobile() && !skel2->isMobile())
     return true;
 
-  const bool skel1Inactive = !skel1->isMobile() || skel1->isResting();
-  const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
-  if (gSolverRestingContactFilterActive && skel1Inactive && skel2Inactive) {
-    const bool sameFrozenMobileIsland
-        = gPreserveRestingIslandContacts && skel1->isMobile()
-          && skel2->isMobile() && skel1->isResting() && skel2->isResting()
-          && skel1->getIslandIndex() >= 0
-          && skel1->getIslandIndex() == skel2->getIslandIndex();
-    if (sameFrozenMobileIsland)
-      return false;
-
-    return true;
-  }
-
   if (skel1 == skel2) {
     if (!skel1->isEnabledSelfCollisionCheck())
       return true;
@@ -205,6 +191,20 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   if (!mBodyNodeBlackList.empty()
       && mBodyNodeBlackList.contains(bodyNode1, bodyNode2)) {
+    return true;
+  }
+
+  const bool skel1Inactive = !skel1->isMobile() || skel1->isResting();
+  const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
+  if (gSolverRestingContactFilterActive && skel1Inactive && skel2Inactive) {
+    const bool sameFrozenMobileIsland
+        = gPreserveRestingIslandContacts && skel1->isMobile()
+          && skel2->isMobile() && skel1->isResting() && skel2->isResting()
+          && skel1->getIslandIndex() >= 0
+          && skel1->getIslandIndex() == skel2->getIslandIndex();
+    if (sameFrozenMobileIsland)
+      return false;
+
     return true;
   }
 

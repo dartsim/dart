@@ -173,6 +173,10 @@ public:
   /// work.
   void setDeactivationActive(bool _active);
 
+  /// Enables/disables automatic sleeping. Legacy spelling kept for source
+  /// compatibility; forwards to setDeactivationActive().
+  void setAutomaticSleepingEnabled(bool _enabled);
+
   /// Sets the number of threads available to parallel solver work. This mirrors
   /// World::setNumSimulationThreads(); a value of 0 maps to hardware
   /// concurrency, and 1 keeps the historical serial behavior.
