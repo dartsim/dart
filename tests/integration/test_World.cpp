@@ -42,7 +42,11 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
 #include <iostream>
+#include <thread>
+#include <utility>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
@@ -56,6 +60,79 @@ using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
+
+namespace {
+
+//==============================================================================
+class CountingBoxedLcpConstraintSolver
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  explicit CountingBoxedLcpConstraintSolver(
+      constraint::BoxedLcpSolverPtr solver)
+    : constraint::BoxedLcpConstraintSolver(std::move(solver), nullptr)
+  {
+  }
+
+  std::size_t getMaxConcurrentSolves() const
+  {
+    return mMaxConcurrentSolves.load();
+  }
+
+protected:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    const std::size_t active = mActiveSolves.fetch_add(1u) + 1u;
+    std::size_t observed = mMaxConcurrentSolves.load();
+    while (active > observed
+           && !mMaxConcurrentSolves.compare_exchange_weak(observed, active)) {
+      // Retry until the larger observed value is recorded.
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    mActiveSolves.fetch_sub(1u);
+  }
+
+private:
+  std::atomic<std::size_t> mActiveSolves{0u};
+  std::atomic<std::size_t> mMaxConcurrentSolves{0u};
+};
+
+//==============================================================================
+std::size_t countConcurrentIndependentSolves(bool randomizePgs)
+{
+  auto world = World::create();
+  DeactivationOptions disabled;
+  disabled.mEnabled = false;
+  world->setDeactivationOptions(disabled);
+
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto option = pgs->getOption();
+  option.mRandomizeConstraintOrder = randomizePgs;
+  pgs->setOption(option);
+
+  auto solver
+      = std::make_unique<CountingBoxedLcpConstraintSolver>(std::move(pgs));
+  auto* solverPtr = solver.get();
+  world->setConstraintSolver(std::move(solver));
+  world->setNumSimulationThreads(4u);
+
+  constexpr std::size_t numGroups = 130u;
+  for (std::size_t i = 0; i < numGroups; ++i) {
+    auto body = createObject(Eigen::Vector3d(static_cast<double>(i), 0.0, 0.0));
+    auto* bodyNode = body->getBodyNode(0);
+    world->addSkeleton(body);
+
+    auto constraint = std::make_shared<constraint::BallJointConstraint>(
+        bodyNode, bodyNode->getTransform().translation());
+    world->getConstraintSolver()->addConstraint(constraint);
+  }
+
+  world->step();
+  return solverPtr->getMaxConcurrentSolves();
+}
+
+} // namespace
 
 //==============================================================================
 TEST(World, AddingAndRemovingSkeletons)
@@ -418,6 +495,13 @@ TEST(World, SimulationThreadCount)
 
   world->setNumSimulationThreads(1u);
   EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+}
+
+//==============================================================================
+TEST(World, RandomizedPgsUsesSerialIndependentGroupSolve)
+{
+  EXPECT_GT(countConcurrentIndependentSolves(false), 1u);
+  EXPECT_EQ(countConcurrentIndependentSolves(true), 1u);
 }
 
 //==============================================================================

@@ -41,6 +41,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -48,6 +49,7 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -89,6 +91,25 @@ bool isExactDefaultContactSurfaceHandler(
 #endif
 
   return isExactDefault;
+}
+
+//==============================================================================
+bool isRandomizedPgsSolver(const ConstBoxedLcpSolverPtr& solver)
+{
+  const auto pgs = std::dynamic_pointer_cast<const PgsBoxedLcpSolver>(solver);
+  return pgs != nullptr && pgs->getOption().mRandomizeConstraintOrder;
+}
+
+//==============================================================================
+bool usesRandomizedPgsSolver(const ConstraintSolver& solver)
+{
+  const auto* boxedSolver
+      = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
+  if (boxedSolver == nullptr)
+    return false;
+
+  return isRandomizedPgsSolver(boxedSolver->getBoxedLcpSolver())
+         || isRandomizedPgsSolver(boxedSolver->getSecondaryBoxedLcpSolver());
 }
 
 //==============================================================================
@@ -1407,7 +1428,8 @@ void ConstraintSolver::solveConstrainedGroups()
     };
 
     if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
-        && mConstrainedGroups.size() >= 128u) {
+        && mConstrainedGroups.size() >= 128u
+        && !usesRandomizedPgsSolver(*this)) {
       DART_PROFILE_SCOPED_N("parallel solve groups");
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
