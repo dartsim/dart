@@ -158,6 +158,25 @@ def test_new_legacy_cpp_function_with_numeric_return_type_requires_tag(tmp_path)
     assert any("newAxis" in m for m in messages)
 
 
+def test_new_legacy_trailing_return_function_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "auto oldUtility() -> bool;\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8") + "\nauto newUtility() -> bool;\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("newUtility" in m for m in messages)
+
+
 def test_new_legacy_inline_namespace_function_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -534,6 +553,37 @@ void bind(nb::module_& m) {
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("NewLegacyJoint.new_method" in m for m in messages)
+
+
+def test_new_legacy_binding_constructor_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    binding = _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::class_<ExistingJoint>(m, "ExistingJoint")
+      .def("old_method", [] {});
+}
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    binding.write_text(
+        binding.read_text(encoding="utf-8").replace(
+            '.def("old_method", [] {});',
+            '.def("old_method", [] {})\n      .def(nb::init<int>());',
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("ExistingJoint.__init__" in m for m in messages)
 
 
 def test_new_legacy_enum_binding_and_attr_require_bugfix_port_tag(tmp_path):

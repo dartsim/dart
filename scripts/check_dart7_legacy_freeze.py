@@ -50,7 +50,7 @@ CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
-    r"(?:noexcept\s*)?(?:;|\{)"
+    r"(?:noexcept\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?\s*(?:;|\{)"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
 CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
@@ -104,6 +104,7 @@ BINDING_MEMBER_PATTERN = re.compile(
     r"\.(?P<kind>def(?:_[A-Za-z_]+)?|def_property(?:_[A-Za-z_]+)?|def_readwrite|def_readonly)"
     r"\(\s*\"(?P<name>[^\"]+)\""
 )
+BINDING_CONSTRUCTOR_PATTERN = re.compile(r"\.def\s*\(\s*nb::init\b")
 STUB_CLASS_PATTERN = re.compile(r"^(?P<indent>\s*)class\s+(?P<name>[A-Za-z_]\w*)\b")
 STUB_DEF_PATTERN = re.compile(r"^(?P<indent>\s*)def\s+(?P<name>[A-Za-z_]\w*)\b")
 STUB_ATTR_PATTERN = re.compile(r"^(?P<indent>\s*)(?P<name>[A-Za-z_]\w*)\s*:")
@@ -666,6 +667,21 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
 
                 if module_buffer and ";" in code:
                     module_buffer = ""
+
+                constructor_match = BINDING_CONSTRUCTOR_PATTERN.search(
+                    member_search_line
+                )
+                if constructor_match:
+                    entries.append(
+                        LegacyEntry(
+                            "binding-constructor",
+                            rel_path,
+                            f"{current_class}.__init__",
+                            nearby_tag(lines, member_search_index),
+                        )
+                    )
+                    member_buffer = ""
+                    continue
 
                 member_match = BINDING_MEMBER_PATTERN.search(member_search_line)
                 if member_match:
