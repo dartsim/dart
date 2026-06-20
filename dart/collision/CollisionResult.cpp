@@ -45,8 +45,9 @@ namespace collision {
 void CollisionResult::addContact(const Contact& contact)
 {
   mContacts.push_back(contact);
-  addObject(contact.collisionObject1);
-  addObject(contact.collisionObject2);
+  addObjectToCaches(contact.collisionObject1);
+  addObjectToCaches(contact.collisionObject2);
+  mCollidingObjectCachesDirty = false;
 }
 
 //==============================================================================
@@ -81,6 +82,7 @@ const std::vector<Contact>& CollisionResult::getContacts() const
 const std::unordered_set<const dynamics::BodyNode*>&
 CollisionResult::getCollidingBodyNodes() const
 {
+  updateCollidingObjectCaches();
   return mCollidingBodyNodes;
 }
 
@@ -88,18 +90,21 @@ CollisionResult::getCollidingBodyNodes() const
 const std::unordered_set<const dynamics::ShapeFrame*>&
 CollisionResult::getCollidingShapeFrames() const
 {
+  updateCollidingObjectCaches();
   return mCollidingShapeFrames;
 }
 
 //==============================================================================
 bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
 {
+  updateCollidingObjectCaches();
   return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
 }
 
 //==============================================================================
 bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
 {
+  updateCollidingObjectCaches();
   return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
 }
 
@@ -121,15 +126,27 @@ void CollisionResult::clear()
   mContacts.clear();
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
+  mCollidingObjectCachesDirty = false;
 }
 
 //==============================================================================
-void CollisionResult::addObject(CollisionObject* object)
+void CollisionResult::updateCollidingObjectCaches() const
+{
+  if (!mCollidingObjectCachesDirty)
+    return;
+
+  mCollidingShapeFrames.clear();
+  mCollidingBodyNodes.clear();
+  mCollidingObjectCachesDirty = false;
+}
+
+//==============================================================================
+void CollisionResult::addObjectToCaches(CollisionObject* object) const
 {
   if (!object) {
-    dterr << "[CollisionResult::addObject] Attempting to add a collision with "
-          << "a nullptr object to a CollisionResult instance. This is not "
-          << "allowed. Please report this as a bug!\n";
+    dterr << "[CollisionResult::addObjectToCaches] Attempting to add a "
+          << "collision with a nullptr object to a CollisionResult instance. "
+          << "This is not allowed. Please report this as a bug!\n";
     DART_ASSERT(false);
     return;
   }
@@ -137,10 +154,8 @@ void CollisionResult::addObject(CollisionObject* object)
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
   mCollidingShapeFrames.insert(frame);
 
-  if (frame->isShapeNode()) {
-    const dynamics::ShapeNode* node = frame->asShapeNode();
-    mCollidingBodyNodes.insert(node->getBodyNodePtr());
-  }
+  if (const auto* bodyNode = object->getBodyNode())
+    mCollidingBodyNodes.insert(bodyNode);
 }
 
 } // namespace collision

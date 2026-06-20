@@ -36,6 +36,8 @@
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/fcl/BackwardCompatibility.hpp>
 
+#include <vector>
+
 namespace dart {
 namespace collision {
 
@@ -84,9 +86,24 @@ protected:
   /// Return FCL collision manager that is also a broad-phase algorithm
   const FCLCollisionManager* getFCLCollisionManager() const;
 
+  /// Return FCL objects registered with the finite broad-phase manager.
+  const std::vector<fcl::CollisionObject*>& getFiniteFCLCollisionObjects()
+      const;
+
+  /// Return unbounded FCL objects that cannot be registered with the finite
+  /// broad-phase manager.
+  const std::vector<fcl::CollisionObject*>& getUnboundedFCLCollisionObjects()
+      const;
+
 protected:
   /// FCL broad-phase algorithm
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+
+  /// Finite FCL objects registered with mBroadPhaseAlg.
+  std::vector<fcl::CollisionObject*> mFiniteObjects;
+
+  /// Unbounded FCL objects, such as halfspaces, handled outside mBroadPhaseAlg.
+  std::vector<fcl::CollisionObject*> mUnboundedObjects;
 };
 
 } // namespace collision

@@ -43,6 +43,36 @@
 namespace dart {
 namespace collision {
 
+namespace {
+
+//==============================================================================
+class MutableFCLCollisionObject : public dart::collision::fcl::CollisionObject
+{
+public:
+  explicit MutableFCLCollisionObject(
+      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
+          fclCollGeom)
+    : dart::collision::fcl::CollisionObject(fclCollGeom)
+  {
+    // Do nothing
+  }
+
+  void setCollisionGeometry(
+      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
+          fclCollGeom)
+  {
+    cgeom = fclCollGeom;
+    cgeom_const = fclCollGeom;
+
+    if (cgeom) {
+      cgeom->computeLocalAABB();
+      computeAABB();
+    }
+  }
+};
+
+} // namespace
+
 //==============================================================================
 dart::collision::fcl::CollisionObject*
 FCLCollisionObject::getFCLCollisionObject()
@@ -63,7 +93,7 @@ FCLCollisionObject::FCLCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
+    mFCLCollisionObject(new MutableFCLCollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(this);
 
@@ -83,6 +113,17 @@ FCLCollisionObject::FCLCollisionObject(
       mKey = shapeFrame->getName();
     }
   }
+}
+
+//==============================================================================
+void FCLCollisionObject::setFCLCollisionGeometry(
+    const std::shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
+{
+  auto mutableObject
+      = static_cast<MutableFCLCollisionObject*>(mFCLCollisionObject.get());
+  DART_ASSERT(mutableObject);
+
+  mutableObject->setCollisionGeometry(fclCollGeom);
 }
 
 //==============================================================================

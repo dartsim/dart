@@ -51,11 +51,10 @@ const dynamics::ShapeFrame* getShapeFrame(const CollisionObject* object)
 
 const dynamics::ShapeNode* getShapeNode(const CollisionObject* object)
 {
-  const auto* shapeFrame = getShapeFrame(object);
-  if (shapeFrame == nullptr)
+  if (object == nullptr)
     return nullptr;
 
-  return shapeFrame->asShapeNode();
+  return object->getShapeNode();
 }
 
 dynamics::ConstBodyNodePtr getBodyNode(const CollisionObject* object)

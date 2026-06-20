@@ -53,6 +53,9 @@ public:
   /// Removes all the pairs from this container.
   void removeAllPairs();
 
+  /// Returns true if this container has no pairs.
+  bool empty() const;
+
   /// Returns true if this container contains the pair.
   bool contains(const T* left, const T* right) const;
 
@@ -120,6 +123,13 @@ template <class T>
 void UnorderedPairs<T>::removeAllPairs()
 {
   mList.clear();
+}
+
+//==============================================================================
+template <class T>
+bool UnorderedPairs<T>::empty() const
+{
+  return mList.empty();
 }
 
 //==============================================================================

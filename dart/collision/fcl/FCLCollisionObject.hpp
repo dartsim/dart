@@ -66,6 +66,11 @@ protected:
       const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
           fclCollGeom);
 
+  /// Replace the FCL geometry while preserving the FCL object pointer.
+  void setFCLCollisionGeometry(
+      const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
+          fclCollGeom);
+
   // Documentation inherited
   void updateEngineData() override;
 

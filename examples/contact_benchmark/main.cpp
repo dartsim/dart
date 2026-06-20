@@ -139,6 +139,7 @@ struct Options
   double generatedSpacing = kDefaultGeneratedSpacing;
   std::optional<std::string> dumpFinalScenePath;
   std::optional<std::size_t> maxContacts;
+  std::optional<std::size_t> maxContactsPerPair;
   CollisionEngine collisionEngine = CollisionEngine::Default;
   BoxedLcpSolverKind boxedLcpSolver = BoxedLcpSolverKind::Default;
 };
@@ -234,6 +235,8 @@ void printUsage(const std::string& programName)
       << "                            Set the boxed-LCP primary solver for "
          "measurement.\n"
       << "  --max-contacts N          Set global collision contact cap.\n"
+      << "  --max-contacts-per-pair N Set per-pair contact cap; 0 preserves "
+         "legacy behavior.\n"
       << "  --primitive-shapes        Use FCL primitive shapes when FCL is "
          "used.\n"
       << "  --disable-deactivation    Disable automatic "
@@ -415,6 +418,8 @@ Options parseOptions(int argc, char* argv[])
       options.dumpFinalScenePath = needValue(arg);
     } else if (arg == "--max-contacts") {
       options.maxContacts = parseSize(needValue(arg), arg);
+    } else if (arg == "--max-contacts-per-pair") {
+      options.maxContactsPerPair = parseSize(needValue(arg), arg);
     } else if (arg == "--collision") {
       options.collisionEngine = parseCollisionEngine(needValue(arg));
     } else if (arg == "--lcp-solver") {
@@ -1187,6 +1192,11 @@ void applyOptions(
     world->getConstraintSolver()->getCollisionOption().maxNumContacts
         = *options.maxContacts;
   }
+
+  if (options.maxContactsPerPair.has_value()) {
+    world->getConstraintSolver()->getCollisionOption().maxNumContactsPerPair
+        = *options.maxContactsPerPair;
+  }
 }
 
 void printWorldSummary(
@@ -1200,6 +1210,11 @@ void printWorldSummary(
             << "\n";
   std::cout << "  Collision max contacts: "
             << world->getConstraintSolver()->getCollisionOption().maxNumContacts
+            << "\n";
+  std::cout << "  Collision max contacts per pair: "
+            << world->getConstraintSolver()
+                   ->getCollisionOption()
+                   .maxNumContactsPerPair
             << "\n";
   std::cout << "  Deactivation enabled: "
             << (world->getDeactivationOptions().mEnabled ? "true" : "false")

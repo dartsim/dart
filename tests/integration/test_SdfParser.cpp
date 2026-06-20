@@ -31,7 +31,11 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
@@ -41,6 +45,9 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#if HAVE_BULLET
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 
 using namespace dart;
 using namespace math;
@@ -155,6 +162,101 @@ TEST(SdfParser, ParsingSDFFiles)
 
     world->removeAllSkeletons();
   }
+}
+
+//==============================================================================
+TEST(SdfParser, PlaneShapeOption)
+{
+  const std::string sdfFilename = "dart://sample/sdf/test/plane_shape.sdf";
+
+  SkeletonPtr legacySkeleton = SdfParser::readSkeleton(sdfFilename);
+  ASSERT_TRUE(legacySkeleton != nullptr);
+  ASSERT_EQ(legacySkeleton->getNumBodyNodes(), 1u);
+  auto* legacyBody = legacySkeleton->getBodyNode(0);
+  ASSERT_TRUE(legacyBody != nullptr);
+  ASSERT_EQ(legacyBody->getNumShapeNodes(), 1u);
+  EXPECT_TRUE(
+      std::dynamic_pointer_cast<BoxShape>(
+          legacyBody->getShapeNode(0)->getShape())
+      != nullptr);
+
+  SdfParser::Options options;
+  options.mUsePlaneShapeForPlane = true;
+  SkeletonPtr planeSkeleton = SdfParser::readSkeleton(sdfFilename, options);
+  ASSERT_TRUE(planeSkeleton != nullptr);
+  ASSERT_EQ(planeSkeleton->getNumBodyNodes(), 1u);
+  auto* planeBody = planeSkeleton->getBodyNode(0);
+  ASSERT_TRUE(planeBody != nullptr);
+  ASSERT_EQ(planeBody->getNumShapeNodes(), 1u);
+
+  const auto plane = std::dynamic_pointer_cast<PlaneShape>(
+      planeBody->getShapeNode(0)->getShape());
+  ASSERT_TRUE(plane != nullptr);
+  EXPECT_TRUE(plane->getNormal().isApprox(Eigen::Vector3d::UnitZ()));
+}
+
+//==============================================================================
+TEST(SdfParser, PlaneShapeBulletWorldSettles)
+{
+#if HAVE_BULLET
+  SdfParser::Options options;
+  options.mUsePlaneShapeForPlane = true;
+  options.mCollisionDetector = collision::BulletCollisionDetector::create();
+
+  WorldPtr world = SdfParser::readWorld(
+      "dart://sample/sdf/test/plane_box_world.sdf", options);
+  ASSERT_TRUE(world != nullptr);
+
+  auto deactivation = world->getDeactivationOptions();
+  deactivation.mEnabled = true;
+  world->setDeactivationOptions(deactivation);
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 32u;
+
+  SkeletonPtr ground = world->getSkeleton("ground");
+  SkeletonPtr box = world->getSkeleton("box");
+  ASSERT_TRUE(ground != nullptr);
+  ASSERT_TRUE(box != nullptr);
+  EXPECT_FALSE(ground->isMobile());
+  EXPECT_TRUE(box->isMobile());
+
+  ASSERT_EQ(ground->getNumBodyNodes(), 1u);
+  auto* groundBody = ground->getBodyNode(0);
+  ASSERT_TRUE(groundBody != nullptr);
+  ASSERT_EQ(groundBody->getNumShapeNodes(), 1u);
+  EXPECT_TRUE(
+      std::dynamic_pointer_cast<PlaneShape>(
+          groundBody->getShapeNode(0)->getShape())
+      != nullptr);
+
+  ASSERT_EQ(box->getNumBodyNodes(), 1u);
+  auto* boxBody = box->getBodyNode(0);
+  ASSERT_TRUE(boxBody != nullptr);
+
+  bool sawContact = false;
+  std::size_t steps = 0;
+  for (; steps < 5000 && !box->isResting(); ++steps) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0;
+  }
+
+  EXPECT_TRUE(sawContact) << "box never contacted the parsed PlaneShape";
+  ASSERT_LT(steps, 5000u) << "box never went to sleep on the parsed plane";
+  ASSERT_TRUE(box->isResting());
+
+  const double z = boxBody->getTransform().translation().z();
+  EXPECT_NEAR(z, 0.1, 2e-2);
+
+  const Eigen::VectorXd frozenPositions = box->getPositions();
+  for (std::size_t i = 0; i < 200; ++i) {
+    world->step();
+    ASSERT_TRUE(box->isResting()) << "box spuriously woke at step " << i;
+    EXPECT_TRUE(box->getPositions().isApprox(frozenPositions, 1e-12))
+        << "resting box drifted on parsed PlaneShape at step " << i;
+  }
+#else
+  GTEST_SKIP() << "Bullet is unavailable";
+#endif
 }
 
 //==============================================================================

@@ -42,6 +42,7 @@
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -243,14 +244,26 @@ bool BulletCollisionDetector::collide(
       collisionWorld->getDispatcher());
   dispatcher->setFilter(option.collisionFilter);
 
-  // Filter out persistent contact pairs already existing in the world
-  filterOutCollisions(collisionWorld);
+  if (option.collisionFilter) {
+    DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
+    filterOutCollisions(collisionWorld);
+  }
 
-  castedGroup->updateEngineData();
-  collisionWorld->performDiscreteCollisionDetection();
+  {
+    DART_PROFILE_SCOPED_N("Bullet update engine data");
+    castedGroup->updateEngineDataForCollide();
+  }
+
+  {
+    DART_PROFILE_SCOPED_N("Bullet perform discrete collision");
+    collisionWorld->performDiscreteCollisionDetection();
+  }
 
   if (result) {
-    reportContacts(collisionWorld, option, *result);
+    {
+      DART_PROFILE_SCOPED_N("Bullet report contacts");
+      reportContacts(collisionWorld, option, *result);
+    }
 
     return result->isCollision();
   } else {
@@ -689,6 +702,7 @@ void reportContacts(
   DART_ASSERT(dispatcher);
 
   const auto numManifolds = dispatcher->getNumManifolds();
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
 
   for (auto i = 0; i < numManifolds; ++i) {
     const auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
@@ -703,8 +717,12 @@ void reportContacts(
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPointer1);
 
     const auto numContacts = contactManifold->getNumContacts();
+    std::size_t pairContacts = 0u;
 
     for (auto j = 0; j < numContacts; ++j) {
+      if (pairContacts >= maxContactsPerPair)
+        break;
+
       const auto& cp = contactManifold->getContactPoint(j);
 
       if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared()) {
@@ -714,6 +732,7 @@ void reportContacts(
       }
 
       result.addContact(convertContact(cp, collObj0, collObj1));
+      ++pairContacts;
 
       // No need to check further collisions
       if (result.getNumContacts() >= option.maxNumContacts) {
