@@ -12,6 +12,21 @@
     `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+  * Remove the deprecated external optimizer backends (IPOPT, NLopt, pagmo,
+    SNOPT) and the pagmo-based multi-objective optimization API
+    (`MultiObjectiveProblem`/`MultiObjectiveSolver`, `Population`,
+    `GenericMultiObjectiveProblem`), which were extracted to the separate
+    [dart-optimization](https://github.com/dartsim/dart-optimization) package.
+    The `optimizer-ipopt` / `optimizer-nlopt` / `optimizer-pagmo` CMake
+    components and their installed headers, the `dart.optimizer.NloptSolver`
+    Python binding, and the `HAVE_IPOPT` / `HAVE_NLOPT` / `HAVE_PAGMO` /
+    `HAVE_SNOPT` macros in the installed `dart/config.hpp` are removed, and the
+    non-Pixi install instructions (apt/brew/vcpkg/Arch), root `Dockerfile`, and
+    `Brewfile` no longer pull these packages. The optimizer core (`Function`,
+    `Problem`, `Solver`, `GradientDescentSolver`) used by DART's
+    `InverseKinematics` is retained:
+    [#3105](https://github.com/dartsim/dart/pull/3105)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
