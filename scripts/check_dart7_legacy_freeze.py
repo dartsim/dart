@@ -33,9 +33,17 @@ BINDING_SUFFIXES = {".cpp", ".hpp", ".h"}
 
 CPP_TYPE_PATTERN = re.compile(
     r"^\s*(?:template\s*<[^>]+>\s*)?"
-    r"(?P<kind>class|struct|enum(?:\s+class)?|using|typedef)\s+"
+    r"(?P<kind>class|struct|enum(?:\s+class)?|using)\s+"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?P<name>[A-Za-z_]\w*)"
+)
+CPP_TYPEDEF_POINTER_PATTERN = re.compile(
+    r"^\s*(?:template\s*<[^>]+>\s*)?typedef\b.*"
+    r"\(\s*\*\s*(?P<name>[A-Za-z_]\w*)\s*\)"
+)
+CPP_TYPEDEF_ALIAS_PATTERN = re.compile(
+    r"^\s*(?:template\s*<[^>]+>\s*)?typedef\b.*\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*;"
 )
 CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
@@ -47,6 +55,12 @@ CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
 CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_]+|extern|static|inline|constexpr)\b"
+)
+CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:(?:extern|static|inline|constexpr)\s+)*"
+    r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
+    r"[A-Za-z_]\w*\s*\("
 )
 CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
@@ -356,14 +370,26 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     )
 
                 type_match = CPP_TYPE_PATTERN.search(line)
-                if type_match and not in_detail_namespace:
+                typedef_match = None
+                if type_match is None:
+                    typedef_match = CPP_TYPEDEF_POINTER_PATTERN.search(
+                        line
+                    ) or CPP_TYPEDEF_ALIAS_PATTERN.search(line)
+
+                if (type_match or typedef_match) and not in_detail_namespace:
                     current_class = class_stack[-1] if class_stack else None
                     public_surface = current_class is None or (
                         bool(current_class["public_surface"])
                         and current_class["access"] == "public"
                     )
-                    kind = type_match.group("kind").replace(" ", "-")
-                    type_name = type_match.group("name")
+                    kind = (
+                        type_match.group("kind") if type_match else "typedef"
+                    ).replace(" ", "-")
+                    type_name = (
+                        type_match.group("name")
+                        if type_match
+                        else typedef_match.group("name")
+                    )
                     if public_surface:
                         entries.append(
                             LegacyEntry(
@@ -403,6 +429,9 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     elif (
                         CPP_DART_API_TOKEN_PATTERN.search(function_code)
                         or CPP_NAMESPACE_FUNCTION_START_PATTERN.search(function_code)
+                        or CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN.search(
+                            function_code
+                        )
                     ) and "(" in function_code:
                         function_buffer = [function_code]
                         function_start = index
@@ -467,6 +496,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     and current_class["access"] == "public"
                     and not in_detail_namespace
                     and not type_match
+                    and not typedef_match
                     and not access_match
                     and inline_member_body_depth is None
                 ):

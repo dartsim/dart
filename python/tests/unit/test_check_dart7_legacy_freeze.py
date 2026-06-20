@@ -178,6 +178,65 @@ def test_new_legacy_inline_namespace_function_requires_bugfix_port_tag(tmp_path)
     assert any("newUtility" in m for m in messages)
 
 
+def test_new_legacy_plain_namespace_function_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "bool oldUtility();\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8") + "\nbool newUtility();\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("newUtility" in m for m in messages)
+
+
+def test_new_legacy_typedef_alias_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "typedef std::shared_ptr<LegacyJoint> OldJointPtr;\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\ntypedef std::shared_ptr<LegacyJoint> NewJointPtr;\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NewJointPtr" in m for m in messages)
+
+
+def test_new_legacy_function_pointer_typedef_alias_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "typedef bool (*OldUtilityFn)(int value);\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\ntypedef bool (*NewUtilityFn)(int value);\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NewUtilityFn" in m for m in messages)
+
+
 def test_new_legacy_namespace_constant_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
