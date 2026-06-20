@@ -1101,6 +1101,7 @@ cpp-enum|dart/dynamics/point_cloud_shape.hpp|PointShapeType
 cpp-enum|dart/dynamics/shape.hpp|DataVariance
 cpp-enum|dart/dynamics/shape.hpp|ShapeType
 cpp-enum|dart/dynamics/skeleton.hpp|ConfigFlags
+cpp-function|dart/dynamics/ik_fast.hpp|wrapCyclicSolution
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.b
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.findex
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.hi

@@ -37,12 +37,17 @@ CPP_TYPE_PATTERN = re.compile(
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?P<name>[A-Za-z_]\w*)"
 )
-CPP_DART_API_FUNCTION_PATTERN = re.compile(
-    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
-    r"(?:static\s+)?(?:inline\s+)?(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
-    r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?;"
+CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:(?:extern|static|inline|constexpr)\s+)*"
+    r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
+    r"(?:noexcept\s*)?(?:;|\{)"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
+CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_]+|extern|static|inline|constexpr)\b"
+)
 CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
@@ -395,7 +400,10 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     function_code = code.strip()
                     if function_buffer:
                         function_buffer.append(function_code)
-                    elif CPP_DART_API_TOKEN_PATTERN.search(function_code):
+                    elif (
+                        CPP_DART_API_TOKEN_PATTERN.search(function_code)
+                        or CPP_NAMESPACE_FUNCTION_START_PATTERN.search(function_code)
+                    ) and "(" in function_code:
                         function_buffer = [function_code]
                         function_start = index
 
@@ -403,7 +411,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         ";" in function_code or "{" in function_code
                     ):
                         function_signature = " ".join(function_buffer)
-                        function_match = CPP_DART_API_FUNCTION_PATTERN.search(
+                        function_match = CPP_NAMESPACE_FUNCTION_PATTERN.search(
                             function_signature
                         )
                         if function_match:
