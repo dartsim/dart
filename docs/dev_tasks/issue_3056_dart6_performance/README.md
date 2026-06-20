@@ -87,6 +87,9 @@ speedup.
 - Current PR2 compatibility review fixes keep the legacy solver sleeping setter
   as a source-compatible alias and preserve ordinary self-collision/blacklist
   filtering before the solver-local resting-island contact preservation path.
+- Current PR2 custom-filter fix disables all-resting snapshot reuse for filters
+  whose decision state is not revision-tracked, so stateful custom filters
+  cannot hide changed contact decisions behind the cached fast path.
 
 ## Default-On Correctness Rule
 
@@ -187,3 +190,5 @@ bug until proven otherwise.
 - For the PR2 Codex compatibility/filter-order reviews, rebuilt
   `test_IslandDeactivation` and `test_ConstraintSolver`, then passed both
   through focused CTest.
+- For the PR2 Codex custom-filter review, rebuilt `test_IslandDeactivation` and
+  passed the focused CTest after adding a stateful custom-filter regression.

@@ -192,6 +192,41 @@ std::size_t stepUntil(World* world, std::size_t maxSteps, Predicate pred)
 constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
+class TogglePairCollisionFilter : public CollisionFilter
+{
+public:
+  TogglePairCollisionFilter(
+      const BodyNode* body1, const BodyNode* body2, bool ignorePair)
+    : mBody1(body1), mBody2(body2), mIgnorePair(ignorePair)
+  {
+  }
+
+  void setIgnorePair(bool ignorePair)
+  {
+    mIgnorePair = ignorePair;
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    if (mBaseFilter.ignoresCollision(object1, object2))
+      return true;
+
+    const auto* body1 = object1->getBodyNode();
+    const auto* body2 = object2->getBodyNode();
+    const bool targetPair = (body1 == mBody1 && body2 == mBody2)
+                            || (body1 == mBody2 && body2 == mBody1);
+    return mIgnorePair && targetPair;
+  }
+
+private:
+  BodyNodeCollisionFilter mBaseFilter;
+  const BodyNode* mBody1;
+  const BodyNode* mBody2;
+  bool mIgnorePair;
+};
+
 // Creates a world with automatic deactivation enabled. Keep this explicit so
 // tests stay robust if callers locally override the default options.
 WorldPtr makeSleepWorld()
@@ -903,6 +938,41 @@ TEST(IslandDeactivation, PublicCollisionFilterReportsRestingContacts)
   CollisionResult result;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+// Stateful custom filters do not expose a revision, so the all-resting cache
+// must opt out instead of reusing a snapshot after the filter's decision
+// changes.
+TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf));
+  world->addSkeleton(sleeper);
+
+  auto filter = std::make_shared<TogglePairCollisionFilter>(
+      floor->getBodyNode(0), sleeper->getBodyNode(0), true);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+  sleeper->setSleepCandidate(true);
+  sleeper->setIslandIndex(0);
+  sleeper->setResting(true);
+
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+  filter->setIgnorePair(false);
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "custom filter change was hidden by the all-resting fast path";
 }
 
 //==============================================================================

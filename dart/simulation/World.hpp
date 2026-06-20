@@ -377,6 +377,11 @@ protected:
   /// snapshot.
   void updateAllRestingSnapshotGlobalVersions();
 
+  /// Returns true if the current filter exposes enough state for all-resting
+  /// snapshot reuse.
+  bool isCollisionFilterSnapshotTrackable(
+      const collision::CollisionFilter* filter) const;
+
   /// Returns the collision-filter revision tracked by all-resting snapshots.
   std::size_t getCollisionFilterSnapshotRevision(
       const collision::CollisionFilter* filter) const;

@@ -858,6 +858,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter)) {
+    invalidateAllRestingKinematicSnapshot();
+    return false;
+  }
+
   const auto collisionFilterRevision
       = getCollisionFilterSnapshotRevision(collisionFilter);
   const bool collisionFilterUnchanged
@@ -954,6 +959,13 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 //==============================================================================
 void World::updateAllRestingKinematicSnapshot()
 {
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  if (!isCollisionFilterSnapshotTrackable(
+          collisionOption.collisionFilter.get())) {
+    invalidateAllRestingKinematicSnapshot();
+    return;
+  }
+
   mAllRestingKinematicSnapshot.clear();
   mAllRestingKinematicSnapshot.reserve(mSkeletons.size());
   mAllRestingSnapshotHasMobileSkeleton = false;
@@ -993,6 +1005,17 @@ void World::updateAllRestingSnapshotGlobalVersions()
   mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
   mAllRestingSnapshotCollisionFilterRevision
       = getCollisionFilterSnapshotRevision(mAllRestingSnapshotCollisionFilter);
+}
+
+//==============================================================================
+bool World::isCollisionFilterSnapshotTrackable(
+    const collision::CollisionFilter* filter) const
+{
+  if (filter == nullptr)
+    return true;
+
+  return dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter)
+         != nullptr;
 }
 
 //==============================================================================
