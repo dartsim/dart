@@ -38,14 +38,6 @@ dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
 
-if(TARGET dart-optimizer-ipopt)
-  target_link_libraries(test_Optimizer dart-optimizer-ipopt)
-endif()
-
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(test_Optimizer dart-optimizer-nlopt)
-endif()
-
 if(TARGET dart-utils)
 
   dart_add_test("integration" test_CompositeResourceRetriever)
@@ -106,11 +98,6 @@ dart_format_add(
   SharedLibraryWamIkFast.hpp
   SharedLibraryWamIkFast.cpp
 )
-
-if(TARGET dart-optimizer-pagmo)
-  dart_add_test("integration" test_MultiObjectiveOptimization)
-  target_link_libraries(test_MultiObjectiveOptimization dart-optimizer-pagmo)
-endif()
 
 dart_add_test("integration" test_Distance)
 if(TARGET dart-collision-bullet)
