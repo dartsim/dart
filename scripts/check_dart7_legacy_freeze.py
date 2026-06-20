@@ -57,7 +57,8 @@ CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
-    r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
+    r"(?:(?:[A-Za-z_]\w*(?:<[^;(){}]*>)?::)*)"
+    r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
     r"(?:noexcept\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?\s*(?:;|\{)"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
@@ -69,7 +70,16 @@ CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
-    r"[A-Za-z_]\w*\s*\("
+    r"(?:(?:[A-Za-z_]\w*(?:<[^;(){}]*>)?::)*)"
+    r"~?[A-Za-z_]\w*\s*\("
+)
+CPP_QUALIFIED_NAMESPACE_FUNCTION_PATTERN = re.compile(
+    r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+"
+    r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
+    r"(?:noexcept\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?\s*(?:;|\{)"
+)
+CPP_QUALIFIED_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
+    r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+~?[A-Za-z_]\w*\s*\("
 )
 CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
@@ -209,20 +219,13 @@ def is_detail_path(path: Path) -> bool:
     return "/detail/" in path.as_posix()
 
 
-def is_cpp_detail_wrapper_header(text: str) -> bool:
-    has_detail_include = False
+def cpp_detail_include_paths(text: str) -> set[Path]:
+    includes: set[Path] = set()
     for line in text.splitlines():
-        stripped = code_without_comment(line).strip()
-        if not stripped or stripped.startswith(("/*", "*", "*/")):
-            continue
-        if CPP_DETAIL_INCLUDE_PATTERN.search(stripped):
-            has_detail_include = True
-            continue
-        if stripped.startswith(("#ifndef", "#define", "#endif", "#pragma")):
-            continue
-        return False
-
-    return has_detail_include
+        include_match = CPP_DETAIL_INCLUDE_PATTERN.search(line)
+        if include_match:
+            includes.add(Path(include_match.group("path")))
+    return includes
 
 
 def public_cpp_detail_headers(root: Path, rel_root: Path) -> set[Path]:
@@ -239,15 +242,10 @@ def public_cpp_detail_headers(root: Path, rel_root: Path) -> set[Path]:
         ):
             continue
         text = read_text(child)
-        if text is None or not is_cpp_detail_wrapper_header(text):
+        if text is None:
             continue
 
-        for line in text.splitlines():
-            include_match = CPP_DETAIL_INCLUDE_PATTERN.search(line)
-            if not include_match:
-                continue
-
-            rel_include = Path(include_match.group("path"))
+        for rel_include in cpp_detail_include_paths(text):
             if not rel_include.as_posix().startswith(rel_root.as_posix() + "/detail/"):
                 continue
 
@@ -394,10 +392,23 @@ def add_public_cpp_member_entry(
 
 def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
     entries: list[LegacyEntry] = []
+    ignored_function_names = {
+        "if",
+        "for",
+        "while",
+        "switch",
+        "return",
+        "static_cast",
+        "const_cast",
+        "dynamic_cast",
+        "reinterpret_cast",
+        "constexpr",
+    }
     for rel_root in LEGACY_CPP_ROOTS:
         public_detail_paths = public_cpp_detail_headers(root, rel_root)
         for path in iter_files(root, rel_root, CPP_SUFFIXES, public_detail_paths):
             rel_path = relative_path(path, root)
+            scan_detail_namespace = Path(rel_path) in public_detail_paths
             lines = path.read_text(encoding="utf-8").splitlines()
             brace_depth = 0
             namespace_stack: list[tuple[str, int]] = []
@@ -411,6 +422,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             member_buffer: list[str] = []
             member_start = 0
             inline_member_body_depth: int | None = None
+            namespace_function_body_depth: int | None = None
             for index, line in enumerate(lines):
                 stripped = line.strip()
                 if not stripped or stripped.startswith(("//", "*", "/*", "#")):
@@ -422,6 +434,14 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     and brace_depth <= inline_member_body_depth
                 ):
                     inline_member_body_depth = None
+                if (
+                    namespace_function_body_depth is not None
+                    and brace_depth <= namespace_function_body_depth
+                ):
+                    namespace_function_body_depth = None
+                if namespace_function_body_depth is not None:
+                    brace_depth += brace_delta(line)
+                    continue
 
                 while namespace_stack and brace_depth <= namespace_stack[-1][1]:
                     namespace_stack.pop()
@@ -440,6 +460,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     or "::detail" in namespace
                     for namespace, _ in namespace_stack
                 )
+                in_scanned_surface = scan_detail_namespace or not in_detail_namespace
                 in_namespace_scope = (
                     not class_stack
                     and not enum_stack
@@ -454,7 +475,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
 
                 code = code_without_comment(line)
                 if pending_scope:
-                    if "{" in code and not in_detail_namespace:
+                    if "{" in code and in_scanned_surface:
                         kind = str(pending_scope["kind"])
                         type_name = str(pending_scope["name"])
                         if kind in {"class", "struct"}:
@@ -482,7 +503,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     elif ";" in code:
                         pending_scope = None
 
-                if enum_stack and enum_stack[-1][2] and not in_detail_namespace:
+                if enum_stack and enum_stack[-1][2] and in_scanned_surface:
                     add_cpp_enum_values(
                         entries, rel_path, enum_stack[-1][0], line, lines, index
                     )
@@ -490,7 +511,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                 smart_pointer_macro_match = CPP_SMART_POINTER_MACRO_PATTERN.search(line)
                 if (
                     smart_pointer_macro_match
-                    and not in_detail_namespace
+                    and in_scanned_surface
                     and not class_stack
                     and not enum_stack
                 ):
@@ -511,7 +532,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         line
                     ) or CPP_TYPEDEF_ALIAS_PATTERN.search(line)
 
-                if (type_match or typedef_match) and not in_detail_namespace:
+                if (type_match or typedef_match) and in_scanned_surface:
                     current_class = class_stack[-1] if class_stack else None
                     public_surface = current_class is None or (
                         bool(current_class["public_surface"])
@@ -558,7 +579,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             "public_surface": public_surface,
                         }
 
-                if not in_detail_namespace and not class_stack:
+                if in_scanned_surface and not class_stack:
                     function_code = code.strip()
                     if function_buffer:
                         function_buffer.append(function_code)
@@ -566,6 +587,9 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         CPP_DART_API_TOKEN_PATTERN.search(function_code)
                         or CPP_NAMESPACE_FUNCTION_START_PATTERN.search(function_code)
                         or CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN.search(
+                            function_code
+                        )
+                        or CPP_QUALIFIED_NAMESPACE_FUNCTION_CANDIDATE_PATTERN.search(
                             function_code
                         )
                     ) and "(" in function_code:
@@ -587,8 +611,14 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         function_signature = " ".join(function_buffer)
                         function_match = CPP_NAMESPACE_FUNCTION_PATTERN.search(
                             function_signature
+                        ) or CPP_QUALIFIED_NAMESPACE_FUNCTION_PATTERN.search(
+                            function_signature
                         )
-                        if function_match:
+                        if (
+                            function_match
+                            and function_match.group("name")
+                            not in ignored_function_names
+                        ):
                             entries.append(
                                 LegacyEntry(
                                     "cpp-function",
@@ -598,11 +628,11 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                     function_signature,
                                 )
                             )
+                        if "{" in function_code and brace_delta(line) > 0:
+                            namespace_function_body_depth = brace_depth
                         function_buffer = []
 
-                if not in_detail_namespace and (
-                    in_namespace_scope or namespace_data_buffer
-                ):
+                if in_scanned_surface and (in_namespace_scope or namespace_data_buffer):
                     namespace_data_code = code.strip()
                     if namespace_data_buffer:
                         namespace_data_buffer.append(namespace_data_code)
@@ -641,7 +671,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     current_class is not None
                     and current_class["public_surface"]
                     and current_class["access"] == "public"
-                    and not in_detail_namespace
+                    and in_scanned_surface
                     and not type_match
                     and not typedef_match
                     and not access_match

@@ -125,6 +125,42 @@ def test_new_legacy_public_detail_symbol_requires_bugfix_port_tag(tmp_path):
     assert any("NewWrappedLegacy" in m for m in messages)
 
 
+def test_new_legacy_transitive_detail_symbol_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    detail_header = _write(
+        tmp_path / "dart" / "dynamics" / "detail" / "transitive_legacy.hpp",
+        """
+namespace dart::dynamics::detail {
+class DART_API ExistingTransitiveLegacy {};
+} // namespace dart::dynamics::detail
+""",
+    )
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API ExistingJoint {};
+
+#include <dart/dynamics/detail/transitive_legacy.hpp>
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    detail_header.write_text(
+        detail_header.read_text(encoding="utf-8").replace(
+            "class DART_API ExistingTransitiveLegacy {};",
+            "class DART_API ExistingTransitiveLegacy {};\n"
+            "class DART_API NewTransitiveLegacy {};",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("detail/transitive_legacy.hpp" in m for m in messages)
+    assert any("NewTransitiveLegacy" in m for m in messages)
+
+
 def test_private_legacy_detail_symbol_is_not_public_freeze_surface(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
