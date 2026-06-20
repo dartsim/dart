@@ -279,7 +279,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   `check-dartpy-import-layout` stale-runtime drift (this packet changes no
   dartpy files).
 
-#### WP-091.4 Legacy freeze gate and Decision 5
+#### WP-091.4 Legacy freeze gate and Decision 5 [claimed]
 
 - Objective: PLAN-042 Decision 5 (which legacy DART 6 surfaces are removed,
   quarantined, wrapped, or promoted) is recorded, and CI rejects new public
@@ -294,25 +294,13 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
 - Acceptance evidence: decision recorded in PLAN-042; freeze check exercised
   by a meta-test; orphaned-feature disposition recorded.
 - Gates: `pixi run lint`, `pixi run check-lint`.
-- Dependencies: maintainer direction on Decision 5 options. **BLOCKED as of
-  2026-06-13:** "Decision 5" is item 5 ("Classic simulation and dynamics
-  boundary") in the numbered `## Decisions To Make` list of
-  `docs/plans/042-dart7-public-api-and-source-layout.md`, still open with no
-  recorded maintainer choice; the same unresolved state is mirrored in
-  `042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`
-  (the "Legacy dynamics boundary" bullet under `## Required Follow-Up
-Decisions`, and the `dart/dynamics` row of `## Current Folder
-Classification`, marked "compatibility/quarantine lane; surviving concepts
-  need explicit DART 7 names") and in
-  `042-dart7-public-api-and-source-layout/api-source-layout-audit.md` (the
-  `dart/dynamics` row, whose disposition cell still reads "Decide remove,
-  wrap, or quarantine per concept"). Unblock by recording the Decision 5
-  outcome — per DART 6 surface (World, Skeleton, BodyNode, the constraint
-  concepts, the orphaned cylindrical joint), whether each is removed,
-  quarantined, wrapped, or promoted — and resolving those three open anchors
-  in place (no new `## Decision 5` heading is needed; the anchors already
-  exist). The quarantine lane this packet's freeze check must enforce is
-  undefined until that decision exists, so do not start the check before then.
+- Dependencies: maintainer direction on Decision 5 options. **Unblocked on
+  2026-06-19:** the accepted direction is to completely remove DART 6 legacy
+  from the DART 7 public contract, while waiting until DART 6.20+ and any later
+  `release-6.*` maintenance branches have fully ported the capabilities they
+  still need. Current open DART 6.20+ work observed while claiming this packet
+  includes PRs #3071, #3085, #3086, #3087, #3088, #3089, and #3092; more
+  release-lane PRs may appear before final removal.
 
 #### WP-091.5 Renumber colliding plan IDs [done — PR #3003, merged 2026-06-14]
 
