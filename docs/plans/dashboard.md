@@ -30,16 +30,14 @@ its own line so status updates remain git-history friendly.
   via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077; and
   WP-091.41 through WP-091.44 via PR #3072; and the WP-091.24 standalone
   harness/packet slice, bounded WP-091.13 shared-helper cleanup, and
-  WP-091.33e packet-reporting checker via PR #3083. The remaining WS0 packet is
-  WP-091.4 legacy freeze, which stays **blocked**: PLAN-042 Decision 5 has no
-  recorded maintainer direction.
-  WP-091.13 and WP-091.24 now have closeout evidence under their `[claimed]`
-  headings: one canonical rigid-contact assembly producer feeds sequential
-  impulse, boxed-LCP, and differentiable capture, while `StepMetrics` now folds
-  cached contact/iteration diagnostics, variational residuals, multibody
-  momentum, and a smooth-corpus convergence sweep. After this closeout packet,
-  the only PLAN-091 item without executable closure remains the blocked
-  WP-091.4 decision.
+  WP-091.33e packet-reporting checker via PR #3083. PR #3091 closed WP-091.13
+  and WP-091.24: one canonical rigid-contact assembly producer feeds
+  sequential impulse, boxed-LCP, and differentiable capture, while
+  `StepMetrics` now folds cached contact/iteration diagnostics, variational
+  residuals, multibody momentum, and a smooth-corpus convergence sweep. The
+  remaining WS0 packet is WP-091.4 legacy freeze, which stays **blocked**:
+  PLAN-042 Decision 5 has no recorded maintainer direction; it is the only
+  PLAN-091 item without executable closure.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
