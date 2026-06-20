@@ -306,6 +306,33 @@ def test_new_legacy_constrained_cpp_function_requires_bugfix_port_tag(tmp_path):
     assert any("newUtility" in m for m in messages)
 
 
+def test_changed_legacy_leading_requires_function_signature_requires_bugfix_port_tag(
+    tmp_path,
+):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "template <class T>\n"
+        "requires (OldLegacyConstraint<T>)\n"
+        "bool legacyUtility(T);\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "OldLegacyConstraint",
+            "NewLegacyConstraint",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("legacyUtility" in m for m in messages)
+    assert any("NewLegacyConstraint" in m for m in messages)
+
+
 def test_new_legacy_inline_namespace_function_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

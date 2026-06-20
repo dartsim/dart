@@ -63,6 +63,12 @@ CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
 CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_]+|extern|static|inline|constexpr)\b"
 )
+CPP_NAMESPACE_FUNCTION_TEMPLATE_PREFIX_PATTERN = re.compile(
+    r"^\s*template\s*<[^;{}]+>$"
+)
+CPP_NAMESPACE_FUNCTION_PREFIX_PATTERN = re.compile(
+    r"^\s*(?:template\s*<[^;{}]+>\s+requires\b[^;{}]*|requires\b[^;{}]*)$"
+)
 CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
@@ -540,6 +546,27 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     elif (
                         in_namespace_scope
                         and not any(token in function_code for token in (";", "{", "}"))
+                        and CPP_NAMESPACE_FUNCTION_PREFIX_PATTERN.search(function_code)
+                    ):
+                        function_prefix = [function_code]
+                        function_start = index
+                        if function_code.startswith("requires"):
+                            cursor = index - 1
+                            while cursor >= 0:
+                                previous_code = code_without_comment(
+                                    lines[cursor]
+                                ).strip()
+                                if not CPP_NAMESPACE_FUNCTION_TEMPLATE_PREFIX_PATTERN.search(
+                                    previous_code
+                                ):
+                                    break
+                                function_prefix.insert(0, previous_code)
+                                function_start = cursor
+                                cursor -= 1
+                        function_buffer = function_prefix
+                    elif (
+                        in_namespace_scope
+                        and not any(token in function_code for token in (";", "{", "}"))
                         and CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN.search(
                             function_code
                         )
@@ -551,10 +578,20 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         ";" in function_code or "{" in function_code
                     ):
                         function_signature = " ".join(function_buffer)
+                        function_match_signature = " ".join(
+                            part
+                            for part in function_buffer
+                            if not CPP_NAMESPACE_FUNCTION_TEMPLATE_PREFIX_PATTERN.search(
+                                part
+                            )
+                            and not CPP_NAMESPACE_FUNCTION_PREFIX_PATTERN.search(part)
+                        )
+                        if not function_match_signature:
+                            function_match_signature = function_signature
                         function_match = CPP_NAMESPACE_FUNCTION_PATTERN.search(
-                            function_signature
+                            function_match_signature
                         ) or CPP_QUALIFIED_NAMESPACE_FUNCTION_PATTERN.search(
-                            function_signature
+                            function_match_signature
                         )
                         if (
                             function_match
