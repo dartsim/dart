@@ -131,8 +131,37 @@ adding a new documentation platform.
 - Gates: `pixi run check-docs-policy`, `pixi run lint`.
 - Dependencies: none.
 
+#### WP-121.8 Strict docs/ai `type` legend check [done — local implementation]
+
+- Objective: the docs/ai frontmatter pilot rejects a `type` value outside the
+  closed legend of the eight identity types the real docs already use, so a
+  typo or drifted identity header fails fast instead of passing silently.
+- Scope: `scripts/check_docs_policy.py` (the `DOCS_AI_TYPE_LEGEND` constant plus
+  the strict check inside `check_ai_doc_frontmatter`) and
+  `tests/test_check_docs_policy.py`.
+- Non-goals: a second new check, generated knowledge-graph JSON, expanding the
+  frontmatter pilot beyond `docs/ai/`, or flipping any advisory to blocking.
+- Acceptance evidence: `check_ai_doc_frontmatter` fails when `type` is set but
+  not in `DOCS_AI_TYPE_LEGEND`; the eight real `docs/ai/*.md` stay green; one
+  net-new meta-test (`test_docs_ai_frontmatter_rejects_out_of_legend_type`)
+  covers both rejection and a clean roster (test count 24 → 25). Existing
+  fixtures migrated off the non-legend `type: ai-policy` placeholder.
+- Gates: `pixi run python -m pytest tests/test_check_docs_policy.py`,
+  `pixi run check-docs-policy`, `pixi run check-ai-commands`, `pixi run lint`.
+- Dependencies: WP-121.3.
+
 ## Follow-Up Trigger
 
 After at least one clean cycle with no advisory output from the report-only
 checks, decide whether any advisory should become blocking. Make that decision
 in this plan and keep the flip separate from ordinary docs cleanup.
+
+**Deferred as of 2026-06-19.** The one-clean-cycle precondition is not met:
+`check-docs-policy` currently emits 17 north-star freshness advisories (cited
+evidence paths changed 2026-06-17..06-19 against
+`evidence-last-verified=2026-06-16`) while still exiting 0, so promoting any
+advisory to blocking is premature. The additive WP-121.8 strict `type` legend
+check landed instead, adding no new advisory output. Revisit the flip after the
+freshness channel reports one clean cycle (bumping `evidence-last-verified` in
+`docs/ai/north-star.md` is the separate, owner-doc-governed manual step that
+clears that channel).

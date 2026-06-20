@@ -66,9 +66,15 @@
 #include <dart/simulation/detail/world_storage.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
 #include <dart/simulation/frame/free_frame.hpp>
+#include <dart/simulation/io/skeleton_loader.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/version.hpp>
 #include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -895,6 +901,44 @@ void expectRegistryStorageCapacitiesUnchanged(
     ASSERT_NE(it, actual.end()) << "missing storage id " << id;
     EXPECT_EQ(it->second, capacity) << "storage id " << id;
   }
+}
+
+// PLAN-122 L-001: build a legacy dynamics::Skeleton that the model-loading
+// bridge (dart::simulation::io::addSkeleton) translates into a DART 7 World.
+// A single-revolute pendulum exercises the multibody solver family after bake.
+dart::dynamics::SkeletonPtr makeImportedPendulumSkeleton()
+{
+  auto skeleton = dart::dynamics::Skeleton::create("imported_pendulum");
+
+  dart::dynamics::RevoluteJoint::Properties jointProperties;
+  jointProperties.mAxis = Eigen::Vector3d::UnitY();
+  jointProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          nullptr,
+          jointProperties,
+          dart::dynamics::BodyNode::AspectProperties("bob"));
+  joint->setName("hinge");
+  joint->setPosition(0, 0.3);
+  joint->setVelocity(0, -0.1);
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(1.25);
+  body->setInertia(inertia);
+
+  return skeleton;
+}
+
+// Scene configuration that imports a model through the loader bridge before the
+// World is baked, so the translation cost stays outside the measured post-bake
+// window. Used by the PLAN-122 L-001 imported-scene allocation gates below.
+void configureImportedSkeletonScene(dart::simulation::World& world)
+{
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  const auto skeleton = makeImportedPendulumSkeleton();
+  dart::simulation::io::addSkeleton(world, *skeleton);
+  world.setTimeStep(0.001);
 }
 
 template <typename ConfigureScene>
@@ -9684,6 +9728,34 @@ TEST(World, BakedDefaultRigidAndArticulatedContactsDoNotMallocOnHeap)
         world.setTimeStep(0.002);
       },
       true);
+#endif
+}
+
+// PLAN-122 L-001 (model-loading bridge): a model imported through
+// dart::simulation::io::addSkeleton bakes to the same multibody representation
+// as a hand-built one, so its first post-bake steps must not grow the World
+// base allocator, allocate from the global heap, or hit raw malloc. The source
+// skeleton is built and translated during scene configuration (before bake), so
+// the import cost lies outside every measured post-bake window.
+TEST(World, BakedImportedSkeletonStepsDoNotGrowWorldBaseAllocator)
+{
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "imported skeleton", configureImportedSkeletonScene);
+}
+
+TEST(World, BakedImportedSkeletonStepsDoNotAllocateGlobalHeap)
+{
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "imported skeleton", configureImportedSkeletonScene);
+}
+
+TEST(World, BakedImportedSkeletonStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "imported skeleton", configureImportedSkeletonScene);
 #endif
 }
 

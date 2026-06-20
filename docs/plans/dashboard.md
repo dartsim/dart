@@ -59,12 +59,13 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Keep closing rows through the PLAN-122 coverage matrix. Current
-  progress is 13/18 rows closed; there are no remaining
-  implementation-capacity rows for currently selectable DART 7 CPU
-  `World::step()` paths. `M-004`, `F-002`, `L-001`, and `G-001` are
-  promotion-gated by their owner plans before they can become final allocation
-  claims. Classic DART 6 step paths are excluded unless they are being migrated
-  into the DART 7 `World` pipeline.
+  progress is 14/18 rows closed; `L-001` is now closed by first-post-bake
+  world-base/global-heap/raw-malloc gates over a model imported through the
+  `addSkeleton` bridge. There are no remaining implementation-capacity rows for
+  currently selectable DART 7 CPU `World::step()` paths. `M-004`, `F-002`, and
+  `G-001` are promotion-gated by their owner plans before they can become final
+  allocation claims. Classic DART 6 step paths are excluded unless they are
+  being migrated into the DART 7 `World` pipeline.
 - Gate: A row closes only with cited tests proving same-shape DART 7
   `World::step()` after bake does not grow the World base allocator or allocate
   through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
@@ -88,9 +89,10 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: AI-native execution
-- Next step: Land the first guardrail wave as pilot-scoped graph-health
-  advisories plus strict low-risk metadata/catalog checks, then watch for one
-  clean cycle before deciding whether any advisory should become blocking.
+- Next step: The strict docs/ai `type` legend check (WP-121.8) landed on top of
+  the first guardrail wave. The advisory→blocking flip stays deferred — the
+  north-star freshness channel is not clean (17 advisories on 2026-06-19) — so
+  watch for one clean freshness cycle before promoting any advisory.
 - Gate: `pixi run python -m pytest tests/test_check_docs_policy.py`,
   `pixi run check-docs-policy`, `pixi run check-ai-commands`, and
   `pixi run lint` prove the local checker, AI adapter sync, and docs formatting
