@@ -146,6 +146,34 @@ public:
     assert any("LegacyJoint.newMethod" in m for m in messages)
 
 
+def test_new_legacy_cpp_member_with_next_line_class_brace_requires_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "constraint" / "legacy_constraint.hpp",
+        """
+class DART_API LegacyConstraint
+{
+public:
+  void oldMethod();
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "  void oldMethod();",
+            "  void oldMethod();\n  double newTolerance;",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyConstraint.newTolerance" in m for m in messages)
+
+
 def test_bugfix_port_tag_does_not_allow_adjacent_legacy_symbol(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -192,6 +220,31 @@ def test_new_legacy_binding_requires_bugfix_port_tag(tmp_path):
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("module.newLegacyUtility" in m for m in messages)
+
+
+def test_new_legacy_multiline_binding_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+    _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::class_<NewLegacyJoint>(
+      m, "NewLegacyJoint")
+      .def("new_method", [] {});
+}
+""",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NewLegacyJoint" in m for m in messages)
+    assert any("NewLegacyJoint.new_method" in m for m in messages)
 
 
 def test_new_legacy_enum_binding_and_attr_require_bugfix_port_tag(tmp_path):

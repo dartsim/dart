@@ -246,6 +246,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             namespace_stack: list[tuple[str, int]] = []
             class_stack: list[dict[str, object]] = []
             enum_stack: list[tuple[str, int]] = []
+            pending_scope: dict[str, object] | None = None
             member_buffer: list[str] = []
             member_start = 0
             for index, line in enumerate(lines):
@@ -271,6 +272,27 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     or "::detail" in namespace
                     for namespace, _ in namespace_stack
                 )
+
+                code = code_without_comment(line)
+                if pending_scope:
+                    if "{" in code and not in_detail_namespace:
+                        kind = str(pending_scope["kind"])
+                        type_name = str(pending_scope["name"])
+                        if kind in {"class", "struct"}:
+                            class_stack.append(
+                                {
+                                    "name": type_name,
+                                    "exit_depth": brace_depth,
+                                    "access": (
+                                        "private" if kind == "class" else "public"
+                                    ),
+                                }
+                            )
+                        elif kind.startswith("enum"):
+                            enum_stack.append((type_name, brace_depth))
+                        pending_scope = None
+                    elif ";" in code:
+                        pending_scope = None
 
                 if enum_stack and not in_detail_namespace:
                     add_cpp_enum_values(
@@ -302,6 +324,12 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         add_cpp_enum_values(
                             entries, rel_path, type_name, line, lines, index
                         )
+                    elif ";" not in code:
+                        pending_scope = {
+                            "kind": kind,
+                            "name": type_name,
+                            "line_index": index,
+                        }
 
                 function_match = (
                     None
@@ -363,8 +391,20 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
             lines = path.read_text(encoding="utf-8").splitlines()
             current_class = "module"
             current_enum = ""
+            declaration_buffer = ""
+            declaration_start = 0
             for index, line in enumerate(lines):
-                class_match = BINDING_CLASS_PATTERN.search(line)
+                code = code_without_comment(line).strip()
+                if "nb::class_" in code or "nb::enum_" in code:
+                    declaration_buffer = code
+                    declaration_start = index
+                elif declaration_buffer:
+                    declaration_buffer = f"{declaration_buffer} {code}".strip()
+
+                search_line = declaration_buffer or line
+                search_index = declaration_start if declaration_buffer else index
+
+                class_match = BINDING_CLASS_PATTERN.search(search_line)
                 if class_match:
                     current_class = class_match.group("name")
                     current_enum = ""
@@ -373,11 +413,12 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             "binding-class",
                             rel_path,
                             current_class,
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, search_index),
                         )
                     )
+                    declaration_buffer = ""
 
-                enum_match = BINDING_ENUM_PATTERN.search(line)
+                enum_match = BINDING_ENUM_PATTERN.search(search_line)
                 if enum_match:
                     current_enum = enum_match.group("name")
                     entries.append(
@@ -385,9 +426,13 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             "binding-enum",
                             rel_path,
                             current_enum,
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, search_index),
                         )
                     )
+                    declaration_buffer = ""
+
+                if declaration_buffer and ";" in code:
+                    declaration_buffer = ""
 
                 enum_value_match = BINDING_ENUM_VALUE_PATTERN.search(line)
                 if enum_value_match and current_enum:
