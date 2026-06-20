@@ -175,6 +175,7 @@ bool trySolveDiagonalLcp(
     Scalar* x,
     const Scalar* b,
     Scalar* w,
+    int nub,
     const Scalar* lo,
     const Scalar* hi,
     const int* findex,
@@ -199,7 +200,9 @@ bool trySolveDiagonalLcp(
   for (int row = 0; row < n; ++row) {
     const Scalar diagonal = A[row * nskip + row];
     Scalar value = b[row] / diagonal;
-    value = std::max(lo[row], std::min(hi[row], value));
+    if (row >= nub) {
+      value = std::max(lo[row], std::min(hi[row], value));
+    }
     x[row] = value;
     if (w) {
       w[row] = diagonal * value - b[row];
@@ -244,7 +247,7 @@ bool solveLcpWithScratch(
 
   constexpr int kMaxDiagonalFastPathSize = 256;
   if (n <= kMaxDiagonalFastPathSize
-      && trySolveDiagonalLcp(n, A, x, b, outer_w, lo, hi, findex, nskip)) {
+      && trySolveDiagonalLcp(n, A, x, b, outer_w, nub, lo, hi, findex, nskip)) {
     return true;
   }
 

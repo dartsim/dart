@@ -145,6 +145,21 @@ inline DantzigProblemCase makeBoxedDiagonalDantzigCase(int n)
   return problem;
 }
 
+inline DantzigProblemCase makePartiallyUnboundedDiagonalDantzigCase()
+{
+  auto problem = makeDantzigProblemCase("partially_unbounded_diagonal", 3, 1);
+
+  setMatrixEntry(problem, 0, 0, 2.0);
+  setMatrixEntry(problem, 1, 1, 3.0);
+  setMatrixEntry(problem, 2, 2, 4.0);
+
+  problem.b = {4.0, 6.0, -2.0};
+  problem.lo = {0.0, 0.0, -1.0};
+  problem.hi = {0.0, 1.0, 1.0};
+
+  return problem;
+}
+
 inline DantzigProblemCase makeBoxedCoupledDantzigCase(int n)
 {
   auto problem = makeDantzigProblemCase("boxed_coupled", n, 0);
@@ -204,6 +219,7 @@ inline std::vector<DantzigProblemCase> makeDantzigCorrectnessCases()
       makeUnboundedDantzigCase(1),
       makeUnboundedDantzigCase(8),
       makeBoxedDiagonalDantzigCase(4),
+      makePartiallyUnboundedDiagonalDantzigCase(),
       makeBoxedCoupledDantzigCase(8),
       makeFrictionDantzigCase(3),
   };
