@@ -64,12 +64,18 @@ CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
 )
 CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
+    r"|"
+    r"inline\s+"
+    r")"
 )
 CPP_NAMESPACE_DATA_PATTERN = re.compile(
     r"^\s*(?:"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
+    r"|"
+    r"inline\s+"
     r"|"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?"
@@ -100,6 +106,7 @@ BINDING_MODULE_ATTR_PATTERN = re.compile(
     r"\b(?:m|module)\.attr\(\s*\"(?P<name>[^\"]+)\""
 )
 BINDING_MODULE_DEF_PATTERN = re.compile(r"\b(?:m|module)\.def\(\s*\"(?P<name>[^\"]+)\"")
+BINDING_MEMBER_ATTR_PATTERN = re.compile(r"\.attr\(\s*\"(?P<name>[^\"]+)\"")
 BINDING_MEMBER_PATTERN = re.compile(
     r"\.(?P<kind>def(?:_[A-Za-z_]+)?|def_property(?:_[A-Za-z_]+)?|def_readwrite|def_readonly)"
     r"\(\s*\"(?P<name>[^\"]+)\""
@@ -599,7 +606,8 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
 
                 if (
                     re.search(
-                        r"\.(?:def|def_property|def_readwrite|def_readonly)", code
+                        r"\.(?:attr|def|def_property|def_readwrite|def_readonly)",
+                        code,
                     )
                     and not is_module_binding_call
                 ):
@@ -607,9 +615,6 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                     member_start = index
                 elif member_buffer:
                     member_buffer = f"{member_buffer} {code}".strip()
-
-                member_search_line = member_buffer or line
-                member_search_index = member_start if member_buffer else index
 
                 if re.search(r"\.value\s*\(", code):
                     enum_value_buffer = code
@@ -668,34 +673,50 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                 if module_buffer and ";" in code:
                     module_buffer = ""
 
-                constructor_match = BINDING_CONSTRUCTOR_PATTERN.search(
-                    member_search_line
-                )
-                if constructor_match:
-                    entries.append(
-                        LegacyEntry(
-                            "binding-constructor",
-                            rel_path,
-                            f"{current_class}.__init__",
-                            nearby_tag(lines, member_search_index),
-                        )
+                if member_buffer:
+                    member_attr_match = BINDING_MEMBER_ATTR_PATTERN.search(
+                        member_buffer
                     )
-                    member_buffer = ""
-                    continue
+                    if member_attr_match:
+                        entries.append(
+                            LegacyEntry(
+                                "binding-attr",
+                                rel_path,
+                                f"{current_class}.{member_attr_match.group('name')}",
+                                nearby_tag(lines, member_start),
+                            )
+                        )
+                        member_buffer = ""
+                        continue
 
-                member_match = BINDING_MEMBER_PATTERN.search(member_search_line)
-                if member_match:
-                    entries.append(
-                        LegacyEntry(
-                            "binding-" + member_match.group("kind"),
-                            rel_path,
-                            f"{current_class}.{member_match.group('name')}",
-                            nearby_tag(lines, member_search_index),
-                        )
+                    constructor_match = BINDING_CONSTRUCTOR_PATTERN.search(
+                        member_buffer
                     )
-                    member_buffer = ""
-                elif member_buffer and ";" in code:
-                    member_buffer = ""
+                    if constructor_match:
+                        entries.append(
+                            LegacyEntry(
+                                "binding-constructor",
+                                rel_path,
+                                f"{current_class}.__init__",
+                                nearby_tag(lines, member_start),
+                            )
+                        )
+                        member_buffer = ""
+                        continue
+
+                    member_match = BINDING_MEMBER_PATTERN.search(member_buffer)
+                    if member_match:
+                        entries.append(
+                            LegacyEntry(
+                                "binding-" + member_match.group("kind"),
+                                rel_path,
+                                f"{current_class}.{member_match.group('name')}",
+                                nearby_tag(lines, member_start),
+                            )
+                        )
+                        member_buffer = ""
+                    elif ";" in code:
+                        member_buffer = ""
     return entries
 
 

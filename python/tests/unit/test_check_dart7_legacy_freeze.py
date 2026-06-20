@@ -276,6 +276,25 @@ def test_new_legacy_namespace_constant_requires_bugfix_port_tag(tmp_path):
     assert any("NEW_VALUE" in m for m in messages)
 
 
+def test_new_legacy_inline_namespace_variable_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "constraint" / "legacy_globals.hpp",
+        "inline double oldTolerance;\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8") + "\ninline double newTolerance;\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("newTolerance" in m for m in messages)
+
+
 def test_new_legacy_exported_namespace_variable_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -584,6 +603,37 @@ void bind(nb::module_& m) {
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("ExistingJoint.__init__" in m for m in messages)
+
+
+def test_new_legacy_binding_class_attr_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    binding = _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::class_<ExistingJoint>(m, "ExistingJoint")
+      .def("old_method", [] {});
+}
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    binding.write_text(
+        binding.read_text(encoding="utf-8").replace(
+            '.def("old_method", [] {});',
+            '.def("old_method", [] {})\n      .attr("NewConst") = 1;',
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("ExistingJoint.NewConst" in m for m in messages)
 
 
 def test_new_legacy_enum_binding_and_attr_require_bugfix_port_tag(tmp_path):
