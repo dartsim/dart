@@ -82,8 +82,10 @@ builds normally in the feature environment.
 
 ### Slice 2 — Collision extras (bullet-cpp, libode) — OPEN → PR #3106 (rebased onto release-6.20)
 - Moved out of base `[dependencies]` into `[feature.collision-extra.dependencies]`;
-  added `collision-extra` environment + Linux `collision-extra` CI job. Left
-  `[feature.gazebo.dependencies]` bullet/ode UNCHANGED.
+  added `collision-extra` environment + Linux `collision-extra` CI job that
+  runs the runtime gates (`pixi run -e collision-extra test` and
+  `pixi run -e collision-extra test-py`). Left `[feature.gazebo.dependencies]`
+  bullet/ode UNCHANGED.
 - Adversarial verify (workflow): `safeForDefaultBuild=true`, `gzPhysicsRisk=none`
   (gz uses the FCL detector; gazebo env retains both), not in
   `DART_PKG_EXTERNAL_DEPS` → no downstream-contract change. Default
@@ -137,7 +139,9 @@ builds normally in the feature environment.
 
 - Always: `pixi run check-lint` before commit.
 - After any dep change: default `pixi run config` + `build`.
-- For each demoted dep: `pixi run -e <feature> build` + that surface's tests.
+- For each demoted dep: `pixi run -e <feature> build` + that surface's runtime
+  tests. Do not treat `test-all` as runtime coverage; in this repo it builds
+  CMake's `ALL` target but does not invoke `ctest` or pytest.
 - Exported/installed surfaces: installed-package/component smoke.
 - Collision/constraint/solver/package surfaces visible to gz: `pixi run -e
   gazebo test-gz` (use `DART_PARALLEL_JOBS=8` per local OOM gotcha).
@@ -158,12 +162,13 @@ builds normally in the feature environment.
 3. **CI matrix (confirm for later slices):** slice 1 removed the optimizer
    backends outright, so there is **no `optimization` env** — its coverage now
    lives in `dart-optimization`. Slice 2 adds a dedicated `collision-extra` Pixi
-   env + one Linux `collision-extra` CI job (`pixi run -e collision-extra
-   test-all`); slice 3 (GUI) would follow the same per-concern-env pattern.
-   Alternative the maintainer may prefer one consolidated `full` env/job. Note the
-   Linux `coverage` (codecov) + non-Linux default builds lose bullet/ode
-   line-coverage; the dedicated job + gz lane retain functional coverage — add
-   per-platform jobs only if asked.
+   env + one Linux `collision-extra` CI job that must run runtime tests
+   (`pixi run -e collision-extra test` plus `pixi run -e collision-extra
+   test-py` for dartpy). Slice 3 (GUI) would follow the same per-concern-env
+   pattern. Alternative the maintainer may prefer one consolidated `full`
+   env/job. Note the Linux `coverage` (codecov) + non-Linux default builds lose
+   bullet/ode line-coverage; the dedicated job + gz lane retain functional
+   coverage — add per-platform jobs only if asked.
 
 ## Progress log
 
