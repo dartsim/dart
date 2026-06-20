@@ -26,6 +26,15 @@ In summary, DART supports robotics, animation, machine-learning research, and be
 Features
 --------
 
+.. note::
+
+   Some capabilities listed below are not yet available in the DART 7 facade and
+   remain **DART 6** features — notably the modular inverse-kinematics framework,
+   analytic IkFast integration, and soft body nodes. See the `documentation
+   migration plan
+   <https://github.com/dartsim/dart/blob/main/docs/onboarding/dart7-docs-migration.md>`_
+   for porting status.
+
 General
 ~~~~~~~
 

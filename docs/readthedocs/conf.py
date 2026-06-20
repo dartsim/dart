@@ -548,6 +548,8 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
+    # Reusable RST fragments pulled in via ``.. include::``; not standalone docs.
+    "_includes",
 ]
 
 

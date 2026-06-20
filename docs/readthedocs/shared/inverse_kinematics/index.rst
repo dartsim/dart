@@ -1,6 +1,8 @@
 Inverse Kinematics
 ===================
 
+.. include:: /_includes/legacy_dart6.rst
+
 DART ships with a modular inverse kinematics (IK) framework that works the same
 way across C++ and dartpy. Every end effector can own an
 :class:`dart::dynamics::InverseKinematics` instance that exposes:

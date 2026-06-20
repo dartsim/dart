@@ -1,6 +1,13 @@
 Examples
 ========
 
+.. include:: /_includes/legacy_dart6.rst
+
+.. note::
+
+   For a DART 7 "Hello, World" simulation using the current API, see
+   :doc:`/user_guide/getting_started/hello_dart`.
+
 Once you have installed dartpy using pip install -U dartpy, you can run the following "Hello World" example to simulate a 6-DOF robot using DART.
 
 .. note::
