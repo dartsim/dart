@@ -40,6 +40,12 @@
 namespace dart {
 namespace collision {
 
+namespace {
+
+thread_local bool gPreserveRestingIslandContacts = false;
+
+} // namespace
+
 //==============================================================================
 CollisionFilter::~CollisionFilter()
 {
@@ -114,11 +120,7 @@ void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 //==============================================================================
 void BodyNodeCollisionFilter::setPreserveRestingIslandContacts(bool preserve)
 {
-  if (mPreserveRestingIslandContacts == preserve)
-    return;
-
-  mPreserveRestingIslandContacts = preserve;
-  ++mRevision;
+  gPreserveRestingIslandContacts = preserve;
 }
 
 //==============================================================================
@@ -131,6 +133,7 @@ std::size_t BodyNodeCollisionFilter::getRevision() const
 
   mix(seed, dynamics::Skeleton::getGlobalStructuralVersion());
   mix(seed, dynamics::Skeleton::getGlobalDeactivationStateVersion());
+  mix(seed, gPreserveRestingIslandContacts ? 1u : 0u);
   return seed;
 }
 
@@ -170,7 +173,7 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
   if (skel1Inactive && skel2Inactive) {
     const bool sameFrozenMobileIsland
-        = mPreserveRestingIslandContacts && skel1->isMobile()
+        = gPreserveRestingIslandContacts && skel1->isMobile()
           && skel2->isMobile() && skel1->isResting() && skel2->isResting()
           && skel1->getIslandIndex() >= 0
           && skel1->getIslandIndex() == skel2->getIslandIndex();

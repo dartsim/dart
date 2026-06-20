@@ -138,10 +138,6 @@ private:
   /// Revision for blacklist updates. Combined with global skeleton filter
   /// state in getRevision().
   std::size_t mRevision = 0u;
-
-  /// Whether to preserve contacts between resting members of the same mobile
-  /// island so an awake impact can wake the whole island.
-  bool mPreserveRestingIslandContacts = false;
 };
 
 } // namespace collision
