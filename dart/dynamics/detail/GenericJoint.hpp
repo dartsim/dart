@@ -1065,8 +1065,13 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
+    const double command = this->getAccelerationsStatic()[index];
+    if (this->mAspectState.mCommands[index] != command) {
+      this->mAspectState.mCommands[index] = command;
+      this->notifyExternalDisturbanceUpdated();
+    }
+  }
 }
 
 //==============================================================================
@@ -1093,8 +1098,13 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   setAccelerationsStatic(accelerations);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands = this->getAccelerationsStatic();
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
+    const auto& commands = this->getAccelerationsStatic();
+    if (this->mAspectState.mCommands != commands) {
+      this->mAspectState.mCommands = commands;
+      this->notifyExternalDisturbanceUpdated();
+    }
+  }
 }
 
 //==============================================================================

@@ -1708,6 +1708,32 @@ TEST(IslandDeactivation, WakeOnCommand)
 }
 
 //==============================================================================
+// ACCELERATION actuators mirror generalized accelerations into command storage.
+// That command write must invalidate the quiet-disturbance cache.
+TEST(IslandDeactivation, AccelerationCommandInvalidatesQuietDisturbanceCache)
+{
+  auto single = createFreeBox(
+      "single",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  single->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+  EXPECT_FALSE(single->hasExternalDisturbance());
+  single->getJoint(0)->setAcceleration(0, 1.0);
+  EXPECT_TRUE(single->hasExternalDisturbance())
+      << "setAcceleration() did not invalidate the quiet command cache";
+
+  auto vector = createFreeBox(
+      "vector",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  vector->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+  EXPECT_FALSE(vector->hasExternalDisturbance());
+  vector->getJoint(0)->setAccelerations(Eigen::Vector6d::Constant(1.0));
+  EXPECT_TRUE(vector->hasExternalDisturbance())
+      << "setAccelerations() did not invalidate the quiet command cache";
+}
+
+//==============================================================================
 // A quiet command observed by step(false) is cached as non-disturbing, but a
 // later step(true) still must honor the resetCommand contract and clear it.
 TEST(IslandDeactivation, ResetCommandClearsCachedQuietCommand)
