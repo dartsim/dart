@@ -1084,6 +1084,47 @@ TEST(IslandDeactivation, WakeOnContactMaterialChange)
 }
 
 //==============================================================================
+// Inertia edits change the dynamics and cached contact-force response without
+// changing pose, collision geometry, or command state. The all-resting fast
+// path must wake and recompute the solver state after those edits.
+TEST(IslandDeactivation, WakeOnInertiaChange)
+{
+  for (const bool editMass : {true, false}) {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+
+    auto sleeper = createFreeBox(
+        editMass ? "mass" : "moment",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+
+    auto* body = sleeper->getBodyNode(0);
+    if (editMass) {
+      body->setMass(2.0 * body->getMass());
+    } else {
+      double ixx = 0.0;
+      double iyy = 0.0;
+      double izz = 0.0;
+      double ixy = 0.0;
+      double ixz = 0.0;
+      double iyz = 0.0;
+      body->getMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
+      body->setMomentOfInertia(2.0 * ixx, 2.0 * iyy, 2.0 * izz, ixy, ixz, iyz);
+    }
+
+    world->step();
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+        << "inertia edit reused the all-resting fast path";
+    EXPECT_FALSE(sleeper->isResting())
+        << "inertia edit did not wake the sleeping body";
+  }
+}
+
+//==============================================================================
 // If the all-resting snapshot is invalidated before a new snapshot is built,
 // support edits must still wake resting bodies on the next step.
 TEST(IslandDeactivation, WakeOnSupportShapeChangeAfterSnapshotInvalidation)

@@ -611,12 +611,19 @@ void BodyNode::setMass(const double mass)
 {
   checkMass(*this, mass);
 
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setMass(mass);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
+  if (skel) {
     skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -634,9 +641,16 @@ void BodyNode::setMomentOfInertia(
     double _Ixz,
     double _Iyz)
 {
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setMoment(_Ixx, _Iyy, _Izz, _Ixy, _Ixz, _Iyz);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -675,8 +689,10 @@ void BodyNode::setInertia(const Inertia& inertia)
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
+  if (skel) {
     skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
 
   incrementVersion();
 }
@@ -713,9 +729,16 @@ const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 //==============================================================================
 void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setLocalCOM(_com);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
+  incrementVersion();
 }
 
 //==============================================================================
