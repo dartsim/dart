@@ -4,6 +4,11 @@ import dartpy as dart
 import numpy as np
 import pytest
 
+requires_bullet = pytest.mark.skipif(
+    not hasattr(dart.collision, "BulletCollisionDetector"),
+    reason="Bullet collision detector is not available in this build",
+)
+
 
 def collision_groups_tester(cd):
     size = [1, 1, 1]
@@ -195,6 +200,7 @@ def test_filter(cd):
     assert group.collide(option)
 
 
+@requires_bullet
 def test_raycast():
     cd = dart.collision.BulletCollisionDetector()
 
