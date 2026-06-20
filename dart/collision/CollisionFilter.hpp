@@ -43,6 +43,10 @@ namespace dynamics {
 class BodyNode;
 } // namespace dynamics
 
+namespace constraint {
+class ConstraintSolver;
+} // namespace constraint
+
 namespace collision {
 
 class CollisionObject;
@@ -113,6 +117,15 @@ public:
       const CollisionObject* object2) const override;
 
 private:
+  friend class constraint::ConstraintSolver;
+
+  /// Sets whether contacts inside a frozen mobile island should be preserved.
+  ///
+  /// Resting-vs-resting contacts can usually be skipped. During wakeup, though,
+  /// contacts between members of a frozen mobile island must be available so an
+  /// awake impact unites and wakes the full island atomically.
+  void setPreserveRestingIslandContacts(bool preserve);
+
   /// Returns true if the two BodyNodes are adjacent BodyNodes (i.e., the two
   /// BodyNodes are connected by a Joint).
   bool areAdjacentBodies(
@@ -125,6 +138,10 @@ private:
   /// Revision for blacklist updates. Combined with global skeleton filter
   /// state in getRevision().
   std::size_t mRevision = 0u;
+
+  /// Whether to preserve contacts between resting members of the same mobile
+  /// island so an awake impact can wake the whole island.
+  bool mPreserveRestingIslandContacts = false;
 };
 
 } // namespace collision

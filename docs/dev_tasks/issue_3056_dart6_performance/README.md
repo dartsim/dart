@@ -18,8 +18,8 @@ speedup.
 - Baseline evidence, same scene with deactivation disabled: RTF `0.740188`,
   final contacts `360`, final resting `0 / 120`, finite state true, final hash
   `0xcf3145a17b2cada2`.
-- PR1 #3085 added primitive plane and contact-cap collision support and is
-  merged into `release-6.20`.
+- PR1 #3085 added primitive plane and contact-cap collision support, passed
+  Codex review, and is merged into `release-6.20`.
 - PR1 current default Bullet run, same 120-object/9000-step command as PR0:
   RTF `0.915975`, final contacts `360`, final resting `81 / 120`, finite state
   true, final hash `0x212c1143bd0a2fb3`. This preserves PR0 final state.
@@ -70,6 +70,10 @@ speedup.
   because it changed the explicit `--disable-deactivation` baseline. PR2's
   default speedup must come from resting-world deactivation, not from a solver
   shortcut that changes always-active physics.
+- Current PR2 review fixes keep the all-resting fast path conservative: a
+  sleeping body with externally edited velocity wakes before the cached step is
+  reused, and contacts inside a frozen mobile island are preserved during an
+  awake impact so wakeup remains island-atomic.
 
 ## Default-On Correctness Rule
 
@@ -130,3 +134,9 @@ bug until proven otherwise.
   `contact_benchmark`, `test_IslandDeactivation`, `test_World`, and
   `test_ContactSurface`; CTest passed the three focused tests; the 3-object
   `contact_benchmark` smoke advanced time with finite final state.
+- For the PR2 Codex velocity/island review, `test_IslandDeactivation` now covers
+  velocity edits while the all-resting cache is hot and same-step wake of a
+  frozen mobile island. Rebuilt `test_IslandDeactivation`, then rebuilt
+  `contact_benchmark`, `test_World`, and `test_ContactSurface`; CTest passed
+  the three focused tests, and the 3-object `contact_benchmark` smoke advanced
+  time with finite final state.

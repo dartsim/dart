@@ -764,6 +764,20 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
+  if (auto* filter = dynamic_cast<collision::BodyNodeCollisionFilter*>(
+          mCollisionOption.collisionFilter.get())) {
+    bool hasAwakeMobileSkeleton = false;
+    if (mDeactivationActive) {
+      for (const auto& skeleton : mSkeletons) {
+        if (skeleton->isMobile() && !skeleton->isResting()) {
+          hasAwakeMobileSkeleton = true;
+          break;
+        }
+      }
+    }
+    filter->setPreserveRestingIslandContacts(hasAwakeMobileSkeleton);
+  }
+
   {
     DART_PROFILE_SCOPED_N("collide");
     mCollisionGroup->collide(mCollisionOption, &mCollisionResult);

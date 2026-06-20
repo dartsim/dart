@@ -470,6 +470,82 @@ TEST(IslandDeactivation, WakeOnContact)
 }
 
 //==============================================================================
+// Editing a sleeping body's velocity between all-resting fast-path steps must
+// wake it so the requested motion is integrated.
+TEST(IslandDeactivation, WakeOnVelocityEdit)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  const double xBefore
+      = sleeper->getBodyNode(0)->getTransform().translation().x();
+  Eigen::Vector6d vel = Eigen::Vector6d::Zero();
+  vel[3] = 1.0;
+  sleeper->getJoint(0)->setVelocities(vel);
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "velocity edit was hidden by the all-resting fast path";
+  const double xAfter
+      = sleeper->getBodyNode(0)->getTransform().translation().x();
+  EXPECT_GT(xAfter, xBefore + 1e-5) << "edited velocity was not integrated";
+}
+
+//==============================================================================
+// When an awake body hits one member of a frozen mobile contact island, the
+// resting-resting contacts inside that island must participate in the same
+// solver pass so the wake is island-atomic.
+TEST(IslandDeactivation, WakeOnContactPreservesRestingIsland)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto projectile = createFreeBox(
+      "projectile",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(-0.8, 0, kHalf));
+  world->addSkeleton(projectile);
+
+  constexpr double overlap = 1.0e-8;
+  std::vector<SkeletonPtr> stack;
+  for (int i = 0; i < 3; ++i) {
+    const double z = kHalf - overlap / 2.0 + i * (kBoxSize - overlap);
+    auto b = createFreeBox(
+        "stack" + std::to_string(i),
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, z));
+    world->addSkeleton(b);
+    stack.push_back(b);
+  }
+
+  for (const auto& b : stack) {
+    b->setSleepCandidate(true);
+    b->setIslandIndex(0);
+    b->setResting(true);
+    ASSERT_TRUE(b->isResting()) << b->getName() << " did not sleep";
+  }
+
+  Eigen::Vector6d vel = Eigen::Vector6d::Zero();
+  vel[3] = 2.0;
+  projectile->getJoint(0)->setVelocities(vel);
+
+  const std::size_t woke
+      = stepUntil(world.get(), 1000, [&]() { return !stack[0]->isResting(); });
+  ASSERT_LT(woke, 1000u) << "projectile never woke the contacted stack member";
+  for (const auto& b : stack) {
+    EXPECT_FALSE(b->isResting())
+        << b->getName() << " stayed frozen after its island was hit";
+  }
+}
+
+//==============================================================================
 // A sleeping body must not stay hidden behind the all-resting fast path when an
 // external API edits static geometry. gz-physics can move free groups between
 // simulation steps, so DART must invalidate the resting cache and perform a

@@ -112,6 +112,16 @@ void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 }
 
 //==============================================================================
+void BodyNodeCollisionFilter::setPreserveRestingIslandContacts(bool preserve)
+{
+  if (mPreserveRestingIslandContacts == preserve)
+    return;
+
+  mPreserveRestingIslandContacts = preserve;
+  ++mRevision;
+}
+
+//==============================================================================
 std::size_t BodyNodeCollisionFilter::getRevision() const
 {
   std::size_t seed = mRevision;
@@ -158,8 +168,17 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   const bool skel1Inactive = !skel1->isMobile() || skel1->isResting();
   const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
-  if (skel1Inactive && skel2Inactive)
+  if (skel1Inactive && skel2Inactive) {
+    const bool sameFrozenMobileIsland
+        = mPreserveRestingIslandContacts && skel1->isMobile()
+          && skel2->isMobile() && skel1->isResting() && skel2->isResting()
+          && skel1->getIslandIndex() >= 0
+          && skel1->getIslandIndex() == skel2->getIslandIndex();
+    if (sameFrozenMobileIsland)
+      return false;
+
     return true;
+  }
 
   if (skel1 == skel2) {
     if (!skel1->isEnabledSelfCollisionCheck())

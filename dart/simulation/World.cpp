@@ -800,6 +800,27 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       *snapshotStale = true;
   };
 
+  const double linWake = mDeactivationOptions.mWakeThresholdScale
+                         * mDeactivationOptions.mLinearSpeedThreshold;
+  const double angWake = mDeactivationOptions.mWakeThresholdScale
+                         * mDeactivationOptions.mAngularSpeedThreshold;
+
+  auto restingSkeletonNeedsWake = [&](const dynamics::SkeletonPtr& skel) {
+    if (!skel->isResting() || !skel->isSleepCandidate()
+        || skel->getIslandIndex() < 0
+        || skel->checkExternalDisturbanceAndReset(_resetCommand)) {
+      return true;
+    }
+
+    if (skel->computeMaxBodyLinearSpeed() > linWake
+        || skel->computeMaxBodyAngularSpeed() > angWake) {
+      markSnapshotStale();
+      return true;
+    }
+
+    return false;
+  };
+
   if (!mAllRestingKinematicSnapshotValid)
     return false;
 
@@ -817,6 +838,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
       && mAllRestingSnapshotDeactivationStateVersion
              == dynamics::Skeleton::getGlobalDeactivationStateVersion()) {
+    for (const auto& skel : mSkeletons) {
+      if (skel->isMobile() && restingSkeletonNeedsWake(skel))
+        return false;
+    }
     return true;
   }
 
@@ -853,9 +878,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       continue;
 
     hasMobileSkeleton = true;
-    if (!skel->isResting() || !skel->isSleepCandidate()
-        || skel->getIslandIndex() < 0
-        || skel->checkExternalDisturbanceAndReset(_resetCommand)) {
+    if (restingSkeletonNeedsWake(skel)) {
       return false;
     }
   }
