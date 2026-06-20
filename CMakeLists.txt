@@ -383,6 +383,9 @@ set(
   "Filament version for future explicit fetch support"
 )
 mark_as_advanced(DART_FILAMENT_VERSION)
+dart_option(DART_USE_SYSTEM_FMT
+  "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)" ON CATEGORY system
+)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
