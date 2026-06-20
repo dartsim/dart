@@ -2105,9 +2105,8 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
                                     : 0.0;
 
       const bool diagnosticStep
-          = !options.quiet
-            && ((options.checkpoint != 0 && done % options.checkpoint == 0)
-                || done == options.steps);
+          = !options.quiet && options.checkpoint != 0
+            && (done % options.checkpoint == 0 || done == options.steps);
       if (diagnosticStep) {
         printDiagnostics(
             done,
