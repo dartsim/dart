@@ -255,6 +255,9 @@ if(
   set(_dart_default_gui ON)
 endif()
 dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui} CATEGORY build)
+# OpenUSD (pxr) scene loader for dart-io. Defaults OFF because OpenUSD is not a
+# default dependency; enable only in an environment that provides pxr.
+dart_option(DART_BUILD_IO_USD "Build the OpenUSD (pxr) scene loader in dart-io" OFF CATEGORY build)
 if(DEFINED DART_BUILD_GUI_RAYLIB AND DART_BUILD_GUI_RAYLIB)
   message(
     FATAL_ERROR

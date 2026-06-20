@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    doc = "Minimal single-link USD sample for the DART 7 dart/io/usd loader (PLAN-061 Phase 1)."
+    defaultPrim = "simple_chain"
+    metersPerUnit = 1.0
+    upAxis = "Z"
+)
+
+def Xform "simple_chain" (
+    kind = "component"
+)
+{
+    def Xform "link0"
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "geom"
+        {
+            double size = 0.2
+        }
+    }
+}
