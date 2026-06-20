@@ -20,7 +20,14 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 find_package(DART 6.17 REQUIRED COMPONENTS gui-osg CONFIG)
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+# Python embedding is optional: skip the example gracefully when the Python
+# development files are unavailable, mirroring the in-source guard above.
+find_package(Python3 COMPONENTS Interpreter Development)
+if(NOT Python3_FOUND)
+  message(STATUS "Skipping ${example_name}: Python3 development files not found")
+  return()
+endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})

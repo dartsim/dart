@@ -66,7 +66,11 @@ public:
     if (mSolve->is_none() || !PyCallable_Check(mSolve->ptr()))
       throw py::value_error("solve must be a callable Python object");
 
-    constructDofMap();
+    // Note: constructDofMap() is intentionally not called here. Both
+    // construction paths invoke it after the object is registered as the IK's
+    // analytical method: InverseKinematics::setGradientMethod() and
+    // InverseKinematics::clone(). Calling it in the constructor would run it
+    // twice and double-emit the non-dependent-DOF warning.
   }
 
   ~PythonAnalyticalIk() override
@@ -110,6 +114,34 @@ public:
   }
 
 private:
+  // True if the handle is a sequence/array (so it can be a configuration
+  // vector), false for a scalar such as a Python or numpy number.
+  static bool isArrayLike(py::handle value)
+  {
+    return py::isinstance<py::list>(value) || py::isinstance<py::tuple>(value)
+           || py::hasattr(value, "__len__");
+  }
+
+  // True if the handle is an integer scalar (Python int or numpy integer), but
+  // not an array, so it can be a validity flag.
+  static bool isIntLike(py::handle value)
+  {
+    return !isArrayLike(value)
+           && (py::isinstance<py::int_>(value) || PyIndex_Check(value.ptr()));
+  }
+
+  // Reads an integer validity flag, defaulting to VALID when the value is
+  // missing or not integer-convertible instead of throwing an opaque cast error
+  // back across the Python boundary.
+  static int extractValidity(py::handle value)
+  {
+    try {
+      return value.cast<int>();
+    } catch (const py::cast_error&) {
+      return VALID;
+    }
+  }
+
   Solution castSolution(py::handle rawSolution) const
   {
     if (py::isinstance<Solution>(rawSolution))
@@ -121,27 +153,36 @@ private:
     if (py::hasattr(rawSolution, "mConfig")) {
       config = rawSolution.attr("mConfig");
       if (py::hasattr(rawSolution, "mValidity"))
-        validity = rawSolution.attr("mValidity").cast<int>();
+        validity = extractValidity(rawSolution.attr("mValidity"));
     } else if (py::hasattr(rawSolution, "q")) {
       config = rawSolution.attr("q");
       if (py::hasattr(rawSolution, "validity"))
-        validity = rawSolution.attr("validity").cast<int>();
+        validity = extractValidity(rawSolution.attr("validity"));
     } else if (
         py::isinstance<py::tuple>(rawSolution)
         || py::isinstance<py::list>(rawSolution)) {
+      // Treat a 2-element sequence as (config, validity) only when it is
+      // unambiguously that shape: the first element is itself array-like and
+      // the second is an integer scalar. Otherwise the whole sequence is the
+      // configuration, so a bare 2-DOF config such as [a, b] is not misread as
+      // a (config, validity) pair.
       py::sequence sequence = py::reinterpret_borrow<py::sequence>(rawSolution);
-      if (sequence.size() == 2) {
-        try {
-          validity = sequence[1].cast<int>();
-          config = py::reinterpret_borrow<py::object>(sequence[0]);
-        } catch (const py::cast_error&) {
-          validity = VALID;
-          config = py::reinterpret_borrow<py::object>(rawSolution);
-        }
+      if (sequence.size() == 2 && isArrayLike(sequence[0])
+          && isIntLike(sequence[1])) {
+        config = py::reinterpret_borrow<py::object>(sequence[0]);
+        validity = extractValidity(sequence[1]);
       }
     }
 
-    Eigen::VectorXd q = config.cast<Eigen::VectorXd>();
+    Eigen::VectorXd q;
+    try {
+      q = config.cast<Eigen::VectorXd>();
+    } catch (const py::cast_error&) {
+      throw py::value_error(
+          "Python analytical IK solution could not be converted to a 1-D float "
+          "vector of length "
+          + std::to_string(mDofs.size()));
+    }
 
     if (q.size() != static_cast<int>(mDofs.size())) {
       throw py::value_error(
@@ -726,6 +767,25 @@ void InverseKinematics(py::module& m)
             return self->setGradientMethod<PythonAnalyticalIk>(
                 resolvedDofs, std::move(solve), methodName);
           },
+          "Installs a Python callback as a DART analytical IK gradient method "
+          "and returns the created Analytical method.\n"
+          "\n"
+          "solve: a callable taking the 4x4 desired end-effector transform (as "
+          "a numpy array) and returning an iterable of solutions, or None. "
+          "Each "
+          "solution may be a DART InverseKinematicsAnalytical.Solution, an "
+          "object exposing a ``q``/``mConfig`` attribute (optionally with a "
+          "``validity``/``mValidity`` flag), a ``(config, validity)`` pair, or "
+          "a "
+          "plain configuration sequence. Every configuration must contain one "
+          "value per registered DOF.\n"
+          "dofs: the DOFs the callback solves for; defaults to the IK's DOFs. "
+          "DOFs omitted here are handled by DART's analytical extra-DOF "
+          "utilization.\n"
+          "methodName: the name reported for the analytical method.\n"
+          "\n"
+          "The returned handle is owned by this InverseKinematics and is "
+          "invalidated by a later setPythonAnalytical/setGradientMethod call.",
           ::py::arg("solve"),
           ::py::arg("dofs") = ::py::none(),
           ::py::arg("methodName") = "PythonAnalyticalIk",
@@ -736,6 +796,8 @@ void InverseKinematics(py::module& m)
               -> dart::dynamics::InverseKinematics::GradientMethod& {
             return self->getGradientMethod();
           },
+          "Returns the active gradient method. The reference is invalidated by "
+          "a later setGradientMethod/setPythonAnalytical call.",
           ::py::return_value_policy::reference_internal)
       .def(
           "getAnalytical",
@@ -743,6 +805,9 @@ void InverseKinematics(py::module& m)
               -> dart::dynamics::InverseKinematics::Analytical* {
             return self->getAnalytical();
           },
+          "Returns the active analytical method, or None if the gradient "
+          "method "
+          "is not analytical. Invalidated by a later setGradientMethod call.",
           ::py::return_value_policy::reference_internal)
       .def(
           "setObjective",

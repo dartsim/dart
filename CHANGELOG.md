@@ -35,17 +35,23 @@
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers
-    feed DART's native analytical and whole-body IK pipeline.
+    feed DART's native analytical and whole-body IK pipeline:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * Examples
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
-    prebuilt IK modules and changing target and solver options online.
+    prebuilt IK modules and changing target and solver options online. The
+    selected solution poses a DART skeleton built from the arm's kinematics, a
+    draggable target gizmo re-solves the IK as it moves, and arms can be switched
+    online without a restart:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
-    route ImGui font/style scaling through `ImGuiHandler`.
+    route ImGui font/style scaling through `ImGuiHandler`:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 

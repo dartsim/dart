@@ -115,8 +115,7 @@ def test_python_analytical_accepts_tuple_and_solution_objects():
     assert solutions[0].mValidity == dart.dynamics.InverseKinematicsAnalytical.VALID
     assert np.allclose(solutions[0].mConfig, valid)
     assert (
-        solutions[1].mValidity
-        == dart.dynamics.InverseKinematicsAnalytical.OUT_OF_REACH
+        solutions[1].mValidity == dart.dynamics.InverseKinematicsAnalytical.OUT_OF_REACH
     )
     assert np.allclose(solutions[1].mConfig, out_of_reach)
 

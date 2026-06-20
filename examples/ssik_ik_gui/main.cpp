@@ -30,11 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Python.h must be included before any standard or system headers because it
+// configures feature-test macros (e.g. _POSIX_C_SOURCE) that those headers
+// latch on first inclusion. Keep it first; clang-format would otherwise sort it
+// in with the other angle-bracket includes.
+// clang-format off
+#include <Python.h>
+// clang-format on
+
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
-#include <Python.h>
+#include <osg/Camera>
+#include <osg/GraphicsContext>
+#include <osg/Viewport>
 
 #include <algorithm>
 #include <array>
@@ -48,16 +58,45 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 namespace {
 
-constexpr int kViewerWidth = 980;
-constexpr int kViewerHeight = 720;
+constexpr int kViewerWidth = 1180;
+constexpr int kViewerHeight = 860;
 
 constexpr double pi()
 {
   return 3.14159265358979323846;
 }
+
+//==============================================================================
+// RAII helper that ensures the calling thread holds the Python GIL for the
+// duration of a scope. The OSG viewer may invoke ImGui widget rendering (and
+// therefore the embedded-Python solver calls) from a draw thread that is not
+// the thread that initialized the interpreter, so every block that touches the
+// CPython C API must hold the GIL. PyGILState_Ensure/Release is reentrant, so
+// this is safe even when the current thread already holds the GIL.
+class GilGuard
+{
+public:
+  GilGuard() : mState(PyGILState_Ensure())
+  {
+    // Do nothing
+  }
+
+  ~GilGuard()
+  {
+    PyGILState_Release(mState);
+  }
+
+  GilGuard(const GilGuard&) = delete;
+  GilGuard& operator=(const GilGuard&) = delete;
+
+private:
+  PyGILState_STATE mState;
+};
 
 //==============================================================================
 class PyObjectPtr
@@ -205,11 +244,24 @@ std::vector<ArmSpec> getArmSpecs()
 }
 
 //==============================================================================
+// One joint of an ssik product-of-exponentials chain: the fixed transforms
+// before/after the joint and its rotation axis. Forward kinematics composes
+// tLeft * exp(axis * q) * tRight per joint.
+struct JointSpec
+{
+  Eigen::Isometry3d tLeft = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tRight = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+  bool prismatic = false;
+};
+
+//==============================================================================
 struct ArmInfo
 {
   std::string baseLink;
   std::string eeLink;
   int dof = 0;
+  std::vector<JointSpec> chain;
   Eigen::Isometry3d home = [] {
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
     tf.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
@@ -228,15 +280,50 @@ struct SsikSolution
 };
 
 //==============================================================================
+// Python bridge to the optional ssik package. It loads a prebuilt analytical IK
+// module, solves for a target pose, and also reports the per-joint world frames
+// of each solution (computed from the module's product-of-exponentials chain)
+// so the example can render the articulated arm rather than just a marker.
 const char* kBridgeScript = R"PY(
 import importlib
+
+import numpy as np
+
 
 class DARTSsikBridge:
     def __init__(self):
         self.module = None
 
     def _flat(self, matrix):
-        return [float(matrix[r][c]) for r in range(4) for c in range(4)]
+        m = np.asarray(matrix, dtype=np.float64).reshape((4, 4))
+        return [float(v) for v in m.reshape(-1)]
+
+    def _has_chain(self):
+        attrs = ("_JOINT_T_LEFTS", "_JOINT_AXES", "_JOINT_TYPES", "_JOINT_T_RIGHTS")
+        return self.module is not None and all(
+            hasattr(self.module, a) for a in attrs
+        )
+
+    def chain(self):
+        # Per-joint product-of-exponentials structure used to build a DART
+        # skeleton: each joint contributes T_left * exp(axis * q) * T_right.
+        if not self._has_chain():
+            return None
+        t_lefts = self.module._JOINT_T_LEFTS
+        t_rights = self.module._JOINT_T_RIGHTS
+        axes = self.module._JOINT_AXES
+        types = self.module._JOINT_TYPES
+        out = []
+        for i in range(len(t_lefts)):
+            out.append(
+                {
+                    "t_left": self._flat(t_lefts[i]),
+                    "t_right": self._flat(t_rights[i]),
+                    "axis": [float(x) for x in np.asarray(axes[i], dtype=np.float64)],
+                    "type": str(types[i]),
+                }
+            )
+        return out
 
     def load(self, module_name):
         self.module = importlib.import_module("ssik.prebuilt." + module_name)
@@ -245,6 +332,7 @@ class DARTSsikBridge:
             "EE_LINK": str(getattr(self.module, "EE_LINK", "")),
             "DOF": int(getattr(self.module, "DOF", 0)),
             "T_HOME": self._flat(getattr(self.module, "T_HOME")),
+            "CHAIN": self.chain(),
         }
 
     def solve(
@@ -259,8 +347,7 @@ class DARTSsikBridge:
     ):
         if self.module is None:
             raise RuntimeError("no ssik prebuilt module is loaded")
-        import numpy as np
-        T = np.asarray(flat_target, dtype=np.float64).reshape((4, 4))
+        target = np.asarray(flat_target, dtype=np.float64).reshape((4, 4))
         kwargs = {
             "max_solutions": None if int(max_solutions) <= 0 else int(max_solutions),
             "respect_limits": bool(respect_limits),
@@ -269,21 +356,26 @@ class DARTSsikBridge:
         }
         if use_seed:
             kwargs["q_seed"] = np.asarray(seed, dtype=np.float64)
-        solutions = self.module.solve(T, **kwargs)
+        solutions = self.module.solve(target, **kwargs)
         out = []
         has_fk = hasattr(self.module, "fk")
         for solution in solutions:
             q = np.asarray(solution.q, dtype=np.float64)
-            fk_pose = None
-            if has_fk:
-                fk_pose = self._flat(self.module.fk(q))
-            out.append({
-                "q": q.tolist(),
-                "fk_residual": float(getattr(solution, "fk_residual", float("nan"))),
-                "refinement_used": str(getattr(solution, "refinement_used", "")),
-                "fk_pose": fk_pose,
-            })
+            fk_pose = self._flat(self.module.fk(q)) if has_fk else None
+            out.append(
+                {
+                    "q": q.tolist(),
+                    "fk_residual": float(
+                        getattr(solution, "fk_residual", float("nan"))
+                    ),
+                    "refinement_used": str(
+                        getattr(solution, "refinement_used", "")
+                    ),
+                    "fk_pose": fk_pose,
+                }
+            )
         return out
+
 
 bridge = DARTSsikBridge()
 )PY";
@@ -380,6 +472,29 @@ bool parseVector(PyObject* object, Eigen::VectorXd& vector, std::string& error)
 }
 
 //==============================================================================
+bool parseVec3(PyObject* object, Eigen::Vector3d& vec, std::string& error)
+{
+  PyObjectPtr sequence(PySequence_Fast(object, "expected a 3-vector"));
+  if (!sequence) {
+    error = consumePythonError();
+    return false;
+  }
+  if (PySequence_Fast_GET_SIZE(sequence.get()) != 3) {
+    error = "expected a 3-vector";
+    return false;
+  }
+  PyObject** items = PySequence_Fast_ITEMS(sequence.get());
+  for (int i = 0; i < 3; ++i) {
+    vec[i] = PyFloat_AsDouble(items[i]);
+    if (PyErr_Occurred()) {
+      error = consumePythonError();
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
 std::string getStringItem(PyObject* dict, const char* key)
 {
   PyObject* item = PyDict_GetItemString(dict, key);
@@ -396,11 +511,57 @@ std::string getStringItem(PyObject* dict, const char* key)
 }
 
 //==============================================================================
+bool parseChain(
+    PyObject* object, std::vector<JointSpec>& chain, std::string& error)
+{
+  chain.clear();
+  if (!object || object == Py_None)
+    return true; // module without product-of-exponentials metadata
+
+  PyObjectPtr sequence(PySequence_Fast(object, "expected a joint chain"));
+  if (!sequence) {
+    error = consumePythonError();
+    return false;
+  }
+
+  const Py_ssize_t size = PySequence_Fast_GET_SIZE(sequence.get());
+  PyObject** items = PySequence_Fast_ITEMS(sequence.get());
+  chain.reserve(static_cast<std::size_t>(size));
+  for (Py_ssize_t i = 0; i < size; ++i) {
+    PyObject* entry = items[i];
+    if (!PyDict_Check(entry)) {
+      error = "invalid joint chain entry";
+      return false;
+    }
+    JointSpec spec;
+    PyObject* tLeft = PyDict_GetItemString(entry, "t_left");
+    PyObject* tRight = PyDict_GetItemString(entry, "t_right");
+    PyObject* axis = PyDict_GetItemString(entry, "axis");
+    if (!tLeft || !tRight || !axis) {
+      error = "incomplete joint chain entry";
+      return false;
+    }
+    if (!parseMatrix(tLeft, spec.tLeft, error)
+        || !parseMatrix(tRight, spec.tRight, error)
+        || !parseVec3(axis, spec.axis, error))
+      return false;
+    const std::string type = getStringItem(entry, "type");
+    spec.prismatic = type.find("pris") != std::string::npos
+                     || type.find("Pris") != std::string::npos;
+    chain.push_back(spec);
+  }
+
+  return true;
+}
+
+//==============================================================================
 class SsikPythonBridge
 {
 public:
   SsikPythonBridge()
   {
+    GilGuard gil;
+
     mGlobals.reset(PyDict_New());
     if (!mGlobals)
       throw std::runtime_error("failed to allocate Python globals");
@@ -422,6 +583,8 @@ public:
 
   bool loadArm(const std::string& moduleName, ArmInfo& info, std::string& error)
   {
+    GilGuard gil;
+
     PyObjectPtr result(
         PyObject_CallMethod(mBridge.get(), "load", "s", moduleName.c_str()));
     if (!result) {
@@ -443,9 +606,17 @@ public:
       error = consumePythonError();
       return false;
     }
+    if (info.dof <= 0) {
+      error = "ssik prebuilt module reported a non-positive DOF";
+      return false;
+    }
 
     PyObject* home = PyDict_GetItemString(result.get(), "T_HOME");
     if (!home || !parseMatrix(home, info.home, error))
+      return false;
+
+    PyObject* chain = PyDict_GetItemString(result.get(), "CHAIN");
+    if (!parseChain(chain, info.chain, error))
       return false;
 
     return true;
@@ -462,6 +633,8 @@ public:
       std::vector<SsikSolution>& solutions,
       std::string& error)
   {
+    GilGuard gil;
+
     PyObjectPtr method(PyObject_GetAttrString(mBridge.get(), "solve"));
     if (!method) {
       error = consumePythonError();
@@ -555,6 +728,157 @@ private:
 };
 
 //==============================================================================
+// Builds a real DART skeleton for the selected arm from its
+// product-of-exponentials chain and poses it with setPositions(q). Using an
+// articulated skeleton keeps the arm connected by construction and makes arm
+// switching robust: each arm load rebuilds (and removes the previous) skeleton,
+// so no per-link visual state can leak across arms.
+class ArmSkeleton
+{
+public:
+  void setWorld(const dart::simulation::WorldPtr& world)
+  {
+    mWorld = world;
+  }
+
+  // Rebuilds the skeleton for the given chain. An empty chain removes the arm.
+  void build(const std::vector<JointSpec>& chain)
+  {
+    if (mSkeleton) {
+      mWorld->removeSkeleton(mSkeleton);
+      mSkeleton = nullptr;
+    }
+    if (chain.empty())
+      return;
+
+    const Eigen::Vector4d linkColor(0.85, 0.20, 0.18, 1.0);
+    const Eigen::Vector4d jointColor(0.16, 0.18, 0.22, 1.0);
+
+    mSkeleton = dart::dynamics::Skeleton::create("ssik_arm");
+
+    dart::dynamics::WeldJoint::Properties baseProps;
+    baseProps.mName = "base_joint";
+    dart::dynamics::BodyNode* parent
+        = mSkeleton
+              ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+                  nullptr, baseProps)
+              .second;
+    parent->setName("base");
+    addSphere(parent, Eigen::Vector3d::Zero(), jointColor);
+    addCylinder(
+        parent,
+        Eigen::Vector3d::Zero(),
+        chain.front().tLeft.translation(),
+        linkColor);
+
+    for (std::size_t k = 0; k < chain.size(); ++k) {
+      const JointSpec& spec = chain[k];
+      Eigen::Vector3d axis = spec.axis;
+      if (axis.norm() > 1e-9)
+        axis.normalize();
+
+      dart::dynamics::BodyNode* body = nullptr;
+      if (spec.prismatic) {
+        dart::dynamics::PrismaticJoint::Properties props;
+        props.mName = "j" + std::to_string(k);
+        props.mAxis = axis;
+        props.mT_ParentBodyToJoint = spec.tLeft;
+        props.mT_ChildBodyToJoint = spec.tRight.inverse();
+        body = mSkeleton
+                   ->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>(
+                       parent, props)
+                   .second;
+      } else {
+        dart::dynamics::RevoluteJoint::Properties props;
+        props.mName = "j" + std::to_string(k);
+        props.mAxis = axis;
+        props.mT_ParentBodyToJoint = spec.tLeft;
+        props.mT_ChildBodyToJoint = spec.tRight.inverse();
+        body = mSkeleton
+                   ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+                       parent, props)
+                   .second;
+      }
+      body->setName("b" + std::to_string(k));
+
+      addSphere(body, Eigen::Vector3d::Zero(), jointColor);
+      // The body's parent and child joints are fixed in its frame, so the link
+      // cylinders connecting them are static geometry that moves with the body.
+      addCylinder(
+          body,
+          spec.tRight.inverse().translation(),
+          Eigen::Vector3d::Zero(),
+          linkColor);
+      if (k + 1 < chain.size())
+        addCylinder(
+            body,
+            Eigen::Vector3d::Zero(),
+            chain[k + 1].tLeft.translation(),
+            linkColor);
+
+      parent = body;
+    }
+
+    mWorld->addSkeleton(mSkeleton);
+    setConfig(Eigen::VectorXd::Zero(mSkeleton->getNumDofs()));
+  }
+
+  void setConfig(const Eigen::VectorXd& q)
+  {
+    if (!mSkeleton)
+      return;
+    const std::size_t dofs = mSkeleton->getNumDofs();
+    Eigen::VectorXd positions = Eigen::VectorXd::Zero(dofs);
+    const Eigen::Index n
+        = std::min<Eigen::Index>(static_cast<Eigen::Index>(dofs), q.size());
+    positions.head(n) = q.head(n);
+    mSkeleton->setPositions(positions);
+  }
+
+private:
+  static constexpr double kLinkRadius = 0.028;
+  static constexpr double kJointRadius = 0.045;
+
+  void addCylinder(
+      dart::dynamics::BodyNode* body,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector4d& color)
+  {
+    const Eigen::Vector3d delta = b - a;
+    const double length = delta.norm();
+    if (length < 1e-5)
+      return;
+    auto shape
+        = std::make_shared<dart::dynamics::CylinderShape>(kLinkRadius, length);
+    auto* node = body->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = 0.5 * (a + b);
+    tf.linear() = Eigen::Quaterniond::FromTwoVectors(
+                      Eigen::Vector3d::UnitZ(), delta / length)
+                      .toRotationMatrix();
+    node->setRelativeTransform(tf);
+    node->getVisualAspect()->setColor(color);
+  }
+
+  void addSphere(
+      dart::dynamics::BodyNode* body,
+      const Eigen::Vector3d& position,
+      const Eigen::Vector4d& color)
+  {
+    auto shape = std::make_shared<dart::dynamics::SphereShape>(kJointRadius);
+    auto* node = body->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = position;
+    node->setRelativeTransform(tf);
+    node->getVisualAspect()->setColor(color);
+  }
+
+  dart::simulation::WorldPtr mWorld;
+  dart::dynamics::SkeletonPtr mSkeleton;
+};
+
+//==============================================================================
 Eigen::Isometry3d makeTransform(
     const std::array<float, 3>& xyz, const std::array<float, 3>& rpyDegrees)
 {
@@ -610,36 +934,85 @@ Eigen::Isometry3d offsetPose(
 }
 
 //==============================================================================
+// Attaches a red/green/blue translation-axis gizmo to the interactive target
+// frame so the end-effector target is clearly visible and the gizmo moves with
+// the frame when it is dragged or its pose is edited.
+void attachAxisGizmo(
+    const dart::gui::osg::InteractiveFramePtr& frame, double length)
+{
+  const dart::dynamics::ArrowShape::Properties props(0.014, 2.0, 0.25);
+  const std::array<std::pair<Eigen::Vector3d, Eigen::Vector4d>, 3> axes{
+      {{Eigen::Vector3d(length, 0.0, 0.0),
+        Eigen::Vector4d(0.92, 0.18, 0.18, 1.0)},
+       {Eigen::Vector3d(0.0, length, 0.0),
+        Eigen::Vector4d(0.18, 0.85, 0.25, 1.0)},
+       {Eigen::Vector3d(0.0, 0.0, length),
+        Eigen::Vector4d(0.25, 0.45, 1.0, 1.0)}}};
+  for (const auto& axis : axes) {
+    dart::dynamics::SimpleFrame* arrow
+        = frame->addShapeFrame(std::make_shared<dart::dynamics::ArrowShape>(
+            Eigen::Vector3d::Zero(), axis.first, props, axis.second));
+    arrow->getVisualAspect(true)->setColor(axis.second);
+  }
+}
+
+//==============================================================================
 class SsikIkWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
   SsikIkWidget(
       dart::gui::osg::ImGuiViewer* viewer,
       dart::gui::osg::InteractiveFramePtr target,
-      dart::gui::osg::InteractiveFramePtr solvedFrame)
+      dart::dynamics::SimpleFramePtr solvedFrame,
+      ArmSkeleton* arm,
+      int initialArmIndex)
     : mViewer(viewer),
       mTarget(std::move(target)),
       mSolvedFrame(std::move(solvedFrame)),
+      mArm(arm),
       mArms(getArmSpecs())
   {
+    if (initialArmIndex >= 0
+        && initialArmIndex < static_cast<int>(mArms.size()))
+      mArmIndex = initialArmIndex;
     loadSelectedArm();
   }
 
   void render() override
   {
+    // If the target gizmo was dragged in the 3D view, its frame transform no
+    // longer matches the panel controls. Pick that up, reflect it in the
+    // controls, and re-solve so the arm follows the dragged target.
+    const Eigen::Isometry3d targetTf = mTarget->getTransform();
+    if (!targetTf.isApprox(mAppliedTargetTf, 1e-9)) {
+      setTargetControlsFromTransform(targetTf, mTargetXyz, mTargetRpyDegrees);
+      mAppliedTargetTf = targetTf;
+      if (mAutoSolve)
+        solveCurrent();
+    }
+
     const auto guiScale
         = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
     ImGui::SetNextWindowPos(
         ImVec2(10 * guiScale, 20 * guiScale), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(
-        ImVec2(520 * guiScale, 700 * guiScale), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.85f);
 
+    // Auto-resize so the panel always grows to fit its content (the amount of
+    // text varies with the loaded arm and number of solutions); the user never
+    // has to resize it manually to reveal clipped controls.
     if (!ImGui::Begin(
-            "ssik Analytical IK", nullptr, ImGuiWindowFlags_MenuBar)) {
+            "ssik Analytical IK",
+            nullptr,
+            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::End();
       return;
     }
+
+    // Constrain field and wrapped-text widths so the auto-resized window has a
+    // stable, readable width instead of stretching to the longest message.
+    const float fieldWidth = 240.0f * guiScale;
+    ImGui::PushItemWidth(fieldWidth);
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 360.0f * guiScale);
 
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
@@ -663,7 +1036,35 @@ public:
     ImGui::Separator();
     renderSolutions();
 
+    ImGui::PopTextWrapPos();
+    ImGui::PopItemWidth();
     ImGui::End();
+  }
+
+  int armCount() const
+  {
+    return static_cast<int>(mArms.size());
+  }
+
+  // Test hook: switches to the given arm (the same path as choosing it in the
+  // combo) and returns a one-line summary. Used by --self-test to exercise
+  // online arm switching across every prebuilt module without opening a window.
+  std::string selectArmForTest(int index)
+  {
+    if (index < 0 || index >= static_cast<int>(mArms.size()))
+      return "invalid arm index";
+
+    mArmIndex = index;
+    loadSelectedArm();
+
+    std::ostringstream stream;
+    stream << mArms[index].label << " (" << mArms[index].module << "): ";
+    if (mLoaded)
+      stream << "loaded DOF=" << mInfo.dof << ", " << mSolutions.size()
+             << " solution(s)";
+    else
+      stream << "not loaded (" << mStatus << ")";
+    return stream.str();
   }
 
 private:
@@ -793,6 +1194,8 @@ private:
       mStatus = "Install ssik in this Python environment to use this example: "
                 + error;
       mInfo = ArmInfo();
+      if (mArm)
+        mArm->build({});
       setTargetControlsFromTransform(mInfo.home, mTargetXyz, mTargetRpyDegrees);
       syncTargetFrame();
       mSolvedFrame->setTransform(
@@ -802,6 +1205,9 @@ private:
 
     mLoaded = true;
     mSeed = Eigen::VectorXd::Zero(mInfo.dof);
+    // Rebuild the articulated skeleton for the newly selected arm.
+    if (mArm)
+      mArm->build(mInfo.chain);
     setTargetControlsFromTransform(mInfo.home, mTargetXyz, mTargetRpyDegrees);
     syncTargetFrame();
     mSolvedFrame->setTransform(mInfo.home);
@@ -811,6 +1217,9 @@ private:
   void syncTargetFrame()
   {
     mTarget->setTransform(makeTransform(mTargetXyz, mTargetRpyDegrees));
+    // Record the panel-driven pose so render()'s drag detection only reacts to
+    // direct gizmo dragging, not to our own control edits.
+    mAppliedTargetTf = mTarget->getTransform();
   }
 
   void solveCurrent()
@@ -835,6 +1244,8 @@ private:
             error)) {
       mSolutions.clear();
       mStatus = "Solve failed: " + error;
+      if (mArm)
+        mArm->setConfig(Eigen::VectorXd::Zero(mInfo.dof));
       return;
     }
 
@@ -848,6 +1259,9 @@ private:
       mSelectedSolution = std::min<int>(
           mSelectedSolution, static_cast<int>(mSolutions.size()) - 1);
       updateSolvedFrame();
+    } else if (mArm) {
+      // No reachable solution: rest the arm at its zero configuration.
+      mArm->setConfig(Eigen::VectorXd::Zero(mInfo.dof));
     }
   }
 
@@ -860,11 +1274,15 @@ private:
     const SsikSolution& solution = mSolutions[mSelectedSolution];
     if (solution.hasFkPose)
       mSolvedFrame->setTransform(solution.fkPose);
+    if (mArm)
+      mArm->setConfig(solution.q);
   }
 
-  osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
+  dart::gui::osg::ImGuiViewer* mViewer;
   dart::gui::osg::InteractiveFramePtr mTarget;
-  dart::gui::osg::InteractiveFramePtr mSolvedFrame;
+  dart::dynamics::SimpleFramePtr mSolvedFrame;
+  ArmSkeleton* mArm;
+  Eigen::Isometry3d mAppliedTargetTf = Eigen::Isometry3d::Identity();
   SsikPythonBridge mBridge;
   std::vector<ArmSpec> mArms;
   int mArmIndex = 0;
@@ -896,14 +1314,137 @@ public:
 };
 
 //==============================================================================
-void addFrameMarker(
-    const dart::gui::osg::InteractiveFramePtr& frame,
-    const Eigen::Vector4d& color,
-    double radius)
+struct Options
 {
-  dart::dynamics::SimpleFrame* marker = frame->addShapeFrame(
-      std::make_shared<dart::dynamics::SphereShape>(radius));
-  marker->getVisualAspect(true)->setColor(color);
+  double scale = 1.0;
+  bool showHelp = false;
+  bool headless = false;
+  bool selfTest = false;
+  std::string shotPath = "ssik_ik_gui.png";
+  int armIndex = 0;
+};
+
+//==============================================================================
+void printUsage(const char* executable)
+{
+  dart::gui::osg::printGuiScaleUsage(std::cout, executable);
+  std::cout << "\nAdditional options:\n"
+            << "  --arm INDEX      Initial arm index to load (default 0).\n"
+            << "  --headless       Render one off-screen frame to a PNG and "
+               "exit.\n"
+            << "  --shot PATH      Output PNG path for --headless (default "
+               "ssik_ik_gui.png).\n"
+            << "  --self-test      Load and solve every prebuilt arm in turn "
+               "(exercises online switching) and exit.\n";
+}
+
+//==============================================================================
+// Parses example-specific options and delegates the shared GUI scale flags
+// (--gui-scale, -h/--help) to the common dart-gui-osg helper.
+Options parseOptions(int argc, char* argv[])
+{
+  Options options;
+
+  std::vector<char*> forwarded;
+  forwarded.push_back(argv[0]);
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--headless") == 0) {
+      options.headless = true;
+    } else if (std::strcmp(argv[i], "--self-test") == 0) {
+      options.selfTest = true;
+    } else if (std::strcmp(argv[i], "--shot") == 0 && i + 1 < argc) {
+      options.shotPath = argv[++i];
+    } else if (std::strcmp(argv[i], "--arm") == 0 && i + 1 < argc) {
+      options.armIndex = std::atoi(argv[++i]);
+    } else {
+      forwarded.push_back(argv[i]);
+    }
+  }
+
+  const dart::gui::osg::GuiScaleOptions gui
+      = dart::gui::osg::parseGuiScaleOptions(
+          static_cast<int>(forwarded.size()), forwarded.data(), &std::cerr);
+  options.scale = gui.scale;
+  options.showHelp = gui.showHelp;
+  return options;
+}
+
+//==============================================================================
+// Render one frame off-screen into a pbuffer and write it to a PNG without
+// opening a window. Useful for smoke tests / CI and for verifying the arm
+// rendering. Returns a process exit code.
+int runHeadless(
+    dart::gui::osg::ImGuiViewer* viewer,
+    const Options& options,
+    const ::osg::Vec3& eye,
+    const ::osg::Vec3& center,
+    const ::osg::Vec3& up)
+{
+  const int width
+      = dart::gui::osg::scaleWindowExtent(kViewerWidth, options.scale);
+  const int height
+      = dart::gui::osg::scaleWindowExtent(kViewerHeight, options.scale);
+
+  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
+      = new ::osg::GraphicsContext::Traits;
+  traits->readDISPLAY();
+  traits->setUndefinedScreenDetailsToDefaultScreen();
+  traits->x = 0;
+  traits->y = 0;
+  traits->width = width;
+  traits->height = height;
+  traits->red = traits->green = traits->blue = 8;
+  traits->alpha = 8;
+  traits->depth = 24;
+  traits->windowDecoration = false;
+  traits->pbuffer = true;
+  traits->doubleBuffer = true;
+
+  ::osg::ref_ptr<::osg::GraphicsContext> gc
+      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
+  if (!gc) {
+    std::cerr << "[headless] Failed to create an off-screen GL context "
+                 "(no usable DISPLAY?).\n";
+    return 1;
+  }
+
+  auto* camera = viewer->getCamera();
+  camera->setGraphicsContext(gc.get());
+  camera->setViewport(new ::osg::Viewport(0, 0, width, height));
+  camera->setProjectionMatrixAsPerspective(
+      30.0, static_cast<double>(width) / height, 0.1, 1000.0);
+  const GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
+  camera->setDrawBuffer(buffer);
+  camera->setReadBuffer(buffer);
+
+  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
+  viewer->setCameraManipulator(nullptr);
+  viewer->simulate(false);
+  camera->setViewMatrixAsLookAt(eye, center, up);
+
+  viewer->realize();
+  if (!viewer->isRealized()) {
+    std::cerr << "[headless] Viewer failed to realize off-screen.\n";
+    return 1;
+  }
+  if (auto* queue = viewer->getEventQueue()) {
+    queue->windowResize(0, 0, width, height);
+    queue->setMouseInputRange(0.0f, 0.0f, width, height);
+  }
+
+  // A few frames let ImGui build its first frame and the widget solve and pose
+  // the arm before the screen capture.
+  for (int i = 0; i < 10; ++i) {
+    camera->setViewMatrixAsLookAt(eye, center, up);
+    viewer->frame();
+  }
+
+  viewer->captureScreen(options.shotPath);
+  viewer->frame(); // SaveScreen writes the PNG during this frame.
+
+  std::cout << "[headless] wrote " << options.shotPath << " (" << width << "x"
+            << height << ")\n";
+  return 0;
 }
 
 } // namespace
@@ -911,10 +1452,9 @@ void addFrameMarker(
 //==============================================================================
 int main(int argc, char* argv[])
 {
-  const dart::gui::osg::GuiScaleOptions options
-      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  const Options options = parseOptions(argc, argv);
   if (options.showHelp) {
-    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    printUsage(argv[0]);
     return 0;
   }
 
@@ -925,43 +1465,58 @@ int main(int argc, char* argv[])
   Eigen::Isometry3d defaultTarget = Eigen::Isometry3d::Identity();
   defaultTarget.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
 
+  // A draggable 6-DOF gizmo (translation arrows + rotation rings) serves as the
+  // IK target, like the atlas_puppet example. Sized larger than the arm's joint
+  // markers so it stays visible where the end effector reaches it.
   dart::gui::osg::InteractiveFramePtr target(
       new dart::gui::osg::InteractiveFrame(
-          dart::dynamics::Frame::World(),
-          "ssik_target",
-          defaultTarget,
-          0.35,
-          4.0));
-  target->setName("ssik_target");
-  addFrameMarker(target, Eigen::Vector4d(1.0, 0.80, 0.05, 0.95), 0.055);
+          dart::dynamics::Frame::World(), "ssik_target", defaultTarget, 0.55));
   world->addSimpleFrame(target);
+  attachAxisGizmo(target, 0.5);
 
-  dart::gui::osg::InteractiveFramePtr solvedFrame(
-      new dart::gui::osg::InteractiveFrame(
-          dart::dynamics::Frame::World(),
-          "ssik_fk_solution",
-          offsetPose(defaultTarget, Eigen::Vector3d(0.0, 0.25, 0.0)),
-          0.28,
-          3.0));
-  solvedFrame->setName("ssik_fk_solution");
-  addFrameMarker(solvedFrame, Eigen::Vector4d(0.15, 0.85, 1.0, 0.85), 0.045);
+  // The solved end-effector pose is an output indicator (not interactive), so a
+  // plain cyan sphere marker rather than a second draggable gizmo.
+  dart::dynamics::SimpleFramePtr solvedFrame(new dart::dynamics::SimpleFrame(
+      dart::dynamics::Frame::World(),
+      "ssik_fk_solution",
+      offsetPose(defaultTarget, Eigen::Vector3d(0.0, 0.25, 0.0))));
+  solvedFrame->setShape(std::make_shared<dart::dynamics::SphereShape>(0.05));
+  solvedFrame->createVisualAspect()->setColor(
+      Eigen::Vector4d(0.15, 0.85, 1.0, 0.85));
   world->addSimpleFrame(solvedFrame);
+
+  ArmSkeleton arm;
+  arm.setWorld(world);
 
   osg::ref_ptr<SsikWorldNode> node = new SsikWorldNode(world);
 
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
+  // Render on the calling (main) thread. The embedded Python interpreter is
+  // initialized on this thread and keeps the GIL, so widget rendering -- which
+  // calls back into Python to solve and to switch arms -- must also run here.
+  // With OSG's default multi-threaded model the draw thread would block forever
+  // trying to acquire the GIL, freezing the UI on the first solve/arm switch.
+  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
   viewer->addWorldNode(node);
   viewer->getImGuiHandler()->setGuiScale(options.scale);
 
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<SsikIkWidget>(viewer, target, solvedFrame));
+  auto widget = std::make_shared<SsikIkWidget>(
+      viewer.get(), target, solvedFrame, &arm, options.armIndex);
+  viewer->getImGuiHandler()->addWidget(widget);
+
+  if (options.selfTest) {
+    for (int i = 0; i < widget->armCount(); ++i)
+      std::cout << "[self-test] " << widget->selectArmForTest(i) << "\n";
+    std::cout << "[self-test] cycled " << widget->armCount()
+              << " arms without crashing\n";
+    return 0;
+  }
 
   viewer->enableDragAndDrop(target.get());
-  viewer->enableDragAndDrop(solvedFrame.get());
   viewer->addInstructionText(
-      "\nYellow marker: target transform. Cyan marker: selected FK "
-      "solution.\n");
+      "\nRed arm: the selected IK solution. Yellow marker: target transform. "
+      "Cyan marker: solved end-effector.\n");
   viewer->addInstructionText(
       "Install optional ssik with: pixi run python -m pip install ssik\n");
   viewer->addInstructionText(
@@ -973,15 +1528,21 @@ int main(int argc, char* argv[])
   grid->setPlaneType(dart::gui::osg::GridVisual::PlaneType::XY);
   viewer->addAttachment(grid);
 
+  // Framed to fit the prebuilt arms, whose reach at home ranges from ~0.4 m
+  // (compact 6R) up to ~1.4 m (tall 7R such as iiwa14/Rizon10).
+  const ::osg::Vec3 eye(2.6f, -3.0f, 1.6f);
+  const ::osg::Vec3 center(0.1f, 0.0f, 0.55f);
+  const ::osg::Vec3 up(0.0f, 0.0f, 1.0f);
+
+  if (options.headless)
+    return runHeadless(viewer.get(), options, eye, center, up);
+
   viewer->setUpViewInWindow(
       0,
       0,
       dart::gui::osg::scaleWindowExtent(kViewerWidth, options.scale),
       dart::gui::osg::scaleWindowExtent(kViewerHeight, options.scale));
-  viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(1.8f, -2.2f, 1.4f),
-      ::osg::Vec3(0.35f, 0.05f, 0.25f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+  viewer->getCameraManipulator()->setHomePosition(eye, center, up);
   viewer->setCameraManipulator(viewer->getCameraManipulator());
 
   viewer->run();
