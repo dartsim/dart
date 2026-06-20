@@ -48,8 +48,13 @@ CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
 )
 CPP_NAMESPACE_DATA_PATTERN = re.compile(
-    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"^\s*(?:"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
+    r"|"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
+    r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?"
+    r")"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?"
     r"(?:\s*=\s*[^;]+|\s*\{[^;]*\})?\s*;"
@@ -416,7 +421,12 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     namespace_data_code = code.strip()
                     if namespace_data_buffer:
                         namespace_data_buffer.append(namespace_data_code)
-                    elif CPP_NAMESPACE_DATA_START_PATTERN.search(namespace_data_code):
+                    elif CPP_NAMESPACE_DATA_START_PATTERN.search(
+                        namespace_data_code
+                    ) or (
+                        CPP_DART_API_TOKEN_PATTERN.search(namespace_data_code)
+                        and "(" not in namespace_data_code
+                    ):
                         namespace_data_buffer = [namespace_data_code]
                         namespace_data_start = index
 
@@ -650,6 +660,16 @@ def collect_stub_reexports(
         for candidate in text.split(","):
             candidate = candidate.strip()
             if not candidate:
+                continue
+            if candidate == "*":
+                entries.append(
+                    LegacyEntry(
+                        "stub-reexport",
+                        rel,
+                        f"{module}.*",
+                        nearby_tag(lines, index),
+                    )
+                )
                 continue
             name_match = STUB_IMPORT_NAME_PATTERN.search(candidate)
             if name_match:
