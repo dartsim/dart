@@ -427,6 +427,8 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
             member_start = 0
             module_buffer = ""
             module_start = 0
+            enum_value_buffer = ""
+            enum_value_start = 0
             for index, line in enumerate(lines):
                 code = code_without_comment(line).strip()
                 if "nb::class_" in code or "nb::enum_" in code:
@@ -494,16 +496,33 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                 member_search_line = member_buffer or line
                 member_search_index = member_start if member_buffer else index
 
-                enum_value_match = BINDING_ENUM_VALUE_PATTERN.search(line)
+                if re.search(r"\.value\s*\(", code):
+                    enum_value_buffer = code
+                    enum_value_start = index
+                elif enum_value_buffer:
+                    enum_value_buffer = f"{enum_value_buffer} {code}".strip()
+
+                enum_value_search_line = enum_value_buffer or line
+                enum_value_search_index = (
+                    enum_value_start if enum_value_buffer else index
+                )
+
+                enum_value_match = BINDING_ENUM_VALUE_PATTERN.search(
+                    enum_value_search_line
+                )
                 if enum_value_match and current_enum:
                     entries.append(
                         LegacyEntry(
                             "binding-enum-value",
                             rel_path,
                             f"{current_enum}.{enum_value_match.group('name')}",
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, enum_value_search_index),
                         )
                     )
+                    enum_value_buffer = ""
+
+                if enum_value_buffer and ";" in code:
+                    enum_value_buffer = ""
 
                 module_attr_match = BINDING_MODULE_ATTR_PATTERN.search(
                     module_search_line
