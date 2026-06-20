@@ -124,6 +124,7 @@ compile_flags.txt
 
 # AI tool local state
 .omc/
+.omo/
 .omx/
 .sisyphus/
 
