@@ -1,28 +1,31 @@
 # Install DART
 
-DART 7 is **Python-first**: the quickest way to start is the `dartpy` package.
-Building from source gives you the newest DART 7 surface and the interactive
-viewer.
+DART 7 is **Python-first**, but because it is still in development its `dartpy`
+packages are pre-releases. The two reliable ways to get the DART 7 API used
+throughout this guide are PyPI pre-release wheels and a source build.
 
-```{admonition} Pre-release packages
-:class: note
+```{admonition} Default channels still install DART 6
+:class: important
 
-DART 7 artifacts are published as pre-releases while the API stabilizes. Until a
-final DART 7 release is tagged, package managers may still resolve the latest
-DART 6 artifacts unless you opt into the pre-release. When in doubt, build from
-source for the examples in this guide.
+Plain `uv add dartpy`, `pixi add dartpy`, and `conda install dartpy` resolve the
+**stable DART 6** line, which uses a different API — `dart.World()` and
+`add_rigid_body` from this guide do not exist there. Install DART 7 explicitly
+with one of the options below, or build from source.
 ```
 
-## Python package
+## Python package (pre-release)
 
-Use your preferred package manager to add `dartpy` to an environment:
+DART 7 wheels are published as pre-releases on PyPI (currently Linux x86_64 /
+CPython 3.14). Opt into pre-releases so you get DART 7 rather than DART 6:
 
 ```bash
-uv add dartpy                 # uv (recommended for Python-first projects)
-pip install dartpy --pre      # PyPI wheels; --pre opts into DART 7 pre-releases
-pixi add dartpy               # Pixi environment
-conda install -c conda-forge dartpy
+pip install --pre dartpy           # pip (PyPI)
+uv add dartpy --prerelease allow    # uv (PyPI)
 ```
+
+The default `pixi add dartpy` and `conda install -c conda-forge dartpy` channels
+currently track the stable **DART 6** line; use them for DART 6, or build from
+source (below) for the DART 7 examples in this guide.
 
 Verify the install by creating a tiny world in code — this does not need any
 sample data files:
