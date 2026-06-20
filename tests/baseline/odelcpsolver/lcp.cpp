@@ -113,6 +113,8 @@ rows/columns and manipulate C.
 #include "matrix.h"
 #include "misc.h"
 
+#include <array>
+
 //***************************************************************************
 // code generation parameters
 
@@ -809,23 +811,65 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
   }
 
   const int nskip = dPAD(n);
-  dReal *L = new dReal[ (n*nskip)];
-  dReal *d = new dReal[ (n)];
-  dReal *w = outer_w ? outer_w : (new dReal[n]);
-  dReal *delta_w = new dReal[ (n)];
-  dReal *delta_x = new dReal[ (n)];
-  dReal *Dell = new dReal[ (n)];
-  dReal *ell = new dReal[ (n)];
+  constexpr int kInlineLcpMaxN = 12;
+  constexpr int kInlineLcpMaxNSkip = dPAD(kInlineLcpMaxN);
+  const bool useInlineStorage
+      = n <= kInlineLcpMaxN && nskip <= kInlineLcpMaxNSkip;
+  std::array<dReal, kInlineLcpMaxN * kInlineLcpMaxNSkip> inlineL;
+  std::array<dReal, kInlineLcpMaxN> inlineD;
+  std::array<dReal, kInlineLcpMaxN> inlineW;
+  std::array<dReal, kInlineLcpMaxN> inlineDeltaW;
+  std::array<dReal, kInlineLcpMaxN> inlineDeltaX;
+  std::array<dReal, kInlineLcpMaxN> inlineDell;
+  std::array<dReal, kInlineLcpMaxN> inlineEll;
+  std::array<int, kInlineLcpMaxN> inlineP;
+  std::array<int, kInlineLcpMaxN> inlineC;
+  std::array<bool, kInlineLcpMaxN> inlineState;
 #ifdef ROWPTRS
-  dReal **Arows = new dReal* [n];
+  std::array<dReal*, kInlineLcpMaxN> inlineArows;
+#endif
+  dReal *L = useInlineStorage ? inlineL.data() : new dReal[(n * nskip)];
+  dReal *d = useInlineStorage ? inlineD.data() : new dReal[(n)];
+  dReal *w = outer_w
+                 ? outer_w
+                 : (useInlineStorage ? inlineW.data() : new dReal[n]);
+  dReal *delta_w
+      = useInlineStorage ? inlineDeltaW.data() : new dReal[(n)];
+  dReal *delta_x
+      = useInlineStorage ? inlineDeltaX.data() : new dReal[(n)];
+  dReal *Dell = useInlineStorage ? inlineDell.data() : new dReal[(n)];
+  dReal *ell = useInlineStorage ? inlineEll.data() : new dReal[(n)];
+#ifdef ROWPTRS
+  dReal **Arows = useInlineStorage ? inlineArows.data() : new dReal*[n];
 #else
   dReal **Arows = nullptr;
 #endif
-  int *p = new int[n];
-  int *C = new int[n];
+  int *p = useInlineStorage ? inlineP.data() : new int[n];
+  int *C = useInlineStorage ? inlineC.data() : new int[n];
 
   // for i in N, state[i] is 0 if x(i)==lo(i) or 1 if x(i)==hi(i)
-  bool *state = new bool[n];
+  bool *state = useInlineStorage ? inlineState.data() : new bool[n];
+
+  auto cleanup = [&]() {
+    if (useInlineStorage) {
+      return;
+    }
+
+    if (!outer_w)
+      delete[] w;
+    delete[] L;
+    delete[] d;
+    delete[] delta_w;
+    delete[] delta_x;
+    delete[] Dell;
+    delete[] ell;
+#ifdef ROWPTRS
+    delete[] Arows;
+#endif
+    delete[] p;
+    delete[] C;
+    delete[] state;
+  };
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
@@ -1011,22 +1055,7 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         if (s <= REAL(0.0)) {
 
           if (earlyTermination) {
-            if (!outer_w)
-              delete[] w;
-            delete[] L;
-            delete[] d;
-            delete[] delta_w;
-            delete[] delta_x;
-            delete[] Dell;
-            delete[] ell;
-          #ifdef ROWPTRS
-            delete[] Arows;
-          #endif
-            delete[] p;
-            delete[] C;
-
-            delete[] state;
-
+            cleanup();
             return false;
           }
 
@@ -1102,21 +1131,7 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
 
   lcp.unpermute();
 
-  if (!outer_w)
-	  delete[] w;
-  delete[] L;
-  delete[] d;
-  delete[] delta_w;
-  delete[] delta_x;
-  delete[] Dell;
-  delete[] ell;
-#ifdef ROWPTRS
-  delete[] Arows;
-#endif
-  delete[] p;
-  delete[] C;
-
-  delete[] state;
+  cleanup();
 
   return true;
 }

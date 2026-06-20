@@ -12,6 +12,21 @@
     `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+  * Remove the deprecated external optimizer backends (IPOPT, NLopt, pagmo,
+    SNOPT) and the pagmo-based multi-objective optimization API
+    (`MultiObjectiveProblem`/`MultiObjectiveSolver`, `Population`,
+    `GenericMultiObjectiveProblem`), which were extracted to the separate
+    [dart-optimization](https://github.com/dartsim/dart-optimization) package.
+    The `optimizer-ipopt` / `optimizer-nlopt` / `optimizer-pagmo` CMake
+    components and their installed headers, the `dart.optimizer.NloptSolver`
+    Python binding, and the `HAVE_IPOPT` / `HAVE_NLOPT` / `HAVE_PAGMO` /
+    `HAVE_SNOPT` macros in the installed `dart/config.hpp` are removed, and the
+    non-Pixi install instructions (apt/brew/vcpkg/Arch), root `Dockerfile`, and
+    `Brewfile` no longer pull these packages. The optimizer core (`Function`,
+    `Problem`, `Solver`, `GradientDescentSolver`) used by DART's
+    `InverseKinematics` is retained:
+    [#3105](https://github.com/dartsim/dart/pull/3105)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
@@ -37,6 +52,13 @@
     for contact-heavy scenes, with regression coverage for FCL halfspace
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
+
+* Simulation
+
+  * Enable resting-world deactivation by default with wake-aware invalidation
+    and fidelity coverage against the always-active path, improving resting
+    contact-heavy scenes while preserving an explicit deactivation opt-out:
+    [#3086](https://github.com/dartsim/dart/pull/3086)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 

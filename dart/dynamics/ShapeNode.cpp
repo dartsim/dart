@@ -86,6 +86,9 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
   dirtyJacobian();
   dirtyJacobianDeriv();
 
+  if (BodyNode* bodyNode = getBodyNodePtr().get())
+    bodyNode->handleCollisionShapeGeometryUpdated(this);
+
   mRelativeTransformUpdatedSignal.raise(
       this, oldTransform, getRelativeTransform());
 }

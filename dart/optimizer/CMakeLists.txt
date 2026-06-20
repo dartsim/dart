@@ -18,9 +18,3 @@ install(
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )
-
-# Add subdirectories (components)
-add_subdirectory(ipopt)
-add_subdirectory(nlopt)
-add_subdirectory(pagmo)
-add_subdirectory(snopt)

@@ -20,8 +20,6 @@ RUN apt-get update \
     libassimp-dev \
     libfcl-dev \
     libfmt-dev \
-    libnlopt-cxx-dev \
-    coinor-libipopt-dev \
     libbullet-dev \
     libode-dev \
     liboctomap-dev \

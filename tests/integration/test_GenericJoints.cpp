@@ -405,6 +405,34 @@ TEST(GenericJoint, NaNFrictionClampedToZero)
 }
 
 //==============================================================================
+TEST(GenericJoint, InvalidStoredFrictionDoesNotUnderflowFrictionCount)
+{
+  for (const double invalid :
+       {std::numeric_limits<double>::quiet_NaN(), -1.0}) {
+    RevoluteJoint::Properties properties;
+    properties.mFrictions[0] = invalid;
+
+    auto skeleton = Skeleton::create();
+    auto* joint
+        = skeleton
+              ->createJointAndBodyNodePair<RevoluteJoint>(nullptr, properties)
+              .first;
+
+    ASSERT_FALSE(joint->hasCoulombFriction());
+
+    joint->setCoulombFriction(0, 0.0);
+    EXPECT_EQ(joint->getCoulombFriction(0), 0.0);
+    EXPECT_FALSE(joint->hasCoulombFriction());
+
+    joint->setCoulombFriction(0, 1.0);
+    EXPECT_TRUE(joint->hasCoulombFriction());
+
+    joint->setCoulombFriction(0, 0.0);
+    EXPECT_FALSE(joint->hasCoulombFriction());
+  }
+}
+
+//==============================================================================
 TEST(GenericJoint, NaNSpringStiffnessClampedToZero)
 {
   SingleDofJointTest joint;

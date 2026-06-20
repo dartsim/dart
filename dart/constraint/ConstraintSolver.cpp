@@ -41,6 +41,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -48,6 +49,7 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -55,7 +57,13 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
-#include <unordered_map>
+#include <condition_variable>
+#include <limits>
+#include <mutex>
+#include <thread>
+#include <type_traits>
+#include <typeinfo>
+#include <unordered_set>
 #include <utility>
 
 #include <cstdint>
@@ -64,6 +72,216 @@ namespace dart {
 namespace constraint {
 
 using namespace dynamics;
+
+//==============================================================================
+bool isExactDefaultContactSurfaceHandler(
+    const ContactSurfaceHandlerPtr& handler)
+{
+  if (handler == nullptr)
+    return false;
+
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
+#endif
+  const bool isExactDefault
+      = typeid(*handler) == typeid(DefaultContactSurfaceHandler);
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
+
+  return isExactDefault;
+}
+
+//==============================================================================
+bool isRandomizedPgsSolver(const ConstBoxedLcpSolverPtr& solver)
+{
+  const auto pgs = std::dynamic_pointer_cast<const PgsBoxedLcpSolver>(solver);
+  return pgs != nullptr && pgs->getOption().mRandomizeConstraintOrder;
+}
+
+//==============================================================================
+bool usesRandomizedPgsSolver(const ConstraintSolver& solver)
+{
+  const auto* boxedSolver
+      = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
+  if (boxedSolver == nullptr)
+    return false;
+
+  return isRandomizedPgsSolver(boxedSolver->getBoxedLcpSolver())
+         || isRandomizedPgsSolver(boxedSolver->getSecondaryBoxedLcpSolver());
+}
+
+//==============================================================================
+class ConstraintThreadPool
+{
+public:
+  ConstraintThreadPool() = default;
+
+  ~ConstraintThreadPool()
+  {
+    setWorkerCount(0u);
+  }
+
+  void setWorkerCount(std::size_t workerCount)
+  {
+    if (workerCount == mWorkers.size())
+      return;
+
+    stopWorkers();
+    if (workerCount == 0u)
+      return;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = false;
+    }
+
+    mWorkers.reserve(workerCount);
+    for (std::size_t i = 0; i < workerCount; ++i)
+      mWorkers.emplace_back([this] { workerLoop(); });
+  }
+
+  template <typename Func>
+  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  {
+    if (count == 0u)
+      return;
+
+    const std::size_t totalParticipants = std::min<std::size_t>(
+        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
+    if (totalParticipants <= 1u) {
+      for (std::size_t i = 0; i < count; ++i)
+        func(i);
+      return;
+    }
+
+    const std::size_t chunkSize
+        = (count + totalParticipants - 1u) / totalParticipants;
+    const std::size_t workerCount = totalParticipants - 1u;
+    using Function = typename std::remove_reference<Func>::type;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      DART_ASSERT(!mTaskActive);
+      mTaskActive = true;
+      mTaskCallable = static_cast<void*>(std::addressof(func));
+      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
+        auto& task = *static_cast<Function*>(callable);
+        for (std::size_t i = begin; i < end; ++i)
+          task(i);
+      };
+      mTaskCount = count;
+      mTaskChunkSize = chunkSize;
+      mWorkerLimit = totalParticipants;
+      mNextWorkerIndex = 1u;
+      mActiveWorkerCount = workerCount;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
+    for (std::size_t i = 0; i < mainEnd; ++i)
+      func(i);
+
+    {
+      std::unique_lock<std::mutex> lock(mMutex);
+      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
+      mTaskActive = false;
+      mTaskCallable = nullptr;
+      mTaskInvoker = nullptr;
+      mWorkerLimit = 1u;
+    }
+  }
+
+private:
+  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
+
+  void stopWorkers()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = true;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    for (auto& worker : mWorkers) {
+      if (worker.joinable())
+        worker.join();
+    }
+    mWorkers.clear();
+
+    std::lock_guard<std::mutex> lock(mMutex);
+    mStop = false;
+    mTaskActive = false;
+    mTaskCallable = nullptr;
+    mTaskInvoker = nullptr;
+    mActiveWorkerCount = 0u;
+    mWorkerLimit = 1u;
+    mNextWorkerIndex = 1u;
+  }
+
+  void workerLoop()
+  {
+    std::size_t observedGeneration = 0u;
+
+    while (true) {
+      void* callable = nullptr;
+      TaskInvoker invoker = nullptr;
+      std::size_t begin = 0u;
+      std::size_t end = 0u;
+
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mTaskCv.wait(lock, [&] {
+          return mStop || observedGeneration != mTaskGeneration;
+        });
+
+        if (mStop)
+          return;
+
+        observedGeneration = mTaskGeneration;
+        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
+          continue;
+
+        const std::size_t workerIndex = mNextWorkerIndex++;
+        begin = workerIndex * mTaskChunkSize;
+        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
+        callable = mTaskCallable;
+        invoker = mTaskInvoker;
+      }
+
+      if (begin < end)
+        invoker(callable, begin, end);
+
+      {
+        std::lock_guard<std::mutex> lock(mMutex);
+        DART_ASSERT(mActiveWorkerCount > 0u);
+        --mActiveWorkerCount;
+        if (mActiveWorkerCount == 0u)
+          mDoneCv.notify_one();
+      }
+    }
+  }
+
+  std::vector<std::thread> mWorkers;
+  std::mutex mMutex;
+  std::condition_variable mTaskCv;
+  std::condition_variable mDoneCv;
+  bool mStop = false;
+  bool mTaskActive = false;
+  std::size_t mTaskGeneration = 0u;
+  std::size_t mTaskCount = 0u;
+  std::size_t mTaskChunkSize = 0u;
+  std::size_t mWorkerLimit = 1u;
+  std::size_t mNextWorkerIndex = 1u;
+  std::size_t mActiveWorkerCount = 0u;
+  void* mTaskCallable = nullptr;
+  TaskInvoker mTaskInvoker = nullptr;
+};
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
@@ -102,6 +320,9 @@ ConstraintSolver::ConstraintSolver()
   // incorrect contact point computation.
   // (see: https://github.com/flexible-collision-library/fcl/issues/106)
 }
+
+//==============================================================================
+ConstraintSolver::~ConstraintSolver() = default;
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -264,15 +485,41 @@ double ConstraintSolver::getTimeStep() const
 }
 
 //==============================================================================
-void ConstraintSolver::setAutomaticSleepingEnabled(bool _enabled)
+void ConstraintSolver::setDeactivationActive(bool _active)
 {
-  mSleepingEnabled = _enabled;
+  mDeactivationActive = _active;
 }
 
 //==============================================================================
-void ConstraintSolver::setDeactivationActive(bool _enabled)
+void ConstraintSolver::setAutomaticSleepingEnabled(bool _enabled)
 {
-  setAutomaticSleepingEnabled(_enabled);
+  setDeactivationActive(_enabled);
+}
+
+//==============================================================================
+void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
+{
+  if (numThreads == 0u) {
+    numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0u)
+      numThreads = 1u;
+  }
+
+  mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
+  if (mNumSimulationThreads <= 1u) {
+    mConstraintThreadPool.reset();
+    return;
+  }
+
+  if (!mConstraintThreadPool)
+    mConstraintThreadPool = std::make_unique<ConstraintThreadPool>();
+  mConstraintThreadPool->setWorkerCount(mNumSimulationThreads - 1u);
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::getNumSimulationThreads() const
+{
+  return mNumSimulationThreads;
 }
 
 //==============================================================================
@@ -380,11 +627,25 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
-  for (auto& skeleton : mSkeletons) {
-    skeleton->clearConstraintImpulses();
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    skeleton->clearCollidingBodies();
-    DART_SUPPRESS_DEPRECATED_END
+  {
+    DART_PROFILE_SCOPED_N("ConstraintSolver::clear per-step state");
+    auto clearSkeletonAt = [&](std::size_t i) {
+      auto& skeleton = mSkeletons[i];
+      skeleton->clearConstraintImpulses();
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      skeleton->clearCollidingBodies();
+      DART_SUPPRESS_DEPRECATED_END
+    };
+
+    if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
+        && mSkeletons.size() >= 128u) {
+      DART_PROFILE_SCOPED_N("parallel clear per-step state");
+      mConstraintThreadPool->parallelFor(
+          mSkeletons.size(), mNumSimulationThreads, clearSkeletonAt);
+    } else {
+      for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+        clearSkeletonAt(i);
+    }
   }
 
   // Update constraints and collect active constraints
@@ -403,11 +664,62 @@ void ConstraintSolver::setFromOtherConstraintSolver(
 {
   removeAllSkeletons();
   mManualConstraints.clear();
+  mAutomaticJointConstraintJoints.clear();
+  mAutomaticJointConstraintRevision = static_cast<std::size_t>(-1);
+  mAutomaticJointConstraintSkeletonVersion = static_cast<std::size_t>(-1);
 
   addSkeletons(other.getSkeletons());
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  setNumSimulationThreads(other.getNumSimulationThreads());
+}
+
+//==============================================================================
+bool ConstraintSolver::canJointCreateAutomaticConstraint(
+    const dynamics::Joint* joint) const
+{
+  if (joint == nullptr || joint->isKinematic())
+    return false;
+
+  return joint->hasCoulombFriction() || joint->areLimitsEnforced()
+         || joint->getActuatorType() == dynamics::Joint::SERVO
+         || (joint->getActuatorType() == dynamics::Joint::MIMIC
+             && joint->getMimicJoint());
+}
+
+//==============================================================================
+void ConstraintSolver::updateAutomaticJointConstraintCache()
+{
+  std::size_t skeletonVersion = mSkeletons.size();
+  auto mix = [](std::size_t& value, std::size_t input) {
+    value ^= input + 0x9e3779b97f4a7c15ULL + (value << 6) + (value >> 2);
+  };
+
+  for (const auto& skel : mSkeletons) {
+    mix(skeletonVersion, reinterpret_cast<std::uintptr_t>(skel.get()));
+    mix(skeletonVersion, skel ? skel->getVersion() : 0u);
+  }
+
+  const std::size_t jointRevision
+      = dynamics::Joint::getAutomaticConstraintRevision();
+  if (mAutomaticJointConstraintRevision == jointRevision
+      && mAutomaticJointConstraintSkeletonVersion == skeletonVersion) {
+    return;
+  }
+
+  mAutomaticJointConstraintRevision = jointRevision;
+  mAutomaticJointConstraintSkeletonVersion = skeletonVersion;
+  mAutomaticJointConstraintJoints.clear();
+
+  for (const auto& skel : mSkeletons) {
+    const std::size_t numJoints = skel->getNumJoints();
+    for (std::size_t i = 0; i < numJoints; ++i) {
+      dynamics::Joint* joint = skel->getJoint(i);
+      if (canJointCreateAutomaticConstraint(joint))
+        mAutomaticJointConstraintJoints.push_back(joint);
+    }
+  }
 }
 
 //==============================================================================
@@ -477,15 +789,21 @@ void ConstraintSolver::updateConstraints()
 
   // Clear previous active constraint list
   mActiveConstraints.clear();
+  mActiveConstraintsAllSingleReactiveContacts = true;
 
   //----------------------------------------------------------------------------
   // Update manual constraints
   //----------------------------------------------------------------------------
-  for (auto& manualConstraint : mManualConstraints) {
-    manualConstraint->update();
+  {
+    DART_PROFILE_SCOPED_N("update manual constraints");
+    for (auto& manualConstraint : mManualConstraints) {
+      manualConstraint->update();
 
-    if (manualConstraint->isActive())
-      mActiveConstraints.push_back(manualConstraint);
+      if (manualConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(manualConstraint);
+      }
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -493,10 +811,30 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
+  auto* restingContactFilter
+      = dynamic_cast<collision::BodyNodeCollisionFilter*>(
+          mCollisionOption.collisionFilter.get());
+  if (restingContactFilter != nullptr) {
+    bool hasAwakeMobileSkeleton = false;
+    if (mDeactivationActive) {
+      for (const auto& skeleton : mSkeletons) {
+        if (skeleton->isMobile() && !skeleton->isResting()) {
+          hasAwakeMobileSkeleton = true;
+          break;
+        }
+      }
+    }
+    restingContactFilter->setSolverRestingContactFilterActive(
+        mDeactivationActive, hasAwakeMobileSkeleton);
+  }
+
   {
     DART_PROFILE_SCOPED_N("collide");
     mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
   }
+
+  if (restingContactFilter != nullptr)
+    restingContactFilter->setSolverRestingContactFilterActive(false, false);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
@@ -504,133 +842,237 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous soft contact constraints
   mSoftContactConstraints.clear();
 
-  // Create a mapping of contact pairs to the number of contacts between them
-  using ContactPair
-      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+  const bool useBuiltInDefaultContactActiveState
+      = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
+  const auto* builtInDefaultContactHandler
+      = useBuiltInDefaultContactActiveState
+            ? static_cast<const DefaultContactSurfaceHandler*>(
+                mContactSurfaceHandler.get())
+            : nullptr;
+  const bool useBuiltInDefaultSurfaceParamsCache
+      = builtInDefaultContactHandler != nullptr
+        && builtInDefaultContactHandler->mParent == nullptr;
 
-  // Hash and equality that ignore the order within a contact pair, so that the
-  // (objA, objB) and (objB, objA) orderings map to the same entry. This matches
-  // the order-independent counting the previous std::map comparator provided,
-  // but with O(1) average lookups instead of O(log n) tree operations.
+  // Create a mapping of contact pairs to the number of contacts between them.
+  // The scratch table uses open addressing over retained vectors so the
+  // per-step contact-pair count remains order-independent without allocating
+  // one unordered_map node per contact pair.
+  struct ContactPair
+  {
+    collision::CollisionObject* first;
+    collision::CollisionObject* second;
+  };
   struct ContactPairHash
   {
     std::size_t operator()(const ContactPair& pair) const
     {
-      auto a = reinterpret_cast<std::uintptr_t>(pair.first);
-      auto b = reinterpret_cast<std::uintptr_t>(pair.second);
-      if (a > b)
-        std::swap(a, b);
+      const auto a = reinterpret_cast<std::uintptr_t>(pair.first);
+      const auto b = reinterpret_cast<std::uintptr_t>(pair.second);
       const std::size_t h1 = std::hash<std::uintptr_t>()(a);
       const std::size_t h2 = std::hash<std::uintptr_t>()(b);
       return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
     }
   };
-  struct ContactPairEqual
+  struct ContactPairCount
   {
-    bool operator()(const ContactPair& x, const ContactPair& y) const
-    {
-      return (x.first == y.first && x.second == y.second)
-             || (x.first == y.second && x.second == y.first);
-    }
+    ContactPair pair;
+    std::size_t count;
+    ContactSurfaceParams surfaceParams;
+    bool surfaceParamsInitialized;
+  };
+  struct ContactCandidate
+  {
+    collision::Contact* contact;
+    std::size_t contactPairIndex;
   };
 
-  // Reused across steps so the per-step contact bookkeeping does not allocate.
-  // thread_local keeps concurrent solves on different threads independent while
-  // leaving the solver's class layout (ABI) untouched. unordered_map::clear()
-  // and vector::clear() retain their buckets/capacity, so steady-state stepping
-  // performs no contact-pair allocation at all.
-  static thread_local std::
-      unordered_map<ContactPair, std::size_t, ContactPairHash, ContactPairEqual>
-          contactPairMap;
-  contactPairMap.clear();
-  static thread_local std::vector<collision::Contact*> contacts;
-  contacts.clear();
+  constexpr std::size_t invalidContactPairIndex
+      = (std::numeric_limits<std::size_t>::max)();
+  static thread_local std::vector<ContactPairCount> contactPairCounts;
+  contactPairCounts.clear();
+  static thread_local std::vector<std::size_t> contactPairBuckets;
 
-  // Create new contact constraints
-  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
-    auto& contact = mCollisionResult.getContact(i);
+  static thread_local std::vector<ContactCandidate> contactCandidates;
+  contactCandidates.clear();
 
-    if (collision::Contact::isZeroNormal(contact.normal)) {
-      // Skip this contact. This is because we assume that a contact with
-      // zero-length normal is invalid.
-      continue;
-    }
+  {
+    DART_PROFILE_SCOPED_N("collect contact candidates");
+    contactPairCounts.reserve(mCollisionResult.getNumContacts());
+    contactCandidates.reserve(mCollisionResult.getNumContacts());
+    const ContactPairHash contactPairHash;
+    bool contactPairBucketsInitialized = false;
+    const auto initializeContactPairBuckets = [&]() {
+      if (contactPairBucketsInitialized)
+        return;
 
-    // Set colliding bodies
-    if (contact.collisionObject1 == nullptr
-        || contact.collisionObject2 == nullptr) {
-      dtwarn << "[ConstraintSolver] Ignoring contact with a null collision "
-             << "object.\n";
-      continue;
-    }
+      std::size_t bucketCount = 2u;
+      while (bucketCount < mCollisionResult.getNumContacts() * 2u)
+        bucketCount <<= 1u;
+      if (contactPairBuckets.size() < bucketCount)
+        contactPairBuckets.resize(bucketCount, invalidContactPairIndex);
+      std::fill(
+          contactPairBuckets.begin(),
+          contactPairBuckets.end(),
+          invalidContactPairIndex);
+      contactPairBucketsInitialized = true;
+    };
 
-    auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
-        contact.collisionObject1->getShapeFrame());
-    auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
-        contact.collisionObject2->getShapeFrame());
-    auto shapeNode1
-        = shapeFrame1 != nullptr ? shapeFrame1->asShapeNode() : nullptr;
-    auto shapeNode2
-        = shapeFrame2 != nullptr ? shapeFrame2->asShapeNode() : nullptr;
-    if (shapeNode1 == nullptr || shapeNode2 == nullptr
-        || shapeNode1->getBodyNodePtr() == nullptr
-        || shapeNode2->getBodyNodePtr() == nullptr) {
-      dtwarn << "[ConstraintSolver] Ignoring contact with a missing "
-             << "ShapeNode or BodyNode.\n";
-      continue;
-    }
+    const auto findOrCreateContactPairIndex
+        = [&](collision::CollisionObject* object1,
+              collision::CollisionObject* object2) -> std::size_t {
+      initializeContactPairBuckets();
+      ContactPair pair{object1, object2};
+      if (reinterpret_cast<std::uintptr_t>(pair.first)
+          > reinterpret_cast<std::uintptr_t>(pair.second)) {
+        std::swap(pair.first, pair.second);
+      }
 
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    shapeNode1->getBodyNodePtr()->setColliding(true);
-    shapeNode2->getBodyNodePtr()->setColliding(true);
-    DART_SUPPRESS_DEPRECATED_END
+      const std::size_t bucketMask = contactPairBuckets.size() - 1u;
+      std::size_t bucket = contactPairHash(pair) & bucketMask;
+      while (true) {
+        const std::size_t pairIndex = contactPairBuckets[bucket];
+        if (pairIndex == invalidContactPairIndex) {
+          const std::size_t newPairIndex = contactPairCounts.size();
+          contactPairCounts.push_back(
+              {pair, 0u, ContactSurfaceParams(), false});
+          contactPairBuckets[bucket] = newPairIndex;
+          return newPairIndex;
+        }
 
-    // If penetration depth is negative, then the collision isn't really
-    // happening and the contact point should be ignored.
-    // TODO(MXG): Investigate ways to leverage the proximity information of a
-    //            negative penetration to improve collision handling.
-    if (contact.penetrationDepth < 0.0)
-      continue;
+        const auto& existingPair = contactPairCounts[pairIndex].pair;
+        if (existingPair.first == pair.first
+            && existingPair.second == pair.second) {
+          return pairIndex;
+        }
 
-    if (isSoftContact(contact)) {
-      mSoftContactConstraints.push_back(
-          std::make_shared<SoftContactConstraint>(contact, mTimeStep));
-    } else {
-      // Increment the count of contacts between the two collision objects
-      ++contactPairMap[std::make_pair(
-          contact.collisionObject1, contact.collisionObject2)];
+        bucket = (bucket + 1u) & bucketMask;
+      }
+    };
 
-      contacts.push_back(&contact);
+    for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
+      auto& contact = mCollisionResult.getContact(i);
+
+      if (collision::Contact::isZeroNormal(contact.normal)) {
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
+      }
+
+      // Set colliding bodies
+      if (contact.collisionObject1 == nullptr
+          || contact.collisionObject2 == nullptr) {
+        dtwarn << "[ConstraintSolver] Ignoring contact with a null collision "
+               << "object.\n";
+        continue;
+      }
+
+      const auto* shapeNode1 = contact.collisionObject1->getShapeNode();
+      const auto* shapeNode2 = contact.collisionObject2->getShapeNode();
+      auto* bodyNode1 = contact.collisionObject1->getBodyNode();
+      auto* bodyNode2 = contact.collisionObject2->getBodyNode();
+      if (shapeNode1 == nullptr || shapeNode2 == nullptr || bodyNode1 == nullptr
+          || bodyNode2 == nullptr) {
+        dtwarn << "[ConstraintSolver] Ignoring contact with a missing "
+               << "ShapeNode or BodyNode.\n";
+        continue;
+      }
+
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      bodyNode1->setColliding(true);
+      bodyNode2->setColliding(true);
+      DART_SUPPRESS_DEPRECATED_END
+
+      // If penetration depth is negative, then the collision isn't really
+      // happening and the contact point should be ignored.
+      // TODO(MXG): Investigate ways to leverage the proximity information of a
+      //            negative penetration to improve collision handling.
+      if (contact.penetrationDepth < 0.0)
+        continue;
+
+      if (isSoftContact(bodyNode1, bodyNode2)) {
+        mSoftContactConstraints.push_back(
+            std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+      } else {
+        const std::size_t contactPairIndex = findOrCreateContactPairIndex(
+            contact.collisionObject1, contact.collisionObject2);
+        ++contactPairCounts[contactPairIndex].count;
+
+        contactCandidates.push_back({&contact, contactPairIndex});
+      }
     }
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : contacts) {
-    std::size_t numContacts = 1;
-    auto it = contactPairMap.find(
-        std::make_pair(contact->collisionObject1, contact->collisionObject2));
-    if (it != contactPairMap.end())
-      numContacts = it->second;
+  {
+    DART_PROFILE_SCOPED_N("build contact constraints");
+    for (const auto& candidate : contactCandidates) {
+      ContactConstraintPtr contactConstraint;
+      if (useBuiltInDefaultSurfaceParamsCache) {
+        auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
+        const auto numContactsOnPair = contactPairCount.count;
+        if (!contactPairCount.surfaceParamsInitialized) {
+          contactPairCount.surfaceParams
+              = builtInDefaultContactHandler
+                    ->DefaultContactSurfaceHandler::createParams(
+                        *candidate.contact, numContactsOnPair);
+          const auto contactCount = static_cast<double>(numContactsOnPair);
+          contactPairCount.surfaceParams.mPrimarySlipCompliance *= contactCount;
+          contactPairCount.surfaceParams.mSecondarySlipCompliance
+              *= contactCount;
+          contactPairCount.surfaceParamsInitialized = true;
+        }
 
-    auto contactConstraint = mContactSurfaceHandler->createConstraint(
-        *contact, numContacts, mTimeStep);
-    if (contactConstraint == nullptr)
-      continue;
+        contactConstraint
+            = builtInDefaultContactHandler
+                  ->DefaultContactSurfaceHandler::createConstraint(
+                      *candidate.contact,
+                      mTimeStep,
+                      contactPairCount.surfaceParams);
+      } else {
+        auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
+        const auto numContactsOnPair = contactPairCount.count;
+        contactConstraint
+            = builtInDefaultContactHandler != nullptr
+                  ? builtInDefaultContactHandler
+                        ->DefaultContactSurfaceHandler ::createConstraint(
+                            *candidate.contact, numContactsOnPair, mTimeStep)
+                  : mContactSurfaceHandler->createConstraint(
+                      *candidate.contact, numContactsOnPair, mTimeStep);
+      }
+      if (contactConstraint == nullptr)
+        continue;
 
-    mContactConstraints.push_back(contactConstraint);
+      mContactConstraints.push_back(contactConstraint);
 
-    contactConstraint->update();
+      if (useBuiltInDefaultContactActiveState) {
+        contactConstraint->mActive = contactConstraint->mIsReactiveA
+                                     || contactConstraint->mIsReactiveB;
+      } else {
+        contactConstraint->update();
+      }
 
-    if (contactConstraint->isActive())
-      mActiveConstraints.push_back(contactConstraint);
+      const bool isActive = useBuiltInDefaultContactActiveState
+                                ? contactConstraint->mActive
+                                : contactConstraint->isActive();
+      if (isActive) {
+        if (contactConstraint->getSingleReactiveSkeleton() == nullptr)
+          mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(contactConstraint);
+      }
+    }
   }
 
   // Add the new soft contact constraints to dynamic constraint list
-  for (const auto& softContactConstraint : mSoftContactConstraints) {
-    softContactConstraint->update();
+  {
+    DART_PROFILE_SCOPED_N("update soft contact constraints");
+    for (const auto& softContactConstraint : mSoftContactConstraints) {
+      softContactConstraint->update();
 
-    if (softContactConstraint->isActive())
-      mActiveConstraints.push_back(softContactConstraint);
+      if (softContactConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(softContactConstraint);
+      }
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -641,22 +1083,13 @@ void ConstraintSolver::updateConstraints()
   mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
-  // Create new joint constraints
-  for (const auto& skel : mSkeletons) {
-    const std::size_t numJoints = skel->getNumJoints();
-    for (std::size_t i = 0; i < numJoints; i++) {
-      dynamics::Joint* joint = skel->getJoint(i);
-
-      if (joint->isKinematic())
-        continue;
-
-      const std::size_t dof = joint->getNumDofs();
-      for (std::size_t j = 0; j < dof; ++j) {
-        if (joint->getCoulombFriction(j) != 0.0) {
-          mJointCoulombFrictionConstraints.push_back(
-              std::make_shared<JointCoulombFrictionConstraint>(joint));
-          break;
-        }
+  {
+    DART_PROFILE_SCOPED_N("scan joint constraints");
+    updateAutomaticJointConstraintCache();
+    for (auto* joint : mAutomaticJointConstraintJoints) {
+      if (joint->hasCoulombFriction()) {
+        mJointCoulombFrictionConstraints.push_back(
+            std::make_shared<JointCoulombFrictionConstraint>(joint));
       }
 
       if (joint->areLimitsEnforced()
@@ -673,25 +1106,34 @@ void ConstraintSolver::updateConstraints()
   }
 
   // Add active joint limit
-  for (auto& jointLimitConstraint : mJointConstraints) {
-    jointLimitConstraint->update();
+  {
+    DART_PROFILE_SCOPED_N("update joint constraints");
+    for (auto& jointLimitConstraint : mJointConstraints) {
+      jointLimitConstraint->update();
 
-    if (jointLimitConstraint->isActive())
-      mActiveConstraints.push_back(jointLimitConstraint);
-  }
+      if (jointLimitConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(jointLimitConstraint);
+      }
+    }
 
-  for (auto& mimicMotorConstraint : mMimicMotorConstraints) {
-    mimicMotorConstraint->update();
+    for (auto& mimicMotorConstraint : mMimicMotorConstraints) {
+      mimicMotorConstraint->update();
 
-    if (mimicMotorConstraint->isActive())
-      mActiveConstraints.push_back(mimicMotorConstraint);
-  }
+      if (mimicMotorConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(mimicMotorConstraint);
+      }
+    }
 
-  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints) {
-    jointFrictionConstraint->update();
+    for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints) {
+      jointFrictionConstraint->update();
 
-    if (jointFrictionConstraint->isActive())
-      mActiveConstraints.push_back(jointFrictionConstraint);
+      if (jointFrictionConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(jointFrictionConstraint);
+      }
+    }
   }
 }
 
@@ -700,62 +1142,186 @@ void ConstraintSolver::buildConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
-  // Clear constrained groups
-  mConstrainedGroups.clear();
+  // Clear constrained groups while retaining per-group constraint-vector
+  // capacity for the steady-state case where thousands of small contact groups
+  // are rebuilt every step.
+  for (auto& group : mConstrainedGroups) {
+    group.removeAllConstraints();
+    group.mRootSkeleton.reset();
+    group.mAllSingleReactiveContacts = false;
+    group.mSingleReactiveContactsShareBody = true;
+    group.mSingleReactiveBodyNode = nullptr;
+    group.mSingleReactiveSkeleton = nullptr;
+  }
   mGroupResting.clear();
 
   // Exit if there is no active constraint
   if (mActiveConstraints.empty()) {
+    mConstrainedGroups.clear();
+
     // With no active constraints, no island can be frozen. Clear any stale
     // freeze flags so a body that just lost all of its contacts resumes
-    // simulating (e.g. a stack member that was kicked away).
-    if (mSleepingEnabled && mHadSleepingGroups) {
+    // simulating (e.g. a stack member that was kicked away). Preserve the
+    // sleep-candidate dwell state here: World::updateRestStates() and the
+    // pre-solve wake-band check clear stale candidates only when the body is
+    // actually disturbed or moving again, which makes sleeping robust to
+    // one-frame contact misses from collision jitter.
+    if (mDeactivationActive && mHadDeactivationGroups) {
+      if (mCollisionResult.getNumContacts() > 0) {
+        static thread_local std::unordered_set<const dynamics::Skeleton*>
+            contactedSkeletons;
+        contactedSkeletons.clear();
+        contactedSkeletons.reserve(mCollisionResult.getNumContacts());
+
+        for (std::size_t i = 0; i < mCollisionResult.getNumContacts(); ++i) {
+          const auto& contact = mCollisionResult.getContact(i);
+          const auto bodyNode1 = contact.getBodyNodePtr1();
+          const auto bodyNode2 = contact.getBodyNodePtr2();
+
+          if (bodyNode1) {
+            const auto skeleton = bodyNode1->getSkeleton();
+            if (skeleton && skeleton->isMobile())
+              contactedSkeletons.insert(skeleton.get());
+          }
+
+          if (bodyNode2) {
+            const auto skeleton = bodyNode2->getSkeleton();
+            if (skeleton && skeleton->isMobile())
+              contactedSkeletons.insert(skeleton.get());
+          }
+        }
+
+        for (auto& skeleton : mSkeletons) {
+          if (contactedSkeletons.find(skeleton.get())
+              != contactedSkeletons.end()) {
+            continue;
+          }
+
+          if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+            skeleton->setResting(false);
+            skeleton->setIslandIndex(-1);
+          }
+        }
+
+        return;
+      }
+
+      bool preservedRestingIsland = false;
       for (auto& skeleton : mSkeletons) {
-        if (skeleton->isResting() || skeleton->isSleepCandidate()
-            || skeleton->getIslandIndex() >= 0) {
+        const bool canRemainResting = skeleton->isResting()
+                                      && skeleton->isSleepCandidate()
+                                      && skeleton->getIslandIndex() >= 0
+                                      && !skeleton->hasExternalDisturbance();
+
+        if (canRemainResting) {
+          preservedRestingIsland = true;
+          continue;
+        }
+
+        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
           skeleton->setResting(false);
-          skeleton->setSleepCandidate(false);
+          skeleton->setIslandIndex(-1);
+        }
+      }
+
+      if (preservedRestingIsland)
+        return;
+
+      for (auto& skeleton : mSkeletons) {
+        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+          skeleton->setResting(false);
           skeleton->setIslandIndex(-1);
         }
       }
     }
-    mHadSleepingGroups = false;
+    mHadDeactivationGroups = false;
     return;
   }
 
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (const auto& activeConstraint : mActiveConstraints)
-    activeConstraint->uniteSkeletons();
+  const bool allConstraintsHaveSingleReactiveSkeleton
+      = mActiveConstraintsAllSingleReactiveContacts;
+  if (!allConstraintsHaveSingleReactiveSkeleton) {
+    DART_PROFILE_SCOPED_N("unite active constraints");
+    for (const auto& activeConstraint : mActiveConstraints) {
+      if (const auto* contact
+          = dynamic_cast<const ContactConstraint*>(activeConstraint.get())) {
+        if (contact->getSingleReactiveSkeleton() != nullptr)
+          continue;
+      }
+
+      activeConstraint->uniteSkeletons();
+    }
+  }
 
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (const auto& activeConstraint : mActiveConstraints) {
-    bool found = false;
-    const auto& skel = activeConstraint->getRootSkeleton();
+  const std::size_t invalidUnionIndex = static_cast<std::size_t>(-1);
+  std::size_t numConstrainedGroups = 0u;
+  {
+    DART_PROFILE_SCOPED_N("build constrained group map");
+    if (allConstraintsHaveSingleReactiveSkeleton) {
+      for (auto& activeConstraint : mActiveConstraints) {
+        const auto* contact
+            = static_cast<const ContactConstraint*>(activeConstraint.get());
+        auto* skel = contact->getSingleReactiveSkeleton();
+        auto* bodyNode = contact->getSingleReactiveBodyNode();
+        DART_ASSERT(skel != nullptr);
+        DART_ASSERT(bodyNode != nullptr);
 
-    for (const auto& constrainedGroup : mConstrainedGroups) {
-      if (constrainedGroup.mRootSkeleton == skel) {
-        found = true;
-        break;
+        auto groupIndex = skel->mUnionIndex;
+
+        if (groupIndex == invalidUnionIndex) {
+          groupIndex = numConstrainedGroups;
+          if (numConstrainedGroups == mConstrainedGroups.size())
+            mConstrainedGroups.emplace_back();
+
+          auto& group = mConstrainedGroups[groupIndex];
+          group.mRootSkeleton = skel->getPtr();
+          group.mAllSingleReactiveContacts = true;
+          group.mSingleReactiveContactsShareBody = true;
+          group.mSingleReactiveBodyNode = bodyNode;
+          group.mSingleReactiveSkeleton = skel;
+          skel->mUnionIndex = groupIndex;
+          ++numConstrainedGroups;
+        } else {
+          auto& group = mConstrainedGroups[groupIndex];
+          if (group.mSingleReactiveContactsShareBody
+              && group.mSingleReactiveBodyNode != bodyNode) {
+            group.mSingleReactiveContactsShareBody = false;
+            group.mSingleReactiveBodyNode = nullptr;
+          }
+        }
+
+        DART_ASSERT(activeConstraint->isActive());
+        mConstrainedGroups[groupIndex].mConstraints.push_back(
+            std::move(activeConstraint));
+      }
+    } else {
+      for (auto& activeConstraint : mActiveConstraints) {
+        const auto& skel = activeConstraint->getRootSkeleton();
+        auto groupIndex = skel->mUnionIndex;
+
+        if (groupIndex == invalidUnionIndex) {
+          groupIndex = numConstrainedGroups;
+          if (numConstrainedGroups == mConstrainedGroups.size())
+            mConstrainedGroups.emplace_back();
+
+          mConstrainedGroups[groupIndex].mRootSkeleton = skel;
+          skel->mUnionIndex = groupIndex;
+          ++numConstrainedGroups;
+        }
+
+        DART_ASSERT(activeConstraint->isActive());
+        mConstrainedGroups[groupIndex].mConstraints.push_back(
+            std::move(activeConstraint));
       }
     }
 
-    if (found)
-      continue;
-
-    ConstrainedGroup newConstGroup;
-    newConstGroup.mRootSkeleton = skel;
-    skel->mUnionIndex = mConstrainedGroups.size();
-    mConstrainedGroups.push_back(newConstGroup);
-  }
-
-  // Add active constraints to constrained groups
-  for (const auto& activeConstraint : mActiveConstraints) {
-    const auto& skel = activeConstraint->getRootSkeleton();
-    mConstrainedGroups[skel->mUnionIndex].addConstraint(activeConstraint);
+    mConstrainedGroups.resize(numConstrainedGroups);
   }
 
   //----------------------------------------------------------------------------
@@ -775,8 +1341,8 @@ void ConstraintSolver::buildConstrainedGroups()
   // constraint-coupled neighbour is still moving, so gravity is never skipped
   // for a body whose island LCP still runs.
   //----------------------------------------------------------------------------
-  if (mSleepingEnabled) {
-    mHadSleepingGroups = !mConstrainedGroups.empty();
+  if (mDeactivationActive) {
+    mHadDeactivationGroups = !mConstrainedGroups.empty();
     mGroupResting.assign(mConstrainedGroups.size(), true);
 
     // Only rigid contact islands whose penetration correction has essentially
@@ -785,58 +1351,70 @@ void ConstraintSolver::buildConstrainedGroups()
     // expose solver forces as part of their observable behavior; keeping those
     // islands awake preserves existing query semantics when sleeping is enabled
     // by default.
-    constexpr double kSleepContactPenetrationTolerance = 1e-3;
-    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
-      const auto& group = mConstrainedGroups[i];
-      for (std::size_t j = 0; j < group.getNumConstraints(); ++j) {
-        const auto* constraint = group.getConstraint(j).get();
-        const auto* contact
-            = dynamic_cast<const ContactConstraint*>(constraint);
-        if (!contact
-            || contact->getContact().penetrationDepth
-                   > kSleepContactPenetrationTolerance) {
-          mGroupResting[i] = false;
-          break;
+    constexpr double kSleepContactPenetrationTolerance = 1e-5;
+    {
+      DART_PROFILE_SCOPED_N("classify resting groups");
+      for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
+        const auto& group = mConstrainedGroups[i];
+        for (std::size_t j = 0; j < group.mConstraints.size(); ++j) {
+          const auto* constraint = group.mConstraints[j].get();
+          const auto* contact
+              = dynamic_cast<const ContactConstraint*>(constraint);
+          if (!contact) {
+            mGroupResting[i] = false;
+            break;
+          }
+
+          if (contact->getContact().penetrationDepth
+              > kSleepContactPenetrationTolerance) {
+            mGroupResting[i] = false;
+            break;
+          }
         }
       }
     }
 
-    // Map each group's root skeleton (raw pointer) to its group index.
-    std::unordered_map<const dynamics::Skeleton*, std::size_t> rootToGroup;
-    rootToGroup.reserve(mConstrainedGroups.size());
-    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
-      rootToGroup[mConstrainedGroups[i].mRootSkeleton.get()] = i;
+    {
+      DART_PROFILE_SCOPED_N("stamp resting islands");
+      // Pass 1: an island rests only if every member is a sleep candidate.
+      for (const auto& skeleton : mSkeletons) {
+        const auto root = ConstraintBase::getRootSkeleton(skeleton);
+        const auto groupIndex = root->mUnionIndex;
+        if (groupIndex == invalidUnionIndex
+            || groupIndex >= mGroupResting.size()) {
+          continue; // not in any active-constraint island
+        }
+        mGroupResting[groupIndex]
+            = mGroupResting[groupIndex] && skeleton->isSleepCandidate();
+      }
 
-    // Pass 1: an island rests only if every member is a sleep candidate.
-    for (const auto& skeleton : mSkeletons) {
-      const auto root = ConstraintBase::getRootSkeleton(skeleton);
-      const auto it = rootToGroup.find(root.get());
-      if (it == rootToGroup.end())
-        continue; // not in any active-constraint island
-      mGroupResting[it->second]
-          = mGroupResting[it->second] && skeleton->isSleepCandidate();
-    }
-
-    // Pass 2: stamp the island index and keep only already-frozen islands
-    // frozen. A newly eligible island must run one final contact solve before
-    // it freezes so observable force caches (e.g. transmitted wrench queries)
-    // keep the last solved constraint forces instead of an unconstrained
-    // forward-dynamics value.
-    for (const auto& skeleton : mSkeletons) {
-      const auto root = ConstraintBase::getRootSkeleton(skeleton);
-      const auto it = rootToGroup.find(root.get());
-      const bool grouped = (it != rootToGroup.end());
-      const bool groupCanRest = grouped && mGroupResting[it->second];
-      skeleton->setResting(groupCanRest && skeleton->isResting());
-      skeleton->setIslandIndex(grouped ? static_cast<int>(it->second) : -1);
+      // Pass 2: stamp the island index and keep only already-frozen islands
+      // frozen. A newly eligible island must run one final contact solve before
+      // it freezes so observable force caches (e.g. transmitted wrench queries)
+      // keep the last solved constraint forces instead of an unconstrained
+      // forward-dynamics value.
+      for (const auto& skeleton : mSkeletons) {
+        const auto root = ConstraintBase::getRootSkeleton(skeleton);
+        const auto groupIndex = root->mUnionIndex;
+        const bool grouped = groupIndex != invalidUnionIndex
+                             && groupIndex < mGroupResting.size();
+        const bool groupCanRest = grouped && mGroupResting[groupIndex];
+        if (grouped && !groupCanRest && skeleton->isSleepCandidate())
+          skeleton->setSleepCandidate(false);
+        skeleton->setResting(groupCanRest && skeleton->isResting());
+        skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
+      }
     }
   }
 
   //----------------------------------------------------------------------------
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
-  for (auto& skeleton : mSkeletons)
-    skeleton->resetUnion();
+  {
+    DART_PROFILE_SCOPED_N("reset constraint unions");
+    for (auto& skeleton : mSkeletons)
+      skeleton->resetUnion();
+  }
 }
 
 //==============================================================================
@@ -844,40 +1422,60 @@ void ConstraintSolver::solveConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
+  if (!mDeactivationActive) {
+    auto solveGroupAt = [&](std::size_t i) {
+      solveConstrainedGroup(mConstrainedGroups[i]);
+    };
+
+    if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
+        && mConstrainedGroups.size() >= 128u
+        && !usesRandomizedPgsSolver(*this)) {
+      DART_PROFILE_SCOPED_N("parallel solve groups");
+      mConstraintThreadPool->parallelFor(
+          mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
+    } else {
+      for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+        solveGroupAt(i);
+    }
+
+    return;
+  }
+
   static thread_local std::vector<char> groupAlreadyResting;
   groupAlreadyResting.assign(mConstrainedGroups.size(), 1);
   static thread_local std::vector<char> groupSolvedToRest;
   groupSolvedToRest.assign(mConstrainedGroups.size(), 0);
 
-  if (mSleepingEnabled) {
-    for (const auto& skeleton : mSkeletons) {
-      const int island = skeleton->getIslandIndex();
-      if (island < 0)
-        continue;
+  for (const auto& skeleton : mSkeletons) {
+    const int island = skeleton->getIslandIndex();
+    if (island < 0)
+      continue;
 
-      const auto groupIndex = static_cast<std::size_t>(island);
-      if (groupIndex >= groupAlreadyResting.size())
-        continue;
+    const auto groupIndex = static_cast<std::size_t>(island);
+    if (groupIndex >= groupAlreadyResting.size())
+      continue;
 
-      if (!skeleton->isResting())
-        groupAlreadyResting[groupIndex] = 0;
-    }
+    if (!skeleton->isResting())
+      groupAlreadyResting[groupIndex] = 0;
   }
 
-  for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
+  auto solveGroupAt = [&](std::size_t i) {
     const bool groupCanRest = i < mGroupResting.size() && mGroupResting[i];
 
     // Skip only islands that were already frozen at the start of this solve. A
     // newly eligible island still needs one final solve to refresh the contact
     // impulse and body-force caches before it is frozen for subsequent steps.
     if (groupCanRest && groupAlreadyResting[i])
-      continue;
+      return;
 
     solveConstrainedGroup(mConstrainedGroups[i]);
 
     if (groupCanRest)
       groupSolvedToRest[i] = 1;
-  }
+  };
+
+  for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+    solveGroupAt(i);
 
   for (const auto& skeleton : mSkeletons) {
     const int island = skeleton->getIslandIndex();
@@ -893,18 +1491,15 @@ void ConstraintSolver::solveConstrainedGroups()
 }
 
 //==============================================================================
-bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
+bool ConstraintSolver::isSoftContact(
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2) const
 {
-  const auto bodyNode1 = contact.getBodyNodePtr1();
-  const auto bodyNode2 = contact.getBodyNodePtr2();
   DART_ASSERT(bodyNode1);
   DART_ASSERT(bodyNode2);
 
-  const auto bodyNode1IsSoft
-      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1.get()) != nullptr;
-
-  const auto bodyNode2IsSoft
-      = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2.get()) != nullptr;
+  const auto bodyNode1IsSoft = bodyNode1->asSoftBodyNode() != nullptr;
+  const auto bodyNode2IsSoft = bodyNode2->asSoftBodyNode() != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
 }

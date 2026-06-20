@@ -76,6 +76,14 @@ protected:
   /// Return Bullet collision world
   const btCollisionWorld* getBulletCollisionWorld() const;
 
+  /// Returns true if persistent manifolds should be checked for stale filtered
+  /// pairs for the given filter revision.
+  bool shouldFilterPersistentPairs(
+      const CollisionFilter* filter, std::size_t revision);
+
+  /// Resets the cached persistent-pair filter state.
+  void resetPersistentPairFilterCache();
+
   /// Update Bullet collision objects and broadphase data before collision.
   void updateEngineDataForCollide();
 
@@ -93,6 +101,10 @@ protected:
 
   /// Bullet collision world
   std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;
+
+  /// Last filter state used to clear stale persistent manifolds.
+  const CollisionFilter* mLastPersistentPairFilter = nullptr;
+  std::size_t mLastPersistentPairFilterRevision = 0u;
 };
 
 } // namespace collision

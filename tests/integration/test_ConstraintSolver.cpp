@@ -54,6 +54,15 @@ TEST(ConstraintSolver, DefaultConstactSurfaceHandler)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, AutomaticSleepingAliasIsSourceCompatible)
+{
+  auto world = createWorld();
+  auto* solver = world->getConstraintSolver();
+  solver->setAutomaticSleepingEnabled(false);
+  solver->setAutomaticSleepingEnabled(true);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, CustomConstactSurfaceHandler)
 {
   class CustomHandler : public constraint::ContactSurfaceHandler

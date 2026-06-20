@@ -38,6 +38,7 @@
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 
+#include <memory_resource>
 #include <utility>
 
 #include <cmath>
@@ -54,12 +55,105 @@ dynamics::ShapeNode* getContactShapeNode(
   if (collisionObject == nullptr)
     return nullptr;
 
-  auto* shapeFrame
-      = const_cast<dynamics::ShapeFrame*>(collisionObject->getShapeFrame());
-  if (shapeFrame == nullptr)
-    return nullptr;
+  return const_cast<dynamics::ShapeNode*>(collisionObject->getShapeNode());
+}
 
-  return shapeFrame->asShapeNode();
+// Contact constraints are rebuilt every simulation step. A process-lifetime
+// pool keeps the public shared_ptr-returning API intact while avoiding repeated
+// malloc/free churn once the pool reaches the scene's high-water mark.
+std::pmr::memory_resource* getContactConstraintPool()
+{
+  static auto* pool = new std::pmr::synchronized_pool_resource;
+  return pool;
+}
+
+//==============================================================================
+double sanitizeFrictionCoefficient(
+    const dynamics::ShapeNode* shapeNode,
+    double coeff,
+    const char* coefficientName)
+{
+  if (!std::isfinite(coeff) || coeff < 0.0) {
+    dtwarn << "[ContactConstraint] Invalid " << coefficientName << " (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Friction must be non-negative and finite. Using default "
+           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
+    return DART_DEFAULT_FRICTION_COEFF;
+  }
+
+  return coeff;
+}
+
+//==============================================================================
+double sanitizeSlipCompliance(
+    const dynamics::ShapeNode* shapeNode,
+    double slipCompliance,
+    const char* complianceName)
+{
+  // Negative values (including the -1.0 sentinel) mean "use default".
+  // This is by design - see ShapeFrame.hpp documentation.
+  if (slipCompliance < 0.0)
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+
+  if (!std::isfinite(slipCompliance)) {
+    dtwarn << "[ContactConstraint] Invalid " << complianceName << " ("
+           << slipCompliance << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Slip compliance must be finite. Using "
+           << "default value (" << DART_DEFAULT_SLIP_COMPLIANCE << ").\n";
+    return DART_DEFAULT_SLIP_COMPLIANCE;
+  }
+
+  return slipCompliance;
+}
+
+//==============================================================================
+double sanitizeRestitutionCoefficient(
+    const dynamics::ShapeNode* shapeNode, double coeff)
+{
+  if (!std::isfinite(coeff) || coeff < 0.0 || coeff > 1.0) {
+    dtwarn << "[ContactConstraint] Invalid restitution coefficient (" << coeff
+           << ") from ShapeNode [" << shapeNode->getName()
+           << "]. Restitution must be in range [0, 1] and finite. Using "
+           << "default value (" << DART_DEFAULT_RESTITUTION_COEFF << ").\n";
+    return DART_DEFAULT_RESTITUTION_COEFF;
+  }
+
+  return coeff;
+}
+
+//==============================================================================
+Eigen::Vector3d computeWorldFirstFrictionDirFromAspect(
+    const dynamics::ShapeNode* shapeNode,
+    const dynamics::DynamicsAspect* dynamicAspect)
+{
+  auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
+  Eigen::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
+
+  if (frictionDir.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    return Eigen::Vector3d::Zero();
+
+  // rotate using custom frame if it is specified
+  if (frame)
+    return frame->getWorldTransform().linear() * frictionDir;
+
+  // otherwise rotate using shapeNode
+  return shapeNode->getWorldTransform().linear() * frictionDir;
+}
+
+//==============================================================================
+bool hasDefaultContactSurfaceProperties(
+    const dynamics::DynamicsAspect* dynamicAspect)
+{
+  return dynamicAspect->getRestitutionCoeff() == DART_DEFAULT_RESTITUTION_COEFF
+         && dynamicAspect->getPrimaryFrictionCoeff()
+                == DART_DEFAULT_FRICTION_COEFF
+         && dynamicAspect->getSecondaryFrictionCoeff()
+                == DART_DEFAULT_FRICTION_COEFF
+         && dynamicAspect->getPrimarySlipCompliance() == -1.0
+         && dynamicAspect->getSecondarySlipCompliance() == -1.0
+         && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
+         && dynamicAspect->getFirstFrictionDirection().squaredNorm()
+                < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
 }
 
 } // namespace
@@ -103,7 +197,10 @@ ContactConstraintPtr ContactSurfaceHandler::createConstraint(
     const double timeStep) const
 {
   auto params = createParams(contact, numContactsOnCollisionObject);
-  return std::make_shared<ContactConstraint>(contact, timeStep, params);
+  std::pmr::polymorphic_allocator<ContactConstraint> allocator(
+      getContactConstraintPool());
+  return std::allocate_shared<ContactConstraint>(
+      allocator, contact, timeStep, params);
 }
 
 //==============================================================================
@@ -122,17 +219,61 @@ ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
     return params;
   }
 
-  const double restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
-  const double restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
+  const auto* dynamicAspectA = shapeNodeA->getDynamicsAspect();
+  const auto* dynamicAspectB = shapeNodeB->getDynamicsAspect();
+  if (mParent == nullptr && dynamicAspectA != nullptr
+      && dynamicAspectB != nullptr
+      && hasDefaultContactSurfaceProperties(dynamicAspectA)
+      && hasDefaultContactSurfaceProperties(dynamicAspectB)) {
+    return params;
+  }
+
+  double restitutionCoeffA;
+  double restitutionCoeffB;
+  double frictionCoeffA;
+  double frictionCoeffB;
+  double secondaryFrictionCoeffA;
+  double secondaryFrictionCoeffB;
+  double slipComplianceA = DART_DEFAULT_SLIP_COMPLIANCE;
+  double slipComplianceB = DART_DEFAULT_SLIP_COMPLIANCE;
+  double secondarySlipComplianceA = DART_DEFAULT_SLIP_COMPLIANCE;
+  double secondarySlipComplianceB = DART_DEFAULT_SLIP_COMPLIANCE;
+  Eigen::Vector3d frictionDirA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d frictionDirB = Eigen::Vector3d::Zero();
+
+  if (dynamicAspectA == nullptr || dynamicAspectB == nullptr) {
+    restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
+    restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
+
+    frictionCoeffA = computePrimaryFrictionCoefficient(shapeNodeA);
+    frictionCoeffB = computePrimaryFrictionCoefficient(shapeNodeB);
+    secondaryFrictionCoeffA = computeSecondaryFrictionCoefficient(shapeNodeA);
+    secondaryFrictionCoeffB = computeSecondaryFrictionCoefficient(shapeNodeB);
+  } else {
+    restitutionCoeffA = sanitizeRestitutionCoefficient(
+        shapeNodeA, dynamicAspectA->getRestitutionCoeff());
+    restitutionCoeffB = sanitizeRestitutionCoefficient(
+        shapeNodeB, dynamicAspectB->getRestitutionCoeff());
+
+    frictionCoeffA = sanitizeFrictionCoefficient(
+        shapeNodeA,
+        dynamicAspectA->getPrimaryFrictionCoeff(),
+        "primary friction coefficient");
+    frictionCoeffB = sanitizeFrictionCoefficient(
+        shapeNodeB,
+        dynamicAspectB->getPrimaryFrictionCoeff(),
+        "primary friction coefficient");
+    secondaryFrictionCoeffA = sanitizeFrictionCoefficient(
+        shapeNodeA,
+        dynamicAspectA->getSecondaryFrictionCoeff(),
+        "secondary friction coefficient");
+    secondaryFrictionCoeffB = sanitizeFrictionCoefficient(
+        shapeNodeB,
+        dynamicAspectB->getSecondaryFrictionCoeff(),
+        "secondary friction coefficient");
+  }
 
   params.mRestitutionCoeff = restitutionCoeffA * restitutionCoeffB;
-
-  const double frictionCoeffA = computePrimaryFrictionCoefficient(shapeNodeA);
-  const double frictionCoeffB = computePrimaryFrictionCoefficient(shapeNodeB);
-  const double secondaryFrictionCoeffA
-      = computeSecondaryFrictionCoefficient(shapeNodeA);
-  const double secondaryFrictionCoeffB
-      = computeSecondaryFrictionCoefficient(shapeNodeB);
 
   params.mPrimaryFrictionCoeff = (std::min)(frictionCoeffA, frictionCoeffB);
   params.mSecondaryFrictionCoeff
@@ -144,24 +285,46 @@ ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
     // damping for each collision is multiplied by the number of contact points
     // (numContacts). To eliminate this dependence on numContacts, the inverse
     // damping is multiplied by numContacts.
-    const double slipComplianceA = computePrimarySlipCompliance(shapeNodeA);
-    const double slipComplianceB = computePrimarySlipCompliance(shapeNodeB);
+    if (dynamicAspectA == nullptr || dynamicAspectB == nullptr) {
+      slipComplianceA = computePrimarySlipCompliance(shapeNodeA);
+      slipComplianceB = computePrimarySlipCompliance(shapeNodeB);
+
+      secondarySlipComplianceA = computeSecondarySlipCompliance(shapeNodeA);
+      secondarySlipComplianceB = computeSecondarySlipCompliance(shapeNodeB);
+
+      frictionDirA = computeWorldFirstFrictionDir(shapeNodeA);
+      frictionDirB = computeWorldFirstFrictionDir(shapeNodeB);
+    } else {
+      slipComplianceA = sanitizeSlipCompliance(
+          shapeNodeA,
+          dynamicAspectA->getPrimarySlipCompliance(),
+          "primary slip compliance");
+      slipComplianceB = sanitizeSlipCompliance(
+          shapeNodeB,
+          dynamicAspectB->getPrimarySlipCompliance(),
+          "primary slip compliance");
+
+      secondarySlipComplianceA = sanitizeSlipCompliance(
+          shapeNodeA,
+          dynamicAspectA->getSecondarySlipCompliance(),
+          "secondary slip compliance");
+      secondarySlipComplianceB = sanitizeSlipCompliance(
+          shapeNodeB,
+          dynamicAspectB->getSecondarySlipCompliance(),
+          "secondary slip compliance");
+
+      frictionDirA
+          = computeWorldFirstFrictionDirFromAspect(shapeNodeA, dynamicAspectA);
+      frictionDirB
+          = computeWorldFirstFrictionDirFromAspect(shapeNodeB, dynamicAspectB);
+    }
 
     // Combine slip compliances through addition
     params.mPrimarySlipCompliance = slipComplianceA + slipComplianceB;
 
-    const double secondarySlipComplianceA
-        = computeSecondarySlipCompliance(shapeNodeA);
-    const double secondarySlipComplianceB
-        = computeSecondarySlipCompliance(shapeNodeB);
-
     // Combine slip compliances through addition
     params.mSecondarySlipCompliance
         = secondarySlipComplianceA + secondarySlipComplianceB;
-
-    // Check shapeNodes for valid friction direction unit vectors
-    auto frictionDirA = computeWorldFirstFrictionDir(shapeNodeA);
-    auto frictionDirB = computeWorldFirstFrictionDir(shapeNodeB);
 
     // resulting friction direction unit vector
     bool nonzeroDirA
@@ -200,20 +363,24 @@ ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
     const size_t numContactsOnCollisionObject,
     const double timeStep) const
 {
-  auto constraint = ContactSurfaceHandler::createConstraint(
-      contact, numContactsOnCollisionObject, timeStep);
+  auto params = createParams(contact, numContactsOnCollisionObject);
+  const auto contactCount = static_cast<double>(numContactsOnCollisionObject);
+  params.mPrimarySlipCompliance *= contactCount;
+  params.mSecondarySlipCompliance *= contactCount;
 
-  if (constraint == nullptr)
-    return nullptr;
+  return createConstraint(contact, timeStep, params);
+}
 
-  constraint->setPrimarySlipCompliance(
-      constraint->getPrimarySlipCompliance()
-      * static_cast<double>(numContactsOnCollisionObject));
-  constraint->setSecondarySlipCompliance(
-      constraint->getSecondarySlipCompliance()
-      * static_cast<double>(numContactsOnCollisionObject));
-
-  return constraint;
+//==============================================================================
+ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
+    collision::Contact& contact,
+    const double timeStep,
+    const ContactSurfaceParams& params) const
+{
+  std::pmr::polymorphic_allocator<ContactConstraint> allocator(
+      getContactConstraintPool());
+  return std::allocate_shared<ContactConstraint>(
+      allocator, contact, timeStep, params);
 }
 
 //==============================================================================
@@ -392,6 +559,9 @@ Eigen::Vector3d DefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
 
   auto frame = dynamicAspect->getFirstFrictionDirectionFrame();
   Eigen::Vector3d frictionDir = dynamicAspect->getFirstFrictionDirection();
+
+  if (frictionDir.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    return Eigen::Vector3d::Zero();
 
   // rotate using custom frame if it is specified
   if (frame) {
