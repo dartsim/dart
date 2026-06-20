@@ -49,6 +49,10 @@
   #include "dart/utils/urdf/urdf_parser.hpp"
 #endif
 
+#if DART_IO_HAS_USD
+  #include "dart/io/usd/usd_parser.hpp"
+#endif
+
 #include <tinyxml2.h>
 
 #include <optional>
@@ -109,6 +113,9 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   }
   if (ext == ".mjcf") {
     return Mjcf;
+  }
+  if (ext == ".usd" || ext == ".usda" || ext == ".usdc" || ext == ".usdz") {
+    return Usd;
   }
 
   // Extensions like ".xml" are ambiguous across multiple formats.
@@ -282,6 +289,17 @@ dynamics::SkeletonPtr readSkeleton(
           "parsing. URI=[{}]",
           uri.toString());
       return nullptr;
+    case Usd:
+#if DART_IO_HAS_USD
+      return usd::UsdParser::readSkeleton(uri, resolved.resourceRetriever);
+#else
+      DART_ERROR(
+          "[dart::io::readSkeleton] USD support is not available. Build with "
+          "DART_BUILD_IO_USD=ON (requires OpenUSD/pxr) to read USD files. "
+          "URI=[{}]",
+          uri.toString());
+      return nullptr;
+#endif
     case Auto:
       break;
   }

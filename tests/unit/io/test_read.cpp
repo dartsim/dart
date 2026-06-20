@@ -298,6 +298,21 @@ TEST(ReadUnit, InfersFormatFromUrdfExtension)
 }
 
 //==============================================================================
+TEST(ReadUnit, InfersFormatFromUsdExtension)
+{
+  // The .usda extension routes to ModelFormat::Usd. With DART_BUILD_IO_USD OFF
+  // (the default, no OpenUSD in the build env) the front door must return the
+  // "USD support is not available" guard diagnostic instead of a link error,
+  // mirroring the SDF/URDF unavailable paths above.
+  const auto skeleton = io::readSkeleton("dart://sample/usd/simple_chain.usda");
+#if DART_IO_HAS_USD
+  EXPECT_NE(skeleton, nullptr);
+#else
+  EXPECT_EQ(skeleton, nullptr);
+#endif
+}
+
+//==============================================================================
 TEST(ReadUnit, InfersFormatFromMjcfExtension)
 {
   io::ReadOptions options;

@@ -22,6 +22,16 @@ else()
   target_compile_definitions(${target_name} PUBLIC DART_IO_HAS_URDF=0)
 endif()
 
+# Optional OpenUSD (pxr) scene loader, compiled into dart-io only when
+# DART_BUILD_IO_USD is ON. The subdirectory wires the pxr dependency and sets
+# DART_IO_HAS_USD=1; otherwise the front door in read.cpp emits a clean
+# "USD support is not available" diagnostic.
+if(DART_BUILD_IO_USD)
+  add_subdirectory(usd)
+else()
+  target_compile_definitions(${target_name} PUBLIC DART_IO_HAS_USD=0)
+endif()
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})

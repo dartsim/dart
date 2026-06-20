@@ -191,6 +191,15 @@ if(TARGET dart-io)
   target_link_libraries(INTEGRATION_io_Read dart-io)
 endif()
 
+# OpenUSD loader integration test. Only built when DART_BUILD_IO_USD=ON (which
+# requires OpenUSD/pxr); it compiles out cleanly in the default build. The
+# loader is reached through the dart::simulation::io::addSkeleton front door, so
+# the test links dart-simulation in addition to dart-io.
+if(DART_BUILD_IO_USD AND TARGET dart-io)
+  dart_add_test("integration" INTEGRATION_io_Usd io/test_usd_parser.cpp)
+  target_link_libraries(INTEGRATION_io_Usd dart-io dart-simulation)
+endif()
+
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_urdf_parser.cpp)

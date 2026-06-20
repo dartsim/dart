@@ -67,6 +67,11 @@ enum class ModelFormat
   /// MJCF format (.xml / <mujoco>).
   Mjcf,
 
+  /// USD format (.usd / .usda / .usdc / .usdz). Requires building with
+  /// DART_BUILD_IO_USD=ON (OpenUSD/pxr); otherwise reads emit a clear
+  /// "USD support is not available" diagnostic.
+  Usd,
+
 };
 
 /// Root joint type used when a model does not explicitly specify its root
