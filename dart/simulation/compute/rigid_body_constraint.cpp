@@ -326,9 +326,10 @@ void assembleRigidBodyContactProblemInto(
   // Each optional output is handled independently: cleared when its flag is
   // disabled (so a caller that reuses the problem and toggles only one flag can
   // never observe stale shape/content from a previous assembly), and resized in
-  // place when enabled (so a stable contact shape reuses the existing buffers --
-  // Eigen reallocates only when the requested size differs). resize(0, ...) is a
-  // no-op when already empty, so repeated same-shape steps stay malloc-free.
+  // place when enabled (so a stable contact shape reuses the existing buffers
+  // -- Eigen reallocates only when the requested size differs). resize(0, ...)
+  // is a no-op when already empty, so repeated same-shape steps stay
+  // malloc-free.
   if (options.populateSystem) {
     // The Delassus block is fully overwritten below, but it is zeroed in place
     // to preserve the previous Eigen::MatrixXd::Zero(size, size) init exactly.
