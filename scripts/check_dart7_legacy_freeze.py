@@ -50,7 +50,7 @@ CPP_MEMBER_FUNCTION_PATTERN = re.compile(
     r"(?:^|[\s*&:<>,])(?P<name>operator\s*[^\s(]+|~?[A-Za-z_]\w*)\s*\("
 )
 CPP_MEMBER_DATA_PATTERN = re.compile(
-    r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?(?:\s*=\s*[^;]+)?\s*;"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?" r"(?:\s*=\s*[^;]+|\s*\{[^;]*\})?\s*;"
 )
 CPP_ENUM_VALUE_PATTERN = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\b")
 BINDING_CLASS_PATTERN = re.compile(
@@ -78,7 +78,9 @@ STUB_VALUE_PATTERN = re.compile(r"^(?P<indent>\s*)(?P<name>[A-Za-z_]\w*)\s*=\s*.
 STUB_LEGACY_IMPORT_PATTERN = re.compile(
     r"^from \.(?P<module>dynamics|constraint) import"
 )
-STUB_IMPORT_NAME_PATTERN = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\s*,?\s*$")
+STUB_IMPORT_NAME_PATTERN = re.compile(
+    r"^\s*(?P<name>[A-Za-z_]\w*)" r"(?:\s+as\s+(?P<alias>[A-Za-z_]\w*))?\s*,?\s*$"
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -582,16 +584,17 @@ def collect_stub_reexports(
         closes_import = ")" in text
         text = text.replace("(", "").replace(")", "")
         for candidate in text.split(","):
-            name = candidate.strip().split(" as ", 1)[0].strip()
-            if not name:
+            candidate = candidate.strip()
+            if not candidate:
                 continue
-            name_match = STUB_IMPORT_NAME_PATTERN.search(name)
+            name_match = STUB_IMPORT_NAME_PATTERN.search(candidate)
             if name_match:
+                name = name_match.group("alias") or name_match.group("name")
                 entries.append(
                     LegacyEntry(
                         "stub-reexport",
                         rel,
-                        f"{module}.{name_match.group('name')}",
+                        f"{module}.{name}",
                         nearby_tag(lines, index),
                     )
                 )

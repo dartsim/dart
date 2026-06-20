@@ -146,6 +146,34 @@ public:
     assert any("LegacyJoint.newMethod" in m for m in messages)
 
 
+def test_new_legacy_cpp_brace_initialized_data_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  static constexpr int OldLimit = 1;
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "  static constexpr int OldLimit = 1;",
+            "  static constexpr int OldLimit = 1;\n"
+            "  static constexpr int NewLimit{2};",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyJoint.NewLimit" in m for m in messages)
+
+
 def test_new_legacy_cpp_member_with_next_line_class_brace_requires_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -459,6 +487,25 @@ def test_new_same_line_root_legacy_reexport_requires_bugfix_port_tag(tmp_path):
 
     stub.write_text(
         "from .dynamics import ExistingJoint, NewLegacyJoint\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("dynamics.NewLegacyJoint" in m for m in messages)
+
+
+def test_new_aliased_root_legacy_reexport_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    stub = _write(
+        tmp_path / "python" / "stubs" / "dartpy" / "__init__.pyi",
+        "from .dynamics import ExistingJoint\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    stub.write_text(
+        "from .dynamics import ExistingJoint as NewLegacyJoint\n",
         encoding="utf-8",
     )
 
