@@ -100,6 +100,53 @@ def test_new_legacy_cpp_symbol_requires_bugfix_port_tag(tmp_path):
     assert any("NewLegacyJoint" in m for m in messages)
 
 
+def test_new_legacy_public_detail_symbol_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    detail_header = _write(
+        tmp_path / "dart" / "dynamics" / "detail" / "wrapped_legacy.hpp",
+        "class DART_API ExistingWrappedLegacy {};\n",
+    )
+    _write(
+        tmp_path / "dart" / "dynamics" / "wrapped_legacy.hpp",
+        "#include <dart/dynamics/detail/wrapped_legacy.hpp>\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    detail_header.write_text(
+        detail_header.read_text(encoding="utf-8")
+        + "\nclass DART_API NewWrappedLegacy {};\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("detail/wrapped_legacy.hpp" in m for m in messages)
+    assert any("NewWrappedLegacy" in m for m in messages)
+
+
+def test_private_legacy_detail_symbol_is_not_public_freeze_surface(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    detail_header = _write(
+        tmp_path / "dart" / "dynamics" / "detail" / "private_legacy.hpp",
+        "class DART_API ExistingPrivateLegacy {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    detail_header.write_text(
+        detail_header.read_text(encoding="utf-8")
+        + "\nclass DART_API NewPrivateLegacy {};\n",
+        encoding="utf-8",
+    )
+
+    assert module.find_violations(tmp_path, baseline) == []
+
+
 def test_bugfix_port_tag_allows_new_legacy_cpp_symbol(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

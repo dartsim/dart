@@ -810,6 +810,8 @@ cpp-class|dart/dynamics/degree_of_freedom.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom|class DART_API DegreeOfFreedom : public virtual common::Subject
 cpp-class|dart/dynamics/degree_of_freedom.hpp|Joint|class Joint;
 cpp-class|dart/dynamics/degree_of_freedom.hpp|Skeleton|class Skeleton;
+cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor|class DART_API AssimpInputResourceAdaptor : public Assimp::IOStream
+cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor|class DART_API AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 cpp-class|dart/dynamics/ellipsoid_shape.hpp|EllipsoidShape|class DART_API EllipsoidShape : public Shape
 cpp-class|dart/dynamics/end_effector.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/end_effector.hpp|EndEffector|class EndEffector final : public common::EmbedPropertiesOnTopOf<
@@ -1128,6 +1130,7 @@ cpp-enum|dart/dynamics/point_cloud_shape.hpp|PointShapeType|enum PointShapeType
 cpp-enum|dart/dynamics/shape.hpp|DataVariance|enum DataVariance
 cpp-enum|dart/dynamics/shape.hpp|ShapeType|enum ShapeType
 cpp-enum|dart/dynamics/skeleton.hpp|ConfigFlags|enum ConfigFlags
+cpp-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|createFileIO|DART_API aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 cpp-function|dart/dynamics/ik_fast.hpp|wrapCyclicSolution|DART_API bool wrapCyclicSolution( double curr, double lb, double ub, double& sol);
 cpp-function|dart/dynamics/ikfast.h|ComputeFk|IKFAST_API void ComputeFk(const IkReal* joints, IkReal* eetrans, IkReal* eerot);
 cpp-function|dart/dynamics/ikfast.h|ComputeIk2|IKFAST_API bool ComputeIk2(const IkReal* eetrans, const IkReal* eerot, const IkReal* pfree, ikfast::IkSolutionListBase<IkReal>& solutions, void* pOpenRAVEManip);
@@ -1866,6 +1869,20 @@ cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVeloc
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocityLowerLimit|void setVelocityLowerLimit(double _limit);
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocityUpperLimit|void setVelocityUpperLimit(double _limit);
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocity|void setVelocity(double _velocity);
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.AssimpInputResourceAdaptor|explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.FileSize|std::size_t FileSize() const override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Flush|void Flush() override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Read|std::size_t Read( void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Seek|aiReturn Seek(std::size_t pOffset, aiOrigin pOrigin) override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Tell|std::size_t Tell() const override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Write|std::size_t Write( const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.~AssimpInputResourceAdaptor|virtual ~AssimpInputResourceAdaptor();
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.AssimpInputResourceRetrieverAdaptor|explicit AssimpInputResourceRetrieverAdaptor( const common::ResourceRetrieverPtr& _resourceRetriever);
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.Close|void Close(Assimp::IOStream* pFile) override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.Exists|bool Exists(const char* pFile) const override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.Open|Assimp::IOStream* Open(const char* pFile, const char* pMode = "rb") override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.getOsSeparator|char getOsSeparator() const override;
+cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor.~AssimpInputResourceRetrieverAdaptor|virtual ~AssimpInputResourceRetrieverAdaptor();
 cpp-member-function|dart/dynamics/ellipsoid_shape.hpp|EllipsoidShape.EllipsoidShape|explicit EllipsoidShape(const Eigen::Vector3d& diameters);
 cpp-member-function|dart/dynamics/ellipsoid_shape.hpp|EllipsoidShape.clone|ShapePtr clone() const override;
 cpp-member-function|dart/dynamics/ellipsoid_shape.hpp|EllipsoidShape.computeInertia|Eigen::Matrix3d computeInertia(double mass) const override;

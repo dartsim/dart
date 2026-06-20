@@ -31,6 +31,9 @@ LEGACY_STUBS = (
 CPP_SUFFIXES = {".h", ".hpp"}
 BINDING_SUFFIXES = {".cpp", ".hpp", ".h"}
 
+CPP_DETAIL_INCLUDE_PATTERN = re.compile(
+    r"^\s*#\s*include\s*[<\"](?P<path>dart/(?:dynamics|constraint)/detail/[^>\"]+)[>\"]"
+)
 CPP_TYPE_PATTERN = re.compile(
     r"^\s*(?:template\s*<[^>]+>\s*)?"
     r"(?P<kind>class|struct|enum(?:\s+class)?|using)\s+"
@@ -202,16 +205,80 @@ def nearby_tag(lines: list[str], line_index: int) -> bool:
     return FREEZE_TAG in previous and previous.startswith(("//", "#", "/*", "*"))
 
 
-def iter_files(root: Path, rel_root: Path, suffixes: set[str]) -> list[Path]:
+def is_detail_path(path: Path) -> bool:
+    return "/detail/" in path.as_posix()
+
+
+def is_cpp_detail_wrapper_header(text: str) -> bool:
+    has_detail_include = False
+    for line in text.splitlines():
+        stripped = code_without_comment(line).strip()
+        if not stripped or stripped.startswith(("/*", "*", "*/")):
+            continue
+        if CPP_DETAIL_INCLUDE_PATTERN.search(stripped):
+            has_detail_include = True
+            continue
+        if stripped.startswith(("#ifndef", "#define", "#endif", "#pragma")):
+            continue
+        return False
+
+    return has_detail_include
+
+
+def public_cpp_detail_headers(root: Path, rel_root: Path) -> set[Path]:
+    path = root / rel_root
+    if not path.exists():
+        return set()
+
+    public_detail_headers: set[Path] = set()
+    for child in sorted(path.rglob("*")):
+        if (
+            not child.is_file()
+            or child.suffix not in CPP_SUFFIXES
+            or is_detail_path(child.relative_to(root))
+        ):
+            continue
+        text = read_text(child)
+        if text is None or not is_cpp_detail_wrapper_header(text):
+            continue
+
+        for line in text.splitlines():
+            include_match = CPP_DETAIL_INCLUDE_PATTERN.search(line)
+            if not include_match:
+                continue
+
+            rel_include = Path(include_match.group("path"))
+            if not rel_include.as_posix().startswith(rel_root.as_posix() + "/detail/"):
+                continue
+
+            include_path = root / rel_include
+            if not include_path.exists() or include_path.suffix not in CPP_SUFFIXES:
+                continue
+
+            public_detail_headers.add(rel_include)
+
+    return public_detail_headers
+
+
+def iter_files(
+    root: Path,
+    rel_root: Path,
+    suffixes: set[str],
+    allowed_detail_paths: set[Path] | None = None,
+) -> list[Path]:
     path = root / rel_root
     if not path.exists():
         return []
+    allowed_detail_paths = allowed_detail_paths or set()
     return sorted(
         child
         for child in path.rglob("*")
         if child.is_file()
         and child.suffix in suffixes
-        and "/detail/" not in child.relative_to(root).as_posix()
+        and (
+            not is_detail_path(child.relative_to(root))
+            or child.relative_to(root) in allowed_detail_paths
+        )
     )
 
 
@@ -328,7 +395,8 @@ def add_public_cpp_member_entry(
 def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
     entries: list[LegacyEntry] = []
     for rel_root in LEGACY_CPP_ROOTS:
-        for path in iter_files(root, rel_root, CPP_SUFFIXES):
+        public_detail_paths = public_cpp_detail_headers(root, rel_root)
+        for path in iter_files(root, rel_root, CPP_SUFFIXES, public_detail_paths):
             rel_path = relative_path(path, root)
             lines = path.read_text(encoding="utf-8").splitlines()
             brace_depth = 0
