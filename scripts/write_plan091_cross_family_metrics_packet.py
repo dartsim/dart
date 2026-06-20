@@ -21,9 +21,7 @@ from benchmark_packet_utils import (  # noqa: E402
     canonical_benchmark_name,
 )
 
-DEFAULT_MANIFEST = Path(
-    "docs/plans/091-architecture-hardening/cross-family-metrics-corpus.json"
-)
+DEFAULT_MANIFEST = Path("docs/design/dart7_cross_family_metrics_corpus.json")
 DEFAULT_OUTPUT = Path(".benchmark_results/plan091/cross_family_metrics_packet.json")
 PACKET_KEY = "plan091_cross_family_metrics_packet"
 

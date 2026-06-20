@@ -18,7 +18,10 @@ its own line so status updates remain git-history friendly.
 ### PLAN-091: DART 7 Architecture Hardening
 
 - Owner doc:
-  [`091-architecture-hardening.md`](091-architecture-hardening.md)
+  [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md);
+  follow-up owner docs:
+  [`solver-family-intake.md`](solver-family-intake.md) and
+  [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md)
 - Status: Complete
 - Horizon: Now
 - Dimension: Algorithm extensibility
