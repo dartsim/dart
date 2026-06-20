@@ -55,7 +55,8 @@ CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?:(?:[A-Za-z_]\w*(?:<[^;(){}]*>)?::)*)"
-    r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
+    r"(?P<name>operator\s*(?:\(\)|\[\]|[^\s(]+)|~?[A-Za-z_]\w*)"
+    r"\s*\([^;{}]*\)\s*(?:const\s*)?"
     r"(?:noexcept(?:\s*\([^)]*\))?\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?"
     r"(?:requires\s+[^;{}]+)?\s*(?:;|\{)"
 )
@@ -75,16 +76,18 @@ CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?:(?:[A-Za-z_]\w*(?:<[^;(){}]*>)?::)*)"
-    r"~?[A-Za-z_]\w*\s*\("
+    r"(?:operator\s*(?:\(\)|\[\]|[^\s(]+)|~?[A-Za-z_]\w*)\s*\("
 )
 CPP_QUALIFIED_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+"
-    r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
+    r"(?P<name>operator\s*(?:\(\)|\[\]|[^\s(]+)|~?[A-Za-z_]\w*)"
+    r"\s*\([^;{}]*\)\s*(?:const\s*)?"
     r"(?:noexcept(?:\s*\([^)]*\))?\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?"
     r"(?:requires\s+[^;{}]+)?\s*(?:;|\{)"
 )
 CPP_QUALIFIED_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
-    r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+~?[A-Za-z_]\w*\s*\("
+    r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+"
+    r"(?:operator\s*(?:\(\)|\[\]|[^\s(]+)|~?[A-Za-z_]\w*)\s*\("
 )
 CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
