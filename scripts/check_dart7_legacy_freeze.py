@@ -766,9 +766,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                         )
                         member_added = True
 
-                    for _constructor_match in BINDING_CONSTRUCTOR_PATTERN.finditer(
-                        member_buffer
-                    ):
+                    for _ in BINDING_CONSTRUCTOR_PATTERN.finditer(member_buffer):
                         entries.append(
                             LegacyEntry(
                                 "binding-constructor",
