@@ -51,6 +51,7 @@
 #include "dart/utils/utils.hpp"
 
 #include <limits>
+#include <new>
 
 using namespace dart;
 using namespace common;
@@ -59,6 +60,32 @@ using namespace collision;
 using namespace dynamics;
 using namespace simulation;
 using namespace utils;
+
+namespace {
+
+class TestCollisionObject final : public CollisionObject
+{
+public:
+  TestCollisionObject(
+      CollisionDetector* collisionDetector, const ShapeFrame* shapeFrame)
+    : CollisionObject(collisionDetector, shapeFrame)
+  {
+    // Do nothing
+  }
+
+private:
+  void updateEngineData() override
+  {
+    // Do nothing
+  }
+};
+
+struct alignas(TestCollisionObject) TestCollisionObjectStorage
+{
+  unsigned char data[sizeof(TestCollisionObject)];
+};
+
+} // namespace
 
 class Collision : public testing::Test
 {
@@ -1818,6 +1845,63 @@ TEST_F(Collision, ContactBodyNodeAccessors)
   EXPECT_TRUE(
       (bn1.get() == bnA && bn2.get() == bnB)
       || (bn1.get() == bnB && bn2.get() == bnA));
+}
+
+//==============================================================================
+TEST_F(Collision, CollisionResultCachesCollidingFramesEagerly)
+{
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("result_cache_a");
+  auto skelB = Skeleton::create("result_cache_b");
+  auto skelC = Skeleton::create("result_cache_c");
+  auto skelD = Skeleton::create("result_cache_d");
+
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+  auto pairC = skelC->createJointAndBodyNodePair<FreeJoint>();
+  auto pairD = skelD->createJointAndBodyNodePair<FreeJoint>();
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* nodeA = pairA.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeB = pairB.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeC = pairC.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeD = pairD.second->createShapeNodeWith<CollisionAspect>(box);
+
+  CollisionResult result;
+  TestCollisionObjectStorage storageA;
+  TestCollisionObjectStorage storageB;
+
+  auto* objectA
+      = new (storageA.data) TestCollisionObject(detector.get(), nodeA);
+  auto* objectB
+      = new (storageB.data) TestCollisionObject(detector.get(), nodeB);
+
+  Contact contact;
+  contact.collisionObject1 = objectA;
+  contact.collisionObject2 = objectB;
+  result.addContact(contact);
+
+  objectA->~TestCollisionObject();
+  objectB->~TestCollisionObject();
+
+  auto* replacementA
+      = new (storageA.data) TestCollisionObject(detector.get(), nodeC);
+  auto* replacementB
+      = new (storageB.data) TestCollisionObject(detector.get(), nodeD);
+
+  EXPECT_TRUE(result.inCollision(nodeA));
+  EXPECT_TRUE(result.inCollision(nodeB));
+  EXPECT_TRUE(result.inCollision(pairA.second));
+  EXPECT_TRUE(result.inCollision(pairB.second));
+
+  EXPECT_FALSE(result.inCollision(nodeC));
+  EXPECT_FALSE(result.inCollision(nodeD));
+  EXPECT_FALSE(result.inCollision(pairC.second));
+  EXPECT_FALSE(result.inCollision(pairD.second));
+
+  replacementA->~TestCollisionObject();
+  replacementB->~TestCollisionObject();
 }
 
 //==============================================================================

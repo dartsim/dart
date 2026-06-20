@@ -45,7 +45,9 @@ namespace collision {
 void CollisionResult::addContact(const Contact& contact)
 {
   mContacts.push_back(contact);
-  mCollidingObjectCachesDirty = true;
+  addObjectToCaches(contact.collisionObject1);
+  addObjectToCaches(contact.collisionObject2);
+  mCollidingObjectCachesDirty = false;
 }
 
 //==============================================================================
@@ -122,13 +124,9 @@ CollisionResult::operator bool() const
 void CollisionResult::clear()
 {
   mContacts.clear();
-
-  if (!mCollidingObjectCachesDirty) {
-    mCollidingShapeFrames.clear();
-    mCollidingBodyNodes.clear();
-  }
-
-  mCollidingObjectCachesDirty = true;
+  mCollidingShapeFrames.clear();
+  mCollidingBodyNodes.clear();
+  mCollidingObjectCachesDirty = false;
 }
 
 //==============================================================================
@@ -139,14 +137,6 @@ void CollisionResult::updateCollidingObjectCaches() const
 
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
-  mCollidingShapeFrames.reserve(mContacts.size() * 2u);
-  mCollidingBodyNodes.reserve(mContacts.size() * 2u);
-
-  for (const auto& contact : mContacts) {
-    addObjectToCaches(contact.collisionObject1);
-    addObjectToCaches(contact.collisionObject2);
-  }
-
   mCollidingObjectCachesDirty = false;
 }
 
