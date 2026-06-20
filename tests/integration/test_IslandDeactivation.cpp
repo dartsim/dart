@@ -964,6 +964,51 @@ TEST(IslandDeactivation, WakeOnSolverCollisionFilterChangeBeforeFastPath)
 }
 
 //==============================================================================
+// Collision-option scalar edits can change contact generation without changing
+// detector, group, or filter identity. The all-resting snapshot must include
+// these options so sleepers wake and the new contact settings take effect.
+TEST(IslandDeactivation, WakeOnCollisionOptionChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->getConstraintSolver()->getCollisionOption().enableContact = false;
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// The between-step resting-world state guard must also track collision-option
+// scalar edits before the first no-contact fast-path snapshot is built.
+TEST(IslandDeactivation, WakeOnCollisionOptionChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  world->getConstraintSolver()->getCollisionOption().enableContact = false;
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Collision-shape edits under a static support must invalidate the all-resting
 // snapshot even when the static skeleton pose itself does not change.
 TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)

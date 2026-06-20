@@ -891,6 +891,13 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       = mAllRestingSnapshotCollisionFilter == collisionFilter
         && mAllRestingSnapshotCollisionFilterRevision
                == collisionFilterRevision;
+  const bool collisionOptionScalarsUnchanged
+      = mAllRestingSnapshotCollisionEnableContact
+            == collisionOption.enableContact
+        && mAllRestingSnapshotCollisionMaxNumContacts
+               == collisionOption.maxNumContacts
+        && mAllRestingSnapshotCollisionMaxNumContactsPerPair
+               == collisionOption.maxNumContactsPerPair;
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const bool collisionDetectorUnchanged
@@ -908,7 +915,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
       && mAllRestingSnapshotDeactivationStateVersion
              == dynamics::Skeleton::getGlobalDeactivationStateVersion()
-      && collisionDetectorUnchanged && collisionFilterUnchanged) {
+      && collisionDetectorUnchanged && collisionFilterUnchanged
+      && collisionOptionScalarsUnchanged) {
     for (const auto& skel : mSkeletons) {
       if (skel->isMobile() && restingSkeletonNeedsWake(skel))
         return false;
@@ -916,7 +924,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return true;
   }
 
-  if (!collisionDetectorUnchanged || !collisionFilterUnchanged) {
+  if (!collisionDetectorUnchanged || !collisionFilterUnchanged
+      || !collisionOptionScalarsUnchanged) {
     markSnapshotStale();
     return false;
   }
@@ -1037,6 +1046,10 @@ void World::updateAllRestingSnapshotGlobalVersions()
   mAllRestingSnapshotCollisionGroupVersion
       = collisionGroup->getContentVersion();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  mAllRestingSnapshotCollisionEnableContact = collisionOption.enableContact;
+  mAllRestingSnapshotCollisionMaxNumContacts = collisionOption.maxNumContacts;
+  mAllRestingSnapshotCollisionMaxNumContactsPerPair
+      = collisionOption.maxNumContactsPerPair;
   mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
   mAllRestingSnapshotCollisionFilterRevision
       = getCollisionFilterSnapshotRevision(mAllRestingSnapshotCollisionFilter);
@@ -1121,6 +1134,12 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
         && mLastStepRestingWorldStateCollisionGroupVersion
                == collisionGroup->getContentVersion()
+        && mLastStepRestingWorldStateCollisionEnableContact
+               == collisionOption.enableContact
+        && mLastStepRestingWorldStateCollisionMaxNumContacts
+               == collisionOption.maxNumContacts
+        && mLastStepRestingWorldStateCollisionMaxNumContactsPerPair
+               == collisionOption.maxNumContactsPerPair
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
                == getCollisionFilterSnapshotRevision(collisionFilter);
@@ -1144,6 +1163,12 @@ void World::updateLastStepRestingWorldState()
   mLastStepRestingWorldStateCollisionGroupVersion
       = collisionGroup->getContentVersion();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  mLastStepRestingWorldStateCollisionEnableContact
+      = collisionOption.enableContact;
+  mLastStepRestingWorldStateCollisionMaxNumContacts
+      = collisionOption.maxNumContacts;
+  mLastStepRestingWorldStateCollisionMaxNumContactsPerPair
+      = collisionOption.maxNumContactsPerPair;
   mLastStepRestingWorldStateCollisionFilter
       = collisionOption.collisionFilter.get();
   mLastStepRestingWorldStateCollisionFilterTrackable
@@ -1178,6 +1203,9 @@ void World::invalidateLastStepRestingWorldState()
   mLastStepRestingWorldStateCollisionDetector = nullptr;
   mLastStepRestingWorldStateCollisionGroup = nullptr;
   mLastStepRestingWorldStateCollisionGroupVersion = 0u;
+  mLastStepRestingWorldStateCollisionEnableContact = false;
+  mLastStepRestingWorldStateCollisionMaxNumContacts = 0u;
+  mLastStepRestingWorldStateCollisionMaxNumContactsPerPair = 0u;
   mLastStepRestingWorldStateCollisionFilter = nullptr;
   mLastStepRestingWorldStateCollisionFilterRevision = 0u;
 }
@@ -1191,6 +1219,9 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionDetector = nullptr;
   mAllRestingSnapshotCollisionGroup = nullptr;
   mAllRestingSnapshotCollisionGroupVersion = 0u;
+  mAllRestingSnapshotCollisionEnableContact = false;
+  mAllRestingSnapshotCollisionMaxNumContacts = 0u;
+  mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0u;
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
 }
