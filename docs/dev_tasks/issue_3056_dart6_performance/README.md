@@ -31,6 +31,25 @@ speedup.
   `0.0511826`, capped at 4 contacts/pair RTF `0.131733`, but final hashes and
   state diverged substantially. That cap must remain explicit for this path
   unless follow-up work proves a physically equivalent cap policy.
+- Next collision diff should implement a contact-manifold reduction/selection
+  algorithm before making any four-contact-per-pair behavior default-on. The
+  goal is to choose representative, well-distributed contact points for each
+  pair instead of truncating backend contact output in iteration order. Required
+  evidence: same original #3056 command line, baseline vs previous vs current
+  RTF, final-state hash/summaries, and focused tests showing preserved contact
+  support for boxes, cylinders, spheres, and planes.
+- Prior-art search found three useful sources: closed PR #2366 had a generic
+  `constraint::ContactManifoldCache` with persistent pair history, deepest
+  contact plus spatially spread contact selection, a box-stacking GUI
+  comparison, C++/dartpy tests, and `bm_contact_manifold_cache`; merged PR
+  #2125 and release backport #2902 added an ODE-specific DART 6 contact-history
+  cache for sparse capsule contacts; and merged DART 7 native-collision PRs
+  #2652/#2688 added `ContactManifold`, `PersistentManifoldCache`, and box-box
+  contact reduction under `dart/collision/native`.
+- Sequencing decision: keep #3085 as the plane/contact-cap plumbing and evidence
+  PR. The default-on behavior belongs in a later manifold-reduction PR that
+  mines #2366 and DART 7 native collision, then proves equivalence before
+  changing core defaults.
 - PR2 #3086 must make any behavior-preserving performance path default-on if it
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
@@ -51,8 +70,12 @@ bug until proven otherwise.
    PR0 and add focused collision correctness regressions.
 3. PR2: resting-world/deactivation and solver hot-loop improvements. Compare
    against PR0 and PR1, and verify default-on behavior preserves fidelity.
-4. Later PRs: larger backend swaps or DART 7 native collision detector ports,
-   only after Bullet/FCL/ODE/native comparisons show the dependency and
+4. PR3 candidate: contact-manifold reduction/selection. This should be a
+   separate review from PR1 because PR1's per-pair cap is a measurement and
+   control knob, while this follow-up must preserve contact-patch fidelity well
+   enough to justify default-on behavior.
+5. Later PRs: larger backend swaps or DART 7 native collision detector ports,
+   only after available collision-engine comparisons show the dependency and
    correctness tradeoffs clearly.
 
 ## Validation Log
