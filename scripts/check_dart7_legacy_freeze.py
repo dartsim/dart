@@ -43,6 +43,17 @@ CPP_DART_API_FUNCTION_PATTERN = re.compile(
     r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?;"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
+CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
+)
+CPP_NAMESPACE_DATA_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?(?:constexpr|const)\s+"
+    r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?"
+    r"(?:\s*=\s*[^;]+|\s*\{[^;]*\})?\s*;"
+)
 CPP_ACCESS_PATTERN = re.compile(r"^\s*(?P<access>public|protected|private)\s*:\s*$")
 CPP_NAMESPACE_PATTERN = re.compile(
     r"^\s*namespace\s+(?P<name>[A-Za-z_:]\w*(?:::\w+)*)\s*\{"
@@ -253,6 +264,8 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             pending_scope: dict[str, object] | None = None
             function_buffer: list[str] = []
             function_start = 0
+            namespace_data_buffer: list[str] = []
+            namespace_data_start = 0
             member_buffer: list[str] = []
             member_start = 0
             inline_member_body_depth: int | None = None
@@ -284,6 +297,17 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     or namespace == "detail"
                     or "::detail" in namespace
                     for namespace, _ in namespace_stack
+                )
+                in_namespace_scope = (
+                    not class_stack
+                    and not enum_stack
+                    and (
+                        (not namespace_stack and brace_depth == 0)
+                        or (
+                            bool(namespace_stack)
+                            and brace_depth == namespace_stack[-1][1] + 1
+                        )
+                    )
                 )
 
                 code = code_without_comment(line)
@@ -387,6 +411,32 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                 )
                             )
                         function_buffer = []
+
+                if not in_detail_namespace and in_namespace_scope:
+                    namespace_data_code = code.strip()
+                    if namespace_data_buffer:
+                        namespace_data_buffer.append(namespace_data_code)
+                    elif CPP_NAMESPACE_DATA_START_PATTERN.search(namespace_data_code):
+                        namespace_data_buffer = [namespace_data_code]
+                        namespace_data_start = index
+
+                    if namespace_data_buffer and (
+                        ";" in namespace_data_code or "{" in namespace_data_code
+                    ):
+                        namespace_data_signature = " ".join(namespace_data_buffer)
+                        namespace_data_match = CPP_NAMESPACE_DATA_PATTERN.search(
+                            namespace_data_signature
+                        )
+                        if namespace_data_match:
+                            entries.append(
+                                LegacyEntry(
+                                    "cpp-namespace-data",
+                                    rel_path,
+                                    namespace_data_match.group("name"),
+                                    nearby_tag(lines, namespace_data_start),
+                                )
+                            )
+                        namespace_data_buffer = []
 
                 access_match = CPP_ACCESS_PATTERN.search(line)
                 if access_match and class_stack:

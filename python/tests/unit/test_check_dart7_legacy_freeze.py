@@ -139,6 +139,26 @@ def test_new_legacy_multiline_cpp_function_requires_bugfix_port_tag(tmp_path):
     assert any("newUtility" in m for m in messages)
 
 
+def test_new_legacy_namespace_constant_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "constraint" / "legacy_constants.hpp",
+        "constexpr double OLD_VALUE = 1.0;\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\nconst Eigen::Vector3d NEW_VALUE\n    = Eigen::Vector3d::UnitX();\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NEW_VALUE" in m for m in messages)
+
+
 def test_new_legacy_cpp_member_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
