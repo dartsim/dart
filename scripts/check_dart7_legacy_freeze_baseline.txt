@@ -786,6 +786,7 @@ cpp-class|dart/constraint/soft_contact_constraint.hpp|SoftContactConstraint|clas
 cpp-class|dart/constraint/weld_joint_constraint.hpp|WeldJointConstraint|class DART_API WeldJointConstraint : public DynamicJointConstraint
 cpp-class|dart/dynamics/arrow_shape.hpp|ArrowShape|class DART_API ArrowShape : public MeshShape
 cpp-class|dart/dynamics/ball_joint.hpp|BallJoint|class DART_API BallJoint : public detail::BallJointBase
+cpp-class|dart/dynamics/body_node.hpp|ArticulatedDynamicsAccess|class ArticulatedDynamicsAccess;
 cpp-class|dart/dynamics/body_node.hpp|BodyNode|class DART_API BodyNode
 cpp-class|dart/dynamics/body_node.hpp|CollisionAspect|class CollisionAspect;
 cpp-class|dart/dynamics/body_node.hpp|DegreeOfFreedom|class DegreeOfFreedom;
@@ -810,12 +811,14 @@ cpp-class|dart/dynamics/degree_of_freedom.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom|class DART_API DegreeOfFreedom : public virtual common::Subject
 cpp-class|dart/dynamics/degree_of_freedom.hpp|Joint|class Joint;
 cpp-class|dart/dynamics/degree_of_freedom.hpp|Skeleton|class Skeleton;
+cpp-class|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess|class ArticulatedDynamicsAccess
 cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor|class DART_API AssimpInputResourceAdaptor : public Assimp::IOStream
 cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor|class DART_API AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 cpp-class|dart/dynamics/detail/ball_joint_aspect.hpp|BallJoint|class BallJoint;
 cpp-class|dart/dynamics/detail/basic_node_manager.hpp|BasicNodeManagerForBodyNode|class BasicNodeManagerForBodyNode
 cpp-class|dart/dynamics/detail/basic_node_manager.hpp|BasicNodeManagerForSkeleton|class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
 cpp-class|dart/dynamics/detail/body_node_aspect.hpp|Skeleton|class Skeleton;
+cpp-class|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool|class BodyNodePool
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase|class DART_API SkeletonRefCountingBase
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr|class TemplateBodyNodePtr
@@ -849,6 +852,7 @@ cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|DynamicsAspect|class Dynam
 cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|ShapeFrame|class ShapeFrame;
 cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|VisualAspect|class VisualAspect;
 cpp-class|dart/dynamics/detail/skeleton_aspect.hpp|Skeleton|class Skeleton;
+cpp-class|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView|class SkeletonDynamicsView
 cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyAspect|class SoftBodyAspect;
 cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNode|class SoftBodyNode;
 cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftMeshShape|class SoftMeshShape;
@@ -1034,6 +1038,8 @@ cpp-class|dart/dynamics/shape_node.hpp|ShapeNode|class DART_API ShapeNode : publ
 cpp-class|dart/dynamics/shape_node.hpp|VisualAspect|class VisualAspect;
 cpp-class|dart/dynamics/shared_library_ik_fast.hpp|SharedLibraryIkFast|class DART_API SharedLibraryIkFast : public IkFast
 cpp-class|dart/dynamics/simple_frame.hpp|SimpleFrame|class DART_API SimpleFrame : public Detachable, public ShapeFrame
+cpp-class|dart/dynamics/skeleton.hpp|BodyNodePool|class BodyNodePool;
+cpp-class|dart/dynamics/skeleton.hpp|SkeletonDynamicsView|class SkeletonDynamicsView;
 cpp-class|dart/dynamics/skeleton.hpp|Skeleton|class DART_API Skeleton
 cpp-class|dart/dynamics/soft_body_node.hpp|SoftBodyNodeHelper|class DART_API SoftBodyNodeHelper
 cpp-class|dart/dynamics/soft_body_node.hpp|SoftBodyNode|class DART_API SoftBodyNode : public detail::SoftBodyNodeBase
@@ -1060,6 +1066,7 @@ cpp-class|dart/dynamics/zero_dof_joint.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/zero_dof_joint.hpp|ZeroDofJoint|class DART_API ZeroDofJoint : public Joint
 cpp-enum-class|dart/constraint/constraint_base.hpp|ConstraintPhase|enum class ConstraintPhase
 cpp-enum-class|dart/dynamics/detail/euler_joint_aspect.hpp|AxisOrder|enum class AxisOrder : int
+cpp-enum-class|dart/dynamics/detail/joint_coordinate_chart.hpp|CoordinateChart|enum class CoordinateChart : int
 cpp-enum-class|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType|enum class PlaneType : int
 cpp-enum-class|dart/dynamics/mesh_shape.hpp|MeshOwnership|enum class MeshOwnership
 cpp-enum-class|dart/dynamics/mimic_dof_properties.hpp|MimicConstraintType|enum class MimicConstraintType
@@ -1080,6 +1087,9 @@ cpp-enum-value|dart/dynamics/detail/joint_aspect.hpp|ActuatorType.MIMIC|MIMIC
 cpp-enum-value|dart/dynamics/detail/joint_aspect.hpp|ActuatorType.PASSIVE|PASSIVE
 cpp-enum-value|dart/dynamics/detail/joint_aspect.hpp|ActuatorType.SERVO|SERVO
 cpp-enum-value|dart/dynamics/detail/joint_aspect.hpp|ActuatorType.VELOCITY|VELOCITY
+cpp-enum-value|dart/dynamics/detail/joint_coordinate_chart.hpp|CoordinateChart.EULER_XYZ|EULER_XYZ = 1
+cpp-enum-value|dart/dynamics/detail/joint_coordinate_chart.hpp|CoordinateChart.EULER_ZYX|EULER_ZYX = 2
+cpp-enum-value|dart/dynamics/detail/joint_coordinate_chart.hpp|CoordinateChart.EXP_MAP|EXP_MAP = 0
 cpp-enum-value|dart/dynamics/detail/marker_aspect.hpp|ConstraintType.HARD|HARD
 cpp-enum-value|dart/dynamics/detail/marker_aspect.hpp|ConstraintType.NO|NO
 cpp-enum-value|dart/dynamics/detail/marker_aspect.hpp|ConstraintType.SOFT|SOFT
@@ -1194,6 +1204,22 @@ cpp-enum|dart/dynamics/shape.hpp|ShapeType|enum ShapeType
 cpp-enum|dart/dynamics/skeleton.hpp|ConfigFlags|enum ConfigFlags
 cpp-function|dart/constraint/detail/constraint_solver-impl.hpp|eachConstraint|void ConstraintSolver::eachConstraint(Func func) const {
 cpp-function|dart/constraint/detail/constraint_solver-impl.hpp|eachConstraint|void ConstraintSolver::eachConstraint(Func func) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|inline void abaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|inline void abaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep, AbaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|inline void abaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|inline void abaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep, AbaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|void abaBodyNodes( BodyNodeT* const* bodyNodes, std::size_t numBodyNodes, const GravityT& gravity, double timeStep) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|abaBodyNodes|void abaBodyNodes( BodyNodeT* const* bodyNodes, std::size_t numBodyNodes, const GravityT& gravity, double timeStep, AbaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|aba|void aba(Model& model) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|aba|void aba(Model& model, AbaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBatch|void rneaBatch(std::span<Model> models, RneaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBodyNodes|inline void rneaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBodyNodes|inline void rneaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep, RneaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBodyNodes|inline void rneaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBodyNodes|inline void rneaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep, RneaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaBodyNodes|void rneaBodyNodes( BodyNodeT* const* bodyNodes, std::size_t numBodyNodes, const GravityT& gravity, double timeStep, RneaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rneaDynamic|void rneaDynamic(Model& model, RneaOptions options) {
+cpp-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|rnea|void rnea(Model& model, RneaOptions options) {
 cpp-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|createFileIO|DART_API aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 cpp-function|dart/dynamics/detail/basic_node_manager.hpp|getNode|NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index) {
 cpp-function|dart/dynamics/detail/basic_node_manager.hpp|getNode|NodeType* BasicNodeManagerForSkeleton::getNode( std::size_t treeIndex, std::size_t nodeIndex) {
@@ -1231,6 +1257,19 @@ cpp-function|dart/dynamics/detail/body_node_aspect.hpp|getAllNodeProperties|AllN
 cpp-function|dart/dynamics/detail/body_node_aspect.hpp|getAllNodeStates|AllNodeStates getAllNodeStates(const BodyNode* bodyNode);
 cpp-function|dart/dynamics/detail/body_node_aspect.hpp|setAllNodeProperties|void setAllNodeProperties( BodyNode* bodyNode, const AllNodeProperties& properties);
 cpp-function|dart/dynamics/detail/body_node_aspect.hpp|setAllNodeStates|void setAllNodeStates(BodyNode* bodyNode, const AllNodeStates& states);
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool|BodyNodePool<T>::BodyNodePool( common::MemoryAllocator& baseAllocator, std::size_t initialChunkCapacity) : mBaseAllocator(baseAllocator), mSlotsPerChunk( initialChunkCapacity == 0 ? kDefaultSlotsPerChunk : initialChunkCapacity), mChunks(), mFreeList(nullptr), mSize(0), mNextSlotIndex(0) {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|Chunk|BodyNodePool<T>::Chunk::Chunk( common::MemoryAllocator& allocator, std::size_t slotCount) : mAllocator(allocator), mAllocatedSize(slotCount * kSlotSize + kSlotAlignment - 1) {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|addChunk|void BodyNodePool<T>::addChunk() {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|allocate|void* BodyNodePool<T>::allocate() {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|capacity|std::size_t BodyNodePool<T>::capacity() const noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|clear|void BodyNodePool<T>::clear() noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|deallocate|void BodyNodePool<T>::deallocate(void* ptr) noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|getChunkFor|std::shared_ptr<typename BodyNodePool<T>::Chunk> BodyNodePool<T>::getChunkFor( const void* ptr) const noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|getSlot|std::byte* BodyNodePool<T>::Chunk::getSlot(std::size_t index) const {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|owns|bool BodyNodePool<T>::owns(const void* ptr) const noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|size|std::size_t BodyNodePool<T>::size() const noexcept {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|~BodyNodePool|BodyNodePool<T>::~BodyNodePool() {
+cpp-function|dart/dynamics/detail/body_node_pool.hpp|~Chunk|BodyNodePool<T>::Chunk::~Chunk() {
 cpp-function|dart/dynamics/detail/composite_node.hpp|copyNodePropertiesTo|void CompositePropertiesNode<Base>::copyNodePropertiesTo( std::unique_ptr<Node::Properties>& outputProperties) const {
 cpp-function|dart/dynamics/detail/composite_node.hpp|copyNodeStateTo|void CompositeStateNode<Base>::copyNodeStateTo( std::unique_ptr<Node::State>& outputState) const {
 cpp-function|dart/dynamics/detail/composite_node.hpp|getNodeProperties|std::unique_ptr<Node::Properties> CompositePropertiesNode<Base>::getNodeProperties() const {
@@ -1562,6 +1601,11 @@ cpp-member-data|dart/dynamics/branch.hpp|Criteria.mStart|WeakBodyNodePtr mStart;
 cpp-member-data|dart/dynamics/chain.hpp|Criteria.mIncludeUpstreamParentJoint|bool mIncludeUpstreamParentJoint;
 cpp-member-data|dart/dynamics/chain.hpp|Criteria.mStart|WeakBodyNodePtr mStart;
 cpp-member-data|dart/dynamics/chain.hpp|Criteria.mTarget|WeakBodyNodePtr mTarget;
+cpp-member-data|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|AbaOptions.mWithDampingForces|bool mWithDampingForces = true;
+cpp-member-data|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|AbaOptions.mWithSpringForces|bool mWithSpringForces = true;
+cpp-member-data|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|RneaOptions.mWithDampingForces|bool mWithDampingForces = false;
+cpp-member-data|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|RneaOptions.mWithExternalForces|bool mWithExternalForces = false;
+cpp-member-data|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|RneaOptions.mWithSpringForces|bool mWithSpringForces = false;
 cpp-member-data|dart/dynamics/detail/ball_joint_aspect.hpp|BallJointUniqueProperties.mCoordinateChart|CoordinateChart mCoordinateChart;
 cpp-member-data|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProperties.mGravityMode|bool mGravityMode;
 cpp-member-data|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProperties.mInertia|Inertia mInertia;
@@ -2343,6 +2387,20 @@ cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVeloc
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocityLowerLimit|void setVelocityLowerLimit(double _limit);
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocityUpperLimit|void setVelocityUpperLimit(double _limit);
 cpp-member-function|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom.setVelocity|void setVelocity(double _velocity);
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.abaBodyNodes|static void abaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.abaBodyNodes|static void abaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep, AbaOptions options) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.abaBodyNodes|static void abaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.abaBodyNodes|static void abaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep, AbaOptions options) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.rneaBodyNodes|static void rneaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.rneaBodyNodes|static void rneaBodyNodes( BodyNode* const* bodyNodes, std::size_t numBodyNodes, const Eigen::Vector3d& gravity, double timeStep, RneaOptions options) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.rneaBodyNodes|static void rneaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.rneaBodyNodes|static void rneaBodyNodes( const std::vector<BodyNode*>& bodyNodes, const Eigen::Vector3d& gravity, double timeStep, RneaOptions options) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateAccelerationFD|static void updateAccelerationFD(BodyNodeT& bodyNode) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateBiasForce|static void updateBiasForce( BodyNodeT& bodyNode, const GravityT& gravity, double timeStep) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateJointForceFD|static void updateJointForceFD( BodyNodeT& bodyNode, double timeStep, bool withDampingForces, bool withSpringForces) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateJointForceID|static void updateJointForceID( BodyNodeT& bodyNode, double timeStep, bool withDampingForces, bool withSpringForces) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateTransmittedForceFD|static void updateTransmittedForceFD(BodyNodeT& bodyNode) {
+cpp-member-function|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess.updateTransmittedForceID|static void updateTransmittedForceID( BodyNodeT& bodyNode, const GravityT& gravity, bool withExternalForces) {
 cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.AssimpInputResourceAdaptor|explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
 cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.FileSize|std::size_t FileSize() const override;
 cpp-member-function|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor.Flush|void Flush() override;
@@ -2377,6 +2435,20 @@ cpp-member-function|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProp
 cpp-member-function|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProperties.~BodyNodeAspectProperties|virtual ~BodyNodeAspectProperties() = default;
 cpp-member-function|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeState.BodyNodeState|BodyNodeState(const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());
 cpp-member-function|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeState.~BodyNodeState|virtual ~BodyNodeState() = default;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.BodyNodePool|BodyNodePool(BodyNodePool&&) = delete;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.BodyNodePool|BodyNodePool(const BodyNodePool&) = delete;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.BodyNodePool|explicit BodyNodePool( common::MemoryAllocator& baseAllocator = common::MemoryAllocator::GetDefault(), std::size_t initialChunkCapacity = 64);
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.allocate|[[nodiscard]] void* allocate();
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.capacity|[[nodiscard]] std::size_t capacity() const noexcept;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.deallocate|void deallocate(void* ptr) noexcept;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.getChunkFor|[[nodiscard]] std::shared_ptr<Chunk> getChunkFor( const void* ptr) const noexcept;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.operator=|BodyNodePool& operator=(BodyNodePool&&) = delete;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.operator=|BodyNodePool& operator=(const BodyNodePool&) = delete;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.owns|[[nodiscard]] bool owns(const void* ptr) const noexcept;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.size|[[nodiscard]] std::size_t size() const noexcept;
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.static_assert|static_assert( sizeof(T) >= sizeof(void*), "BodyNodePool requires sizeof(T) >= sizeof(void*).");
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.static_assert|static_assert( std::has_single_bit(kSlotAlignment), "BodyNodePool requires a power-of-two slot alignment.");
+cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.~BodyNodePool|~BodyNodePool();
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase.getSkeleton|std::shared_ptr<Skeleton> getSkeleton();
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase.getSkeleton|std::shared_ptr<const Skeleton> getSkeleton() const;
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr() : mPtr(nullptr) {}
@@ -2554,6 +2626,19 @@ cpp-member-function|dart/dynamics/detail/shape_frame_aspect.hpp|VisualAspectProp
 cpp-member-function|dart/dynamics/detail/shape_frame_aspect.hpp|VisualAspectProperties.~VisualAspectProperties|virtual ~VisualAspectProperties() = default;
 cpp-member-function|dart/dynamics/detail/skeleton_aspect.hpp|SkeletonAspectProperties.SkeletonAspectProperties|SkeletonAspectProperties( const std::string& _name = "Skeleton", bool _isMobile = true, const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81), double _timeStep = 0.001, bool _enabledSelfCollisionCheck = false, bool _enableAdjacentBodyCheck = false);
 cpp-member-function|dart/dynamics/detail/skeleton_aspect.hpp|SkeletonAspectProperties.~SkeletonAspectProperties|virtual ~SkeletonAspectProperties() = default;
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.SkeletonDynamicsView|explicit SkeletonDynamicsView(Skeleton& skeleton) noexcept : mBodyNodes(skeleton.mSkelCache.mBodyNodes.data()), mNumBodyNodes(skeleton.mSkelCache.mBodyNodes.size()), mNumDofs(skeleton.mSkelCache.mDofs.size()), mGravity(skeleton.mAspectProperties.mGravity), mTimeStep(skeleton.mAspectProperties.mTimeStep) {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getBodyNodeData|BodyNode* const* getBodyNodeData() const noexcept {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getBodyNode|BodyNode& getBodyNode(std::size_t index) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getGravity|const Eigen::Vector3d& getGravity() const noexcept {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getNumBodyNodes|std::size_t getNumBodyNodes() const noexcept {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getNumDofs|std::size_t getNumDofs() const noexcept {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.getTimeStep|double getTimeStep() const noexcept {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateAccelerationFD|void updateAccelerationFD(BodyNode& bodyNode) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateBiasForce|void updateBiasForce( BodyNode& bodyNode, const Eigen::Vector3d& gravity, double timeStep) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateJointForceFD|void updateJointForceFD( BodyNode& bodyNode, double timeStep, bool withDampingForces, bool withSpringForces) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateJointForceID|void updateJointForceID( BodyNode& bodyNode, double timeStep, bool withDampingForces, bool withSpringForces) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateTransmittedForceFD|void updateTransmittedForceFD(BodyNode& bodyNode) const {
+cpp-member-function|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView.updateTransmittedForceID|void updateTransmittedForceID( BodyNode& bodyNode, const Eigen::Vector3d& gravity, bool withExternalForces) const {
 cpp-member-function|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNodeProperties.DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR|DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SoftBodyNodeProperties) SoftBodyNodeProperties( const BodyNode::Properties& _bodyProperties = BodyNode::Properties(), const SoftBodyNodeUniqueProperties& _softProperties = SoftBodyNodeUniqueProperties());
 cpp-member-function|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNodeProperties.~SoftBodyNodeProperties|virtual ~SoftBodyNodeProperties() = default;
 cpp-member-function|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNodeUniqueProperties.SoftBodyNodeUniqueProperties|SoftBodyNodeUniqueProperties( double kv = DART_DEFAULT_VERTEX_STIFFNESS, double ke = DART_DEFAULT_EDGE_STIFNESS, double dampCoeff = DART_DEFAULT_DAMPING_COEFF, std::span<const PointMass::Properties> points = {},
@@ -4620,6 +4705,8 @@ cpp-struct|dart/constraint/pgs_boxed_lcp_solver.hpp|Option|struct DART_API Optio
 cpp-struct|dart/dynamics/arrow_shape.hpp|Properties|struct DART_API Properties
 cpp-struct|dart/dynamics/branch.hpp|Criteria|struct DART_API Criteria
 cpp-struct|dart/dynamics/chain.hpp|Criteria|struct DART_API Criteria
+cpp-struct|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|AbaOptions|struct AbaOptions
+cpp-struct|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|RneaOptions|struct RneaOptions
 cpp-struct|dart/dynamics/detail/ball_joint_aspect.hpp|BallJointProperties|struct DART_API BallJointProperties : GenericJoint<math::SO3Space>::Properties,
 cpp-struct|dart/dynamics/detail/ball_joint_aspect.hpp|BallJointUniqueProperties|struct DART_API BallJointUniqueProperties
 cpp-struct|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProperties|struct DART_API BodyNodeAspectProperties

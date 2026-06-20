@@ -31,9 +31,6 @@ LEGACY_STUBS = (
 CPP_SUFFIXES = {".h", ".hpp"}
 BINDING_SUFFIXES = {".cpp", ".hpp", ".h"}
 
-CPP_DETAIL_INCLUDE_PATTERN = re.compile(
-    r"^\s*#\s*include\s*[<\"](?P<path>dart/(?:dynamics|constraint)/detail/[^>\"]+)[>\"]"
-)
 CPP_TYPE_PATTERN = re.compile(
     r"^\s*(?:template\s*<[^>]+>\s*)?"
     r"(?P<kind>class|struct|enum(?:\s+class)?|using)\s+"
@@ -219,64 +216,21 @@ def is_detail_path(path: Path) -> bool:
     return "/detail/" in path.as_posix()
 
 
-def cpp_detail_include_paths(text: str) -> set[Path]:
-    includes: set[Path] = set()
-    for line in text.splitlines():
-        include_match = CPP_DETAIL_INCLUDE_PATTERN.search(line)
-        if include_match:
-            includes.add(Path(include_match.group("path")))
-    return includes
-
-
-def public_cpp_detail_headers(root: Path, rel_root: Path) -> set[Path]:
-    path = root / rel_root
-    if not path.exists():
-        return set()
-
-    public_detail_headers: set[Path] = set()
-    for child in sorted(path.rglob("*")):
-        if (
-            not child.is_file()
-            or child.suffix not in CPP_SUFFIXES
-            or is_detail_path(child.relative_to(root))
-        ):
-            continue
-        text = read_text(child)
-        if text is None:
-            continue
-
-        for rel_include in cpp_detail_include_paths(text):
-            if not rel_include.as_posix().startswith(rel_root.as_posix() + "/detail/"):
-                continue
-
-            include_path = root / rel_include
-            if not include_path.exists() or include_path.suffix not in CPP_SUFFIXES:
-                continue
-
-            public_detail_headers.add(rel_include)
-
-    return public_detail_headers
-
-
 def iter_files(
     root: Path,
     rel_root: Path,
     suffixes: set[str],
-    allowed_detail_paths: set[Path] | None = None,
+    include_detail_paths: bool = False,
 ) -> list[Path]:
     path = root / rel_root
     if not path.exists():
         return []
-    allowed_detail_paths = allowed_detail_paths or set()
     return sorted(
         child
         for child in path.rglob("*")
         if child.is_file()
         and child.suffix in suffixes
-        and (
-            not is_detail_path(child.relative_to(root))
-            or child.relative_to(root) in allowed_detail_paths
-        )
+        and (include_detail_paths or not is_detail_path(child.relative_to(root)))
     )
 
 
@@ -405,10 +359,8 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
         "constexpr",
     }
     for rel_root in LEGACY_CPP_ROOTS:
-        public_detail_paths = public_cpp_detail_headers(root, rel_root)
-        for path in iter_files(root, rel_root, CPP_SUFFIXES, public_detail_paths):
+        for path in iter_files(root, rel_root, CPP_SUFFIXES, include_detail_paths=True):
             rel_path = relative_path(path, root)
-            scan_detail_namespace = Path(rel_path) in public_detail_paths
             lines = path.read_text(encoding="utf-8").splitlines()
             brace_depth = 0
             namespace_stack: list[tuple[str, int]] = []
@@ -454,13 +406,6 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                 if namespace_match and "{" in line:
                     namespace_stack.append((namespace_match.group("name"), brace_depth))
 
-                in_detail_namespace = any(
-                    namespace.endswith("detail")
-                    or namespace == "detail"
-                    or "::detail" in namespace
-                    for namespace, _ in namespace_stack
-                )
-                in_scanned_surface = scan_detail_namespace or not in_detail_namespace
                 in_namespace_scope = (
                     not class_stack
                     and not enum_stack
@@ -475,7 +420,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
 
                 code = code_without_comment(line)
                 if pending_scope:
-                    if "{" in code and in_scanned_surface:
+                    if "{" in code:
                         kind = str(pending_scope["kind"])
                         type_name = str(pending_scope["name"])
                         if kind in {"class", "struct"}:
@@ -503,18 +448,13 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     elif ";" in code:
                         pending_scope = None
 
-                if enum_stack and enum_stack[-1][2] and in_scanned_surface:
+                if enum_stack and enum_stack[-1][2]:
                     add_cpp_enum_values(
                         entries, rel_path, enum_stack[-1][0], line, lines, index
                     )
 
                 smart_pointer_macro_match = CPP_SMART_POINTER_MACRO_PATTERN.search(line)
-                if (
-                    smart_pointer_macro_match
-                    and in_scanned_surface
-                    and not class_stack
-                    and not enum_stack
-                ):
+                if smart_pointer_macro_match and not class_stack and not enum_stack:
                     entries.append(
                         LegacyEntry(
                             "cpp-smart-pointer-macro",
@@ -532,7 +472,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                         line
                     ) or CPP_TYPEDEF_ALIAS_PATTERN.search(line)
 
-                if (type_match or typedef_match) and in_scanned_surface:
+                if type_match or typedef_match:
                     current_class = class_stack[-1] if class_stack else None
                     public_surface = current_class is None or (
                         bool(current_class["public_surface"])
@@ -579,7 +519,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             "public_surface": public_surface,
                         }
 
-                if in_scanned_surface and not class_stack:
+                if not class_stack:
                     function_code = code.strip()
                     if function_buffer:
                         function_buffer.append(function_code)
@@ -632,7 +572,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             namespace_function_body_depth = brace_depth
                         function_buffer = []
 
-                if in_scanned_surface and (in_namespace_scope or namespace_data_buffer):
+                if in_namespace_scope or namespace_data_buffer:
                     namespace_data_code = code.strip()
                     if namespace_data_buffer:
                         namespace_data_buffer.append(namespace_data_code)
@@ -671,7 +611,6 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     current_class is not None
                     and current_class["public_surface"]
                     and current_class["access"] == "public"
-                    and in_scanned_surface
                     and not type_match
                     and not typedef_match
                     and not access_match

@@ -161,7 +161,7 @@ class DART_API ExistingJoint {};
     assert any("NewTransitiveLegacy" in m for m in messages)
 
 
-def test_private_legacy_detail_symbol_is_not_public_freeze_surface(tmp_path):
+def test_new_legacy_installed_detail_symbol_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
     _write(
@@ -180,7 +180,10 @@ def test_private_legacy_detail_symbol_is_not_public_freeze_surface(tmp_path):
         encoding="utf-8",
     )
 
-    assert module.find_violations(tmp_path, baseline) == []
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("detail/private_legacy.hpp" in m for m in messages)
+    assert any("NewPrivateLegacy" in m for m in messages)
 
 
 def test_bugfix_port_tag_allows_new_legacy_cpp_symbol(tmp_path):
