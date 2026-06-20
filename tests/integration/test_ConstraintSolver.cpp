@@ -31,18 +31,625 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/constraint/BallJointConstraint.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/JointCoulombFrictionConstraint.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
+
 using namespace dart;
+
+namespace {
+
+class FakeConstraint final : public constraint::ConstraintBase
+{
+public:
+  explicit FakeConstraint(std::size_t dimension)
+  {
+    mDim = dimension;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo*) override {}
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double*, bool) override {}
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+};
+
+class DerivedDantzigBoxedLcpSolver final
+  : public constraint::DantzigBoxedLcpSolver
+{
+};
+
+class DerivedPgsBoxedLcpSolver final : public constraint::PgsBoxedLcpSolver
+{
+};
+
+class CustomContactConstraint final : public constraint::ContactConstraint
+{
+public:
+  using ContactConstraint::ContactConstraint;
+};
+
+class FakeCollisionObject final : public collision::CollisionObject
+{
+public:
+  FakeCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : collision::CollisionObject(detector, shapeFrame)
+  {
+  }
+
+protected:
+  void updateEngineData() override {}
+};
+
+class FakeCollisionDetector final : public collision::CollisionDetector
+{
+public:
+  std::shared_ptr<collision::CollisionDetector> cloneWithoutCollisionObjects()
+      const override
+  {
+    return std::make_shared<FakeCollisionDetector>();
+  }
+
+  const std::string& getType() const override
+  {
+    static const std::string type = "FakeCollisionDetector";
+    return type;
+  }
+
+  std::unique_ptr<collision::CollisionGroup> createCollisionGroup() override
+  {
+    return nullptr;
+  }
+
+  bool collide(
+      collision::CollisionGroup*,
+      const collision::CollisionOption& = collision::CollisionOption(),
+      collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  bool collide(
+      collision::CollisionGroup*,
+      collision::CollisionGroup*,
+      const collision::CollisionOption& = collision::CollisionOption(),
+      collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  double distance(
+      collision::CollisionGroup*,
+      const collision::DistanceOption& = collision::DistanceOption(),
+      collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+  double distance(
+      collision::CollisionGroup*,
+      collision::CollisionGroup*,
+      const collision::DistanceOption& = collision::DistanceOption(),
+      collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+protected:
+  std::unique_ptr<collision::CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame*) override
+  {
+    return nullptr;
+  }
+
+  void refreshCollisionObject(collision::CollisionObject*) override {}
+};
+
+class ExposedThreadedConstraintSolver final
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  using BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
+
+  void addFakeConstrainedGroups(std::size_t numGroups, std::size_t dimension)
+  {
+    for (std::size_t i = 0; i < numGroups; ++i) {
+      constraint::ConstrainedGroup group;
+      group.addConstraint(std::make_shared<FakeConstraint>(dimension));
+      mConstrainedGroups.push_back(group);
+    }
+  }
+
+  void addConstrainedGroup(
+      const std::vector<constraint::ConstraintBasePtr>& constraints)
+  {
+    constraint::ConstrainedGroup group;
+    for (const auto& constraint : constraints)
+      group.addConstraint(constraint);
+    mConstrainedGroups.push_back(group);
+  }
+
+  void solveGroupsForTest()
+  {
+    solveConstrainedGroups();
+  }
+
+  int getNumSolvedGroups() const
+  {
+    return mNumSolvedGroups.load(std::memory_order_relaxed);
+  }
+
+  int getMaxConcurrentSolves() const
+  {
+    return mMaxConcurrentSolves.load(std::memory_order_relaxed);
+  }
+
+protected:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    const int concurrent
+        = mConcurrentSolves.fetch_add(1, std::memory_order_relaxed) + 1;
+    int observed = mMaxConcurrentSolves.load(std::memory_order_relaxed);
+    while (concurrent > observed
+           && !mMaxConcurrentSolves.compare_exchange_weak(
+               observed, concurrent, std::memory_order_relaxed)) {
+      // Keep trying with the updated observed value.
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    mNumSolvedGroups.fetch_add(1, std::memory_order_relaxed);
+    mConcurrentSolves.fetch_sub(1, std::memory_order_relaxed);
+  }
+
+private:
+  std::atomic<int> mConcurrentSolves{0};
+  std::atomic<int> mMaxConcurrentSolves{0};
+  std::atomic<int> mNumSolvedGroups{0};
+};
+
+dynamics::BodyNode* createFreeBody(
+    const std::string& name,
+    bool mobile,
+    std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto body
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
+  skeleton->setMobile(mobile);
+  skeletons.push_back(skeleton);
+  return body;
+}
+
+dynamics::SoftBodyNode* createSoftBody(
+    const std::string& name,
+    bool mobile,
+    std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto body = skeleton
+                  ->createJointAndBodyNodePair<
+                      dynamics::FreeJoint,
+                      dynamics::SoftBodyNode>()
+                  .second;
+  skeleton->setMobile(mobile);
+  skeletons.push_back(skeleton);
+  return body;
+}
+
+std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
+    const std::string& name, std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto rootPair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.first->setActuatorType(dynamics::Joint::VELOCITY);
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<dynamics::BallJoint>();
+  skeletons.push_back(skeleton);
+  return {rootPair.second, childPair.second};
+}
+
+collision::Contact createContact(
+    collision::CollisionObject* object1, collision::CollisionObject* object2)
+{
+  collision::Contact contact;
+  contact.collisionObject1 = object1;
+  contact.collisionObject2 = object2;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  return contact;
+}
+
+template <typename ConstraintT>
+std::shared_ptr<ConstraintT> createContactConstraint(
+    collision::Contact& contact)
+{
+  auto constraint = std::make_shared<ConstraintT>(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+  constraint::ConstraintBase& base = *constraint;
+  base.update();
+  return constraint;
+}
+
+std::shared_ptr<constraint::SoftContactConstraint> createSoftContactConstraint(
+    collision::Contact& contact)
+{
+  auto constraint
+      = std::make_shared<constraint::SoftContactConstraint>(contact, 0.001);
+  constraint::ConstraintBase& base = *constraint;
+  base.update();
+  return constraint;
+}
+
+void addPaddingGroups(ExposedThreadedConstraintSolver& solver)
+{
+  solver.addFakeConstrainedGroups(128, 100);
+}
+
+bool solvesGroupsInParallel(ExposedThreadedConstraintSolver& solver)
+{
+  solver.setNumSimulationThreads(4);
+  solver.solveGroupsForTest();
+  EXPECT_GT(solver.getNumSolvedGroups(), 0);
+  return solver.getMaxConcurrentSolves() > 1;
+}
+
+} // namespace
 
 //==============================================================================
 std::shared_ptr<World> createWorld()
 {
   return simulation::World::create();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstraint(std::make_shared<FakeConstraint>(1));
+  solver.addFakeConstrainedGroups(130, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelGroupSolveRequiresExactBuiltInSolvers)
+{
+  auto solvesInParallel = [](ExposedThreadedConstraintSolver& solver) {
+    solver.addFakeConstrainedGroups(130, 100);
+    return solvesGroupsInParallel(solver);
+  };
+
+  ExposedThreadedConstraintSolver defaultSolver;
+  EXPECT_TRUE(solvesInParallel(defaultSolver));
+
+  ExposedThreadedConstraintSolver noSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
+  EXPECT_TRUE(solvesInParallel(noSecondarySolver));
+
+  ExposedThreadedConstraintSolver pgsPrimarySolver(
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), nullptr);
+  EXPECT_TRUE(solvesInParallel(pgsPrimarySolver));
+
+  auto randomizedPrimaryPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto primaryOption = randomizedPrimaryPgs->getOption();
+  primaryOption.mRandomizeConstraintOrder = true;
+  randomizedPrimaryPgs->setOption(primaryOption);
+
+  ExposedThreadedConstraintSolver randomizedPrimarySolver(
+      randomizedPrimaryPgs, nullptr);
+  EXPECT_FALSE(solvesInParallel(randomizedPrimarySolver));
+
+  ExposedThreadedConstraintSolver derivedPrimarySolver(
+      std::make_shared<DerivedDantzigBoxedLcpSolver>(),
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  EXPECT_FALSE(solvesInParallel(derivedPrimarySolver));
+
+  ExposedThreadedConstraintSolver derivedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
+      std::make_shared<DerivedPgsBoxedLcpSolver>());
+  EXPECT_FALSE(solvesInParallel(derivedSecondarySolver));
+
+  auto randomizedPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto option = randomizedPgs->getOption();
+  option.mRandomizeConstraintOrder = true;
+  randomizedPgs->setOption(option);
+
+  ExposedThreadedConstraintSolver randomizedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
+  EXPECT_FALSE(solvesInParallel(randomizedSecondarySolver));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, CustomContactConstraintsForceSerialParallelGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody1 = createFreeBody("fixed1", false, skeletons);
+  auto* fixedBody2 = createFreeBody("fixed2", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode1 = fixedBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* fixedShapeNode2 = fixedBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode1 = dynamicBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode2 = dynamicBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject1(&detector, fixedShapeNode1);
+  FakeCollisionObject fixedObject2(&detector, fixedShapeNode2);
+  FakeCollisionObject dynamicObject1(&detector, dynamicShapeNode1);
+  FakeCollisionObject dynamicObject2(&detector, dynamicShapeNode2);
+
+  auto contact1 = createContact(&dynamicObject1, &fixedObject1);
+  auto contact2 = createContact(&dynamicObject2, &fixedObject2);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createContactConstraint<CustomContactConstraint>(contact1),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createContactConstraint<CustomContactConstraint>(contact2),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DistinctNonReactiveBodiesCanSolveGroupsInParallel)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody1 = createFreeBody("fixed1", false, skeletons);
+  auto* fixedBody2 = createFreeBody("fixed2", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, fixedBody1, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, fixedBody2, Eigen::Vector3d::Zero()),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialParallelGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, fixedBody, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, fixedBody, Eigen::Vector3d::Zero()),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialParallelGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  const auto mixedBodies = createMixedReactiveSkeleton("mixed", skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ASSERT_FALSE(mixedBodies.first->isReactive());
+  ASSERT_TRUE(mixedBodies.second->isReactive());
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody1, mixedBodies.second, Eigen::Vector3d::Zero()),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody2, mixedBodies.first, Eigen::Vector3d::Zero()),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* softBody = createSoftBody("soft", false, skeletons);
+  auto* dynamicBody1 = createFreeBody("dynamic1", true, skeletons);
+  auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
+
+  ASSERT_FALSE(softBody->isReactive());
+  ASSERT_TRUE(dynamicBody1->isReactive());
+  ASSERT_TRUE(dynamicBody2->isReactive());
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* softShapeNode = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode1 = dynamicBody1->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode2 = dynamicBody2->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject softObject(&detector, softShapeNode);
+  FakeCollisionObject dynamicObject1(&detector, dynamicShapeNode1);
+  FakeCollisionObject dynamicObject2(&detector, dynamicShapeNode2);
+
+  auto contact1 = createContact(&dynamicObject1, &softObject);
+  auto contact2 = createContact(&dynamicObject2, &softObject);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(contact1),
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(contact2),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, FixedSkeletonJointConstraintsForceSerialGroupSolves)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto fixedSkeleton = dynamics::Skeleton::create("fixed");
+  auto fixedPair
+      = fixedSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  fixedSkeleton->setMobile(false);
+  skeletons.push_back(fixedSkeleton);
+
+  auto* fixedJoint = fixedPair.first;
+  auto* fixedBody = fixedPair.second;
+  fixedJoint->setCoulombFriction(0, 1.0);
+  fixedJoint->setVelocity(0, 1.0);
+
+  auto jointFriction
+      = std::make_shared<constraint::JointCoulombFrictionConstraint>(
+          fixedJoint);
+  constraint::ConstraintBase& jointFrictionBase = *jointFriction;
+  jointFrictionBase.update();
+  ASSERT_TRUE(jointFrictionBase.isActive());
+
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      jointFriction,
+  });
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      std::make_shared<constraint::BallJointConstraint>(
+          dynamicBody, fixedBody, Eigen::Vector3d::Zero()),
+  });
+  addPaddingGroups(solver);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
 //==============================================================================

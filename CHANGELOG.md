@@ -45,6 +45,10 @@
     contact-heavy scenes while preserving an explicit deactivation opt-out:
     [#3086](https://github.com/dartsim/dart/pull/3086)
 
+  * Keep opt-in parallel constraint-island solving on the serial path for
+    manual constraints, custom contact constraints, custom LCP solvers, and
+    groups that share non-reactive bodies or skeletons across islands.
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
