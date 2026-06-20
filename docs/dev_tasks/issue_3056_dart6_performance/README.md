@@ -52,17 +52,17 @@ speedup.
 - PR2 #3086 must make any behavior-preserving performance path default-on if it
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
-- PR2 current default-on Bullet run, same 120-object/9000-step generated drop
-  command: RTF `6.13047`, final contacts `0`, final resting `120 / 120`,
-  finite state true, final hash `0x5a46e38c66967e04`. The zero-contact final
-  state is expected only after all mobile skeletons are resting and the
-  all-resting fast path is active.
+- PR2 current default-on Bullet run after review fixes, same
+  120-object/9000-step generated drop command: RTF `3.45052`, final contacts
+  `0`, final resting `120 / 120`, finite state true, final hash
+  `0x44100959a3ae413b`. The zero-contact final state is expected only after
+  all mobile skeletons are resting and the all-resting fast path is active.
 - PR2 current explicit `--disable-deactivation` run on the same command: RTF
-  `1.01079`, final contacts `360`, final resting `0 / 120`, finite state true,
-  final hash `0x40e36d5812803d4`.
+  `0.490135`, final contacts `360`, final resting `0 / 120`, finite state true,
+  final hash `0xc68e1f3b0fa9dc83`.
 - PR2 current final-scene comparison, default-on vs disabled, 121 dumped shapes:
-  max position delta `8.5907e-4` m, mean position delta `5.6539e-5` m, max
-  quaternion L2 delta `8.5911e-4`. The sleep contact penetration gate is
+  max position delta `0.00122575` m, mean position delta `5.74756e-5` m, max
+  quaternion L2 delta `0.00122581`. The sleep contact penetration gate is
   tightened to `1e-5`, and
   `IslandDeactivation.DefaultEnabledSettlesCloseToAlwaysActivePath` now guards
   the default-on fidelity bar on a focused drop-and-settle case.
@@ -140,3 +140,7 @@ bug until proven otherwise.
   `contact_benchmark`, `test_World`, and `test_ContactSurface`; CTest passed
   the three focused tests, and the 3-object `contact_benchmark` smoke advanced
   time with finite final state.
+- Reran the 120-object/9000-step Bullet comparison after those review fixes:
+  default-on RTF `3.45052`, disabled RTF `0.490135`, both finite. Dumped both
+  final scenes and compared 121 shapes: max position delta `0.00122575` m, mean
+  position delta `5.74756e-5` m, max quaternion L2 delta `0.00122581`.
