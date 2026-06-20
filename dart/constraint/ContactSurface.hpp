@@ -166,6 +166,12 @@ public:
       size_t numContactsOnCollisionObject,
       double timeStep) const override;
 
+  /// Create a contact constraint from already-computed surface parameters.
+  ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      double timeStep,
+      const ContactSurfaceParams& params) const;
+
 protected:
   static double computeFrictionCoefficient(
       const dynamics::ShapeNode* shapeNode);
@@ -183,12 +189,6 @@ protected:
       const dynamics::ShapeNode* shapeNode);
 
 private:
-  /// Create a contact constraint from already-computed surface parameters.
-  ContactConstraintPtr createConstraint(
-      collision::Contact& contact,
-      double timeStep,
-      const ContactSurfaceParams& params) const;
-
   friend class ConstraintSolver;
   friend class ContactConstraint;
 };
