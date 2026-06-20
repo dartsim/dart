@@ -1,0 +1,24 @@
+{# Extend the Read the Docs theme to show a site-wide DART 7 / DART 6 notice.
+
+   This template only exists on ``main`` (the DART 7 line), so Read the Docs
+   renders the banner on the "latest" build but not on the ``release-6.*`` tag
+   builds that produce the DART 6 LTS documentation. That keeps the message
+   accurate per version without any runtime version sniffing.
+
+   The banner markup is intentionally small; its appearance lives in
+   ``_static/css/custom.css`` (``.dart-version-banner``). #}
+{% extends "!layout.html" %}
+
+{% block document %}
+  <div class="dart-version-banner" role="note" aria-label="DART version notice">
+    <span class="dart-version-banner__badge">DART&nbsp;7 · in development</span>
+    <span class="dart-version-banner__text">
+      You are reading the documentation for <strong>DART&nbsp;7</strong>, an
+      in-progress redesign that is <strong>not yet recommended for production
+      use</strong>. Looking for the current stable release? See the
+      <a href="https://dart.readthedocs.io/en/stable/">DART&nbsp;6 LTS
+      documentation</a>.
+    </span>
+  </div>
+  {{ super() }}
+{% endblock %}

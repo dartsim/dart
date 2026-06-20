@@ -70,4 +70,9 @@ Use `pixi run docs-clean` to remove generated documentation outputs.
   include shims under `dartpy/api/modules/`.
 - Keep developer and maintainer workflow docs under `docs/onboarding/` unless
   they are intentionally published as user-facing RTD pages.
+- This site documents DART 7. Pages that still carry **DART 6** content show a
+  legacy notice (`.. include:: /_includes/legacy_dart6.rst` for RST, or an inline
+  admonition for Markdown) and are tracked in
+  [`docs/onboarding/dart7-docs-migration.md`](../onboarding/dart7-docs-migration.md).
+  When you port a page to DART 7, remove its notice and update that plan.
 - Verify with `pixi run docs-build` for published-site changes when feasible.

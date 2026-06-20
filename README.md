@@ -26,6 +26,15 @@ foundations for users who need more than a black-box simulator. DART uses
 generalized coordinates for articulated rigid body systems and Featherstone's
 Articulated Body Algorithm for accurate, stable motion dynamics.
 
+> [!IMPORTANT]
+> **Which DART is this?** This `main` branch tracks **DART 7**, an in-progress
+> redesign that is **not yet recommended for production use**. Its documentation
+> is the [`latest`](https://dart.readthedocs.io/en/latest/) site.
+>
+> For a stable release, use **DART 6 LTS**:
+> [documentation](https://dart.readthedocs.io/en/stable/) ·
+> [`release-6.19` branch](https://github.com/dartsim/dart/tree/release-6.19).
+
 <p align="center">
   <img src="docs/assets/unitree_g1_demo.gif" width="720" alt="Unitree G1 humanoid demo" />
 </p>
@@ -71,10 +80,10 @@ for current source-checkout examples; DART 6 C++ snippets remain on the
 
 The quick-start snippets above target the current `main` branch and DART 7 API.
 Until DART 7 package artifacts are published, package managers resolve the
-latest published DART 6 artifacts instead. During the 6.17 rollout, some indexes
-may still serve 6.16.x until their packages finish publishing; use the file-free
-package smoke checks below for the installed package version, or use the source
-checkout path for the DART 7 quick starts.
+latest published DART 6 artifacts instead, and different indexes may briefly
+serve different DART 6 patch releases until their packages finish publishing.
+Use the file-free package smoke checks below for the installed package version,
+or use the source checkout path for the DART 7 quick starts.
 
 ### Python (Recommended)
 
@@ -163,8 +172,9 @@ search terms, and capture commands are in the
 
 #### Branches
 
-- `main` — Active development targeting DART 7
-- `release-6.17` — Maintenance branch for DART 6 (critical fixes only)
+- `main` — Active development targeting DART 7 (not yet production-ready)
+- `release-6.19` — Maintenance branch for DART 6 LTS (critical fixes only); see
+  the [DART 6 documentation](https://dart.readthedocs.io/en/stable/)
 
 ## Citation
 
