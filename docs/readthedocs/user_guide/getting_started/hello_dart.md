@@ -14,10 +14,12 @@ import numpy as np
 world = dart.World(time_step=1.0 / 1000.0)
 world.gravity = np.array([0.0, 0.0, -9.81])
 
-# 2. Add a static ground plate. CollisionShape.box takes *half* extents,
-#    so this is a 4 m x 4 m x 0.1 m slab centered at the origin.
+# 2. Add a static ground plate. CollisionShape.box takes *half* extents, so this
+#    is a 4 m x 4 m x 0.1 m slab; placing its center at z = -0.05 puts the top
+#    surface at z = 0.
 ground_opts = dart.RigidBodyOptions()
 ground_opts.is_static = True
+ground_opts.position = np.array([0.0, 0.0, -0.05])
 ground = world.add_rigid_body("ground", ground_opts)
 ground.set_collision_shape(dart.CollisionShape.box(np.array([2.0, 2.0, 0.05])))
 
