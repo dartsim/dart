@@ -46,6 +46,19 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Demote the optional alternative collision backends (`bullet`, `ode`) out of
+    the default Pixi environment into a dedicated `collision-extra` environment
+    so a default build pulls a minimal dependency set. The
+    `dart-collision-{bullet,ode}` components, their tests, and dartpy bindings
+    are unchanged and stay covered via `pixi run -e collision-extra ...` and a
+    new `collision-extra` CI job. `gz-physics` uses DART's FCL detector and the
+    `gazebo` environment retains both backends independently, and neither is in
+    `DART_PKG_EXTERNAL_DEPS`, so Gazebo and downstream `find_package(DART)`
+    consumers are unaffected. Building the bundled examples/tutorials that
+    request these components out-of-source against a minimal default install
+    requires `pixi run -e collision-extra` (or installing bullet/ode):
+    [#3106](https://github.com/dartsim/dart/pull/3106)
+
 * Collision
 
   * Add primitive plane collision support and configurable per-pair contact caps

@@ -115,6 +115,34 @@ jobs:
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install
 
+  # Alternative collision backends (bullet/ode) are no longer part of the default
+  # environment. Keep building and testing the dart-collision-{bullet,ode}
+  # components and their dartpy bindings here so the default-footprint shrink does
+  # not silently drop their coverage.
+  collision-extra:
+    name: collision backends
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+          environments: collision-extra
+
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Test DART and dartpy with bullet/ode collision backends
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          pixi run -e collision-extra test-all
+
   # Catch compile failures when assertions are enabled but we're not in a Debug
   # build type (e.g., downstream builds that drop -DNDEBUG in Release).
   build-asserts:

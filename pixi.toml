@@ -29,14 +29,12 @@ sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 assimp = ">=5.4.3,<7"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
 libboost-devel = ">=1.86.0,<2"
-libode = ">=0.16.5,<0.17"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
@@ -831,10 +829,19 @@ test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
+# Optional alternative collision backends, demoted from the default environment.
+# gz-physics uses DART's FCL detector, not these, and the gazebo feature retains
+# bullet-cpp/libode independently. The collision-extra environment keeps the
+# dart-collision-{bullet,ode} components and their tests/bindings covered.
+[feature.collision-extra.dependencies]
+bullet-cpp = ">=3.25,<4"
+libode = ">=0.16.5,<0.17"
+
 #==============
 # Environments
 #==============
 
 [environments]
 default = ["assimp6"]
+collision-extra = ["collision-extra", "assimp6"]
 gazebo = ["gazebo"]
