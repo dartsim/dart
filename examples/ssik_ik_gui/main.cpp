@@ -728,11 +728,12 @@ private:
 };
 
 //==============================================================================
-// Builds a real DART skeleton for the selected arm from its
-// product-of-exponentials chain and poses it with setPositions(q). Using an
-// articulated skeleton keeps the arm connected by construction and makes arm
-// switching robust: each arm load rebuilds (and removes the previous) skeleton,
-// so no per-link visual state can leak across arms.
+// Renders the IK solutions as real DART skeletons built from the arm's
+// product-of-exponentials chain and posed with setPositions(q). Every solution
+// gets its own skeleton instance so they can be shown simultaneously: the
+// selected one is opaque and the rest are translucent "ghosts". Using
+// articulated skeletons keeps each arm connected by construction; switching
+// arms rebuilds the pool, so no per-link visual state leaks across arms.
 class ArmSkeleton
 {
 public:
@@ -741,38 +742,113 @@ public:
     mWorld = world;
   }
 
-  // Rebuilds the skeleton for the given chain. An empty chain removes the arm.
+  // Selects the chain for subsequent solutions. An empty chain clears the arm.
   void build(const std::vector<JointSpec>& chain)
   {
-    if (mSkeleton) {
-      mWorld->removeSkeleton(mSkeleton);
-      mSkeleton = nullptr;
-    }
-    if (chain.empty())
+    clearInstances();
+    mChain = chain;
+  }
+
+  // Poses one skeleton per solution, highlighting the selected one and drawing
+  // the others as translucent ghosts. With no solution, shows a single skeleton
+  // at its zero configuration.
+  void showSolutions(const std::vector<SsikSolution>& solutions, int selected)
+  {
+    if (mChain.empty()) {
+      clearInstances();
       return;
+    }
 
-    const Eigen::Vector4d linkColor(0.85, 0.20, 0.18, 1.0);
-    const Eigen::Vector4d jointColor(0.16, 0.18, 0.22, 1.0);
+    const std::size_t wanted
+        = solutions.empty()
+              ? 1
+              : std::min<std::size_t>(solutions.size(), kMaxInstances);
+    while (mInstances.size() < wanted)
+      mInstances.push_back(buildInstance());
+    while (mInstances.size() > wanted) {
+      mWorld->removeSkeleton(mInstances.back());
+      mInstances.pop_back();
+    }
 
-    mSkeleton = dart::dynamics::Skeleton::create("ssik_arm");
+    const Eigen::Vector4d selectedColor(0.90, 0.20, 0.18, 1.0);
+    const Eigen::Vector4d ghostColor(0.85, 0.32, 0.30, 0.22);
+    const Eigen::Vector4d restColor(0.55, 0.58, 0.62, 0.5);
+
+    if (solutions.empty()) {
+      setConfig(mInstances[0], Eigen::VectorXd::Zero(numDofs()));
+      setColor(mInstances[0], restColor);
+      return;
+    }
+
+    for (std::size_t i = 0; i < wanted; ++i) {
+      setConfig(mInstances[i], solutions[i].q);
+      setColor(
+          mInstances[i],
+          static_cast<int>(i) == selected ? selectedColor : ghostColor);
+    }
+  }
+
+private:
+  static constexpr double kLinkRadius = 0.028;
+  static constexpr double kJointRadius = 0.045;
+  static constexpr std::size_t kMaxInstances = 16;
+
+  std::size_t numDofs() const
+  {
+    return mInstances.empty() ? mChain.size()
+                              : mInstances.front()->getNumDofs();
+  }
+
+  void clearInstances()
+  {
+    for (const auto& skeleton : mInstances)
+      mWorld->removeSkeleton(skeleton);
+    mInstances.clear();
+  }
+
+  void setConfig(
+      const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& q)
+  {
+    const std::size_t dofs = skeleton->getNumDofs();
+    Eigen::VectorXd positions = Eigen::VectorXd::Zero(dofs);
+    const Eigen::Index n
+        = std::min<Eigen::Index>(static_cast<Eigen::Index>(dofs), q.size());
+    positions.head(n) = q.head(n);
+    skeleton->setPositions(positions);
+  }
+
+  void setColor(
+      const dart::dynamics::SkeletonPtr& skeleton, const Eigen::Vector4d& color)
+  {
+    for (std::size_t b = 0; b < skeleton->getNumBodyNodes(); ++b) {
+      auto* body = skeleton->getBodyNode(b);
+      for (std::size_t s = 0; s < body->getNumShapeNodes(); ++s) {
+        auto* node = body->getShapeNode(s);
+        if (auto* visual = node->getVisualAspect())
+          visual->setRGBA(color);
+      }
+    }
+  }
+
+  dart::dynamics::SkeletonPtr buildInstance()
+  {
+    auto skeleton = dart::dynamics::Skeleton::create(
+        "ssik_arm_" + std::to_string(mInstanceCounter++));
 
     dart::dynamics::WeldJoint::Properties baseProps;
     baseProps.mName = "base_joint";
     dart::dynamics::BodyNode* parent
-        = mSkeleton
+        = skeleton
               ->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
                   nullptr, baseProps)
               .second;
     parent->setName("base");
-    addSphere(parent, Eigen::Vector3d::Zero(), jointColor);
+    addSphere(parent, Eigen::Vector3d::Zero());
     addCylinder(
-        parent,
-        Eigen::Vector3d::Zero(),
-        chain.front().tLeft.translation(),
-        linkColor);
+        parent, Eigen::Vector3d::Zero(), mChain.front().tLeft.translation());
 
-    for (std::size_t k = 0; k < chain.size(); ++k) {
-      const JointSpec& spec = chain[k];
+    for (std::size_t k = 0; k < mChain.size(); ++k) {
+      const JointSpec& spec = mChain[k];
       Eigen::Vector3d axis = spec.axis;
       if (axis.norm() > 1e-9)
         axis.normalize();
@@ -784,7 +860,7 @@ public:
         props.mAxis = axis;
         props.mT_ParentBodyToJoint = spec.tLeft;
         props.mT_ChildBodyToJoint = spec.tRight.inverse();
-        body = mSkeleton
+        body = skeleton
                    ->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>(
                        parent, props)
                    .second;
@@ -794,56 +870,33 @@ public:
         props.mAxis = axis;
         props.mT_ParentBodyToJoint = spec.tLeft;
         props.mT_ChildBodyToJoint = spec.tRight.inverse();
-        body = mSkeleton
+        body = skeleton
                    ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
                        parent, props)
                    .second;
       }
       body->setName("b" + std::to_string(k));
 
-      addSphere(body, Eigen::Vector3d::Zero(), jointColor);
+      addSphere(body, Eigen::Vector3d::Zero());
       // The body's parent and child joints are fixed in its frame, so the link
       // cylinders connecting them are static geometry that moves with the body.
       addCylinder(
-          body,
-          spec.tRight.inverse().translation(),
-          Eigen::Vector3d::Zero(),
-          linkColor);
-      if (k + 1 < chain.size())
+          body, spec.tRight.inverse().translation(), Eigen::Vector3d::Zero());
+      if (k + 1 < mChain.size())
         addCylinder(
-            body,
-            Eigen::Vector3d::Zero(),
-            chain[k + 1].tLeft.translation(),
-            linkColor);
+            body, Eigen::Vector3d::Zero(), mChain[k + 1].tLeft.translation());
 
       parent = body;
     }
 
-    mWorld->addSkeleton(mSkeleton);
-    setConfig(Eigen::VectorXd::Zero(mSkeleton->getNumDofs()));
+    mWorld->addSkeleton(skeleton);
+    return skeleton;
   }
-
-  void setConfig(const Eigen::VectorXd& q)
-  {
-    if (!mSkeleton)
-      return;
-    const std::size_t dofs = mSkeleton->getNumDofs();
-    Eigen::VectorXd positions = Eigen::VectorXd::Zero(dofs);
-    const Eigen::Index n
-        = std::min<Eigen::Index>(static_cast<Eigen::Index>(dofs), q.size());
-    positions.head(n) = q.head(n);
-    mSkeleton->setPositions(positions);
-  }
-
-private:
-  static constexpr double kLinkRadius = 0.028;
-  static constexpr double kJointRadius = 0.045;
 
   void addCylinder(
       dart::dynamics::BodyNode* body,
       const Eigen::Vector3d& a,
-      const Eigen::Vector3d& b,
-      const Eigen::Vector4d& color)
+      const Eigen::Vector3d& b)
   {
     const Eigen::Vector3d delta = b - a;
     const double length = delta.norm();
@@ -858,24 +911,22 @@ private:
                       Eigen::Vector3d::UnitZ(), delta / length)
                       .toRotationMatrix();
     node->setRelativeTransform(tf);
-    node->getVisualAspect()->setColor(color);
   }
 
   void addSphere(
-      dart::dynamics::BodyNode* body,
-      const Eigen::Vector3d& position,
-      const Eigen::Vector4d& color)
+      dart::dynamics::BodyNode* body, const Eigen::Vector3d& position)
   {
     auto shape = std::make_shared<dart::dynamics::SphereShape>(kJointRadius);
     auto* node = body->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
     tf.translation() = position;
     node->setRelativeTransform(tf);
-    node->getVisualAspect()->setColor(color);
   }
 
   dart::simulation::WorldPtr mWorld;
-  dart::dynamics::SkeletonPtr mSkeleton;
+  std::vector<JointSpec> mChain;
+  std::vector<dart::dynamics::SkeletonPtr> mInstances;
+  std::size_t mInstanceCounter = 0;
 };
 
 //==============================================================================
@@ -1245,7 +1296,7 @@ private:
       mSolutions.clear();
       mStatus = "Solve failed: " + error;
       if (mArm)
-        mArm->setConfig(Eigen::VectorXd::Zero(mInfo.dof));
+        mArm->showSolutions(mSolutions, -1);
       return;
     }
 
@@ -1255,18 +1306,17 @@ private:
       stream << " (all branches)";
     mStatus = stream.str();
 
-    if (!mSolutions.empty()) {
+    if (!mSolutions.empty())
       mSelectedSolution = std::min<int>(
           mSelectedSolution, static_cast<int>(mSolutions.size()) - 1);
-      updateSolvedFrame();
-    } else if (mArm) {
-      // No reachable solution: rest the arm at its zero configuration.
-      mArm->setConfig(Eigen::VectorXd::Zero(mInfo.dof));
-    }
+    updateSolvedFrame();
   }
 
   void updateSolvedFrame()
   {
+    if (mArm)
+      mArm->showSolutions(mSolutions, mSelectedSolution);
+
     if (mSelectedSolution < 0
         || mSelectedSolution >= static_cast<int>(mSolutions.size()))
       return;
@@ -1274,8 +1324,6 @@ private:
     const SsikSolution& solution = mSolutions[mSelectedSolution];
     if (solution.hasFkPose)
       mSolvedFrame->setTransform(solution.fkPose);
-    if (mArm)
-      mArm->setConfig(solution.q);
   }
 
   dart::gui::osg::ImGuiViewer* mViewer;

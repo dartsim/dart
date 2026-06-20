@@ -48,10 +48,10 @@
 * Examples
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
-    prebuilt IK modules and changing target and solver options online. The
-    selected solution poses a DART skeleton built from the arm's kinematics, a
-    draggable target gizmo re-solves the IK as it moves, and arms can be switched
-    online without a restart:
+    prebuilt IK modules and changing target and solver options online. Every IK
+    solution is shown at once as a DART skeleton built from the arm's kinematics
+    (the selected branch opaque, the rest translucent), dragging the target
+    re-solves the IK live, and arms can be switched online without a restart:
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
