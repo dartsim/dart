@@ -139,6 +139,25 @@ def test_new_legacy_multiline_cpp_function_requires_bugfix_port_tag(tmp_path):
     assert any("newUtility" in m for m in messages)
 
 
+def test_new_legacy_cpp_function_with_numeric_return_type_requires_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "DART_API Eigen::Vector3d oldAxis();\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8") + "\nDART_API Eigen::Vector3d newAxis();\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("newAxis" in m for m in messages)
+
+
 def test_new_legacy_namespace_constant_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

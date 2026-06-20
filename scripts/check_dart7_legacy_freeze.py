@@ -39,7 +39,7 @@ CPP_TYPE_PATTERN = re.compile(
 )
 CPP_DART_API_FUNCTION_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
-    r"(?:static\s+)?(?:inline\s+)?(?:[A-Za-z_:<>~*&,\s]+)\s+"
+    r"(?:static\s+)?(?:inline\s+)?(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?;"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
