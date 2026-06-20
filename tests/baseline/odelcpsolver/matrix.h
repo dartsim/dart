@@ -25,10 +25,10 @@
 #ifndef _ODE_MATRIX_H_
 #define _ODE_MATRIX_H_
 
-#include "dart/external/odelcpsolver/common.h"
+#include "common.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* set a vector/matrix of size n to all zeros, or to a specific value. */
@@ -152,7 +152,7 @@ ODE_API void dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int ns
  *   - d has size n. d contains the reciprocal diagonal elements of D.
  *   - a has size n.
  * the result is written into L, except that the left column of L and d[0]
- * are not actually modified. see ldltaddTL.m for further comments. 
+ * are not actually modified. see ldltaddTL.m for further comments.
  */
 ODE_API void dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip);
 
@@ -218,15 +218,20 @@ PURE_INLINE size_t _dEstimateSolveCholeskyTmpbufSize(int n)
 
 PURE_INLINE size_t _dEstimateInvertPDMatrixTmpbufSize(int n)
 {
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(dPAD(n));
   size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
   size_t SolveCholesky_size = _dEstimateSolveCholeskyTmpbufSize(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size ? FactorCholesky_size : SolveCholesky_size;
-  return dPAD(n) * (n + 1) * sizeof(dReal) + MaxCholesky_size;
+  return nskipSize * (nSize + 1) * sizeof(dReal) + MaxCholesky_size;
 }
 
 PURE_INLINE size_t _dEstimateIsPositiveDefiniteTmpbufSize(int n)
 {
-  return dPAD(n) * n * sizeof(dReal) + _dEstimateFactorCholeskyTmpbufSize(n);
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(dPAD(n));
+  return nskipSize * nSize * sizeof(dReal)
+         + _dEstimateFactorCholeskyTmpbufSize(n);
 }
 
 PURE_INLINE size_t _dEstimateLDLTAddTLTmpbufSize(int nskip)
@@ -271,7 +276,7 @@ PURE_INLINE size_t _dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
 //#endif // defined(__ODE__)
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif

@@ -35,7 +35,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 #include <cmath>
 
@@ -216,15 +216,15 @@ void CylindricalJointConstraint::getInformation(ConstraintInfo* _lcp)
   DART_ASSERT(_lcp->findex[2] == -1);
   DART_ASSERT(_lcp->findex[3] == -1);
 
-  _lcp->lo[0] = -dInfinity;
-  _lcp->lo[1] = -dInfinity;
-  _lcp->lo[2] = -dInfinity;
-  _lcp->lo[3] = -dInfinity;
+  _lcp->lo[0] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[1] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[2] = -::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->lo[3] = -::dart::lcpsolver::dantzig::kInfinity;
 
-  _lcp->hi[0] = dInfinity;
-  _lcp->hi[1] = dInfinity;
-  _lcp->hi[2] = dInfinity;
-  _lcp->hi[3] = dInfinity;
+  _lcp->hi[0] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[1] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[2] = ::dart::lcpsolver::dantzig::kInfinity;
+  _lcp->hi[3] = ::dart::lcpsolver::dantzig::kInfinity;
 
   _lcp->x[0] = mOldX[0];
   _lcp->x[1] = mOldX[1];

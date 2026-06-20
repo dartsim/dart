@@ -108,10 +108,10 @@ rows/columns and manipulate C.
 
 */
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/lcp.h"
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "odeconfig.h"
+#include "lcp.h"
+#include "matrix.h"
+#include "misc.h"
 
 //***************************************************************************
 // code generation parameters
@@ -134,7 +134,7 @@ rows/columns and manipulate C.
 #define NUB_OPTIMIZATIONS
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 //***************************************************************************
@@ -145,7 +145,7 @@ namespace ode {
 // rows will be swapped by exchanging row pointers. otherwise the data will
 // be copied.
 
-static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip, 
+static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip,
   int do_fast_row_swaps)
 {
   dAASSERT (A && n > 0 && i1 >= 0 && i2 >= 0 && i1 < n && i2 < n &&
@@ -223,21 +223,21 @@ static void swapProblem (ATYPE A, dReal *x, dReal *b, dReal *w, dReal *lo,
   bool tmpb;
   dIASSERT (n>0 && i1 >=0 && i2 >= 0 && i1 < n && i2 < n && nskip >= n && i1 <= i2);
   if (i1==i2) return;
-  
+
   swapRowsAndCols (A,n,i1,i2,nskip,do_fast_row_swaps);
-  
+
   tmpr = x[i1];
   x[i1] = x[i2];
   x[i2] = tmpr;
-  
+
   tmpr = b[i1];
   b[i1] = b[i2];
   b[i2] = tmpr;
-  
+
   tmpr = w[i1];
   w[i1] = w[i2];
   w[i2] = tmpr;
-  
+
   tmpr = lo[i1];
   lo[i1] = lo[i2];
   lo[i2] = tmpr;
@@ -443,7 +443,7 @@ dLCP::dLCP (int _n, int _nskip, int _nub, dReal *_Adata, dReal *_x, dReal *_b, d
         i1 = dRandInt(n-nub)+nub;
         i2 = dRandInt(n-nub)+nub;
       }
-      while (i1 > i2); 
+      while (i1 > i2);
       //printf ("--> %d %d\n",i1,i2);
       swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,m_findex,n,i1,i2,m_nskip,0);
     }
@@ -597,7 +597,7 @@ void dLCP::transfer_i_from_N_to_C (int i)
   // @@@ TO DO LATER
   // if we just finish here then we'll go back and re-solve for
   // delta_x. but actually we can be more efficient and incrementally
-  // update delta_x here. but if we do this, we wont have ell and Dell
+  // update delta_x here. but if we do this, we won't have ell and Dell
   // to use in updating the factorization later.
 
 # ifdef DEBUG_LCP
@@ -852,7 +852,7 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
     // if we've hit the first friction index, we have to compute the lo and
     // hi values based on the values of x already computed. we have been
     // permuting the indexes, so the values stored in the findex vector are
-    // no longer valid. thus we have to temporarily unpermute the x vector. 
+    // no longer valid. thus we have to temporarily unpermute the x vector.
     // for the purposes of this computation, 0*infinity = 0 ... so if the
     // contact constraint's normal force is 0, there should be no tangential
     // force applied.
@@ -927,7 +927,7 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
         lcp.solve1 (delta_x,i,dir);
 
-        // note that delta_x[i] = dirf, but we wont bother to set it
+        // note that delta_x[i] = dirf, but we won't bother to set it
 
         // compute: delta_w = A*delta_x ... note we only care about
         // delta_w(N) and delta_w(i), the rest is ignored
@@ -1032,10 +1032,14 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
 
           // We shouldn't be overly aggressive about printing this warning,
           // because sometimes it gets spammed if s is just a tiny bit beneath
-          // 0.0.
+          // 0.0. Print only first occurrence to avoid log spam.
           if (s < REAL(-1e-6)) {
-            dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)",
-                      (double)s);
+            static bool printed_once = false;
+            if (!printed_once) {
+              dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e) [suppressing further messages]",
+                        (double)s);
+              printed_once = true;
+            }
           }
 
           if (i < n) {
@@ -1120,19 +1124,21 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
 size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 {
   const int nskip = dPAD(n);
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(nskip);
 
   size_t res = 0;
 
-  res += (sizeof(dReal) * (n * nskip)); // for L
-  res += 5 * (sizeof(dReal) * n); // for d, delta_w, delta_x, Dell, ell
+  res += (sizeof(dReal) * (nSize * nskipSize)); // for L
+  res += 5 * (sizeof(dReal) * nSize); // for d, delta_w, delta_x, Dell, ell
   if (!outer_w_avail) {
-    res += (sizeof(dReal) * n); // for w
+    res += (sizeof(dReal) * nSize); // for w
   }
 #ifdef ROWPTRS
-  res += (sizeof(dReal *) * n); // for Arows
+  res += (sizeof(dReal *) * nSize); // for Arows
 #endif
-  res += 2 * (sizeof(int) * n); // for p, C
-  res += (sizeof(bool) * n); // for state
+  res += 2 * (sizeof(int) * nSize); // for p, C
+  res += (sizeof(bool) * nSize); // for state
 
   // Use n instead of nC as nC varies at runtime while n is greater or equal to nC
   size_t lcp_transfer_req = dLCP::estimate_transfer_i_from_C_to_N_mem_req(n, nskip);
@@ -1186,12 +1192,12 @@ ODE_API int dTestSolveLCP()
   dReal *w = new dReal[n];
   dReal *lo = new dReal[n];
   dReal *hi = new dReal[n];
-  
+
   dReal *A2 = new dReal[n*nskip];
   dReal *b2 = new dReal[n];
   dReal *lo2 = new dReal[n];
   dReal *hi2 = new dReal[n];
-  
+
   dReal *tmp1 = new dReal[n];
   dReal *tmp2 = new dReal[n];
 
@@ -1240,7 +1246,7 @@ ODE_API int dTestSolveLCP()
       dSetZero (x,n);
       dSetZero (w,n);
 
- 
+
       dSolveLCP (n,A2,x,b2,w,nub,lo2,hi2,0);
 
       // check the solution
@@ -1271,7 +1277,7 @@ ODE_API int dTestSolveLCP()
       // pacifier
       printf ("passed: NL=%3d NH=%3d C=%3d   ",n1,n2,n3);
   }
- 
+
   delete[] A;
   delete[] x;
   delete[] b;
@@ -1283,7 +1289,7 @@ ODE_API int dTestSolveLCP()
   delete[] b2 ;
   delete[] lo2;
   delete[] hi2;
-  
+
   delete[] tmp1;
   delete[] tmp2;
 
@@ -1291,5 +1297,5 @@ ODE_API int dTestSolveLCP()
 }
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
