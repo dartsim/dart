@@ -182,6 +182,23 @@ while [ "$attempt" -le {apt_attempts} ]; do
 done
 """
     exec_in_container(args, command)
+    repair_fmt_cmake_package(args)
+
+
+def repair_fmt_cmake_package(args):
+    command = r"""
+fmt_targets="/usr/lib64/cmake/fmt/fmt-targets-relwithdebinfo.cmake"
+fmt_c_archive="/usr/lib64/libfmt-c.a"
+if [ -f "$fmt_targets" ] && grep -q "$fmt_c_archive" "$fmt_targets" && [ ! -e "$fmt_c_archive" ]; then
+  echo "Repairing broken Alt Linux libfmt-devel export: creating missing $fmt_c_archive"
+  if command -v ar >/dev/null 2>&1; then
+    ar rcs "$fmt_c_archive"
+  else
+    printf '!<arch>\n' > "$fmt_c_archive"
+  fi
+fi
+"""
+    exec_in_container(args, command)
 
 
 def sync_repo(args):
