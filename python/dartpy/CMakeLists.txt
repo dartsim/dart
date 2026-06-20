@@ -253,9 +253,27 @@ set(dartpy_gui_headers gui/descriptors.hpp gui/panel.hpp gui/viewer.hpp)
 
 set(dartpy_gui_sources gui/descriptors.cpp gui/panel.cpp gui/viewer.cpp)
 
-set(dartpy_simulation_headers simulation/module.hpp)
+set(
+  dartpy_simulation_headers
+  simulation/module.hpp
+  simulation/module_detail.hpp
+)
 
-set(dartpy_simulation_sources simulation/module.cpp)
+# simulation/module.cpp used to host all ~624 nanobind bindings in one ~3983-line
+# translation unit. In Debug (-O0 -g) that single TU compiled for 2h41m+ and timed
+# out the required CI "Debug Tests" job; because it is one TU, -j parallelism could
+# not help. The bindings are split here -- in their original registration order, see
+# module_detail.hpp -- across several module_*.cpp parts that compile in parallel.
+set(
+  dartpy_simulation_sources
+  simulation/module.cpp
+  simulation/module_core.cpp
+  simulation/module_frames.cpp
+  simulation/module_bodies.cpp
+  simulation/module_compute.cpp
+  simulation/module_deformable_io.cpp
+  simulation/module_world.cpp
+)
 
 set(_dartpy_has_gui FALSE)
 set(_dartpy_has_simulation FALSE)
