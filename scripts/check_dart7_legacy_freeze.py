@@ -246,7 +246,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             brace_depth = 0
             namespace_stack: list[tuple[str, int]] = []
             class_stack: list[dict[str, object]] = []
-            enum_stack: list[tuple[str, int]] = []
+            enum_stack: list[tuple[str, int, bool]] = []
             pending_scope: dict[str, object] | None = None
             member_buffer: list[str] = []
             member_start = 0
@@ -294,49 +294,67 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                     "access": (
                                         "private" if kind == "class" else "public"
                                     ),
+                                    "public_surface": bool(
+                                        pending_scope["public_surface"]
+                                    ),
                                 }
                             )
                         elif kind.startswith("enum"):
-                            enum_stack.append((type_name, brace_depth))
+                            enum_stack.append(
+                                (
+                                    type_name,
+                                    brace_depth,
+                                    bool(pending_scope["public_surface"]),
+                                )
+                            )
                         pending_scope = None
                     elif ";" in code:
                         pending_scope = None
 
-                if enum_stack and not in_detail_namespace:
+                if enum_stack and enum_stack[-1][2] and not in_detail_namespace:
                     add_cpp_enum_values(
                         entries, rel_path, enum_stack[-1][0], line, lines, index
                     )
 
                 type_match = CPP_TYPE_PATTERN.search(line)
                 if type_match and not in_detail_namespace:
+                    current_class = class_stack[-1] if class_stack else None
+                    public_surface = current_class is None or (
+                        bool(current_class["public_surface"])
+                        and current_class["access"] == "public"
+                    )
                     kind = type_match.group("kind").replace(" ", "-")
                     type_name = type_match.group("name")
-                    entries.append(
-                        LegacyEntry(
-                            "cpp-" + kind,
-                            rel_path,
-                            type_name,
-                            nearby_tag(lines, index),
+                    if public_surface:
+                        entries.append(
+                            LegacyEntry(
+                                "cpp-" + kind,
+                                rel_path,
+                                type_name,
+                                nearby_tag(lines, index),
+                            )
                         )
-                    )
                     if "{" in line and kind in {"class", "struct"}:
                         class_stack.append(
                             {
                                 "name": type_name,
                                 "exit_depth": brace_depth,
                                 "access": "private" if kind == "class" else "public",
+                                "public_surface": public_surface,
                             }
                         )
                     elif "{" in line and kind.startswith("enum"):
-                        enum_stack.append((type_name, brace_depth))
-                        add_cpp_enum_values(
-                            entries, rel_path, type_name, line, lines, index
-                        )
+                        enum_stack.append((type_name, brace_depth, public_surface))
+                        if public_surface:
+                            add_cpp_enum_values(
+                                entries, rel_path, type_name, line, lines, index
+                            )
                     elif ";" not in code:
                         pending_scope = {
                             "kind": kind,
                             "name": type_name,
                             "line_index": index,
+                            "public_surface": public_surface,
                         }
 
                 function_match = (
@@ -361,6 +379,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                 current_class = class_stack[-1] if class_stack else None
                 if (
                     current_class is not None
+                    and current_class["public_surface"]
                     and current_class["access"] == "public"
                     and not in_detail_namespace
                     and not type_match
