@@ -12,6 +12,9 @@
 namespace {
 
 using dart::lcpsolver::dantzig::Infinity;
+using dart::lcpsolver::dantzig::Multiply0;
+using dart::lcpsolver::dantzig::Multiply1;
+using dart::lcpsolver::dantzig::Multiply2;
 using dart::lcpsolver::dantzig::Padding;
 
 struct DantzigProblem
@@ -120,6 +123,66 @@ void expectNear(
   }
 }
 
+void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
+{
+  const int pskip = Padding(p);
+  const int qskip = Padding(q);
+  const int rskip = Padding(r);
+
+  std::vector<double> b0(static_cast<std::size_t>(p * qskip), -1.0);
+  std::vector<double> b1(static_cast<std::size_t>(q * pskip), -1.0);
+  for (int i = 0; i < p; ++i) {
+    for (int k = 0; k < q; ++k) {
+      const double value = static_cast<double>(i * q + k + 1);
+      b0[i * qskip + k] = value;
+      b1[k * pskip + i] = value;
+    }
+  }
+
+  std::vector<double> c0(static_cast<std::size_t>(q * rskip), -1.0);
+  std::vector<double> c2(static_cast<std::size_t>(r * qskip), -1.0);
+  for (int k = 0; k < q; ++k) {
+    for (int j = 0; j < r; ++j) {
+      const double value = static_cast<double>((k + 1) * (j + 2));
+      c0[k * rskip + j] = value;
+      c2[j * qskip + k] = value;
+    }
+  }
+
+  std::vector<double> expected(static_cast<std::size_t>(p * r), 0.0);
+  for (int i = 0; i < p; ++i) {
+    for (int j = 0; j < r; ++j) {
+      for (int k = 0; k < q; ++k) {
+        expected[i * r + j] += b0[i * qskip + k] * c0[k * rskip + j];
+      }
+    }
+  }
+
+  const auto expectProduct
+      = [p, r, rskip, &expected](const std::vector<double>& actual) {
+          for (int i = 0; i < p; ++i) {
+            for (int j = 0; j < r; ++j) {
+              EXPECT_DOUBLE_EQ(expected[i * r + j], actual[i * rskip + j]);
+            }
+            for (int j = r; j < rskip; ++j) {
+              EXPECT_EQ(-1.0, actual[i * rskip + j]);
+            }
+          }
+        };
+
+  std::vector<double> a(static_cast<std::size_t>(p * rskip), -1.0);
+  Multiply0(a.data(), b0.data(), c0.data(), p, q, r);
+  expectProduct(a);
+
+  std::fill(a.begin(), a.end(), -1.0);
+  Multiply1(a.data(), b1.data(), c0.data(), p, q, r);
+  expectProduct(a);
+
+  std::fill(a.begin(), a.end(), -1.0);
+  Multiply2(a.data(), b0.data(), c2.data(), p, q, r);
+  expectProduct(a);
+}
+
 } // namespace
 
 TEST(DantzigNative, SolvesUnboundedProblem)
@@ -181,4 +244,10 @@ TEST(DantzigNative, PivotMatrixExternalViewUsesActiveRowPointers)
 
   const auto& constMatrix = matrix;
   EXPECT_EQ(4.0, constMatrix(0, 1));
+}
+
+TEST(DantzigNative, MatrixMultiplyUsesPaddedStrides)
+{
+  expectMatrixMultiplyUsesPaddedStrides(2, 3, 2);
+  expectMatrixMultiplyUsesPaddedStrides(2, 10, 10);
 }

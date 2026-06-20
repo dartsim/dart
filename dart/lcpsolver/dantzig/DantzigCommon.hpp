@@ -262,15 +262,20 @@ inline void Multiply0(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
+  const int qskip = Padding(q);
+  const int rskip = Padding(r);
 
   // Use Eigen SIMD for medium/large matrices
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
       && r >= MATRIX_MULTIPLY_SIMD_THRESHOLD) {
     using Matrix = Eigen::
         Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    Eigen::Map<Matrix> mapA(A, p, r);
-    Eigen::Map<const Matrix> mapB(B, p, q);
-    Eigen::Map<const Matrix> mapC(C, q, r);
+    using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+    const Stride qstride(qskip, 1);
+    const Stride rstride(rskip, 1);
+    Eigen::Map<Matrix, 0, Stride> mapA(A, p, r, rstride);
+    Eigen::Map<const Matrix, 0, Stride> mapB(B, p, q, qstride);
+    Eigen::Map<const Matrix, 0, Stride> mapC(C, q, r, rstride);
     mapA.noalias() = mapB * mapC;
   } else {
     // Raw pointer implementation for small matrices
@@ -278,9 +283,9 @@ inline void Multiply0(
       for (int j = 0; j < r; ++j) {
         Scalar sum = Scalar(0);
         for (int k = 0; k < q; ++k) {
-          sum += B[i * q + k] * C[k * r + j];
+          sum += B[i * qskip + k] * C[k * rskip + j];
         }
-        A[i * r + j] = sum;
+        A[i * rskip + j] = sum;
       }
     }
   }
@@ -293,14 +298,19 @@ inline void Multiply1(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
+  const int pskip = Padding(p);
+  const int rskip = Padding(r);
 
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
       && r >= MATRIX_MULTIPLY_SIMD_THRESHOLD) {
     using Matrix = Eigen::
         Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    Eigen::Map<Matrix> mapA(A, p, r);
-    Eigen::Map<const Matrix> mapB(B, q, p); // Note: q×p for transpose
-    Eigen::Map<const Matrix> mapC(C, q, r);
+    using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+    const Stride pstride(pskip, 1);
+    const Stride rstride(rskip, 1);
+    Eigen::Map<Matrix, 0, Stride> mapA(A, p, r, rstride);
+    Eigen::Map<const Matrix, 0, Stride> mapB(B, q, p, pstride);
+    Eigen::Map<const Matrix, 0, Stride> mapC(C, q, r, rstride);
     mapA.noalias() = mapB.transpose() * mapC;
   } else {
     // Raw pointer: B transposed access
@@ -308,9 +318,9 @@ inline void Multiply1(
       for (int j = 0; j < r; ++j) {
         Scalar sum = Scalar(0);
         for (int k = 0; k < q; ++k) {
-          sum += B[k * p + i] * C[k * r + j]; // B[k,i] transposed
+          sum += B[k * pskip + i] * C[k * rskip + j];
         }
-        A[i * r + j] = sum;
+        A[i * rskip + j] = sum;
       }
     }
   }
@@ -323,14 +333,19 @@ inline void Multiply2(
     Scalar* A, const Scalar* B, const Scalar* C, int p, int q, int r)
 {
   DART_ASSERT(p > 0 && q > 0 && r > 0 && A && B && C);
+  const int qskip = Padding(q);
+  const int rskip = Padding(r);
 
   if (q >= MATRIX_MULTIPLY_SIMD_THRESHOLD
       && r >= MATRIX_MULTIPLY_SIMD_THRESHOLD) {
     using Matrix = Eigen::
         Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    Eigen::Map<Matrix> mapA(A, p, r);
-    Eigen::Map<const Matrix> mapB(B, p, q);
-    Eigen::Map<const Matrix> mapC(C, r, q); // Note: r×q for transpose
+    using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+    const Stride qstride(qskip, 1);
+    const Stride rstride(rskip, 1);
+    Eigen::Map<Matrix, 0, Stride> mapA(A, p, r, rstride);
+    Eigen::Map<const Matrix, 0, Stride> mapB(B, p, q, qstride);
+    Eigen::Map<const Matrix, 0, Stride> mapC(C, r, q, qstride);
     mapA.noalias() = mapB * mapC.transpose();
   } else {
     // Raw pointer: C transposed access
@@ -338,9 +353,9 @@ inline void Multiply2(
       for (int j = 0; j < r; ++j) {
         Scalar sum = Scalar(0);
         for (int k = 0; k < q; ++k) {
-          sum += B[i * q + k] * C[j * q + k]; // C[j,k] transposed
+          sum += B[i * qskip + k] * C[j * qskip + k];
         }
-        A[i * r + j] = sum;
+        A[i * rskip + j] = sum;
       }
     }
   }
