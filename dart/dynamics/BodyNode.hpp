@@ -1340,7 +1340,11 @@ private:
   /// without adding/removing the Shape itself.
   void handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode);
 
+  /// Notify that a collidable ShapeNode's contact material properties changed.
+  void handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode);
+
   friend class CollisionAspect;
+  friend class DynamicsAspect;
   friend class ShapeNode;
   friend class ShapeFrame;
 };

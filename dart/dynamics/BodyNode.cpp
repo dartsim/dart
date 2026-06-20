@@ -579,6 +579,23 @@ void BodyNode::handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode)
 }
 
 //==============================================================================
+void BodyNode::handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+}
+
+//==============================================================================
 void checkMass(const BodyNode& bodyNode, const double mass)
 {
   if (mass <= 0.0) {

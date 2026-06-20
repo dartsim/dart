@@ -908,6 +908,46 @@ TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)
 }
 
 //==============================================================================
+// Contact material changes can alter the contact response without changing any
+// skeleton pose or shape geometry. They must invalidate the all-resting
+// snapshot so the next step recomputes contacts instead of reusing the no-op
+// fast path.
+TEST(IslandDeactivation, WakeOnContactMaterialChange)
+{
+  for (const bool editSupport : {true, false}) {
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    world->addSkeleton(floor);
+
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+
+    auto* targetBodyNode
+        = editSupport ? floor->getBodyNode(0) : sleeper->getBodyNode(0);
+    auto* dynamics = targetBodyNode->getShapeNode(0)->get<DynamicsAspect>();
+    ASSERT_NE(dynamics, nullptr);
+
+    if (editSupport) {
+      dynamics->setFrictionCoeff(0.0);
+    } else {
+      dynamics->setRestitutionCoeff(0.5);
+    }
+
+    world->step();
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+        << "contact material edit reused the all-resting fast path";
+    EXPECT_FALSE(sleeper->isResting())
+        << "contact material edit did not wake the sleeping body";
+  }
+}
+
+//==============================================================================
 // If the all-resting snapshot is invalidated before a new snapshot is built,
 // support edits must still wake resting bodies on the next step.
 TEST(IslandDeactivation, WakeOnSupportShapeChangeAfterSnapshotInvalidation)

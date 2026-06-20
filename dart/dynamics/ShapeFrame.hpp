@@ -156,10 +156,14 @@ public:
   void setPrimaryFrictionCoeff(const double& value);
   const double& getPrimaryFrictionCoeff() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(
+      double, SecondaryFrictionCoeff, notifyContactDynamicsPropertiesUpdated)
+  DART_COMMON_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
   // void setSecondaryFrictionCoeff(const double& value);
   // const double& getSecondaryFrictionCoeff() const;
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(
+      double, RestitutionCoeff, notifyContactDynamicsPropertiesUpdated)
+  DART_COMMON_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
 
@@ -168,10 +172,14 @@ public:
   /// They start with a default value of -1.0 and will be ignored
   /// in favor of the global default value unless explicitly
   /// set to a positive value.
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimarySlipCompliance)
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(
+      double, PrimarySlipCompliance, notifyContactDynamicsPropertiesUpdated)
+  DART_COMMON_GET_ASPECT_PROPERTY(double, PrimarySlipCompliance)
   // void sePrimarytSlipCompliance(const double& value);
   // const double& getPrimarySlipCompliance() const;
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondarySlipCompliance)
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(
+      double, SecondarySlipCompliance, notifyContactDynamicsPropertiesUpdated)
+  DART_COMMON_GET_ASPECT_PROPERTY(double, SecondarySlipCompliance)
   // void setSecondarySlipCompliance(const double& value);
   // const double& getSecondarySlipCompliance() const;
 
@@ -183,9 +191,16 @@ public:
   /// Get the frame for the first friction direction vector.
   const Frame* getFirstFrictionDirectionFrame() const;
 
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(
+      Eigen::Vector3d,
+      FirstFrictionDirection,
+      notifyContactDynamicsPropertiesUpdated)
+  DART_COMMON_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
   // void setFirstFrictionDirection(const Eigen::Vector3d& value);
   // const Eigen::Vector3d& getFirstFrictionDirection() const;
+
+private:
+  void notifyContactDynamicsPropertiesUpdated();
 };
 
 //==============================================================================

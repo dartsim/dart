@@ -277,6 +277,7 @@ void DynamicsAspect::setFrictionCoeff(const double& value)
 {
   mProperties.mFrictionCoeff = value;
   mProperties.mSecondaryFrictionCoeff = value;
+  notifyContactDynamicsPropertiesUpdated();
 }
 
 double DynamicsAspect::getFrictionCoeff() const
@@ -288,6 +289,7 @@ double DynamicsAspect::getFrictionCoeff() const
 void DynamicsAspect::setPrimaryFrictionCoeff(const double& value)
 {
   mProperties.mFrictionCoeff = value;
+  notifyContactDynamicsPropertiesUpdated();
 }
 
 const double& DynamicsAspect::getPrimaryFrictionCoeff() const
@@ -299,12 +301,33 @@ const double& DynamicsAspect::getPrimaryFrictionCoeff() const
 void DynamicsAspect::setFirstFrictionDirectionFrame(const Frame* value)
 {
   mProperties.mFirstFrictionDirectionFrame = value;
+  notifyContactDynamicsPropertiesUpdated();
 }
 
 //==============================================================================
 const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
 {
   return mProperties.mFirstFrictionDirectionFrame;
+}
+
+//==============================================================================
+void DynamicsAspect::notifyContactDynamicsPropertiesUpdated()
+{
+  notifyPropertiesUpdated();
+
+  auto* shapeFrame = getComposite();
+  if (shapeFrame == nullptr)
+    return;
+
+  auto* shapeNode = shapeFrame->asShapeNode();
+  if (shapeNode == nullptr)
+    return;
+
+  auto* bodyNode = shapeNode->getBodyNodePtr().get();
+  if (bodyNode == nullptr)
+    return;
+
+  bodyNode->handleCollisionShapeDynamicsUpdated(shapeNode);
 }
 
 //==============================================================================
