@@ -100,7 +100,7 @@ CPP_NAMESPACE_FUNCTION_SPLIT_TEMPLATE_RETURN_START_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
     r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
-    r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*<[^;(){}]*$"
+    r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*<[^;(){}>]*$"
 )
 CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
@@ -140,6 +140,19 @@ CPP_MEMBER_DATA_START_PATTERN = re.compile(
     r"[A-Za-z_]\w*(?:::\w*)?(?:<[^;(){}]*>)?"
     r"(?:[\s*&]+(?:const\s+)?)"
     r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*(?:=|\{)?\s*$"
+)
+CPP_MEMBER_FUNCTION_RETURN_START_PATTERN = re.compile(
+    r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
+    r"(?:(?:virtual|static|inline|constexpr|explicit|friend)\s+)*"
+    r"(?:(?:const|volatile|typename)\s+)*"
+    r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*(?:<[^;(){}]*>)?"
+    r"(?:[\s*&]+(?:const\s+)?)?$"
+)
+CPP_MEMBER_FUNCTION_SPLIT_TEMPLATE_RETURN_START_PATTERN = re.compile(
+    r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
+    r"(?:(?:virtual|static|inline|constexpr|explicit|friend)\s+)*"
+    r"(?:(?:const|volatile|typename)\s+)*"
+    r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*<[^;(){}>]*$"
 )
 CPP_ENUM_VALUE_PATTERN = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\b")
 BINDING_CLASS_PATTERN = re.compile(
@@ -329,10 +342,21 @@ def member_data_name(signature: str) -> str | None:
 def starts_public_cpp_member_buffer(code: str) -> bool:
     if code.startswith(("enum ", "friend ", "using ", "typedef ")):
         return False
+    plausible_split_return = code.startswith(
+        ("const ", "volatile ", "typename ")
+    ) or any(token in code for token in ("<", "::", "&", "*"))
     return (
         "(" in code
         or code.endswith(";")
         or CPP_MEMBER_DATA_START_PATTERN.search(code) is not None
+        or (
+            plausible_split_return
+            and (
+                CPP_MEMBER_FUNCTION_RETURN_START_PATTERN.search(code) is not None
+                or CPP_MEMBER_FUNCTION_SPLIT_TEMPLATE_RETURN_START_PATTERN.search(code)
+                is not None
+            )
+        )
     )
 
 

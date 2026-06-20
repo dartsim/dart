@@ -1600,7 +1600,7 @@ cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.phase|Constra
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.useSplitImpulse|bool useSplitImpulse{false};
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.w|double* w;
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.x|double* x;
-cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mABackup|mABackup;
+cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mABackup|Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mABackup;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mActiveConstraints|std::vector<ConstraintBasePtr> mActiveConstraints;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mA|Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mBBackup|Eigen::VectorXd mBBackup;
@@ -1621,7 +1621,7 @@ cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mHiBackup
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mHi|Eigen::VectorXd mHi;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mImpulseAppliedStates|std::vector<bool> mImpulseAppliedStates;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mJointConstraints|std::vector<JointConstraintPtr> mJointConstraints;
-cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mJointCoulombFrictionConstraints|mJointCoulombFrictionConstraints;
+cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mJointCoulombFrictionConstraints|std::vector<JointCoulombFrictionConstraintPtr> mJointCoulombFrictionConstraints;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mLcpSolverSetExplicitly|bool mLcpSolverSetExplicitly{false};
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mLcpSolver|math::LcpSolverPtr mLcpSolver;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mLoBackup|Eigen::VectorXd mLoBackup;
@@ -2151,7 +2151,7 @@ cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.mAmShapeNode|bool mAmSh
 cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.mConnectionForShapeVersionChange|common::Connection mConnectionForShapeVersionChange;
 cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.mRelativeTransformUpdatedSignal|RelativeTransformUpdatedSignal mRelativeTransformUpdatedSignal;
 cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.mShapeUpdatedSignal|ShapeUpdatedSignal mShapeUpdatedSignal;
-cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.onRelativeTransformUpdated|onRelativeTransformUpdated;
+cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.onRelativeTransformUpdated|common::SlotRegister<RelativeTransformUpdatedSignal> onRelativeTransformUpdated;
 cpp-member-data|dart/dynamics/shape_frame.hpp|ShapeFrame.onShapeUpdated|common::SlotRegister<ShapeUpdatedSignal> onShapeUpdated;
 cpp-member-data|dart/dynamics/shared_library_ik_fast.hpp|SharedLibraryIkFast.mComputeFk|mutable IkFastFuncComputeFk mComputeFk;
 cpp-member-data|dart/dynamics/shared_library_ik_fast.hpp|SharedLibraryIkFast.mComputeIk|mutable IkFastFuncComputeIk mComputeIk;
@@ -2211,7 +2211,7 @@ cpp-member-data|dart/dynamics/sparse_occupancy_grid.hpp|OccupiedCell.occupancy|d
 cpp-member-data|dart/dynamics/sparse_occupancy_grid.hpp|OccupiedCell.size|double size = 0.0;
 cpp-member-data|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor.mSpecNodeIterator|BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
 cpp-member-data|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor.mSpecNodeNameMgrIterator|NodeNameMgrMap::iterator mSpecNodeNameMgrIterator;
-cpp-member-data|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor.mTreeSpecNodeIterators|mTreeSpecNodeIterators;
+cpp-member-data|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor.mTreeSpecNodeIterators|std::vector<BasicNodeManagerForBodyNode::NodeMap::iterator> mTreeSpecNodeIterators;
 cpp-member-function|dart/constraint/balance_constraint.hpp|BalanceConstraint.BalanceConstraint|BalanceConstraint( const std::shared_ptr<dynamics::HierarchicalIK>& _ik, BalanceMethod_t _balanceMethod = SHIFT_SUPPORT, ErrorMethod_t _errorMethod = FROM_CENTROID);
 cpp-member-function|dart/constraint/balance_constraint.hpp|BalanceConstraint.clearCaches|void clearCaches();
 cpp-member-function|dart/constraint/balance_constraint.hpp|BalanceConstraint.clone|math::FunctionPtr clone( const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
