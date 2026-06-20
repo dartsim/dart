@@ -7,21 +7,22 @@ import os
 import subprocess
 import sys
 
-SYSTEM_IMGUI_CMAKE_ARG = "-DDART_USE_SYSTEM_IMGUI=ON"
 
-
-def with_system_imgui_cmake_args(environ: dict[str, str]) -> dict[str, str]:
-    """Return an environment with Pixi's default ImGui CMake option prepended."""
+def with_cmake_args(environ: dict[str, str], cmake_args: list[str]) -> dict[str, str]:
+    """Return an environment with Pixi CMake options prepended."""
     updated = dict(environ)
+    extra_args = " ".join(cmake_args).strip()
     existing = updated.get("CMAKE_ARGS", "").strip()
-    updated["CMAKE_ARGS"] = (
-        f"{SYSTEM_IMGUI_CMAKE_ARG} {existing}" if existing else SYSTEM_IMGUI_CMAKE_ARG
-    )
+    combined = f"{extra_args} {existing}".strip()
+    if combined:
+        updated["CMAKE_ARGS"] = combined
+    else:
+        updated.pop("CMAKE_ARGS", None)
     return updated
 
 
 def main() -> int:
-    env = with_system_imgui_cmake_args(dict(os.environ))
+    env = with_cmake_args(dict(os.environ), sys.argv[1:])
     return subprocess.call(
         [sys.executable, "-m", "pip", "install", ".", "-vv"],
         env=env,
