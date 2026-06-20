@@ -56,7 +56,8 @@ CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?:(?:[A-Za-z_]\w*(?:<[^;(){}]*>)?::)*)"
     r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
-    r"(?:noexcept\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?\s*(?:;|\{)"
+    r"(?:noexcept(?:\s*\([^)]*\))?\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?"
+    r"(?:requires\s+[^;{}]+)?\s*(?:;|\{)"
 )
 CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
 CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
@@ -73,7 +74,8 @@ CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
 CPP_QUALIFIED_NAMESPACE_FUNCTION_PATTERN = re.compile(
     r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+"
     r"(?P<name>~?[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
-    r"(?:noexcept\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?\s*(?:;|\{)"
+    r"(?:noexcept(?:\s*\([^)]*\))?\s*)?(?:->\s*[A-Za-z0-9_:<>~*&,\s]+)?"
+    r"(?:requires\s+[^;{}]+)?\s*(?:;|\{)"
 )
 CPP_QUALIFIED_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
     r"^\s*(?:(?:[A-Za-z_]\w*)(?:<[^;(){}]*>)?::)+~?[A-Za-z_]\w*\s*\("
