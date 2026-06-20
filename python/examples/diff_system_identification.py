@@ -21,7 +21,11 @@ scene::
 
 Graceful degradation: differentiable support is an opt-in build flag
 (``DART_BUILD_DIFF``), and the default pixi build ships with it OFF. When it is
-unavailable the script prints a clear message and exits 0 instead of raising.
+*not compiled* the script prints a clear message and exits 0 instead of raising.
+On a ``DART_BUILD_DIFF=ON`` build the example must actually run: a failure of the
+differentiable API (or non-convergence) is reported and exits *nonzero* rather
+than being masked as "unavailable", so a DIFF-ON smoke run cannot pass silently
+while the example is broken.
 """
 
 from __future__ import annotations
@@ -97,28 +101,22 @@ def _rollout(world: Any, body: Any, want_derivatives: bool) -> tuple[
     return states, derivatives
 
 
-def _diff_available(sx: Any) -> tuple[bool, str]:
-    """Detect whether differentiable simulation is compiled in.
+def _diff_built(sx: Any) -> bool:
+    """Whether differentiable support is compiled in (``DART_BUILD_DIFF=ON``).
 
-    Mirrors the cartpole-scene detection: ``sx.diff.rollout`` only exists in a
-    ``DART_BUILD_DIFF=ON`` build, and the parameter/Jacobian calls throw when
-    diff support is not compiled. ``is_differentiable`` is *not* a reliable
-    signal -- it reflects the requested opt-in even when support is absent -- so
-    we actually exercise the diff calls inside a guard.
+    ``sx.diff.rollout`` is re-exported only in a ``DART_BUILD_DIFF=ON`` build (it
+    is ``#ifdef DART_HAS_DIFF`` in C++), so its presence is the compile-time
+    signal -- the same gate the differentiable demo scenes use. ``is_differentiable``
+    is NOT reliable: it returns the requested opt-in flag even when support was
+    not compiled, so we do not use it here.
+
+    This deliberately distinguishes ONLY "diff not compiled" (a graceful,
+    expected condition) from "diff compiled". Once diff is compiled, any failure
+    of the differentiable API is a real regression and must surface as a nonzero
+    exit (see ``main``), NOT be masked as a graceful skip.
     """
     diff = getattr(sx, "diff", None)
-    if diff is None or not hasattr(diff, "rollout"):
-        return False, "sx.diff differentiable bindings are not built"
-    try:
-        world, body = _build_world(sx, TRUE_MASS)
-        world.add_differentiable_parameter(body, sx.PhysicalParameter.MASS)
-        world.step()
-        jacobian = np.asarray(world.get_step_derivatives().parameter_jacobian)
-    except Exception as exc:  # noqa: BLE001 - any diff failure -> graceful exit
-        return False, f"differentiable step derivatives unavailable: {exc}"
-    if jacobian.shape != (STATE_SIZE, 1):
-        return False, f"unexpected parameter_jacobian shape {jacobian.shape}"
-    return True, ""
+    return diff is not None and hasattr(diff, "rollout")
 
 
 def _identify_mass(sx: Any) -> dict[str, Any]:
@@ -141,6 +139,17 @@ def _identify_mass(sx: Any) -> dict[str, Any]:
         world, body = _build_world(sx, mass)
         world.add_differentiable_parameter(body, sx.PhysicalParameter.MASS)
         predicted, derivatives = _rollout(world, body, want_derivatives=True)
+
+        # Sanity-check the differentiable API once. On a DART_BUILD_DIFF=ON build
+        # a wrong-shaped parameter Jacobian is a regression, so raise (surfaced
+        # as a nonzero exit by main) instead of silently producing a bad result.
+        if iters == 1:
+            first_jacobian = np.asarray(derivatives[0].parameter_jacobian)
+            if first_jacobian.shape != (STATE_SIZE, 1):
+                raise ValueError(
+                    "differentiable API returned parameter_jacobian with shape "
+                    f"{first_jacobian.shape}, expected {(STATE_SIZE, 1)}"
+                )
 
         residuals = [predicted[t] - observed[t] for t in range(NUM_STEPS + 1)]
         loss = 0.5 * float(sum(r @ r for r in residuals))
@@ -182,13 +191,11 @@ def main() -> int:
         print("  Set PYTHONPATH to the built dartpy and retry. Exiting 0.")
         return 0
 
-    available, message = _diff_available(sx)
-    if not available:
+    if not _diff_built(sx):
         print(
-            "[diff-unavailable] differentiable simulation is not enabled in "
+            "[diff-unavailable] differentiable simulation is not compiled into "
             "this build."
         )
-        print(f"  reason: {message}")
         print(
             "  Rebuild with the DART_BUILD_DIFF CMake option ON to run the "
             "system-identification optimization."
@@ -196,12 +203,33 @@ def main() -> int:
         print("  (The default pixi build ships with DART_BUILD_DIFF=OFF.)")
         return 0
 
+    # Differentiable support IS compiled in, so the example must actually run.
+    # Any failure of the differentiable API from here on is a real regression,
+    # not a missing-feature condition: report it and exit nonzero rather than
+    # masking it as the graceful "unavailable" path above.
     print(
         "differentiable simulation ENABLED - recovering mass by gradient "
         "descent\n"
     )
-    result = _identify_mass(sx)
+    try:
+        result = _identify_mass(sx)
+    except Exception as exc:  # noqa: BLE001 - surface DIFF-ON regressions loudly
+        print(
+            "[error] the differentiable run failed on a DART_BUILD_DIFF=ON "
+            f"build: {exc}"
+        )
+        return 1
+
     recovered = float(result["mass"])
+    if not np.isfinite(recovered):
+        # A non-finite result on a DIFF-ON build is a regression, not a PASS.
+        # Check it explicitly rather than relying on NaN/inf comparing False
+        # against the tolerance below.
+        print(
+            "[error] the differentiable run produced a non-finite recovered "
+            f"mass ({recovered}) on a DART_BUILD_DIFF=ON build."
+        )
+        return 1
     rel_err = abs(recovered - TRUE_MASS) / TRUE_MASS
     print()
     print(
@@ -218,7 +246,10 @@ def main() -> int:
             "relative tolerance."
         )
         return 0
-    print(f"WARN: did not reach {ACCEPT_REL_TOL:.0e} relative tolerance.")
+    print(
+        f"FAIL: did not recover the mass within {ACCEPT_REL_TOL:.0e} relative "
+        "tolerance."
+    )
     return 1
 
 
