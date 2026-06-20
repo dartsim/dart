@@ -320,33 +320,30 @@ void assembleRigidBodyContactProblemInto(
   }
 
   const std::size_t n = problem.constraints.size();
-  if (!options.populateSystem && !options.populateJacobian) {
-    // No dense system requested: release any stale buffers so the members keep
-    // their documented "no system" post-condition. resize(0, ...) is a no-op
-    // when already empty, so the common populateSystem=false callers stay
-    // allocation-free across repeated same-shape steps.
-    problem.delassus.resize(0, 0);
-    problem.rhs.resize(0);
-    problem.lo.resize(0);
-    problem.hi.resize(0);
-    problem.findex.resize(0);
-    problem.jacobian.resize(0, 0);
-    return;
-  }
-
   const auto size
       = static_cast<Eigen::Index>(n * RigidBodyContactProblem::kRowsPerContact);
+
+  // Each optional output is handled independently: cleared when its flag is
+  // disabled (so a caller that reuses the problem and toggles only one flag can
+  // never observe stale shape/content from a previous assembly), and resized in
+  // place when enabled (so a stable contact shape reuses the existing buffers --
+  // Eigen reallocates only when the requested size differs). resize(0, ...) is a
+  // no-op when already empty, so repeated same-shape steps stay malloc-free.
   if (options.populateSystem) {
-    // Resize in place so a stable contact shape reuses the existing buffers
-    // (Eigen reallocates only when the requested size differs). The Delassus
-    // block is fully overwritten below, but it is zeroed in place to preserve
-    // the previous Eigen::MatrixXd::Zero(size, size) initialization exactly.
+    // The Delassus block is fully overwritten below, but it is zeroed in place
+    // to preserve the previous Eigen::MatrixXd::Zero(size, size) init exactly.
     problem.delassus.resize(size, size);
     problem.delassus.setZero();
     problem.rhs.resize(size);
     problem.lo.resize(size);
     problem.hi.resize(size);
     problem.findex.resize(size);
+  } else {
+    problem.delassus.resize(0, 0);
+    problem.rhs.resize(0);
+    problem.lo.resize(0);
+    problem.hi.resize(0);
+    problem.findex.resize(0);
   }
   if (options.populateJacobian) {
     // The Jacobian rows are accumulated with +=, so it must be zeroed; resize
@@ -354,6 +351,12 @@ void assembleRigidBodyContactProblemInto(
     problem.jacobian.resize(
         size, static_cast<Eigen::Index>(6 * problem.dynamicBodies.size()));
     problem.jacobian.setZero();
+  } else {
+    problem.jacobian.resize(0, 0);
+  }
+
+  if (!options.populateSystem && !options.populateJacobian) {
+    return;
   }
 
   for (std::size_t i = 0; i < n; ++i) {
