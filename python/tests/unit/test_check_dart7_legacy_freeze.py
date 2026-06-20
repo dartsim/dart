@@ -369,6 +369,42 @@ public:
     assert any("LegacyJoint.NewLimit" in m for m in messages)
 
 
+def test_new_legacy_multiline_cpp_data_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+#include <array>
+
+class DART_API LegacyJoint {
+public:
+  static constexpr int OldLimit = 1;
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "  static constexpr int OldLimit = 1;",
+            "  static constexpr int OldLimit = 1;\n"
+            "  static constexpr int NewLimit =\n"
+            "      2;\n"
+            "  static constexpr std::array<int, 2> NewValues{\n"
+            "      1,\n"
+            "      2,\n"
+            "  };",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyJoint.NewLimit" in m for m in messages)
+    assert any("LegacyJoint.NewValues" in m for m in messages)
+
+
 def test_new_legacy_cpp_member_with_next_line_class_brace_requires_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

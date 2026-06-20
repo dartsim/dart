@@ -94,6 +94,13 @@ CPP_MEMBER_FUNCTION_PATTERN = re.compile(
 CPP_MEMBER_DATA_PATTERN = re.compile(
     r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?" r"(?:\s*=\s*[^;]+|\s*\{[^;]*\})?\s*;"
 )
+CPP_MEMBER_DATA_START_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:(?:static|inline|constexpr|const|mutable|extern)\s+)*"
+    r"[A-Za-z_]\w*(?:::\w*)?(?:<[^;(){}]*>)?"
+    r"(?:[\s*&]+(?:const\s+)?)"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*(?:=|\{)?\s*$"
+)
 CPP_ENUM_VALUE_PATTERN = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\b")
 BINDING_CLASS_PATTERN = re.compile(
     r"\bnb::class_<[^;]*\(\s*[^,]+,\s*\"(?P<name>[^\"]+)\""
@@ -245,6 +252,16 @@ def member_data_name(signature: str) -> str | None:
         return None
     match = CPP_MEMBER_DATA_PATTERN.search(signature)
     return match.group("name") if match else None
+
+
+def starts_public_cpp_member_buffer(code: str) -> bool:
+    if code.startswith(("enum ", "friend ", "using ", "typedef ")):
+        return False
+    return (
+        "(" in code
+        or code.endswith(";")
+        or CPP_MEMBER_DATA_START_PATTERN.search(code) is not None
+    )
 
 
 def add_public_cpp_member_entry(
@@ -511,14 +528,14 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     code = code_without_comment(line).strip()
                     if member_buffer:
                         member_buffer.append(code)
-                    elif "(" in code or (
-                        code.endswith(";") and not code.startswith("enum ")
-                    ):
+                    elif starts_public_cpp_member_buffer(code):
                         member_buffer = [code]
                         member_start = index
 
-                    if member_buffer and (";" in code or "{" in code):
-                        signature = " ".join(member_buffer)
+                    signature = " ".join(member_buffer)
+                    if member_buffer and (
+                        ";" in code or ("{" in code and "(" in signature)
+                    ):
                         add_public_cpp_member_entry(
                             entries,
                             rel_path,

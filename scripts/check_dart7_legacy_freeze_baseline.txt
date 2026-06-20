@@ -1148,6 +1148,7 @@ cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.phase
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.useSplitImpulse
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.w
 cpp-member-data|dart/constraint/constraint_base.hpp|ConstraintInfo.x
+cpp-member-data|dart/constraint/contact_surface.hpp|ContactSurfaceParams.mContactSurfaceMotionVelocity
 cpp-member-data|dart/constraint/contact_surface.hpp|ContactSurfaceParams.mFirstFrictionalDirection
 cpp-member-data|dart/constraint/contact_surface.hpp|ContactSurfaceParams.mPrimaryFrictionCoeff
 cpp-member-data|dart/constraint/contact_surface.hpp|ContactSurfaceParams.mPrimarySlipCompliance
