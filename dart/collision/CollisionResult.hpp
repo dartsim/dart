@@ -104,8 +104,10 @@ protected:
   /// Set of ShapeFrames that are colliding
   mutable std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
 
-  /// True if the colliding BodyNode/ShapeFrame sets need to be rebuilt.
-  mutable bool mCollidingObjectCachesDirty = true;
+  /// Kept for subclasses that may have called updateCollidingObjectCaches().
+  /// addContact() populates the caches eagerly because CollisionObject
+  /// instances can be shorter-lived than the result that stores their contacts.
+  mutable bool mCollidingObjectCachesDirty = false;
 };
 
 } // namespace collision

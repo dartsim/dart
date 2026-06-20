@@ -18,10 +18,8 @@ speedup.
 - Baseline evidence, same scene with deactivation disabled: RTF `0.740188`,
   final contacts `360`, final resting `0 / 120`, finite state true, final hash
   `0xcf3145a17b2cada2`.
-- PR1 #3085 adds primitive plane and contact-cap collision support. Current
-  review fix preserves FCL backend object identity across shape refresh and
-  removes shared objects from the group that originally registered them, rather
-  than from the object's current shape type.
+- PR1 #3085 added primitive plane and contact-cap collision support and is
+  merged into `release-6.20`.
 - PR1 current default Bullet run, same 120-object/9000-step command as PR0:
   RTF `0.915975`, final contacts `360`, final resting `81 / 120`, finite state
   true, final hash `0x212c1143bd0a2fb3`. This preserves PR0 final state.
@@ -32,6 +30,25 @@ speedup.
   `0.0511826`, capped at 4 contacts/pair RTF `0.131733`, but final hashes and
   state diverged substantially. That cap must remain explicit for this path
   unless follow-up work proves a physically equivalent cap policy.
+- Next collision diff should implement a contact-manifold reduction/selection
+  algorithm before making any four-contact-per-pair behavior default-on. The
+  goal is to choose representative, well-distributed contact points for each
+  pair instead of truncating backend contact output in iteration order. Required
+  evidence: same original #3056 command line, baseline vs previous vs current
+  RTF, final-state hash/summaries, and focused tests showing preserved contact
+  support for boxes, cylinders, spheres, and planes.
+- Prior-art search found three useful sources: closed PR #2366 had a generic
+  `constraint::ContactManifoldCache` with persistent pair history, deepest
+  contact plus spatially spread contact selection, a box-stacking GUI
+  comparison, C++/dartpy tests, and `bm_contact_manifold_cache`; merged PR
+  #2125 and release backport #2902 added an ODE-specific DART 6 contact-history
+  cache for sparse capsule contacts; and merged DART 7 native-collision PRs
+  #2652/#2688 added `ContactManifold`, `PersistentManifoldCache`, and box-box
+  contact reduction under `dart/collision/native`.
+- Sequencing decision: keep #3085 as the plane/contact-cap plumbing and evidence
+  PR. The default-on behavior belongs in a later manifold-reduction PR that
+  mines #2366 and DART 7 native collision, then proves equivalence before
+  changing core defaults.
 - PR2 #3086 must make any behavior-preserving performance path default-on if it
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
@@ -41,13 +58,14 @@ speedup.
   state is expected only after all mobile skeletons are resting and the
   all-resting fast path is active.
 - PR2 current explicit `--disable-deactivation` run on the same command: RTF
-  `1.01079`, final contacts `360`, final resting `0 / 120`, finite state
-  true, final hash `0x40e36d5812803d4`.
+  `1.01079`, final contacts `360`, final resting `0 / 120`, finite state true,
+  final hash `0x40e36d5812803d4`.
 - PR2 current final-scene comparison, default-on vs disabled, 121 dumped shapes:
   max position delta `8.5907e-4` m, mean position delta `5.6539e-5` m, max
   quaternion L2 delta `8.5911e-4`. The sleep contact penetration gate is
-  tightened to `1e-5`, and `IslandDeactivation.DefaultEnabledSettlesCloseToAlwaysActivePath`
-  now guards the default-on fidelity bar on a focused drop-and-settle case.
+  tightened to `1e-5`, and
+  `IslandDeactivation.DefaultEnabledSettlesCloseToAlwaysActivePath` now guards
+  the default-on fidelity bar on a focused drop-and-settle case.
 - The direct single-body LCP shortcut is disabled pending fidelity evidence
   because it changed the explicit `--disable-deactivation` baseline. PR2's
   default speedup must come from resting-world deactivation, not from a solver
@@ -69,8 +87,12 @@ bug until proven otherwise.
    PR0 and add focused collision correctness regressions.
 3. PR2: resting-world/deactivation and solver hot-loop improvements. Compare
    against PR0 and PR1, and verify default-on behavior preserves fidelity.
-4. Later PRs: larger backend swaps or DART 7 native collision detector ports,
-   only after Bullet/FCL/ODE/native comparisons show the dependency and
+4. PR3 candidate: contact-manifold reduction/selection. This should be a
+   separate review from PR1 because PR1's per-pair cap is a measurement and
+   control knob, while this follow-up must preserve contact-patch fidelity well
+   enough to justify default-on behavior.
+5. Later PRs: larger backend swaps or DART 7 native collision detector ports,
+   only after available collision-engine comparisons show the dependency and
    correctness tradeoffs clearly.
 
 ## Validation Log
@@ -78,19 +100,20 @@ bug until proven otherwise.
 - Built `test_CollisionGroups` after the FCL shared-object review fix.
 - Ran `pixi run ./build/default/cpp/ReleaseNoProfile/tests/integration/test_CollisionGroups`
   after the FCL shared-object review fix: 22 tests passed.
-- Built `test_Collision`, `test_SdfParser`, and `sdf_perf_test` after the FCL
+- Built `test_Collision`, `test_SdfParser`, and `contact_benchmark` after the FCL
   refresh and example changes.
 - Ran `pixi run ./build/default/cpp/ReleaseNoProfile/tests/integration/test_Collision`:
   28 tests passed.
 - Ran `pixi run ./build/default/cpp/ReleaseNoProfile/tests/integration/test_SdfParser`:
   6 tests passed.
 - Ran `pixi run lint`.
-- For PR0 review fix #3089, built `sdf_perf_test`, verified
+- For PR0 review fix #3089, built `contact_benchmark`, verified
   `--generate-objects -1` exits with status 1, ran a 6-object/20-step smoke run
   that advanced time and emitted finite final state, and ran `pixi run lint`.
-- For PR2 default-on fidelity, built `sdf_perf_test`, `test_IslandDeactivation`,
-  `test_World`, and `test_ContactSurface`; ran `test_IslandDeactivation`
-  after adding the always-active comparison test: 19 tests passed.
+- For PR2 default-on fidelity, built `contact_benchmark`,
+  `test_IslandDeactivation`, `test_World`, and `test_ContactSurface`; ran
+  `test_IslandDeactivation` after adding the always-active comparison test: 19
+  tests passed.
 - Ran `test_ContactSurface` after the PR2 contact/sleep changes: 12 tests
   passed.
 - Ran `test_World` after making deactivation default-on: 6 tests passed. The
