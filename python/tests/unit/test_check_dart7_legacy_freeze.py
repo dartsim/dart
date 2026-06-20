@@ -405,6 +405,30 @@ class ExistingJoint:
     assert any("ExistingJoint.new_name" in m for m in messages)
 
 
+def test_new_legacy_stub_enum_value_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    stub = _write(
+        tmp_path / "python" / "stubs" / "dartpy" / "dynamics.pyi",
+        """
+import enum
+
+class LegacyEnum(enum.Enum):
+    OLD_VALUE = 0
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    stub.write_text(
+        stub.read_text(encoding="utf-8") + "\n    NEW_VALUE = 1\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyEnum.NEW_VALUE" in m for m in messages)
+
+
 def test_decision_record_must_explain_removal_staging(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path, plan_text="DART 6.20+ port lane\n")

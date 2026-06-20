@@ -74,6 +74,7 @@ STUB_ATTR_PATTERN = re.compile(r"^(?P<indent>\s*)(?P<name>[A-Za-z_]\w*)\s*:")
 STUB_ALIAS_PATTERN = re.compile(
     r"^(?P<indent>\s*)(?P<name>[A-Za-z_]\w*)\s*=\s*(?P<target>[A-Za-z_]\w*)\b"
 )
+STUB_VALUE_PATTERN = re.compile(r"^(?P<indent>\s*)(?P<name>[A-Za-z_]\w*)\s*=\s*.+$")
 STUB_LEGACY_IMPORT_PATTERN = re.compile(
     r"^from \.(?P<module>dynamics|constraint) import"
 )
@@ -616,6 +617,19 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         "stub-alias",
                         rel,
                         f"{stub_context(class_stack, indent)}.{alias_match.group('name')}",
+                        nearby_tag(lines, index),
+                    )
+                )
+                continue
+
+            value_match = STUB_VALUE_PATTERN.search(line)
+            if value_match:
+                indent = len(value_match.group("indent"))
+                entries.append(
+                    LegacyEntry(
+                        "stub-value",
+                        rel,
+                        f"{stub_context(class_stack, indent)}.{value_match.group('name')}",
                         nearby_tag(lines, index),
                     )
                 )
