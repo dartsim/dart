@@ -159,6 +159,7 @@ def should_skip_bootstrap():
 def bootstrap_container(args):
     ensure_started(args)
     if should_skip_bootstrap():
+        repair_fmt_cmake_package(args)
         return
     packages_env = os.getenv("ALT_LINUX_PACKAGES")
     packages = shlex.split(packages_env) if packages_env else DEFAULT_PACKAGES
@@ -187,9 +188,9 @@ done
 
 def repair_fmt_cmake_package(args):
     command = r"""
-fmt_targets="/usr/lib64/cmake/fmt/fmt-targets-relwithdebinfo.cmake"
+fmt_targets_dir="/usr/lib64/cmake/fmt"
 fmt_c_archive="/usr/lib64/libfmt-c.a"
-if [ -f "$fmt_targets" ] && grep -q "$fmt_c_archive" "$fmt_targets" && [ ! -e "$fmt_c_archive" ]; then
+if [ -d "$fmt_targets_dir" ] && grep -R -q "libfmt-c[.]a" "$fmt_targets_dir" && [ ! -e "$fmt_c_archive" ]; then
   echo "Repairing broken Alt Linux libfmt-devel export: creating missing $fmt_c_archive"
   if command -v ar >/dev/null 2>&1; then
     ar rcs "$fmt_c_archive"

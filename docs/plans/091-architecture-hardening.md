@@ -299,9 +299,9 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   from the DART 7 public contract, while waiting until DART 6.20+ and any later
   `release-6.*` maintenance branches have fully ported the capabilities they
   still need. Current open DART 6.20+ work observed while updating this packet
-  includes PRs #3071, #3086, #3088, and #3092; this is a snapshot, not an
-  exhaustive removal precondition, and more release-lane PRs may appear before
-  final removal.
+  includes PRs #3071, #3086, #3088, #3092, and #3100; this is a snapshot, not
+  an exhaustive removal precondition, and more release-lane PRs may appear
+  before final removal.
 
 #### WP-091.5 Renumber colliding plan IDs [done — PR #3003, merged 2026-06-14]
 

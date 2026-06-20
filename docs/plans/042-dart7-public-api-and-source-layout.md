@@ -151,8 +151,8 @@ the resulting principles and DART vocabulary, not the source projects' names.
    if needed, owns parity work for DART 6 users; `release-6.*` branches remain
    the support lane and are the place to land DART 6 feature parity or
    downstream compatibility fixes. Current open DART 6.20+ PRs observed while
-   recording this decision include #3071, #3085, #3086, #3087, #3088, #3089,
-   and #3092, but the list is not exhaustive.
+   recording this decision include #3071, #3086, #3088, #3092, and #3100, but
+   the list is not exhaustive.
 
    On `main`, `World`, `Skeleton`, `BodyNode`, classic joint/constraint
    concepts, and legacy utilities do not get new first-use public API under
