@@ -648,27 +648,28 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                     enum_value_start if enum_value_buffer else index
                 )
 
-                enum_value_match = BINDING_ENUM_VALUE_PATTERN.search(
-                    enum_value_search_line
+                enum_value_matches = list(
+                    BINDING_ENUM_VALUE_PATTERN.finditer(enum_value_search_line)
                 )
-                if enum_value_match and current_enum:
-                    entries.append(
-                        LegacyEntry(
-                            "binding-enum-value",
-                            rel_path,
-                            f"{current_enum}.{enum_value_match.group('name')}",
-                            nearby_tag(lines, enum_value_search_index),
+                if enum_value_matches and current_enum:
+                    for enum_value_match in enum_value_matches:
+                        entries.append(
+                            LegacyEntry(
+                                "binding-enum-value",
+                                rel_path,
+                                f"{current_enum}.{enum_value_match.group('name')}",
+                                nearby_tag(lines, enum_value_search_index),
+                            )
                         )
-                    )
                     enum_value_buffer = ""
 
                 if enum_value_buffer and ";" in code:
                     enum_value_buffer = ""
 
-                module_attr_match = BINDING_MODULE_ATTR_PATTERN.search(
+                module_added = False
+                for module_attr_match in BINDING_MODULE_ATTR_PATTERN.finditer(
                     module_search_line
-                )
-                if module_attr_match:
+                ):
                     entries.append(
                         LegacyEntry(
                             "binding-attr",
@@ -677,10 +678,10 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             nearby_tag(lines, module_search_index),
                         )
                     )
-                    module_buffer = ""
-
-                module_def_match = BINDING_MODULE_DEF_PATTERN.search(module_search_line)
-                if module_def_match:
+                    module_added = True
+                for module_def_match in BINDING_MODULE_DEF_PATTERN.finditer(
+                    module_search_line
+                ):
                     entries.append(
                         LegacyEntry(
                             "binding-function",
@@ -689,16 +690,36 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             nearby_tag(lines, module_search_index),
                         )
                     )
+                    module_added = True
+                if module_buffer:
+                    for chained_module_def_match in BINDING_MEMBER_PATTERN.finditer(
+                        module_search_line
+                    ):
+                        if chained_module_def_match.group("kind") != "def":
+                            continue
+                        prefix = module_search_line[: chained_module_def_match.start()]
+                        if re.search(r"\b(?:m|module)$", prefix.rstrip()):
+                            continue
+                        entries.append(
+                            LegacyEntry(
+                                "binding-function",
+                                rel_path,
+                                f"module.{chained_module_def_match.group('name')}",
+                                nearby_tag(lines, module_search_index),
+                            )
+                        )
+                        module_added = True
+                if module_added:
                     module_buffer = ""
 
                 if module_buffer and ";" in code:
                     module_buffer = ""
 
                 if member_buffer:
-                    member_attr_match = BINDING_MEMBER_ATTR_PATTERN.search(
+                    member_added = False
+                    for member_attr_match in BINDING_MEMBER_ATTR_PATTERN.finditer(
                         member_buffer
-                    )
-                    if member_attr_match:
+                    ):
                         entries.append(
                             LegacyEntry(
                                 "binding-attr",
@@ -707,13 +728,11 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 nearby_tag(lines, member_start),
                             )
                         )
-                        member_buffer = ""
-                        continue
+                        member_added = True
 
-                    constructor_match = BINDING_CONSTRUCTOR_PATTERN.search(
+                    for _constructor_match in BINDING_CONSTRUCTOR_PATTERN.finditer(
                         member_buffer
-                    )
-                    if constructor_match:
+                    ):
                         entries.append(
                             LegacyEntry(
                                 "binding-constructor",
@@ -722,11 +741,9 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 nearby_tag(lines, member_start),
                             )
                         )
-                        member_buffer = ""
-                        continue
+                        member_added = True
 
-                    member_match = BINDING_MEMBER_PATTERN.search(member_buffer)
-                    if member_match:
+                    for member_match in BINDING_MEMBER_PATTERN.finditer(member_buffer):
                         entries.append(
                             LegacyEntry(
                                 "binding-" + member_match.group("kind"),
@@ -735,6 +752,9 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 nearby_tag(lines, member_start),
                             )
                         )
+                        member_added = True
+
+                    if member_added:
                         member_buffer = ""
                     elif ";" in code:
                         member_buffer = ""

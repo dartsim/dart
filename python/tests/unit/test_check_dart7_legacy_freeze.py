@@ -610,6 +610,36 @@ void bind(nb::module_& m) {
     assert not any("ExistingJoint.newLegacyUtility" in m for m in messages)
 
 
+def test_new_legacy_chained_module_binding_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    binding = _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  m.def("oldLegacyUtility", [] {});
+}
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    binding.write_text(
+        binding.read_text(encoding="utf-8").replace(
+            'm.def("oldLegacyUtility", [] {});',
+            'm.def("oldLegacyUtility", [] {}).def("newLegacyUtility", [] {});',
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("module.newLegacyUtility" in m for m in messages)
+
+
 def test_new_legacy_multiline_binding_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -658,6 +688,36 @@ void bind(nb::module_& m) {
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("NewLegacyJoint.new_method" in m for m in messages)
+
+
+def test_new_legacy_chained_binding_member_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    binding = _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::class_<ExistingJoint>(m, "ExistingJoint").def("old_method", [] {});
+}
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    binding.write_text(
+        binding.read_text(encoding="utf-8").replace(
+            '.def("old_method", [] {});',
+            '.def("old_method", [] {}).def("new_method", [] {});',
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("ExistingJoint.new_method" in m for m in messages)
 
 
 def test_new_legacy_binding_constructor_requires_bugfix_port_tag(tmp_path):
@@ -771,6 +831,37 @@ void bind(nb::module_& m) {
             "      .value(\n"
             '          "NEW_VALUE",\n'
             "          LegacyEnum::NewValue);",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyEnum.NEW_VALUE" in m for m in messages)
+
+
+def test_new_legacy_chained_enum_value_binding_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    binding = _write(
+        tmp_path / "python" / "dartpy" / "dynamics" / "new_binding.cpp",
+        """
+void bind(nb::module_& m) {
+  nb::enum_<LegacyEnum>(m, "LegacyEnum").value("OLD_VALUE", LegacyEnum::OldValue);
+}
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    binding.write_text(
+        binding.read_text(encoding="utf-8").replace(
+            '.value("OLD_VALUE", LegacyEnum::OldValue);',
+            '.value("OLD_VALUE", LegacyEnum::OldValue)'
+            '.value("NEW_VALUE", LegacyEnum::NewValue);',
         ),
         encoding="utf-8",
     )
