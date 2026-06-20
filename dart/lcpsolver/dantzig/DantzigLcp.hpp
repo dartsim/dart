@@ -61,6 +61,7 @@
 
 #include <Eigen/Core>
 
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -128,19 +129,25 @@ struct DantzigLcpScratch
     }
 
     releaseState();
-    L = std::move(other.L);
-    d = std::move(other.d);
-    w = std::move(other.w);
-    deltaW = std::move(other.deltaW);
-    deltaX = std::move(other.deltaX);
-    dell = std::move(other.dell);
-    ell = std::move(other.ell);
-    p = std::move(other.p);
-    C = std::move(other.C);
-    rowPointers = std::move(other.rowPointers);
-    stateAllocator = std::move(other.stateAllocator);
-    state = std::exchange(other.state, nullptr);
-    stateCapacity = std::exchange(other.stateCapacity, 0u);
+    moveVectorContents(L, other.L);
+    moveVectorContents(d, other.d);
+    moveVectorContents(w, other.w);
+    moveVectorContents(deltaW, other.deltaW);
+    moveVectorContents(deltaX, other.deltaX);
+    moveVectorContents(dell, other.dell);
+    moveVectorContents(ell, other.ell);
+    moveVectorContents(p, other.p);
+    moveVectorContents(C, other.C);
+    moveVectorContents(rowPointers, other.rowPointers);
+
+    if (other.state != nullptr) {
+      reserveState(other.stateCapacity);
+      for (std::size_t i = 0; i < other.stateCapacity; ++i) {
+        state[i] = other.state[i];
+      }
+      other.releaseState();
+    }
+
     return *this;
   }
 
@@ -200,6 +207,18 @@ struct DantzigLcpScratch
   }
 
 private:
+  template <typename Vector>
+  static void moveVectorContents(Vector& target, Vector& source)
+  {
+    target.clear();
+    target.reserve(source.size());
+    target.insert(
+        target.end(),
+        std::make_move_iterator(source.begin()),
+        std::make_move_iterator(source.end()));
+    source.clear();
+  }
+
   void releaseState() noexcept
   {
     if (state == nullptr) {

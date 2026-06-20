@@ -7,10 +7,12 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
 #include <vector>
 
 namespace {
 
+using dart::lcpsolver::dantzig::DantzigLcpScratch;
 using dart::lcpsolver::dantzig::Infinity;
 using dart::lcpsolver::dantzig::Multiply0;
 using dart::lcpsolver::dantzig::Multiply1;
@@ -259,4 +261,27 @@ TEST(DantzigNative, PublicHeaderDoesNotLeakPrivateSolverMacros)
 #else
   SUCCEED();
 #endif
+}
+
+TEST(DantzigNative, ScratchMoveAssignmentKeepsStateAllocatorValid)
+{
+  DantzigLcpScratch<double> source;
+  source.reserveState(3);
+  source.state[0] = true;
+  source.state[1] = false;
+  source.state[2] = true;
+
+  DantzigLcpScratch<double> target;
+  target = std::move(source);
+
+  ASSERT_NE(nullptr, target.state);
+  EXPECT_EQ(3u, target.stateCapacity);
+  EXPECT_TRUE(target.state[0]);
+  EXPECT_FALSE(target.state[1]);
+  EXPECT_TRUE(target.state[2]);
+  EXPECT_EQ(nullptr, source.state);
+  EXPECT_EQ(0u, source.stateCapacity);
+
+  target.reserveState(4);
+  EXPECT_EQ(4u, target.stateCapacity);
 }
