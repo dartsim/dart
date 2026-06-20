@@ -433,6 +433,32 @@ class ExistingJoint:
     assert any("ExistingJoint.new_name" in m for m in messages)
 
 
+def test_tagged_legacy_stub_multiline_def_parameters_are_not_attrs(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    stub = _write(
+        tmp_path / "python" / "stubs" / "dartpy" / "dynamics.pyi",
+        """
+class ExistingJoint:
+    def oldName(self) -> str: ...
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    stub.write_text(
+        stub.read_text(encoding="utf-8")
+        + "\n"
+        + "    # dart7-legacy-freeze: bugfix-port release-6.* parity\n"
+        + "    def newName(\n"
+        + "        self,\n"
+        + "        value: int,\n"
+        + "    ) -> str: ...\n",
+        encoding="utf-8",
+    )
+
+    assert module.find_violations(tmp_path, baseline) == []
+
+
 def test_new_legacy_stub_enum_value_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

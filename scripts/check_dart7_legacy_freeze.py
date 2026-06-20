@@ -586,8 +586,15 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
         lines = path.read_text(encoding="utf-8").splitlines()
         collect_stub_reexports(entries, rel, lines)
         class_stack: list[tuple[int, str]] = []
+        stub_def_signature_depth = 0
         for index, line in enumerate(lines):
             if not line.strip() or line.lstrip().startswith("#"):
+                continue
+
+            if stub_def_signature_depth > 0:
+                stub_def_signature_depth += line.count("(") - line.count(")")
+                if stub_def_signature_depth < 0:
+                    stub_def_signature_depth = 0
                 continue
 
             class_match = STUB_CLASS_PATTERN.search(line)
@@ -617,6 +624,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         nearby_tag(lines, index),
                     )
                 )
+                stub_def_signature_depth = max(0, line.count("(") - line.count(")"))
                 continue
 
             alias_match = STUB_ALIAS_PATTERN.search(line)
