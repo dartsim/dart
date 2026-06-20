@@ -55,6 +55,11 @@ struct CollisionOption
   /// this to 1 for binary check.
   std::size_t maxNumContacts;
 
+  /// Maximum number of contacts to keep for each collision object pair. Set
+  /// this to 0 to preserve the legacy behavior where only maxNumContacts limits
+  /// contact generation globally.
+  std::size_t maxNumContactsPerPair;
+
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
 
@@ -63,6 +68,10 @@ struct CollisionOption
       bool enableContact = true,
       std::size_t maxNumContacts = 1000u,
       const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+
+  /// Returns the active per-pair contact cap after applying legacy defaults and
+  /// the global contact cap.
+  std::size_t getEffectiveMaxNumContactsPerPair() const;
 };
 
 } // namespace collision

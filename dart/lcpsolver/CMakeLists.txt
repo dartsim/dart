@@ -4,6 +4,8 @@ file(GLOB srcs "*.cpp")
 dart_add_core_headers(${hdrs})
 dart_add_core_sources(${srcs})
 
+add_subdirectory(dantzig)
+
 # Generate header for this namespace
 dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})
 dart_generate_include_header_file(

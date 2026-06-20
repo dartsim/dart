@@ -31,6 +31,13 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+* Collision
+
+  * Add primitive plane collision support and configurable per-pair contact caps
+    for contact-heavy scenes, with regression coverage for FCL halfspace
+    distances, shared-object refreshes, and collision-result cache lifetime:
+    [#3085](https://github.com/dartsim/dart/pull/3085)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,

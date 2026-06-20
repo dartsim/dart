@@ -400,8 +400,17 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
     return;
 
   // Perform narrow-phase collision detection
-  auto numc
-      = dCollide(o1, o2, MAX_COLLIDE_RETURNS, odeResult, sizeof(odeResult[0]));
+  const auto maxContactsPerPair = std::min<std::size_t>(
+      option.getEffectiveMaxNumContactsPerPair(), MAX_COLLIDE_RETURNS);
+  if (maxContactsPerPair == 0u)
+    return;
+
+  auto numc = dCollide(
+      o1,
+      o2,
+      static_cast<int>(maxContactsPerPair),
+      odeResult,
+      sizeof(odeResult[0]));
 
   cdData->numContacts += numc;
 
@@ -470,9 +479,11 @@ void reportContacts(
   }
 #endif
 
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
   const auto available = option.maxNumContacts - result.getNumContacts();
   const auto requested = static_cast<std::size_t>(numContacts);
-  const auto contactsToCopy = static_cast<int>(std::min(requested, available));
+  const auto contactsToCopy
+      = static_cast<int>(std::min({requested, available, maxContactsPerPair}));
 
   for (auto i = 0; i < contactsToCopy; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
@@ -523,7 +534,7 @@ void reportContacts(
   }
 
   const std::size_t pairTarget
-      = std::min<std::size_t>(3u, option.maxNumContacts);
+      = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
   if (pairContactCount >= pairTarget) {
     return;
   }
@@ -732,7 +743,8 @@ bool expandBoxCylinderContact(
     const CollisionOption& option,
     CollisionResult& result)
 {
-  if (option.maxNumContacts <= 1)
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
+  if (maxContactsPerPair <= 1)
     return false;
 
   const auto* shape1 = baseContact.collisionObject1->getShape().get();
@@ -823,9 +835,13 @@ bool expandBoxCylinderContact(
     return false;
 
   const double perContactDepth = baseContact.penetrationDepth;
+  std::size_t pairContacts = 0u;
   for (auto& contact : contacts) {
     contact.penetrationDepth = perContactDepth;
     result.addContact(contact);
+    ++pairContacts;
+    if (pairContacts >= maxContactsPerPair)
+      return true;
     if (result.getNumContacts() >= option.maxNumContacts)
       return true;
   }
@@ -836,18 +852,11 @@ bool expandBoxCylinderContact(
 
 double computeTangentialSpeed(const Contact& contact)
 {
-  const auto* frame1 = contact.collisionObject1
-                           ? contact.collisionObject1->getShapeFrame()
-                           : nullptr;
-  const auto* frame2 = contact.collisionObject2
-                           ? contact.collisionObject2->getShapeFrame()
-                           : nullptr;
-
-  const dynamics::BodyNode* bn1 = (frame1 && frame1->isShapeNode())
-                                      ? frame1->asShapeNode()->getBodyNodePtr()
+  const dynamics::BodyNode* bn1 = contact.collisionObject1
+                                      ? contact.collisionObject1->getBodyNode()
                                       : nullptr;
-  const dynamics::BodyNode* bn2 = (frame2 && frame2->isShapeNode())
-                                      ? frame2->asShapeNode()->getBodyNodePtr()
+  const dynamics::BodyNode* bn2 = contact.collisionObject2
+                                      ? contact.collisionObject2->getBodyNode()
                                       : nullptr;
 
   const Eigen::Vector3d worldPoint = contact.point;
@@ -892,9 +901,7 @@ bool shouldUseContactHistory(
   const auto hasTrackedBody = [](const CollisionObject* object) {
     if (object == nullptr)
       return false;
-    const auto* frame = object->getShapeFrame();
-    return frame != nullptr && frame->isShapeNode()
-           && frame->asShapeNode()->getBodyNodePtr() != nullptr;
+    return object->getBodyNode() != nullptr;
   };
   return hasTrackedBody(object1) && hasTrackedBody(object2);
 }

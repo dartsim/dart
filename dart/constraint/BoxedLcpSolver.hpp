@@ -76,8 +76,8 @@ public:
   /// push hard to solve the problem using some hacks.
   ///
   /// \return Success.
-  // Note: The function signature is ODE specific for now. Consider changing
-  // this to Eigen friendly version once own Dantzig LCP solver is available.
+  // Note: The function signature follows the historical Dantzig LCP driver.
+  // Consider changing this to an Eigen friendly version in a future API update.
   virtual bool solve(
       int n,
       double* A,

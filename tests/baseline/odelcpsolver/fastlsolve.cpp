@@ -22,10 +22,10 @@
 
 /* generated code, do not edit. */
 
-#include "dart/external/odelcpsolver/matrix.h"
+#include "matrix.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* solve L*X=B, with B containing 1 right hand sides.
@@ -332,5 +332,5 @@ void dSolveL1 (const dReal *L, dReal *B, int n, int lskip1)
 }
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart

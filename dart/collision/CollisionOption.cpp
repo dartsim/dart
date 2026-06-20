@@ -32,6 +32,8 @@
 
 #include "dart/collision/CollisionOption.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace collision {
 
@@ -42,9 +44,19 @@ CollisionOption::CollisionOption(
     const std::shared_ptr<CollisionFilter>& collisionFilter)
   : enableContact(enableContact),
     maxNumContacts(maxNumContacts),
+    maxNumContactsPerPair(0u),
     collisionFilter(collisionFilter)
 {
   // Do nothing
+}
+
+//==============================================================================
+std::size_t CollisionOption::getEffectiveMaxNumContactsPerPair() const
+{
+  if (maxNumContactsPerPair == 0u)
+    return maxNumContacts;
+
+  return std::min(maxNumContactsPerPair, maxNumContacts);
 }
 
 } // namespace collision

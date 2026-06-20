@@ -25,10 +25,10 @@
 #ifndef _ODE_MISC_H_
 #define _ODE_MISC_H_
 
-#include "dart/external/odelcpsolver/common.h"
+#include "common.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 /* return 1 if the random number generator is working. */
@@ -76,7 +76,7 @@ ODE_API dReal dMaxDifference (const dReal *A, const dReal *B, int n, int m);
 ODE_API dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n);
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart
 
 #endif

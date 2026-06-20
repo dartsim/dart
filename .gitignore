@@ -16,6 +16,9 @@ build/
 *.swo
 
 # CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
 CPack*
 CTest*
 Testing/
@@ -122,6 +125,7 @@ compile_flags.txt
 
 # AI tool local state
 .omc/
+.omo/
 .omx/
 .omo/
 .sisyphus/

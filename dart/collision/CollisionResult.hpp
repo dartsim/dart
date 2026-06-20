@@ -91,16 +91,23 @@ public:
   void clear();
 
 protected:
-  void addObject(CollisionObject* object);
+  void updateCollidingObjectCaches() const;
+
+  void addObjectToCaches(CollisionObject* object) const;
 
   /// List of contact information for each contact
   std::vector<Contact> mContacts;
 
   /// Set of BodyNodes that are colliding
-  std::unordered_set<const dynamics::BodyNode*> mCollidingBodyNodes;
+  mutable std::unordered_set<const dynamics::BodyNode*> mCollidingBodyNodes;
 
   /// Set of ShapeFrames that are colliding
-  std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
+  mutable std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
+
+  /// Kept for subclasses that may have called updateCollidingObjectCaches().
+  /// addContact() populates the caches eagerly because CollisionObject
+  /// instances can be shorter-lived than the result that stores their contacts.
+  mutable bool mCollidingObjectCachesDirty = false;
 };
 
 } // namespace collision

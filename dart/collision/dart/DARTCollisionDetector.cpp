@@ -348,7 +348,12 @@ void postProcess(
   // Don't add repeated points
   const auto tol = 3.0e-12;
 
+  const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t pairContacts = 0u;
   for (auto pairContact : pairResult.getContacts()) {
+    if (pairContacts >= maxContactsPerPair)
+      break;
+
     auto foundClose = false;
 
     for (auto totalContact : totalResult.getContacts()) {
@@ -365,6 +370,7 @@ void postProcess(
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
+    ++pairContacts;
 
     if (totalResult.getNumContacts() >= option.maxNumContacts)
       break;

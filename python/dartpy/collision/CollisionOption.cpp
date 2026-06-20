@@ -61,6 +61,12 @@ void CollisionOption(py::module& m)
       .def_readwrite(
           "maxNumContacts", &dart::collision::CollisionOption::maxNumContacts)
       .def_readwrite(
+          "maxNumContactsPerPair",
+          &dart::collision::CollisionOption::maxNumContactsPerPair)
+      .def(
+          "getEffectiveMaxNumContactsPerPair",
+          &dart::collision::CollisionOption::getEffectiveMaxNumContactsPerPair)
+      .def_readwrite(
           "collisionFilter",
           &dart::collision::CollisionOption::collisionFilter);
 }

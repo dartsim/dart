@@ -65,7 +65,10 @@ if(TARGET dart-utils)
   
   dart_add_test("integration" test_SdfParser)
   target_link_libraries(test_SdfParser dart-utils)
-  
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(test_SdfParser dart-collision-bullet)
+  endif()
+
   dart_add_test("integration" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
 

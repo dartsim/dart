@@ -20,12 +20,12 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/external/odelcpsolver/odeconfig.h"
-#include "dart/external/odelcpsolver/misc.h"
-#include "dart/external/odelcpsolver/matrix.h"
+#include "odeconfig.h"
+#include "misc.h"
+#include "matrix.h"
 
 namespace dart {
-namespace external {
+namespace baseline {
 namespace ode {
 
 //****************************************************************************
@@ -197,5 +197,5 @@ dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n)
 }
 
 } // namespace ode
-} // namespace external
+} // namespace baseline
 } // namespace dart

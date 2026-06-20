@@ -96,6 +96,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #   fixed even after further changes are made
 # - "unit": low level tests for one or few classes and functions to verify that
 #   they performs correctly as expected
+add_subdirectory(baseline)
 add_subdirectory(integration)
 add_subdirectory(regression)
 add_subdirectory(unit)
