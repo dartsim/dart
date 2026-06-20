@@ -144,6 +144,7 @@ CPP_MEMBER_DATA_START_PATTERN = re.compile(
 CPP_MEMBER_FUNCTION_RETURN_START_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
     r"(?:(?:virtual|static|inline|constexpr|explicit|friend)\s+)*"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:const|volatile|typename)\s+)*"
     r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*(?:<[^;(){}]*>)?"
     r"(?:[\s*&]+(?:const\s+)?)?$"
@@ -151,6 +152,7 @@ CPP_MEMBER_FUNCTION_RETURN_START_PATTERN = re.compile(
 CPP_MEMBER_FUNCTION_SPLIT_TEMPLATE_RETURN_START_PATTERN = re.compile(
     r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
     r"(?:(?:virtual|static|inline|constexpr|explicit|friend)\s+)*"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:const|volatile|typename)\s+)*"
     r"(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*<[^;(){}>]*$"
 )
@@ -357,10 +359,12 @@ def member_data_name(signature: str) -> str | None:
 
 
 def starts_public_cpp_member_buffer(code: str) -> bool:
-    if code.startswith(("enum ", "friend ", "using ", "typedef ")):
+    if code.startswith(("enum ", "using ", "typedef ")):
+        return False
+    if code.startswith("friend ") and "(" not in code:
         return False
     plausible_split_return = code.startswith(
-        ("const ", "volatile ", "typename ")
+        ("const ", "volatile ", "typename ", "friend ")
     ) or any(token in code for token in ("<", "::", "&", "*"))
     return (
         "(" in code
@@ -547,7 +551,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     current_class = class_stack[-1] if class_stack else None
                     public_surface = current_class is None or (
                         bool(current_class["public_surface"])
-                        and current_class["access"] == "public"
+                        and current_class["access"] in {"public", "protected"}
                     )
                     kind = (
                         type_match.group("kind") if type_match else "typedef"

@@ -949,8 +949,10 @@ cpp-class|dart/dynamics/generic_joint.hpp|GenericJoint|class GenericJoint
 cpp-class|dart/dynamics/group.hpp|Group|class DART_API Group : public ReferentialSkeleton
 cpp-class|dart/dynamics/heightmap_shape.hpp|HeightmapShape|class HeightmapShape : public Shape
 cpp-class|dart/dynamics/hierarchical_ik.hpp|CompositeIK|class DART_API CompositeIK : public HierarchicalIK
+cpp-class|dart/dynamics/hierarchical_ik.hpp|Constraint|class Constraint final : public Function, public math::Function
 cpp-class|dart/dynamics/hierarchical_ik.hpp|Function|class Function
 cpp-class|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK|class DART_API HierarchicalIK : public common::Subject
+cpp-class|dart/dynamics/hierarchical_ik.hpp|Objective|class Objective final : public Function, public math::Function
 cpp-class|dart/dynamics/hierarchical_ik.hpp|WholeBodyIK|class DART_API WholeBodyIK : public HierarchicalIK
 cpp-class|dart/dynamics/ik_fast.hpp|IkFast|class DART_API IkFast : public InverseKinematics::Analytical
 cpp-class|dart/dynamics/ikfast.h|IkFastFunctions|class IkFastFunctions
@@ -961,6 +963,7 @@ cpp-class|dart/dynamics/ikfast.h|IkSolutionList|class IkSolutionList : public Ik
 cpp-class|dart/dynamics/ikfast.h|IkSolution|class IkSolution : public IkSolutionBase<T>
 cpp-class|dart/dynamics/inertia.hpp|Inertia|class DART_API Inertia
 cpp-class|dart/dynamics/inverse_kinematics.hpp|Analytical|class Analytical;
+cpp-class|dart/dynamics/inverse_kinematics.hpp|Constraint|class Constraint;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|ErrorMethod|class ErrorMethod;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|Function|class Function;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|GradientMethod|class GradientMethod;
@@ -976,6 +979,7 @@ cpp-class|dart/dynamics/inverse_kinematics.hpp|InverseKinematics|class InverseKi
 cpp-class|dart/dynamics/inverse_kinematics.hpp|InverseKinematics|class InverseKinematics::Objective final : public Function,
 cpp-class|dart/dynamics/inverse_kinematics.hpp|JacobianDLS|class JacobianDLS;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|JacobianTranspose|class JacobianTranspose;
+cpp-class|dart/dynamics/inverse_kinematics.hpp|Objective|class Objective;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|TaskSpaceRegion|class TaskSpaceRegion;
 cpp-class|dart/dynamics/jacobian_node.hpp|DegreeOfFreedom|class DegreeOfFreedom;
 cpp-class|dart/dynamics/jacobian_node.hpp|InverseKinematics|class InverseKinematics;
@@ -990,6 +994,7 @@ cpp-class|dart/dynamics/line_segment_shape.hpp|LineSegmentShape|class DART_API L
 cpp-class|dart/dynamics/linkage.hpp|Linkage|class DART_API Linkage : public ReferentialSkeleton
 cpp-class|dart/dynamics/marker.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/marker.hpp|Marker|class DART_API Marker final : public common::EmbedPropertiesOnTopOf<
+cpp-class|dart/dynamics/mesh_shape.hpp|MeshHandle|class DART_API MeshHandle
 cpp-class|dart/dynamics/mesh_shape.hpp|MeshShape|class DART_API MeshShape : public Shape
 cpp-class|dart/dynamics/meta_skeleton.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/meta_skeleton.hpp|DegreeOfFreedom|class DegreeOfFreedom;
@@ -1070,6 +1075,7 @@ cpp-enum-class|dart/dynamics/detail/joint_coordinate_chart.hpp|CoordinateChart|e
 cpp-enum-class|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType|enum class PlaneType : int
 cpp-enum-class|dart/dynamics/mesh_shape.hpp|MeshOwnership|enum class MeshOwnership
 cpp-enum-class|dart/dynamics/mimic_dof_properties.hpp|MimicConstraintType|enum class MimicConstraintType
+cpp-enum-class|dart/dynamics/skeleton.hpp|BodyNodePoolKind|enum class BodyNodePoolKind
 cpp-enum-value|dart/constraint/balance_constraint.hpp|BalanceMethod_t.SHIFT_COM|SHIFT_COM
 cpp-enum-value|dart/constraint/balance_constraint.hpp|BalanceMethod_t.SHIFT_SUPPORT|SHIFT_SUPPORT = 0
 cpp-enum-value|dart/constraint/balance_constraint.hpp|ErrorMethod_t.FROM_CENTROID|FROM_CENTROID = 0
@@ -1097,6 +1103,9 @@ cpp-enum-value|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType.ARBITRARY|
 cpp-enum-value|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType.XY|XY
 cpp-enum-value|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType.YZ|YZ
 cpp-enum-value|dart/dynamics/detail/planar_joint_aspect.hpp|PlaneType.ZX|ZX
+cpp-enum-value|dart/dynamics/entity.hpp|ConstructAbstractTag.ConstructAbstract|ConstructAbstract
+cpp-enum-value|dart/dynamics/entity.hpp|ConstructFrameTag.ConstructFrame|ConstructFrame
+cpp-enum-value|dart/dynamics/frame.hpp|ConstructAbstractTag.ConstructAbstract|ConstructAbstract
 cpp-enum-value|dart/dynamics/ik_fast.hpp|IkType.DIRECTION_3D|DIRECTION_3D
 cpp-enum-value|dart/dynamics/ik_fast.hpp|IkType.LOOKAT_3D|LOOKAT_3D
 cpp-enum-value|dart/dynamics/ik_fast.hpp|IkType.RAY_4D|RAY_4D
@@ -1178,6 +1187,8 @@ cpp-enum-value|dart/dynamics/shape.hpp|ShapeType.RECTANGULAR_PYRAMID|RECTANGULAR
 cpp-enum-value|dart/dynamics/shape.hpp|ShapeType.SOFT_MESH|SOFT_MESH
 cpp-enum-value|dart/dynamics/shape.hpp|ShapeType.SPHERE|SPHERE
 cpp-enum-value|dart/dynamics/shape.hpp|ShapeType.UNSUPPORTED|UNSUPPORTED
+cpp-enum-value|dart/dynamics/skeleton.hpp|BodyNodePoolKind.Body|Body
+cpp-enum-value|dart/dynamics/skeleton.hpp|BodyNodePoolKind.Soft|Soft
 cpp-enum-value|dart/dynamics/skeleton.hpp|ConfigFlags.CONFIG_ACCELERATIONS|CONFIG_ACCELERATIONS = 1 << 3
 cpp-enum-value|dart/dynamics/skeleton.hpp|ConfigFlags.CONFIG_ALL|CONFIG_ALL = 0xFF
 cpp-enum-value|dart/dynamics/skeleton.hpp|ConfigFlags.CONFIG_COMMANDS|CONFIG_COMMANDS = 1 << 5
@@ -1190,6 +1201,9 @@ cpp-enum|dart/constraint/balance_constraint.hpp|ErrorMethod_t|enum ErrorMethod_t
 cpp-enum|dart/dynamics/chain.hpp|IncludeUpstreamParentJointTag|enum IncludeUpstreamParentJointTag
 cpp-enum|dart/dynamics/detail/joint_aspect.hpp|ActuatorType|enum ActuatorType
 cpp-enum|dart/dynamics/detail/marker_aspect.hpp|ConstraintType|enum ConstraintType
+cpp-enum|dart/dynamics/entity.hpp|ConstructAbstractTag|enum ConstructAbstractTag
+cpp-enum|dart/dynamics/entity.hpp|ConstructFrameTag|enum ConstructFrameTag
+cpp-enum|dart/dynamics/frame.hpp|ConstructAbstractTag|enum ConstructAbstractTag
 cpp-enum|dart/dynamics/ik_fast.hpp|IkType|enum IkType
 cpp-enum|dart/dynamics/inertia.hpp|Param|enum Param
 cpp-enum|dart/dynamics/inverse_kinematics.hpp|ExtraDofUtilization|enum ExtraDofUtilization
@@ -1857,6 +1871,10 @@ cpp-member-data|dart/dynamics/entity.hpp|Entity.onNameChanged|common::SlotRegist
 cpp-member-data|dart/dynamics/entity.hpp|Entity.onTransformUpdated|common::SlotRegister<EntitySignal> onTransformUpdated;
 cpp-member-data|dart/dynamics/entity.hpp|Entity.onVelocityChanged|common::SlotRegister<EntitySignal> onVelocityChanged;
 cpp-member-data|dart/dynamics/fixed_frame.hpp|FixedFrame.mZero|static const Eigen::Vector6d mZero;
+cpp-member-data|dart/dynamics/fixed_jacobian_node.hpp|Cache.mBodyJacobianSpatialDeriv|math::Jacobian mBodyJacobianSpatialDeriv;
+cpp-member-data|dart/dynamics/fixed_jacobian_node.hpp|Cache.mBodyJacobian|math::Jacobian mBodyJacobian;
+cpp-member-data|dart/dynamics/fixed_jacobian_node.hpp|Cache.mWorldJacobianClassicDeriv|math::Jacobian mWorldJacobianClassicDeriv;
+cpp-member-data|dart/dynamics/fixed_jacobian_node.hpp|Cache.mWorldJacobian|math::Jacobian mWorldJacobian;
 cpp-member-data|dart/dynamics/fixed_jacobian_node.hpp|FixedJacobianNode.mCache|mutable Cache mCache;
 cpp-member-data|dart/dynamics/frame.hpp|Frame.mAcceleration|mutable Eigen::Vector6d mAcceleration;
 cpp-member-data|dart/dynamics/frame.hpp|Frame.mChildEntities|std::set<Entity*> mChildEntities;
@@ -1876,6 +1894,9 @@ cpp-member-data|dart/dynamics/generic_joint.hpp|GenericJoint.mTotalForce|Vector 
 cpp-member-data|dart/dynamics/generic_joint.hpp|GenericJoint.mTotalImpulse|Vector mTotalImpulse;
 cpp-member-data|dart/dynamics/group.hpp|Group.includeDofs|bool includeDofs = true);
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|CompositeIK.mModuleSet|std::unordered_set<std::shared_ptr<InverseKinematics>> mModuleSet;
+cpp-member-data|dart/dynamics/hierarchical_ik.hpp|Constraint.mIK|std::weak_ptr<HierarchicalIK> mIK;
+cpp-member-data|dart/dynamics/hierarchical_ik.hpp|Constraint.mLevelGradCache|Eigen::VectorXd mLevelGradCache;
+cpp-member-data|dart/dynamics/hierarchical_ik.hpp|Constraint.mTempGradCache|Eigen::VectorXd mTempGradCache;
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mHierarchy|IKHierarchy mHierarchy;
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mJacCache|mutable math::Jacobian mJacCache;
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mLastPositions|mutable Eigen::VectorXd mLastPositions;
@@ -1888,6 +1909,8 @@ cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mPtr|std::weak_
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mSVDCache|mutable Eigen::JacobiSVD<math::Jacobian, Eigen::ComputeFullV> mSVDCache;
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mSkeleton|WeakSkeletonPtr mSkeleton;
 cpp-member-data|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.mSolver|std::shared_ptr<math::Solver> mSolver;
+cpp-member-data|dart/dynamics/hierarchical_ik.hpp|Objective.mGradCache|Eigen::VectorXd mGradCache;
+cpp-member-data|dart/dynamics/hierarchical_ik.hpp|Objective.mIK|std::weak_ptr<HierarchicalIK> mIK;
 cpp-member-data|dart/dynamics/ik_fast.hpp|IkFast.mConfigured|mutable bool mConfigured;
 cpp-member-data|dart/dynamics/ik_fast.hpp|IkFast.mDofs|mutable std::vector<std::size_t> mDofs;
 cpp-member-data|dart/dynamics/ik_fast.hpp|IkFast.mFreeDofs|mutable std::vector<std::size_t> mFreeDofs;
@@ -2117,6 +2140,9 @@ cpp-member-data|dart/dynamics/point_mass.hpp|State.mAccelerations|Eigen::Vector3
 cpp-member-data|dart/dynamics/point_mass.hpp|State.mForces|Eigen::Vector3d mForces;
 cpp-member-data|dart/dynamics/point_mass.hpp|State.mPositions|Eigen::Vector3d mPositions;
 cpp-member-data|dart/dynamics/point_mass.hpp|State.mVelocities|Eigen::Vector3d mVelocities;
+cpp-member-data|dart/dynamics/referential_skeleton.hpp|IndexMap.mBodyNodeIndex|std::size_t mBodyNodeIndex;
+cpp-member-data|dart/dynamics/referential_skeleton.hpp|IndexMap.mDofIndices|std::vector<std::size_t> mDofIndices;
+cpp-member-data|dart/dynamics/referential_skeleton.hpp|IndexMap.mJointIndex|std::size_t mJointIndex;
 cpp-member-data|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.mAugM|mutable Eigen::MatrixXd mAugM;
 cpp-member-data|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.mBodyNodes|std::vector<BodyNodePtr> mBodyNodes;
 cpp-member-data|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.mCg|mutable Eigen::VectorXd mCg;
@@ -2175,6 +2201,37 @@ cpp-member-data|dart/dynamics/skeleton.hpp|Configuration.mForces|Eigen::VectorXd
 cpp-member-data|dart/dynamics/skeleton.hpp|Configuration.mIndices|std::vector<std::size_t> mIndices;
 cpp-member-data|dart/dynamics/skeleton.hpp|Configuration.mPositions|Eigen::VectorXd mPositions;
 cpp-member-data|dart/dynamics/skeleton.hpp|Configuration.mVelocities|Eigen::VectorXd mVelocities;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mAugM|Eigen::MatrixXd mAugM;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mBodyNodes|std::vector<BodyNode*> mBodyNodes;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mCg|Eigen::VectorXd mCg;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mConstBodyNodes|std::vector<const BodyNode*> mConstBodyNodes;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mConstDofs|std::vector<const DegreeOfFreedom*> mConstDofs;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mCvec|Eigen::VectorXd mCvec;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mDirty|DirtyFlags mDirty;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mDofs|std::vector<DegreeOfFreedom*> mDofs;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mFc|Eigen::VectorXd mFc;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mFext|Eigen::VectorXd mFext;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mG|Eigen::VectorXd mG;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mInvAugM|Eigen::MatrixXd mInvAugM;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mInvM|Eigen::MatrixXd mInvM;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mM|Eigen::MatrixXd mM;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mSupportAxes|std::pair<Eigen::Vector3d, Eigen::Vector3d> mSupportAxes;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mSupportCentroid|Eigen::Vector2d mSupportCentroid;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mSupportGeometry|math::SupportGeometry mSupportGeometry;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mSupportIndices|std::vector<std::size_t> mSupportIndices;
+cpp-member-data|dart/dynamics/skeleton.hpp|DataCache.mSupportPolygon|math::SupportPolygon mSupportPolygon;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mArticulatedInertia|bool mArticulatedInertia;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mAugMassMatrix|bool mAugMassMatrix;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mCoriolisAndGravityForces|bool mCoriolisAndGravityForces;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mCoriolisForces|bool mCoriolisForces;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mDampingForces|bool mDampingForces;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mExternalForces|bool mExternalForces;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mGravityForces|bool mGravityForces;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mInvAugMassMatrix|bool mInvAugMassMatrix;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mInvMassMatrix|bool mInvMassMatrix;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mMassMatrix|bool mMassMatrix;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mSupportVersion|std::size_t mSupportVersion;
+cpp-member-data|dart/dynamics/skeleton.hpp|DirtyFlags.mSupport|bool mSupport;
 cpp-member-data|dart/dynamics/skeleton.hpp|Skeleton.mBodyNodePool|std::unique_ptr<detail::BodyNodePool<BodyNode>> mBodyNodePool;
 cpp-member-data|dart/dynamics/skeleton.hpp|Skeleton.mBorrowedChunks|std::vector<std::shared_ptr<void>> mBorrowedChunks;
 cpp-member-data|dart/dynamics/skeleton.hpp|Skeleton.mHeapAllocatedBodyNodes|std::vector<BodyNode*> mHeapAllocatedBodyNodes;
@@ -3715,6 +3772,11 @@ cpp-member-function|dart/dynamics/hierarchical_ik.hpp|CompositeIK.create|static 
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|CompositeIK.getModuleSet|ConstModuleSet getModuleSet() const;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|CompositeIK.getModuleSet|const ModuleSet& getModuleSet();
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|CompositeIK.refreshIKHierarchy|void refreshIKHierarchy() override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Constraint.Constraint|Constraint(const std::shared_ptr<HierarchicalIK>& _ik);
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Constraint.clone|math::FunctionPtr clone( const std::shared_ptr<HierarchicalIK>& _newIK) const override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Constraint.evalGradient|void evalGradient( const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Constraint.eval|double eval(const Eigen::VectorXd& _x) override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Constraint.~Constraint|virtual ~Constraint() = default;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Function.clone|virtual math::FunctionPtr clone( const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Function.~Function|virtual ~Function() = default;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.HierarchicalIK|HierarchicalIK(const SkeletonPtr& _skeleton);
@@ -3748,6 +3810,11 @@ cpp-member-function|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.setSolver|v
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.solveAndApply|bool solveAndApply( Eigen::VectorXd& positions, bool allowIncompleteResult = true);
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.solveAndApply|bool solveAndApply(bool allowIncompleteResult = true);
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|HierarchicalIK.~HierarchicalIK|virtual ~HierarchicalIK() = default;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Objective.Objective|Objective(const std::shared_ptr<HierarchicalIK>& _ik);
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Objective.clone|math::FunctionPtr clone( const std::shared_ptr<HierarchicalIK>& _newIK) const override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Objective.evalGradient|void evalGradient( const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Objective.eval|double eval(const Eigen::VectorXd& _x) override;
+cpp-member-function|dart/dynamics/hierarchical_ik.hpp|Objective.~Objective|virtual ~Objective() = default;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|WholeBodyIK.WholeBodyIK|WholeBodyIK(const SkeletonPtr& _skel);
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|WholeBodyIK.cloneWholeBodyIK|virtual std::shared_ptr<WholeBodyIK> cloneWholeBodyIK( const SkeletonPtr& _newSkel) const;
 cpp-member-function|dart/dynamics/hierarchical_ik.hpp|WholeBodyIK.clone|std::shared_ptr<HierarchicalIK> clone( const SkeletonPtr& _newSkel) const override;
@@ -4280,6 +4347,17 @@ cpp-member-function|dart/dynamics/marker.hpp|Marker.setConstraintType|void setCo
 cpp-member-function|dart/dynamics/marker.hpp|Marker.setLocalPosition|void setLocalPosition(const Eigen::Vector3d& offset);
 cpp-member-function|dart/dynamics/marker.hpp|Marker.~Marker|virtual ~Marker() = default;
 cpp-member-function|dart/dynamics/mesh_material.hpp|MeshMaterial.MeshMaterial|MeshMaterial() = default;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.MeshHandle|MeshHandle() = default;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.getOwnership|MeshOwnership getOwnership() const;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.getShared|const std::shared_ptr<const aiScene>& getShared() const;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.get|const aiScene* get() const;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.operator->|const aiScene* operator->() const;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.operator=|MeshHandle& operator=(const aiScene* mesh);
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.operator=|MeshHandle& operator=(std::shared_ptr<const aiScene> mesh);
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.operatorbool|explicit operator bool() const;
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.reset|void reset();
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.set|void set(const aiScene* mesh, MeshOwnership ownership);
+cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshHandle.set|void set(std::shared_ptr<const aiScene> mesh);
 cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshShape.MeshShape|MeshShape( const Eigen::Vector3d& scale, std::shared_ptr<math::TriMesh<double>> mesh, const common::Uri& uri = "");
 cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshShape.MeshShape|MeshShape( const Eigen::Vector3d& scale, std::shared_ptr<math::TriMesh<double>> mesh, const common::Uri& uri, common::ResourceRetrieverPtr resourceRetriever);
 cpp-member-function|dart/dynamics/mesh_shape.hpp|MeshShape.MeshShape|[[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
@@ -4798,6 +4876,8 @@ cpp-member-function|dart/dynamics/pyramid_shape.hpp|PyramidShape.setBaseWidth|vo
 cpp-member-function|dart/dynamics/pyramid_shape.hpp|PyramidShape.setHeight|void setHeight(double height);
 cpp-member-function|dart/dynamics/pyramid_shape.hpp|PyramidShape.updateBoundingBox|void updateBoundingBox() const override;
 cpp-member-function|dart/dynamics/pyramid_shape.hpp|PyramidShape.updateVolume|void updateVolume() const override;
+cpp-member-function|dart/dynamics/referential_skeleton.hpp|IndexMap.IndexMap|IndexMap();
+cpp-member-function|dart/dynamics/referential_skeleton.hpp|IndexMap.isExpired|bool isExpired() const;
 cpp-member-function|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.ReferentialSkeleton|ReferentialSkeleton() = default;
 cpp-member-function|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.clearExternalForces|void clearExternalForces() override;
 cpp-member-function|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton.clearInternalForces|void clearInternalForces() override;
@@ -5063,6 +5143,7 @@ cpp-member-function|dart/dynamics/skeleton.hpp|Configuration.Configuration|Confi
 cpp-member-function|dart/dynamics/skeleton.hpp|Configuration.Configuration|Configuration( std::span<const std::size_t> indices, const Eigen::VectorXd& positions = Eigen::VectorXd(), const Eigen::VectorXd& velocities = Eigen::VectorXd(), const Eigen::VectorXd& accelerations = Eigen::VectorXd(), const Eigen::VectorXd& forces = Eigen::VectorXd(), const Eigen::VectorXd& commands = Eigen::VectorXd());
 cpp-member-function|dart/dynamics/skeleton.hpp|Configuration.operator!=|bool operator!=(const Configuration& other) const;
 cpp-member-function|dart/dynamics/skeleton.hpp|Configuration.operator==|bool operator==(const Configuration& other) const;
+cpp-member-function|dart/dynamics/skeleton.hpp|DirtyFlags.DirtyFlags|DirtyFlags();
 cpp-member-function|dart/dynamics/skeleton.hpp|Skeleton.DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS|DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(Marker) DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(ShapeNode) DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS(EndEffector) void integratePositions(double _dt);
 cpp-member-function|dart/dynamics/skeleton.hpp|Skeleton.DART_DEPRECATED|DART_DEPRECATED(6.13) std::span<DegreeOfFreedom* const> getDofs() override;
 cpp-member-function|dart/dynamics/skeleton.hpp|Skeleton.DART_DEPRECATED|DART_DEPRECATED(6.13) std::span<const BodyNode* const> getBodyNodes() const override;
@@ -5746,6 +5827,7 @@ cpp-struct|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|AbaOptions|s
 cpp-struct|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|RneaOptions|struct RneaOptions
 cpp-struct|dart/dynamics/detail/ball_joint_aspect.hpp|BallJointProperties|struct DART_API BallJointProperties : GenericJoint<math::SO3Space>::Properties,
 cpp-struct|dart/dynamics/detail/ball_joint_aspect.hpp|BallJointUniqueProperties|struct DART_API BallJointUniqueProperties
+cpp-struct|dart/dynamics/detail/basic_node_manager.hpp|type|struct type
 cpp-struct|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeAspectProperties|struct DART_API BodyNodeAspectProperties
 cpp-struct|dart/dynamics/detail/body_node_aspect.hpp|BodyNodeState|struct DART_API BodyNodeState
 cpp-struct|dart/dynamics/detail/body_node_ptr.hpp|MutexedWeakSkeletonPtr|struct MutexedWeakSkeletonPtr
@@ -5782,6 +5864,7 @@ cpp-struct|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNodeUniqueStat
 cpp-struct|dart/dynamics/detail/translational_joint2_d_aspect.hpp|TranslationalJoint2DProperties|struct DART_API TranslationalJoint2DProperties
 cpp-struct|dart/dynamics/detail/universal_joint_aspect.hpp|UniversalJointProperties|struct DART_API UniversalJointProperties
 cpp-struct|dart/dynamics/detail/universal_joint_aspect.hpp|UniversalJointUniqueProperties|struct DART_API UniversalJointUniqueProperties
+cpp-struct|dart/dynamics/fixed_jacobian_node.hpp|Cache|struct Cache
 cpp-struct|dart/dynamics/fwd.hpp|MimicDofProperties|struct MimicDofProperties;
 cpp-struct|dart/dynamics/inverse_kinematics.hpp|Properties|struct DART_API Properties
 cpp-struct|dart/dynamics/inverse_kinematics.hpp|Properties|struct DART_API Properties
@@ -5801,7 +5884,11 @@ cpp-struct|dart/dynamics/mesh_shape.hpp|SubMeshRange|struct SubMeshRange
 cpp-struct|dart/dynamics/mimic_dof_properties.hpp|MimicDofProperties|struct MimicDofProperties
 cpp-struct|dart/dynamics/point_mass.hpp|Properties|struct DART_API Properties
 cpp-struct|dart/dynamics/point_mass.hpp|State|struct DART_API State
+cpp-struct|dart/dynamics/referential_skeleton.hpp|IndexMap|struct IndexMap
 cpp-struct|dart/dynamics/skeleton.hpp|Configuration|struct DART_API Configuration
+cpp-struct|dart/dynamics/skeleton.hpp|DataCache|struct DataCache
+cpp-struct|dart/dynamics/skeleton.hpp|DataCache|struct DataCache;
+cpp-struct|dart/dynamics/skeleton.hpp|DirtyFlags|struct DirtyFlags
 cpp-struct|dart/dynamics/sparse_occupancy_grid.hpp|CellKeyHash|struct CellKeyHash
 cpp-struct|dart/dynamics/sparse_occupancy_grid.hpp|CellKey|struct CellKey
 cpp-struct|dart/dynamics/sparse_occupancy_grid.hpp|OccupiedCell|struct OccupiedCell
@@ -5820,7 +5907,9 @@ cpp-typedef|dart/dynamics/ikfast.h|GetNumFreeParametersFn|typedef int (*GetNumFr
 cpp-typedef|dart/dynamics/ikfast.h|GetNumJointsFn|typedef int (*GetNumJointsFn)();
 cpp-typedef|dart/dynamics/ikfast.h|IkReal|typedef IKFAST_REAL IkReal;
 cpp-typedef|dart/dynamics/ikfast.h|IkReal|typedef double IkReal;
+cpp-using|dart/constraint/constraint_solver.hpp|CollisionDetector|using CollisionDetector = collision::CollisionDetector;
 cpp-using|dart/dynamics/ball_joint.hpp|Base|using Base = detail::BallJointBase;
+cpp-using|dart/dynamics/ball_joint.hpp|Base|using Base::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/ball_joint.hpp|CoordinateChart|using CoordinateChart = detail::CoordinateChart;
 cpp-using|dart/dynamics/ball_joint.hpp|Properties|using Properties = detail::BallJointProperties;
 cpp-using|dart/dynamics/ball_joint.hpp|UniqueProperties|using UniqueProperties = detail::BallJointUniqueProperties;
@@ -5831,6 +5920,7 @@ cpp-using|dart/dynamics/body_node.hpp|AspectProperties|using AspectProperties = 
 cpp-using|dart/dynamics/body_node.hpp|ColShapeAddedSignal|using ColShapeAddedSignal
 cpp-using|dart/dynamics/body_node.hpp|ColShapeRemovedSignal|using ColShapeRemovedSignal = ColShapeAddedSignal;
 cpp-using|dart/dynamics/body_node.hpp|CompositeProperties|using CompositeProperties = common::Composite::Properties;
+cpp-using|dart/dynamics/body_node.hpp|Matrix4dVector|using Matrix4dVector = std::vector<Eigen::Matrix4d>;
 cpp-using|dart/dynamics/body_node.hpp|NodePropertiesMap|using NodePropertiesMap = detail::NodePropertiesMap;
 cpp-using|dart/dynamics/body_node.hpp|NodeStateMap|using NodeStateMap = detail::NodeStateMap;
 cpp-using|dart/dynamics/body_node.hpp|Properties|using Properties = common::Composite::MakeProperties<BodyNode>;
@@ -5912,6 +6002,7 @@ cpp-using|dart/dynamics/entity.hpp|NameChangedSignal|using NameChangedSignal = c
 cpp-using|dart/dynamics/entity_node.hpp|NameAspect|using NameAspect = typename detail::EntityNodeAspectBase<Base>::Aspect;
 cpp-using|dart/dynamics/euler_joint.hpp|AxisOrder|using AxisOrder = detail::AxisOrder;
 cpp-using|dart/dynamics/euler_joint.hpp|Base|using Base = detail::EulerJointBase;
+cpp-using|dart/dynamics/euler_joint.hpp|Base|using Base::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/euler_joint.hpp|Properties|using Properties = detail::EulerJointProperties;
 cpp-using|dart/dynamics/euler_joint.hpp|UniqueProperties|using UniqueProperties = detail::EulerJointUniqueProperties;
 cpp-using|dart/dynamics/euler_joint.hpp|enum|using enum AxisOrder;
@@ -5920,6 +6011,7 @@ cpp-using|dart/dynamics/fixed_jacobian_node.hpp|TemplatedJacobianNode|using Temp
 cpp-using|dart/dynamics/fixed_jacobian_node.hpp|TemplatedJacobianNode|using TemplatedJacobianNode<FixedJacobianNode>::getJacobianSpatialDeriv;
 cpp-using|dart/dynamics/fixed_jacobian_node.hpp|TemplatedJacobianNode|using TemplatedJacobianNode<FixedJacobianNode>::getWorldJacobian;
 cpp-using|dart/dynamics/free_joint.hpp|Base|using Base = detail::FreeJointBase;
+cpp-using|dart/dynamics/free_joint.hpp|Base|using Base::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/free_joint.hpp|CoordinateChart|using CoordinateChart = detail::CoordinateChart;
 cpp-using|dart/dynamics/free_joint.hpp|Properties|using Properties = detail::FreeJointProperties;
 cpp-using|dart/dynamics/free_joint.hpp|UniqueProperties|using UniqueProperties = detail::FreeJointUniqueProperties;
@@ -5981,6 +6073,7 @@ cpp-using|dart/dynamics/node_manager_joiner.hpp|Base|using Base::getNode;
 cpp-using|dart/dynamics/node_manager_joiner.hpp|Base|using Base::getNumNodes;
 cpp-using|dart/dynamics/node_manager_joiner.hpp|Base|using Base::isSpecializedForNode;
 cpp-using|dart/dynamics/planar_joint.hpp|Base|using Base = GenericJoint<math::R3Space>;
+cpp-using|dart/dynamics/planar_joint.hpp|Base|using Base::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/planar_joint.hpp|PlaneType|using PlaneType = detail::PlaneType;
 cpp-using|dart/dynamics/planar_joint.hpp|Properties|using Properties = detail::PlanarJointProperties;
 cpp-using|dart/dynamics/planar_joint.hpp|UniqueProperties|using UniqueProperties = detail::PlanarJointUniqueProperties;
@@ -6004,6 +6097,11 @@ cpp-using|dart/dynamics/shape_node.hpp|BasicProperties|using BasicProperties
 cpp-using|dart/dynamics/shape_node.hpp|Properties|using Properties = common::Composite::Properties;
 cpp-using|dart/dynamics/shape_node.hpp|RelativeTransformUpdatedSignal|using RelativeTransformUpdatedSignal = common::Signal<void(
 cpp-using|dart/dynamics/shape_node.hpp|ShapeUpdatedSignal|using ShapeUpdatedSignal = common::Signal<void(
+cpp-using|dart/dynamics/shared_library_ik_fast.hpp|IkFastFuncComputeFk|using IkFastFuncComputeFk = void (*)(
+cpp-using|dart/dynamics/shared_library_ik_fast.hpp|IkFastFuncComputeIk|using IkFastFuncComputeIk = bool (*)(
+cpp-using|dart/dynamics/shared_library_ik_fast.hpp|IkFastFuncGetConstCharPtr|using IkFastFuncGetConstCharPtr = const char* (*)();
+cpp-using|dart/dynamics/shared_library_ik_fast.hpp|IkFastFuncGetIntPtr|using IkFastFuncGetIntPtr = int* (*)();
+cpp-using|dart/dynamics/shared_library_ik_fast.hpp|IkFastFuncGetInt|using IkFastFuncGetInt = int (*)();
 cpp-using|dart/dynamics/skeleton.hpp|AspectPropertiesData|using AspectPropertiesData = detail::SkeletonAspectProperties;
 cpp-using|dart/dynamics/skeleton.hpp|AspectProperties|using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
 cpp-using|dart/dynamics/skeleton.hpp|MetaSkeleton|using MetaSkeleton::getAngularJacobian;
@@ -6014,6 +6112,7 @@ cpp-using|dart/dynamics/skeleton.hpp|MetaSkeleton|using MetaSkeleton::getJacobia
 cpp-using|dart/dynamics/skeleton.hpp|MetaSkeleton|using MetaSkeleton::getLinearJacobian;
 cpp-using|dart/dynamics/skeleton.hpp|MetaSkeleton|using MetaSkeleton::getLinearJacobianDeriv;
 cpp-using|dart/dynamics/skeleton.hpp|Properties|using Properties = common::Composite::Properties;
+cpp-using|dart/dynamics/skeleton.hpp|SpecializedTreeNodes|using SpecializedTreeNodes
 cpp-using|dart/dynamics/skeleton.hpp|State|using State = common::Composite::State;
 cpp-using|dart/dynamics/soft_body_node.hpp|Base|using Base = detail::SoftBodyNodeBase;
 cpp-using|dart/dynamics/soft_body_node.hpp|Properties|using Properties = detail::SoftBodyNodeProperties;
@@ -6023,11 +6122,14 @@ cpp-using|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|usin
 cpp-using|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|using BodyNodeSpecializedFor<SpecNode>::getNumNodes;
 cpp-using|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|using BodyNodeSpecializedFor<SpecNode>::isSpecializedForNode;
 cpp-using|dart/dynamics/translational_joint.hpp|Base|using Base = GenericJoint<math::R3Space>;
+cpp-using|dart/dynamics/translational_joint.hpp|Base|using Base::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/translational_joint2_d.hpp|Base|using Base = detail::TranslationalJoint2DBase;
+cpp-using|dart/dynamics/translational_joint2_d.hpp|GenericJoint|using GenericJoint<math::R2Space>::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/translational_joint2_d.hpp|PlaneType|using PlaneType = detail::PlaneType;
 cpp-using|dart/dynamics/translational_joint2_d.hpp|Properties|using Properties = detail::TranslationalJoint2DProperties;
 cpp-using|dart/dynamics/translational_joint2_d.hpp|UniqueProperties|using UniqueProperties = detail::TranslationalJoint2DUniqueProperties;
 cpp-using|dart/dynamics/universal_joint.hpp|Base|using Base = detail::UniversalJointBase;
+cpp-using|dart/dynamics/universal_joint.hpp|GenericJoint|using GenericJoint<math::R2Space>::getRelativeJacobianStatic;
 cpp-using|dart/dynamics/universal_joint.hpp|Properties|using Properties = detail::UniversalJointProperties;
 cpp-using|dart/dynamics/universal_joint.hpp|UniqueProperties|using UniqueProperties = detail::UniversalJointUniqueProperties;
 stub-alias|python/stubs/dartpy/constraint.pyi|BallJointConstraint.get_constraint_force_mixing|get_constraint_force_mixing = getConstraintForceMixing

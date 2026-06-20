@@ -744,6 +744,35 @@ protected:
     assert any("LegacyJoint.newValue" in m for m in messages)
 
 
+def test_new_legacy_friend_member_function_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  void oldMethod();
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "  void oldMethod();",
+            "  void oldMethod();\n"
+            "  friend DART_API bool operator==(\n"
+            "      const LegacyJoint& lhs, const LegacyJoint& rhs);",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyJoint.operator==" in m for m in messages)
+
+
 def test_changed_legacy_cpp_member_signature_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -946,6 +975,33 @@ public:
     )
 
     assert module.find_violations(tmp_path, baseline) == []
+
+
+def test_protected_legacy_cpp_nested_type_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  void oldMethod();
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "public:",
+            "protected:\n  struct NewHook {};\n\npublic:",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("NewHook" in m for m in messages)
 
 
 def test_private_legacy_cpp_nested_type_is_not_public_surface(tmp_path):
