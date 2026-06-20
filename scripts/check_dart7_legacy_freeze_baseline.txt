@@ -309,7 +309,6 @@ binding-def|python/dartpy/dynamics/inertia.cpp|Inertia.transform
 binding-def|python/dartpy/dynamics/inertia.cpp|Inertia.transformed
 binding-def|python/dartpy/dynamics/inertia.cpp|Inertia.verify
 binding-def|python/dartpy/dynamics/inverse_kinematics.cpp|InverseKinematics.__repr__
-binding-def|python/dartpy/dynamics/inverse_kinematics.cpp|InverseKinematics.createSimpleFrame
 binding-def|python/dartpy/dynamics/inverse_kinematics.cpp|InverseKinematics.getErrorMethod
 binding-def|python/dartpy/dynamics/inverse_kinematics.cpp|InverseKinematics.getGradientMethod
 binding-def|python/dartpy/dynamics/inverse_kinematics.cpp|InverseKinematics.getProblem
@@ -696,6 +695,7 @@ binding-enum|python/dartpy/dynamics/joint.cpp|MimicConstraintType
 binding-enum|python/dartpy/dynamics/linkage.cpp|ExpansionPolicy
 binding-enum|python/dartpy/dynamics/shape.cpp|ColorMode
 binding-enum|python/dartpy/dynamics/shape.cpp|PointShapeType
+binding-function|python/dartpy/dynamics/inverse_kinematics.cpp|module.createSimpleFrame
 cpp-class|dart/constraint/balance_constraint.hpp|BalanceConstraint
 cpp-class|dart/constraint/ball_joint_constraint.hpp|BallJointConstraint
 cpp-class|dart/constraint/boxed_lcp_constraint_solver.hpp|BoxedLcpConstraintSolver

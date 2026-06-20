@@ -395,6 +395,8 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
             declaration_start = 0
             member_buffer = ""
             member_start = 0
+            module_buffer = ""
+            module_start = 0
             for index, line in enumerate(lines):
                 code = code_without_comment(line).strip()
                 if "nb::class_" in code or "nb::enum_" in code:
@@ -436,8 +438,23 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                 if declaration_buffer and ";" in code:
                     declaration_buffer = ""
 
-                if re.search(
-                    r"\.(?:def|def_property|def_readwrite|def_readonly)", code
+                is_module_binding_call = (
+                    re.search(r"\b(?:m|module)\.(?:def|attr)\s*\(", code) is not None
+                )
+                if is_module_binding_call:
+                    module_buffer = code
+                    module_start = index
+                elif module_buffer:
+                    module_buffer = f"{module_buffer} {code}".strip()
+
+                module_search_line = module_buffer or line
+                module_search_index = module_start if module_buffer else index
+
+                if (
+                    re.search(
+                        r"\.(?:def|def_property|def_readwrite|def_readonly)", code
+                    )
+                    and not is_module_binding_call
                 ):
                     member_buffer = code
                     member_start = index
@@ -458,27 +475,34 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                         )
                     )
 
-                module_attr_match = BINDING_MODULE_ATTR_PATTERN.search(line)
+                module_attr_match = BINDING_MODULE_ATTR_PATTERN.search(
+                    module_search_line
+                )
                 if module_attr_match:
                     entries.append(
                         LegacyEntry(
                             "binding-attr",
                             rel_path,
                             f"module.{module_attr_match.group('name')}",
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, module_search_index),
                         )
                     )
+                    module_buffer = ""
 
-                module_def_match = BINDING_MODULE_DEF_PATTERN.search(line)
+                module_def_match = BINDING_MODULE_DEF_PATTERN.search(module_search_line)
                 if module_def_match:
                     entries.append(
                         LegacyEntry(
                             "binding-function",
                             rel_path,
                             f"module.{module_def_match.group('name')}",
-                            nearby_tag(lines, index),
+                            nearby_tag(lines, module_search_index),
                         )
                     )
+                    module_buffer = ""
+
+                if module_buffer and ";" in code:
+                    module_buffer = ""
 
                 member_match = BINDING_MEMBER_PATTERN.search(member_search_line)
                 if member_match:
