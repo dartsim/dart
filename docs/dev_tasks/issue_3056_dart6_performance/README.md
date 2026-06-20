@@ -52,17 +52,18 @@ speedup.
 - PR2 #3086 must make any behavior-preserving performance path default-on if it
   is safe for gz-physics compatibility. Any default speedup must be backed by a
   fidelity/correctness test, not just an RTF improvement.
-- PR2 current default-on Bullet run after review fixes, same
-  120-object/9000-step generated drop command: RTF `3.45052`, final contacts
+- PR2 current default-on Bullet run after gz-physics fidelity fixes, same
+  120-object/9000-step generated drop command: RTF `2.52099`, final contacts
   `0`, final resting `120 / 120`, finite state true, final hash
-  `0x44100959a3ae413b`. The zero-contact final state is expected only after
+  `0xf8661e0f2baad9f9`. The zero-contact final state is expected only after
   all mobile skeletons are resting and the all-resting fast path is active.
 - PR2 current explicit `--disable-deactivation` run on the same command: RTF
-  `0.490135`, final contacts `360`, final resting `0 / 120`, finite state true,
+  `0.489052`, final contacts `360`, final resting `0 / 120`, finite state true,
   final hash `0xc68e1f3b0fa9dc83`.
 - PR2 current final-scene comparison, default-on vs disabled, 121 dumped shapes:
-  max position delta `0.00122575` m, mean position delta `5.74756e-5` m, max
-  quaternion L2 delta `0.00122581`. The sleep contact penetration gate is
+  max position delta `0.00118920391212` m, mean position delta
+  `5.35687462563e-5` m, max quaternion L2 delta `0.00118926675519`. The sleep
+  contact penetration gate is
   tightened to `1e-5`, and
   `IslandDeactivation.DefaultEnabledSettlesCloseToAlwaysActivePath` now guards
   the default-on fidelity bar on a focused drop-and-settle case.
@@ -74,6 +75,11 @@ speedup.
   sleeping body with externally edited velocity wakes before the cached step is
   reused, and contacts inside a frozen mobile island are preserved during an
   awake impact so wakeup remains island-atomic.
+- Current PR2 gz-physics fixes keep sleep transitions from advancing the final
+  solved impulse into pose, zero body velocity caches when entering rest, clear
+  stale sleep candidacy when an active contact group cannot rest, and prevent a
+  quiet support contact from sleeping while another mobile body in the world is
+  still above the wake-speed band.
 
 ## Default-On Correctness Rule
 
@@ -144,3 +150,21 @@ bug until proven otherwise.
   default-on RTF `3.45052`, disabled RTF `0.490135`, both finite. Dumped both
   final scenes and compared 121 shapes: max position delta `0.00122575` m, mean
   position delta `5.74756e-5` m, max quaternion L2 delta `0.00122581`.
+- After #3085 merged and #3086 failed gz-physics CI, reproduced
+  `COMMON_TEST_joint_features_dartsim` and `UNIT_SDFFeatures_TEST` locally,
+  added deactivation regressions for final sleep-transition pose/velocity,
+  unconverged contacts, and waiting for other active mobile bodies, rebuilt
+  `contact_benchmark`, `test_IslandDeactivation`, `test_World`, and
+  `test_ContactSurface`, and passed those three focused DART tests through
+  CTest.
+- Reinstalled DART into the Gazebo pixi environment and passed the focused
+  gz-physics failures:
+  `COMMON_TEST_joint_features_dartsim` and `UNIT_SDFFeatures_TEST`.
+- Reran the 120-object/9000-step/drop-height-0.2 Bullet comparison after the
+  gz-physics fidelity fix: default-on RTF `2.52099`, disabled RTF `0.489052`,
+  both finite. Dumped both final scenes and compared 121 shapes: max position
+  delta `0.00118920391212` m, mean position delta `5.35687462563e-5` m, max
+  quaternion L2 delta `0.00118926675519`.
+- Ran `pixi run -e gazebo test-gz-physics`: gz-physics build succeeded, 199/199
+  tests plus 4/4 performance tests passed, and the DART plugin linked against
+  the pixi-installed DART libraries.

@@ -612,11 +612,14 @@ void World::step(bool _resetCommand)
             skel->setImpulseApplied(false);
           }
 
-          skel->integratePositions(mTimeStep);
+          if (!preservingFinalSleepSolve)
+            skel->integratePositions(mTimeStep);
 
-          if (preservingFinalSleepSolve && skel->getNumDofs() > 0)
+          if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
             skel->setVelocities(
                 Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
+            skel->computeForwardKinematics(false, true, false);
+          }
 
           if (_resetCommand) {
             skel->clearInternalForces();
@@ -666,6 +669,21 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // handles active contact islands; the final contact-result pass below handles
   // quiet candidate bodies whose static support contact produced no active
   // constraint on this step.
+  constexpr double kSleepContactPenetrationTolerance = 1e-5;
+  constexpr double kFinalSleepLinearSpeed = 1e-3;
+  constexpr double kFinalSleepAngularSpeed = 1e-2;
+  const auto& contacts = mConstraintSolver->getLastCollisionResult();
+  std::size_t numAwakeMovingSkeletons = 0;
+  for (const auto& skel : mSkeletons) {
+    if (!skel->isMobile() || skel->isResting())
+      continue;
+
+    const bool aboveWake = skel->computeMaxBodyLinearSpeed() > linWake
+                           || skel->computeMaxBodyAngularSpeed() > angWake;
+    if (aboveWake)
+      ++numAwakeMovingSkeletons;
+  }
+
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
     if (!skel->isMobile())
@@ -700,8 +718,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       // the wider wake band) or was disturbed/impulsed this step. The wake band
       // is larger than the sleep band (hysteresis) to avoid candidacy
       // thrashing.
-      if (disturbed || linSpeed > linWake || angSpeed > angWake)
+      if (disturbed || linSpeed > linWake || angSpeed > angWake) {
         skel->setSleepCandidate(false);
+      }
     } else {
       const bool canAccumulateDwell = islanded || skel->isSleepCandidate()
                                       || skel->getRestDwellTime() > 0.0;
@@ -710,8 +729,17 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (quiet) {
         const double dwell = skel->getRestDwellTime() + mTimeStep;
         skel->setRestDwellTime(dwell);
-        if (dwell >= mDeactivationOptions.mTimeUntilSleep)
+        const bool finalQuiet = linSpeed < kFinalSleepLinearSpeed
+                                && angSpeed < kFinalSleepAngularSpeed;
+        const bool thisAwakeMoving
+            = !skel->isResting()
+              && (linInstant > linWake || angInstant > angWake);
+        const bool hasOtherAwakeMovingSkeleton
+            = numAwakeMovingSkeletons > (thisAwakeMoving ? 1u : 0u);
+        if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet
+            && !hasOtherAwakeMovingSkeleton) {
           skel->setSleepCandidate(true);
+        }
       } else {
         skel->setRestDwellTime(0.0);
       }
@@ -724,8 +752,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // support, let it sleep instead of requiring a non-zero LCP island on that
   // exact frame. Moving or disturbed candidates are cleared before this point
   // by the wake-band checks above and in the pre-solve velocity pass.
-  constexpr double kSleepContactPenetrationTolerance = 1e-5;
-  const auto& contacts = mConstraintSolver->getLastCollisionResult();
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
     const auto& contact = contacts.getContact(i);
     if (contact.penetrationDepth > kSleepContactPenetrationTolerance)

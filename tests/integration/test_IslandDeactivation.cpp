@@ -233,7 +233,8 @@ void expectSleeperFallsAfterSupportEdit(
 // acceleration by upgrading. The opt-out path is covered by DisabledIsNoOp.
 TEST(IslandDeactivation, EnabledByDefault)
 {
-  EXPECT_TRUE(World::create()->getDeactivationOptions().mEnabled);
+  const auto& opts = World::create()->getDeactivationOptions();
+  EXPECT_TRUE(opts.mEnabled);
 }
 
 //==============================================================================
@@ -300,6 +301,105 @@ TEST(IslandDeactivation, SettlesThenSleeps)
     EXPECT_TRUE(box->getPositions().isApprox(frozenPos, 1e-12))
         << "frozen box drifted at step " << i;
   }
+}
+
+//==============================================================================
+// The transition into the frozen state runs one final contact solve for
+// observable contact-force caches, but it must not integrate that final impulse
+// into the pose or leave stale non-zero body velocity caches behind.
+TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  auto* body = box->getBodyNode(0);
+  Eigen::VectorXd lastAwakePos = box->getPositions();
+  bool slept = false;
+  for (std::size_t i = 0; i < 5000; ++i) {
+    ASSERT_FALSE(box->isResting());
+    lastAwakePos = box->getPositions();
+
+    world->step();
+    if (box->isResting()) {
+      slept = true;
+      break;
+    }
+  }
+
+  ASSERT_TRUE(slept) << "box never went to sleep";
+  EXPECT_TRUE(box->getPositions().isApprox(lastAwakePos, 1e-12))
+      << "sleep transition integrated the final contact impulse";
+  EXPECT_NEAR(body->getTransform().translation().z(), kHalf, 1e-5);
+  EXPECT_NEAR(body->getLinearVelocity().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(body->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// A candidate island whose contacts have not physically converged must be kept
+// awake. Otherwise default-on sleeping can leave downstream integrations with a
+// residual velocity before the contact solver has actually settled the body.
+TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 0.01));
+  Eigen::Vector6d residualVelocity = Eigen::Vector6d::Zero();
+  residualVelocity[3] = 0.005;
+  box->getJoint(0)->setVelocities(residualVelocity);
+  box->setSleepCandidate(true);
+  box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// A quiet support contact must not freeze while another mobile body in the same
+// world is still falling. Downstream worlds can attach/detach joints between
+// otherwise independent models; sleeping one settled model before the other
+// dynamic models finish settling changes the later contact response.
+TEST(IslandDeactivation, SettledBodyWaitsForOtherMobileBodyToSettle)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto settled = createFreeBox(
+      "settled",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  auto falling = createFreeBox(
+      "falling",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(1.0, 0, kHalf + 3.0));
+  world->addSkeleton(settled);
+  world->addSkeleton(falling);
+
+  for (std::size_t i = 0; i < 650; ++i) {
+    world->step();
+    ASSERT_FALSE(settled->isResting())
+        << "settled body slept while another body was still active at step "
+        << i;
+    ASSERT_FALSE(falling->isResting());
+  }
+
+  EXPECT_GT(falling->getBodyNode(0)->getTransform().translation().z(), 1.0);
+
+  const std::size_t stepsToSleep = stepUntil(world.get(), 7000, [&]() {
+    return settled->isResting() && falling->isResting();
+  });
+  EXPECT_LT(stepsToSleep, 7000u)
+      << "bodies did not sleep after the active body settled";
 }
 
 //==============================================================================

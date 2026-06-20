@@ -1333,9 +1333,13 @@ void ConstraintSolver::buildConstrainedGroups()
           const auto* constraint = group.mConstraints[j].get();
           const auto* contact
               = dynamic_cast<const ContactConstraint*>(constraint);
-          if (!contact
-              || contact->getContact().penetrationDepth
-                     > kSleepContactPenetrationTolerance) {
+          if (!contact) {
+            mGroupResting[i] = false;
+            break;
+          }
+
+          if (contact->getContact().penetrationDepth
+              > kSleepContactPenetrationTolerance) {
             mGroupResting[i] = false;
             break;
           }
@@ -1368,6 +1372,8 @@ void ConstraintSolver::buildConstrainedGroups()
         const bool grouped = groupIndex != invalidUnionIndex
                              && groupIndex < mGroupResting.size();
         const bool groupCanRest = grouped && mGroupResting[groupIndex];
+        if (grouped && !groupCanRest && skeleton->isSleepCandidate())
+          skeleton->setSleepCandidate(false);
         skeleton->setResting(groupCanRest && skeleton->isResting());
         skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
       }

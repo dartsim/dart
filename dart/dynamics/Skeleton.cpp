@@ -3885,8 +3885,10 @@ void Skeleton::setResting(bool _resting)
   // exact velocity it happened to carry at sleep time. It is only ever applied
   // to an island the solver is freezing this step (whose constraint solve is
   // skipped), so the cleared velocity is not consumed by that step's solve.
-  if (_resting && !wasResting && getNumDofs() > 0)
+  if (_resting && !wasResting && getNumDofs() > 0) {
     setVelocities(Eigen::VectorXd::Zero(static_cast<int>(getNumDofs())));
+    computeForwardKinematics(false, true, false);
+  }
 }
 
 //==============================================================================
