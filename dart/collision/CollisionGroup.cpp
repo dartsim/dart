@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -365,10 +366,16 @@ std::size_t CollisionGroup::computeMetaSkeletonVersion(
 //==============================================================================
 void CollisionGroup::updateEngineData()
 {
-  for (const auto& info : mObjectInfoList)
-    info->mObject->updateEngineData();
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update objects");
+    for (const auto& info : mObjectInfoList)
+      info->mObject->updateEngineData();
+  }
 
-  updateCollisionGroupEngineData();
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update backend");
+    updateCollisionGroupEngineData();
+  }
 }
 
 //==============================================================================

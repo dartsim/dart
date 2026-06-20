@@ -34,7 +34,9 @@
 
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
 namespace collision {
@@ -66,13 +68,50 @@ BulletCollisionObject::BulletCollisionObject(
       mBulletCollisionShape->mCollisionShape.get());
 
   mBulletCollisionObject->setUserPointer(this);
+
+  updateTransformFastPath();
+}
+
+//==============================================================================
+void BulletCollisionObject::updateTransformFastPath()
+{
+  mLastTransformFastPathVersion = mShapeFrame->getVersion();
+  mUseBodyNodeWorldTransform = false;
+
+  if (mBulletCollisionShape->mRelativeTransform)
+    return;
+
+  if (mShapeNode == nullptr || mBodyNode == nullptr)
+    return;
+
+  mUseBodyNodeWorldTransform = mShapeNode->getRelativeTransform().matrix()
+                               == Eigen::Isometry3d::Identity().matrix();
 }
 
 //==============================================================================
 void BulletCollisionObject::updateEngineData()
 {
-  btTransform worldTransform
-      = convertTransform(mShapeFrame->getWorldTransform());
+  if (mLastTransformFastPathVersion != mShapeFrame->getVersion())
+    updateTransformFastPath();
+
+  const Eigen::Isometry3d& shapeFrameTf
+      = mUseBodyNodeWorldTransform ? mBodyNode->getWorldTransform()
+                                   : mShapeFrame->getWorldTransform();
+  const Eigen::Vector3d& translation = shapeFrameTf.translation();
+  const Eigen::Matrix3d& rotation = shapeFrameTf.linear();
+
+  btTransform worldTransform(
+      btMatrix3x3(
+          rotation(0, 0),
+          rotation(0, 1),
+          rotation(0, 2),
+          rotation(1, 0),
+          rotation(1, 1),
+          rotation(1, 2),
+          rotation(2, 0),
+          rotation(2, 1),
+          rotation(2, 2)),
+      btVector3(translation.x(), translation.y(), translation.z()));
 
   if (mBulletCollisionShape->mRelativeTransform)
     worldTransform *= (*mBulletCollisionShape->mRelativeTransform);

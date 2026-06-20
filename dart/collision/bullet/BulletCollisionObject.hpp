@@ -46,6 +46,7 @@ class BulletCollisionObject : public CollisionObject
 {
 public:
   friend class BulletCollisionDetector;
+  friend class BulletCollisionGroup;
 
   /// Return Bullet collision object
   btCollisionObject* getBulletCollisionObject();
@@ -63,10 +64,17 @@ protected:
   // Documentation inherited
   void updateEngineData() override;
 
+  /// Refreshes whether this object can use its BodyNode world transform
+  /// directly during transform sync.
+  void updateTransformFastPath();
+
 protected:
   /// Bullet collision object
   std::shared_ptr<BulletCollisionShape> mBulletCollisionShape;
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
+
+  std::size_t mLastTransformFastPathVersion = static_cast<std::size_t>(-1);
+  bool mUseBodyNodeWorldTransform = false;
 };
 
 } // namespace collision

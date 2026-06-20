@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
 namespace collision {
@@ -58,6 +59,18 @@ const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
 }
 
 //==============================================================================
+const dynamics::ShapeNode* CollisionObject::getShapeNode() const
+{
+  return mShapeNode;
+}
+
+//==============================================================================
+dynamics::BodyNode* CollisionObject::getBodyNode() const
+{
+  return mBodyNode;
+}
+
+//==============================================================================
 dynamics::ConstShapePtr CollisionObject::getShape() const
 {
   return mShapeFrame->getShape();
@@ -73,10 +86,17 @@ const Eigen::Isometry3d& CollisionObject::getTransform() const
 CollisionObject::CollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame)
+  : mCollisionDetector(collisionDetector),
+    mShapeFrame(shapeFrame),
+    mShapeNode(nullptr),
+    mBodyNode(nullptr)
 {
   DART_ASSERT(mCollisionDetector);
   DART_ASSERT(mShapeFrame);
+
+  auto* mutableFrame = const_cast<dynamics::ShapeFrame*>(mShapeFrame);
+  mShapeNode = mutableFrame != nullptr ? mutableFrame->asShapeNode() : nullptr;
+  mBodyNode = mShapeNode != nullptr ? mShapeNode->getBodyNodePtr() : nullptr;
 }
 
 } // namespace collision
