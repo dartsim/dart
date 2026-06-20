@@ -42,6 +42,7 @@ CPP_DART_API_FUNCTION_PATTERN = re.compile(
     r"(?:static\s+)?(?:inline\s+)?(?:[A-Za-z_:<>~*&,\s]+)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?;"
 )
+CPP_DART_API_TOKEN_PATTERN = re.compile(r"\b(?:DART|DARTPY)_[A-Z0-9_]+")
 CPP_ACCESS_PATTERN = re.compile(r"^\s*(?P<access>public|protected|private)\s*:\s*$")
 CPP_NAMESPACE_PATTERN = re.compile(
     r"^\s*namespace\s+(?P<name>[A-Za-z_:]\w*(?:::\w+)*)\s*\{"
@@ -250,6 +251,8 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             class_stack: list[dict[str, object]] = []
             enum_stack: list[tuple[str, int, bool]] = []
             pending_scope: dict[str, object] | None = None
+            function_buffer: list[str] = []
+            function_start = 0
             member_buffer: list[str] = []
             member_start = 0
             inline_member_body_depth: int | None = None
@@ -359,20 +362,31 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             "public_surface": public_surface,
                         }
 
-                function_match = (
-                    None
-                    if in_detail_namespace
-                    else CPP_DART_API_FUNCTION_PATTERN.search(line)
-                )
-                if function_match and not class_stack:
-                    entries.append(
-                        LegacyEntry(
-                            "cpp-function",
-                            rel_path,
-                            function_match.group("name"),
-                            nearby_tag(lines, index),
+                if not in_detail_namespace and not class_stack:
+                    function_code = code.strip()
+                    if function_buffer:
+                        function_buffer.append(function_code)
+                    elif CPP_DART_API_TOKEN_PATTERN.search(function_code):
+                        function_buffer = [function_code]
+                        function_start = index
+
+                    if function_buffer and (
+                        ";" in function_code or "{" in function_code
+                    ):
+                        function_signature = " ".join(function_buffer)
+                        function_match = CPP_DART_API_FUNCTION_PATTERN.search(
+                            function_signature
                         )
-                    )
+                        if function_match:
+                            entries.append(
+                                LegacyEntry(
+                                    "cpp-function",
+                                    rel_path,
+                                    function_match.group("name"),
+                                    nearby_tag(lines, function_start),
+                                )
+                            )
+                        function_buffer = []
 
                 access_match = CPP_ACCESS_PATTERN.search(line)
                 if access_match and class_stack:
