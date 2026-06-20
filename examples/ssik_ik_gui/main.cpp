@@ -985,29 +985,6 @@ Eigen::Isometry3d offsetPose(
 }
 
 //==============================================================================
-// Attaches a red/green/blue translation-axis gizmo to the interactive target
-// frame so the end-effector target is clearly visible and the gizmo moves with
-// the frame when it is dragged or its pose is edited.
-void attachAxisGizmo(
-    const dart::gui::osg::InteractiveFramePtr& frame, double length)
-{
-  const dart::dynamics::ArrowShape::Properties props(0.014, 2.0, 0.25);
-  const std::array<std::pair<Eigen::Vector3d, Eigen::Vector4d>, 3> axes{
-      {{Eigen::Vector3d(length, 0.0, 0.0),
-        Eigen::Vector4d(0.92, 0.18, 0.18, 1.0)},
-       {Eigen::Vector3d(0.0, length, 0.0),
-        Eigen::Vector4d(0.18, 0.85, 0.25, 1.0)},
-       {Eigen::Vector3d(0.0, 0.0, length),
-        Eigen::Vector4d(0.25, 0.45, 1.0, 1.0)}}};
-  for (const auto& axis : axes) {
-    dart::dynamics::SimpleFrame* arrow
-        = frame->addShapeFrame(std::make_shared<dart::dynamics::ArrowShape>(
-            Eigen::Vector3d::Zero(), axis.first, props, axis.second));
-    arrow->getVisualAspect(true)->setColor(axis.second);
-  }
-}
-
-//==============================================================================
 class SsikIkWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
@@ -1513,14 +1490,13 @@ int main(int argc, char* argv[])
   Eigen::Isometry3d defaultTarget = Eigen::Isometry3d::Identity();
   defaultTarget.translation() = Eigen::Vector3d(0.45, 0.0, 0.35);
 
-  // A draggable 6-DOF gizmo (translation arrows + rotation rings) serves as the
-  // IK target, like the atlas_puppet example. Sized larger than the arm's joint
-  // markers so it stays visible where the end effector reaches it.
+  // A draggable 6-DOF InteractiveFrame gizmo (translation arrows + rotation
+  // rings + planar handles) serves as the IK target, like the atlas_puppet
+  // example. Sized so it stays visible where the end effector reaches it.
   dart::gui::osg::InteractiveFramePtr target(
       new dart::gui::osg::InteractiveFrame(
-          dart::dynamics::Frame::World(), "ssik_target", defaultTarget, 0.55));
+          dart::dynamics::Frame::World(), "ssik_target", defaultTarget, 0.25));
   world->addSimpleFrame(target);
-  attachAxisGizmo(target, 0.5);
 
   // The solved end-effector pose is an output indicator (not interactive), so a
   // plain cyan sphere marker rather than a second draggable gizmo.

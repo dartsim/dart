@@ -709,8 +709,25 @@ void ImGuiHandler::render(::osg::RenderInfo& renderInfo)
   // enabled. The backend assumes texture unit 0 with caller-provided UVs, so
   // force that state for the duration of the ImGui draw and restore it
   // afterwards.
+  // The ImGui OpenGL2 backend changes a lot of fixed-function GL state (blend,
+  // depth test, lighting, polygon mode, matrices, vertex-array pointers, ...).
+  // Its own glPushAttrib/glPopAttrib does not cover everything, so leaked state
+  // corrupts the next frame's scene draw -- most visibly dropping the
+  // InteractiveFrame drag gizmo. Bracket the draw with a full attribute
+  // save/restore, and then invalidate osg::State's lazy cache so OSG re-applies
+  // its tracked state on the next draw.
   ScopedOpenGL2RenderState gl2State(renderInfo);
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
+  glPopClientAttrib();
+  glPopAttrib();
+
+  if (::osg::State* state = renderInfo.getState()) {
+    state->dirtyAllModes();
+    state->dirtyAllAttributes();
+    state->dirtyAllVertexArrays();
+  }
 }
 
 } // namespace osg
