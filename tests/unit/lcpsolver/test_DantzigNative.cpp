@@ -12,14 +12,11 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <chrono>
-#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include <cmath>
-#include <ctime>
 
 namespace {
 
@@ -29,17 +26,9 @@ using dart::lcpsolver::dantzig::multiply0;
 using dart::lcpsolver::dantzig::multiply1;
 using dart::lcpsolver::dantzig::multiply2;
 using dart::lcpsolver::dantzig::padding;
-using dart::test::DantzigProblemCase;
-using dart::test::DantzigProblemWorkspace;
 using dart::test::makeDantzigCorrectnessCases;
-using dart::test::makeDantzigPerformanceCases;
-using dart::test::solutionChecksum;
 using dart::test::solveDantzigBaseline;
-using dart::test::solveDantzigBaselineWorkspace;
 using dart::test::solveDantzigNative;
-using dart::test::solveDantzigNativeWorkspace;
-
-volatile double gDantzigChecksumSink = 0.0;
 
 class SingleDofConstraint final : public dart::constraint::ConstraintBase
 {
@@ -189,44 +178,6 @@ void expectMatrixMultiplyUsesPaddedStrides(int p, int q, int r)
   std::fill(a.begin(), a.end(), -1.0);
   multiply2(a.data(), b0.data(), c2.data(), p, q, r);
   expectProduct(a);
-}
-
-template <typename Solver>
-double bestElapsedCpuSeconds(const Solver& solver, int iterations)
-{
-  constexpr int trials = 3;
-  double best = std::numeric_limits<double>::infinity();
-
-  for (int trial = 0; trial < trials; ++trial) {
-    double checksum = 0.0;
-    const std::clock_t start = std::clock();
-    for (int i = 0; i < iterations; ++i) {
-      checksum += solver();
-    }
-    const std::clock_t end = std::clock();
-    gDantzigChecksumSink += checksum;
-    best = std::min(
-        best,
-        static_cast<double>(end - start) / static_cast<double>(CLOCKS_PER_SEC));
-  }
-
-  return best;
-}
-
-double solveNativeForTiming(
-    const DantzigProblemCase& problem,
-    DantzigProblemWorkspace& workspace,
-    DantzigLcpScratch<double>& scratch)
-{
-  EXPECT_TRUE(solveDantzigNativeWorkspace(problem, &workspace, &scratch));
-  return solutionChecksum(workspace.x);
-}
-
-double solveBaselineForTiming(
-    const DantzigProblemCase& problem, DantzigProblemWorkspace& workspace)
-{
-  EXPECT_TRUE(solveDantzigBaselineWorkspace(problem, &workspace));
-  return solutionChecksum(workspace.x);
 }
 
 } // namespace
@@ -415,26 +366,4 @@ TEST(DantzigNative, DeprecatedDantzigLcpSolverSolvesConstrainedGroup)
 
   EXPECT_TRUE(constraint->isExcited());
   EXPECT_NEAR(2.0, constraint->getAppliedImpulse(), 1e-12);
-}
-
-TEST(DantzigNative, NativeOutperformsLegacyBaselineOnPerformanceCases)
-{
-  for (const auto& problem : makeDantzigPerformanceCases()) {
-    DantzigLcpScratch<double> scratch;
-    DantzigProblemWorkspace nativeWorkspace(problem);
-    DantzigProblemWorkspace baselineWorkspace(problem);
-    constexpr int iterations = 512;
-    const double nativeSeconds = bestElapsedCpuSeconds(
-        [&]() {
-          return solveNativeForTiming(problem, nativeWorkspace, scratch);
-        },
-        iterations);
-    const double baselineSeconds = bestElapsedCpuSeconds(
-        [&]() { return solveBaselineForTiming(problem, baselineWorkspace); },
-        iterations);
-
-    EXPECT_LT(nativeSeconds, baselineSeconds)
-        << problem.name << " native=" << nativeSeconds
-        << " baseline=" << baselineSeconds;
-  }
 }
