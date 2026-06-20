@@ -377,6 +377,10 @@ protected:
   /// snapshot.
   void updateAllRestingSnapshotGlobalVersions();
 
+  /// Returns the collision-filter revision tracked by all-resting snapshots.
+  std::size_t getCollisionFilterSnapshotRevision(
+      const collision::CollisionFilter* filter) const;
+
   /// Invalidates the all-resting fast path cache.
   void invalidateAllRestingKinematicSnapshot();
 
@@ -478,6 +482,9 @@ protected:
   std::size_t mAllRestingSnapshotKinematicVersion = 0;
   std::size_t mAllRestingSnapshotExternalDisturbanceVersion = 0;
   std::size_t mAllRestingSnapshotDeactivationStateVersion = 0;
+  const collision::CollisionFilter* mAllRestingSnapshotCollisionFilter
+      = nullptr;
+  std::size_t mAllRestingSnapshotCollisionFilterRevision = 0;
 
   /// Whether mAllRestingKinematicSnapshot can be used.
   bool mAllRestingKinematicSnapshotValid = false;

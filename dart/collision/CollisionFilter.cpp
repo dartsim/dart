@@ -142,6 +142,12 @@ std::size_t BodyNodeCollisionFilter::getRevision() const
 }
 
 //==============================================================================
+std::size_t BodyNodeCollisionFilter::getBodyNodePairBlackListRevision() const
+{
+  return mRevision;
+}
+
+//==============================================================================
 bool BodyNodeCollisionFilter::ignoresCollision(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const

@@ -38,6 +38,7 @@
 
 #include "dart/simulation/World.hpp"
 
+#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
@@ -855,6 +856,15 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  const auto* collisionFilter = collisionOption.collisionFilter.get();
+  const auto collisionFilterRevision
+      = getCollisionFilterSnapshotRevision(collisionFilter);
+  const bool collisionFilterUnchanged
+      = mAllRestingSnapshotCollisionFilter == collisionFilter
+        && mAllRestingSnapshotCollisionFilterRevision
+               == collisionFilterRevision;
+
   if (mAllRestingSnapshotReady && mAllRestingSnapshotHasMobileSkeleton
       && mAllRestingSnapshotStructuralVersion
              == dynamics::Skeleton::getGlobalStructuralVersion()
@@ -863,12 +873,18 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       && mAllRestingSnapshotExternalDisturbanceVersion
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
       && mAllRestingSnapshotDeactivationStateVersion
-             == dynamics::Skeleton::getGlobalDeactivationStateVersion()) {
+             == dynamics::Skeleton::getGlobalDeactivationStateVersion()
+      && collisionFilterUnchanged) {
     for (const auto& skel : mSkeletons) {
       if (skel->isMobile() && restingSkeletonNeedsWake(skel))
         return false;
     }
     return true;
+  }
+
+  if (!collisionFilterUnchanged) {
+    markSnapshotStale();
+    return false;
   }
 
   if (mAllRestingSnapshotDeactivationStateVersion
@@ -973,6 +989,22 @@ void World::updateAllRestingSnapshotGlobalVersions()
       = dynamics::Skeleton::getGlobalExternalDisturbanceVersion();
   mAllRestingSnapshotDeactivationStateVersion
       = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
+  mAllRestingSnapshotCollisionFilterRevision
+      = getCollisionFilterSnapshotRevision(mAllRestingSnapshotCollisionFilter);
+}
+
+//==============================================================================
+std::size_t World::getCollisionFilterSnapshotRevision(
+    const collision::CollisionFilter* filter) const
+{
+  const auto* bodyNodeFilter
+      = dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter);
+  if (bodyNodeFilter == nullptr)
+    return 0u;
+
+  return bodyNodeFilter->getBodyNodePairBlackListRevision();
 }
 
 //==============================================================================
@@ -981,6 +1013,8 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingKinematicSnapshotValid = false;
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
+  mAllRestingSnapshotCollisionFilter = nullptr;
+  mAllRestingSnapshotCollisionFilterRevision = 0u;
 }
 
 //==============================================================================

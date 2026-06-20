@@ -725,6 +725,34 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 }
 
 //==============================================================================
+// Solver collision-filter updates can remove support contacts without touching
+// skeleton pose/version counters. The all-resting snapshot must include the
+// filter revision so sleeping bodies wake instead of reusing the cached no-op
+// step forever.
+TEST(IslandDeactivation, WakeOnSolverCollisionFilterChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* filter = dynamic_cast<BodyNodeCollisionFilter*>(
+      world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(
+      floor->getBodyNode(0), sleeper->getBodyNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Collision-shape edits under a static support must invalidate the all-resting
 // snapshot even when the static skeleton pose itself does not change.
 TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)

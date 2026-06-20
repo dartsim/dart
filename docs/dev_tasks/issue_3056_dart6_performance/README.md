@@ -80,6 +80,10 @@ speedup.
   stale sleep candidacy when an active contact group cannot rest, and prevent a
   quiet support contact from sleeping while another mobile body in the world is
   still above the wake-speed band.
+- Current PR2 filter-cache fix keys the all-resting fast path on the solver
+  collision-filter pointer and BodyNode-pair blacklist revision. That wakes
+  sleepers when support contacts are removed by a solver filter edit while
+  preserving the GUI sleep-color/visual-only no-op path.
 
 ## Default-On Correctness Rule
 
@@ -168,3 +172,12 @@ bug until proven otherwise.
 - Ran `pixi run -e gazebo test-gz-physics`: gz-physics build succeeded, 199/199
   tests plus 4/4 performance tests passed, and the DART plugin linked against
   the pixi-installed DART libraries.
+- For the PR2 Codex collision-filter review, added a solver-filter support
+  removal regression and narrowed the all-resting snapshot revision to the
+  BodyNode-pair blacklist so visual-only color changes remain cached. Rebuilt
+  `contact_benchmark`, `test_IslandDeactivation`, `test_World`, and
+  `test_ContactSurface`; CTest passed the three focused tests, and the 3-object
+  `contact_benchmark` smoke advanced time with finite final state.
+- Rebuilt gz-physics' test-enabled DART plugin tree against the current DART
+  install and passed the focused downstream checks:
+  `COMMON_TEST_joint_features_dartsim` and `UNIT_SDFFeatures_TEST`.

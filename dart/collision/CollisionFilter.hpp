@@ -43,6 +43,10 @@ namespace dynamics {
 class BodyNode;
 } // namespace dynamics
 
+namespace simulation {
+class World;
+} // namespace simulation
+
 namespace constraint {
 class ConstraintSolver;
 } // namespace constraint
@@ -118,6 +122,7 @@ public:
 
 private:
   friend class constraint::ConstraintSolver;
+  friend class simulation::World;
 
   /// Sets solver-only filtering for inactive resting pairs.
   ///
@@ -131,6 +136,9 @@ private:
   bool areAdjacentBodies(
       const dynamics::BodyNode* bodyNode1,
       const dynamics::BodyNode* bodyNode2) const;
+
+  /// Returns the blacklist-only revision for world-level rest snapshots.
+  std::size_t getBodyNodePairBlackListRevision() const;
 
   /// List of pairs to be ignored in the collision detection.
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
