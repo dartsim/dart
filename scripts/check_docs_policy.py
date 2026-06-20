@@ -66,6 +66,16 @@ DOCS_AI_FRONTMATTER_FILES = {
     "workflows.md",
 }
 DOCS_AI_FRONTMATTER_KEYS = {"type", "owner"}
+DOCS_AI_TYPE_LEGEND = {
+    "ai-principles",
+    "ai-entrypoint",
+    "ai-component-policy",
+    "ai-verification-policy",
+    "ai-workflow-map",
+    "ai-session-policy",
+    "ai-operating-model",
+    "ai-north-star",
+}
 DISCOVERABILITY_INDEXES = {
     "docs/ai": "docs/ai/README.md",
 }
@@ -620,6 +630,12 @@ def check_ai_doc_frontmatter(repo_root: Path) -> list[str]:
         for key in DOCS_AI_FRONTMATTER_KEYS:
             if not frontmatter.get(key):
                 failures.append(f"{rel_path}: missing frontmatter field `{key}`")
+
+        doc_type = frontmatter.get("type", "")
+        if doc_type and doc_type not in DOCS_AI_TYPE_LEGEND:
+            failures.append(
+                f"{rel_path}: frontmatter `type` not in legend: `{doc_type}`"
+            )
 
         unknown_keys = set(frontmatter) - DOCS_AI_FRONTMATTER_KEYS
         if unknown_keys:
