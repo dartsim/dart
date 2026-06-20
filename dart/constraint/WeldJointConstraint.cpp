@@ -35,7 +35,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 namespace dart {
 namespace constraint {
@@ -159,19 +159,19 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
   DART_ASSERT(_lcp->findex[4] == -1);
   DART_ASSERT(_lcp->findex[5] == -1);
 
-  _lcp->lo[0] = -dInfinity;
-  _lcp->lo[1] = -dInfinity;
-  _lcp->lo[2] = -dInfinity;
-  _lcp->lo[3] = -dInfinity;
-  _lcp->lo[4] = -dInfinity;
-  _lcp->lo[5] = -dInfinity;
+  _lcp->lo[0] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[1] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[2] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[3] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[4] = -::dart::lcpsolver::dantzig::Infinity;
+  _lcp->lo[5] = -::dart::lcpsolver::dantzig::Infinity;
 
-  _lcp->hi[0] = dInfinity;
-  _lcp->hi[1] = dInfinity;
-  _lcp->hi[2] = dInfinity;
-  _lcp->hi[3] = dInfinity;
-  _lcp->hi[4] = dInfinity;
-  _lcp->hi[5] = dInfinity;
+  _lcp->hi[0] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[1] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[2] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[3] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[4] = ::dart::lcpsolver::dantzig::Infinity;
+  _lcp->hi[5] = ::dart::lcpsolver::dantzig::Infinity;
 
   _lcp->x[0] = mOldX[0];
   _lcp->x[1] = mOldX[1];

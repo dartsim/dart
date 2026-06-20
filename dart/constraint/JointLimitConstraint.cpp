@@ -37,7 +37,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 #include <iostream>
 
@@ -190,7 +190,8 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -velocities[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = static_cast<double>(dInfinity);
+      mUpperBound[i]
+          = static_cast<double>(::dart::lcpsolver::dantzig::Infinity);
 
       if (mIsPositionLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -207,7 +208,8 @@ void JointLimitConstraint::update()
     mViolation[i] = positions[i] - positionUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -velocities[i];
-      mLowerBound[i] = -static_cast<double>(dInfinity);
+      mLowerBound[i]
+          = -static_cast<double>(::dart::lcpsolver::dantzig::Infinity);
       mUpperBound[i] = 0.0;
 
       if (mIsPositionLimitViolated[i]) {
@@ -228,7 +230,8 @@ void JointLimitConstraint::update()
     if (mViolation[i] < 0.0) {
       mNegativeVel[i] = -mViolation[i];
       mLowerBound[i] = 0.0;
-      mUpperBound[i] = static_cast<double>(dInfinity);
+      mUpperBound[i]
+          = static_cast<double>(::dart::lcpsolver::dantzig::Infinity);
 
       if (mIsVelocityLimitViolated[i]) {
         ++(mLifeTime[i]);
@@ -245,7 +248,8 @@ void JointLimitConstraint::update()
     mViolation[i] = velocities[i] - velocityUpperLimits[i];
     if (mViolation[i] > 0.0) {
       mNegativeVel[i] = -mViolation[i];
-      mLowerBound[i] = -static_cast<double>(dInfinity);
+      mLowerBound[i]
+          = -static_cast<double>(::dart::lcpsolver::dantzig::Infinity);
       mUpperBound[i] = 0.0;
 
       if (mIsVelocityLimitViolated[i]) {

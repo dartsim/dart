@@ -72,7 +72,7 @@ Usage summary:
   the system package by default, including headless package builds, and uses a
   DART-patched fetched copy when `DART_USE_SYSTEM_IMGUI` is disabled.
 - `lodepng` is used by the GLUT screenshot path.
-- `odelcpsolver` is included by core constraint, contact, boxed LCP, Dantzig,
+- `odelcpsolver` was included by core constraint, contact, boxed LCP, Dantzig,
   PGS, and default `World` solver paths.
 
 ## DART 7 Reference State
@@ -200,12 +200,13 @@ Bullet and ODE collision components
 `dart/external/odelcpsolver`
 
 - Risk: very high.
-- Plan: the narrow cleanup is to rehome the DART 6 solver code under a
-  DART-owned internal path, not delete it. True replacement requires a separate
-  solver behavior project with full contact and downstream evidence.
-- Current PR direction: move the implementation under `dart/lcpsolver/dantzig`
-  while keeping legacy `dart/external/odelcpsolver` forwarding headers and the
-  `external-odelcpsolver` package component for DART 6 compatibility.
+- Plan: replace the production ODE-style source tree with the DART-owned native
+  Dantzig kernel ported from DART 7, wired through DART 6's existing
+  `dart/lcpsolver` and constraint APIs.
+- Current PR direction: install only the DART-owned `dart/lcpsolver/dantzig`
+  headers and sources. Keep the original ODE implementation only as a
+  test-only baseline under `tests/baseline/odelcpsolver` for parity,
+  correctness, and performance-comparison evidence.
 - Validation: full unit tests for constraints/contact/dynamics, focused LCP
   solver regressions, dartpy smoke where constraint solver types are bound, and
   Gazebo.
@@ -236,9 +237,9 @@ OpenSceneGraph and GLUT GUI dependencies
 6. **Collision dependency reduction.** Treat Bullet/ODE package moves as
    optional-component packaging work. Treat FCL removal as a native-collision
    backport decision, not a routine cleanup.
-7. **LCP solver cleanup.** Rehome `odelcpsolver` internals if the goal is to
-   eliminate `dart/external/`. Replace it only under a separate solver-behavior
-   plan with full contact and Gazebo evidence.
+7. **LCP solver cleanup.** Replace the production `odelcpsolver` tree with the
+   DART-owned native Dantzig kernel, and keep any old ODE code under tests only
+   when it is needed as a parity or performance baseline.
 
 ## Implementation Gates
 

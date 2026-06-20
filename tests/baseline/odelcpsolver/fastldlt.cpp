@@ -22,11 +22,11 @@
 
 /* generated code, do not edit. */
 
-#include "dart/lcpsolver/dantzig/matrix.h"
+#include "matrix.h"
 
 namespace dart {
-namespace lcpsolver {
-namespace dantzig {
+namespace baseline {
+namespace ode {
 
 /* solve L*X=B, with B containing 1 right hand sides.
  * L is an n*n lower triangular matrix with ones on the diagonal.
@@ -414,6 +414,6 @@ void dFactorLDLT (dReal *A, dReal *d, int n, int nskip1)
   _dFactorLDLT (A, d, n, nskip1);
 }
 
-} // namespace dantzig
-} // namespace lcpsolver
+} // namespace ode
+} // namespace baseline
 } // namespace dart

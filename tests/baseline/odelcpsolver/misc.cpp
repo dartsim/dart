@@ -20,13 +20,13 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/lcpsolver/dantzig/odeconfig.h"
-#include "dart/lcpsolver/dantzig/misc.h"
-#include "dart/lcpsolver/dantzig/matrix.h"
+#include "odeconfig.h"
+#include "misc.h"
+#include "matrix.h"
 
 namespace dart {
-namespace lcpsolver {
-namespace dantzig {
+namespace baseline {
+namespace ode {
 
 //****************************************************************************
 // random numbers
@@ -196,6 +196,6 @@ dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n)
   return max;
 }
 
-} // namespace dantzig
-} // namespace lcpsolver
+} // namespace ode
+} // namespace baseline
 } // namespace dart

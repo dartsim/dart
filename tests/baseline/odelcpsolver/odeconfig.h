@@ -20,8 +20,8 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef DART_LCPSOLVER_DANTZIG_ODECONFIG_H_
-#define DART_LCPSOLVER_DANTZIG_ODECONFIG_H_
+#ifndef _ODE_CONFIG_H_
+#define _ODE_CONFIG_H_
 
 /* Pull in the standard headers */
 #include <stddef.h>
@@ -60,8 +60,8 @@
 #endif
 
 namespace dart {
-namespace lcpsolver {
-namespace dantzig {
+namespace baseline {
+namespace ode {
 
 /* Well-defined common data types...need to define for 64 bit systems */
 #if defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
@@ -81,8 +81,8 @@ namespace dantzig {
   typedef unsigned char   uint8;
 #endif
 
-} // namespace dantzig
-} // namespace lcpsolver
+} // namespace ode
+} // namespace baseline
 } // namespace dart
 
 /* Define the dInfinity macro */
