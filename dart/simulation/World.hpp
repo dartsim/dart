@@ -485,6 +485,14 @@ protected:
     std::vector<Eigen::Isometry3d> mBodyTransforms;
   };
 
+  struct RestingWorldSkeletonState
+  {
+    const dynamics::Skeleton* mSkeleton = nullptr;
+    std::size_t mStructuralVersion = 0;
+    std::size_t mKinematicVersion = 0;
+    std::size_t mNumBodyNodes = 0;
+  };
+
   /// Snapshot used to avoid skipping collision after an external pose edit.
   std::vector<AllRestingKinematicSnapshot> mAllRestingKinematicSnapshot;
 
@@ -513,6 +521,7 @@ protected:
   /// resting.
   bool mLastStepRestingWorldStateValid = false;
   bool mLastStepRestingWorldStateCollisionFilterTrackable = false;
+  std::vector<RestingWorldSkeletonState> mLastStepRestingWorldSkeletonStates;
   std::size_t mLastStepRestingWorldStateDeactivationStateVersion = 0;
   const collision::CollisionDetector*
       mLastStepRestingWorldStateCollisionDetector

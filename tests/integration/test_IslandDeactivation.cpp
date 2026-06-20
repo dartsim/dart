@@ -884,6 +884,32 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
 }
 
 //==============================================================================
+// Kinematic edits to an immobile support can remove a resting body's support
+// immediately after the body sleeps, before the first no-contact snapshot is
+// built. The between-step world-state guard must notice that per-world
+// skeleton kinematic revision change.
+TEST(IslandDeactivation, WakeOnSupportPoseChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floor->getJoint(0)->setTransformFromParentBodyNode(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Solver collision-filter updates can remove support contacts without touching
 // skeleton pose/version counters. The all-resting snapshot must include the
 // filter revision so sleeping bodies wake instead of reusing the cached no-op

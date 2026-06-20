@@ -1087,10 +1087,33 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   const auto* collisionFilter = collisionOption.collisionFilter.get();
   const bool collisionFilterTrackable
       = isCollisionFilterSnapshotTrackable(collisionFilter);
+  // Before the no-contact kinematic snapshot exists, this guard is the only
+  // place that can notice support pose edits made between the sleep transition
+  // and the next step. Once the full snapshot exists, let its exact
+  // pose/transform validation distinguish real kinematic edits from visual-only
+  // version changes.
+  bool skeletonStateUnchanged = true;
+  if (!mAllRestingKinematicSnapshotValid) {
+    skeletonStateUnchanged
+        = mLastStepRestingWorldSkeletonStates.size() == mSkeletons.size();
+    if (skeletonStateUnchanged) {
+      for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+        const auto& snapshot = mLastStepRestingWorldSkeletonStates[i];
+        const auto& skel = mSkeletons[i];
+        if (snapshot.mSkeleton != skel.get()
+            || snapshot.mStructuralVersion != skel->getVersion()
+            || snapshot.mKinematicVersion != skel->getKinematicVersion()
+            || snapshot.mNumBodyNodes != skel->getNumBodyNodes()) {
+          skeletonStateUnchanged = false;
+          break;
+        }
+      }
+    }
+  }
 
   const bool worldStateUnchanged
       = mLastStepRestingWorldStateCollisionFilterTrackable
-        && collisionFilterTrackable
+        && collisionFilterTrackable && skeletonStateUnchanged
         && mLastStepRestingWorldStateDeactivationStateVersion
                == dynamics::Skeleton::getGlobalDeactivationStateVersion()
         && mLastStepRestingWorldStateCollisionDetector
@@ -1131,6 +1154,15 @@ void World::updateLastStepRestingWorldState()
             ? getCollisionFilterSnapshotRevision(
                 mLastStepRestingWorldStateCollisionFilter)
             : 0u;
+  mLastStepRestingWorldSkeletonStates.clear();
+  mLastStepRestingWorldSkeletonStates.reserve(mSkeletons.size());
+  for (const auto& skel : mSkeletons) {
+    mLastStepRestingWorldSkeletonStates.push_back(RestingWorldSkeletonState{
+        skel.get(),
+        skel->getVersion(),
+        skel->getKinematicVersion(),
+        skel->getNumBodyNodes()});
+  }
   mLastStepRestingWorldStateDeactivationStateVersion
       = dynamics::Skeleton::getGlobalDeactivationStateVersion();
   mLastStepRestingWorldStateValid = true;
@@ -1141,6 +1173,7 @@ void World::invalidateLastStepRestingWorldState()
 {
   mLastStepRestingWorldStateValid = false;
   mLastStepRestingWorldStateCollisionFilterTrackable = false;
+  mLastStepRestingWorldSkeletonStates.clear();
   mLastStepRestingWorldStateDeactivationStateVersion = 0u;
   mLastStepRestingWorldStateCollisionDetector = nullptr;
   mLastStepRestingWorldStateCollisionGroup = nullptr;
