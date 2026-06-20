@@ -4,13 +4,25 @@
 
 Living assessment record. This document owns the durable, evidence-backed
 findings of the June 2026 DART 7 architecture review and the standing
-architecture rules derived from them. Operating state, sequencing, and the
-work packets that execute these findings live in PLAN-091 in
-[`../plans/dashboard.md`](../plans/dashboard.md) and
-[`../plans/091-architecture-hardening.md`](../plans/091-architecture-hardening.md).
-When a finding is resolved in code, update or remove its entry here and record
-the evidence; this file should always describe the current verified state, not
-a historical snapshot.
+architecture rules derived from them. PLAN-091 closed its living work-packet
+plan in [`../plans/dashboard.md`](../plans/dashboard.md), but that closeout
+does not mark every verified architecture gap below as resolved in code. When
+a finding is resolved, update or remove its entry here and record the evidence;
+this file should always describe the current verified state, not a historical
+snapshot.
+
+PLAN-091 closeout folded the completed packet plan into durable owner docs
+instead of keeping the numbered plan as an archive. The durable operating
+state is now: this assessment owns the verified findings and standing rule;
+[`../plans/solver-family-intake.md`](../plans/solver-family-intake.md) owns the
+new-family gate; [`simulation_solver_architecture.md`](simulation_solver_architecture.md)
+and
+[`algorithm_extension_contracts.md`](algorithm_extension_contracts.md) own the
+solver-contract architecture; [`batched_world_device_residency.md`](batched_world_device_residency.md)
+owns the batched/device-residency contract; and
+[`../plans/042-dart7-public-api-and-source-layout.md`](../plans/042-dart7-public-api-and-source-layout.md)
+owns the DART 6 legacy quarantine/removal sequence. The closeout PR history is
+summarized in the dashboard entry.
 
 ## How this assessment was produced
 
@@ -208,8 +220,8 @@ are too loose to catch silent physics changes).
 
 ## Resolution map
 
-Each finding is executed through PLAN-091 work packets; this table is a
-pointer, not a tracker — see the plan for scope and acceptance evidence.
+Each finding was executed through PLAN-091 work packets; this table is a
+durable closeout pointer, not an active tracker.
 
 | Finding                             | Direction                                                                                                                                            | Executed by  |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |

@@ -18,42 +18,41 @@ its own line so status updates remain git-history friendly.
 ### PLAN-091: DART 7 Architecture Hardening
 
 - Owner doc:
-  [`091-architecture-hardening.md`](091-architecture-hardening.md)
-- Status: Active
+  [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md);
+  follow-up owner docs:
+  [`solver-family-intake.md`](solver-family-intake.md) and
+  [`042-dart7-public-api-and-source-layout.md`](042-dart7-public-api-and-source-layout.md)
+- Status: Complete
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Completed packets include WP-091.3 via PR #2999; WP-091.5,
-  WP-091.10, WP-091.11, WP-091.14, and WP-091.23 via PR #3003; WP-091.12 via
-  PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR #3029;
-  WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31, WP-091.33b, and
-  WP-091.33c via PR #3052; WP-091.32 via PR #3058; WP-091.33d plus WP-091.34
-  via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077; and
-  WP-091.41 through WP-091.44 via PR #3072; and the WP-091.24 standalone
+- Next step: Complete. Completed packets include WP-091.3 via PR #2999;
+  WP-091.5, WP-091.10, WP-091.11, WP-091.14, and WP-091.23 via PR #3003;
+  WP-091.12 via PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR
+  #3029; WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31,
+  WP-091.33b, and WP-091.33c via PR #3052; WP-091.32 via PR #3058; WP-091.33d
+  plus WP-091.34 via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077;
+  WP-091.41 through WP-091.44 via PR #3072; the WP-091.24 standalone
   harness/packet slice, bounded WP-091.13 shared-helper cleanup, and
-  WP-091.33e packet-reporting checker via PR #3083. PR #3091 closed WP-091.13
-  and WP-091.24: one canonical rigid-contact assembly producer feeds
-  sequential impulse, boxed-LCP, and differentiable capture, while
-  `StepMetrics` now folds cached contact/iteration diagnostics, variational
-  residuals, multibody momentum, and a smooth-corpus convergence sweep. PR
-  #3095 is closing the remaining WS0 packet, WP-091.4 legacy freeze: PLAN-042
-  Decision 5 now records freeze/quarantine first, release-6.20+ and later
-  release-lane ports next, then DART 7 public-contract removal after those
-  needs settle. The freeze gate blocks untagged legacy surface growth while
-  current open release-6.20 PRs (#3071, #3086, #3088, #3092, and #3100) and any
-  later release-lane ports finish. Final deletion of DART 6 legacy is not a
-  WP-091.4 prerequisite; track that in PLAN-042 follow-up work after the release
-  lane is settled.
-  Packets are orchestrator-authored per
-  [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
-  `dart-execute-packet`; availability follows each packet's own Dependencies
-  line. The standing rule applies now: new solver-family work routes through
-  [`solver-family-intake.md`](solver-family-intake.md) and does not bypass the
-  contracts this plan is landing.
-- Gate: A packet is done only when its named acceptance evidence exists and
-  its listed `pixi run ...` gates pass, with availability governed by the
-  per-packet Dependencies lines; plan completion follows the acceptance
-  criteria in the owner doc, including one new solver-family intake exercised
-  through the strengthened checklist without bypass.
+  WP-091.33e packet-reporting checker via PR #3083; WP-091.13 and WP-091.24
+  closeout via PR #3091; and the remaining WS0 packet, WP-091.4 legacy freeze,
+  via PR #3095. PLAN-042 Decision 5 now records freeze/quarantine first,
+  release-6.20+ and later release-lane ports next, then DART 7 public-contract
+  removal after those needs settle. The freeze gate blocks untagged legacy
+  surface growth while current open release-6.20 PRs (#3071, #3086, #3092,
+  #3105, and #3107) and any later release-lane ports finish. Final deletion of
+  DART 6 legacy is not a WP-091.4 prerequisite; track that in PLAN-042
+  follow-up work after the release lane is settled. No active PLAN-091 packets
+  remain; new solver-family work routes through
+  [`solver-family-intake.md`](solver-family-intake.md), unresolved
+  architecture findings remain in
+  [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md),
+  and follow-up implementation belongs to the active owner plan that selects
+  the work.
+- Gate: Closed. Durable evidence is the merged packet PR list above, the
+  standing solver-family intake gate, the moved cross-family metrics manifest
+  in `docs/design/dart7_cross_family_metrics_corpus.json`, and PLAN-042
+  Decision 5 for DART 6 legacy quarantine/removal sequencing. Future work uses
+  the gates of its active owner plan instead of PLAN-091 packet gates.
 
 ### PLAN-122: DART 7 Simulation-Loop Allocation Hardening
 
