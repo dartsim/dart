@@ -1611,8 +1611,8 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     friction = 0.0;
   }
 
-  const bool hadFriction = Base::mAspectProperties.mFrictions[index] != 0.0;
-  const bool hasFriction = friction != 0.0;
+  const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
+  const bool hasFriction = friction > 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
   if (hadFriction && !hasFriction) {
     --Joint::mNumNonzeroCoulombFrictionDofs;
