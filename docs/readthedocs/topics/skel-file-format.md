@@ -1,5 +1,14 @@
 # Legacy SKEL File Format
 
+```{admonition} DART 6 feature — removed in DART 7
+:class: caution
+
+SKEL is a **DART 6** format. DART 7 removes SKEL support, so the loader shown
+here is not part of the DART 7 API. Use URDF, SDFormat, or MJCF for new models,
+or a `release-6.*` branch when you need SKEL. Status is tracked in the
+[documentation migration plan](https://github.com/dartsim/dart/blob/main/docs/onboarding/dart7-docs-migration.md).
+```
+
 SKEL is DART's legacy XML format for describing worlds, skeletons, robots, and
 environments. Its structure is based on [SDFormat](http://sdformat.org/) with a
 few DART-specific extensions.

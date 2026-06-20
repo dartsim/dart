@@ -1,6 +1,8 @@
 IkFast Support and Integration
 ==============================
 
+.. include:: /_includes/legacy_dart6.rst
+
 IkFast is the analytic inverse kinematics generator that ships with
 `OpenRAVE <https://github.com/rdiankov/openrave>`_. DART exposes the generated
 solutions through :class:`dart::dynamics::SharedLibraryIkFast` so that an IKFast

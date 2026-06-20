@@ -1,0 +1,198 @@
+/* DART documentation — site-local styling.
+ *
+ * Two concerns live here:
+ *   1. The DART 7 / DART 6 version notice banner shown on every page of the
+ *      "latest" (DART 7) build. The template lives in
+ *      ``_templates/layout.html``; this file owns its appearance.
+ *   2. The DART 7 User Guide landing-page card grid. The markup lives in
+ *      ``user_guide/index.md`` as a small block of HTML; this file owns its
+ *      look so the guide reads as a guided walkthrough rather than a bare
+ *      table of contents.
+ *
+ * Colors derive from the DART logo (warm amber + slate) so the site keeps its
+ * own identity instead of mirroring any other project's documentation theme.
+ */
+
+:root {
+  --dart-amber: #e8821e;
+  --dart-amber-soft: #fbe6d2;
+  --dart-amber-line: #f3c48a;
+  --dart-slate: #2b3440;
+  --dart-slate-soft: #5a6675;
+  --dart-ink: #1f2730;
+  --dart-card-bg: #ffffff;
+  --dart-card-border: #e4e8ee;
+}
+
+/* --------------------------------------------------------------------------
+ * Version notice banner (DART 7 vs DART 6 LTS)
+ * ------------------------------------------------------------------------ */
+
+.dart-version-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.5rem 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--dart-amber-line);
+  border-left: 4px solid var(--dart-amber);
+  border-radius: 6px;
+  background: var(--dart-amber-soft);
+  color: var(--dart-ink);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.dart-version-banner__badge {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--dart-amber);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dart-version-banner__text {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.dart-version-banner a {
+  color: #b5610a;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.dart-version-banner a:hover {
+  color: #8f4c06;
+}
+
+/* --------------------------------------------------------------------------
+ * User Guide landing-page card grid
+ * ------------------------------------------------------------------------ */
+
+.ug-hero {
+  margin: 0 0 1.75rem 0;
+  padding: 1.4rem 1.5rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--dart-slate) 0%, #3b4858 100%);
+  color: #f4f6f8;
+}
+
+.ug-hero__kicker {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dart-amber-line);
+}
+
+.ug-hero h2,
+.ug-hero p:first-of-type {
+  margin-top: 0;
+}
+
+.ug-hero p {
+  margin-bottom: 0;
+  color: #d6dce3;
+  font-size: 0.98rem;
+}
+
+.ug-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem 0;
+}
+
+.ug-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid #e4e8ee;
+  border-radius: 9px;
+  background: var(--dart-card-bg);
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.ug-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--dart-amber);
+}
+
+.ug-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(43, 52, 64, 0.12);
+  border-color: var(--dart-amber-line);
+}
+
+.ug-card__step {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dart-amber);
+}
+
+.ug-card__title {
+  margin: 0.3rem 0 0.4rem 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--dart-slate);
+}
+
+.ug-card__title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ug-card__title a:hover {
+  color: var(--dart-amber);
+}
+
+.ug-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--dart-slate-soft);
+}
+
+.ug-card__links {
+  margin-top: 0.7rem;
+  font-size: 0.86rem;
+}
+
+.ug-card__links a {
+  font-weight: 600;
+}
+
+/* Make the whole card clickable when it wraps a single primary link. */
+.ug-card--linked a.ug-card__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  text-indent: -9999px;
+}
+
+@media (max-width: 480px) {
+  .ug-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
