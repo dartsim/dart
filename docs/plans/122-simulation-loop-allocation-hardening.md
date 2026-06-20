@@ -16,16 +16,20 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 13 of 18 matrix rows are closed with first-post-bake
-  evidence. There are no remaining implementation-capacity rows for currently
+- Progress snapshot: 14 of 18 matrix rows are closed with first-post-bake
+  evidence. `L-001` is now closed: the legacy `dynamics::Skeleton` → DART 7
+  `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
+  first-post-bake world-base, global-heap, and raw-malloc gates over an imported
+  scene, with the source-model translation kept in the pre-bake configuration
+  phase. There are no remaining implementation-capacity rows for currently
   selectable DART 7 CPU `World::step()` paths: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
-  are promotion-gated rows `M-004`, `F-002`, `L-001`, and `G-001`; they stay
-  owned by their named plans until the corresponding solver, derivative,
-  loader, or accelerator path is promoted into `World::step()`. No new
-  `docs/dev_tasks/` folder is needed for those rows while this plan and its
-  coverage matrix remain the durable owner.
+  are promotion-gated rows `M-004`, `F-002`, and `G-001`; they stay owned by
+  their named plans until the corresponding solver, derivative, or accelerator
+  path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
+  needed for those rows while this plan and its coverage matrix remain the
+  durable owner.
 
 ## Scope
 
