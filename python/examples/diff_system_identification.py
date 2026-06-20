@@ -19,15 +19,17 @@ scene::
     PYTHONPATH=build/default/cpp/Release/python:python \\
         .pixi/envs/default/bin/python python/examples/diff_system_identification.py
 
-Exit-code contract: the script exits 0 in exactly two cases -- (1) ``dartpy``
-imports successfully but differentiable support is not compiled
+Exit-code contract: the script exits 0 in exactly two cases -- (1) the expected
+DART 7 ``dartpy`` imports successfully but differentiable support is not compiled
 (``DART_BUILD_DIFF=OFF``, the default pixi build), where it prints a clear
 message instead of raising; and (2) a successful mass recovery on a
 ``DART_BUILD_DIFF=ON`` build. Every other outcome exits *nonzero*: a ``dartpy``
 import/setup failure (broken ``PYTHONPATH``, missing or ABI-mismatched
-extension), a failure of the differentiable API, a non-finite result, or
-non-convergence. This keeps a DIFF-ON smoke run from passing while the example
-never actually ran.
+extension); a wrong or stale ``dartpy`` that imports but lacks the DART 7
+World/differentiable surface (e.g. an installed package shadowing the build
+tree); a failure of the differentiable API; a non-finite result; or
+non-convergence. This keeps a smoke run from passing while the example never
+actually exercised DART.
 """
 
 from __future__ import annotations
@@ -121,6 +123,36 @@ def _diff_built(sx: Any) -> bool:
     return diff is not None and hasattr(diff, "rollout")
 
 
+# Symbols the example needs from a correct DART 7 dartpy regardless of the
+# differentiable build flag. Their absence means a wrong/partial dartpy.
+_REQUIRED_DART7_SYMBOLS = ("World", "diff", "PhysicalParameter", "ContactSolverMethod")
+
+
+def _diff_off_is_genuine(sx: Any) -> tuple[bool, str]:
+    """Confirm that absent diff bindings mean a genuine ``DART_BUILD_DIFF=OFF``
+    build of the *expected* dartpy -- not a wrong, partial, or stale ``dartpy``
+    that merely imports (e.g. an installed package shadowing the build tree).
+
+    A correct DART 7 dartpy exposes the World/differentiable surface and, when
+    built OFF, raises a specific ``DART_BUILD_DIFF`` error from the
+    differentiable API. Anything else is a setup error that must not be reported
+    as a graceful skip. Returns ``(genuine, reason)``.
+    """
+    missing = [name for name in _REQUIRED_DART7_SYMBOLS if not hasattr(sx, name)]
+    if missing:
+        return False, f"imported dartpy is missing DART 7 symbols {missing}"
+    try:
+        world, body = _build_world(sx, TRUE_MASS)
+        world.add_differentiable_parameter(body, sx.PhysicalParameter.MASS)
+    except Exception as exc:  # noqa: BLE001 - inspect the error to classify it
+        message = str(exc)
+        if "DART_BUILD_DIFF" in message or "differentiable support" in message:
+            return True, ""  # the expected "not compiled" signal from a real build
+        return False, f"differentiable API failed unexpectedly: {exc}"
+    # A real OFF build rejects parameter registration; reaching here is wrong.
+    return False, "differentiable API did not reject registration on an OFF build"
+
+
 def _identify_mass(sx: Any) -> dict[str, Any]:
     """Recover the planted mass by gradient descent on the parameter Jacobian."""
     # Ground-truth trajectory generated with the true (unknown to the optimizer)
@@ -200,6 +232,18 @@ def main() -> int:
         return 1
 
     if not _diff_built(sx):
+        genuine, reason = _diff_off_is_genuine(sx)
+        if not genuine:
+            print(
+                "[error] differentiable bindings are absent and this is not a "
+                "valid DART_BUILD_DIFF=OFF dartpy build."
+            )
+            print(f"  reason: {reason}")
+            print(
+                "  Point PYTHONPATH at the freshly built dartpy; a stale or "
+                "partial dartpy may be shadowing the build tree."
+            )
+            return 1
         print(
             "[diff-unavailable] differentiable simulation is not compiled into "
             "this build."
