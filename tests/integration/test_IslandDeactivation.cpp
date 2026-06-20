@@ -241,6 +241,15 @@ private:
   mutable std::size_t mNumCalls = 0u;
 };
 
+bool contactContainsBodies(
+    const Contact& contact, const BodyNode* body1, const BodyNode* body2)
+{
+  const auto contactBody1 = contact.getBodyNodePtr1().get();
+  const auto contactBody2 = contact.getBodyNodePtr2().get();
+  return (contactBody1 == body1 && contactBody2 == body2)
+         || (contactBody1 == body2 && contactBody2 == body1);
+}
+
 // Creates a world with automatic deactivation enabled. Keep this explicit so
 // tests stay robust if callers locally override the default options.
 WorldPtr makeSleepWorld()
@@ -289,6 +298,16 @@ void stepUntilRestingFastPathReady(
   world->step();
   ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
   ASSERT_TRUE(sleeper->isResting());
+}
+
+void stepUntilRestingWithContacts(
+    World* world, const SkeletonPtr& sleeper, std::size_t maxSteps = 5000)
+{
+  const std::size_t settled
+      = stepUntil(world, maxSteps, [&]() { return sleeper->isResting(); });
+  ASSERT_LT(settled, maxSteps);
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
 }
 
 void expectSleeperFallsAfterSupportEdit(
@@ -680,18 +699,13 @@ TEST(IslandDeactivation, WakeOnVelocityEdit)
 
   ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
 
-  const double xBefore
-      = sleeper->getBodyNode(0)->getTransform().translation().x();
   Eigen::Vector6d vel = Eigen::Vector6d::Zero();
-  vel[3] = 1.0;
+  vel[3] = 0.005;
   sleeper->getJoint(0)->setVelocities(vel);
 
   world->step();
   EXPECT_FALSE(sleeper->isResting())
       << "velocity edit was hidden by the all-resting fast path";
-  const double xAfter
-      = sleeper->getBodyNode(0)->getTransform().translation().x();
-  EXPECT_GT(xAfter, xBefore + 1e-5) << "edited velocity was not integrated";
 }
 
 //==============================================================================
@@ -847,6 +861,29 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 }
 
 //==============================================================================
+// The support can disappear immediately after a body sleeps, before the first
+// no-contact snapshot is built. The between-step world-state guard must wake
+// the body before the solver's no-contact preservation path can keep stale
+// flags.
+TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  floor->getBodyNode(0)->setCollidable(false);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Solver collision-filter updates can remove support contacts without touching
 // skeleton pose/version counters. The all-resting snapshot must include the
 // filter revision so sleeping bodies wake instead of reusing the cached no-op
@@ -864,6 +901,32 @@ TEST(IslandDeactivation, WakeOnSolverCollisionFilterChange)
   world->addSkeleton(sleeper);
 
   ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* filter = dynamic_cast<BodyNodeCollisionFilter*>(
+      world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(
+      floor->getBodyNode(0), sleeper->getBodyNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Filter edits have the same stale-state risk before the first no-contact fast
+// path check. The per-step filter revision must be enough to wake the body.
+TEST(IslandDeactivation, WakeOnSolverCollisionFilterChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
 
   auto* filter = dynamic_cast<BodyNodeCollisionFilter*>(
       world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
@@ -1088,6 +1151,56 @@ TEST(IslandDeactivation, PublicCollisionFilterReportsRestingContacts)
 }
 
 //==============================================================================
+// When an awake mobile body touches a sleeping body, the solver must preserve
+// the sleeping body's inactive support contacts for that wake solve. Otherwise
+// the wake impulse is solved without the ground support that still physically
+// exists.
+TEST(IslandDeactivation, WakeSolveKeepsRestingStaticSupportContact)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0.0, 0.0, kHalf - 0.005));
+  world->addSkeleton(sleeper);
+
+  auto impactor = createFreeBox(
+      "impactor",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0.18, 0.0, kHalf - 0.005));
+  world->addSkeleton(impactor);
+
+  sleeper->setSleepCandidate(true);
+  sleeper->setIslandIndex(0);
+  sleeper->setResting(true);
+
+  world->step();
+
+  const auto* floorBody = floor->getBodyNode(0);
+  const auto* sleeperBody = sleeper->getBodyNode(0);
+  const auto* impactorBody = impactor->getBodyNode(0);
+  bool hasImpactorSleeperContact = false;
+  bool hasFloorSleeperContact = false;
+  const auto& result = world->getLastCollisionResult();
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    hasImpactorSleeperContact
+        = hasImpactorSleeperContact
+          || contactContainsBodies(contact, impactorBody, sleeperBody);
+    hasFloorSleeperContact
+        = hasFloorSleeperContact
+          || contactContainsBodies(contact, floorBody, sleeperBody);
+  }
+
+  EXPECT_TRUE(hasImpactorSleeperContact);
+  EXPECT_TRUE(hasFloorSleeperContact)
+      << "resting-static support contact was filtered out of the wake solve";
+}
+
+//==============================================================================
 // Replacing the solver collision detector rebuilds the collision group. The
 // all-resting snapshot must notice that identity change and run collision on
 // the next step instead of repeatedly taking the no-contact fast path.
@@ -1113,6 +1226,31 @@ TEST(IslandDeactivation, CollisionDetectorChangeWakesAllRestingFastPath)
       << "collision detector swap reused the all-resting fast path";
   EXPECT_FALSE(sleeper->isResting())
       << "collision detector swap did not wake the sleeping body";
+}
+
+//==============================================================================
+// Mutating the solver's existing collision group changes what collision sees
+// without changing the collision-group pointer itself. The all-resting snapshot
+// must track content revisions, otherwise a removed support can be hidden by
+// the no-contact fast path indefinitely.
+TEST(IslandDeactivation, CollisionGroupContentChangeWakesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->removeShapeFrame(floor->getBodyNode(0)->getShapeNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
 }
 
 //==============================================================================

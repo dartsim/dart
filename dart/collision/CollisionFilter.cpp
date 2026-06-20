@@ -202,7 +202,13 @@ bool BodyNodeCollisionFilter::ignoresCollision(
           && skel2->isMobile() && skel1->isResting() && skel2->isResting()
           && skel1->getIslandIndex() >= 0
           && skel1->getIslandIndex() == skel2->getIslandIndex();
-    if (sameFrozenMobileIsland)
+    const bool restingMobileOnStaticSupport
+        = gPreserveRestingIslandContacts
+          && ((skel1->isMobile() && skel1->isResting()
+               && skel1->getIslandIndex() >= 0 && !skel2->isMobile())
+              || (skel2->isMobile() && skel2->isResting()
+                  && skel2->getIslandIndex() >= 0 && !skel1->isMobile()));
+    if (sameFrozenMobileIsland || restingMobileOnStaticSupport)
       return false;
 
     return true;

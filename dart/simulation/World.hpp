@@ -388,6 +388,18 @@ protected:
   std::size_t getCollisionFilterSnapshotRevision(
       const collision::CollisionFilter* filter) const;
 
+  /// Returns true if any mobile skeleton is currently in the resting state.
+  bool hasRestingMobileSkeleton() const;
+
+  /// Wakes resting skeletons when world/contact state changed between steps.
+  void wakeRestingSkeletonsIfStepStateChanged();
+
+  /// Saves world/contact state after a step that may leave bodies resting.
+  void updateLastStepRestingWorldState();
+
+  /// Clears the saved state used to detect between-step world/contact changes.
+  void invalidateLastStepRestingWorldState();
+
   /// Invalidates the all-resting fast path cache.
   void invalidateAllRestingKinematicSnapshot();
 
@@ -492,9 +504,25 @@ protected:
   const collision::CollisionDetector* mAllRestingSnapshotCollisionDetector
       = nullptr;
   const collision::CollisionGroup* mAllRestingSnapshotCollisionGroup = nullptr;
+  std::size_t mAllRestingSnapshotCollisionGroupVersion = 0;
   const collision::CollisionFilter* mAllRestingSnapshotCollisionFilter
       = nullptr;
   std::size_t mAllRestingSnapshotCollisionFilterRevision = 0;
+
+  /// World/contact state captured after the last step while bodies were
+  /// resting.
+  bool mLastStepRestingWorldStateValid = false;
+  bool mLastStepRestingWorldStateCollisionFilterTrackable = false;
+  std::size_t mLastStepRestingWorldStateDeactivationStateVersion = 0;
+  const collision::CollisionDetector*
+      mLastStepRestingWorldStateCollisionDetector
+      = nullptr;
+  const collision::CollisionGroup* mLastStepRestingWorldStateCollisionGroup
+      = nullptr;
+  std::size_t mLastStepRestingWorldStateCollisionGroupVersion = 0;
+  const collision::CollisionFilter* mLastStepRestingWorldStateCollisionFilter
+      = nullptr;
+  std::size_t mLastStepRestingWorldStateCollisionFilterRevision = 0;
 
   /// Whether mAllRestingKinematicSnapshot can be used.
   bool mAllRestingKinematicSnapshotValid = false;

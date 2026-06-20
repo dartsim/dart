@@ -45,6 +45,7 @@
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 
@@ -63,6 +64,18 @@
 
 namespace dart {
 namespace simulation {
+
+//==============================================================================
+static bool hasNonzeroGeneralizedVelocity(const dynamics::Skeleton& skel)
+{
+  for (std::size_t i = 0; i < skel.getNumDofs(); ++i) {
+    const auto* dof = skel.getDof(i);
+    if (dof && dof->getVelocity() != 0.0)
+      return true;
+  }
+
+  return false;
+}
 
 //==============================================================================
 class SimulationThreadPool
@@ -395,6 +408,7 @@ void World::reset()
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
   invalidateAllRestingKinematicSnapshot();
+  invalidateLastStepRestingWorldState();
 
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
@@ -412,6 +426,8 @@ void World::step(bool _resetCommand)
   // Mirror the enable flag onto the solver so its island rest-detection / LCP
   // skipping runs only when the feature is on (otherwise it is a strict no-op).
   mConstraintSolver->setDeactivationActive(deactivationEnabled);
+  if (deactivationEnabled)
+    wakeRestingSkeletonsIfStepStateChanged();
 
   if (!deactivationEnabled) {
     {
@@ -464,6 +480,7 @@ void World::step(bool _resetCommand)
     mTime += mTimeStep;
     mFrame++;
     invalidateAllRestingKinematicSnapshot();
+    invalidateLastStepRestingWorldState();
     return;
   }
 
@@ -482,6 +499,7 @@ void World::step(bool _resetCommand)
     DART_PROFILE_SCOPED_N("World::step - All-resting fast path");
     mTime += mTimeStep;
     mFrame++;
+    updateLastStepRestingWorldState();
     return;
   }
 
@@ -524,9 +542,11 @@ void World::step(bool _resetCommand)
           // silently dropped. Gravity alone is not a disturbance, so a body
           // resting on its support stays asleep.
           if (deactivationEnabled && skel->isResting()) {
-            if (externallyDisturbed) {
+            if (externallyDisturbed || hasNonzeroGeneralizedVelocity(*skel)) {
               skel->setResting(false);
               skel->setSleepCandidate(false);
+              if (!disturbedThisStep.empty())
+                disturbedThisStep[i] = 1;
             } else {
               if (_resetCommand) {
                 skel->clearInternalForces();
@@ -648,6 +668,11 @@ void World::step(bool _resetCommand)
   } else {
     invalidateAllRestingKinematicSnapshot();
   }
+
+  if (deactivationEnabled)
+    updateLastStepRestingWorldState();
+  else
+    invalidateLastStepRestingWorldState();
 }
 
 //==============================================================================
@@ -830,6 +855,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       return true;
     }
 
+    if (hasNonzeroGeneralizedVelocity(*skel)) {
+      markSnapshotStale();
+      return true;
+    }
+
     return false;
   };
 
@@ -865,7 +895,9 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const bool collisionDetectorUnchanged
       = mAllRestingSnapshotCollisionDetector == collisionDetector.get()
-        && mAllRestingSnapshotCollisionGroup == collisionGroup.get();
+        && mAllRestingSnapshotCollisionGroup == collisionGroup.get()
+        && mAllRestingSnapshotCollisionGroupVersion
+               == collisionGroup->getContentVersion();
 
   if (mAllRestingSnapshotReady && mAllRestingSnapshotHasMobileSkeleton
       && mAllRestingSnapshotStructuralVersion
@@ -1002,6 +1034,8 @@ void World::updateAllRestingSnapshotGlobalVersions()
   mAllRestingSnapshotCollisionDetector = collisionDetector.get();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   mAllRestingSnapshotCollisionGroup = collisionGroup.get();
+  mAllRestingSnapshotCollisionGroupVersion
+      = collisionGroup->getContentVersion();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
   mAllRestingSnapshotCollisionFilterRevision
@@ -1031,6 +1065,91 @@ std::size_t World::getCollisionFilterSnapshotRevision(
 }
 
 //==============================================================================
+bool World::hasRestingMobileSkeleton() const
+{
+  for (const auto& skel : mSkeletons) {
+    if (skel->isMobile() && skel->isResting())
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void World::wakeRestingSkeletonsIfStepStateChanged()
+{
+  if (!mLastStepRestingWorldStateValid || !hasRestingMobileSkeleton())
+    return;
+
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  const auto* collisionFilter = collisionOption.collisionFilter.get();
+  const bool collisionFilterTrackable
+      = isCollisionFilterSnapshotTrackable(collisionFilter);
+
+  const bool worldStateUnchanged
+      = mLastStepRestingWorldStateCollisionFilterTrackable
+        && collisionFilterTrackable
+        && mLastStepRestingWorldStateDeactivationStateVersion
+               == dynamics::Skeleton::getGlobalDeactivationStateVersion()
+        && mLastStepRestingWorldStateCollisionDetector
+               == collisionDetector.get()
+        && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
+        && mLastStepRestingWorldStateCollisionGroupVersion
+               == collisionGroup->getContentVersion()
+        && mLastStepRestingWorldStateCollisionFilter == collisionFilter
+        && mLastStepRestingWorldStateCollisionFilterRevision
+               == getCollisionFilterSnapshotRevision(collisionFilter);
+
+  if (!worldStateUnchanged)
+    wakeRestingSkeletonsForWorldChange();
+}
+
+//==============================================================================
+void World::updateLastStepRestingWorldState()
+{
+  if (!hasRestingMobileSkeleton()) {
+    invalidateLastStepRestingWorldState();
+    return;
+  }
+
+  const auto collisionDetector = mConstraintSolver->getCollisionDetector();
+  mLastStepRestingWorldStateCollisionDetector = collisionDetector.get();
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  mLastStepRestingWorldStateCollisionGroup = collisionGroup.get();
+  mLastStepRestingWorldStateCollisionGroupVersion
+      = collisionGroup->getContentVersion();
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  mLastStepRestingWorldStateCollisionFilter
+      = collisionOption.collisionFilter.get();
+  mLastStepRestingWorldStateCollisionFilterTrackable
+      = isCollisionFilterSnapshotTrackable(
+          mLastStepRestingWorldStateCollisionFilter);
+  mLastStepRestingWorldStateCollisionFilterRevision
+      = mLastStepRestingWorldStateCollisionFilterTrackable
+            ? getCollisionFilterSnapshotRevision(
+                mLastStepRestingWorldStateCollisionFilter)
+            : 0u;
+  mLastStepRestingWorldStateDeactivationStateVersion
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  mLastStepRestingWorldStateValid = true;
+}
+
+//==============================================================================
+void World::invalidateLastStepRestingWorldState()
+{
+  mLastStepRestingWorldStateValid = false;
+  mLastStepRestingWorldStateCollisionFilterTrackable = false;
+  mLastStepRestingWorldStateDeactivationStateVersion = 0u;
+  mLastStepRestingWorldStateCollisionDetector = nullptr;
+  mLastStepRestingWorldStateCollisionGroup = nullptr;
+  mLastStepRestingWorldStateCollisionGroupVersion = 0u;
+  mLastStepRestingWorldStateCollisionFilter = nullptr;
+  mLastStepRestingWorldStateCollisionFilterRevision = 0u;
+}
+
+//==============================================================================
 void World::invalidateAllRestingKinematicSnapshot()
 {
   mAllRestingKinematicSnapshotValid = false;
@@ -1038,6 +1157,7 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotReady = false;
   mAllRestingSnapshotCollisionDetector = nullptr;
   mAllRestingSnapshotCollisionGroup = nullptr;
+  mAllRestingSnapshotCollisionGroupVersion = 0u;
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
 }
@@ -1058,6 +1178,7 @@ void World::wakeRestingSkeletonsForWorldChange()
   }
 
   invalidateAllRestingKinematicSnapshot();
+  invalidateLastStepRestingWorldState();
 }
 
 //==============================================================================
