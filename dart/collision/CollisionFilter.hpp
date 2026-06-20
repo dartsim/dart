@@ -119,12 +119,12 @@ public:
 private:
   friend class constraint::ConstraintSolver;
 
-  /// Sets whether contacts inside a frozen mobile island should be preserved.
+  /// Sets solver-only filtering for inactive resting pairs.
   ///
   /// Resting-vs-resting contacts can usually be skipped. During wakeup, though,
   /// contacts between members of a frozen mobile island must be available so an
   /// awake impact unites and wakes the full island atomically.
-  void setPreserveRestingIslandContacts(bool preserve);
+  void setSolverRestingContactFilterActive(bool active, bool preserve);
 
   /// Returns true if the two BodyNodes are adjacent BodyNodes (i.e., the two
   /// BodyNodes are connected by a Joint).

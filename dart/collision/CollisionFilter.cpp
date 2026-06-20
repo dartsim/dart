@@ -42,6 +42,7 @@ namespace collision {
 
 namespace {
 
+thread_local bool gSolverRestingContactFilterActive = false;
 thread_local bool gPreserveRestingIslandContacts = false;
 
 } // namespace
@@ -118,9 +119,11 @@ void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 }
 
 //==============================================================================
-void BodyNodeCollisionFilter::setPreserveRestingIslandContacts(bool preserve)
+void BodyNodeCollisionFilter::setSolverRestingContactFilterActive(
+    bool active, bool preserve)
 {
-  gPreserveRestingIslandContacts = preserve;
+  gSolverRestingContactFilterActive = active;
+  gPreserveRestingIslandContacts = active && preserve;
 }
 
 //==============================================================================
@@ -133,6 +136,7 @@ std::size_t BodyNodeCollisionFilter::getRevision() const
 
   mix(seed, dynamics::Skeleton::getGlobalStructuralVersion());
   mix(seed, dynamics::Skeleton::getGlobalDeactivationStateVersion());
+  mix(seed, gSolverRestingContactFilterActive ? 1u : 0u);
   mix(seed, gPreserveRestingIslandContacts ? 1u : 0u);
   return seed;
 }
@@ -171,7 +175,7 @@ bool BodyNodeCollisionFilter::ignoresCollision(
 
   const bool skel1Inactive = !skel1->isMobile() || skel1->isResting();
   const bool skel2Inactive = !skel2->isMobile() || skel2->isResting();
-  if (skel1Inactive && skel2Inactive) {
+  if (gSolverRestingContactFilterActive && skel1Inactive && skel2Inactive) {
     const bool sameFrozenMobileIsland
         = gPreserveRestingIslandContacts && skel1->isMobile()
           && skel2->isMobile() && skel1->isResting() && skel2->isResting()

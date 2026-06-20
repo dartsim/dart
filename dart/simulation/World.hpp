@@ -459,6 +459,7 @@ protected:
     std::size_t mKinematicVersion = 0;
     std::size_t mNumBodyNodes = 0;
     Eigen::VectorXd mPositions;
+    std::vector<Eigen::Isometry3d> mBodyTransforms;
   };
 
   /// Snapshot used to avoid skipping collision after an external pose edit.

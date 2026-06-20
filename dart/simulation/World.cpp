@@ -864,14 +864,30 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     if (snapshot.mStructuralVersion != skel->getVersion()
         || snapshot.mKinematicVersion != skel->getKinematicVersion()) {
       const Eigen::VectorXd positions = skel->getPositions();
-      if (positions.size() != snapshot.mPositions.size()
-          || !positions.isApprox(snapshot.mPositions, 0.0)) {
+      bool kinematicStateUnchanged
+          = positions.size() == snapshot.mPositions.size()
+            && positions.isApprox(snapshot.mPositions, 0.0)
+            && snapshot.mBodyTransforms.size() == skel->getNumBodyNodes();
+      if (kinematicStateUnchanged) {
+        for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
+          const auto* bodyNode = skel->getBodyNode(j);
+          if (bodyNode == nullptr
+              || !bodyNode->getTransform().matrix().isApprox(
+                  snapshot.mBodyTransforms[j].matrix(), 0.0)) {
+            kinematicStateUnchanged = false;
+            break;
+          }
+        }
+      }
+
+      if (!kinematicStateUnchanged) {
         markSnapshotStale();
         return false;
       }
 
       snapshot.mStructuralVersion = skel->getVersion();
       snapshot.mKinematicVersion = skel->getKinematicVersion();
+      snapshot.mPositions = positions;
     }
 
     if (!skel->isMobile())
@@ -908,6 +924,9 @@ void World::updateAllRestingKinematicSnapshot()
     snapshot.mKinematicVersion = skel->getKinematicVersion();
     snapshot.mNumBodyNodes = skel->getNumBodyNodes();
     snapshot.mPositions = skel->getPositions();
+    snapshot.mBodyTransforms.reserve(snapshot.mNumBodyNodes);
+    for (std::size_t i = 0; i < snapshot.mNumBodyNodes; ++i)
+      snapshot.mBodyTransforms.push_back(skel->getBodyNode(i)->getTransform());
     mAllRestingKinematicSnapshot.push_back(snapshot);
     mAllRestingSnapshotHasMobileSkeleton
         = mAllRestingSnapshotHasMobileSkeleton || skel->isMobile();

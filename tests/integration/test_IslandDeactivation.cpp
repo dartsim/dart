@@ -51,6 +51,7 @@
 #include <cmath>
 
 using namespace dart;
+using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
@@ -656,6 +657,62 @@ TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)
   floorBox->setSize(Eigen::Vector3d(10.0, 10.0, 0.02));
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Joint-frame edits can change world geometry without changing generalized
+// positions. The all-resting snapshot must invalidate on the kinematic version
+// change and run a real collision pass.
+TEST(IslandDeactivation, WakeOnSupportJointFrameChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* joint = floor->getJoint(0);
+  Eigen::Isometry3d moved = joint->getTransformFromParentBodyNode();
+  moved.translation().z() -= 0.25;
+  joint->setTransformFromParentBodyNode(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// The resting-contact filter is an internal solver optimization. Public
+// collision queries that use BodyNodeCollisionFilter must still report contacts
+// involving bodies that the solver has marked resting.
+TEST(IslandDeactivation, PublicCollisionFilterReportsRestingContacts)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto detector = world->getConstraintSolver()->getCollisionDetector();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFramesOf(floor.get());
+  group->addShapeFramesOf(sleeper.get());
+
+  CollisionOption option;
+  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
 //==============================================================================

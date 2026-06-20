@@ -784,8 +784,10 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  if (auto* filter = dynamic_cast<collision::BodyNodeCollisionFilter*>(
-          mCollisionOption.collisionFilter.get())) {
+  auto* restingContactFilter
+      = dynamic_cast<collision::BodyNodeCollisionFilter*>(
+          mCollisionOption.collisionFilter.get());
+  if (restingContactFilter != nullptr) {
     bool hasAwakeMobileSkeleton = false;
     if (mDeactivationActive) {
       for (const auto& skeleton : mSkeletons) {
@@ -795,13 +797,17 @@ void ConstraintSolver::updateConstraints()
         }
       }
     }
-    filter->setPreserveRestingIslandContacts(hasAwakeMobileSkeleton);
+    restingContactFilter->setSolverRestingContactFilterActive(
+        mDeactivationActive, hasAwakeMobileSkeleton);
   }
 
   {
     DART_PROFILE_SCOPED_N("collide");
     mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
   }
+
+  if (restingContactFilter != nullptr)
+    restingContactFilter->setSolverRestingContactFilterActive(false, false);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
