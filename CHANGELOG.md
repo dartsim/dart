@@ -252,6 +252,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
   fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
   gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
+  FetchContent source build of fmt when set OFF, so source and container builds
+  keep working when a distro's packaged fmt CMake config is broken; the Alt
+  Linux Docker repro now uses it instead of the faulty rolling `libfmt-devel`.
 - Moved local development and CI toward Pixi-owned tasks, tiered verification,
   load-aware parallelism, generated docs checks, CMake formatting, and
   reproducible benchmark/dashboard commands.

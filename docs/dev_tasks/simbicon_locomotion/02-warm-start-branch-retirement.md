@@ -63,8 +63,9 @@ ported wholesale. Use the maintained plans instead:
 
 - `docs/plans/080-rigid-body-dynamics-solver.md` for rigid-body solver and
   contact-solver follow-up slices.
-- `docs/plans/091-architecture-hardening.md` for solver architecture hardening
-  and work-packet sequencing.
+- `docs/design/dart7_architecture_assessment.md` and
+  `docs/plans/solver-family-intake.md` for solver architecture hardening
+  rules and new-family sequencing.
 - `docs/dev_tasks/rigid_body_dynamics_solver/` for active implementation state.
 
 ## Removal Result

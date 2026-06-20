@@ -40,11 +40,11 @@ contract yet, conceptual-only Model/State split, executor seam unused by
 dynamics stages, missing apples-to-apples substrate) and owns the standing
 rule: new solver families enter only through
 `docs/plans/solver-family-intake.md`, including contract conformance and
-machine-recorded solver identity in all benchmark evidence. The fixes are
-executed as PLAN-091 work packets
-(`docs/plans/091-architecture-hardening.md`) under the orchestrator/executor
-model in `docs/ai/orchestration.md`. Do not write new code that copies a
-pattern the assessment lists as a verified finding.
+machine-recorded solver identity in all benchmark evidence. PLAN-091 retired
+the first living hardening packet plan; current follow-up work routes through
+`docs/plans/dashboard.md`, the intake checklist, and the durable owner docs
+named in the assessment. Do not write new code that copies a pattern the
+assessment still lists as a verified finding.
 
 ## Key owner documents
 
@@ -77,5 +77,6 @@ clean-break, north-star). The docs an agent most often needs inline:
 
 Use `docs/ai/verification.md` to select the docs-only or code gate set for the
 change. Implementation work that realizes parts of this architecture also
-follows the gates in `docs/design/simulation_solver_architecture.md` and the
-packet gates in `docs/plans/091-architecture-hardening.md`.
+follows the gates in `docs/design/simulation_solver_architecture.md`, the
+solver-family intake checklist, and any active owner plan named in
+`docs/plans/dashboard.md`.

@@ -6,13 +6,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "write_plan091_cross_family_metrics_packet.py"
-MANIFEST = (
-    ROOT
-    / "docs"
-    / "plans"
-    / "091-architecture-hardening"
-    / "cross-family-metrics-corpus.json"
-)
+MANIFEST = ROOT / "docs" / "design" / "dart7_cross_family_metrics_corpus.json"
 
 
 def _load_module():

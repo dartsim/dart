@@ -42,7 +42,7 @@ portable source of truth.
 | Code style                            | `docs/onboarding/code-style.md`                                                                                                                                    |
 | Architecture                          | `docs/onboarding/architecture.md`, `docs/onboarding/README.md`                                                                                                     |
 | DART 7 architecture vision            | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                       |
-| Architecture hardening / work packets | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/091-architecture-hardening.md`, `docs/ai/orchestration.md`         |
+| Architecture hardening / work packets | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/solver-family-intake.md`, `docs/ai/orchestration.md`               |
 | Public API work                       | `docs/onboarding/api-boundaries.md`                                                                                                                                |
 | Theory/research foundations           | `docs/background/README.md`                                                                                                                                        |
 | CI/CD issues                          | `docs/onboarding/ci-cd.md`                                                                                                                                         |

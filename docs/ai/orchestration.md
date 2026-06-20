@@ -9,9 +9,9 @@ This file owns DART's two-role AI operating model and the work-packet
 contract that connects the roles. `docs/ai/README.md` owns the current model
 routing; `docs/ai/workflows.md` owns the workflow catalog;
 `docs/ai/verification.md` owns gate selection. The owning numbered plan file
-owns the packets themselves (for example
-`docs/plans/091-architecture-hardening.md`), while the dashboard owns only
-that plan's operating state.
+owns active packets themselves (for example
+`docs/plans/122-simulation-loop-allocation-hardening.md`), while the dashboard
+owns only that plan's operating state.
 
 ## Roles
 
