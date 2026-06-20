@@ -119,6 +119,29 @@ def test_bugfix_port_tag_allows_new_legacy_cpp_symbol(tmp_path):
     assert module.find_violations(tmp_path, baseline) == []
 
 
+def test_trailing_bugfix_port_tag_does_not_allow_next_cpp_symbol(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "class DART_API ExistingJoint {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\nclass DART_API BugfixPortJoint {}; "
+        + "// dart7-legacy-freeze: bugfix-port release-6.* parity\n"
+        + "class DART_API UntaggedJoint {};\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert not any("BugfixPortJoint" in m for m in messages)
+    assert any("UntaggedJoint" in m for m in messages)
+
+
 def test_new_legacy_multiline_cpp_function_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

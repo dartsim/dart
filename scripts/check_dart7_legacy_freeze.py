@@ -175,9 +175,13 @@ def relative_path(path: Path, root: Path) -> str:
 
 
 def nearby_tag(lines: list[str], line_index: int) -> bool:
-    return FREEZE_TAG in lines[line_index] or (
-        line_index > 0 and FREEZE_TAG in lines[line_index - 1]
-    )
+    if FREEZE_TAG in lines[line_index]:
+        return True
+    if line_index == 0:
+        return False
+
+    previous = lines[line_index - 1].strip()
+    return FREEZE_TAG in previous and previous.startswith(("//", "#", "/*", "*"))
 
 
 def iter_files(root: Path, rel_root: Path, suffixes: set[str]) -> list[Path]:
