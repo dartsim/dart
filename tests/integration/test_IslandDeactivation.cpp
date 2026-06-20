@@ -303,7 +303,8 @@ void expectSleeperFallsAfterSupportEdit(
 // acceleration by upgrading. The opt-out path is covered by DisabledIsNoOp.
 TEST(IslandDeactivation, EnabledByDefault)
 {
-  const auto& opts = World::create()->getDeactivationOptions();
+  const auto world = World::create();
+  const auto& opts = world->getDeactivationOptions();
   EXPECT_TRUE(opts.mEnabled);
 }
 
