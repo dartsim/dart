@@ -145,18 +145,15 @@ struct Options
 
 struct ContactPair
 {
-  const void* a = nullptr;
-  const void* b = nullptr;
+  std::uintptr_t a = 0;
+  std::uintptr_t b = 0;
 
   ContactPair(const void* first, const void* second)
   {
-    if (first < second) {
-      a = first;
-      b = second;
-    } else {
-      a = second;
-      b = first;
-    }
+    const auto firstAddress = reinterpret_cast<std::uintptr_t>(first);
+    const auto secondAddress = reinterpret_cast<std::uintptr_t>(second);
+    a = std::min(firstAddress, secondAddress);
+    b = std::max(firstAddress, secondAddress);
   }
 
   bool operator==(const ContactPair& other) const
@@ -169,8 +166,8 @@ struct ContactPairHash
 {
   std::size_t operator()(const ContactPair& pair) const
   {
-    const auto h1 = std::hash<const void*>()(pair.a);
-    const auto h2 = std::hash<const void*>()(pair.b);
+    const auto h1 = std::hash<std::uintptr_t>()(pair.a);
+    const auto h2 = std::hash<std::uintptr_t>()(pair.b);
     return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
   }
 };
