@@ -62,6 +62,12 @@ CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"[A-Za-z_]\w*\s*\("
 )
+CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN = re.compile(
+    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"(?:(?:extern|static|inline|constexpr)\s+)*"
+    r"[A-Za-z_]\w*(?:::\w*)?(?:<[^;(){}]*>)?"
+    r"(?:[\s*&]+(?:const\s+)?)?$"
+)
 CPP_NAMESPACE_DATA_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:"
@@ -77,7 +83,7 @@ CPP_NAMESPACE_DATA_PATTERN = re.compile(
     r"|"
     r"inline\s+"
     r"|"
-    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
+    r"(?:extern\s+)?(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)+"
     r"(?:extern\s+)?(?:inline\s+)?(?:static\s+)?"
     r")"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
@@ -462,6 +468,15 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             function_code
                         )
                     ) and "(" in function_code:
+                        function_buffer = [function_code]
+                        function_start = index
+                    elif (
+                        in_namespace_scope
+                        and not any(token in function_code for token in (";", "{", "}"))
+                        and CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN.search(
+                            function_code
+                        )
+                    ):
                         function_buffer = [function_code]
                         function_start = index
 
