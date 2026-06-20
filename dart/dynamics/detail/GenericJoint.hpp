@@ -445,6 +445,8 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
       DART_ASSERT(false);
       break;
   }
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -522,6 +524,8 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
       DART_ASSERT(false);
       break;
   }
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -536,6 +540,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::resetCommands()
 {
   this->mAspectState.mCommands.setZero();
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -602,6 +607,7 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits[index], position);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -627,6 +633,7 @@ void GenericJoint<ConfigSpaceT>::setPositionLowerLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits, lowerLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -647,6 +654,7 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits[index], position);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -672,6 +680,7 @@ void GenericJoint<ConfigSpaceT>::setPositionUpperLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits, upperLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -889,6 +898,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits[index], velocity);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -914,6 +924,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityLowerLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityLowerLimits, lowerLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -934,6 +945,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimit(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits[index], velocity);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -959,6 +971,7 @@ void GenericJoint<ConfigSpaceT>::setVelocityUpperLimits(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mVelocityUpperLimits, upperLimits);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -1052,8 +1065,13 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
+    const double command = this->getAccelerationsStatic()[index];
+    if (this->mAspectState.mCommands[index] != command) {
+      this->mAspectState.mCommands[index] = command;
+      this->notifyExternalDisturbanceUpdated();
+    }
+  }
 }
 
 //==============================================================================
@@ -1080,8 +1098,13 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   setAccelerationsStatic(accelerations);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands = this->getAccelerationsStatic();
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
+    const auto& commands = this->getAccelerationsStatic();
+    if (this->mAspectState.mCommands != commands) {
+      this->mAspectState.mCommands = commands;
+      this->notifyExternalDisturbanceUpdated();
+    }
+  }
 }
 
 //==============================================================================
@@ -1200,6 +1223,8 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1227,6 +1252,8 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1332,6 +1359,8 @@ void GenericJoint<ConfigSpaceT>::resetForces()
 
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
+
+  this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1592,7 +1621,16 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     friction = 0.0;
   }
 
+  const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
+  const bool hasFriction = friction > 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
+  if (hadFriction && !hasFriction) {
+    --Joint::mNumNonzeroCoulombFrictionDofs;
+    this->notifyAutomaticConstraintPropertiesUpdated();
+  } else if (!hadFriction && hasFriction) {
+    ++Joint::mNumNonzeroCoulombFrictionDofs;
+    this->notifyAutomaticConstraintPropertiesUpdated();
+  }
 }
 
 //==============================================================================
@@ -1688,6 +1726,10 @@ GenericJoint<ConfigSpaceT>::GenericJoint(const Properties& properties)
   // Joint and GenericJoint Aspects must be created by the most derived class.
   this->mAspectState.mPositions = properties.mInitialPositions;
   this->mAspectState.mVelocities = properties.mInitialVelocities;
+  for (auto i = 0u; i < NumDofs; ++i) {
+    if (!std::isnan(properties.mFrictions[i]) && properties.mFrictions[i] > 0.0)
+      ++Joint::mNumNonzeroCoulombFrictionDofs;
+  }
 }
 
 //==============================================================================

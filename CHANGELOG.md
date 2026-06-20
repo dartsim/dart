@@ -53,6 +53,13 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
+* Simulation
+
+  * Enable resting-world deactivation by default with wake-aware invalidation
+    and fidelity coverage against the always-active path, improving resting
+    contact-heavy scenes while preserving an explicit deactivation opt-out:
+    [#3086](https://github.com/dartsim/dart/pull/3086)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic

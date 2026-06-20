@@ -38,6 +38,8 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
+
 #include <cmath>
 #include <cstring>
 
@@ -88,22 +90,24 @@ bool PgsBoxedLcpSolver::solve(
     bool /*earlyTermination*/)
 {
   const int nskip = ::dart::lcpsolver::dantzig::padding(n);
+  static thread_local std::vector<int> cacheOrder;
+  static thread_local std::vector<double> cacheD;
 
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
   if (nub >= n) {
-    mCacheD.resize(n);
-    std::fill(mCacheD.begin(), mCacheD.end(), 0);
+    cacheD.resize(n);
+    std::fill(cacheD.begin(), cacheD.end(), 0);
 
-    ::dart::lcpsolver::dantzig::factorLdlt(A, mCacheD.data(), n, nskip);
-    ::dart::lcpsolver::dantzig::solveLdlt(A, mCacheD.data(), b, n, nskip);
+    ::dart::lcpsolver::dantzig::factorLdlt(A, cacheD.data(), n, nskip);
+    ::dart::lcpsolver::dantzig::solveLdlt(A, cacheD.data(), b, n, nskip);
     std::memcpy(x, b, n * sizeof(double));
 
     return true;
   }
 
-  mCacheOrder.clear();
-  mCacheOrder.reserve(n);
+  cacheOrder.clear();
+  cacheOrder.reserve(n);
 
   bool possibleToTerminate = true;
   for (int i = 0; i < n; ++i) {
@@ -113,7 +117,7 @@ bool PgsBoxedLcpSolver::solve(
       continue;
     }
 
-    mCacheOrder.push_back(i);
+    cacheOrder.push_back(i);
 
     // Initial loop
     const double* A_ptr = A + nskip * i;
@@ -161,7 +165,7 @@ bool PgsBoxedLcpSolver::solve(
   }
 
   // Normalizing
-  for (const auto& index : mCacheOrder) {
+  for (const auto& index : cacheOrder) {
     const double dummy = 1.0 / A[nskip * index + index];
     b[index] *= dummy;
     for (int j = 0; j < n; ++j)
@@ -171,11 +175,11 @@ bool PgsBoxedLcpSolver::solve(
   for (int iter = 1; iter < mOption.mMaxIteration; ++iter) {
     if (mOption.mRandomizeConstraintOrder) {
       if ((iter & 7) == 0) {
-        for (std::size_t i = 1; i < mCacheOrder.size(); ++i) {
-          const int tmp = mCacheOrder[i];
+        for (std::size_t i = 1; i < cacheOrder.size(); ++i) {
+          const int tmp = cacheOrder[i];
           const int swapi = ::dart::lcpsolver::dantzig::randomInt(i + 1);
-          mCacheOrder[i] = mCacheOrder[swapi];
-          mCacheOrder[swapi] = tmp;
+          cacheOrder[i] = cacheOrder[swapi];
+          cacheOrder[swapi] = tmp;
         }
       }
     }
@@ -183,7 +187,7 @@ bool PgsBoxedLcpSolver::solve(
     possibleToTerminate = true;
 
     // Single loop
-    for (const auto& index : mCacheOrder) {
+    for (const auto& index : cacheOrder) {
       const double* A_ptr = A + nskip * index;
       double new_x = b[index];
       const double old_x = x[index];

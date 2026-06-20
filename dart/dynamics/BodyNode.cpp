@@ -184,6 +184,18 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
     }                                                                          \
   }
 
+/// SKEL_SET_EXTERNAL_FORCES : Marks cached external forces dirty and advances
+/// the user-disturbance generation used by World's all-resting fast path.
+#define SKEL_SET_EXTERNAL_FORCES()                                             \
+  {                                                                            \
+    SkeletonPtr skel = getSkeleton();                                          \
+    if (skel) {                                                                \
+      skel->mTreeCache[mTreeIndex].mDirty.mExternalForces = true;              \
+      skel->mSkelCache.mDirty.mExternalForces = true;                          \
+      skel->incrementExternalDisturbanceVersion();                             \
+    }                                                                          \
+  }
+
 /// SET_FLAGS : A version of SKEL_SET_FLAGS that assumes a SkeletonPtr named
 /// 'skel' has already been locked
 #define SET_FLAGS(X)                                                           \
@@ -344,7 +356,7 @@ void BodyNode::setAspectState(const AspectState& state)
 {
   if (mAspectState.mFext != state.mFext) {
     mAspectState.mFext = state.mFext;
-    SKEL_SET_FLAGS(mExternalForces);
+    SKEL_SET_EXTERNAL_FORCES();
   }
 }
 
@@ -493,6 +505,11 @@ bool BodyNode::isCollidable() const
 //==============================================================================
 void BodyNode::setCollidable(bool _isCollidable)
 {
+  if (mAspectProperties.mIsCollidable != _isCollidable) {
+    if (auto* skeleton = getSkeletonRawPtr())
+      skeleton->incrementDeactivationStateVersion();
+  }
+
   mAspectProperties.mIsCollidable = _isCollidable;
 }
 
@@ -509,6 +526,9 @@ void BodyNode::handleCollisionShapeStateChange(
   ConstShapePtr shape = shapeNode->getShape();
   if (!shape)
     return;
+
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
 
   if (isCollidable && !wasCollidable) {
     mColShapeAddedSignal.raise(this, shape);
@@ -531,11 +551,48 @@ void BodyNode::handleCollisionShapeUpdated(
   if (collision == nullptr || !collision->getCollidable())
     return;
 
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
   if (oldShape)
     mColShapeRemovedSignal.raise(this, oldShape);
 
   if (newShape)
     mColShapeAddedSignal.raise(this, newShape);
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+}
+
+//==============================================================================
+void BodyNode::handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode)
+{
+  if (!shapeNode)
+    return;
+
+  if (shapeNode->getBodyNodePtr().get() != this)
+    return;
+
+  const auto* collision = shapeNode->get<CollisionAspect>();
+  if (collision == nullptr || !collision->getCollidable())
+    return;
+
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -554,12 +611,19 @@ void BodyNode::setMass(const double mass)
 {
   checkMass(*this, mass);
 
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setMass(mass);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
+  if (skel) {
     skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -577,9 +641,16 @@ void BodyNode::setMomentOfInertia(
     double _Ixz,
     double _Iyz)
 {
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setMoment(_Ixx, _Iyy, _Izz, _Ixy, _Ixz, _Iyz);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -618,8 +689,10 @@ void BodyNode::setInertia(const Inertia& inertia)
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
-  if (skel)
+  if (skel) {
     skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
 
   incrementVersion();
 }
@@ -656,9 +729,16 @@ const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 //==============================================================================
 void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
+  const Inertia oldInertia = mAspectProperties.mInertia;
   mAspectProperties.mInertia.setLocalCOM(_com);
+  if (oldInertia == mAspectProperties.mInertia)
+    return;
 
   dirtyArticulatedInertia();
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -906,6 +986,18 @@ SkeletonPtr BodyNode::getSkeleton()
 ConstSkeletonPtr BodyNode::getSkeleton() const
 {
   return mSkeleton.lock();
+}
+
+//==============================================================================
+Skeleton* BodyNode::getSkeletonRawPtr()
+{
+  return mSkeletonRawPtr;
+}
+
+//==============================================================================
+const Skeleton* BodyNode::getSkeletonRawPtr() const
+{
+  return mSkeletonRawPtr;
 }
 
 //==============================================================================
@@ -1325,7 +1417,7 @@ void BodyNode::addExtForce(
 
   mAspectState.mFext += math::dAdInvT(T, F);
 
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
@@ -1367,7 +1459,7 @@ void BodyNode::setExtForce(
 
   mAspectState.mFext = math::dAdInvT(T, F);
 
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
@@ -1387,7 +1479,7 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& torque, bool isLocal)
     mAspectState.mFext.head<3>()
         += getWorldTransform().linear().transpose() * torque;
 
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
@@ -1407,7 +1499,7 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& torque, bool isLocal)
     mAspectState.mFext.head<3>()
         = getWorldTransform().linear().transpose() * torque;
 
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
@@ -1728,7 +1820,7 @@ void BodyNode::notifyExternalForcesUpdate()
 //==============================================================================
 void BodyNode::dirtyExternalForces()
 {
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
@@ -2062,7 +2154,7 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
 void BodyNode::clearExternalForces()
 {
   mAspectState.mFext.setZero();
-  SKEL_SET_FLAGS(mExternalForces);
+  SKEL_SET_EXTERNAL_FORCES();
 }
 
 //==============================================================================
