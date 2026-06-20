@@ -3065,7 +3065,7 @@ cpp-member-function|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool.~BodyNo
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase.SkeletonRefCountingBase|SkeletonRefCountingBase();
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase.getSkeleton|std::shared_ptr<Skeleton> getSkeleton();
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase.getSkeleton|std::shared_ptr<const Skeleton> getSkeleton() const;
-cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr() : mPtr(nullptr) {}
+cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr() : mPtr(nullptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp) : mPtr(nullptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.TemplateBodyNodePtr|TemplateBodyNodePtr(const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp) : mPtr(nullptr) {
@@ -3079,7 +3079,7 @@ cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.o
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.set|void set(BodyNodeT* _ptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr.~TemplateBodyNodePtr|~TemplateBodyNodePtr() {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.TemplateWeakBodyNodePtr|TemplateWeakBodyNodePtr( const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr) : mPtr(nullptr) {
-cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.TemplateWeakBodyNodePtr|TemplateWeakBodyNodePtr() : mPtr(nullptr) {}
+cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.TemplateWeakBodyNodePtr|TemplateWeakBodyNodePtr() : mPtr(nullptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.TemplateWeakBodyNodePtr|TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.expired|bool expired() const {
 cpp-member-function|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr.lock|TemplateBodyNodePtr<BodyNodeT> lock() const {
@@ -3113,7 +3113,7 @@ cpp-member-function|dart/dynamics/detail/degree_of_freedom_ptr.hpp|TemplateWeakD
 cpp-member-function|dart/dynamics/detail/degree_of_freedom_ptr.hpp|TemplateWeakDegreeOfFreedomPtr.set|void set(DegreeOfFreedomT* _ptr) {
 cpp-member-function|dart/dynamics/detail/end_effector_aspect.hpp|EndEffectorProperties.EndEffectorProperties|EndEffectorProperties( const Eigen::Isometry3d& defaultTf = Eigen::Isometry3d::Identity());
 cpp-member-function|dart/dynamics/detail/end_effector_aspect.hpp|SupportPropertiesData.SupportPropertiesData|inline SupportPropertiesData( const math::SupportGeometry& geometry = math::SupportGeometry()) : mGeometry(geometry) {
-cpp-member-function|dart/dynamics/detail/end_effector_aspect.hpp|SupportStateData.SupportStateData|inline SupportStateData(bool active = false) : mActive(active) {}
+cpp-member-function|dart/dynamics/detail/end_effector_aspect.hpp|SupportStateData.SupportStateData|inline SupportStateData(bool active = false) : mActive(active) {
 cpp-member-function|dart/dynamics/detail/entity_node_aspect.hpp|EntityNodeBase.EntityNodeBase|EntityNodeBase(Args&&... args) : Base(std::forward<Args>(args)...) {
 cpp-member-function|dart/dynamics/detail/entity_node_aspect.hpp|EntityNodeBase.EntityNodeBase|EntityNodeBase(Args&&... args) : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>( common::NoArg, std::forward<Args>(args)...) {
 cpp-member-function|dart/dynamics/detail/entity_node_aspect.hpp|EntityNodeBase.~EntityNodeBase|virtual ~EntityNodeBase() = default;
@@ -3185,7 +3185,7 @@ cpp-member-function|dart/dynamics/detail/joint_ptr.hpp|TemplateWeakJointPtr.oper
 cpp-member-function|dart/dynamics/detail/joint_ptr.hpp|TemplateWeakJointPtr.set|void set(JointT* _ptr) {
 cpp-member-function|dart/dynamics/detail/joint_ptr.hpp|TemplateWeakJointPtr.set|void set(const TemplateWeakJointPtr<OtherJointT, OtherBodyNodeT>& _weakPtr) {
 cpp-member-function|dart/dynamics/detail/marker_aspect.hpp|MarkerProperties.MarkerProperties|MarkerProperties( const Eigen::Vector4d& color = Color::White(1.0), ConstraintType type = NO);
-cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.TemplateNodePtr|TemplateNodePtr() : mNode(nullptr) {}
+cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.TemplateNodePtr|TemplateNodePtr() : mNode(nullptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.TemplateNodePtr|TemplateNodePtr(NodeT* _ptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.TemplateNodePtr|TemplateNodePtr(const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _ptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.get|NodeT* get() const {
@@ -3197,7 +3197,7 @@ cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.operatorNo
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr.set|void set(NodeT* _ptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.TemplateWeakNodePtr|TemplateWeakNodePtr( const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _strongPtr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.TemplateWeakNodePtr|TemplateWeakNodePtr( const TemplateWeakNodePtr<OtherNodeT, OtherBodyNodeT>& _weakPtr) {
-cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.TemplateWeakNodePtr|TemplateWeakNodePtr() : mNode(nullptr) {}
+cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.TemplateWeakNodePtr|TemplateWeakNodePtr() : mNode(nullptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.TemplateWeakNodePtr|TemplateWeakNodePtr(NodeT* _ptr) {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.lock|TemplateNodePtr<NodeT, BodyNodeT> lock() const {
 cpp-member-function|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr.operator=|TemplateWeakNodePtr& operator=( const TemplateNodePtr<OtherNodeT, OtherBodyNodeT>& _strongPtr) {

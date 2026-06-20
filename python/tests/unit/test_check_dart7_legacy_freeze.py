@@ -923,6 +923,31 @@ public:
     assert module.find_violations(tmp_path, baseline) == []
 
 
+def test_legacy_cpp_one_line_inline_member_body_is_not_public_surface(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  int oldMethod() const { return 0; }
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "return 0;",
+            "return 1;",
+        ),
+        encoding="utf-8",
+    )
+
+    assert module.find_violations(tmp_path, baseline) == []
+
+
 def test_private_legacy_cpp_nested_type_is_not_public_surface(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

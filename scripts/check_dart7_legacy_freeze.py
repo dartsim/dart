@@ -332,6 +332,23 @@ def member_function_name(signature: str) -> str | None:
     return None
 
 
+def normalize_member_function_detail(signature: str) -> str:
+    paren_depth = 0
+    bracket_depth = 0
+    for index, char in enumerate(signature):
+        if char == "(":
+            paren_depth += 1
+        elif char == ")" and paren_depth > 0:
+            paren_depth -= 1
+        elif char == "[":
+            bracket_depth += 1
+        elif char == "]" and bracket_depth > 0:
+            bracket_depth -= 1
+        elif char == "{" and paren_depth == 0 and bracket_depth == 0:
+            return signature[:index].rstrip() + " {"
+    return signature
+
+
 def member_data_name(signature: str) -> str | None:
     if "(" in signature or signature.startswith(("friend ", "using ", "typedef ")):
         return None
@@ -380,7 +397,7 @@ def add_public_cpp_member_entry(
                 rel_path,
                 f"{class_name}.{function_name}",
                 nearby_tag(lines, line_index),
-                stripped,
+                normalize_member_function_detail(stripped),
             )
         )
         return
