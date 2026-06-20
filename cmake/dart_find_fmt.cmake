@@ -6,6 +6,15 @@
 #
 # This file is provided under the "BSD-style" License
 
+# Downstream `find_package(DART)` consumers re-include this finder through
+# dart_Component.cmake.in but never define DART_USE_SYSTEM_FMT (it is a DART
+# build-time option, not exported into the installed config). Treat an undefined
+# value as ON so installed/packaged and offline consumers keep resolving the
+# system fmt via find_package(fmt) instead of fetching it over the network.
+if(NOT DEFINED DART_USE_SYSTEM_FMT)
+  set(DART_USE_SYSTEM_FMT ON)
+endif()
+
 if(DART_USE_SYSTEM_FMT)
   find_package(fmt)
 else()
