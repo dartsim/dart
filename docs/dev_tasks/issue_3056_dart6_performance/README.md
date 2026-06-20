@@ -118,3 +118,8 @@ bug until proven otherwise.
   passed.
 - Ran `test_World` after making deactivation default-on: 6 tests passed. The
   existing `World.Cloning` test still emits a large non-finite-warning stream.
+- After #3085 merged, merged `release-6.20` into PR2 #3086, removed the stale
+  `sdf_perf_test` target path, rebuilt `contact_benchmark`,
+  `test_IslandDeactivation`, `test_World`, and `test_ContactSurface`, ran those
+  three focused tests through CTest, ran a 3-object `contact_benchmark` smoke,
+  and ran `pixi run lint`.
