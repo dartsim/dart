@@ -141,6 +141,39 @@ the resulting principles and DART vocabulary, not the source projects' names.
 5. **Classic simulation and dynamics boundary.** Decide which DART 6 `World`,
    `Skeleton`, `BodyNode`, constraint, and utility concepts are removed,
    quarantined, wrapped, or promoted as DART 7 concepts.
+
+   **Decision: DART 6 legacy removal staging.** The DART 7 end state is to
+   completely remove DART 6 legacy from the DART 7 public contract. Until DART
+   6.20+ and any later DART 6 maintenance branch have fully ported the
+   capabilities they still need, `main` keeps DART 6 `dart/dynamics`, classic
+   constraint, and classic simulation concepts only as a compatibility
+   quarantine lane. The DART 6.20+ port lane, plus later `release-6.*` branches
+   if needed, owns parity work for DART 6 users; `release-6.*` branches remain
+   the support lane and are the place to land DART 6 feature parity or
+   downstream compatibility fixes. Current open DART 6.20+ PRs observed while
+   recording this decision include #3071, #3086, #3088, #3092, and #3100, but
+   the list is not exhaustive.
+
+   On `main`, `World`, `Skeleton`, `BodyNode`, classic joint/constraint
+   concepts, and legacy utilities do not get new first-use public API under
+   their DART 6 names. Surviving concepts must be reintroduced through DART 7
+   owners and vocabulary, such as `dart/simulation`, `dart/simulation/multibody`,
+   or the curated DART 7 loop-closure/constraint families, with focused owner
+   docs and gates. The orphaned cylindrical joint constraint is not revived as a
+   legacy symbol; if DART 6.20+ evidence proves the capability is still needed,
+   it should be ported as a DART 7 loop-closure or multibody constraint family.
+   Otherwise it retires with the DART 6 legacy surface.
+
+   The quarantine lane is frozen on `main`: new public C++ symbols, dartpy
+   bindings, or generated stubs in `dart/dynamics`, legacy `dart/constraint`,
+   `python/dartpy/dynamics`, `python/dartpy/constraint`, or matching
+   `python/stubs/dartpy/*.pyi` files must be rejected unless the exact new
+   declaration, binding, or stub carries the local tag
+   `dart7-legacy-freeze: bugfix-port` and is justified as a release-6.\* bugfix
+   port. That tag is not an approval to promote DART 6 API on `main`; it is a
+   narrow marker for unavoidable parity fixes while the port lane is still
+   active.
+
 6. **Multi-physics and compute grouping.** Decide where rigid bodies,
    multibodies, deformables, sensors, rendering sync, state spaces, compute
    stages, execution profiles, and backend adapters live so adding a solver or

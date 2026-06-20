@@ -197,12 +197,6 @@ void assembleRigidBodyContactProblemInto(
 {
   problem.constraints.clear();
   problem.dynamicBodies.clear();
-  problem.delassus.resize(0, 0);
-  problem.rhs.resize(0);
-  problem.lo.resize(0);
-  problem.hi.resize(0);
-  problem.findex.resize(0);
-  problem.jacobian.resize(0, 0);
 
   std::size_t rigidContactCount = 0;
   for (const auto& contact : contacts) {
@@ -326,22 +320,44 @@ void assembleRigidBodyContactProblemInto(
   }
 
   const std::size_t n = problem.constraints.size();
-  if (!options.populateSystem && !options.populateJacobian) {
-    return;
-  }
-
   const auto size
       = static_cast<Eigen::Index>(n * RigidBodyContactProblem::kRowsPerContact);
+
+  // Each optional output is handled independently: cleared when its flag is
+  // disabled (so a caller that reuses the problem and toggles only one flag can
+  // never observe stale shape/content from a previous assembly), and resized in
+  // place when enabled (so a stable contact shape reuses the existing buffers
+  // -- Eigen reallocates only when the requested size differs). resize(0, ...)
+  // is a no-op when already empty, so repeated same-shape steps stay
+  // malloc-free.
   if (options.populateSystem) {
-    problem.delassus = Eigen::MatrixXd::Zero(size, size);
+    // The Delassus block is fully overwritten below, but it is zeroed in place
+    // to preserve the previous Eigen::MatrixXd::Zero(size, size) init exactly.
+    problem.delassus.resize(size, size);
+    problem.delassus.setZero();
     problem.rhs.resize(size);
     problem.lo.resize(size);
     problem.hi.resize(size);
     problem.findex.resize(size);
+  } else {
+    problem.delassus.resize(0, 0);
+    problem.rhs.resize(0);
+    problem.lo.resize(0);
+    problem.hi.resize(0);
+    problem.findex.resize(0);
   }
   if (options.populateJacobian) {
-    problem.jacobian = Eigen::MatrixXd::Zero(
+    // The Jacobian rows are accumulated with +=, so it must be zeroed; resize
+    // in place first to keep a stable shape on the allocator-backed buffer.
+    problem.jacobian.resize(
         size, static_cast<Eigen::Index>(6 * problem.dynamicBodies.size()));
+    problem.jacobian.setZero();
+  } else {
+    problem.jacobian.resize(0, 0);
+  }
+
+  if (!options.populateSystem && !options.populateJacobian) {
+    return;
   }
 
   for (std::size_t i = 0; i < n; ++i) {
