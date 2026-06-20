@@ -46,7 +46,8 @@ CPP_TYPEDEF_ALIAS_PATTERN = re.compile(
     r"(?P<name>[A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*;"
 )
 CPP_NAMESPACE_FUNCTION_PATTERN = re.compile(
-    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:const\s*)?"
@@ -57,13 +58,15 @@ CPP_NAMESPACE_FUNCTION_START_PATTERN = re.compile(
     r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_]+|extern|static|inline|constexpr)\b"
 )
 CPP_NAMESPACE_FUNCTION_CANDIDATE_PATTERN = re.compile(
-    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"(?:[A-Za-z0-9_:<>~*&,\s]+)\s+"
     r"[A-Za-z_]\w*\s*\("
 )
 CPP_NAMESPACE_FUNCTION_RETURN_START_PATTERN = re.compile(
-    r"^\s*(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    r"^\s*(?:\[\[[^\]]+\]\]\s*)*"
+    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
     r"(?:(?:extern|static|inline|constexpr)\s+)*"
     r"[A-Za-z_]\w*(?:::\w*)?(?:<[^;(){}]*>)?"
     r"(?:[\s*&]+(?:const\s+)?)?$"
