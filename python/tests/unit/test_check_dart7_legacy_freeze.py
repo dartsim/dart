@@ -174,6 +174,34 @@ public:
     assert any("LegacyConstraint.newTolerance" in m for m in messages)
 
 
+def test_legacy_cpp_inline_member_body_locals_are_not_public_surface(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  int oldMethod() const
+  {
+    return 0;
+  }
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "    return 0;",
+            "    const int tmp = 1;\n    return tmp;",
+        ),
+        encoding="utf-8",
+    )
+
+    assert module.find_violations(tmp_path, baseline) == []
+
+
 def test_bugfix_port_tag_does_not_allow_adjacent_legacy_symbol(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)

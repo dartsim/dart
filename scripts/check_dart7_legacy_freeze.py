@@ -250,11 +250,18 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
             pending_scope: dict[str, object] | None = None
             member_buffer: list[str] = []
             member_start = 0
+            inline_member_body_depth: int | None = None
             for index, line in enumerate(lines):
                 stripped = line.strip()
                 if not stripped or stripped.startswith(("//", "*", "/*", "#")):
                     brace_depth += brace_delta(line)
                     continue
+
+                if (
+                    inline_member_body_depth is not None
+                    and brace_depth <= inline_member_body_depth
+                ):
+                    inline_member_body_depth = None
 
                 while namespace_stack and brace_depth <= namespace_stack[-1][1]:
                     namespace_stack.pop()
@@ -358,6 +365,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                     and not in_detail_namespace
                     and not type_match
                     and not access_match
+                    and inline_member_body_depth is None
                 ):
                     code = code_without_comment(line).strip()
                     if member_buffer:
@@ -378,6 +386,8 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                             lines,
                             member_start,
                         )
+                        if "{" in code and brace_delta(line) > 0:
+                            inline_member_body_depth = brace_depth
                         member_buffer = []
 
                 brace_depth += brace_delta(line)
