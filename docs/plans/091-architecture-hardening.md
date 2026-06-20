@@ -279,7 +279,7 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   `check-dartpy-import-layout` stale-runtime drift (this packet changes no
   dartpy files).
 
-#### WP-091.4 Legacy freeze gate and Decision 5 [claimed]
+#### WP-091.4 Legacy freeze gate and Decision 5 [done — PR #3095, merged 2026-06-20]
 
 - Objective: PLAN-042 Decision 5 (which legacy DART 6 surfaces are removed,
   quarantined, wrapped, or promoted) is recorded, and CI rejects new public
@@ -298,10 +298,9 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   2026-06-19:** the accepted direction is to completely remove DART 6 legacy
   from the DART 7 public contract, while waiting until DART 6.20+ and any later
   `release-6.*` maintenance branches have fully ported the capabilities they
-  still need. Current open DART 6.20+ work observed while updating this packet
-  includes PRs #3071, #3086, #3088, #3092, and #3100; this is a snapshot, not
-  an exhaustive removal precondition, and more release-lane PRs may appear
-  before final removal.
+  still need. Current open DART 6.20+ work observed at closeout includes PRs
+  #3071, #3086, #3088, and #3092; this is a snapshot, not an exhaustive removal
+  precondition, and more release-lane PRs may appear before final removal.
 
 #### WP-091.5 Renumber colliding plan IDs [done — PR #3003, merged 2026-06-14]
 

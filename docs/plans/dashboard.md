@@ -19,30 +19,26 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`091-architecture-hardening.md`](091-architecture-hardening.md)
-- Status: Active
+- Status: Complete
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Completed packets include WP-091.3 via PR #2999; WP-091.5,
-  WP-091.10, WP-091.11, WP-091.14, and WP-091.23 via PR #3003; WP-091.12 via
-  PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR #3029;
-  WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31, WP-091.33b, and
-  WP-091.33c via PR #3052; WP-091.32 via PR #3058; WP-091.33d plus WP-091.34
-  via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077; and
-  WP-091.41 through WP-091.44 via PR #3072; and the WP-091.24 standalone
+- Next step: Complete. Completed packets include WP-091.3 via PR #2999;
+  WP-091.5, WP-091.10, WP-091.11, WP-091.14, and WP-091.23 via PR #3003;
+  WP-091.12 via PR #3020; WP-091.20, WP-091.22, WP-091.30, and WP-091.33 via PR
+  #3029; WP-091.33a via PR #3042; WP-091.21 via PR #3044; WP-091.31,
+  WP-091.33b, and WP-091.33c via PR #3052; WP-091.32 via PR #3058; WP-091.33d
+  plus WP-091.34 via PR #3061; WP-091.15 via PR #3067; WP-091.40 via PR #3077;
+  WP-091.41 through WP-091.44 via PR #3072; the WP-091.24 standalone
   harness/packet slice, bounded WP-091.13 shared-helper cleanup, and
-  WP-091.33e packet-reporting checker via PR #3083. PR #3091 closed WP-091.13
-  and WP-091.24: one canonical rigid-contact assembly producer feeds
-  sequential impulse, boxed-LCP, and differentiable capture, while
-  `StepMetrics` now folds cached contact/iteration diagnostics, variational
-  residuals, multibody momentum, and a smooth-corpus convergence sweep. PR
-  #3095 is closing the remaining WS0 packet, WP-091.4 legacy freeze: PLAN-042
-  Decision 5 now records freeze/quarantine first, release-6.20+ and later
-  release-lane ports next, then DART 7 public-contract removal after those
-  needs settle. The freeze gate blocks untagged legacy surface growth while
-  current open release-6.20 PRs (#3071, #3086, #3088, #3092, and #3100) and any
-  later release-lane ports finish. Final deletion of DART 6 legacy is not a
-  WP-091.4 prerequisite; track that in PLAN-042 follow-up work after the release
-  lane is settled.
+  WP-091.33e packet-reporting checker via PR #3083; WP-091.13 and WP-091.24
+  closeout via PR #3091; and the remaining WS0 packet, WP-091.4 legacy freeze,
+  via PR #3095. PLAN-042 Decision 5 now records freeze/quarantine first,
+  release-6.20+ and later release-lane ports next, then DART 7 public-contract
+  removal after those needs settle. The freeze gate blocks untagged legacy
+  surface growth while current open release-6.20 PRs (#3071, #3086, #3088, and
+  #3092) and any later release-lane ports finish. Final deletion of DART 6
+  legacy is not a WP-091.4 prerequisite; track that in PLAN-042 follow-up work
+  after the release lane is settled.
   Packets are orchestrator-authored per
   [`../ai/orchestration.md`](../ai/orchestration.md) and picked up via
   `dart-execute-packet`; availability follows each packet's own Dependencies
