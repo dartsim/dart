@@ -143,16 +143,21 @@ STUB_IMPORT_NAME_PATTERN = re.compile(
 )
 
 
+def baseline_detail(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip()).replace("|", "/")
+
+
 @dataclass(frozen=True, order=True)
 class LegacyEntry:
     kind: str
     path: str
     name: str
     tagged: bool = False
+    detail: str = ""
 
     @property
     def baseline_line(self) -> str:
-        return f"{self.kind}|{self.path}|{self.name}"
+        return f"{self.kind}|{self.path}|{self.name}|{baseline_detail(self.detail)}"
 
 
 @dataclass(frozen=True)
@@ -237,6 +242,7 @@ def add_cpp_enum_values(
                     rel_path,
                     f"{enum_name}.{match.group('name')}",
                     nearby_tag(lines, index),
+                    candidate,
                 )
             )
 
@@ -297,6 +303,7 @@ def add_public_cpp_member_entry(
                 rel_path,
                 f"{class_name}.{function_name}",
                 nearby_tag(lines, line_index),
+                stripped,
             )
         )
         return
@@ -309,6 +316,7 @@ def add_public_cpp_member_entry(
                 rel_path,
                 f"{class_name}.{data_name}",
                 nearby_tag(lines, line_index),
+                stripped,
             )
         )
 
@@ -435,6 +443,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 type_name,
                                 nearby_tag(lines, index),
+                                code.strip(),
                             )
                         )
                     if "{" in line and kind in {"class", "struct"}:
@@ -497,6 +506,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                     rel_path,
                                     function_match.group("name"),
                                     nearby_tag(lines, function_start),
+                                    function_signature,
                                 )
                             )
                         function_buffer = []
@@ -528,6 +538,7 @@ def collect_cpp_entries(root: Path) -> list[LegacyEntry]:
                                     rel_path,
                                     namespace_data_match.group("name"),
                                     nearby_tag(lines, namespace_data_start),
+                                    namespace_data_signature,
                                 )
                             )
                         namespace_data_buffer = []
@@ -611,6 +622,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             rel_path,
                             current_class,
                             nearby_tag(lines, search_index),
+                            search_line,
                         )
                     )
                     declaration_buffer = ""
@@ -624,6 +636,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             rel_path,
                             current_enum,
                             nearby_tag(lines, search_index),
+                            search_line,
                         )
                     )
                     declaration_buffer = ""
@@ -677,6 +690,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 f"{current_enum}.{enum_value_match.group('name')}",
                                 nearby_tag(lines, enum_value_search_index),
+                                enum_value_search_line,
                             )
                         )
                     enum_value_buffer = ""
@@ -694,6 +708,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             rel_path,
                             f"module.{module_attr_match.group('name')}",
                             nearby_tag(lines, module_search_index),
+                            module_search_line,
                         )
                     )
                     module_added = True
@@ -706,6 +721,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                             rel_path,
                             f"module.{module_def_match.group('name')}",
                             nearby_tag(lines, module_search_index),
+                            module_search_line,
                         )
                     )
                     module_added = True
@@ -724,6 +740,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 f"module.{chained_module_def_match.group('name')}",
                                 nearby_tag(lines, module_search_index),
+                                module_search_line,
                             )
                         )
                         module_added = True
@@ -744,6 +761,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 f"{current_class}.{member_attr_match.group('name')}",
                                 nearby_tag(lines, member_start),
+                                member_buffer,
                             )
                         )
                         member_added = True
@@ -757,6 +775,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 f"{current_class}.__init__",
                                 nearby_tag(lines, member_start),
+                                member_buffer,
                             )
                         )
                         member_added = True
@@ -768,6 +787,7 @@ def collect_binding_entries(root: Path) -> list[LegacyEntry]:
                                 rel_path,
                                 f"{current_class}.{member_match.group('name')}",
                                 nearby_tag(lines, member_start),
+                                member_buffer,
                             )
                         )
                         member_added = True
@@ -802,6 +822,7 @@ def collect_stub_reexports(
                         rel,
                         f"{module}.*",
                         nearby_tag(lines, index),
+                        candidate,
                     )
                 )
                 continue
@@ -814,6 +835,7 @@ def collect_stub_reexports(
                         rel,
                         f"{module}.{name}",
                         nearby_tag(lines, index),
+                        candidate,
                     )
                 )
         return closes_import
@@ -867,6 +889,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         rel,
                         f"{context}.{name}",
                         nearby_tag(lines, index),
+                        line.strip(),
                     )
                 )
                 class_stack.append((indent, name))
@@ -881,6 +904,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         rel,
                         f"{stub_context(class_stack, indent)}.{def_match.group('name')}",
                         nearby_tag(lines, index),
+                        line.strip(),
                     )
                 )
                 stub_def_signature_depth = max(0, line.count("(") - line.count(")"))
@@ -895,6 +919,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         rel,
                         f"{stub_context(class_stack, indent)}.{alias_match.group('name')}",
                         nearby_tag(lines, index),
+                        line.strip(),
                     )
                 )
                 continue
@@ -908,6 +933,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         rel,
                         f"{stub_context(class_stack, indent)}.{value_match.group('name')}",
                         nearby_tag(lines, index),
+                        line.strip(),
                     )
                 )
                 continue
@@ -924,6 +950,7 @@ def collect_stub_entries(root: Path) -> list[LegacyEntry]:
                         rel,
                         f"{stub_context(class_stack, indent)}.{name}",
                         nearby_tag(lines, index),
+                        line.strip(),
                     )
                 )
     return entries

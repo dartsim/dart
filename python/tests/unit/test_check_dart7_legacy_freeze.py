@@ -239,6 +239,31 @@ def test_new_legacy_plain_namespace_function_requires_bugfix_port_tag(tmp_path):
     assert any("newUtility" in m for m in messages)
 
 
+def test_changed_legacy_namespace_function_signature_requires_bugfix_port_tag(
+    tmp_path,
+):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        "DART_API bool legacyUtility(int value);\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "legacyUtility(int value)",
+            "legacyUtility(double value)",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("legacyUtility" in m for m in messages)
+    assert any("double value" in m for m in messages)
+
+
 def test_new_legacy_attributed_namespace_function_requires_bugfix_port_tag(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
@@ -449,6 +474,34 @@ public:
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("LegacyJoint.newMethod" in m for m in messages)
+
+
+def test_changed_legacy_cpp_member_signature_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_joint.hpp",
+        """
+class DART_API LegacyJoint {
+public:
+  void oldMethod(int value);
+};
+""",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8").replace(
+            "oldMethod(int value)",
+            "oldMethod(double value)",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("LegacyJoint.oldMethod" in m for m in messages)
+    assert any("double value" in m for m in messages)
 
 
 def test_new_legacy_cpp_brace_initialized_data_requires_bugfix_port_tag(tmp_path):
@@ -949,6 +1002,29 @@ def test_new_legacy_stub_requires_bugfix_port_tag(tmp_path):
     messages = _messages(module.find_violations(tmp_path, baseline))
 
     assert any("NewLegacyJoint" in m for m in messages)
+
+
+def test_changed_legacy_stub_signature_requires_bugfix_port_tag(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    stub = _write(
+        tmp_path / "python" / "stubs" / "dartpy" / "dynamics.pyi",
+        "class ExistingJoint:\n    def name(self, value: int) -> str: ...\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    stub.write_text(
+        stub.read_text(encoding="utf-8").replace(
+            "value: int",
+            "value: float",
+        ),
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    assert any("ExistingJoint.name" in m for m in messages)
+    assert any("value: float" in m for m in messages)
 
 
 def test_new_root_legacy_reexport_requires_bugfix_port_tag(tmp_path):
