@@ -81,7 +81,29 @@ void dRandSetSeed(unsigned long s)
 
 int dRandInt(int n)
 {
-  return static_cast<int>(dRandReal() * n);
+  DART_ASSERT(n > 0);
+  const unsigned long un = n;
+  volatile unsigned long rawR = dRand();
+  unsigned long r = rawR;
+
+  if (un <= 0x00000010UL) {
+    r ^= (r >> 16);
+    r ^= (r >> 8);
+    r ^= (r >> 4);
+    if (un <= 0x00000002UL) {
+      r ^= (r >> 2);
+      r ^= (r >> 1);
+    } else if (un <= 0x00000004UL) {
+      r ^= (r >> 2);
+    }
+  } else if (un <= 0x00000100UL) {
+    r ^= (r >> 16);
+    r ^= (r >> 8);
+  } else if (un <= 0x00010000UL) {
+    r ^= (r >> 16);
+  }
+
+  return static_cast<int>(r % un);
 }
 
 double dRandReal()

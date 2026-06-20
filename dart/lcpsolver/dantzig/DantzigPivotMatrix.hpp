@@ -218,7 +218,7 @@ public:
   Scalar& operator()(int i, int j)
   {
     DART_ASSERT(i >= 0 && i < rows_ && j >= 0 && j < cols_);
-    return row_ptrs_[i][j];
+    return rowPointerData()[i][j];
   }
 
   /// Access element (i, j) through permuted row pointers (const version)
@@ -228,7 +228,7 @@ public:
   const Scalar& operator()(int i, int j) const
   {
     DART_ASSERT(i >= 0 && i < rows_ && j >= 0 && j < cols_);
-    return row_ptrs_[i][j];
+    return rowPointerData()[i][j];
   }
 
   /// Get the underlying Eigen matrix (bypasses row permutation)
