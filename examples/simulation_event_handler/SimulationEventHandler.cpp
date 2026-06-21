@@ -459,10 +459,10 @@ void SimulationEventHandler::stepSimulation()
 
 void SimulationEventHandler::toggleSimulation()
 {
-  mSimulationRunning = !mSimulationRunning;
+  mSimulationRunning = mViewer ? !mViewer->isSimulating() : !mSimulationRunning;
 
   if (mViewer) {
-    mViewer->allowSimulation(mSimulationRunning);
+    mViewer->simulate(mSimulationRunning);
   }
 
   std::cout << "Simulation " << (mSimulationRunning ? "STARTED" : "PAUSED")

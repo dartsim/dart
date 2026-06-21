@@ -50,13 +50,13 @@ class HumanJointLimitsWorldNode : public dart::gui::osg::WorldNode
 {
 public:
   explicit HumanJointLimitsWorldNode(const WorldPtr& world)
-    : dart::gui::osg::WorldNode(world), ts(0)
+    : dart::gui::osg::WorldNode(world), mConstraintsInitialized(false)
   {
   }
 
   void customPreRefresh() override
   {
-    if (ts == 0) {
+    if (!mConstraintsInitialized) {
       auto skel = mWorld->getSkeleton("human");
 
       auto shldJointl = skel->getJoint("j_bicep_left");
@@ -84,19 +84,18 @@ public:
       constraint_rleg = std::make_shared<HumanLegJointLimitConstraint>(
           thighJointr, shinJointr, ankleJointr, true);
       mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
+
+      mConstraintsInitialized = true;
     }
 
     // Uncomment to apply external force
     // Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
     // Eigen::Vector3d location(0.0, -0.2, 0.0);
     // mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force, location, true, true);
-
-    mWorld->step();
-    ts++;
   }
 
 private:
-  int ts;
+  bool mConstraintsInitialized;
   HumanArmJointLimitConstraintPtr constraint_larm;
   HumanArmJointLimitConstraintPtr constraint_rarm;
   HumanLegJointLimitConstraintPtr constraint_lleg;
