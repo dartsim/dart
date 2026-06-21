@@ -24,7 +24,7 @@ Current #3071 evidence on an Intel i7-13800H, pinned to CPUs 0-15:
   while also showing that active contact/collision work remains below real
   time.
 - Deterministic articulated workload
-  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless -- 16 300 0`:
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 16 300 0`:
   `1793.239 ms` at 1 thread, `1353.723 ms` at 2, `1293.283 ms` at 4,
   `1006.875 ms` at 8, and `1182.029 ms` at 16, with identical final checksum
   at every thread count. Peak local speedup is `1.78x` at 8 threads; 16 threads
