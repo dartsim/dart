@@ -72,6 +72,12 @@
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
 
+  * Expose the opt-in simulation thread controls to dartpy via
+    `World.setNumSimulationThreads()` and
+    `ConstraintSolver.setNumSimulationThreads()`, and add a Pixi task for the
+    deterministic headless boxes/chains benchmark evidence:
+    [#3071](https://github.com/dartsim/dart/pull/3071)
+
   * Accelerate large imported worlds that begin with zero-velocity bodies on
     shallow support contacts by allowing the initial contact pass to consume the
     configured quiet dwell before the normal final solved impulse freezes the

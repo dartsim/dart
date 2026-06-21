@@ -305,6 +305,20 @@ bm-boxes = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_boxes
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
+bm-boxes-headless = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target boxes_headless \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/integration/boxes_headless {{ dim }} {{ steps }} {{ checkpoint }}
+""", depends-on = [
+    "config",
+], args = [
+    { arg = "dim", default = "8" },
+    { arg = "steps", default = "2000" },
+    { arg = "checkpoint", default = "500" },
+], env = { BUILD_TYPE = "Release" } }
+
 bm-empty = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \

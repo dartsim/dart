@@ -138,6 +138,19 @@ int main(int argc, char** argv)
         dim * dim * dim);
   }
 
+  // Opt-in parallel simulation work. THREADS=1 (default) is the serial
+  // reference; THREADS=N runs independent per-skeleton work and constraint
+  // islands on N worker threads. Because the worker count must not change the
+  // result, running the same scene/steps at THREADS=1 and THREADS=N and diffing
+  // the printed step checksums is a determinism check; comparing elapsed_ms is
+  // the speedup A/B.
+  if (const char* threadsEnv = std::getenv("THREADS")) {
+    const int threads = std::atoi(threadsEnv);
+    world->setNumSimulationThreads(
+        threads > 0 ? static_cast<std::size_t>(threads) : 1u);
+    std::printf("# threads=%d\n", threads > 0 ? threads : 1);
+  }
+
   const auto t0 = std::chrono::steady_clock::now();
   for (std::size_t s = 0; s < steps; ++s) {
     world->step();
