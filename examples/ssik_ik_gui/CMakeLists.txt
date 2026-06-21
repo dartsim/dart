@@ -6,12 +6,14 @@ project(${example_name})
 
 set(required_libraries dart dart-gui-osg)
 
-if(NOT TARGET Python3::Python)
-  message(STATUS "Skipping ${example_name}: Python3 development target not found")
-  return()
-endif()
-
 if(DART_IN_SOURCE_BUILD)
+  # The top-level build already searched for Python3 (see DARTFindDependencies),
+  # so the development target is available here when present. Skip the example
+  # gracefully if Python embedding is unavailable.
+  if(NOT TARGET Python3::Python)
+    message(STATUS "Skipping ${example_name}: Python3 development target not found")
+    return()
+  endif()
   dart_build_example_in_source(
     ${example_name}
     LINK_LIBRARIES ${required_libraries} Python3::Python
