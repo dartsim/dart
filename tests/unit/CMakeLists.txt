@@ -224,6 +224,7 @@ dart_add_test(
   constraint/test_cylindrical_joint_constraint.cpp
 )
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
+dart_add_test("unit" UNIT_constraint_NonFiniteContact constraint/test_nonfinite_contact.cpp)
 
 # ==============================================================================
 # Dynamics Tests
