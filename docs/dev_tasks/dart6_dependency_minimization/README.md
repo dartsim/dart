@@ -85,7 +85,16 @@ DART 7 moved or removed the old vendored surfaces as follows:
 - IKFast moved to a DART-owned dynamics header path.
 - ImGui is resolved through the GUI dependency/fetch path instead of an
   in-tree `dart/external` copy.
-- The legacy GLUT/OSG GUI stack was removed as part of the DART 7 clean break.
+- The legacy GLUT GUI stack was removed after the remaining GLUT examples were
+  converted to OSG. The relevant DART 7 reference PRs are:
+  - [#2044](https://github.com/dartsim/dart/pull/2044): removed all GLUT code,
+    removed GLUT CMake/dependency plumbing, converted the remaining GLUT
+    examples to OSG, and made OSG the exclusive GUI backend at that point.
+  - [#2051](https://github.com/dartsim/dart/pull/2051): removed `lodepng`
+    after GLUT screenshot handling disappeared.
+  - [#2203](https://github.com/dartsim/dart/pull/2203): refreshed tutorials,
+    manifests, dependency tooling, and onboarding docs to remove GLUT-era
+    references.
 - ODE LCP solver code became test-baseline/reference material after the DART 7
   solver path moved to DART-owned LCP/math infrastructure.
 
@@ -173,11 +182,14 @@ Default Pixi/package metadata for optional components
 `dart/external/lodepng`
 
 - Risk: medium to high because it is tied to legacy GUI screenshot behavior.
-- Plan: preserve GUI compatibility first. Either replace screenshot encoding
-  with an accepted system dependency such as libpng, or defer removal until
-  maintainers approve a GUI feature split.
-- Validation: GUI screenshot smoke plus package metadata tests for any
-  replacement dependency or feature split.
+- Plan: do not revive standalone `lodepng` replacement work while GLUT remains.
+  DART 6.20 should remove GLUT completely and migrate every GLUT-supported
+  feature to OSG first; once OSG owns screenshot output, `lodepng` should be
+  removed as a consequence, following the DART 7 sequence in #2044 and #2051.
+- Validation: OSG screenshot smoke, all migrated GUI examples/tutorials, package
+  metadata proving `glut`, `libxi-dev`, `libxmu-dev`, and `freeglut` are no
+  longer advertised, and install/package smokes proving the remaining GUI
+  component is OSG-only.
 
 ### High-Risk Or Deferred Slices
 
@@ -214,11 +226,25 @@ Bullet and ODE collision components
 OpenSceneGraph and GLUT GUI dependencies
 
 - Risk: high for API removal, medium for default-environment demotion.
-- Plan: do not remove these APIs in a dependency cleanup PR. A safe 6.20 step
-  is making GUI dependencies opt-in in default environments while keeping
-  feature builds and installed package components intact.
-- Validation: GUI feature configure/build, tutorials/examples that request GUI,
-  and package-component smoke.
+- Owner decision: DART 6.20 should completely remove GLUT. All features
+  supported by GLUT must be supported by OSG before removal, including example
+  interactivity, keyboard/mouse event handling, run-loop behavior, overlays or
+  HUDs, screenshots/PNG output, and tutorial coverage.
+- Plan: use DART 7 PR #2044 as the migration reference for converting the
+  remaining GLUT examples to OSG and deleting `dart/gui/glut`, GLUT headers,
+  CMake find modules, package metadata, and dependency declarations. Use #2203
+  as the reference for tutorial, manifest, and dependency-doc cleanup after the
+  code migration lands. Treat #2051 as the follow-up `lodepng` removal once no
+  GLUT screenshot path remains.
+- Validation: OSG feature-parity smoke for every migrated GLUT example,
+  tutorial/example builds, GUI screenshot smoke, package-component smoke for
+  `gui-osg`, absence checks for installed `dart/gui/glut` headers and top-level
+  GLUT forwarding headers such as `dart/gui/GlutWindow.hpp`,
+  `dart/gui/SimWindow.hpp`, `dart/gui/Win2D.hpp`, and `dart/gui/Win3D.hpp`, and
+  package smokes proving the public `gui`/`dart-gui` component no longer
+  advertises or links GLUT while `gui-osg` remains usable. Also run a default
+  configure/build without GLUT packages and an explicit GUI build with OSG
+  enabled.
 
 ## Sequenced Workstreams
 
@@ -232,8 +258,9 @@ OpenSceneGraph and GLUT GUI dependencies
    decision.
 4. **ImGui vendored-source removal.** Prefer system ImGui or an approved fetch
    fallback while preserving the DART 6 OSG GUI component.
-5. **GUI screenshot dependency decision.** Replace `lodepng` only after the
-   maintainers choose between a system PNG dependency and a GUI feature split.
+5. **GLUT-to-OSG migration and screenshot cleanup.** Migrate every remaining
+   GLUT example/tutorial/feature to OSG, remove the GLUT component and package
+   metadata, then remove `lodepng` once screenshot output is owned by OSG.
 6. **Collision dependency reduction.** Treat Bullet/ODE package moves as
    optional-component packaging work. Treat FCL removal as a native-collision
    backport decision, not a routine cleanup.
@@ -283,5 +310,6 @@ Select gates by touched surface:
 - For ImGui, should DART 6 keep the DART-patched FetchContent compatibility
   target as the default long-term, or require a patched system package path in a
   future release?
-- For GUI screenshots, should DART 6 prefer a system image dependency or defer
-  dependency removal until the GLUT path is retired?
+- Resolved on 2026-06-21: DART 6.20 should completely remove GLUT, not split or
+  preserve it. All GLUT-supported features must have OSG support before deletion,
+  and `lodepng` removal follows the OSG screenshot migration.
