@@ -85,6 +85,14 @@
     micrometer-scale agreement with the always-active path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+* Tests
+
+  * Stop the coverage CI job from running the full test suite twice (the
+    `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
+    raise the coverage CTest timeout above the 1500s default, fixing spurious
+    `test_Issue1193` timeouts under Debug coverage instrumentation:
+    [#3116](https://github.com/dartsim/dart/pull/3116)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
