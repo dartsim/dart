@@ -6,6 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include <cmath>
+
 //==============================================================================
 // Test basic construction and getters
 TEST(CapsuleShapeTest, Construction)
@@ -44,6 +48,84 @@ TEST(CapsuleShapeTest, SetHeight)
 
   capsule->setHeight(100.0);
   EXPECT_DOUBLE_EQ(capsule->getHeight(), 100.0);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, NaNRadiusRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalRadius = capsule->getRadius();
+
+  capsule->setRadius(std::nan(""));
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+
+  capsule->setRadius(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, InfiniteRadiusRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalRadius = capsule->getRadius();
+
+  capsule->setRadius(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+
+  capsule->setRadius(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, NonPositiveRadiusRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalRadius = capsule->getRadius();
+
+  capsule->setRadius(0.0);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+
+  capsule->setRadius(-1.0);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, NaNHeightRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalHeight = capsule->getHeight();
+
+  capsule->setHeight(std::nan(""));
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
+
+  capsule->setHeight(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, InfiniteHeightRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalHeight = capsule->getHeight();
+
+  capsule->setHeight(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
+
+  capsule->setHeight(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, NonPositiveHeightRejected)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  const double originalHeight = capsule->getHeight();
+
+  capsule->setHeight(0.0);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
+
+  capsule->setHeight(-1.0);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), originalHeight);
 }
 
 //==============================================================================

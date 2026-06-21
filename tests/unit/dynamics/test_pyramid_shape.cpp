@@ -4,6 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include <cmath>
+
 //==============================================================================
 TEST(PyramidShapeTest, Construction)
 {
@@ -47,6 +51,123 @@ TEST(PyramidShapeTest, SetHeight)
 
   pyramid->setHeight(0.001);
   EXPECT_DOUBLE_EQ(pyramid->getHeight(), 0.001);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NaNBaseWidthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseWidth = pyramid->getBaseWidth();
+
+  pyramid->setBaseWidth(std::nan(""));
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+
+  pyramid->setBaseWidth(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, InfiniteBaseWidthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseWidth = pyramid->getBaseWidth();
+
+  pyramid->setBaseWidth(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+
+  pyramid->setBaseWidth(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NonPositiveBaseWidthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseWidth = pyramid->getBaseWidth();
+
+  pyramid->setBaseWidth(0.0);
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+
+  pyramid->setBaseWidth(-1.0);
+  EXPECT_DOUBLE_EQ(pyramid->getBaseWidth(), originalBaseWidth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NaNBaseDepthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseDepth = pyramid->getBaseDepth();
+
+  pyramid->setBaseDepth(std::nan(""));
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+
+  pyramid->setBaseDepth(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, InfiniteBaseDepthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseDepth = pyramid->getBaseDepth();
+
+  pyramid->setBaseDepth(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+
+  pyramid->setBaseDepth(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NonPositiveBaseDepthRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalBaseDepth = pyramid->getBaseDepth();
+
+  pyramid->setBaseDepth(0.0);
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+
+  pyramid->setBaseDepth(-1.0);
+  EXPECT_DOUBLE_EQ(pyramid->getBaseDepth(), originalBaseDepth);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NaNHeightRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalHeight = pyramid->getHeight();
+
+  pyramid->setHeight(std::nan(""));
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
+
+  pyramid->setHeight(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, InfiniteHeightRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalHeight = pyramid->getHeight();
+
+  pyramid->setHeight(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
+
+  pyramid->setHeight(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(PyramidShapeTest, NonPositiveHeightRejected)
+{
+  auto pyramid = std::make_shared<dart::dynamics::PyramidShape>(1.0, 2.0, 3.0);
+  const double originalHeight = pyramid->getHeight();
+
+  pyramid->setHeight(0.0);
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
+
+  pyramid->setHeight(-1.0);
+  EXPECT_DOUBLE_EQ(pyramid->getHeight(), originalHeight);
 }
 
 //==============================================================================

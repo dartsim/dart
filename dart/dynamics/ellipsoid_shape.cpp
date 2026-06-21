@@ -32,8 +32,11 @@
 
 #include "dart/dynamics/ellipsoid_shape.hpp"
 
+#include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {
@@ -67,9 +70,15 @@ std::string_view EllipsoidShape::getStaticType()
 //==============================================================================
 void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 {
-  DART_ASSERT(diameters[0] > 0.0);
-  DART_ASSERT(diameters[1] > 0.0);
-  DART_ASSERT(diameters[2] > 0.0);
+  if (!diameters.allFinite() || (diameters.array() <= 0.0).any()) {
+    DART_WARN(
+        "EllipsoidShape::setDiameters: Invalid diameters '[{}, {}, {}]'. Each "
+        "diameter must be a positive finite value. Ignoring request.",
+        diameters[0],
+        diameters[1],
+        diameters[2]);
+    return;
+  }
 
   mDiameters = diameters;
 
@@ -88,12 +97,7 @@ const Eigen::Vector3d& EllipsoidShape::getDiameters() const
 //==============================================================================
 void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
 {
-  mDiameters = radii * 2.0;
-
-  mIsBoundingBoxDirty = true;
-  mIsVolumeDirty = true;
-
-  incrementVersion();
+  setDiameters(radii * 2.0);
 }
 
 //==============================================================================

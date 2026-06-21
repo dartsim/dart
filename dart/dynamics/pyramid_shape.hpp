@@ -107,13 +107,13 @@ protected:
 
 private:
   /// Lateral length (algon X-axis) of the base.
-  double mBaseWidth;
+  double mBaseWidth{1.0};
 
   /// Longitudinal length (algon Y-axis) of the base.
-  double mBaseDepth;
+  double mBaseDepth{1.0};
 
   /// Perpendicular height from the base to the apex.
-  double mHeight;
+  double mHeight{1.0};
 };
 
 } // namespace dynamics

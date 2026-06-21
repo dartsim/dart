@@ -33,6 +33,51 @@ TEST(BoxShapeTest, SetAndGetSize)
 }
 
 //==============================================================================
+TEST(BoxShapeTest, InfiniteSizeRejected)
+{
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  const Eigen::Vector3d originalSize = box->getSize();
+
+  box->setSize(
+      Eigen::Vector3d(std::numeric_limits<double>::infinity(), 1.0, 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+
+  box->setSize(
+      Eigen::Vector3d(1.0, -std::numeric_limits<double>::infinity(), 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+}
+
+//==============================================================================
+TEST(BoxShapeTest, NaNSizeRejected)
+{
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  const Eigen::Vector3d originalSize = box->getSize();
+
+  box->setSize(Eigen::Vector3d(std::nan(""), 1.0, 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+
+  box->setSize(
+      Eigen::Vector3d(1.0, std::numeric_limits<double>::quiet_NaN(), 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+}
+
+//==============================================================================
+TEST(BoxShapeTest, NonPositiveSizeRejected)
+{
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  const Eigen::Vector3d originalSize = box->getSize();
+
+  box->setSize(Eigen::Vector3d(0.0, 1.0, 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+
+  box->setSize(Eigen::Vector3d(1.0, -1.0, 1.0));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+
+  box->setSize(Eigen::Vector3d(1.0, 1.0, -0.001));
+  EXPECT_TRUE(box->getSize().isApprox(originalSize));
+}
+
+//==============================================================================
 TEST(BoxShapeTest, ComputeVolume)
 {
   Eigen::Vector3d size(2.0, 3.0, 4.0);

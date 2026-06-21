@@ -6,6 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include <cmath>
+
 //==============================================================================
 TEST(EllipsoidShapeTest, Construction)
 {
@@ -47,6 +51,54 @@ TEST(EllipsoidShapeTest, SetRadii)
   EXPECT_DOUBLE_EQ(ellipsoid->getDiameters().x(), 4.0);
   EXPECT_DOUBLE_EQ(ellipsoid->getDiameters().y(), 6.0);
   EXPECT_DOUBLE_EQ(ellipsoid->getDiameters().z(), 8.0);
+}
+
+//==============================================================================
+TEST(EllipsoidShapeTest, NaNDiametersRejected)
+{
+  auto ellipsoid = std::make_shared<dart::dynamics::EllipsoidShape>(
+      Eigen::Vector3d(2.0, 2.0, 2.0));
+  const Eigen::Vector3d originalDiameters = ellipsoid->getDiameters();
+
+  ellipsoid->setDiameters(Eigen::Vector3d(std::nan(""), 2.0, 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+
+  ellipsoid->setDiameters(
+      Eigen::Vector3d(2.0, std::numeric_limits<double>::quiet_NaN(), 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+}
+
+//==============================================================================
+TEST(EllipsoidShapeTest, InfiniteDiametersRejected)
+{
+  auto ellipsoid = std::make_shared<dart::dynamics::EllipsoidShape>(
+      Eigen::Vector3d(2.0, 2.0, 2.0));
+  const Eigen::Vector3d originalDiameters = ellipsoid->getDiameters();
+
+  ellipsoid->setDiameters(
+      Eigen::Vector3d(std::numeric_limits<double>::infinity(), 2.0, 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+
+  ellipsoid->setDiameters(
+      Eigen::Vector3d(2.0, -std::numeric_limits<double>::infinity(), 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+}
+
+//==============================================================================
+TEST(EllipsoidShapeTest, NonPositiveDiametersRejected)
+{
+  auto ellipsoid = std::make_shared<dart::dynamics::EllipsoidShape>(
+      Eigen::Vector3d(2.0, 2.0, 2.0));
+  const Eigen::Vector3d originalDiameters = ellipsoid->getDiameters();
+
+  ellipsoid->setDiameters(Eigen::Vector3d(0.0, 2.0, 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+
+  ellipsoid->setDiameters(Eigen::Vector3d(2.0, -1.0, 2.0));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
+
+  ellipsoid->setDiameters(Eigen::Vector3d(2.0, 2.0, -0.001));
+  EXPECT_TRUE(ellipsoid->getDiameters().isApprox(originalDiameters));
 }
 
 //==============================================================================
