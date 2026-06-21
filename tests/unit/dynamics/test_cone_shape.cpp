@@ -6,6 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include <cmath>
+
 //==============================================================================
 TEST(ConeShapeTest, Construction)
 {
@@ -42,6 +46,84 @@ TEST(ConeShapeTest, SetHeight)
 
   cone->setHeight(100.0);
   EXPECT_DOUBLE_EQ(cone->getHeight(), 100.0);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, NaNRadiusRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalRadius = cone->getRadius();
+
+  cone->setRadius(std::nan(""));
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+
+  cone->setRadius(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, InfiniteRadiusRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalRadius = cone->getRadius();
+
+  cone->setRadius(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+
+  cone->setRadius(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, NonPositiveRadiusRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalRadius = cone->getRadius();
+
+  cone->setRadius(0.0);
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+
+  cone->setRadius(-1.0);
+  EXPECT_DOUBLE_EQ(cone->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, NaNHeightRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalHeight = cone->getHeight();
+
+  cone->setHeight(std::nan(""));
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
+
+  cone->setHeight(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, InfiniteHeightRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalHeight = cone->getHeight();
+
+  cone->setHeight(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
+
+  cone->setHeight(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(ConeShapeTest, NonPositiveHeightRejected)
+{
+  auto cone = std::make_shared<dart::dynamics::ConeShape>(0.5, 2.0);
+  const double originalHeight = cone->getHeight();
+
+  cone->setHeight(0.0);
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
+
+  cone->setHeight(-1.0);
+  EXPECT_DOUBLE_EQ(cone->getHeight(), originalHeight);
 }
 
 //==============================================================================

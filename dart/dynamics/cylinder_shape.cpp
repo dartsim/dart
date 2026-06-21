@@ -32,18 +32,20 @@
 
 #include "dart/dynamics/cylinder_shape.hpp"
 
+#include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
+
+#include <cmath>
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER), mRadius(_radius), mHeight(_height)
+CylinderShape::CylinderShape(double _radius, double _height) : Shape(CYLINDER)
 {
-  DART_ASSERT(0.0 < _radius);
-  DART_ASSERT(0.0 < _height);
+  setRadius(_radius);
+  setHeight(_height);
 }
 
 //==============================================================================
@@ -68,7 +70,14 @@ double CylinderShape::getRadius() const
 //==============================================================================
 void CylinderShape::setRadius(double _radius)
 {
-  DART_ASSERT(0.0 < _radius);
+  if (!std::isfinite(_radius) || _radius <= 0.0) {
+    DART_WARN(
+        "CylinderShape::setRadius: Invalid radius '{}'. Radius must be a "
+        "positive finite value. Ignoring request.",
+        _radius);
+    return;
+  }
+
   mRadius = _radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -85,7 +94,14 @@ double CylinderShape::getHeight() const
 //==============================================================================
 void CylinderShape::setHeight(double _height)
 {
-  DART_ASSERT(0.0 < _height);
+  if (!std::isfinite(_height) || _height <= 0.0) {
+    DART_WARN(
+        "CylinderShape::setHeight: Invalid height '{}'. Height must be a "
+        "positive finite value. Ignoring request.",
+        _height);
+    return;
+  }
+
   mHeight = _height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

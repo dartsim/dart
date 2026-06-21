@@ -84,10 +84,10 @@ protected:
 
 private:
   /// @brief
-  double mRadius;
+  double mRadius{1.0};
 
   /// @brief Height along z-axis.
-  double mHeight;
+  double mHeight{1.0};
 };
 
 } // namespace dynamics

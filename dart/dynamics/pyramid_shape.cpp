@@ -45,14 +45,11 @@ namespace dynamics {
 
 //==============================================================================
 PyramidShape::PyramidShape(double baseWidth, double baseDepth, double height)
-  : Shape(PYRAMID),
-    mBaseWidth(baseWidth),
-    mBaseDepth(baseDepth),
-    mHeight(height)
+  : Shape(PYRAMID)
 {
-  DART_ASSERT(0.0 < baseWidth);
-  DART_ASSERT(0.0 < baseDepth);
-  DART_ASSERT(0.0 < height);
+  setBaseWidth(baseWidth);
+  setBaseDepth(baseDepth);
+  setHeight(height);
 }
 
 //==============================================================================
@@ -77,7 +74,14 @@ double PyramidShape::getBaseWidth() const
 //==============================================================================
 void PyramidShape::setBaseWidth(double width)
 {
-  DART_ASSERT(0.0 < width);
+  if (!std::isfinite(width) || width <= 0.0) {
+    DART_WARN(
+        "PyramidShape::setBaseWidth: Invalid width '{}'. Width must be a "
+        "positive finite value. Ignoring request.",
+        width);
+    return;
+  }
+
   mBaseWidth = width;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -94,7 +98,14 @@ double PyramidShape::getBaseDepth() const
 //==============================================================================
 void PyramidShape::setBaseDepth(double depth)
 {
-  DART_ASSERT(0.0 < depth);
+  if (!std::isfinite(depth) || depth <= 0.0) {
+    DART_WARN(
+        "PyramidShape::setBaseDepth: Invalid depth '{}'. Depth must be a "
+        "positive finite value. Ignoring request.",
+        depth);
+    return;
+  }
+
   mBaseDepth = depth;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -111,7 +122,14 @@ double PyramidShape::getHeight() const
 //==============================================================================
 void PyramidShape::setHeight(double height)
 {
-  DART_ASSERT(0.0 < height);
+  if (!std::isfinite(height) || height <= 0.0) {
+    DART_WARN(
+        "PyramidShape::setHeight: Invalid height '{}'. Height must be a "
+        "positive finite value. Ignoring request.",
+        height);
+    return;
+  }
+
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

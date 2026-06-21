@@ -93,10 +93,10 @@ protected:
 
 private:
   /// Radius of the capsule.
-  double mRadius;
+  double mRadius{1.0};
 
   /// Height of the cylindrical part.
-  double mHeight;
+  double mHeight{1.0};
 };
 
 } // namespace dynamics

@@ -6,6 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include <cmath>
+
 //==============================================================================
 TEST(CylinderShapeTest, Construction)
 {
@@ -42,6 +46,84 @@ TEST(CylinderShapeTest, SetHeight)
 
   cylinder->setHeight(100.0);
   EXPECT_DOUBLE_EQ(cylinder->getHeight(), 100.0);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, NaNRadiusRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalRadius = cylinder->getRadius();
+
+  cylinder->setRadius(std::nan(""));
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+
+  cylinder->setRadius(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, InfiniteRadiusRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalRadius = cylinder->getRadius();
+
+  cylinder->setRadius(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+
+  cylinder->setRadius(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, NonPositiveRadiusRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalRadius = cylinder->getRadius();
+
+  cylinder->setRadius(0.0);
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+
+  cylinder->setRadius(-1.0);
+  EXPECT_DOUBLE_EQ(cylinder->getRadius(), originalRadius);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, NaNHeightRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalHeight = cylinder->getHeight();
+
+  cylinder->setHeight(std::nan(""));
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
+
+  cylinder->setHeight(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, InfiniteHeightRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalHeight = cylinder->getHeight();
+
+  cylinder->setHeight(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
+
+  cylinder->setHeight(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
+}
+
+//==============================================================================
+TEST(CylinderShapeTest, NonPositiveHeightRejected)
+{
+  auto cylinder = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
+  const double originalHeight = cylinder->getHeight();
+
+  cylinder->setHeight(0.0);
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
+
+  cylinder->setHeight(-1.0);
+  EXPECT_DOUBLE_EQ(cylinder->getHeight(), originalHeight);
 }
 
 //==============================================================================
