@@ -174,9 +174,13 @@ scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
 
 > Continue the DART 6.20 dependency-reduction lane (task_3). Read this file and
 > the task `README.md`. Optimizer backends are removed (#3105 merged); the
-> collision pixi-demotion was abandoned (#3106 closed) and the native-collision
-> backport is deferred. Standalone dep removals are exhausted — **boost is not
-> independently removable** (`openscenegraph → collada-dom → libboost`), so the
-> next real footprint lever is the **GUI/OSG demotion** (slice 3), which would
-> also drop boost (+ collada-dom + freeglut). Feature-env CI (if any) must use
-> `test`/`test-py`, never `test-all`.
+> collision pixi-demotion was abandoned (#3106 closed). Per **maintainer decision
+> (c)**, ALL interim Pixi demotions are **held** — including the GUI/OSG (slice 3)
+> and collision-extras footprint levers — and the lane pursues only the
+> **native-collision detector port** (deferred, XL, awaiting the maintainer's
+> explicit go-ahead; scoped in `03-native-collision-port-scoping.md`). Standalone
+> dep removals are exhausted (**boost is not independently removable** —
+> `openscenegraph → collada-dom → libboost`; it only drops with the held GUI/OSG
+> work). Do **not** start the GUI/OSG demotion or any other interim demotion
+> without a new maintainer decision — task_3's active removals are complete
+> (#3105). Feature-env CI (if any) must use `test`/`test-py`, never `test-all`.

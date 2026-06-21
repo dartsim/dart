@@ -75,7 +75,7 @@ Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries*
 - **gz subclassing**: is facade-over-native acceptable for `Bullet/OdeCollisionDetector`, or must Bullet/ODE remain real for gz? (DART 7 used facades; verify gz's `Gz*CollisionDetector` still compiles/links against facades.)
 - **Bit-exact parity** with FCL/Bullet contacts is likely infeasible; agree the correctness bar is the `contact_benchmark` hash *for the native detector held fixed*, plus tolerance-based scene-dump diffs vs incumbents.
 - **LTS risk**: this is a large change on a release branch. Phasing keeps each PR reviewable + gz-gated; default-flip (phase 4) is the point of no return — gate it on the perf evidence + a full Gazebo run.
-- **Interaction with the open #3114** island-deactivation/collision fix — rebase onto it once merged.
+- **#3114** (FCL null contact when contact generation is disabled — the island-deactivation regression) is **already merged** into `release-6.20` and present in this branch (`e3b76ddf`); no rebase needed, the native port builds on top of it.
 - **Scale**: DART 7 delivered this across PLAN-035 (#2652/#2688/#2700) over months; in 6.20 it's a multi-PR, multi-week initiative even reusing the algorithms.
 
 ## Recommendation
