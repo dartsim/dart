@@ -38,7 +38,7 @@ The port is **not a copy**:
 
 **Implication:** port the **algorithm core** (broadphase + narrowphase + distance/ccd/raycast/manifolds — Eigen-only math) and re-plumb it behind DART 6's `CollisionDetector`/`CollisionGroup` in C++17 without EnTT.
 
-## gz-physics / gz-sim compatibility matrix (hard constraint — `pixi -e gazebo test-gz`)
+## gz-physics / gz-sim compatibility matrix (hard constraint — `pixi run -e gazebo test-gz`)
 
 | gz requirement | Evidence | Native-port obligation |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ The port is **not a copy**:
 | `SetWorldCollisionDetector("bullet"/"ode"/"fcl"/"dart")` | `dartsim/src/WorldFeatures.cc` | All four names must keep resolving. |
 | `world->getLastCollisionResult().getContacts()`; `Contact{point,normal,penetrationDepth,force,collisionObject1/2}` | `dartsim/src/SimulationFeatures.cc` | Native `Contact` must populate the same fields with equivalent semantics. |
 | Per-pair contact capping | `GzCollisionDetector::LimitCollisionPairMaxContacts` | Native must honor `CollisionOption.maxNumContactsPerPair`. |
-| CI gate | `scripts/run_gz_physics_task.sh` (ctest + plugin-links-DART check) | `pixi -e gazebo test-gz` must stay green on every phase. |
+| CI gate | `scripts/run_gz_physics_task.sh` (ctest + plugin-links-DART check) | `pixi run -e gazebo test-gz` must stay green on every phase. |
 
 ## Feature-parity matrix (native must match the default detector)
 
