@@ -22,7 +22,7 @@ speedup.
   constraints, sleep/deactivation, and the LCP solve.
 - Current exact-scene result, default deactivation enabled: RTF `1.50` across
   repeated 16-thread samples (`1.47286`, `1.50528`, `1.51054`, `1.51119`,
-  `1.50657` through `pixi run ex contact_benchmark -- ...`),
+  `1.50657`, `1.51609` through `pixi run ex contact_benchmark -- ...`),
   finite final state, final hash `0x2375f1927218cd43`, final resting
   `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
   `3000 / 3000` steps.
@@ -52,7 +52,11 @@ speedup.
 - Correctness coverage added for the prompt initial-rest path:
   `IslandDeactivation.InitiallySettledShallowContactCanSleepPromptly` proves a
   shallow zero-velocity support contact can consume initial dwell but still
-  takes one final solved impulse before freezing. The existing
+  takes one final solved impulse before freezing.
+  `IslandDeactivation.InitialMobilePairContactDoesNotSleepPromptly` and
+  `IslandDeactivation.InitialWallContactDoesNotSleepPromptly` prove the dwell
+  credit is not granted to unsupported mobile-mobile contacts or vertical wall
+  contacts. The existing
   `IslandDeactivation.UnconvergedContactClearsSleepCandidate` guards the deep
   penetration case.
 - Downstream gate status on this branch: gz-physics passed in the previous

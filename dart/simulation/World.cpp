@@ -700,15 +700,51 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   constexpr double kSleepContactPenetrationTolerance = 1e-5;
   constexpr double kFinalSleepLinearSpeed = 1e-3;
   constexpr double kFinalSleepAngularSpeed = 1e-2;
+  constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
+  const double gravityNorm = mGravity.norm();
+  Eigen::Vector3d up = Eigen::Vector3d::Zero();
+  if (gravityNorm > 0.0)
+    up = -mGravity / gravityNorm;
+
+  auto isShallowSupportContact = [&](const auto& bodyNode,
+                                     const auto& supportBodyNode,
+                                     const Eigen::Vector3d& normal) {
+    if (!bodyNode || !supportBodyNode || gravityNorm <= 0.0)
+      return false;
+
+    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+    if (skeleton == nullptr || !skeleton->isMobile())
+      return false;
+
+    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
+    const bool supportInactive = supportSkeleton == nullptr
+                                 || !supportSkeleton->isMobile()
+                                 || supportSkeleton->isResting();
+    if (!supportInactive)
+      return false;
+
+    const double normalNorm = normal.norm();
+    if (normalNorm <= 0.0)
+      return false;
+
+    const double verticalComponent = std::abs(normal.dot(up)) / normalNorm;
+    if (verticalComponent < kSupportNormalMinVerticalComponent)
+      return false;
+
+    const double bodyHeightAboveSupport
+        = (bodyNode->getTransform().translation()
+           - supportBodyNode->getTransform().translation())
+              .dot(up);
+    return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
+  };
 
   std::unordered_set<const dynamics::Skeleton*> deepInitialContactSkeletons;
+  std::unordered_set<const dynamics::Skeleton*>
+      supportedInitialContactSkeletons;
   if (mFrame == 0) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
-      if (contact.penetrationDepth <= kSleepContactPenetrationTolerance)
-        continue;
-
       auto markMobileSkeleton = [](auto bodyNode, auto& skeletons) {
         if (!bodyNode)
           return;
@@ -717,10 +753,18 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           skeletons.insert(skeleton);
       };
 
-      markMobileSkeleton(
-          contact.getBodyNodePtr1(), deepInitialContactSkeletons);
-      markMobileSkeleton(
-          contact.getBodyNodePtr2(), deepInitialContactSkeletons);
+      const auto bodyNode1 = contact.getBodyNodePtr1();
+      const auto bodyNode2 = contact.getBodyNodePtr2();
+      if (contact.penetrationDepth > kSleepContactPenetrationTolerance) {
+        markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
+        markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
+        continue;
+      }
+
+      if (isShallowSupportContact(bodyNode1, bodyNode2, contact.normal))
+        markMobileSkeleton(bodyNode1, supportedInitialContactSkeletons);
+      if (isShallowSupportContact(bodyNode2, bodyNode1, contact.normal))
+        markMobileSkeleton(bodyNode2, supportedInitialContactSkeletons);
     }
   }
 
@@ -773,7 +817,11 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         const bool deepInitialContact
             = deepInitialContactSkeletons.find(skel.get())
               != deepInitialContactSkeletons.end();
-        if (mFrame == 0 && islanded && finalQuiet && !deepInitialContact) {
+        const bool supportedInitialContact
+            = supportedInitialContactSkeletons.find(skel.get())
+              != supportedInitialContactSkeletons.end();
+        if (mFrame == 0 && islanded && finalQuiet && !deepInitialContact
+            && supportedInitialContact) {
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }
         skel->setRestDwellTime(dwell);
@@ -815,6 +863,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                    || !supportSkel->isMobile()
                                    || supportSkel->isResting();
       if (!supportInactive)
+        return;
+
+      if (!isShallowSupportContact(bodyNode, supportBodyNode, contact.normal))
         return;
 
       if (skel->getSmoothedLinearSpeed() > linWake

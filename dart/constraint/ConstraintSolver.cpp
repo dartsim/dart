@@ -1486,53 +1486,76 @@ void ConstraintSolver::solveConstrainedGroups()
         touchedSkeletonToGroup;
     std::unordered_map<const dynamics::Skeleton*, std::size_t>
         nonReactiveSkeletonToGroup;
+    constexpr std::size_t kExemptFixedContactSupportGroup
+        = std::numeric_limits<std::size_t>::max();
 
-    auto touchesSharedDependency
-        = [&](const dynamics::BodyNode* body, std::size_t groupIndex) {
-            if (body == nullptr)
-              return false;
+    auto touchesSharedDependency = [&](const dynamics::BodyNode* body,
+                                       std::size_t groupIndex) {
+      if (body == nullptr)
+        return false;
 
-            const auto skeleton = body->getSkeleton().get();
-            const bool reactive = body->isReactive();
-            const bool sharedFixedContactSupport
-                = !reactive && skeleton != nullptr && !skeleton->isMobile()
-                  && groupIndex < mConstrainedGroups.size()
-                  && mConstrainedGroups[groupIndex].mAllSingleReactiveContacts;
-            if (sharedFixedContactSupport) {
-              return false;
-            }
+      const auto skeleton = body->getSkeleton().get();
+      const bool reactive = body->isReactive();
+      const bool sharedFixedContactSupport
+          = !reactive && skeleton != nullptr && !skeleton->isMobile()
+            && groupIndex < mConstrainedGroups.size()
+            && mConstrainedGroups[groupIndex].mAllSingleReactiveContacts;
+      if (sharedFixedContactSupport) {
+        const auto recordExemptSupport
+            = [&](auto& dependencyToGroup, const auto* dependency) {
+                const auto result = dependencyToGroup.emplace(
+                    dependency, kExemptFixedContactSupportGroup);
+                if (result.second)
+                  return false;
 
-            if (skeleton != nullptr) {
-              const auto nonReactiveSkeleton
-                  = nonReactiveSkeletonToGroup.find(skeleton);
-              if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
-                  && nonReactiveSkeleton->second != groupIndex) {
-                return true;
-              }
+                const auto recordedGroup = result.first->second;
+                return recordedGroup != kExemptFixedContactSupportGroup
+                       && recordedGroup != groupIndex;
+              };
 
-              const auto touchedSkeleton
-                  = touchedSkeletonToGroup.emplace(skeleton, groupIndex);
-              if (!reactive && !touchedSkeleton.second
-                  && touchedSkeleton.first->second != groupIndex) {
-                return true;
-              }
-            }
+        if (recordExemptSupport(bodyToGroup, body))
+          return true;
 
-            if (reactive)
-              return false;
+        if (skeleton != nullptr
+            && (recordExemptSupport(touchedSkeletonToGroup, skeleton)
+                || recordExemptSupport(nonReactiveSkeletonToGroup, skeleton))) {
+          return true;
+        }
 
-            const auto bodyResult = bodyToGroup.emplace(body, groupIndex);
-            if (!bodyResult.second && bodyResult.first->second != groupIndex)
-              return true;
+        return false;
+      }
 
-            if (skeleton == nullptr)
-              return false;
+      if (skeleton != nullptr) {
+        const auto nonReactiveSkeleton
+            = nonReactiveSkeletonToGroup.find(skeleton);
+        if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
+            && nonReactiveSkeleton->second != groupIndex) {
+          return true;
+        }
 
-            const auto skeletonResult
-                = nonReactiveSkeletonToGroup.emplace(skeleton, groupIndex);
-            return !skeletonResult.second
-                   && skeletonResult.first->second != groupIndex;
-          };
+        const auto touchedSkeleton
+            = touchedSkeletonToGroup.emplace(skeleton, groupIndex);
+        if (!reactive && !touchedSkeleton.second
+            && touchedSkeleton.first->second != groupIndex) {
+          return true;
+        }
+      }
+
+      if (reactive)
+        return false;
+
+      const auto bodyResult = bodyToGroup.emplace(body, groupIndex);
+      if (!bodyResult.second && bodyResult.first->second != groupIndex)
+        return true;
+
+      if (skeleton == nullptr)
+        return false;
+
+      const auto skeletonResult
+          = nonReactiveSkeletonToGroup.emplace(skeleton, groupIndex);
+      return !skeletonResult.second
+             && skeletonResult.first->second != groupIndex;
+    };
 
     for (std::size_t groupIndex = 0; groupIndex < mConstrainedGroups.size();
          ++groupIndex) {

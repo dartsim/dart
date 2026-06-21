@@ -491,6 +491,59 @@ TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  for (std::size_t i = 0; i < 129u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+    auto contact = createContact(&dynamicObject, &fixedObject);
+    solver.addActiveConstraintForTest(
+        createContactConstraint<constraint::ContactConstraint>(contact));
+  }
+
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
+
+  auto* softBody = createSoftBody("soft", true, skeletons);
+  auto* softShapeNode = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionObject softObject(&detector, softShapeNode);
+  auto softContact = createContact(&softObject, &fixedObject);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(softContact),
+  });
+  solver.addSkeletonForTest(skeletons.back());
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ManualConstraintsForceSerialDeactivationGroupSolves)
 {
   ExposedThreadedConstraintSolver solver;
