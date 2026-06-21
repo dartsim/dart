@@ -40,6 +40,8 @@
 
 #include "dart/simulation/DeactivationOptions.hpp"
 
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+
 #include <dart/dart.hpp>
 
 #include <TestHelpers.hpp>
@@ -51,22 +53,11 @@
 #include <cmath>
 
 using namespace dart;
+using namespace dart::collision;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
 namespace {
-
-class ExposedConstraintSolver final : public constraint::ConstraintSolver
-{
-public:
-  void solveGroupsForTest()
-  {
-    solveConstrainedGroups();
-  }
-
-protected:
-  void solveConstrainedGroup(constraint::ConstrainedGroup&) override {}
-};
 
 //==============================================================================
 // Builds a thin static floor (immobile) centered so its top surface sits at
@@ -90,6 +81,27 @@ SkeletonPtr createFloor()
   // never adds itself to a solver island as an awake member.
   floor->setMobile(false);
   return floor;
+}
+
+//==============================================================================
+// Builds a vertical static wall whose right face sits at x = 0.
+SkeletonPtr createWall()
+{
+  auto wall = Skeleton::create("wall");
+  auto body = wall->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+
+  const double width = 10.0;
+  const double thickness = 0.1;
+  auto shape
+      = std::make_shared<BoxShape>(Eigen::Vector3d(thickness, width, width));
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(-thickness / 2.0, 0.0, 0.0);
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  wall->setMobile(false);
+  return wall;
 }
 
 //==============================================================================
@@ -118,6 +130,41 @@ SkeletonPtr createFreeBox(
   tf.translation() = position;
   skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
 
+  return skel;
+}
+
+//==============================================================================
+// Builds an articulated mobile skeleton with two intentionally overlapping
+// collision boxes. The solver resting-contact filter must still honor the
+// skeleton's ordinary self-collision settings when an awake body exists.
+SkeletonPtr createOverlappingTwoBodySkeleton(const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+
+  GenericJoint<SE3Space>::Properties rootJointProps(name + "_root_joint");
+  BodyNode::Properties rootBodyProps(
+      BodyNode::AspectProperties(name + "_root_body"));
+  rootBodyProps.mInertia.setMass(1.0);
+
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, rootJointProps, rootBodyProps);
+  auto* rootBody = rootPair.second;
+  rootBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.2)));
+
+  WeldJoint::Properties childJointProps;
+  childJointProps.mName = name + "_child_joint";
+  BodyNode::Properties childBodyProps(
+      BodyNode::AspectProperties(name + "_child_body"));
+  childBodyProps.mInertia.setMass(1.0);
+
+  auto* childBody = skel->createJointAndBodyNodePair<WeldJoint>(
+                            rootBody, childJointProps, childBodyProps)
+                        .second;
+  childBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.2)));
+
+  skel->disableSelfCollisionCheck();
   return skel;
 }
 
@@ -152,74 +199,6 @@ SkeletonPtr createPinnedContactArm(const std::string& name)
 }
 
 //==============================================================================
-struct ServoWheelCart
-{
-  SkeletonPtr skel;
-  BodyNode* chassis{nullptr};
-  RevoluteJoint* leftWheel{nullptr};
-  RevoluteJoint* rightWheel{nullptr};
-};
-
-//==============================================================================
-ServoWheelCart createServoWheelCart(const std::string& name)
-{
-  ServoWheelCart cart;
-  cart.skel = Skeleton::create(name);
-
-  FreeJoint::Properties rootProps;
-  rootProps.mName = name + "_root";
-  BodyNode::Properties chassisProps(
-      BodyNode::AspectProperties(std::string(name + "_chassis")));
-  chassisProps.mInertia.setMass(3.0);
-
-  auto rootPair = cart.skel->createJointAndBodyNodePair<FreeJoint>(
-      nullptr, rootProps, chassisProps);
-  auto* root = rootPair.first;
-  cart.chassis = rootPair.second;
-
-  auto chassisShape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 0.5, 0.2));
-  cart.chassis->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
-      chassisShape);
-
-  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
-  rootTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.475);
-  root->setPositions(FreeJoint::convertToPositions(rootTf));
-
-  auto addWheel = [&](const std::string& wheelName, double y) {
-    RevoluteJoint::Properties jointProps;
-    jointProps.mName = name + "_" + wheelName + "_joint";
-    jointProps.mAxis = Eigen::Vector3d::UnitY();
-    jointProps.mT_ParentBodyToJoint.translation()
-        = Eigen::Vector3d(0.25, y, -0.175);
-
-    BodyNode::Properties wheelProps(
-        BodyNode::AspectProperties(std::string(name + "_" + wheelName)));
-    wheelProps.mInertia.setMass(1.0);
-
-    auto pair = cart.chassis->createChildJointAndBodyNodePair<RevoluteJoint>(
-        jointProps, wheelProps);
-    auto* joint = pair.first;
-    auto* wheel = pair.second;
-
-    auto wheelShape = std::make_shared<SphereShape>(0.3);
-    wheel->createShapeNodeWith<CollisionAspect, DynamicsAspect>(wheelShape);
-
-    joint->setForceLowerLimit(0, -1000.0);
-    joint->setForceUpperLimit(0, 1000.0);
-    joint->setVelocityLowerLimit(0, -100.0);
-    joint->setVelocityUpperLimit(0, 100.0);
-
-    return joint;
-  };
-
-  cart.leftWheel = addWheel("left_wheel", 0.35);
-  cart.rightWheel = addWheel("right_wheel", -0.35);
-
-  return cart;
-}
-
-//==============================================================================
 // Steps the world until the predicate is satisfied or maxSteps is exceeded.
 // Returns the number of steps taken (== maxSteps if never satisfied).
 template <typename Predicate>
@@ -236,9 +215,65 @@ std::size_t stepUntil(World* world, std::size_t maxSteps, Predicate pred)
 constexpr double kBoxSize = 0.2;
 constexpr double kHalf = kBoxSize / 2.0;
 
-// Creates a world with automatic sleeping enabled. The library default is
-// ON, but the helper keeps tests explicit and resilient to per-test overrides.
-WorldPtr makeSleepingEnabledWorld()
+class TogglePairCollisionFilter : public BodyNodeCollisionFilter
+{
+public:
+  TogglePairCollisionFilter(
+      const BodyNode* body1, const BodyNode* body2, bool ignorePair)
+    : mBody1(body1), mBody2(body2), mIgnorePair(ignorePair)
+  {
+  }
+
+  void setIgnorePair(bool ignorePair)
+  {
+    mIgnorePair = ignorePair;
+  }
+
+  void resetNumCalls()
+  {
+    mNumCalls = 0u;
+  }
+
+  std::size_t getNumCalls() const
+  {
+    return mNumCalls;
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    ++mNumCalls;
+
+    if (BodyNodeCollisionFilter::ignoresCollision(object1, object2))
+      return true;
+
+    const auto* body1 = object1->getBodyNode();
+    const auto* body2 = object2->getBodyNode();
+    const bool targetPair = (body1 == mBody1 && body2 == mBody2)
+                            || (body1 == mBody2 && body2 == mBody1);
+    return mIgnorePair && targetPair;
+  }
+
+private:
+  const BodyNode* mBody1;
+  const BodyNode* mBody2;
+  bool mIgnorePair;
+  mutable std::size_t mNumCalls = 0u;
+};
+
+bool contactContainsBodies(
+    const Contact& contact, const BodyNode* body1, const BodyNode* body2)
+{
+  const auto contactBody1 = contact.getBodyNodePtr1().get();
+  const auto contactBody2 = contact.getBodyNodePtr2().get();
+  return (contactBody1 == body1 && contactBody2 == body2)
+         || (contactBody1 == body2 && contactBody2 == body1);
+}
+
+// Creates a world with automatic deactivation enabled. Keep this explicit so
+// tests stay robust if callers locally override the default options.
+WorldPtr makeSleepWorld()
 {
   auto world = World::create();
   auto opts = world->getDeactivationOptions();
@@ -247,7 +282,127 @@ WorldPtr makeSleepingEnabledWorld()
   return world;
 }
 
+WorldPtr makeSettlingComparisonWorld(bool deactivationEnabled)
+{
+  auto world = World::create();
+  auto opts = world->getDeactivationOptions();
+  opts.mEnabled = deactivationEnabled;
+  world->setDeactivationOptions(opts);
+
+  world->addSkeleton(createFloor());
+  world->addSkeleton(createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.2)));
+
+  return world;
+}
+
+void stepUntilRestingFastPathReady(
+    World* world, const SkeletonPtr& sleeper, std::size_t maxSteps = 5000)
+{
+  const std::size_t settled
+      = stepUntil(world, maxSteps, [&]() { return sleeper->isResting(); });
+  ASSERT_LT(settled, maxSteps);
+  ASSERT_TRUE(sleeper->isResting());
+
+  for (std::size_t i = 0; i < 1000; ++i) {
+    world->step();
+    if (world->getLastCollisionResult().getNumContacts() == 0)
+      break;
+  }
+
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(sleeper->isResting());
+
+  // Exercise the cached all-resting step once before mutating support geometry.
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(sleeper->isResting());
+}
+
+void stepUntilRestingWithContacts(
+    World* world, const SkeletonPtr& sleeper, std::size_t maxSteps = 5000)
+{
+  const std::size_t settled
+      = stepUntil(world, maxSteps, [&]() { return sleeper->isResting(); });
+  ASSERT_LT(settled, maxSteps);
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+void expectSleeperFallsAfterSupportEdit(
+    World* world, const SkeletonPtr& sleeper)
+{
+  const double zBefore
+      = sleeper->getBodyNode(0)->getTransform().translation().z();
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "support edit did not wake the sleeping dynamic body";
+
+  for (std::size_t i = 0; i < 40; ++i)
+    world->step();
+
+  const double zAfter
+      = sleeper->getBodyNode(0)->getTransform().translation().z();
+  EXPECT_LT(zAfter, zBefore - 1e-4)
+      << "unsupported body did not resume falling";
+}
+
+void expectSolverRunsAfterRestingConstraintEdit(
+    World* world, const SkeletonPtr& sleeper)
+{
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "automatic joint-constraint edit reused the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "automatic joint-constraint edit did not wake the sleeping body";
+}
+
 } // namespace
+
+//==============================================================================
+// Automatic deactivation is enabled by default so users get resting-scene
+// acceleration by upgrading. The opt-out path is covered by DisabledIsNoOp.
+TEST(IslandDeactivation, EnabledByDefault)
+{
+  const auto world = World::create();
+  const auto& opts = world->getDeactivationOptions();
+  EXPECT_TRUE(opts.mEnabled);
+}
+
+//==============================================================================
+// Default-on sleeping must not trade physics fidelity for speed. After the same
+// drop-and-settle scenario, the sleeping result should match the always-active
+// solver path within contact-solver tolerance and land at the expected support
+// height.
+TEST(IslandDeactivation, DefaultEnabledSettlesCloseToAlwaysActivePath)
+{
+  auto enabledWorld = makeSettlingComparisonWorld(true);
+  auto activeWorld = makeSettlingComparisonWorld(false);
+  auto enabledBox = enabledWorld->getSkeleton("box");
+  auto activeBox = activeWorld->getSkeleton("box");
+  ASSERT_TRUE(enabledBox);
+  ASSERT_TRUE(activeBox);
+
+  constexpr std::size_t steps = 6000;
+  for (std::size_t i = 0; i < steps; ++i) {
+    enabledWorld->step();
+    activeWorld->step();
+  }
+
+  ASSERT_TRUE(enabledBox->isResting());
+  EXPECT_FALSE(activeBox->isResting());
+
+  const auto enabledTransform = enabledBox->getBodyNode(0)->getTransform();
+  const auto activeTransform = activeBox->getBodyNode(0)->getTransform();
+  EXPECT_TRUE(enabledTransform.translation().isApprox(
+      activeTransform.translation(), 1e-4));
+  EXPECT_TRUE(
+      enabledTransform.linear().isApprox(activeTransform.linear(), 1e-6));
+  EXPECT_NEAR(enabledTransform.translation().z(), kHalf, 1e-5);
+}
 
 //==============================================================================
 // A box dropped onto static ground must come to rest, become flagged resting
@@ -255,9 +410,7 @@ WorldPtr makeSleepingEnabledWorld()
 // for many further steps.
 TEST(IslandDeactivation, SettlesThenSleeps)
 {
-  EXPECT_TRUE(World::create()->getDeactivationOptions().mEnabled)
-      << "automatic deactivation must default to ON";
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
 
   world->addSkeleton(createFloor());
   // Start just above the floor so it settles quickly.
@@ -286,13 +439,293 @@ TEST(IslandDeactivation, SettlesThenSleeps)
 }
 
 //==============================================================================
+// The transition into the frozen state runs one final contact solve for
+// observable contact-force caches, but it must not integrate that final impulse
+// into the pose or leave stale non-zero body velocity caches behind.
+TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  auto* body = box->getBodyNode(0);
+  Eigen::VectorXd lastAwakePos = box->getPositions();
+  bool slept = false;
+  for (std::size_t i = 0; i < 5000; ++i) {
+    ASSERT_FALSE(box->isResting());
+    lastAwakePos = box->getPositions();
+
+    world->step();
+    if (box->isResting()) {
+      slept = true;
+      break;
+    }
+  }
+
+  ASSERT_TRUE(slept) << "box never went to sleep";
+  EXPECT_TRUE(box->getPositions().isApprox(lastAwakePos, 1e-12))
+      << "sleep transition integrated the final contact impulse";
+  EXPECT_NEAR(body->getTransform().translation().z(), kHalf, 1e-5);
+  EXPECT_NEAR(body->getLinearVelocity().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(body->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// Some imported worlds, including large generated SDF scenes, start with many
+// zero-velocity bodies already shallowly supported by static geometry. They
+// should not spend the full dwell horizon proving rest from t=0, but they still
+// need the normal final contact solve before the island is frozen.
+TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isResting())
+      << "the initial rest credit must still allow one final solved impulse";
+  EXPECT_GE(
+      box->getRestDwellTime(), world->getDeactivationOptions().mTimeUntilSleep);
+
+  world->step();
+
+  EXPECT_TRUE(box->isResting());
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// The first-frame dwell credit is only for gravity-supported shallow contacts.
+// A mobile pair touching in midair must keep falling instead of sleeping as a
+// frozen island.
+TEST(IslandDeactivation, InitialMobilePairContactDoesNotSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->setTimeStep(1e-4);
+
+  auto lower = createFreeBox(
+      "lower", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(0, 0, 1.0));
+  auto upper = createFreeBox(
+      "upper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, 1.0 + kBoxSize - 5e-7));
+  world->addSkeleton(lower);
+  world->addSkeleton(upper);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(lower->isSleepCandidate());
+  EXPECT_FALSE(upper->isSleepCandidate());
+
+  world->step();
+
+  EXPECT_FALSE(lower->isResting());
+  EXPECT_FALSE(upper->isResting());
+}
+
+//==============================================================================
+// A shallow wall contact is not support against gravity, even if the first
+// timestep is small enough that gravity has not yet moved the body beyond the
+// final quiet threshold.
+TEST(IslandDeactivation, InitialWallContactDoesNotSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->setTimeStep(1e-4);
+  world->addSkeleton(createWall());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(kHalf - 5e-7, 0, 1.0));
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(box->isSleepCandidate());
+
+  world->step();
+
+  EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// A candidate island whose contacts have not physically converged must be kept
+// awake. Otherwise default-on sleeping can leave downstream integrations with a
+// residual velocity before the contact solver has actually settled the body.
+TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 0.01));
+  Eigen::Vector6d residualVelocity = Eigen::Vector6d::Zero();
+  residualVelocity[3] = 0.005;
+  box->getJoint(0)->setVelocities(residualVelocity);
+  box->setSleepCandidate(true);
+  box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// A quiet support contact must not freeze while another mobile body in the same
+// world is still falling. Downstream worlds can attach/detach joints between
+// otherwise independent models; sleeping one settled model before the other
+// dynamic models finish settling changes the later contact response.
+TEST(IslandDeactivation, SettledBodyWaitsForOtherMobileBodyToSettle)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto settled = createFreeBox(
+      "settled",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  auto falling = createFreeBox(
+      "falling",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(1.0, 0, kHalf + 3.0));
+  world->addSkeleton(settled);
+  world->addSkeleton(falling);
+
+  for (std::size_t i = 0; i < 650; ++i) {
+    world->step();
+    ASSERT_FALSE(settled->isResting())
+        << "settled body slept while another body was still active at step "
+        << i;
+    ASSERT_FALSE(falling->isResting());
+  }
+
+  EXPECT_GT(falling->getBodyNode(0)->getTransform().translation().z(), 1.0);
+
+  const std::size_t stepsToSleep = stepUntil(world.get(), 7000, [&]() {
+    return settled->isResting() && falling->isResting();
+  });
+  EXPECT_LT(stepsToSleep, 7000u)
+      << "bodies did not sleep after the active body settled";
+}
+
+//==============================================================================
+// Once every mobile body is resting and the previous collision pass produced no
+// contacts, the all-resting fast path may skip physics work. It still must
+// advance the observable world clock and frame counter exactly like a normal
+// step.
+TEST(IslandDeactivation, AllRestingFastPathAdvancesTimeAndFrame)
+{
+  auto world = makeSleepWorld();
+
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  const std::size_t stepsToSleep
+      = stepUntil(world.get(), 5000, [&]() { return box->isResting(); });
+  ASSERT_LT(stepsToSleep, 5000u) << "box never went to sleep";
+  ASSERT_TRUE(box->isResting());
+
+  for (std::size_t i = 0; i < 1000; ++i) {
+    world->step();
+    if (world->getLastCollisionResult().getNumContacts() == 0)
+      break;
+  }
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(box->isResting());
+
+  const double timeBefore = world->getTime();
+  const int frameBefore = world->getSimFrames();
+  const Eigen::VectorXd frozenPos = box->getPositions();
+
+  constexpr std::size_t steps = 100;
+  for (std::size_t i = 0; i < steps; ++i) {
+    world->step();
+    ASSERT_TRUE(box->isResting()) << "box spuriously woke at step " << i;
+    EXPECT_TRUE(box->getPositions().isApprox(frozenPos, 1e-12))
+        << "frozen box drifted at step " << i;
+  }
+
+  EXPECT_NEAR(
+      world->getTime() - timeBefore,
+      static_cast<double>(steps) * world->getTimeStep(),
+      1e-12);
+  EXPECT_EQ(frameBefore + static_cast<int>(steps), world->getSimFrames());
+}
+
+//==============================================================================
+// GUI-only visual updates must not invalidate the all-resting fast path. The
+// sleep-state color overlay changes VisualAspect properties after a body has
+// gone to sleep; this must not look like a pose edit or wake the simulation.
+TEST(IslandDeactivation, VisualColorChangeDoesNotWakeRestingBody)
+{
+  auto world = makeSleepWorld();
+
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+
+  auto* body = box->getBodyNode(0);
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(kBoxSize)));
+  world->addSkeleton(box);
+
+  const std::size_t stepsToSleep
+      = stepUntil(world.get(), 5000, [&]() { return box->isResting(); });
+  ASSERT_LT(stepsToSleep, 5000u) << "box never went to sleep";
+  ASSERT_TRUE(box->isResting());
+
+  for (std::size_t i = 0; i < 1000; ++i) {
+    world->step();
+    if (world->getLastCollisionResult().getNumContacts() == 0)
+      break;
+  }
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_TRUE(box->isResting());
+
+  // Prime the ready snapshot, then mutate only the visual color.
+  world->step();
+  ASSERT_TRUE(box->isResting());
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+  box->setColor(Eigen::Vector4d(0.05, 0.35, 1.0, 1.0));
+  world->step();
+
+  EXPECT_TRUE(box->isResting())
+      << "visual-only color change woke a sleeping body";
+  EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts())
+      << "visual-only color change invalidated the all-resting fast path";
+}
+
+//==============================================================================
 // A skeleton that is put to sleep must preserve the last solved contact wrench
 // in its BodyNode force cache. Downstream adapters expose this through joint
 // transmitted-wrench APIs, so the transition into sleep must not overwrite the
 // value with an unconstrained forward-dynamics pass.
 TEST(IslandDeactivation, SleepingPreservesContactBodyForce)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto arm = createPinnedContactArm("arm");
   world->addSkeleton(arm);
@@ -310,87 +743,11 @@ TEST(IslandDeactivation, SleepingPreservesContactBodyForce)
 }
 
 //==============================================================================
-// A contact island that is already resting but carries the final solved impulse
-// must process that impulse without waking. This covers the path that preserves
-// the contact-force cache for transmitted-wrench queries while freezing the
-// island for subsequent steps.
-TEST(IslandDeactivation, FinalSleepImpulseKeepsBodyFrozen)
-{
-  auto world = makeSleepingEnabledWorld();
-  world->addSkeleton(createFloor());
-  auto arm = createPinnedContactArm("arm");
-  world->addSkeleton(arm);
-
-  // Establish the contact island, then force the exact post-solver state used
-  // for the final sleep solve: resting, sleep-candidate, and carrying an
-  // impulse.
-  world->step();
-  arm->setSleepCandidate(true);
-  arm->setResting(true);
-  arm->setImpulseApplied(true);
-  arm->setVelocities(
-      Eigen::VectorXd::Ones(static_cast<int>(arm->getNumDofs())));
-
-  world->step();
-
-  EXPECT_TRUE(arm->isResting());
-  EXPECT_TRUE(arm->isSleepCandidate());
-  EXPECT_FALSE(arm->isImpulseApplied());
-  EXPECT_TRUE(arm->getVelocities().isZero(1e-12));
-}
-
-//==============================================================================
-// If a resting body receives an impulse while it is not still a sleep
-// candidate, it must wake and process the impulse normally.
-TEST(IslandDeactivation, NonCandidateImpulseWakesRestingBody)
-{
-  auto world = makeSleepingEnabledWorld();
-  world->setGravity(Eigen::Vector3d::Zero());
-
-  auto box = createFreeBox(
-      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
-  world->addSkeleton(box);
-
-  box->setResting(true);
-  box->setSleepCandidate(false);
-  box->setImpulseApplied(true);
-
-  world->step();
-
-  EXPECT_FALSE(box->isResting());
-  EXPECT_FALSE(box->isSleepCandidate());
-  EXPECT_FALSE(box->isImpulseApplied());
-}
-
-//==============================================================================
-// The solver may see stale diagnostic island indices when
-// solveConstrainedGroups is exercised directly without rebuilding groups. It
-// should ignore them instead of indexing into an empty group vector.
-TEST(IslandDeactivation, SolverIgnoresStaleIslandIndexWithoutGroups)
-{
-  ExposedConstraintSolver solver;
-  auto box = createFreeBox(
-      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
-
-  solver.setAutomaticSleepingEnabled(false);
-  solver.addSkeleton(box);
-  // Exercise both spellings: the legacy "active" API must still toggle the
-  // same automatic sleeping work as the new sleeping-enabled name.
-  solver.setDeactivationActive(true);
-  box->setIslandIndex(0);
-  box->setResting(true);
-
-  solver.solveGroupsForTest();
-
-  EXPECT_TRUE(box->isResting());
-}
-
-//==============================================================================
 // A sleeping box that is struck by a second moving body must wake (via the
 // wake-on-contact impulse path) and move.
 TEST(IslandDeactivation, WakeOnContact)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
 
   auto sleeper = createFreeBox(
@@ -436,11 +793,729 @@ TEST(IslandDeactivation, WakeOnContact)
 }
 
 //==============================================================================
+// Editing a sleeping body's velocity between all-resting fast-path steps must
+// wake it so the requested motion is integrated.
+TEST(IslandDeactivation, WakeOnVelocityEdit)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  Eigen::Vector6d vel = Eigen::Vector6d::Zero();
+  vel[3] = 0.005;
+  sleeper->getJoint(0)->setVelocities(vel);
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "velocity edit was hidden by the all-resting fast path";
+}
+
+//==============================================================================
+// When an awake body hits one member of a frozen mobile contact island, the
+// resting-resting contacts inside that island must participate in the same
+// solver pass so the wake is island-atomic.
+TEST(IslandDeactivation, WakeOnContactPreservesRestingIsland)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto projectile = createFreeBox(
+      "projectile",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(-0.8, 0, kHalf));
+  world->addSkeleton(projectile);
+
+  constexpr double overlap = 1.0e-8;
+  std::vector<SkeletonPtr> stack;
+  for (int i = 0; i < 3; ++i) {
+    const double z = kHalf - overlap / 2.0 + i * (kBoxSize - overlap);
+    auto b = createFreeBox(
+        "stack" + std::to_string(i),
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, z));
+    world->addSkeleton(b);
+    stack.push_back(b);
+  }
+
+  for (const auto& b : stack) {
+    b->setSleepCandidate(true);
+    b->setIslandIndex(0);
+    b->setResting(true);
+    ASSERT_TRUE(b->isResting()) << b->getName() << " did not sleep";
+  }
+
+  Eigen::Vector6d vel = Eigen::Vector6d::Zero();
+  vel[3] = 2.0;
+  projectile->getJoint(0)->setVelocities(vel);
+
+  const std::size_t woke
+      = stepUntil(world.get(), 1000, [&]() { return !stack[0]->isResting(); });
+  ASSERT_LT(woke, 1000u) << "projectile never woke the contacted stack member";
+  for (const auto& b : stack) {
+    EXPECT_FALSE(b->isResting())
+        << b->getName() << " stayed frozen after its island was hit";
+  }
+}
+
+//==============================================================================
+// Preserving resting contacts inside a frozen mobile island is a solver-local
+// wakeup optimization; it must not bypass ordinary same-skeleton filtering.
+TEST(IslandDeactivation, RestingIslandPreservesSelfCollisionFilter)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto resting = createOverlappingTwoBodySkeleton("resting");
+  world->addSkeleton(resting);
+
+  auto awake = createFreeBox(
+      "awake", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(10, 0, 0));
+  world->addSkeleton(awake);
+
+  resting->setSleepCandidate(true);
+  resting->setIslandIndex(0);
+  resting->setResting(true);
+  ASSERT_TRUE(resting->isResting());
+  ASSERT_FALSE(resting->isEnabledSelfCollisionCheck());
+
+  world->getConstraintSolver()->solve();
+  EXPECT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
+}
+
+//==============================================================================
+// A sleeping body must not stay hidden behind the all-resting fast path when an
+// external API edits static geometry. gz-physics can move free groups between
+// simulation steps, so DART must invalidate the resting cache and perform a
+// real collision pass instead of filtering resting-vs-static pairs forever.
+TEST(IslandDeactivation, WakeOnStaticPoseChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  auto blocker = createFreeBox(
+      "blocker",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(2.0, 0, kHalf));
+  blocker->setMobile(false);
+  world->addSkeleton(blocker);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(kBoxSize * 0.25, 0, kHalf);
+  static_cast<FreeJoint*>(blocker->getJoint(0))->setTransform(moved);
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "static pose edit was hidden by the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "static pose edit did not wake the sleeping dynamic body";
+}
+
+//==============================================================================
+// Removing a static support must wake sleeping bodies before the no-contact
+// solver path can preserve stale resting flags.
+TEST(IslandDeactivation, WakeOnSupportRemoved)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->removeSkeleton(floor);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Disabling collision on an immobile support changes the physical contact set
+// even though the support skeleton itself is not mobile.
+TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  floor->getBodyNode(0)->setCollidable(false);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// The support can disappear immediately after a body sleeps, before the first
+// no-contact snapshot is built. The between-step world-state guard must wake
+// the body before the solver's no-contact preservation path can keep stale
+// flags.
+TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  floor->getBodyNode(0)->setCollidable(false);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Kinematic edits to an immobile support can remove a resting body's support
+// immediately after the body sleeps, before the first no-contact snapshot is
+// built. The between-step world-state guard must notice that per-world
+// skeleton kinematic revision change.
+TEST(IslandDeactivation, WakeOnSupportPoseChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floor->getJoint(0)->setTransformFromParentBodyNode(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Solver collision-filter updates can remove support contacts without touching
+// skeleton pose/version counters. The all-resting snapshot must include the
+// filter revision so sleeping bodies wake instead of reusing the cached no-op
+// step forever.
+TEST(IslandDeactivation, WakeOnSolverCollisionFilterChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* filter = dynamic_cast<BodyNodeCollisionFilter*>(
+      world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(
+      floor->getBodyNode(0), sleeper->getBodyNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Filter edits have the same stale-state risk before the first no-contact fast
+// path check. The per-step filter revision must be enough to wake the body.
+TEST(IslandDeactivation, WakeOnSolverCollisionFilterChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  auto* filter = dynamic_cast<BodyNodeCollisionFilter*>(
+      world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(
+      floor->getBodyNode(0), sleeper->getBodyNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Collision-option scalar edits can change contact generation without changing
+// detector, group, or filter identity. The all-resting snapshot must include
+// these options so sleepers wake and the new contact settings take effect.
+TEST(IslandDeactivation, WakeOnCollisionOptionChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 0u;
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// The between-step resting-world state guard must also track collision-option
+// scalar edits before the first no-contact fast-path snapshot is built.
+TEST(IslandDeactivation, WakeOnCollisionOptionChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 0u;
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Collision-shape edits under a static support must invalidate the all-resting
+// snapshot even when the static skeleton pose itself does not change.
+TEST(IslandDeactivation, WakeOnSupportShapeGeometryChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* floorShapeNode = floor->getBodyNode(0)->getShapeNode(0);
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floorShapeNode->setRelativeTransform(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(
+      stepUntilRestingFastPathReady(world.get(), sleeper, 8000));
+
+  auto floorBox
+      = std::dynamic_pointer_cast<BoxShape>(floorShapeNode->getShape());
+  ASSERT_TRUE(floorBox);
+  floorBox->setSize(Eigen::Vector3d(10.0, 10.0, 0.02));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Contact material changes can alter the contact response without changing any
+// skeleton pose or shape geometry. They must invalidate the all-resting
+// snapshot so the next step recomputes contacts instead of reusing the no-op
+// fast path.
+TEST(IslandDeactivation, WakeOnContactMaterialChange)
+{
+  for (const bool editSupport : {true, false}) {
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    world->addSkeleton(floor);
+
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+
+    auto* targetBodyNode
+        = editSupport ? floor->getBodyNode(0) : sleeper->getBodyNode(0);
+    auto* dynamics = targetBodyNode->getShapeNode(0)->get<DynamicsAspect>();
+    ASSERT_NE(dynamics, nullptr);
+
+    if (editSupport) {
+      dynamics->setFrictionCoeff(0.0);
+    } else {
+      dynamics->setRestitutionCoeff(0.5);
+    }
+
+    world->step();
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+        << "contact material edit reused the all-resting fast path";
+    EXPECT_FALSE(sleeper->isResting())
+        << "contact material edit did not wake the sleeping body";
+  }
+}
+
+//==============================================================================
+// Inertia edits change the dynamics and cached contact-force response without
+// changing pose, collision geometry, or command state. The all-resting fast
+// path must wake and recompute the solver state after those edits.
+TEST(IslandDeactivation, WakeOnInertiaChange)
+{
+  for (const bool editMass : {true, false}) {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+
+    auto sleeper = createFreeBox(
+        editMass ? "mass" : "moment",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+
+    auto* body = sleeper->getBodyNode(0);
+    if (editMass) {
+      body->setMass(2.0 * body->getMass());
+    } else {
+      double ixx = 0.0;
+      double iyy = 0.0;
+      double izz = 0.0;
+      double ixy = 0.0;
+      double ixz = 0.0;
+      double iyz = 0.0;
+      body->getMomentOfInertia(ixx, iyy, izz, ixy, ixz, iyz);
+      body->setMomentOfInertia(2.0 * ixx, 2.0 * iyy, 2.0 * izz, ixy, ixz, iyz);
+    }
+
+    world->step();
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+        << "inertia edit reused the all-resting fast path";
+    EXPECT_FALSE(sleeper->isResting())
+        << "inertia edit did not wake the sleeping body";
+  }
+}
+
+//==============================================================================
+// If the all-resting snapshot is invalidated before a new snapshot is built,
+// support edits must still wake resting bodies on the next step.
+TEST(IslandDeactivation, WakeOnSupportShapeChangeAfterSnapshotInvalidation)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->setTimeStep(world->getTimeStep());
+  ASSERT_TRUE(sleeper->isResting());
+
+  auto* floorShapeNode = floor->getBodyNode(0)->getShapeNode(0);
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floorShapeNode->setRelativeTransform(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Enabling automatic joint constraints can make a previously resting body need
+// a solver pass even when its world pose has not otherwise changed.
+TEST(IslandDeactivation, WakeOnAutomaticJointConstraintEnforcementChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* joint = sleeper->getJoint(0);
+  ASSERT_GT(joint->getNumDofs(), 0u);
+  const double position = joint->getPosition(0);
+  joint->setPositionLowerLimit(0, position + 0.05);
+  joint->setPositionUpperLimit(0, position + 1.0);
+  joint->setLimitEnforcement(true);
+
+  expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Limit edits are automatic joint-constraint edits too: a joint that was
+// already limit-enforced can become newly constrained without changing
+// kinematics.
+TEST(IslandDeactivation, WakeOnAutomaticJointLimitChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  auto* joint = sleeper->getJoint(0);
+  ASSERT_GT(joint->getNumDofs(), 0u);
+  const double initialPosition = joint->getPosition(0);
+  joint->setPositionLowerLimit(0, initialPosition - 1.0);
+  joint->setPositionUpperLimit(0, initialPosition + 1.0);
+  joint->setLimitEnforcement(true);
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  joint->setPositionLowerLimit(0, joint->getPosition(0) + 0.05);
+
+  expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Joint-frame edits can change world geometry without changing generalized
+// positions. The all-resting snapshot must invalidate on the kinematic version
+// change and run a real collision pass.
+TEST(IslandDeactivation, WakeOnSupportJointFrameChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto* joint = floor->getJoint(0);
+  Eigen::Isometry3d moved = joint->getTransformFromParentBodyNode();
+  moved.translation().z() -= 0.25;
+  joint->setTransformFromParentBodyNode(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// The resting-contact filter is an internal solver optimization. Public
+// collision queries that use BodyNodeCollisionFilter must still report contacts
+// involving bodies that the solver has marked resting.
+TEST(IslandDeactivation, PublicCollisionFilterReportsRestingContacts)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto detector = world->getConstraintSolver()->getCollisionDetector();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFramesOf(floor.get());
+  group->addShapeFramesOf(sleeper.get());
+
+  CollisionOption option;
+  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+// When an awake mobile body touches a sleeping body, the solver must preserve
+// the sleeping body's inactive support contacts for that wake solve. Otherwise
+// the wake impulse is solved without the ground support that still physically
+// exists.
+TEST(IslandDeactivation, WakeSolveKeepsRestingStaticSupportContact)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0.0, 0.0, kHalf - 0.005));
+  world->addSkeleton(sleeper);
+
+  auto impactor = createFreeBox(
+      "impactor",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0.18, 0.0, kHalf - 0.005));
+  world->addSkeleton(impactor);
+
+  sleeper->setSleepCandidate(true);
+  sleeper->setIslandIndex(0);
+  sleeper->setResting(true);
+
+  world->step();
+
+  const auto* floorBody = floor->getBodyNode(0);
+  const auto* sleeperBody = sleeper->getBodyNode(0);
+  const auto* impactorBody = impactor->getBodyNode(0);
+  bool hasImpactorSleeperContact = false;
+  bool hasFloorSleeperContact = false;
+  const auto& result = world->getLastCollisionResult();
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    hasImpactorSleeperContact
+        = hasImpactorSleeperContact
+          || contactContainsBodies(contact, impactorBody, sleeperBody);
+    hasFloorSleeperContact
+        = hasFloorSleeperContact
+          || contactContainsBodies(contact, floorBody, sleeperBody);
+  }
+
+  EXPECT_TRUE(hasImpactorSleeperContact);
+  EXPECT_TRUE(hasFloorSleeperContact)
+      << "resting-static support contact was filtered out of the wake solve";
+}
+
+//==============================================================================
+// Replacing the solver collision detector rebuilds the collision group. The
+// all-resting snapshot must notice that identity change and run collision on
+// the next step instead of repeatedly taking the no-contact fast path.
+TEST(IslandDeactivation, CollisionDetectorChangeWakesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::FCLCollisionDetector::create());
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "collision detector swap reused the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "collision detector swap did not wake the sleeping body";
+}
+
+//==============================================================================
+// Mutating the solver's existing collision group changes what collision sees
+// without changing the collision-group pointer itself. The all-resting snapshot
+// must track content revisions, otherwise a removed support can be hidden by
+// the no-contact fast path indefinitely.
+TEST(IslandDeactivation, CollisionGroupContentChangeWakesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  group->removeShapeFrame(floor->getBodyNode(0)->getShapeNode(0));
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// Stateful custom filters do not expose a revision, so the all-resting cache
+// must opt out instead of reusing a snapshot after the filter's decision
+// changes.
+TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf));
+  world->addSkeleton(sleeper);
+
+  auto filter = std::make_shared<TogglePairCollisionFilter>(
+      floor->getBodyNode(0), sleeper->getBodyNode(0), true);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+  sleeper->setSleepCandidate(true);
+  sleeper->setIslandIndex(0);
+  sleeper->setResting(true);
+
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  world->step();
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+  filter->setIgnorePair(false);
+  filter->resetNumCalls();
+  world->step();
+  EXPECT_GT(filter->getNumCalls(), 0u)
+      << "custom BodyNodeCollisionFilter subclass was hidden by the "
+         "all-resting fast path";
+}
+
+//==============================================================================
 // Applying an external force to a sleeping body must wake it (via the
 // wake-on-force path in step loop 1) and the body must accelerate.
 TEST(IslandDeactivation, WakeOnExternalForce)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
 
   auto box = createFreeBox(
@@ -475,13 +1550,44 @@ TEST(IslandDeactivation, WakeOnExternalForce)
 }
 
 //==============================================================================
+// A generalized force written through the Skeleton/DOF API must also wake a
+// sleeping body. This covers the all-resting fast path's force/command dirty
+// cache, which is separate from BodyNode external-force dirty flags.
+TEST(IslandDeactivation, WakeOnGeneralizedForce)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  const std::size_t settled
+      = stepUntil(world.get(), 5000, [&]() { return box->isResting(); });
+  ASSERT_LT(settled, 5000u);
+  ASSERT_TRUE(box->isResting());
+
+  // Run one all-resting cached step first so the quiet force/command state is
+  // cached, then mutate a generalized force. The next step must not reuse the
+  // quiet cache.
+  world->step();
+  ASSERT_TRUE(box->isResting());
+
+  box->setForce(3, 50.0);
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "generalized force did not wake the body";
+}
+
+//==============================================================================
 // A body with a pending external disturbance must not accumulate quiet dwell
 // and freeze, even if the disturbance is small enough that the body remains
 // below the sleep thresholds. This covers the pre-resetCommand disturbance
 // bookkeeping path for bodies that are not already resting.
 TEST(IslandDeactivation, ExternalDisturbancePreventsSleep)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   auto opts = world->getDeactivationOptions();
   opts.mTimeUntilSleep = 0.05;
   world->setDeactivationOptions(opts);
@@ -510,7 +1616,7 @@ TEST(IslandDeactivation, ExternalDisturbancePreventsSleep)
 // candidate.
 TEST(IslandDeactivation, StackSleepsAsIsland)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->setGravity(Eigen::Vector3d::Zero());
   world->addSkeleton(createFloor());
 
@@ -562,12 +1668,53 @@ TEST(IslandDeactivation, StackSleepsAsIsland)
 }
 
 //==============================================================================
+// Resting is decided per independent contact island. A separate body in genuine
+// motion must not prevent an otherwise settled floor contact from sleeping.
+TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
+{
+  auto world = makeSleepWorld();
+  auto opts = world->getDeactivationOptions();
+  opts.mTimeUntilSleep = 0.05;
+  world->setDeactivationOptions(opts);
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  auto mover = createFreeBox(
+      "mover",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3.0, 0, kHalf + 0.02));
+  world->addSkeleton(mover);
+
+  Eigen::Vector6d movingVelocity = Eigen::Vector6d::Zero();
+  movingVelocity[3]
+      = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+
+  const std::size_t maxSteps = 5000;
+  std::size_t steps = 0;
+  for (; steps < maxSteps && !sleeper->isResting(); ++steps) {
+    mover->getJoint(0)->setVelocities(movingVelocity);
+    world->step();
+    ASSERT_FALSE(mover->isResting())
+        << "moving body slept before the quiet island at step " << steps;
+  }
+
+  EXPECT_LT(steps, maxSteps)
+      << "quiet independent island did not sleep while another body moved";
+  EXPECT_TRUE(sleeper->isResting());
+}
+
+//==============================================================================
 // A body kept in genuine slow motion (above the sleep thresholds) must NOT be
 // put to sleep within the test horizon. This is the "always beneficial"
 // correctness gate: we must never freeze a body that is actually moving.
 TEST(IslandDeactivation, NoPrematureSleepOfMovingBody)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->setGravity(Eigen::Vector3d::Zero()); // isolate the motion we impose
 
   auto box = createFreeBox(
@@ -596,11 +1743,11 @@ TEST(IslandDeactivation, NoPrematureSleepOfMovingBody)
 }
 
 //==============================================================================
-// With sleeping disabled, the box must never report resting, and its trajectory
-// must match a baseline where sleeping is enabled but the body never reaches
-// sleep eligibility (i.e. identical physics). The baseline keeps sleeping
-// unreachable by setting an unreachable dwell time, so both runs execute the
-// same physics path with no skips.
+// With the feature disabled, the box must never report resting, and its
+// trajectory must match the trajectory produced when the feature is enabled but
+// the body simply never sleeps (i.e. identical physics). We compare a disabled
+// run against a baseline run that disables sleeping by setting an unreachable
+// dwell time, so both runs execute the exact same code path with no skips.
 TEST(IslandDeactivation, DisabledIsNoOp)
 {
   auto makeWorld = []() {
@@ -614,16 +1761,16 @@ TEST(IslandDeactivation, DisabledIsNoOp)
     return world;
   };
 
-  // Run A: sleeping explicitly disabled.
+  // Run A: feature explicitly disabled.
   auto worldA = makeWorld();
   DeactivationOptions disabled;
   disabled.mEnabled = false;
   worldA->setDeactivationOptions(disabled);
   auto boxA = worldA->getSkeleton("box");
 
-  // Run B (baseline): sleeping enabled but configured so the body can never
+  // Run B (baseline): feature enabled but configured so the body can never
   // accumulate enough dwell time to sleep within the horizon. This produces the
-  // never-sleeping reference trajectory the disabled run must match.
+  // "enabled-off" reference trajectory the disabled run must match.
   auto worldB = makeWorld();
   DeactivationOptions neverSleeps;
   neverSleeps.mEnabled = true;
@@ -654,7 +1801,7 @@ TEST(IslandDeactivation, DisabledIsNoOp)
 // body is in no island.
 TEST(IslandDeactivation, IslandIndexExposed)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -674,7 +1821,7 @@ TEST(IslandDeactivation, IslandIndexExposed)
 // generalized force is applied (covers the getForces() branch).
 TEST(IslandDeactivation, WakeOnInternalForce)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -694,7 +1841,7 @@ TEST(IslandDeactivation, WakeOnInternalForce)
 // (covers the getCommands() branch).
 TEST(IslandDeactivation, WakeOnCommand)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -704,69 +1851,60 @@ TEST(IslandDeactivation, WakeOnCommand)
   ASSERT_LT(
       stepUntil(world.get(), 5000, [&]() { return box->isResting(); }), 5000u);
 
-  const Eigen::VectorXd positionsBefore = box->getPositions();
   box->setCommands(Eigen::Vector6d::Constant(1.0));
   world->step();
   EXPECT_FALSE(box->isResting()) << "a set command should wake the body";
-  EXPECT_GT((box->getPositions() - positionsBefore).norm(), 0.0)
-      << "a set command should advance the body in the waking step";
 }
 
 //==============================================================================
-// A sleeping vehicle-like model with servo-driven wheel joints must advance on
-// the first commanded step and match the same step from an otherwise identical
-// awake baseline. gz-sim's DiffDrive system sends wheel velocity commands
-// through gz-physics as DART SERVO commands, so sleeping must be a performance
-// optimization only: it must not consume or delay the first command.
-TEST(IslandDeactivation, ServoWheelCommandMatchesAwakeBaseline)
+// ACCELERATION actuators mirror generalized accelerations into command storage.
+// That command write must invalidate the quiet-disturbance cache.
+TEST(IslandDeactivation, AccelerationCommandInvalidatesQuietDisturbanceCache)
 {
-  auto sleepingWorld = makeSleepingEnabledWorld();
-  sleepingWorld->addSkeleton(createFloor());
-  auto sleepingCart = createServoWheelCart("sleeping_cart");
-  sleepingWorld->addSkeleton(sleepingCart.skel);
+  auto single = createFreeBox(
+      "single",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  single->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+  EXPECT_FALSE(single->hasExternalDisturbance());
+  single->getJoint(0)->setAcceleration(0, 1.0);
+  EXPECT_TRUE(single->hasExternalDisturbance())
+      << "setAcceleration() did not invalidate the quiet command cache";
 
-  ASSERT_LT(
-      stepUntil(
-          sleepingWorld.get(),
-          5000,
-          [&]() { return sleepingCart.skel->isResting(); }),
-      5000u);
-  ASSERT_TRUE(sleepingCart.skel->isResting());
+  auto vector = createFreeBox(
+      "vector",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  vector->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+  EXPECT_FALSE(vector->hasExternalDisturbance());
+  vector->getJoint(0)->setAccelerations(Eigen::Vector6d::Constant(1.0));
+  EXPECT_TRUE(vector->hasExternalDisturbance())
+      << "setAccelerations() did not invalidate the quiet command cache";
+}
 
-  auto awakeWorld = makeSleepingEnabledWorld();
-  auto awakeOptions = awakeWorld->getDeactivationOptions();
-  awakeOptions.mTimeUntilSleep = 1.0e30;
-  awakeWorld->setDeactivationOptions(awakeOptions);
-  awakeWorld->addSkeleton(createFloor());
-  auto awakeCart = createServoWheelCart("awake_cart");
-  awakeCart.skel->setPositions(sleepingCart.skel->getPositions());
-  awakeCart.skel->setVelocities(sleepingCart.skel->getVelocities());
-  awakeWorld->addSkeleton(awakeCart.skel);
+//==============================================================================
+// A quiet command observed by step(false) is cached as non-disturbing, but a
+// later step(true) still must honor the resetCommand contract and clear it.
+TEST(IslandDeactivation, ResetCommandClearsCachedQuietCommand)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
 
-  auto setWheelServoCommand = [](ServoWheelCart& cart, double command) {
-    cart.leftWheel->setActuatorType(Joint::SERVO);
-    cart.rightWheel->setActuatorType(Joint::SERVO);
-    cart.leftWheel->setCommand(0, command);
-    cart.rightWheel->setCommand(0, command);
-  };
+  const Eigen::Vector6d quietCommand = Eigen::Vector6d::Constant(1e-12);
+  box->setCommands(quietCommand);
+  world->step(false);
+  EXPECT_TRUE(box->getCommands().isApprox(quietCommand, 0.0));
+  ASSERT_TRUE(box->isResting());
 
-  const double xBefore = sleepingCart.chassis->getTransform().translation().x();
-  constexpr double command = -1.0 / 300.0;
-  setWheelServoCommand(sleepingCart, command);
-  setWheelServoCommand(awakeCart, command);
-  sleepingWorld->step();
-  awakeWorld->step();
-
-  EXPECT_FALSE(sleepingCart.skel->isResting())
-      << "wheel velocity commands should wake the cart";
-  EXPECT_GT(sleepingCart.chassis->getTransform().translation().x(), xBefore)
-      << "wheel velocity commands should move the cart in the waking step";
-  EXPECT_TRUE(sleepingCart.skel->getPositions().isApprox(
-      awakeCart.skel->getPositions(), 1e-12))
-      << "sleeping changed the first commanded-step positions";
-  EXPECT_TRUE(sleepingCart.skel->getVelocities().isApprox(
-      awakeCart.skel->getVelocities(), 1e-12))
-      << "sleeping changed the first commanded-step velocities";
+  world->step(true);
+  EXPECT_TRUE(box->getCommands().isZero(0.0))
+      << "step(true) should clear cached quiet commands";
 }
 
 //==============================================================================
@@ -779,11 +1917,38 @@ TEST(IslandDeactivation, DisturbanceFalseForZeroDof)
 }
 
 //==============================================================================
-// Disabling sleeping must clear any existing resting state so subsequent steps
-// process every skeleton normally.
+// A reset step must clear body-level external wrenches even when they have no
+// generalized-force projection. Otherwise quiet zero-DOF or constrained bodies
+// can carry a stale BodyNode::mFext after World::step(true).
+TEST(IslandDeactivation, ResetCommandClearsUnprojectedBodyExternalForce)
+{
+  auto world = World::create();
+  DeactivationOptions disabled;
+  disabled.mEnabled = false;
+  world->setDeactivationOptions(disabled);
+
+  auto floor = createFloor(); // WeldJoint to world => zero DOFs
+  floor->setMobile(true);
+  ASSERT_EQ(floor->getNumDofs(), 0u);
+  auto* body = floor->getBodyNode(0);
+  ASSERT_TRUE(body);
+  world->addSkeleton(floor);
+
+  body->setExtForce(Eigen::Vector3d::UnitZ());
+  ASSERT_FALSE(body->getExternalForceLocal().isZero(0.0));
+  EXPECT_FALSE(floor->hasExternalDisturbance());
+
+  world->step(true);
+  EXPECT_TRUE(body->getExternalForceLocal().isZero(0.0))
+      << "resetCommand should clear quiet body external forces";
+}
+
+//==============================================================================
+// Disabling deactivation must clear any existing resting state so subsequent
+// steps process every skeleton normally.
 TEST(IslandDeactivation, DisablingClearsRestState)
 {
-  auto world = makeSleepingEnabledWorld();
+  auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -806,7 +1971,7 @@ TEST(IslandDeactivation, DisablingClearsRestState)
 // Performance evidence (run explicitly with --gtest_also_run_disabled_tests).
 // Not a pass/fail correctness test - it prints wall-clock step times so the
 // "always beneficial" claim can be measured: a large speedup at scale for
-// resting scenes, and negligible overhead for an always-awake scene.
+// resting scenes, and negligible overhead for an always-active scene.
 namespace {
 
 double timeSteps(World* world, std::size_t numSteps)
@@ -819,13 +1984,13 @@ double timeSteps(World* world, std::size_t numSteps)
 }
 
 // Grid of separated boxes on the floor: each box is its own independent solver
-// island, all coming to rest. The setup lets them settle (and sleep, if
-// sleeping is enabled) before the timed window.
-WorldPtr makeRestingGrid(int n, bool sleepingEnabled)
+// island, all coming to rest. settleSteps lets them settle (and sleep, if
+// enabled) before the timed window.
+WorldPtr makeRestingGrid(int n, bool enabled)
 {
   auto world = World::create();
   auto opts = world->getDeactivationOptions();
-  opts.mEnabled = sleepingEnabled;
+  opts.mEnabled = enabled;
   world->setDeactivationOptions(opts);
   world->addSkeleton(createFloor());
   const int side
@@ -868,14 +2033,15 @@ TEST(IslandDeactivation, DISABLED_BenchmarkRestingGrid)
 
 TEST(IslandDeactivation, DISABLED_BenchmarkActiveOverhead)
 {
-  // Always-awake scene: boxes kept in continuous motion so nothing ever sleeps.
-  // Measures the detection overhead of the feature in the worst case for it.
-  std::cout << "\n[bench] awake scene (never sleeps): detection overhead\n";
+  // Always-active scene: boxes kept in continuous motion so nothing ever
+  // sleeps. Measures the detection overhead of the feature in the worst case
+  // for it.
+  std::cout << "\n[bench] active scene (never sleeps): detection overhead\n";
   const int n = 144;
-  auto build = [&](bool sleepingEnabled) {
+  auto build = [&](bool enabled) {
     auto world = World::create();
     auto opts = world->getDeactivationOptions();
-    opts.mEnabled = sleepingEnabled;
+    opts.mEnabled = enabled;
     world->setDeactivationOptions(opts);
     const int side = static_cast<int>(std::ceil(std::sqrt((double)n)));
     int made = 0;

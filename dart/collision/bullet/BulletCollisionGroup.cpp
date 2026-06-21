@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/common/Profile.hpp"
 
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
@@ -131,7 +132,25 @@ void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 //==============================================================================
 void BulletCollisionGroup::updateCollisionGroupEngineData()
 {
+  DART_PROFILE_SCOPED_N("Bullet update AABBs");
   mBulletCollisionWorld->updateAabbs();
+}
+
+//==============================================================================
+void BulletCollisionGroup::updateEngineDataForCollide()
+{
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update objects");
+    for (const auto& info : mObjectInfoList) {
+      auto* object = static_cast<BulletCollisionObject*>(info->mObject.get());
+      object->BulletCollisionObject::updateEngineData();
+    }
+  }
+
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update backend");
+    updateCollisionGroupEngineData();
+  }
 }
 
 //==============================================================================
@@ -144,6 +163,27 @@ btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld()
 const btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
 {
   return mBulletCollisionWorld.get();
+}
+
+//==============================================================================
+bool BulletCollisionGroup::shouldFilterPersistentPairs(
+    const CollisionFilter* filter, std::size_t revision)
+{
+  if (mLastPersistentPairFilter == filter
+      && mLastPersistentPairFilterRevision == revision) {
+    return false;
+  }
+
+  mLastPersistentPairFilter = filter;
+  mLastPersistentPairFilterRevision = revision;
+  return true;
+}
+
+//==============================================================================
+void BulletCollisionGroup::resetPersistentPairFilterCache()
+{
+  mLastPersistentPairFilter = nullptr;
+  mLastPersistentPairFilterRevision = 0u;
 }
 
 } // namespace collision

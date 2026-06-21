@@ -43,20 +43,20 @@
 
 #include <Eigen/Dense>
 
+#include <memory>
 #include <vector>
 
 namespace dart {
 
 namespace dynamics {
+class Joint;
 class Skeleton;
 class ShapeNodeCollisionObject;
 } // namespace dynamics
 
 namespace constraint {
 
-namespace detail {
-class IslandSolveExecutor;
-} // namespace detail
+class ConstraintThreadPool;
 
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
@@ -167,16 +167,23 @@ public:
   /// Get time step
   double getTimeStep() const;
 
-  /// Enables/disables the solver-side automatic sleeping work (island rest
-  /// detection and frozen-island LCP skipping). Mirrors the World's
-  /// DeactivationOptions::mEnabled.
+  /// Enables/disables the solver's automatic body-deactivation work (island
+  /// rest detection and frozen-island LCP skipping). Mirrors the World's
+  /// DeactivationOptions::mEnabled. When disabled, the solver does no rest
+  /// work.
+  void setDeactivationActive(bool _active);
+
+  /// Enables/disables automatic sleeping. Legacy spelling kept for source
+  /// compatibility; forwards to setDeactivationActive().
   void setAutomaticSleepingEnabled(bool _enabled);
 
-  /// Backward-compatible spelling for setAutomaticSleepingEnabled().
-  ///
-  /// The legacy "active" name means this solver work is active; it is not a
-  /// skeleton awake/asleep state.
-  void setDeactivationActive(bool _enabled);
+  /// Sets the number of threads available to parallel solver work. This mirrors
+  /// World::setNumSimulationThreads(); a value of 0 maps to hardware
+  /// concurrency, and 1 keeps the historical serial behavior.
+  void setNumSimulationThreads(std::size_t numThreads);
+
+  /// Returns the configured number of solver threads.
+  std::size_t getNumSimulationThreads() const;
 
   /// Set collision detector. This function acquires ownership of the
   /// CollisionDetector passed as an argument. This method is deprecated in
@@ -226,26 +233,6 @@ public:
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
-
-  /// Sets the number of worker threads used to solve independent constraint
-  /// islands in parallel. Default 1 (serial) is bit-for-bit identical to prior
-  /// behavior. Values > 1 are honored only when the configured boxed-LCP
-  /// solvers are known-reentrant built-ins (Dantzig primary with a
-  /// default-option PGS or no secondary); otherwise the solve falls back to
-  /// serial. Parallel results are deterministic and independent of the thread
-  /// count. When no World-owned executor is injected, the solver owns a private
-  /// worker pool so direct ConstraintSolver users get the requested behavior.
-  void setNumThreads(std::size_t numThreads);
-
-  /// Returns the number of worker threads used for the constraint solve.
-  std::size_t getNumThreads() const;
-
-  /// Injects the (caller-owned) worker pool used for parallel island solving.
-  /// The owning World shares a single pool between step()'s per-skeleton loops
-  /// and this solver. Passing nullptr returns to the solver-owned pool implied
-  /// by setNumThreads(). The injected pool must outlive this solver's use of
-  /// it.
-  void setIslandSolveExecutor(detail::IslandSolveExecutor* executor);
 
   /// Sets this constraint solver using other constraint solver. All the
   /// properties and registered skeletons and constraints will be copied over.
@@ -301,7 +288,15 @@ protected:
   void solveConstrainedGroups();
 
   /// Return true if at least one of colliding body is soft body
-  bool isSoftContact(const collision::Contact& contact) const;
+  bool isSoftContact(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2) const;
+
+  /// Refresh the retained list of joints that can emit automatic constraints.
+  void updateAutomaticJointConstraintCache();
+
+  /// Returns true if the joint can emit an automatic constraint.
+  bool canJointCreateAutomaticConstraint(const dynamics::Joint* joint) const;
 
   using CollisionDetector = collision::CollisionDetector;
 
@@ -339,11 +334,22 @@ protected:
   std::vector<JointCoulombFrictionConstraintPtr>
       mJointCoulombFrictionConstraints;
 
+  /// Cached joints that can create automatic constraints.
+  std::vector<dynamics::Joint*> mAutomaticJointConstraintJoints;
+
+  std::size_t mAutomaticJointConstraintRevision = static_cast<std::size_t>(-1);
+  std::size_t mAutomaticJointConstraintSkeletonVersion
+      = static_cast<std::size_t>(-1);
+
   /// Constraints that manually added
   std::vector<ConstraintBasePtr> mManualConstraints;
 
   /// Active constraints
   std::vector<ConstraintBasePtr> mActiveConstraints;
+
+  /// True when every currently active constraint is a ContactConstraint with
+  /// exactly one reactive skeleton.
+  bool mActiveConstraintsAllSingleReactiveContacts = false;
 
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
@@ -355,24 +361,30 @@ protected:
   /// skipped entirely, so every entry is false and no group is ever skipped.
   std::vector<bool> mGroupResting;
 
-  /// Whether automatic sleeping is enabled in the solver (mirrors the World's
+  /// Scratch arrays for deactivation-aware group solves. These intentionally
+  /// use byte storage rather than vector<bool> so parallel group workers can
+  /// write distinct entries without sharing packed bits.
+  std::vector<char> mGroupAlreadyRestingScratch;
+  std::vector<char> mGroupSolvedToRestScratch;
+
+  /// Whether automatic body deactivation is active (mirrors the World's
   /// DeactivationOptions::mEnabled). When false, the solver performs no
   /// rest-detection work and behaves exactly as before the feature.
-  bool mSleepingEnabled = false;
+  bool mDeactivationActive = false;
 
-  /// Whether the previous sleeping-enabled solve built at least one constrained
-  /// group. Used to avoid clearing per-skeleton sleep state every step in
-  /// unconstrained scenes.
-  bool mHadSleepingGroups = false;
+  /// Whether the previous deactivation-active solve built at least one
+  /// constrained group. Used to avoid clearing per-skeleton sleep state every
+  /// step in unconstrained scenes.
+  bool mHadDeactivationGroups = false;
+
+  /// Thread pool used for independent constrained-group solves.
+  std::unique_ptr<ConstraintThreadPool> mConstraintThreadPool;
+
+  /// Number of threads available to constraint solving.
+  std::size_t mNumSimulationThreads = 1u;
 
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
-
-  /// True only while the current thread is solving a constrained group through
-  /// the island executor. Derived solvers use this to choose thread-private
-  /// scratch only for actual concurrent solves. Static state does not affect
-  /// ConstraintSolver's object layout.
-  static thread_local bool mSolvingConstrainedGroupsInParallel;
 };
 
 } // namespace constraint

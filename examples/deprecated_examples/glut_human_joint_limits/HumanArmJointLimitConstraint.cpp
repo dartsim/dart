@@ -39,7 +39,7 @@
 
 #include <dart/common/Console.hpp>
 
-#include <dart/external/odelcpsolver/lcp.h>
+#include <dart/lcpsolver/dantzig/DantzigLcp.hpp>
 
 #include <iostream>
 
@@ -285,7 +285,7 @@ void HumanArmJointLimitConstraint::update()
     mNegativeVel = -mJacobian.dot(q_d);
 
     mLowerBound = 0.0;
-    mUpperBound = dInfinity;
+    mUpperBound = ::dart::lcpsolver::dantzig::kInfinity;
     mDim = 1;
   }
 }

@@ -44,8 +44,6 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
-#include "dart/constraint/detail/IslandSolveExecutor.hpp"
-#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -59,7 +57,6 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -99,59 +96,6 @@ public:
   {
     return nullptr;
   }
-};
-
-class PassiveLcpConstraint final : public constraint::ConstraintBase
-{
-public:
-  explicit PassiveLcpConstraint(std::size_t dimension)
-  {
-    mDim = dimension;
-  }
-
-  void update() override {}
-
-  void getInformation(constraint::ConstraintInfo* info) override
-  {
-    for (std::size_t i = 0; i < mDim; ++i) {
-      info->x[i] = 0.0;
-      info->lo[i] = -1.0;
-      info->hi[i] = 1.0;
-      info->b[i] = 0.0;
-      info->w[i] = 0.0;
-      info->findex[i] = -1;
-    }
-  }
-
-  void applyUnitImpulse(std::size_t index) override
-  {
-    mImpulseIndex = index;
-  }
-
-  void getVelocityChange(double* vel, bool) override
-  {
-    for (std::size_t i = 0; i < mDim; ++i)
-      vel[i] = i == mImpulseIndex ? 1.0 : 0.0;
-  }
-
-  void excite() override {}
-
-  void unexcite() override {}
-
-  void applyImpulse(double*) override {}
-
-  bool isActive() const override
-  {
-    return true;
-  }
-
-  dynamics::SkeletonPtr getRootSkeleton() const override
-  {
-    return nullptr;
-  }
-
-private:
-  std::size_t mImpulseIndex = 0;
 };
 
 class DerivedDantzigBoxedLcpSolver final
@@ -247,28 +191,6 @@ protected:
   void refreshCollisionObject(collision::CollisionObject*) override {}
 };
 
-class ExposedBoxedLcpConstraintSolver final
-  : public constraint::BoxedLcpConstraintSolver
-{
-public:
-  using BoxedLcpConstraintSolver::BoxedLcpConstraintSolver;
-
-  void solveGroupForTest(constraint::ConstrainedGroup& group)
-  {
-    solveConstrainedGroup(group);
-  }
-
-  Eigen::Index getSolverScratchRowsForTest() const
-  {
-    return mA.rows();
-  }
-
-  Eigen::Index getSolverScratchColsForTest() const
-  {
-    return mA.cols();
-  }
-};
-
 class ExposedThreadedConstraintSolver final
   : public constraint::BoxedLcpConstraintSolver
 {
@@ -284,19 +206,6 @@ public:
     }
   }
 
-  void addSleepEligibleFakeConstrainedGroup(
-      const dynamics::SkeletonPtr& skeleton, std::size_t dimension)
-  {
-    const auto groupIndex = mConstrainedGroups.size();
-    skeleton->setIslandIndex(static_cast<int>(groupIndex));
-    mSkeletons.push_back(skeleton);
-    mGroupResting.push_back(true);
-
-    constraint::ConstrainedGroup group;
-    group.addConstraint(std::make_shared<FakeConstraint>(dimension));
-    mConstrainedGroups.push_back(group);
-  }
-
   void addConstrainedGroup(
       const std::vector<constraint::ConstraintBasePtr>& constraints)
   {
@@ -304,6 +213,38 @@ public:
     for (const auto& constraint : constraints)
       group.addConstraint(constraint);
     mConstrainedGroups.push_back(group);
+  }
+
+  void setGroupRestingForTest(std::size_t groupIndex, bool resting)
+  {
+    if (mGroupResting.size() < mConstrainedGroups.size())
+      mGroupResting.assign(mConstrainedGroups.size(), false);
+
+    ASSERT_LT(groupIndex, mGroupResting.size());
+    mGroupResting[groupIndex] = resting;
+  }
+
+  void addSkeletonForTest(const dynamics::SkeletonPtr& skeleton)
+  {
+    mSkeletons.push_back(skeleton);
+  }
+
+  void addActiveConstraintForTest(
+      const constraint::ConstraintBasePtr& constraint)
+  {
+    mActiveConstraints.push_back(constraint);
+    if (mActiveConstraints.size() == 1u)
+      mActiveConstraintsAllSingleReactiveContacts = true;
+
+    const auto* contact
+        = dynamic_cast<const constraint::ContactConstraint*>(constraint.get());
+    if (contact == nullptr)
+      mActiveConstraintsAllSingleReactiveContacts = false;
+  }
+
+  void buildGroupsForTest()
+  {
+    buildConstrainedGroups();
   }
 
   void solveGroupsForTest()
@@ -321,13 +262,6 @@ public:
     return mMaxConcurrentSolves.load(std::memory_order_relaxed);
   }
 
-  void resetSolveStats()
-  {
-    mConcurrentSolves.store(0, std::memory_order_relaxed);
-    mMaxConcurrentSolves.store(0, std::memory_order_relaxed);
-    mNumSolvedGroups.store(0, std::memory_order_relaxed);
-  }
-
 protected:
   void solveConstrainedGroup(constraint::ConstrainedGroup&) override
   {
@@ -340,7 +274,7 @@ protected:
       // Keep trying with the updated observed value.
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     mNumSolvedGroups.fetch_add(1, std::memory_order_relaxed);
     mConcurrentSolves.fetch_sub(1, std::memory_order_relaxed);
   }
@@ -424,6 +358,19 @@ std::shared_ptr<constraint::SoftContactConstraint> createSoftContactConstraint(
   return constraint;
 }
 
+void addPaddingGroups(ExposedThreadedConstraintSolver& solver)
+{
+  solver.addFakeConstrainedGroups(128, 100);
+}
+
+bool solvesGroupsInParallel(ExposedThreadedConstraintSolver& solver)
+{
+  solver.setNumSimulationThreads(4);
+  solver.solveGroupsForTest();
+  EXPECT_GT(solver.getNumSolvedGroups(), 0);
+  return solver.getMaxConcurrentSolves() > 1;
+}
+
 } // namespace
 
 //==============================================================================
@@ -433,103 +380,234 @@ std::shared_ptr<World> createWorld()
 }
 
 //==============================================================================
-TEST(ConstraintSolver, DirectThreadSettingControlsThreadedSolve)
+TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 {
   ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
 
-  EXPECT_EQ(1u, solver.getNumThreads());
-
-  solver.setNumThreads(0);
-  EXPECT_EQ(1u, solver.getNumThreads());
-
-  solver.setNumThreads(4);
-  EXPECT_EQ(4u, solver.getNumThreads());
-  solver.addFakeConstrainedGroups(8, 100);
   solver.solveGroupsForTest();
-  EXPECT_EQ(8, solver.getNumSolvedGroups());
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
 
-  ExposedThreadedConstraintSolver injectedSolver;
-  injectedSolver.setNumThreads(4);
-  injectedSolver.addFakeConstrainedGroups(8, 100);
+//==============================================================================
+TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstraint(std::make_shared<FakeConstraint>(1));
+  solver.addFakeConstrainedGroups(130, 100);
 
-  constraint::detail::IslandSolveExecutor externalExecutor(1);
-  solver.setIslandSolveExecutor(&externalExecutor);
-  solver.resetSolveStats();
   solver.solveGroupsForTest();
-  EXPECT_EQ(8, solver.getNumSolvedGroups());
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
-
-  injectedSolver.setIslandSolveExecutor(&externalExecutor);
-  injectedSolver.solveGroupsForTest();
-  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
-  EXPECT_EQ(1, injectedSolver.getMaxConcurrentSolves());
-
-  injectedSolver.setIslandSolveExecutor(nullptr);
-  injectedSolver.resetSolveStats();
-  injectedSolver.solveGroupsForTest();
-  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
-  EXPECT_GT(injectedSolver.getMaxConcurrentSolves(), 1);
-
-  injectedSolver.setNumThreads(1);
-  injectedSolver.resetSolveStats();
-  injectedSolver.solveGroupsForTest();
-  EXPECT_EQ(8, injectedSolver.getNumSolvedGroups());
-  EXPECT_EQ(1, injectedSolver.getMaxConcurrentSolves());
 }
 
 //==============================================================================
-TEST(ConstraintSolver, DirectThreadSettingSolvesGroupsInParallel)
+TEST(ConstraintSolver, DeactivationActiveAwakeGroupsSolveInParallel)
 {
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
-  solver.addFakeConstrainedGroups(8, 100);
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+
+  const auto candidate = dynamics::Skeleton::create("candidate");
+  candidate->setSleepCandidate(true);
+  candidate->setResting(false);
+  candidate->setIslandIndex(0);
+  solver.addSkeletonForTest(candidate);
+  solver.setGroupRestingForTest(0, true);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_TRUE(candidate->isResting());
 }
 
 //==============================================================================
-TEST(ConstraintSolver, ParallelSleepingGroupsFreezeFromWorkerResults)
+TEST(ConstraintSolver, DeactivationActiveSkipsAlreadyRestingGroupsInParallel)
 {
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
-  solver.setAutomaticSleepingEnabled(true);
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
 
+  const auto resting = dynamics::Skeleton::create("resting");
+  resting->setSleepCandidate(true);
+  resting->setResting(true);
+  resting->setIslandIndex(0);
+  solver.addSkeletonForTest(resting);
+  solver.setGroupRestingForTest(0, true);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(129, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_TRUE(resting->isResting());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
+{
   std::vector<dynamics::SkeletonPtr> skeletons;
-  for (std::size_t i = 0; i < 8; ++i) {
-    auto skeleton
-        = dynamics::Skeleton::create("sleep_candidate_" + std::to_string(i));
-    skeletons.push_back(skeleton);
-    solver.addSleepEligibleFakeConstrainedGroup(skeleton, 100);
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  for (std::size_t i = 0; i < 130u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+    auto contact = createContact(&dynamicObject, &fixedObject);
+    solver.addActiveConstraintForTest(
+        createContactConstraint<constraint::ContactConstraint>(contact));
   }
 
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
-  for (const auto& skeleton : skeletons)
-    EXPECT_TRUE(skeleton->isResting());
 }
 
 //==============================================================================
-TEST(ConstraintSolver, ManualConstraintsForceSerialGroupSolves)
+TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
 {
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
-  solver.addConstraint(std::make_shared<FakeConstraint>(1));
-  solver.addFakeConstrainedGroups(8, 100);
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  for (std::size_t i = 0; i < 129u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+    auto contact = createContact(&dynamicObject, &fixedObject);
+    solver.addActiveConstraintForTest(
+        createContactConstraint<constraint::ContactConstraint>(contact));
+  }
+
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
+
+  auto* softBody = createSoftBody("soft", true, skeletons);
+  auto* softShapeNode = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionObject softObject(&detector, softShapeNode);
+  auto softContact = createContact(&softObject, &fixedObject);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(softContact),
+  });
+  solver.addSkeletonForTest(skeletons.back());
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(8, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
 //==============================================================================
-TEST(ConstraintSolver, CustomContactConstraintsForceSerialGroupSolves)
+TEST(ConstraintSolver, ManualConstraintsForceSerialDeactivationGroupSolves)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+  solver.addConstraint(std::make_shared<FakeConstraint>(1));
+  solver.addFakeConstrainedGroups(130, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelGroupSolveRequiresExactBuiltInSolvers)
+{
+  auto solvesInParallel = [](ExposedThreadedConstraintSolver& solver) {
+    solver.addFakeConstrainedGroups(130, 100);
+    return solvesGroupsInParallel(solver);
+  };
+
+  ExposedThreadedConstraintSolver defaultSolver;
+  EXPECT_TRUE(solvesInParallel(defaultSolver));
+
+  ExposedThreadedConstraintSolver noSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
+  EXPECT_TRUE(solvesInParallel(noSecondarySolver));
+
+  ExposedThreadedConstraintSolver pgsPrimarySolver(
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), nullptr);
+  EXPECT_TRUE(solvesInParallel(pgsPrimarySolver));
+
+  auto randomizedPrimaryPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto primaryOption = randomizedPrimaryPgs->getOption();
+  primaryOption.mRandomizeConstraintOrder = true;
+  randomizedPrimaryPgs->setOption(primaryOption);
+
+  ExposedThreadedConstraintSolver randomizedPrimarySolver(
+      randomizedPrimaryPgs, nullptr);
+  EXPECT_FALSE(solvesInParallel(randomizedPrimarySolver));
+
+  ExposedThreadedConstraintSolver derivedPrimarySolver(
+      std::make_shared<DerivedDantzigBoxedLcpSolver>(),
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  EXPECT_FALSE(solvesInParallel(derivedPrimarySolver));
+
+  ExposedThreadedConstraintSolver derivedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
+      std::make_shared<DerivedPgsBoxedLcpSolver>());
+  EXPECT_FALSE(solvesInParallel(derivedSecondarySolver));
+
+  auto randomizedPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto option = randomizedPgs->getOption();
+  option.mRandomizeConstraintOrder = true;
+  randomizedPgs->setOption(option);
+
+  ExposedThreadedConstraintSolver randomizedSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
+  EXPECT_FALSE(solvesInParallel(randomizedSecondarySolver));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, CustomContactConstraintsForceSerialParallelGroupSolves)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;
   auto* fixedBody1 = createFreeBody("fixed1", false, skeletons);
@@ -561,7 +639,7 @@ TEST(ConstraintSolver, CustomContactConstraintsForceSerialGroupSolves)
   auto contact2 = createContact(&dynamicObject2, &fixedObject2);
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       createContactConstraint<CustomContactConstraint>(contact1),
@@ -570,10 +648,11 @@ TEST(ConstraintSolver, CustomContactConstraintsForceSerialGroupSolves)
       std::make_shared<FakeConstraint>(100),
       createContactConstraint<CustomContactConstraint>(contact2),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
@@ -587,7 +666,7 @@ TEST(ConstraintSolver, DistinctNonReactiveBodiesCanSolveGroupsInParallel)
   auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       std::make_shared<constraint::BallJointConstraint>(
@@ -598,15 +677,16 @@ TEST(ConstraintSolver, DistinctNonReactiveBodiesCanSolveGroupsInParallel)
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody2, fixedBody2, Eigen::Vector3d::Zero()),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
 }
 
 //==============================================================================
-TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialGroupSolves)
+TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialParallelGroupSolves)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;
   auto* fixedBody = createFreeBody("fixed", false, skeletons);
@@ -614,7 +694,7 @@ TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialGroupSolves)
   auto* dynamicBody2 = createFreeBody("dynamic2", true, skeletons);
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       std::make_shared<constraint::BallJointConstraint>(
@@ -625,15 +705,16 @@ TEST(ConstraintSolver, SharedNonReactiveBodiesForceSerialGroupSolves)
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody2, fixedBody, Eigen::Vector3d::Zero()),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
 //==============================================================================
-TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialGroupSolves)
+TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialParallelGroupSolves)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;
   const auto mixedBodies = createMixedReactiveSkeleton("mixed", skeletons);
@@ -644,7 +725,7 @@ TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialGroupSolves)
   ASSERT_TRUE(mixedBodies.second->isReactive());
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       std::make_shared<constraint::BallJointConstraint>(
@@ -655,10 +736,11 @@ TEST(ConstraintSolver, SharedNonReactiveSkeletonForcesSerialGroupSolves)
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody2, mixedBodies.first, Eigen::Vector3d::Zero()),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
@@ -694,7 +776,7 @@ TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
   auto contact2 = createContact(&dynamicObject2, &softObject);
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       createSoftContactConstraint(contact1),
@@ -703,10 +785,11 @@ TEST(ConstraintSolver, SharedNonReactiveSoftContactsForceSerialGroupSolves)
       std::make_shared<FakeConstraint>(100),
       createSoftContactConstraint(contact2),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
@@ -735,7 +818,7 @@ TEST(ConstraintSolver, FixedSkeletonJointConstraintsForceSerialGroupSolves)
   auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
 
   ExposedThreadedConstraintSolver solver;
-  solver.setNumThreads(4);
+  solver.setNumSimulationThreads(4);
   solver.addConstrainedGroup({
       std::make_shared<FakeConstraint>(100),
       jointFriction,
@@ -745,120 +828,12 @@ TEST(ConstraintSolver, FixedSkeletonJointConstraintsForceSerialGroupSolves)
       std::make_shared<constraint::BallJointConstraint>(
           dynamicBody, fixedBody, Eigen::Vector3d::Zero()),
   });
+  addPaddingGroups(solver);
 
   solver.solveGroupsForTest();
 
-  EXPECT_EQ(2, solver.getNumSolvedGroups());
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
-}
-
-//==============================================================================
-TEST(ConstraintSolver, ParallelSolveRequiresExactBuiltInSolvers)
-{
-  auto solvesInParallel = [](ExposedThreadedConstraintSolver& solver) {
-    solver.setNumThreads(4);
-    solver.addFakeConstrainedGroups(8, 100);
-    solver.solveGroupsForTest();
-    EXPECT_EQ(8, solver.getNumSolvedGroups());
-    return solver.getMaxConcurrentSolves() > 1;
-  };
-
-  ExposedThreadedConstraintSolver defaultSolver;
-  EXPECT_TRUE(solvesInParallel(defaultSolver));
-
-  ExposedThreadedConstraintSolver noSecondarySolver(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
-  EXPECT_TRUE(solvesInParallel(noSecondarySolver));
-
-  ExposedThreadedConstraintSolver derivedPrimarySolver(
-      std::make_shared<DerivedDantzigBoxedLcpSolver>(),
-      std::make_shared<constraint::PgsBoxedLcpSolver>());
-  EXPECT_FALSE(solvesInParallel(derivedPrimarySolver));
-
-  ExposedThreadedConstraintSolver derivedSecondarySolver(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
-      std::make_shared<DerivedPgsBoxedLcpSolver>());
-  EXPECT_FALSE(solvesInParallel(derivedSecondarySolver));
-
-  auto randomizedPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
-  auto option = randomizedPgs->getOption();
-  option.mRandomizeConstraintOrder = true;
-  randomizedPgs->setOption(option);
-
-  ExposedThreadedConstraintSolver randomizedSecondarySolver(
-      std::make_shared<constraint::DantzigBoxedLcpSolver>(), randomizedPgs);
-  EXPECT_FALSE(solvesInParallel(randomizedSecondarySolver));
-}
-
-//==============================================================================
-TEST(ConstraintSolver, SerialBoxedLcpSolveUsesSolverOwnedScratch)
-{
-  ExposedBoxedLcpConstraintSolver solver;
-  constraint::ConstrainedGroup group;
-  group.addConstraint(std::make_shared<PassiveLcpConstraint>(3));
-
-  solver.solveGroupForTest(group);
-
-  EXPECT_EQ(3, solver.getSolverScratchRowsForTest());
-  EXPECT_GE(solver.getSolverScratchColsForTest(), 3);
-}
-
-//==============================================================================
-TEST(ConstraintSolver, IslandSolveExecutorRunsAllItems)
-{
-  constraint::detail::IslandSolveExecutor executor(4);
-  EXPECT_EQ(4u, executor.getNumThreads());
-
-  std::vector<std::atomic<int>> counts(128);
-  for (auto& count : counts)
-    count.store(0, std::memory_order_relaxed);
-
-  executor.run(counts.size(), [&](std::size_t i) {
-    counts[i].fetch_add(1, std::memory_order_relaxed);
-  });
-
-  for (const auto& count : counts)
-    EXPECT_EQ(1, count.load(std::memory_order_relaxed));
-}
-
-//==============================================================================
-TEST(ConstraintSolver, IslandSolveExecutorSingleThreadRunsInline)
-{
-  constraint::detail::IslandSolveExecutor executor(0);
-  EXPECT_EQ(1u, executor.getNumThreads());
-
-  bool ranZeroCountBody = false;
-  executor.run(0, [&](std::size_t) { ranZeroCountBody = true; });
-  EXPECT_FALSE(ranZeroCountBody);
-
-  std::vector<int> values(8, 0);
-  executor.run(values.size(), [&](std::size_t i) {
-    values[i] = static_cast<int>(i + 1);
-  });
-
-  for (std::size_t i = 0; i < values.size(); ++i)
-    EXPECT_EQ(static_cast<int>(i + 1), values[i]);
-}
-
-//==============================================================================
-TEST(ConstraintSolver, IslandSolveExecutorRethrowsAndCanRunAgain)
-{
-  constraint::detail::IslandSolveExecutor executor(3);
-
-  EXPECT_THROW(
-      executor.run(
-          16,
-          [](std::size_t i) {
-            if (i == 7)
-              throw std::runtime_error("expected test exception");
-          }),
-      std::runtime_error);
-
-  std::atomic<int> count{0};
-  executor.run(
-      16, [&](std::size_t) { count.fetch_add(1, std::memory_order_relaxed); });
-
-  EXPECT_EQ(16, count.load(std::memory_order_relaxed));
 }
 
 //==============================================================================
@@ -867,6 +842,15 @@ TEST(ConstraintSolver, DefaultConstactSurfaceHandler)
   auto world = createWorld();
   auto solver = world->getConstraintSolver();
   ASSERT_NE(nullptr, solver->getLastContactSurfaceHandler());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AutomaticSleepingAliasIsSourceCompatible)
+{
+  auto world = createWorld();
+  auto* solver = world->getConstraintSolver();
+  solver->setAutomaticSleepingEnabled(false);
+  solver->setAutomaticSleepingEnabled(true);
 }
 
 //==============================================================================

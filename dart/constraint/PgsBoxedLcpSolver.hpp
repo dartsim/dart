@@ -92,9 +92,8 @@ public:
 protected:
   Option mOption;
 
-  // mCacheOrder / mCacheD now live as thread_local scratch inside solve() so a
-  // shared PgsBoxedLcpSolver instance is reentrant under parallel island
-  // solving.
+  mutable std::vector<int> mCacheOrder;
+  mutable std::vector<double> mCacheD;
   mutable Eigen::VectorXd mCachedNormalizedA;
   mutable Eigen::MatrixXd mCachedNormalizedB;
   mutable Eigen::VectorXd mCacheZ;

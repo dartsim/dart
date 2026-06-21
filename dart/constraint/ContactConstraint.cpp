@@ -36,8 +36,9 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include <iostream>
@@ -61,16 +62,40 @@ dynamics::BodyNode* getContactBodyNode(
   if (collisionObject == nullptr)
     return nullptr;
 
-  auto* shapeFrame
-      = const_cast<dynamics::ShapeFrame*>(collisionObject->getShapeFrame());
-  if (shapeFrame == nullptr)
-    return nullptr;
+  return collisionObject->getBodyNode();
+}
 
-  auto* shapeNode = shapeFrame->asShapeNode();
-  if (shapeNode == nullptr)
-    return nullptr;
+//==============================================================================
+bool canSkipContactRelativeVelocity(
+    const dynamics::BodyNode* bodyNode,
+    const dynamics::Skeleton* skeleton,
+    bool isReactive)
+{
+  if (isReactive || bodyNode == nullptr || skeleton == nullptr)
+    return false;
 
-  return shapeNode->getBodyNodePtr().get();
+  return bodyNode->getNumDependentGenCoords() == 0u;
+}
+
+//==============================================================================
+bool isContactBodyNodeReactive(
+    const dynamics::BodyNode* bodyNode, const dynamics::Skeleton* skeleton)
+{
+  if (bodyNode == nullptr || skeleton == nullptr || !skeleton->isMobile()
+      || bodyNode->getNumDependentGenCoords() == 0u) {
+    return false;
+  }
+
+  auto* ancestorBody = bodyNode;
+  while (ancestorBody != nullptr) {
+    const auto* parentJoint = ancestorBody->getParentJoint();
+    if (parentJoint != nullptr && parentJoint->isDynamic())
+      return true;
+
+    ancestorBody = ancestorBody->getParentBodyNode();
+  }
+
+  return false;
 }
 
 } // namespace
@@ -123,10 +148,14 @@ ContactConstraint::ContactConstraint(
   // Resolve skeleton pointers and reactivity once; the LCP-assembly hot path
   // reads these cached values instead of repeatedly calling getSkeleton()
   // (shared_ptr churn) and isReactive() (ancestor-joint walk). See header.
-  mSkeletonA = mBodyNodeA->getSkeleton().get();
-  mSkeletonB = mBodyNodeB->getSkeleton().get();
-  mIsReactiveA = mBodyNodeA->isReactive();
-  mIsReactiveB = mBodyNodeB->isReactive();
+  mSkeletonA = mBodyNodeA->getSkeletonRawPtr();
+  mSkeletonB = mBodyNodeB->getSkeletonRawPtr();
+  mIsReactiveA = isContactBodyNodeReactive(mBodyNodeA, mSkeletonA);
+  mIsReactiveB = isContactBodyNodeReactive(mBodyNodeB, mSkeletonB);
+  mSkipRelVelocityA
+      = canSkipContactRelativeVelocity(mBodyNodeA, mSkeletonA, mIsReactiveA);
+  mSkipRelVelocityB
+      = canSkipContactRelativeVelocity(mBodyNodeB, mSkeletonB, mIsReactiveB);
 
   DART_ASSERT(
       contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
@@ -164,9 +193,13 @@ ContactConstraint::ContactConstraint(
   mContactSurfaceMotionVelocity
       = contactSurfaceParams.mContactSurfaceMotionVelocity;
 
-  DART_ASSERT(mBodyNodeA->getSkeleton());
-  DART_ASSERT(mBodyNodeB->getSkeleton());
-  mIsSelfCollision = (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton());
+  DART_ASSERT(mSkeletonA != nullptr);
+  DART_ASSERT(mSkeletonB != nullptr);
+  mIsSelfCollision = (mSkeletonA == mSkeletonB);
+  if (!mIsSelfCollision && mIsReactiveA != mIsReactiveB) {
+    mSingleReactiveBodyNode = mIsReactiveA ? mBodyNodeA : mBodyNodeB;
+    mSingleReactiveSkeleton = mIsReactiveA ? mSkeletonA : mSkeletonB;
+  }
 
   // Compute local contact Jacobians expressed in body frame
   if (mIsFrictionOn) {
@@ -178,8 +211,14 @@ ContactConstraint::ContactConstraint(
     //  mDim = mContacts.size() * (1 + mNumFrictionConeBases);
     mDim = 3;
 
-    mSpatialNormalA.resize(6, 3);
-    mSpatialNormalB.resize(6, 3);
+#ifndef NDEBUG
+    // Release readers skip these sides through mSkipRelVelocity*/mIsReactive*.
+    // Keep debug zero-fill so the NaN assertions can inspect both matrices.
+    if (mSkipRelVelocityA)
+      mSpatialNormalA.setZero();
+    if (mSkipRelVelocityB)
+      mSpatialNormalB.setZero();
+#endif
 
     Eigen::Vector3d bodyDirectionA;
     Eigen::Vector3d bodyDirectionB;
@@ -197,43 +236,55 @@ ContactConstraint::ContactConstraint(
     DART_ASSERT(std::abs(ct.normal.dot(D.col(1))) < DART_EPSILON);
     DART_ASSERT(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
-    // Jacobian for normal contact
-    bodyDirectionA.noalias()
-        = mBodyNodeA->getTransform().linear().transpose() * ct.normal;
-    bodyDirectionB.noalias()
-        = mBodyNodeB->getTransform().linear().transpose() * -ct.normal;
-    bodyPointA.noalias() = mBodyNodeA->getTransform().inverse() * ct.point;
-    bodyPointB.noalias() = mBodyNodeB->getTransform().inverse() * ct.point;
-    mSpatialNormalA.col(0).head<3>().noalias()
-        = bodyPointA.cross(bodyDirectionA);
-    mSpatialNormalB.col(0).head<3>().noalias()
-        = bodyPointB.cross(bodyDirectionB);
-    mSpatialNormalA.col(0).tail<3>() = bodyDirectionA;
-    mSpatialNormalB.col(0).tail<3>() = bodyDirectionB;
+    if (!mSkipRelVelocityA) {
+      const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
+      const Eigen::Matrix3d rotationA = tfA.linear().transpose();
+      const Eigen::Isometry3d tfAInv = tfA.inverse();
+      bodyPointA.noalias() = tfAInv * ct.point;
 
-    // Jacobian for directional friction 1
-    bodyDirectionA.noalias()
-        = mBodyNodeA->getTransform().linear().transpose() * D.col(0);
-    bodyDirectionB.noalias()
-        = mBodyNodeB->getTransform().linear().transpose() * -D.col(0);
-    mSpatialNormalA.col(1).head<3>().noalias()
-        = bodyPointA.cross(bodyDirectionA);
-    mSpatialNormalB.col(1).head<3>().noalias()
-        = bodyPointB.cross(bodyDirectionB);
-    mSpatialNormalA.col(1).tail<3>() = bodyDirectionA;
-    mSpatialNormalB.col(1).tail<3>() = bodyDirectionB;
+      // Jacobian for normal contact
+      bodyDirectionA.noalias() = rotationA * ct.normal;
+      mSpatialNormalA.col(0).head<3>().noalias()
+          = bodyPointA.cross(bodyDirectionA);
+      mSpatialNormalA.col(0).tail<3>() = bodyDirectionA;
 
-    // Jacobian for directional friction 2
-    bodyDirectionA.noalias()
-        = mBodyNodeA->getTransform().linear().transpose() * D.col(1);
-    bodyDirectionB.noalias()
-        = mBodyNodeB->getTransform().linear().transpose() * -D.col(1);
-    mSpatialNormalA.col(2).head<3>().noalias()
-        = bodyPointA.cross(bodyDirectionA);
-    mSpatialNormalB.col(2).head<3>().noalias()
-        = bodyPointB.cross(bodyDirectionB);
-    mSpatialNormalA.col(2).tail<3>() = bodyDirectionA;
-    mSpatialNormalB.col(2).tail<3>() = bodyDirectionB;
+      // Jacobian for directional friction 1
+      bodyDirectionA.noalias() = rotationA * D.col(0);
+      mSpatialNormalA.col(1).head<3>().noalias()
+          = bodyPointA.cross(bodyDirectionA);
+      mSpatialNormalA.col(1).tail<3>() = bodyDirectionA;
+
+      // Jacobian for directional friction 2
+      bodyDirectionA.noalias() = rotationA * D.col(1);
+      mSpatialNormalA.col(2).head<3>().noalias()
+          = bodyPointA.cross(bodyDirectionA);
+      mSpatialNormalA.col(2).tail<3>() = bodyDirectionA;
+    }
+
+    if (!mSkipRelVelocityB) {
+      const Eigen::Isometry3d& tfB = mBodyNodeB->getWorldTransform();
+      const Eigen::Matrix3d rotationB = tfB.linear().transpose();
+      const Eigen::Isometry3d tfBInv = tfB.inverse();
+      bodyPointB.noalias() = tfBInv * ct.point;
+
+      // Jacobian for normal contact
+      bodyDirectionB.noalias() = rotationB * -ct.normal;
+      mSpatialNormalB.col(0).head<3>().noalias()
+          = bodyPointB.cross(bodyDirectionB);
+      mSpatialNormalB.col(0).tail<3>() = bodyDirectionB;
+
+      // Jacobian for directional friction 1
+      bodyDirectionB.noalias() = rotationB * -D.col(0);
+      mSpatialNormalB.col(1).head<3>().noalias()
+          = bodyPointB.cross(bodyDirectionB);
+      mSpatialNormalB.col(1).tail<3>() = bodyDirectionB;
+
+      // Jacobian for directional friction 2
+      bodyDirectionB.noalias() = rotationB * -D.col(1);
+      mSpatialNormalB.col(2).head<3>().noalias()
+          = bodyPointB.cross(bodyDirectionB);
+      mSpatialNormalB.col(2).tail<3>() = bodyDirectionB;
+    }
 
     DART_ASSERT(!dart::math::isNan(mSpatialNormalA));
     DART_ASSERT(!dart::math::isNan(mSpatialNormalB));
@@ -241,28 +292,44 @@ ContactConstraint::ContactConstraint(
     // Set the dimension of this constraint.
     mDim = 1;
 
-    mSpatialNormalA.resize(6, 1);
-    mSpatialNormalB.resize(6, 1);
+#ifndef NDEBUG
+    // Release readers skip these sides through mSkipRelVelocity*/mIsReactive*.
+    // Keep debug zero-fill so the NaN assertions can inspect both matrices.
+    if (mSkipRelVelocityA)
+      mSpatialNormalA.setZero();
+    if (mSkipRelVelocityB)
+      mSpatialNormalB.setZero();
+#endif
 
     collision::Contact& ct = mContact;
 
-    // Contact normal in the local coordinates
-    const Eigen::Vector3d bodyDirectionA
-        = mBodyNodeA->getTransform().linear().transpose() * ct.normal;
-    const Eigen::Vector3d bodyDirectionB
-        = mBodyNodeB->getTransform().linear().transpose() * -ct.normal;
+    if (!mSkipRelVelocityA) {
+      const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
 
-    // Contact points in the local coordinates
-    const Eigen::Vector3d bodyPointA
-        = mBodyNodeA->getTransform().inverse() * ct.point;
-    const Eigen::Vector3d bodyPointB
-        = mBodyNodeB->getTransform().inverse() * ct.point;
-    mSpatialNormalA.col(0).head<3>().noalias()
-        = bodyPointA.cross(bodyDirectionA);
-    mSpatialNormalB.col(0).head<3>().noalias()
-        = bodyPointB.cross(bodyDirectionB);
-    mSpatialNormalA.col(0).tail<3>().noalias() = bodyDirectionA;
-    mSpatialNormalB.col(0).tail<3>().noalias() = bodyDirectionB;
+      // Contact normal in the local coordinates
+      const Eigen::Vector3d bodyDirectionA
+          = tfA.linear().transpose() * ct.normal;
+
+      // Contact points in the local coordinates
+      const Eigen::Vector3d bodyPointA = tfA.inverse() * ct.point;
+      mSpatialNormalA.col(0).head<3>().noalias()
+          = bodyPointA.cross(bodyDirectionA);
+      mSpatialNormalA.col(0).tail<3>().noalias() = bodyDirectionA;
+    }
+
+    if (!mSkipRelVelocityB) {
+      const Eigen::Isometry3d& tfB = mBodyNodeB->getWorldTransform();
+
+      // Contact normal in the local coordinates
+      const Eigen::Vector3d bodyDirectionB
+          = tfB.linear().transpose() * -ct.normal;
+
+      // Contact points in the local coordinates
+      const Eigen::Vector3d bodyPointB = tfB.inverse() * ct.point;
+      mSpatialNormalB.col(0).head<3>().noalias()
+          = bodyPointB.cross(bodyDirectionB);
+      mSpatialNormalB.col(0).tail<3>().noalias() = bodyDirectionB;
+    }
   }
 }
 
@@ -409,7 +476,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
@@ -471,7 +538,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
 
     // Upper and lower bounds of normal impulsive force
     info->lo[0] = 0.0;
-    info->hi[0] = static_cast<double>(dInfinity);
+    info->hi[0] = static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
     DART_ASSERT(info->findex[0] == -1);
 
     //------------------------------------------------------------------------
@@ -581,21 +648,41 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   if (!hasValidBodyNodes())
     return;
 
-  Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
-  velMap.setZero();
+  if (mDim == 3) {
+    Eigen::Map<Eigen::Vector3d> velMap(vel);
+    velMap.setZero();
 
-  // noalias(): the destination (velMap over the caller's buffer) does not alias
-  // the operands, so Eigen evaluates the matrix-vector product directly into
-  // it. mSpatialNormalA has dynamic column count, so without this the product
-  // is materialized into a heap-allocated temporary on every call -- and this
-  // is the LCP solver's hottest per-pivot routine.
-  if (mIsReactiveA && mSkeletonA->isImpulseApplied())
-    velMap.noalias()
-        += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
+    if (mIsReactiveA && mSkeletonA->isImpulseApplied()) {
+      velMap.noalias() += mSpatialNormalA.template leftCols<3>().transpose()
+                          * mBodyNodeA->getBodyVelocityChange();
+    }
 
-  if (mIsReactiveB && mSkeletonB->isImpulseApplied())
-    velMap.noalias()
-        += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
+    if (mIsReactiveB && mSkeletonB->isImpulseApplied()) {
+      velMap.noalias() += mSpatialNormalB.template leftCols<3>().transpose()
+                          * mBodyNodeB->getBodyVelocityChange();
+    }
+  } else if (mDim == 1) {
+    vel[0] = 0.0;
+
+    if (mIsReactiveA && mSkeletonA->isImpulseApplied())
+      vel[0] += mSpatialNormalA.col(0).dot(mBodyNodeA->getBodyVelocityChange());
+
+    if (mIsReactiveB && mSkeletonB->isImpulseApplied())
+      vel[0] += mSpatialNormalB.col(0).dot(mBodyNodeB->getBodyVelocityChange());
+  } else {
+    Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
+    velMap.setZero();
+
+    if (mIsReactiveA && mSkeletonA->isImpulseApplied())
+      velMap.noalias()
+          += mSpatialNormalA.leftCols(static_cast<int>(mDim)).transpose()
+             * mBodyNodeA->getBodyVelocityChange();
+
+    if (mIsReactiveB && mSkeletonB->isImpulseApplied())
+      velMap.noalias()
+          += mSpatialNormalB.leftCols(static_cast<int>(mDim)).transpose()
+             * mBodyNodeB->getBodyVelocityChange();
+  }
 
   // Add small values to the diagnal to keep it away from singular, similar to
   // cfm variable in ODE
@@ -603,6 +690,71 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
     vel[mAppliedImpulseIndex]
         += vel[mAppliedImpulseIndex] * mConstraintForceMixing;
     switch (mAppliedImpulseIndex) {
+      case 1:
+        vel[1] += (mPrimarySlipCompliance / mTimeStep);
+        break;
+      case 2:
+        vel[2] += (mSecondarySlipCompliance / mTimeStep);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+//==============================================================================
+dynamics::BodyNode* ContactConstraint::getSingleReactiveBodyNode() const
+{
+  return mSingleReactiveBodyNode;
+}
+
+//==============================================================================
+dynamics::Skeleton* ContactConstraint::getSingleReactiveSkeleton() const
+{
+  return mSingleReactiveSkeleton;
+}
+
+Eigen::Vector6d ContactConstraint::getSpatialNormalForSingleReactiveBody(
+    std::size_t index) const
+{
+  DART_ASSERT(index < mDim && "Invalid Index.");
+  DART_ASSERT(getSingleReactiveBodyNode() != nullptr);
+
+  if (mIsReactiveA)
+    return mSpatialNormalA.col(index);
+
+  return mSpatialNormalB.col(index);
+}
+
+//==============================================================================
+void ContactConstraint::getVelocityChangeFromSingleBody(
+    const Eigen::Vector6d& bodyVelocityChange,
+    double* vel,
+    bool withCfm,
+    std::size_t appliedImpulseIndex) const
+{
+  DART_ASSERT(vel != nullptr && "Null pointer is not allowed.");
+  DART_ASSERT(appliedImpulseIndex < mDim && "Invalid Index.");
+  DART_ASSERT(getSingleReactiveBodyNode() != nullptr);
+
+  const auto& spatialNormal = mIsReactiveA ? mSpatialNormalA : mSpatialNormalB;
+  if (mDim == 3) {
+    Eigen::Map<Eigen::Vector3d> velMap(vel);
+    velMap.noalias()
+        = spatialNormal.template leftCols<3>().transpose() * bodyVelocityChange;
+  } else if (mDim == 1) {
+    vel[0] = spatialNormal.col(0).dot(bodyVelocityChange);
+  } else {
+    Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
+    velMap.noalias() = spatialNormal.transpose() * bodyVelocityChange;
+  }
+
+  // Add small values to the diagnal to keep it away from singular, similar to
+  // cfm variable in ODE
+  if (withCfm) {
+    vel[appliedImpulseIndex]
+        += vel[appliedImpulseIndex] * mConstraintForceMixing;
+    switch (appliedImpulseIndex) {
       case 1:
         vel[1] += (mPrimarySlipCompliance / mTimeStep);
         break;
@@ -690,10 +842,10 @@ void ContactConstraint::applyImpulse(double* lambda)
   else {
     // Normal impulsive force
     if (mIsReactiveA)
-      mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
 
     if (mIsReactiveB)
-      mBodyNodeB->addConstraintImpulse(mSpatialNormalB * lambda[0]);
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
@@ -708,14 +860,66 @@ void ContactConstraint::getRelVelocity(double* relVel)
   if (!hasValidBodyNodes())
     return;
 
+  if (mDim == 3) {
+    Eigen::Map<Eigen::Vector3d> relVelMap(relVel);
+    const bool canUseSingleReactiveRelVelocity
+        = mSingleReactiveBodyNode != nullptr
+          && ((mIsReactiveA && mSkipRelVelocityB)
+              || (mIsReactiveB && mSkipRelVelocityA));
+    if (canUseSingleReactiveRelVelocity) {
+      const auto& spatialNormal
+          = mIsReactiveA ? mSpatialNormalA : mSpatialNormalB;
+      relVelMap.noalias() = spatialNormal.template leftCols<3>().transpose()
+                            * mSingleReactiveBodyNode->getSpatialVelocity();
+      relVelMap *= -1.0;
+      return;
+    }
+
+    relVelMap.setZero();
+    if (!mSkipRelVelocityA) {
+      relVelMap.noalias() -= mSpatialNormalA.template leftCols<3>().transpose()
+                             * mBodyNodeA->getSpatialVelocity();
+    }
+    if (!mSkipRelVelocityB) {
+      relVelMap.noalias() -= mSpatialNormalB.template leftCols<3>().transpose()
+                             * mBodyNodeB->getSpatialVelocity();
+    }
+    return;
+  }
+
+  if (mDim == 1) {
+    const bool canUseSingleReactiveRelVelocity
+        = mSingleReactiveBodyNode != nullptr
+          && ((mIsReactiveA && mSkipRelVelocityB)
+              || (mIsReactiveB && mSkipRelVelocityA));
+    if (canUseSingleReactiveRelVelocity) {
+      const auto& spatialNormal
+          = mIsReactiveA ? mSpatialNormalA : mSpatialNormalB;
+      relVel[0] = -spatialNormal.col(0).dot(
+          mSingleReactiveBodyNode->getSpatialVelocity());
+      return;
+    }
+
+    relVel[0] = 0.0;
+    if (!mSkipRelVelocityA)
+      relVel[0] -= mSpatialNormalA.col(0).dot(mBodyNodeA->getSpatialVelocity());
+    if (!mSkipRelVelocityB)
+      relVel[0] -= mSpatialNormalB.col(0).dot(mBodyNodeB->getSpatialVelocity());
+    return;
+  }
+
   Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
   // noalias(): evaluate the dynamic-sized product directly into the caller's
   // buffer instead of a heap-allocated temporary (see getVelocityChange).
-  relVelMap.noalias()
-      -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
-  relVelMap.noalias()
-      -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
+  if (!mSkipRelVelocityA)
+    relVelMap.noalias()
+        -= mSpatialNormalA.leftCols(static_cast<int>(mDim)).transpose()
+           * mBodyNodeA->getSpatialVelocity();
+  if (!mSkipRelVelocityB)
+    relVelMap.noalias()
+        -= mSpatialNormalB.leftCols(static_cast<int>(mDim)).transpose()
+           * mBodyNodeB->getSpatialVelocity();
 }
 
 //==============================================================================
@@ -784,7 +988,7 @@ dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
   if (!hasValidBodyNodes())
     return nullptr;
 
-  if (mBodyNodeA->isReactive())
+  if (mIsReactiveA)
     return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
   else
     return ConstraintBase::getRootSkeleton(mBodyNodeB->getSkeleton());
@@ -807,7 +1011,18 @@ void ContactConstraint::updateFirstFrictionalDirection()
 ContactConstraint::TangentBasisMatrix
 ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 {
-  using namespace math::suffixes;
+  if (std::abs(n.x()) < DART_EPSILON && std::abs(n.y()) < DART_EPSILON
+      && std::abs(std::abs(n.z()) - 1.0) < DART_EPSILON
+      && (mFirstFrictionalDirection - DART_DEFAULT_FRICTION_DIR).squaredNorm()
+             < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED) {
+    TangentBasisMatrix T;
+    T.col(0) = -Eigen::Vector3d::UnitX();
+    if (n.z() > 0.0)
+      T.col(1) = Eigen::Vector3d::UnitY();
+    else
+      T.col(1) = -Eigen::Vector3d::UnitY();
+    return T;
+  }
 
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.
@@ -854,7 +1069,9 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
   // many times
   // The first column is the same as mFirstFrictionalDirection unless
   // mFirstFrictionalDirection is parallel to the normal
-  T.col(0) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, n)) * tangent;
+  // Equivalent to rotating tangent 90 degrees around n, but avoids constructing
+  // a quaternion for every contact in the constraint-build hot path.
+  T.col(0).noalias() = n.cross(tangent);
   T.col(1) = tangent;
   return T;
 }
@@ -865,10 +1082,10 @@ void ContactConstraint::uniteSkeletons()
   if (!hasValidBodyNodes())
     return;
 
-  if (!mBodyNodeA->isReactive() || !mBodyNodeB->isReactive())
+  if (!mIsReactiveA || !mIsReactiveB)
     return;
 
-  if (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton())
+  if (mSkeletonA == mSkeletonB)
     return;
 
   const dynamics::SkeletonPtr& unionIdA

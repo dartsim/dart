@@ -12,6 +12,21 @@
     `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+  * Remove the deprecated external optimizer backends (IPOPT, NLopt, pagmo,
+    SNOPT) and the pagmo-based multi-objective optimization API
+    (`MultiObjectiveProblem`/`MultiObjectiveSolver`, `Population`,
+    `GenericMultiObjectiveProblem`), which were extracted to the separate
+    [dart-optimization](https://github.com/dartsim/dart-optimization) package.
+    The `optimizer-ipopt` / `optimizer-nlopt` / `optimizer-pagmo` CMake
+    components and their installed headers, the `dart.optimizer.NloptSolver`
+    Python binding, and the `HAVE_IPOPT` / `HAVE_NLOPT` / `HAVE_PAGMO` /
+    `HAVE_SNOPT` macros in the installed `dart/config.hpp` are removed, and the
+    non-Pixi install instructions (apt/brew/vcpkg/Arch), root `Dockerfile`, and
+    `Brewfile` no longer pull these packages. The optimizer core (`Function`,
+    `Problem`, `Solver`, `GradientDescentSolver`) used by DART's
+    `InverseKinematics` is retained:
+    [#3105](https://github.com/dartsim/dart/pull/3105)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
@@ -25,6 +40,43 @@
     and build-tree `dart/external/ikfast/ikfast.h` include path available for
     DART 6 source compatibility:
     [#3078](https://github.com/dartsim/dart/pull/3078)
+
+  * Replace the vendored `dart/external/imgui` source tree with a DART-patched
+    FetchContent `external-imgui` compatibility target by default, while keeping
+    an explicit system ImGui opt-in path:
+    [#3081](https://github.com/dartsim/dart/pull/3081)
+
+* Collision
+
+  * Add primitive plane collision support and configurable per-pair contact caps
+    for contact-heavy scenes, with regression coverage for FCL halfspace
+    distances, shared-object refreshes, and collision-result cache lifetime:
+    [#3085](https://github.com/dartsim/dart/pull/3085)
+
+* Simulation
+
+  * Enable resting-world deactivation by default with wake-aware invalidation
+    and fidelity coverage against the always-active path, improving resting
+    contact-heavy scenes while preserving an explicit deactivation opt-out:
+    [#3086](https://github.com/dartsim/dart/pull/3086)
+
+  * Keep opt-in parallel constraint-island solving on the serial path for
+    manual constraints, custom contact constraints, custom LCP solvers, and
+    groups that share non-reactive bodies or skeletons across islands:
+    [#3111](https://github.com/dartsim/dart/pull/3111)
+
+  * Expose the opt-in simulation thread controls to dartpy via
+    `World.setNumSimulationThreads()` and
+    `ConstraintSolver.setNumSimulationThreads()`, and add a Pixi task for the
+    deterministic headless boxes/chains benchmark evidence:
+    [#3071](https://github.com/dartsim/dart/pull/3071)
+
+  * Accelerate large imported worlds that begin with zero-velocity bodies on
+    shallow support contacts by allowing the initial contact pass to consume the
+    configured quiet dwell before the normal final solved impulse freezes the
+    island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 

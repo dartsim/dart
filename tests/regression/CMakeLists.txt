@@ -56,14 +56,31 @@ if(TARGET dart-utils)
 endif()
 
 if(TARGET dart-external-imgui)
-  dart_add_test("regression" test_Issue2516)
-  target_link_libraries(test_Issue2516 dart-external-imgui)
+  set(dart_skip_system_imgui_asan_test OFF)
+  if(DART_USE_SYSTEM_IMGUI
+      AND (CMAKE_CXX_FLAGS MATCHES "fsanitize=address"
+        OR CMAKE_EXE_LINKER_FLAGS MATCHES "fsanitize=address"
+        OR CMAKE_SHARED_LINKER_FLAGS MATCHES "fsanitize=address"))
+    set(dart_skip_system_imgui_asan_test ON)
+  endif()
 
-  dart_add_test("regression" test_Issue2668)
-  target_link_libraries(test_Issue2668 dart-external-imgui)
+  if(NOT DART_USE_SYSTEM_IMGUI)
+    dart_add_test("regression" test_Issue2516)
+    target_link_libraries(test_Issue2516 dart-external-imgui)
 
-  dart_add_test("regression" test_Issue2671)
-  target_link_libraries(test_Issue2671
-    dart-external-imgui
-    ${CMAKE_DL_LIBS})
+    dart_add_test("regression" test_Issue2668)
+    target_link_libraries(test_Issue2668 dart-external-imgui)
+  endif()
+
+  if(NOT dart_skip_system_imgui_asan_test)
+    dart_add_test("regression" test_Issue2671)
+    target_link_libraries(test_Issue2671
+      dart-external-imgui
+      ${CMAKE_DL_LIBS})
+    if(NOT DART_USE_SYSTEM_IMGUI)
+      target_compile_definitions(
+        test_Issue2671 PRIVATE DART_EXTERNAL_IMGUI_HAS_DART_PATCHES
+      )
+    endif()
+  endif()
 endif()

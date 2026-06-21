@@ -38,7 +38,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 #include <algorithm>
 
@@ -232,11 +232,11 @@ void JointConstraint::update()
     const double vel_to_pos_lb
         = hasValidPositionLimits
               ? (positionLowerLimits[i] - positions[i]) / timeStep
-              : -static_cast<double>(dInfinity);
+              : -static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
     const double vel_to_pos_ub
         = hasValidPositionLimits
               ? (positionUpperLimits[i] - positions[i]) / timeStep
-              : static_cast<double>(dInfinity);
+              : static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
 
     // Joint position and velocity constraint check
     if (mJoint->areLimitsEnforced()) {
@@ -270,7 +270,8 @@ void JointConstraint::update()
         // Set the impulse bounds to not to be negative so that the impulse only
         // exerted to push the joint toward the positive direction.
         mImpulseLowerBound[i] = 0.0;
-        mImpulseUpperBound[i] = static_cast<double>(dInfinity);
+        mImpulseUpperBound[i]
+            = static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
 
         if (mActive[i]) {
           ++(mLifeTime[i]);
@@ -306,7 +307,8 @@ void JointConstraint::update()
 
         // Set the impulse bounds to not to be positive so that the impulse only
         // exerted to push the joint toward the negative direction.
-        mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
+        mImpulseLowerBound[i]
+            = -static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
         mImpulseUpperBound[i] = 0.0;
 
         if (mActive[i]) {
@@ -331,9 +333,14 @@ void JointConstraint::update()
             && positions[i] >= positionUpperLimits[i] - mErrorAllowance;
       const bool servoHasFiniteLowerLimit
           = isServo
-            && velocityLowerLimits[i] != -static_cast<double>(dInfinity);
+            && velocityLowerLimits[i]
+                   != -static_cast<double>(
+                       ::dart::lcpsolver::dantzig::kInfinity);
       const bool servoHasFiniteUpperLimit
-          = isServo && velocityUpperLimits[i] != static_cast<double>(dInfinity);
+          = isServo
+            && velocityUpperLimits[i]
+                   != static_cast<double>(
+                       ::dart::lcpsolver::dantzig::kInfinity);
       const bool processServoVelocityLimits
           = hasValidVelocityLimits
             && (servoHasFiniteLowerLimit || servoHasFiniteUpperLimit);
@@ -360,7 +367,8 @@ void JointConstraint::update()
           if (!relaxLowerVelocityBound) {
             mDesiredVelocityChange[i] = -vel_lb_error;
             mImpulseLowerBound[i] = 0.0;
-            mImpulseUpperBound[i] = static_cast<double>(dInfinity);
+            mImpulseUpperBound[i]
+                = static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
 
             if (mActive[i]) {
               ++(mLifeTime[i]);
@@ -383,7 +391,8 @@ void JointConstraint::update()
         if (vel_ub_error > 0.0) {
           if (!relaxUpperVelocityBound) {
             mDesiredVelocityChange[i] = -vel_ub_error;
-            mImpulseLowerBound[i] = -static_cast<double>(dInfinity);
+            mImpulseLowerBound[i]
+                = -static_cast<double>(::dart::lcpsolver::dantzig::kInfinity);
             mImpulseUpperBound[i] = 0.0;
 
             if (mActive[i]) {

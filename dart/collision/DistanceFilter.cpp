@@ -47,8 +47,8 @@ bool BodyNodeDistanceFilter::needDistance(
   if (object1 == object2)
     return false;
 
-  auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
-  auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
+  auto shapeNode1 = object1->getShapeNode();
+  auto shapeNode2 = object2->getShapeNode();
 
   if (!shapeNode1 || !shapeNode2)
     return true;

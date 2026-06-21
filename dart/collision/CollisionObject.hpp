@@ -40,6 +40,12 @@
 #include <Eigen/Dense>
 
 namespace dart {
+
+namespace dynamics {
+class BodyNode;
+class ShapeNode;
+} // namespace dynamics
+
 namespace collision {
 
 class CollisionObject
@@ -58,6 +64,12 @@ public:
 
   /// Return the associated ShapeFrame
   const dynamics::ShapeFrame* getShapeFrame() const;
+
+  /// Return the associated ShapeNode if the ShapeFrame is a ShapeNode.
+  const dynamics::ShapeNode* getShapeNode() const;
+
+  /// Return the associated BodyNode if this object belongs to a ShapeNode.
+  dynamics::BodyNode* getBodyNode() const;
 
   /// Return the associated Shape
   dynamics::ConstShapePtr getShape() const;
@@ -82,6 +94,12 @@ protected:
 
   /// ShapeFrame
   const dynamics::ShapeFrame* mShapeFrame;
+
+  /// Cached ShapeNode, if mShapeFrame is one.
+  dynamics::ShapeNode* mShapeNode;
+
+  /// Cached BodyNode, if mShapeNode belongs to one.
+  dynamics::BodyNode* mBodyNode;
 };
 
 } // namespace collision

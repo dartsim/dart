@@ -35,6 +35,8 @@
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/collision/SmartPointer.hpp>
+
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <dart/common/Deprecated.hpp>
@@ -65,10 +67,20 @@ struct Options
   /// link is not specified in the URDF file.
   RootJointType mDefaultRootJointType;
 
+  /// Collision detector to install before parsed models are added to a World.
+  /// If nullptr, the World default detector is used.
+  collision::CollisionDetectorPtr mCollisionDetector;
+
+  /// Whether SDF <plane> geometries should be loaded as PlaneShape instead of
+  /// the legacy finite thin BoxShape approximation.
+  bool mUsePlaneShapeForPlane;
+
   /// Default constructor
   Options(
       common::ResourceRetrieverPtr resourceRetriever = nullptr,
-      RootJointType defaultRootJointType = RootJointType::FLOATING);
+      RootJointType defaultRootJointType = RootJointType::FLOATING,
+      collision::CollisionDetectorPtr collisionDetector = nullptr,
+      bool usePlaneShapeForPlane = false);
 };
 
 DART_DEPRECATED(6.0)

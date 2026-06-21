@@ -51,6 +51,7 @@
 #include "dart/utils/utils.hpp"
 
 #include <limits>
+#include <new>
 
 using namespace dart;
 using namespace common;
@@ -59,6 +60,66 @@ using namespace collision;
 using namespace dynamics;
 using namespace simulation;
 using namespace utils;
+
+namespace {
+
+class TestCollisionObject final : public CollisionObject
+{
+public:
+  TestCollisionObject(
+      CollisionDetector* collisionDetector, const ShapeFrame* shapeFrame)
+    : CollisionObject(collisionDetector, shapeFrame)
+  {
+    // Do nothing
+  }
+
+private:
+  void updateEngineData() override
+  {
+    // Do nothing
+  }
+};
+
+class ToggleBodyNodeCollisionFilter : public BodyNodeCollisionFilter
+{
+public:
+  ToggleBodyNodeCollisionFilter(
+      const BodyNode* body1, const BodyNode* body2, bool ignorePair)
+    : mBody1(body1), mBody2(body2), mIgnorePair(ignorePair)
+  {
+  }
+
+  void setIgnorePair(bool ignorePair)
+  {
+    mIgnorePair = ignorePair;
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    if (BodyNodeCollisionFilter::ignoresCollision(object1, object2))
+      return true;
+
+    const auto* body1 = object1->getBodyNode();
+    const auto* body2 = object2->getBodyNode();
+    const bool targetPair = (body1 == mBody1 && body2 == mBody2)
+                            || (body1 == mBody2 && body2 == mBody1);
+    return mIgnorePair && targetPair;
+  }
+
+private:
+  const BodyNode* mBody1;
+  const BodyNode* mBody2;
+  bool mIgnorePair;
+};
+
+struct alignas(TestCollisionObject) TestCollisionObjectStorage
+{
+  unsigned char data[sizeof(TestCollisionObject)];
+};
+
+} // namespace
 
 class Collision : public testing::Test
 {
@@ -688,6 +749,13 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 4u);
 
+  result.clear();
+  option.maxNumContactsPerPair = 2u;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+  EXPECT_LE(result.getNumContacts(), 2u);
+
+  option.maxNumContactsPerPair = 0u;
   result.clear();
   option.maxNumContacts = 2u;
   EXPECT_TRUE(group->collide(option, &result));
@@ -1689,6 +1757,91 @@ TEST_F(Collision, Filter)
   testFilter(dart);
 }
 
+#if HAVE_BULLET
+//==============================================================================
+TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterSubclass)
+{
+  auto detector = BulletCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  const Eigen::Vector3d size(1.0, 1.0, 1.0);
+  auto skeleton1 = createBox(size, Eigen::Vector3d::Zero());
+  auto skeleton2 = createBox(size, Eigen::Vector3d(0.25, 0.0, 0.0));
+  auto* body1 = skeleton1->getBodyNode(0u);
+  auto* body2 = skeleton2->getBodyNode(0u);
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+  auto filter
+      = std::make_shared<ToggleBodyNodeCollisionFilter>(body1, body2, false);
+  option.collisionFilter = filter;
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  filter->setIgnorePair(true);
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterAfterUntrackedQuery)
+{
+  auto detector = BulletCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  const Eigen::Vector3d size(1.0, 1.0, 1.0);
+  auto skeleton1 = createBox(size, Eigen::Vector3d::Zero());
+  auto skeleton2 = createBox(size, Eigen::Vector3d(0.25, 0.0, 0.0));
+  auto* body1 = skeleton1->getBodyNode(0u);
+  auto* body2 = skeleton2->getBodyNode(0u);
+  group->addShapeFramesOf(body1);
+  group->addShapeFramesOf(body2);
+
+  CollisionOption bodyNodeFilterOption;
+  bodyNodeFilterOption.enableContact = true;
+  bodyNodeFilterOption.maxNumContacts = 4u;
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  bodyNodeFilter->addBodyNodePairToBlackList(body1, body2);
+  bodyNodeFilterOption.collisionFilter = bodyNodeFilter;
+
+  CollisionResult result;
+  ASSERT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  ASSERT_EQ(0u, result.getNumContacts());
+
+  CollisionOption unfilteredOption;
+  unfilteredOption.enableContact = true;
+  unfilteredOption.maxNumContacts = 4u;
+  result.clear();
+  ASSERT_TRUE(group->collide(unfilteredOption, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  auto customFilter
+      = std::make_shared<ToggleBodyNodeCollisionFilter>(body1, body2, false);
+  CollisionOption customFilterOption;
+  customFilterOption.enableContact = true;
+  customFilterOption.maxNumContacts = 4u;
+  customFilterOption.collisionFilter = customFilter;
+
+  result.clear();
+  ASSERT_TRUE(group->collide(customFilterOption, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+#endif
+
 //==============================================================================
 void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 {
@@ -1811,6 +1964,63 @@ TEST_F(Collision, ContactBodyNodeAccessors)
   EXPECT_TRUE(
       (bn1.get() == bnA && bn2.get() == bnB)
       || (bn1.get() == bnB && bn2.get() == bnA));
+}
+
+//==============================================================================
+TEST_F(Collision, CollisionResultCachesCollidingFramesEagerly)
+{
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("result_cache_a");
+  auto skelB = Skeleton::create("result_cache_b");
+  auto skelC = Skeleton::create("result_cache_c");
+  auto skelD = Skeleton::create("result_cache_d");
+
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+  auto pairC = skelC->createJointAndBodyNodePair<FreeJoint>();
+  auto pairD = skelD->createJointAndBodyNodePair<FreeJoint>();
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* nodeA = pairA.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeB = pairB.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeC = pairC.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeD = pairD.second->createShapeNodeWith<CollisionAspect>(box);
+
+  CollisionResult result;
+  TestCollisionObjectStorage storageA;
+  TestCollisionObjectStorage storageB;
+
+  auto* objectA
+      = new (storageA.data) TestCollisionObject(detector.get(), nodeA);
+  auto* objectB
+      = new (storageB.data) TestCollisionObject(detector.get(), nodeB);
+
+  Contact contact;
+  contact.collisionObject1 = objectA;
+  contact.collisionObject2 = objectB;
+  result.addContact(contact);
+
+  objectA->~TestCollisionObject();
+  objectB->~TestCollisionObject();
+
+  auto* replacementA
+      = new (storageA.data) TestCollisionObject(detector.get(), nodeC);
+  auto* replacementB
+      = new (storageB.data) TestCollisionObject(detector.get(), nodeD);
+
+  EXPECT_TRUE(result.inCollision(nodeA));
+  EXPECT_TRUE(result.inCollision(nodeB));
+  EXPECT_TRUE(result.inCollision(pairA.second));
+  EXPECT_TRUE(result.inCollision(pairB.second));
+
+  EXPECT_FALSE(result.inCollision(nodeC));
+  EXPECT_FALSE(result.inCollision(nodeD));
+  EXPECT_FALSE(result.inCollision(pairC.second));
+  EXPECT_FALSE(result.inCollision(pairD.second));
+
+  replacementA->~TestCollisionObject();
+  replacementB->~TestCollisionObject();
 }
 
 //==============================================================================
@@ -2230,6 +2440,12 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
   option.maxNumContacts = 1u;
   CollisionResult result;
 
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+
+  option.maxNumContacts = 8u;
+  option.maxNumContactsPerPair = 1u;
+  result.clear();
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_EQ(1u, result.getNumContacts());
 

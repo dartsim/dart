@@ -101,7 +101,6 @@ jobs:
             libeigen3-dev
             libfcl-dev
             libfmt-dev
-            coinor-libipopt-dev
             freeglut3-dev
             libxi-dev
             libxmu-dev
@@ -110,7 +109,6 @@ jobs:
             liburdfdom-dev
             liburdfdom-headers-dev
             libopenscenegraph-dev
-            libnlopt-cxx-dev
             liboctomap-dev
             libode-dev
             libspdlog-dev

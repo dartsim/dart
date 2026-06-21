@@ -112,6 +112,18 @@ ConstBodyNodePtr Node::getBodyNodePtr() const
 }
 
 //==============================================================================
+BodyNode* Node::getBodyNode()
+{
+  return mBodyNode;
+}
+
+//==============================================================================
+const BodyNode* Node::getBodyNode() const
+{
+  return mBodyNode;
+}
+
+//==============================================================================
 bool Node::isRemoved() const
 {
   if (nullptr == mBodyNode) {

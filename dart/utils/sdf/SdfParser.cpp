@@ -38,12 +38,14 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
@@ -164,14 +166,16 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* shapelement,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane);
 
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* shapeNodeEle,
     const std::string& shapeNodeName,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane);
 
 void readMaterial(
     tinyxml2::XMLElement* materialEle, dynamics::ShapeNode* shapeNode);
@@ -180,19 +184,22 @@ void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* vizShapeNodeEle,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane);
 
 void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* collShapeNodeEle,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane);
 
 void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever);
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane);
 
 JointMap readAllJoints(
     tinyxml2::XMLElement* skeletonElement,
@@ -242,9 +249,13 @@ common::ResourceRetrieverPtr getRetriever(
 //==============================================================================
 Options::Options(
     common::ResourceRetrieverPtr resourceRetriever,
-    RootJointType defaultRootJointType)
+    RootJointType defaultRootJointType,
+    collision::CollisionDetectorPtr collisionDetector,
+    bool usePlaneShapeForPlane)
   : mResourceRetriever(std::move(resourceRetriever)),
-    mDefaultRootJointType(defaultRootJointType)
+    mDefaultRootJointType(defaultRootJointType),
+    mCollisionDetector(std::move(collisionDetector)),
+    mUsePlaneShapeForPlane(usePlaneShapeForPlane)
 {
   // Do nothing
 }
@@ -279,6 +290,8 @@ bool checkVersion(
 simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
 {
   const auto retriever = getRetriever(options.mResourceRetriever);
+  Options resolvedOptions = options;
+  resolvedOptions.mResourceRetriever = retriever;
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -310,7 +323,7 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
   if (worldElement == nullptr)
     return nullptr;
 
-  return readWorld(worldElement, uri, options);
+  return readWorld(worldElement, uri, resolvedOptions);
 }
 
 //==============================================================================
@@ -327,6 +340,8 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const Options& options)
 {
   const auto retriever = getRetriever(options.mResourceRetriever);
+  Options resolvedOptions = options;
+  resolvedOptions.mResourceRetriever = retriever;
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -358,7 +373,8 @@ dynamics::SkeletonPtr readSkeleton(
   if (skelElement == nullptr)
     return nullptr;
 
-  dynamics::SkeletonPtr newSkeleton = readSkeleton(skelElement, uri, retriever);
+  dynamics::SkeletonPtr newSkeleton
+      = readSkeleton(skelElement, uri, resolvedOptions);
 
   return newSkeleton;
 }
@@ -396,6 +412,11 @@ simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* physicsElement
         = worldElement->FirstChildElement("physics");
     readPhysics(physicsElement, newWorld);
+  }
+
+  if (options.mCollisionDetector) {
+    newWorld->getConstraintSolver()->setCollisionDetector(
+        options.mCollisionDetector);
   }
 
   //--------------------------------------------------------------------------
@@ -512,7 +533,11 @@ dynamics::SkeletonPtr readSkeleton(
   // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
   readAspects(
-      newSkeleton, skeletonElement, baseUri, options.mResourceRetriever);
+      newSkeleton,
+      skeletonElement,
+      baseUri,
+      options.mResourceRetriever,
+      options.mUsePlaneShapeForPlane);
 
   // Set positions to their initial values
   newSkeleton->resetPositions();
@@ -923,7 +948,8 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* _shapelement,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& _retriever)
+    const common::ResourceRetrieverPtr& _retriever,
+    bool usePlaneShapeForPlane)
 {
   dynamics::ShapePtr newShape;
 
@@ -952,16 +978,26 @@ dynamics::ShapePtr readShape(
 
     newShape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
   } else if (hasElement(geometryElement, "plane")) {
-    // TODO: Don't support plane shape yet.
     tinyxml2::XMLElement* planeElement = getElement(geometryElement, "plane");
 
-    Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
-    // TODO: Need to use normal for correct orientation of the plane
-    // Eigen::Vector3d normal = getValueVector3d(planeElement, "normal");
+    if (usePlaneShapeForPlane) {
+      Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+      if (hasElement(planeElement, "normal"))
+        normal = getValueVector3d(planeElement, "normal");
 
-    Eigen::Vector3d size(visSize(0), visSize(1), 0.001);
+      if (!normal.allFinite() || normal.squaredNorm() <= 0.0) {
+        dtwarn << "[SdfParser::readShape] Invalid <plane><normal>; using "
+                  "default [0 0 1].\n";
+        normal = Eigen::Vector3d::UnitZ();
+      }
 
-    newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
+      newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
+    } else {
+      Eigen::Vector2d visSize = getValueVector2d(planeElement, "size");
+      Eigen::Vector3d size(visSize(0), visSize(1), 0.001);
+
+      newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
+    }
   } else if (hasElement(geometryElement, "mesh")) {
     tinyxml2::XMLElement* meshEle = getElement(geometryElement, "mesh");
     // TODO(JS): We assume that uri is just file name for the mesh
@@ -1002,11 +1038,13 @@ dynamics::ShapeNode* readShapeNode(
     tinyxml2::XMLElement* shapeNodeEle,
     const std::string& shapeNodeName,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane)
 {
   DART_ASSERT(bodyNode);
 
-  auto shape = readShape(shapeNodeEle, baseUri, retriever);
+  auto shape
+      = readShape(shapeNodeEle, baseUri, retriever, usePlaneShapeForPlane);
   auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
 
   // Transformation
@@ -1044,7 +1082,8 @@ void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* vizShapeNodeEle,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane)
 {
   std::string visualName = "visual shape";
   if (hasAttribute(vizShapeNodeEle, "name")) {
@@ -1059,7 +1098,8 @@ void readVisualizationShapeNode(
       vizShapeNodeEle,
       bodyNode->getName() + " - " + visualName,
       baseUri,
-      retriever);
+      retriever,
+      usePlaneShapeForPlane);
 
   newShapeNode->createVisualAspect();
 
@@ -1075,7 +1115,8 @@ void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* collShapeNodeEle,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane)
 {
   std::string collName = "collision shape";
   if (hasAttribute(collShapeNodeEle, "name")) {
@@ -1090,7 +1131,8 @@ void readCollisionShapeNode(
       collShapeNodeEle,
       bodyNode->getName() + " - " + collName,
       baseUri,
-      retriever);
+      retriever,
+      usePlaneShapeForPlane);
 
   newShapeNode->createCollisionAspect();
   newShapeNode->createDynamicsAspect();
@@ -1101,7 +1143,8 @@ void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
+    const common::ResourceRetrieverPtr& retriever,
+    bool usePlaneShapeForPlane)
 {
   ElementEnumerator xmlBodies(skeletonElement, "link");
   while (xmlBodies.next()) {
@@ -1112,13 +1155,19 @@ void readAspects(
     // visualization_shape
     ElementEnumerator vizShapes(bodyElement, "visual");
     while (vizShapes.next()) {
-      readVisualizationShapeNode(bodyNode, vizShapes.get(), baseUri, retriever);
+      readVisualizationShapeNode(
+          bodyNode, vizShapes.get(), baseUri, retriever, usePlaneShapeForPlane);
     }
 
     // collision_shape
     ElementEnumerator collShapes(bodyElement, "collision");
     while (collShapes.next())
-      readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+      readCollisionShapeNode(
+          bodyNode,
+          collShapes.get(),
+          baseUri,
+          retriever,
+          usePlaneShapeForPlane);
   }
 }
 

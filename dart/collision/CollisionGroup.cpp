@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -135,6 +136,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   mObjectInfoList.erase(search);
   mObserver.removeShapeFrame(shapeFrame);
+  incrementContentVersion();
 }
 
 //==============================================================================
@@ -166,10 +168,14 @@ bool CollisionGroup::isSubscribedTo()
 //==============================================================================
 void CollisionGroup::removeAllShapeFrames()
 {
+  const bool hadObjects = !mObjectInfoList.empty();
+
   removeAllCollisionObjectsFromEngine();
 
   mObjectInfoList.clear();
   mObserver.removeAllShapeFrames();
+  if (hadObjects)
+    incrementContentVersion();
 }
 
 //==============================================================================
@@ -188,6 +194,12 @@ bool CollisionGroup::hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const
 std::size_t CollisionGroup::getNumShapeFrames() const
 {
   return mObjectInfoList.size();
+}
+
+//==============================================================================
+std::size_t CollisionGroup::getContentVersion() const
+{
+  return mContentVersion;
 }
 
 //==============================================================================
@@ -332,6 +344,7 @@ void CollisionGroup::removeDeletedShapeFrames()
 
     removeCollisionObjectFromEngine((*search)->mObject.get());
     mObjectInfoList.erase(search);
+    incrementContentVersion();
   }
 
   mObserver.mDeletedFrames.clear();
@@ -365,10 +378,16 @@ std::size_t CollisionGroup::computeMetaSkeletonVersion(
 //==============================================================================
 void CollisionGroup::updateEngineData()
 {
-  for (const auto& info : mObjectInfoList)
-    info->mObject->updateEngineData();
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update objects");
+    for (const auto& info : mObjectInfoList)
+      info->mObject->updateEngineData();
+  }
 
-  updateCollisionGroupEngineData();
+  {
+    DART_PROFILE_SCOPED_N("CollisionGroup update backend");
+    updateCollisionGroupEngineData();
+  }
 }
 
 //==============================================================================
@@ -444,6 +463,7 @@ auto CollisionGroup::addShapeFrameImpl(
         shape ? shape->getVersion() : 0,
         {}});
     mObserver.addShapeFrame(shapeFrame);
+    incrementContentVersion();
 
     it = --mObjectInfoList.end();
   }
@@ -477,7 +497,14 @@ void CollisionGroup::removeShapeFrameInternal(
     removeCollisionObjectFromEngine((*search)->mObject.get());
     mObjectInfoList.erase(search);
     mObserver.removeShapeFrame(shapeFrame);
+    incrementContentVersion();
   }
+}
+
+//==============================================================================
+void CollisionGroup::incrementContentVersion()
+{
+  ++mContentVersion;
 }
 
 //==============================================================================
@@ -664,6 +691,7 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
 
     object->mLastKnownShapeID = currentID;
     object->mLastKnownVersion = currentVersion;
+    incrementContentVersion();
 
     return true;
   }

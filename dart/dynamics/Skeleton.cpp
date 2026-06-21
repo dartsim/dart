@@ -39,6 +39,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Marker.hpp"
@@ -49,6 +50,7 @@
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <queue>
 #include <string>
 #include <vector>
@@ -80,6 +82,25 @@
 
 namespace dart {
 namespace dynamics {
+
+namespace {
+
+std::atomic<std::size_t> gStructuralVersion{0};
+std::atomic<std::size_t> gKinematicVersion{0};
+std::atomic<std::size_t> gExternalDisturbanceVersion{0};
+std::atomic<std::size_t> gDeactivationStateVersion{0};
+
+std::size_t incrementGlobal(std::atomic<std::size_t>& counter)
+{
+  return counter.fetch_add(1, std::memory_order_relaxed) + 1;
+}
+
+std::size_t loadGlobal(const std::atomic<std::size_t>& counter)
+{
+  return counter.load(std::memory_order_relaxed);
+}
+
+} // namespace
 
 namespace detail {
 
@@ -434,6 +455,14 @@ Skeleton::~Skeleton()
 }
 
 //==============================================================================
+std::size_t Skeleton::incrementVersion()
+{
+  const std::size_t version = common::VersionCounter::incrementVersion();
+  incrementGlobal(gStructuralVersion);
+  return version;
+}
+
+//==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
   return cloneSkeleton(getName());
@@ -728,6 +757,9 @@ void Skeleton::disableSelfCollision()
 //==============================================================================
 void Skeleton::setSelfCollisionCheck(bool enable)
 {
+  if (mAspectProperties.mEnabledSelfCollisionCheck != enable)
+    incrementDeactivationStateVersion();
+
   mAspectProperties.mEnabledSelfCollisionCheck = enable;
 }
 
@@ -758,6 +790,9 @@ bool Skeleton::isEnabledSelfCollisionCheck() const
 //==============================================================================
 void Skeleton::setAdjacentBodyCheck(bool enable)
 {
+  if (mAspectProperties.mEnabledAdjacentBodyCheck != enable)
+    incrementDeactivationStateVersion();
+
   mAspectProperties.mEnabledAdjacentBodyCheck = enable;
 }
 
@@ -788,6 +823,9 @@ bool Skeleton::isEnabledAdjacentBodyCheck() const
 //==============================================================================
 void Skeleton::setMobile(bool _isMobile)
 {
+  if (mAspectProperties.mIsMobile != _isMobile)
+    incrementDeactivationStateVersion();
+
   mAspectProperties.mIsMobile = _isMobile;
 }
 
@@ -2068,7 +2106,10 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 
 //==============================================================================
 Skeleton::Skeleton(const AspectPropertiesData& properties)
-  : mTotalMass(0.0), mIsImpulseApplied(false), mUnionSize(1)
+  : mTotalMass(0.0),
+    mIsImpulseApplied(false),
+    mUnionSize(1),
+    mUnionIndex(static_cast<std::size_t>(-1))
 {
   createAspect<Aspect>(properties);
   createAspect<detail::BodyNodeVectorProxyAspect>();
@@ -3828,6 +3869,8 @@ bool Skeleton::isResting() const
 void Skeleton::setResting(bool _resting)
 {
   const bool wasResting = mIsResting;
+  if (wasResting != _resting)
+    incrementDeactivationStateVersion();
 
   // Island-atomic frozen flag only. The dwell timer belongs to the per-skeleton
   // candidacy (setSleepCandidate), not here, because the solver sets this every
@@ -3842,8 +3885,10 @@ void Skeleton::setResting(bool _resting)
   // exact velocity it happened to carry at sleep time. It is only ever applied
   // to an island the solver is freezing this step (whose constraint solve is
   // skipped), so the cleared velocity is not consumed by that step's solve.
-  if (_resting && !wasResting && getNumDofs() > 0)
+  if (_resting && !wasResting && getNumDofs() > 0) {
     setVelocities(Eigen::VectorXd::Zero(static_cast<int>(getNumDofs())));
+    computeForwardKinematics(false, true, false);
+  }
 }
 
 //==============================================================================
@@ -3855,6 +3900,9 @@ bool Skeleton::isSleepCandidate() const
 //==============================================================================
 void Skeleton::setSleepCandidate(bool _candidate)
 {
+  if (mSleepCandidate != _candidate)
+    incrementDeactivationStateVersion();
+
   mSleepCandidate = _candidate;
 
   // Losing candidacy (disturbed or started moving) restarts the quiet-dwell
@@ -3896,6 +3944,9 @@ int Skeleton::getIslandIndex() const
 //==============================================================================
 void Skeleton::setIslandIndex(int _index)
 {
+  if (mIslandIndex != _index)
+    incrementDeactivationStateVersion();
+
   mIslandIndex = _index;
 }
 
@@ -3914,21 +3965,53 @@ void Skeleton::setRestDwellTime(double _dwellTime)
 //==============================================================================
 bool Skeleton::hasExternalDisturbance() const
 {
+  return const_cast<Skeleton*>(this)->checkExternalDisturbanceAndReset(false);
+}
+
+//==============================================================================
+bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
+{
+  if (!_resetCommand
+      && mLastQuietExternalDisturbanceVersion == mExternalDisturbanceVersion
+      && !mSkelCache.mDirty.mExternalForces) {
+    return false;
+  }
+
   // A disturbance is any user-applied actuation pending this step. Gravity is
   // intentionally excluded: it is applied internally during forward dynamics
   // and is not represented in any of these vectors, so a body resting under
   // gravity alone reports no disturbance.
-  if (getNumDofs() == 0)
-    return false;
-
   // Small epsilon so floating-point dust in a command/force vector (e.g. a
   // servo writing ~1e-16 at its target) does not count as a real disturbance
   // and defeat sleeping.
   const double tolerance = 1e-9;
 
-  // getExternalForces() returns a cached const reference (no allocation).
-  if (getExternalForces().cwiseAbs().maxCoeff() > tolerance)
-    return true;
+  const std::size_t nDofs = getNumDofs();
+  bool disturbed = false;
+  bool hasResidualExternalForces = false;
+  bool hasResidualBodyExternalForces = false;
+  bool hasResidualDofForces = false;
+  bool hasResidualCommands = false;
+
+  if (nDofs != 0) {
+    // getExternalForces() returns a cached const reference (no allocation).
+    const Eigen::VectorXd& externalForces = getExternalForces();
+    if (externalForces.size() > 0) {
+      hasResidualExternalForces = !externalForces.isZero(0.0);
+      disturbed = externalForces.cwiseAbs().maxCoeff() > tolerance;
+    }
+  }
+
+  if (_resetCommand) {
+    // A body wrench can project to zero generalized force (for example on a
+    // zero-DOF or constrained body) but still needs to honor resetCommand.
+    for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+      if (!bodyNode->getExternalForceLocal().isZero(0.0)) {
+        hasResidualBodyExternalForces = true;
+        break;
+      }
+    }
+  }
 
   // Scan generalized forces and commands per-DOF instead of materializing
   // getForces()/getCommands(): each returns an Eigen::VectorXd by value (a heap
@@ -3936,25 +4019,94 @@ bool Skeleton::hasExternalDisturbance() const
   // exactly getDof(i)->getForce() (MetaSkeleton::getValuesFromAllDofs), and
   // `|x| > tol` is `x > tol || x < -tol`, so the disturbance decision is
   // identical -- just without the temporaries.
-  const std::size_t nDofs = getNumDofs();
   for (std::size_t i = 0; i < nDofs; ++i) {
     const DegreeOfFreedom* dof = getDof(i);
     if (!dof)
       continue;
     const double f = dof->getForce();
+    if (f != 0.0)
+      hasResidualDofForces = true;
     if (f > tolerance || f < -tolerance)
-      return true;
-  }
-  for (std::size_t i = 0; i < nDofs; ++i) {
-    const DegreeOfFreedom* dof = getDof(i);
-    if (!dof)
-      continue;
+      disturbed = true;
+
     const double c = dof->getCommand();
+    if (c != 0.0)
+      hasResidualCommands = true;
     if (c > tolerance || c < -tolerance)
-      return true;
+      disturbed = true;
   }
 
+  if (disturbed)
+    return true;
+
+  if (_resetCommand) {
+    if (hasResidualExternalForces || hasResidualBodyExternalForces) {
+      clearExternalForces();
+      // Refresh the projection cache so the quiet version is recorded below,
+      // including zero-DOF skeletons whose projection is always empty.
+      getExternalForces();
+    }
+    if (hasResidualDofForces)
+      clearInternalForces();
+    if (hasResidualCommands)
+      resetCommands();
+  }
+
+  if (!mSkelCache.mDirty.mExternalForces)
+    mLastQuietExternalDisturbanceVersion = mExternalDisturbanceVersion;
+
   return false;
+}
+
+//==============================================================================
+void Skeleton::incrementExternalDisturbanceVersion()
+{
+  ++mExternalDisturbanceVersion;
+  incrementGlobal(gExternalDisturbanceVersion);
+}
+
+//==============================================================================
+void Skeleton::incrementDeactivationStateVersion()
+{
+  incrementGlobal(gDeactivationStateVersion);
+}
+
+//==============================================================================
+std::size_t Skeleton::incrementKinematicVersion()
+{
+  ++mKinematicVersion;
+  incrementGlobal(gKinematicVersion);
+  return mKinematicVersion;
+}
+
+//==============================================================================
+std::size_t Skeleton::getKinematicVersion() const
+{
+  return mKinematicVersion;
+}
+
+//==============================================================================
+std::size_t Skeleton::getGlobalStructuralVersion()
+{
+  return loadGlobal(gStructuralVersion);
+}
+
+//==============================================================================
+std::size_t Skeleton::getGlobalKinematicVersion()
+{
+  return loadGlobal(gKinematicVersion);
+}
+
+//==============================================================================
+std::size_t Skeleton::getGlobalExternalDisturbanceVersion()
+{
+  return loadGlobal(gExternalDisturbanceVersion);
+}
+
+//==============================================================================
+std::size_t Skeleton::getGlobalDeactivationStateVersion()
+{
+  return loadGlobal(gDeactivationStateVersion);
 }
 
 //==============================================================================
@@ -3989,6 +4141,24 @@ void Skeleton::computeImpulseForwardDynamics()
   // Skip immobile or 0-dof skeleton
   if (!isMobile() || getNumDofs() == 0)
     return;
+
+  if (mSkelCache.mBodyNodes.size() == 1u) {
+    auto* bodyNode = mSkelCache.mBodyNodes[0];
+    auto* parentJoint = bodyNode->getParentJoint();
+    const auto* freeJoint = dynamic_cast<const FreeJoint*>(parentJoint);
+    const bool useSingleFreeBodyPath
+        = freeJoint != nullptr && bodyNode->getParentBodyNode() == nullptr
+          && bodyNode->getNumChildBodyNodes() == 0u
+          && (parentJoint->getActuatorType() == Joint::FORCE
+              || parentJoint->getActuatorType() == Joint::PASSIVE);
+    if (useSingleFreeBodyPath) {
+      bodyNode->updateBiasImpulse();
+      bodyNode->updateVelocityChangeFD();
+      bodyNode->mImpF.setZero();
+      bodyNode->updateConstrainedTerms(mAspectProperties.mTimeStep);
+      return;
+    }
+  }
 
   // Note: we do not need to update articulated inertias here, because they will
   // be updated when BodyNode::updateBiasImpulse() calls

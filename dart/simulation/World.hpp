@@ -56,6 +56,7 @@
 
 #include <Eigen/Dense>
 
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -72,18 +73,19 @@ class Skeleton;
 
 namespace constraint {
 class ConstraintSolver;
-namespace detail {
-class IslandSolveExecutor;
-} // namespace detail
 } // namespace constraint
 
 namespace collision {
+class CollisionDetector;
+class CollisionGroup;
 class CollisionResult;
 } // namespace collision
 
 namespace simulation {
 
 DART_COMMON_DECLARE_SHARED_WEAK(World)
+
+class SimulationThreadPool;
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -138,6 +140,14 @@ public:
 
   /// Get time step
   double getTimeStep() const;
+
+  /// Sets the number of worker threads used for independent per-skeleton
+  /// simulation work. The default is 1, which preserves the historical serial
+  /// execution path. Passing 0 selects std::thread::hardware_concurrency().
+  void setNumSimulationThreads(std::size_t numThreads);
+
+  /// Returns the configured number of simulation worker threads.
+  std::size_t getNumSimulationThreads() const;
 
   //--------------------------------------------------------------------------
   // Structural Properties
@@ -265,16 +275,6 @@ public:
   /// Get the constraint solver
   const constraint::ConstraintSolver* getConstraintSolver() const;
 
-  /// Sets the number of worker threads World::step() may use for independent
-  /// per-skeleton loops and constraint islands. Default 1 (serial) is
-  /// bit-for-bit identical to previous behavior. The setting is forwarded to
-  /// the constraint solver and re-applied if the solver is replaced. See
-  /// ConstraintSolver::setNumThreads for the determinism and fallback rules.
-  void setNumThreads(std::size_t numThreads);
-
-  /// Returns the configured World::step() worker-thread count.
-  std::size_t getNumThreads() const;
-
   //--------------------------------------------------------------------------
   // Automatic deactivation ("sleeping")
   //--------------------------------------------------------------------------
@@ -366,6 +366,47 @@ protected:
   /// indexed in parallel with mSkeletons.
   void updateRestStates(const std::vector<char>& disturbedThisStep);
 
+  /// Returns true if the cached all-resting state is still valid and every
+  /// mobile skeleton remains resting, candidate, islanded, and undisturbed.
+  /// Sets \p snapshotStale when the cache was valid but a structural or
+  /// kinematic change made it unsafe to reuse.
+  bool isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale);
+
+  /// Saves the current skeleton versions for the all-resting fast path.
+  void updateAllRestingKinematicSnapshot(bool _resetCommand);
+
+  /// Refreshes the global generation counters on a validated all-resting
+  /// snapshot.
+  void updateAllRestingSnapshotGlobalVersions();
+
+  /// Returns true if the current filter exposes enough state for all-resting
+  /// snapshot reuse.
+  bool isCollisionFilterSnapshotTrackable(
+      const collision::CollisionFilter* filter) const;
+
+  /// Returns the collision-filter revision tracked by all-resting snapshots.
+  std::size_t getCollisionFilterSnapshotRevision(
+      const collision::CollisionFilter* filter) const;
+
+  /// Returns true if any mobile skeleton is currently in the resting state.
+  bool hasRestingMobileSkeleton() const;
+
+  /// Wakes resting skeletons when world/contact state changed between steps.
+  void wakeRestingSkeletonsIfStepStateChanged();
+
+  /// Saves world/contact state after a step that may leave bodies resting.
+  void updateLastStepRestingWorldState();
+
+  /// Clears the saved state used to detect between-step world/contact changes.
+  void invalidateLastStepRestingWorldState();
+
+  /// Invalidates the all-resting fast path cache.
+  void invalidateAllRestingKinematicSnapshot();
+
+  /// Wakes sleeping mobile skeletons after world-level or external kinematic
+  /// changes that may invalidate filtered resting contacts.
+  void wakeRestingSkeletonsForWorldChange();
+
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
       const dynamics::ConstMetaSkeletonPtr& _skeleton);
@@ -415,6 +456,13 @@ protected:
   /// Simulation time step
   double mTimeStep;
 
+  /// Number of worker threads for independent per-skeleton simulation work.
+  /// Defaults to 1 so World::step remains serial unless explicitly opted in.
+  std::size_t mNumSimulationThreads = 1;
+
+  /// Persistent workers for mNumSimulationThreads > 1.
+  std::unique_ptr<SimulationThreadPool> mSimulationThreadPool;
+
   /// Current simulation time
   double mTime;
 
@@ -424,19 +472,80 @@ protected:
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
 
-  /// Worker-thread count for independent World::step() loops and constraint
-  /// islands (1 == serial). Stored here so it survives a
-  /// setConstraintSolver() replacement.
-  std::size_t mNumThreads = 1;
-
-  /// Persistent worker pool for the per-skeleton forward-dynamics loops in
-  /// step(). Null unless mNumThreads > 1. The integrate-velocity/position loops
-  /// are independent across skeletons, so running them on this pool is
-  /// bit-identical to the serial loop.
-  std::unique_ptr<constraint::detail::IslandSolveExecutor> mExecutor;
-
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
+
+  struct AllRestingKinematicSnapshot
+  {
+    const dynamics::Skeleton* mSkeleton = nullptr;
+    std::size_t mStructuralVersion = 0;
+    std::size_t mKinematicVersion = 0;
+    std::size_t mNumBodyNodes = 0;
+    Eigen::VectorXd mPositions;
+    std::vector<Eigen::Isometry3d> mBodyTransforms;
+  };
+
+  struct RestingWorldSkeletonState
+  {
+    const dynamics::Skeleton* mSkeleton = nullptr;
+    std::size_t mStructuralVersion = 0;
+    std::size_t mKinematicVersion = 0;
+    std::size_t mNumBodyNodes = 0;
+  };
+
+  /// Snapshot used to avoid skipping collision after an external pose edit.
+  std::vector<AllRestingKinematicSnapshot> mAllRestingKinematicSnapshot;
+
+  /// Whether the current all-resting snapshot contains at least one mobile
+  /// skeleton.
+  bool mAllRestingSnapshotHasMobileSkeleton = false;
+
+  /// Whether the snapshot has passed the full per-skeleton all-resting
+  /// readiness scan at least once.
+  bool mAllRestingSnapshotReady = false;
+
+  /// Whether the current snapshot has already observed step(true)'s command /
+  /// force reset contract. A step(false) snapshot may keep quiet commands
+  /// cached, so the next step(true) must run the reset check once.
+  bool mAllRestingSnapshotResetCommand = true;
+
+  /// Global generation counters captured with mAllRestingKinematicSnapshot.
+  std::size_t mAllRestingSnapshotStructuralVersion = 0;
+  std::size_t mAllRestingSnapshotKinematicVersion = 0;
+  std::size_t mAllRestingSnapshotExternalDisturbanceVersion = 0;
+  std::size_t mAllRestingSnapshotDeactivationStateVersion = 0;
+  const collision::CollisionDetector* mAllRestingSnapshotCollisionDetector
+      = nullptr;
+  const collision::CollisionGroup* mAllRestingSnapshotCollisionGroup = nullptr;
+  std::size_t mAllRestingSnapshotCollisionGroupVersion = 0;
+  bool mAllRestingSnapshotCollisionEnableContact = false;
+  std::size_t mAllRestingSnapshotCollisionMaxNumContacts = 0;
+  std::size_t mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0;
+  const collision::CollisionFilter* mAllRestingSnapshotCollisionFilter
+      = nullptr;
+  std::size_t mAllRestingSnapshotCollisionFilterRevision = 0;
+
+  /// World/contact state captured after the last step while bodies were
+  /// resting.
+  bool mLastStepRestingWorldStateValid = false;
+  bool mLastStepRestingWorldStateCollisionFilterTrackable = false;
+  std::vector<RestingWorldSkeletonState> mLastStepRestingWorldSkeletonStates;
+  std::size_t mLastStepRestingWorldStateDeactivationStateVersion = 0;
+  const collision::CollisionDetector*
+      mLastStepRestingWorldStateCollisionDetector
+      = nullptr;
+  const collision::CollisionGroup* mLastStepRestingWorldStateCollisionGroup
+      = nullptr;
+  std::size_t mLastStepRestingWorldStateCollisionGroupVersion = 0;
+  bool mLastStepRestingWorldStateCollisionEnableContact = false;
+  std::size_t mLastStepRestingWorldStateCollisionMaxNumContacts = 0;
+  std::size_t mLastStepRestingWorldStateCollisionMaxNumContactsPerPair = 0;
+  const collision::CollisionFilter* mLastStepRestingWorldStateCollisionFilter
+      = nullptr;
+  std::size_t mLastStepRestingWorldStateCollisionFilterRevision = 0;
+
+  /// Whether mAllRestingKinematicSnapshot can be used.
+  bool mAllRestingKinematicSnapshotValid = false;
 
   ///
   Recording* mRecording;

@@ -35,14 +35,11 @@ eigen = ">=3.4.0,<4"
 fcl = ">=0.7.0,<0.8"
 fmt = ">=11.1.4,<12"
 imgui = ">=1.91.9,<2"
-ipopt = ">=3.14.17,<4"
 libboost-devel = ">=1.86.0,<2"
 libode = ">=0.16.5,<0.17"
-nlopt = ">=2.10.0,<3"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
-pagmo-devel = ">=2.19.1,<3"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 tracy-profiler-client = ">=0.11.1,<0.12"
@@ -111,7 +108,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python -m pip install . -vv" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -301,6 +298,14 @@ bm-boxes = { cmd = """
         --target BM_INTEGRATION_boxes \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_boxes
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+
+bm-boxes-headless = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target boxes_headless \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/integration/boxes_headless
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 bm-empty = { cmd = """
@@ -568,7 +573,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python -m pip install . -vv" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON" }
 
 build-py-dev = { cmd = """
     cmake \

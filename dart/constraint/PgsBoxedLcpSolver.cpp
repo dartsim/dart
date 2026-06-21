@@ -32,11 +32,13 @@
 
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 
-#include "dart/external/odelcpsolver/matrix.h"
-#include "dart/external/odelcpsolver/misc.h"
+#include "dart/lcpsolver/dantzig/DantzigMatrix.hpp"
+#include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 #include "dart/math/Constants.hpp"
 
 #include <Eigen/Dense>
+
+#include <algorithm>
 
 #include <cmath>
 #include <cstring>
@@ -87,33 +89,25 @@ bool PgsBoxedLcpSolver::solve(
     int* findex,
     bool /*earlyTermination*/)
 {
-  const int nskip = dPAD(n);
-
-  // Scratch reused across calls, but thread_local so this solver instance can
-  // be shared by parallel island solves without racing on these caches (the
-  // rest of PGS reads only the caller-provided A/x/b/lo/hi/findex, which are
-  // per-island). Aliased to the historical member names so the solve body stays
-  // verbatim.
-  static thread_local std::vector<double> tlCacheD;
-  static thread_local std::vector<int> tlCacheOrder;
-  auto& mCacheD = tlCacheD;
-  auto& mCacheOrder = tlCacheOrder;
+  const int nskip = ::dart::lcpsolver::dantzig::padding(n);
+  static thread_local std::vector<int> cacheOrder;
+  static thread_local std::vector<double> cacheD;
 
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
   if (nub >= n) {
-    mCacheD.resize(n);
-    std::fill(mCacheD.begin(), mCacheD.end(), 0);
+    cacheD.resize(n);
+    std::fill(cacheD.begin(), cacheD.end(), 0);
 
-    external::ode::dFactorLDLT(A, mCacheD.data(), n, nskip);
-    external::ode::dSolveLDLT(A, mCacheD.data(), b, n, nskip);
+    ::dart::lcpsolver::dantzig::factorLdlt(A, cacheD.data(), n, nskip);
+    ::dart::lcpsolver::dantzig::solveLdlt(A, cacheD.data(), b, n, nskip);
     std::memcpy(x, b, n * sizeof(double));
 
     return true;
   }
 
-  mCacheOrder.clear();
-  mCacheOrder.reserve(n);
+  cacheOrder.clear();
+  cacheOrder.reserve(n);
 
   bool possibleToTerminate = true;
   for (int i = 0; i < n; ++i) {
@@ -123,7 +117,7 @@ bool PgsBoxedLcpSolver::solve(
       continue;
     }
 
-    mCacheOrder.push_back(i);
+    cacheOrder.push_back(i);
 
     // Initial loop
     const double* A_ptr = A + nskip * i;
@@ -171,7 +165,7 @@ bool PgsBoxedLcpSolver::solve(
   }
 
   // Normalizing
-  for (const auto& index : mCacheOrder) {
+  for (const auto& index : cacheOrder) {
     const double dummy = 1.0 / A[nskip * index + index];
     b[index] *= dummy;
     for (int j = 0; j < n; ++j)
@@ -181,11 +175,11 @@ bool PgsBoxedLcpSolver::solve(
   for (int iter = 1; iter < mOption.mMaxIteration; ++iter) {
     if (mOption.mRandomizeConstraintOrder) {
       if ((iter & 7) == 0) {
-        for (std::size_t i = 1; i < mCacheOrder.size(); ++i) {
-          const int tmp = mCacheOrder[i];
-          const int swapi = external::ode::dRandInt(i + 1);
-          mCacheOrder[i] = mCacheOrder[swapi];
-          mCacheOrder[swapi] = tmp;
+        for (std::size_t i = 1; i < cacheOrder.size(); ++i) {
+          const int tmp = cacheOrder[i];
+          const int swapi = ::dart::lcpsolver::dantzig::randomInt(i + 1);
+          cacheOrder[i] = cacheOrder[swapi];
+          cacheOrder[swapi] = tmp;
         }
       }
     }
@@ -193,7 +187,7 @@ bool PgsBoxedLcpSolver::solve(
     possibleToTerminate = true;
 
     // Single loop
-    for (const auto& index : mCacheOrder) {
+    for (const auto& index : cacheOrder) {
       const double* A_ptr = A + nskip * index;
       double new_x = b[index];
       const double old_x = x[index];
@@ -242,7 +236,7 @@ bool PgsBoxedLcpSolver::solve(
 //==============================================================================
 bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
 {
-  const int nskip = dPAD(n);
+  const int nskip = ::dart::lcpsolver::dantzig::padding(n);
 
   // Return false if A has zero-diagonal or A is nonsymmetric matrix
   for (auto i = 0; i < n; ++i) {

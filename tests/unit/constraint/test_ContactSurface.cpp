@@ -33,6 +33,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -212,6 +213,83 @@ TEST(ContactSurface, BothBodiesNaNFrictionUseDefault)
   EXPECT_TRUE(std::isfinite(params.mPrimaryFrictionCoeff));
   EXPECT_DOUBLE_EQ(
       params.mPrimaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
+}
+
+TEST(ContactSurface, DefaultSurfaceParamsAreContactCountIndependent)
+{
+  auto setup = createCollidingBoxes(
+      constraint::DART_DEFAULT_FRICTION_COEFF,
+      constraint::DART_DEFAULT_FRICTION_COEFF,
+      constraint::DART_DEFAULT_RESTITUTION_COEFF,
+      constraint::DART_DEFAULT_RESTITUTION_COEFF);
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  DefaultContactSurfaceHandler handler;
+  auto paramsOneContact = handler.createParams(result.getContact(0), 1);
+  auto paramsFourContacts = handler.createParams(result.getContact(0), 4);
+
+  EXPECT_DOUBLE_EQ(
+      paramsOneContact.mPrimaryFrictionCoeff,
+      paramsFourContacts.mPrimaryFrictionCoeff);
+  EXPECT_DOUBLE_EQ(
+      paramsOneContact.mSecondaryFrictionCoeff,
+      paramsFourContacts.mSecondaryFrictionCoeff);
+  EXPECT_DOUBLE_EQ(
+      paramsOneContact.mRestitutionCoeff, paramsFourContacts.mRestitutionCoeff);
+  EXPECT_DOUBLE_EQ(
+      paramsOneContact.mPrimarySlipCompliance,
+      paramsFourContacts.mPrimarySlipCompliance);
+  EXPECT_DOUBLE_EQ(
+      paramsOneContact.mSecondarySlipCompliance,
+      paramsFourContacts.mSecondarySlipCompliance);
+  EXPECT_EQ(
+      paramsOneContact.mFirstFrictionalDirection,
+      paramsFourContacts.mFirstFrictionalDirection);
+}
+
+TEST(ContactSurface, NonDefaultSlipStillScalesWithContactCount)
+{
+  constexpr double slip = 0.02;
+  constexpr double timeStep = 0.001;
+  auto setup = createCollidingBoxes(1.0, 1.0);
+  setup.skel1->getBodyNode(0)
+      ->getShapeNode(0)
+      ->getDynamicsAspect()
+      ->setPrimarySlipCompliance(slip);
+
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  DefaultContactSurfaceHandler handler;
+  auto constraintOneContact
+      = handler.createConstraint(result.getContact(0), 1, timeStep);
+  auto constraintFourContacts
+      = handler.createConstraint(result.getContact(0), 4, timeStep);
+
+  ASSERT_NE(nullptr, constraintOneContact);
+  ASSERT_NE(nullptr, constraintFourContacts);
+  ASSERT_EQ(3u, constraintOneContact->getDimension());
+  ASSERT_EQ(3u, constraintFourContacts->getDimension());
+
+  double oneContactVelocityChange[3] = {0.0, 0.0, 0.0};
+  ConstraintBase* oneContactBase = constraintOneContact.get();
+  oneContactBase->excite();
+  oneContactBase->applyUnitImpulse(1);
+  oneContactBase->getVelocityChange(oneContactVelocityChange, true);
+  oneContactBase->unexcite();
+
+  double fourContactVelocityChange[3] = {0.0, 0.0, 0.0};
+  ConstraintBase* fourContactBase = constraintFourContacts.get();
+  fourContactBase->excite();
+  fourContactBase->applyUnitImpulse(1);
+  fourContactBase->getVelocityChange(fourContactVelocityChange, true);
+  fourContactBase->unexcite();
+
+  EXPECT_NEAR(
+      fourContactVelocityChange[1] - oneContactVelocityChange[1],
+      3.0 * slip / timeStep,
+      1e-12);
 }
 
 //==============================================================================

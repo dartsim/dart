@@ -36,14 +36,19 @@
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
+#include <algorithm>
+#include <array>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 
 #include <cassert>
 #include <cmath>
@@ -53,17 +58,10 @@ namespace constraint {
 
 namespace {
 
-// Per-thread LCP assembly buffers used only while the island executor is
-// running groups concurrently. Serial solves reuse the solver-owned mA/mX/...
-// members so their peak storage is released with the solver.
-struct LcpWorkspace
-{
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-      ABackup;
-  Eigen::VectorXd X, XBackup, B, BBackup, W, Lo, LoBackup, Hi, HiBackup;
-  Eigen::VectorXi FIndex, FIndexBackup, Offset;
-};
+// Keep the direct single-body LCP shortcut off until it has bitwise/fidelity
+// evidence against the legacy impulse-test assembly path. The resting-world
+// speedup must not depend on a solver path that changes the disabled baseline.
+constexpr bool kEnableDirectSingleBodyLcpShortcut = false;
 
 } // namespace
 
@@ -162,147 +160,307 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   DART_PROFILE_SCOPED;
 
   // Build LCP terms by aggregating them from constraints
-  const std::size_t numConstraints = group.getNumConstraints();
-  const std::size_t n = group.getTotalDimension();
+  const auto& constraints = group.mConstraints;
+  const std::size_t numConstraints = constraints.size();
+  if (numConstraints == 0u)
+    return;
+
+  constexpr std::size_t kInlineConstraintCount = 8;
+  std::array<ConstraintBase*, kInlineConstraintCount> inlineConstraintPtrs;
+  std::array<std::size_t, kInlineConstraintCount> inlineConstraintDims;
+  std::array<std::size_t, kInlineConstraintCount> inlineConstraintOffsets;
+
+  static thread_local std::vector<ConstraintBase*> constraintPtrStorage;
+  static thread_local std::vector<std::size_t> constraintDimStorage;
+  static thread_local std::vector<std::size_t> constraintOffsetStorage;
+
+  ConstraintBase** constraintPtrs = nullptr;
+  std::size_t* constraintDims = nullptr;
+  std::size_t* constraintOffsets = nullptr;
+
+  if (numConstraints <= kInlineConstraintCount) {
+    constraintPtrs = inlineConstraintPtrs.data();
+    constraintDims = inlineConstraintDims.data();
+    constraintOffsets = inlineConstraintOffsets.data();
+  } else {
+    constraintPtrStorage.resize(numConstraints);
+    constraintDimStorage.resize(numConstraints);
+    constraintOffsetStorage.resize(numConstraints);
+    constraintPtrs = constraintPtrStorage.data();
+    constraintDims = constraintDimStorage.data();
+    constraintOffsets = constraintOffsetStorage.data();
+  }
+
+  std::size_t n = 0u;
+  for (std::size_t i = 0; i < numConstraints; ++i) {
+    constraintPtrs[i] = constraints[i].get();
+    constraintDims[i] = constraintPtrs[i]->getDimension();
+    n += constraintDims[i];
+  }
 
   // If there is no constraint, then just return.
   if (0u == n)
     return;
 
-  // Cache raw constraint pointers once so the assembly loops below index a flat
-  // array instead of calling ConstrainedGroup::getConstraint() (which returns a
-  // ConstraintBasePtr by value, i.e. an atomic refcount bump) on every access.
-  // The off-diagonal fill below touches getConstraint(k) O(n^2) times. The
-  // group owns these constraints for the whole solve, so the pointers stay
-  // valid. Parallel solves reuse thread-local pointer storage; serial solves
-  // use stack-owned storage so no thread-local capacity survives solver
-  // destruction.
-  std::vector<ConstraintBase*> serialConstraintPtrs;
-  auto* constraintPtrs = &serialConstraintPtrs;
-  if (mSolvingConstrainedGroupsInParallel) {
-    static thread_local std::vector<ConstraintBase*> tlsConstraintPtrs;
-    constraintPtrs = &tlsConstraintPtrs;
-  }
-  constraintPtrs->resize(numConstraints);
-  for (std::size_t i = 0; i < numConstraints; ++i)
-    (*constraintPtrs)[i] = group.getConstraint(i).get();
+  const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
+  constexpr std::size_t kInlineLcpVectorSize = 12;
+  constexpr std::size_t kInlineLcpMatrixSize = 192;
+  const std::size_t matrixSize = n * static_cast<std::size_t>(nSkip);
+  const bool useInlineLcpBuffer
+      = n <= kInlineLcpVectorSize && matrixSize <= kInlineLcpMatrixSize;
+  std::array<double, kInlineLcpMatrixSize> inlineA;
+  std::array<double, kInlineLcpVectorSize> inlineX;
+  std::array<double, kInlineLcpVectorSize> inlineB;
+  std::array<double, kInlineLcpVectorSize> inlineW;
+  std::array<double, kInlineLcpVectorSize> inlineLo;
+  std::array<double, kInlineLcpVectorSize> inlineHi;
+  std::array<int, kInlineLcpVectorSize> inlineFIndex;
 
-  // LCP working buffers. Serial solves use solver-owned storage; only true
-  // parallel executor dispatch uses thread-local storage.
-  LcpWorkspace* parallelWorkspace = nullptr;
-  if (mSolvingConstrainedGroupsInParallel) {
-    static thread_local LcpWorkspace tlws;
-    parallelWorkspace = &tlws;
-  }
-  auto& mA = parallelWorkspace ? parallelWorkspace->A : this->mA;
-  auto& mABackup
-      = parallelWorkspace ? parallelWorkspace->ABackup : this->mABackup;
-  auto& mX = parallelWorkspace ? parallelWorkspace->X : this->mX;
-  auto& mXBackup
-      = parallelWorkspace ? parallelWorkspace->XBackup : this->mXBackup;
-  auto& mB = parallelWorkspace ? parallelWorkspace->B : this->mB;
-  auto& mBBackup
-      = parallelWorkspace ? parallelWorkspace->BBackup : this->mBBackup;
-  auto& mW = parallelWorkspace ? parallelWorkspace->W : this->mW;
-  auto& mLo = parallelWorkspace ? parallelWorkspace->Lo : this->mLo;
-  auto& mLoBackup
-      = parallelWorkspace ? parallelWorkspace->LoBackup : this->mLoBackup;
-  auto& mHi = parallelWorkspace ? parallelWorkspace->Hi : this->mHi;
-  auto& mHiBackup
-      = parallelWorkspace ? parallelWorkspace->HiBackup : this->mHiBackup;
-  auto& mFIndex = parallelWorkspace ? parallelWorkspace->FIndex : this->mFIndex;
-  auto& mFIndexBackup = parallelWorkspace ? parallelWorkspace->FIndexBackup
-                                          : this->mFIndexBackup;
-  auto& mOffset = parallelWorkspace ? parallelWorkspace->Offset : this->mOffset;
+  double* a = nullptr;
+  double* x = nullptr;
+  double* b = nullptr;
+  double* w = nullptr;
+  double* lo = nullptr;
+  double* hi = nullptr;
+  int* fIndex = nullptr;
 
-  const int nSkip = dPAD(n);
-#if DART_BUILD_MODE_RELEASE
-  mA.resize(n, nSkip);
-#else // debug
-  mA.setZero(n, nSkip);
+  static thread_local Eigen::
+      Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+          lcpA;
+  static thread_local Eigen::VectorXd lcpX;
+  static thread_local Eigen::VectorXd lcpB;
+  static thread_local Eigen::VectorXd lcpW;
+  static thread_local Eigen::VectorXd lcpLo;
+  static thread_local Eigen::VectorXd lcpHi;
+  static thread_local Eigen::VectorXi lcpFIndex;
+
+  if (useInlineLcpBuffer) {
+#if !DART_BUILD_MODE_RELEASE
+    std::fill_n(inlineA.data(), matrixSize, 0.0);
 #endif
-  mX.resize(n);
-  mX.setZero();
-  mB.resize(n);
-  mW.setZero(n); // set w to 0
-  mLo.resize(n);
-  mHi.resize(n);
-  mFIndex.setConstant(n, -1); // set findex to -1
+    std::fill_n(inlineX.data(), n, 0.0);
+    std::fill_n(inlineW.data(), n, 0.0);
+    std::fill_n(inlineFIndex.data(), n, -1);
+    a = inlineA.data();
+    x = inlineX.data();
+    b = inlineB.data();
+    w = inlineW.data();
+    lo = inlineLo.data();
+    hi = inlineHi.data();
+    fIndex = inlineFIndex.data();
+  } else {
+#if DART_BUILD_MODE_RELEASE
+    lcpA.resize(n, nSkip);
+#else // debug
+    lcpA.setZero(n, nSkip);
+#endif
+    lcpX.resize(n);
+    lcpX.setZero();
+    lcpB.resize(n);
+    lcpW.setZero(n); // set w to 0
+    lcpLo.resize(n);
+    lcpHi.resize(n);
+    lcpFIndex.setConstant(n, -1); // set findex to -1
+    a = lcpA.data();
+    x = lcpX.data();
+    b = lcpB.data();
+    w = lcpW.data();
+    lo = lcpLo.data();
+    hi = lcpHi.data();
+    fIndex = lcpFIndex.data();
+  }
 
   // Compute offset indices
-  mOffset.resize(numConstraints);
-  mOffset[0] = 0;
+  constraintOffsets[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i) {
-    const ConstraintBase* constraint = (*constraintPtrs)[i - 1];
-    DART_ASSERT(constraint->getDimension() > 0);
-    mOffset[i] = mOffset[i - 1] + constraint->getDimension();
+    const std::size_t previousDim = constraintDims[i - 1];
+    DART_ASSERT(previousDim > 0);
+    constraintOffsets[i] = constraintOffsets[i - 1] + previousDim;
   }
 
-  // For each constraint
-  {
+  std::array<ContactConstraint*, kInlineConstraintCount> inlineContactPtrs;
+  dynamics::BodyNode* directBody = group.mSingleReactiveBodyNode;
+  dynamics::Skeleton* directSkeleton = group.mSingleReactiveSkeleton;
+  bool useDirectSingleFreeBody
+      = kEnableDirectSingleBodyLcpShortcut && group.mAllSingleReactiveContacts
+        && group.mSingleReactiveContactsShareBody && directBody != nullptr
+        && directSkeleton != nullptr
+        && numConstraints <= kInlineConstraintCount;
+  if (useDirectSingleFreeBody) {
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      inlineContactPtrs[i] = static_cast<ContactConstraint*>(constraintPtrs[i]);
+    }
+  }
+
+  if (useDirectSingleFreeBody) {
+    const auto* parentJoint = directBody->getParentJoint();
+    const auto* freeJoint
+        = dynamic_cast<const dynamics::FreeJoint*>(parentJoint);
+    useDirectSingleFreeBody
+        = directSkeleton != nullptr && directSkeleton->getNumBodyNodes() == 1u
+          && directSkeleton->getNumDofs() == 6u
+          && directBody->getParentBodyNode() == nullptr
+          && directBody->getNumChildBodyNodes() == 0u && freeJoint != nullptr
+          && parentJoint != nullptr
+          && (parentJoint->getActuatorType() == dynamics::Joint::FORCE
+              || parentJoint->getActuatorType() == dynamics::Joint::PASSIVE);
+  }
+
+  const auto resetLcpTerms = [&]() {
+    if (useInlineLcpBuffer) {
+#if !DART_BUILD_MODE_RELEASE
+      std::fill_n(inlineA.data(), matrixSize, 0.0);
+#endif
+      std::fill_n(x, n, 0.0);
+      std::fill_n(w, n, 0.0);
+      std::fill_n(fIndex, n, -1);
+    } else {
+#if !DART_BUILD_MODE_RELEASE
+      lcpA.setZero(n, nSkip);
+#endif
+      lcpX.setZero();
+      lcpW.setZero();
+      lcpFIndex.setConstant(n, -1);
+    }
+  };
+
+  const auto constructLcpTerms = [&]() {
+    resetLcpTerms();
     DART_PROFILE_SCOPED_N("Construct LCP");
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      ConstraintBase* constraint = (*constraintPtrs)[i];
 
-      constInfo.x = mX.data() + mOffset[i];
-      constInfo.lo = mLo.data() + mOffset[i];
-      constInfo.hi = mHi.data() + mOffset[i];
-      constInfo.b = mB.data() + mOffset[i];
-      constInfo.findex = mFIndex.data() + mOffset[i];
-      constInfo.w = mW.data() + mOffset[i];
-
-      // Fill vectors: lo, hi, b, w
-      {
-        DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
-        constraint->getInformation(&constInfo);
+    if (useDirectSingleFreeBody) {
+      const Eigen::Matrix6d& articulatedInertia
+          = directBody->getArticulatedInertia();
+      static const Eigen::Matrix6d identityInertia
+          = Eigen::Matrix6d::Identity();
+      const bool hasIdentityInertia
+          = articulatedInertia.cwiseEqual(identityInertia).all();
+      Eigen::LDLT<Eigen::Matrix6d> inertiaDecomposition;
+      if (!hasIdentityInertia) {
+        inertiaDecomposition.compute(articulatedInertia);
       }
 
-      // Fill a matrix by impulse tests: A
-      {
-        DART_PROFILE_SCOPED_N("Fill A");
-        constraint->excite();
-        for (std::size_t j = 0; j < constraint->getDimension(); ++j) {
-          // Adjust findex for global index
-          if (mFIndex[mOffset[i] + j] >= 0)
-            mFIndex[mOffset[i] + j] += mOffset[i];
+      if (!hasIdentityInertia
+          && inertiaDecomposition.info() != Eigen::Success) {
+        useDirectSingleFreeBody = false;
+      } else {
+        for (std::size_t i = 0; i < numConstraints; ++i) {
+          ContactConstraint* constraint = inlineContactPtrs[i];
+          const std::size_t offset = constraintOffsets[i];
+          const std::size_t dim = constraintDims[i];
 
-          // Apply impulse for impulse test
+          constInfo.x = x + offset;
+          constInfo.lo = lo + offset;
+          constInfo.hi = hi + offset;
+          constInfo.b = b + offset;
+          constInfo.findex = fIndex + offset;
+          constInfo.w = w + offset;
+
           {
-            DART_PROFILE_SCOPED_N("Unit impulse test");
-            constraint->applyUnitImpulse(j);
+            DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
+            constraint->getInformation(&constInfo);
           }
 
-          // Fill upper triangle blocks of A matrix
           {
-            DART_PROFILE_SCOPED_N("Fill upper triangle of A");
-            int index = nSkip * (mOffset[i] + j) + mOffset[i];
-            constraint->getVelocityChange(mA.data() + index, true);
-            for (std::size_t k = i + 1; k < numConstraints; ++k) {
-              index = nSkip * (mOffset[i] + j) + mOffset[k];
-              (*constraintPtrs)[k]->getVelocityChange(mA.data() + index, false);
+            DART_PROFILE_SCOPED_N("Fill A direct single body");
+            for (std::size_t j = 0; j < dim; ++j) {
+              const std::size_t row = offset + j;
+              if (fIndex[row] >= 0)
+                fIndex[row] += offset;
+
+              Eigen::Vector6d bodyVelocityChange
+                  = constraint->getSpatialNormalForSingleReactiveBody(j);
+              if (!hasIdentityInertia)
+                bodyVelocityChange
+                    = inertiaDecomposition.solve(bodyVelocityChange);
+
+              std::size_t index = nSkip * row + offset;
+              constraint->getVelocityChangeFromSingleBody(
+                  bodyVelocityChange, a + index, true, j);
+              for (std::size_t k = i + 1; k < numConstraints; ++k) {
+                index = nSkip * row + constraintOffsets[k];
+                inlineContactPtrs[k]->getVelocityChangeFromSingleBody(
+                    bodyVelocityChange, a + index, false, 0u);
+              }
             }
           }
         }
       }
+    }
 
-      {
-        DART_PROFILE_SCOPED_N("Unexcite");
-        constraint->unexcite();
+    if (!useDirectSingleFreeBody) {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        ConstraintBase* constraint = constraintPtrs[i];
+        const std::size_t offset = constraintOffsets[i];
+        const std::size_t dim = constraintDims[i];
+
+        constInfo.x = x + offset;
+        constInfo.lo = lo + offset;
+        constInfo.hi = hi + offset;
+        constInfo.b = b + offset;
+        constInfo.findex = fIndex + offset;
+        constInfo.w = w + offset;
+
+        // Fill vectors: lo, hi, b, w
+        {
+          DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
+          constraint->getInformation(&constInfo);
+        }
+
+        // Fill a matrix by impulse tests: A
+        {
+          DART_PROFILE_SCOPED_N("Fill A");
+          constraint->excite();
+          for (std::size_t j = 0; j < dim; ++j) {
+            // Adjust findex for global index
+            const std::size_t row = offset + j;
+            if (fIndex[row] >= 0)
+              fIndex[row] += offset;
+
+            // Apply impulse for impulse test
+            {
+              DART_PROFILE_SCOPED_N("Unit impulse test");
+              constraint->applyUnitImpulse(j);
+            }
+
+            // Fill upper triangle blocks of A matrix
+            {
+              DART_PROFILE_SCOPED_N("Fill upper triangle of A");
+              std::size_t index = nSkip * row + offset;
+              constraint->getVelocityChange(a + index, true);
+              for (std::size_t k = i + 1; k < numConstraints; ++k) {
+                index = nSkip * row + constraintOffsets[k];
+                constraintPtrs[k]->getVelocityChange(a + index, false);
+              }
+            }
+          }
+        }
+
+        {
+          DART_PROFILE_SCOPED_N("Unexcite");
+          constraint->unexcite();
+        }
       }
     }
 
     {
       // Fill lower triangle blocks of A matrix
       DART_PROFILE_SCOPED_N("Fill lower triangle of A");
-      mA.leftCols(n).triangularView<Eigen::Lower>()
-          = mA.leftCols(n).triangularView<Eigen::Upper>().transpose();
+      for (std::size_t row = 1; row < n; ++row) {
+        for (std::size_t col = 0; col < row; ++col) {
+          a[nSkip * row + col] = a[nSkip * col + row];
+        }
+      }
     }
-  }
+  };
+
+  // For each constraint
+  constructLcpTerms();
 
 #if !defined(NDEBUG)
-  if (!isSymmetric(n, mA.data())) {
+  if (!isSymmetric(n, a)) {
     dtwarn << "[BoxedLcpConstraintSolver::solveConstrainedGroup] LCP matrix is "
               "not symmetric. Continuing to avoid assertion failure.\n";
   }
@@ -315,56 +473,38 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   // Solve LCP using the primary solver and fallback to secondary solver when
   // the primary solver failed.
-  if (mSecondaryBoxedLcpSolver) {
-    // Make backups for the secondary LCP solver because the primary solver
-    // modifies the original terms.
-    mABackup = mA;
-    mXBackup = mX;
-    mBBackup = mB;
-    mLoBackup = mLo;
-    mHiBackup = mHi;
-    mFIndexBackup = mFIndex;
-  }
   const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
   DART_ASSERT(mBoxedLcpSolver);
-  bool success = mBoxedLcpSolver->solve(
-      n,
-      mA.data(),
-      mX.data(),
-      mB.data(),
-      0,
-      mLo.data(),
-      mHi.data(),
-      mFIndex.data(),
-      earlyTermination);
+  bool success
+      = mBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, earlyTermination);
+
+  const auto hasNaN = [](const double* values, std::size_t size) {
+    for (std::size_t i = 0; i < size; ++i) {
+      if (std::isnan(values[i]))
+        return true;
+    }
+    return false;
+  };
 
   // Sanity check. LCP solvers should not report success with nan values, but
   // it could happen. So we set the success to false for nan values.
-  if (success && mX.hasNaN())
+  if (success && hasNaN(x, n))
     success = false;
 
   bool fallbackSuccess = false;
   bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     DART_PROFILE_SCOPED_N("Secondary LCP");
-    fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
-        n,
-        mABackup.data(),
-        mXBackup.data(),
-        mBBackup.data(),
-        0,
-        mLoBackup.data(),
-        mHiBackup.data(),
-        mFIndexBackup.data(),
-        false);
-    mX = mXBackup;
+    constructLcpTerms();
+    fallbackSuccess
+        = mSecondaryBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, false);
     fallbackRan = true;
   }
 
   // Capture the NaN state of the solution BEFORE any scrubbing so that
   // usability is decided from the pre-scrub state. Scrubbing NaN entries must
   // not be allowed to turn a failed solve into an apparently usable one.
-  const bool hadNaN = mX.hasNaN();
+  const bool hadNaN = hasNaN(x, n);
 
   // Treat a finite fallback solution as usable even if the solver reported
   // failure to avoid discarding potentially valid impulses. Note this uses the
@@ -378,9 +518,9 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     // successful fallback) carries stray NaNs, scrub just those entries to 0
     // so the remaining finite impulses can propagate.
     if (hadNaN) {
-      for (int i = 0; i < mX.size(); ++i) {
-        if (std::isnan(mX[i]))
-          mX[i] = 0.0;
+      for (std::size_t i = 0; i < n; ++i) {
+        if (std::isnan(x[i]))
+          x[i] = 0.0;
       }
     }
   } else {
@@ -389,7 +529,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     // partial finite impulses.
     if (hadNaN) {
       dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
-            << "values: " << mX.transpose() << ". We're setting it zero for "
+            << "values. We're setting it zero for "
             << "safety. Consider using more robust solver such as PGS as a "
             << "secondary solver. If this happens even with PGS solver, please "
             << "report this as a bug.\n";
@@ -400,7 +540,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
             << "a fallback when Dantzig fails.\n";
     }
 
-    mX.setZero();
+    std::fill_n(x, n, 0.0);
   }
 
   // Print LCP formulation
@@ -411,10 +551,18 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // Apply constraint impulses
   {
     DART_PROFILE_SCOPED_N("Apply constraint impulses");
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      ConstraintBase* constraint = (*constraintPtrs)[i];
-      constraint->applyImpulse(mX.data() + mOffset[i]);
-      constraint->excite();
+    if (useDirectSingleFreeBody) {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        inlineContactPtrs[i]->applyImpulse(x + constraintOffsets[i]);
+      }
+
+      directSkeleton->setImpulseApplied(true);
+    } else {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        ConstraintBase* constraint = constraintPtrs[i];
+        constraint->applyImpulse(x + constraintOffsets[i]);
+        constraint->excite();
+      }
     }
   }
 }
@@ -422,7 +570,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 //==============================================================================
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < n; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -450,7 +598,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 bool BoxedLcpConstraintSolver::isSymmetric(
     std::size_t n, double* A, std::size_t begin, std::size_t end)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   for (std::size_t i = begin; i <= end; ++i) {
     for (std::size_t j = begin; j <= end; ++j) {
       if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6) {
@@ -485,7 +633,7 @@ void BoxedLcpConstraintSolver::print(
     double* w,
     int* findex)
 {
-  std::size_t nSkip = dPAD(n);
+  std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   std::cout << "A: " << std::endl;
   for (std::size_t i = 0; i < n; ++i) {
     for (std::size_t j = 0; j < nSkip; ++j) {

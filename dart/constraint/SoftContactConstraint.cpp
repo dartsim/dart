@@ -41,7 +41,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
 #include <iostream>
 
@@ -76,16 +76,8 @@ SoftContactConstraint::SoftContactConstraint(
     collision::Contact& contact, double timeStep)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNode1(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject1->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
-    mBodyNode2(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject2->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
+    mBodyNode1(contact.collisionObject1->getBodyNode()),
+    mBodyNode2(contact.collisionObject2->getBodyNode()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),
@@ -128,12 +120,8 @@ SoftContactConstraint::SoftContactConstraint(
     }
   }
 
-  const auto* shapeNodeA = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject1->getShapeFrame())
-                               ->asShapeNode();
-  const auto* shapeNodeB = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject2->getShapeFrame())
-                               ->asShapeNode();
+  const auto* shapeNodeA = contact.collisionObject1->getShapeNode();
+  const auto* shapeNodeB = contact.collisionObject2->getShapeNode();
 
   //----------------------------------------------------------------------------
   // Bounce
@@ -443,7 +431,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 
       // Upper and lower bounds of normal impulsive force
       _info->lo[index] = 0.0;
-      _info->hi[index] = dInfinity;
+      _info->hi[index] = ::dart::lcpsolver::dantzig::kInfinity;
       DART_ASSERT(_info->findex[index] == -1);
 
       // Upper and lower bounds of tangential direction-1 impulsive force
@@ -518,7 +506,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 
       // Upper and lower bounds of normal impulsive force
       _info->lo[i] = 0.0;
-      _info->hi[i] = dInfinity;
+      _info->hi[i] = ::dart::lcpsolver::dantzig::kInfinity;
       DART_ASSERT(_info->findex[i] == -1);
 
       //------------------------------------------------------------------------

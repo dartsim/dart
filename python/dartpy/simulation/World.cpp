@@ -106,15 +106,15 @@ void World(py::module& m)
             return self->getTimeStep();
           })
       .def(
-          "setNumThreads",
+          "setNumSimulationThreads",
           +[](dart::simulation::World* self, std::size_t numThreads) -> void {
-            self->setNumThreads(numThreads);
+            self->setNumSimulationThreads(numThreads);
           },
           ::py::arg("numThreads"))
       .def(
-          "getNumThreads",
+          "getNumSimulationThreads",
           +[](const dart::simulation::World* self) -> std::size_t {
-            return self->getNumThreads();
+            return self->getNumSimulationThreads();
           })
       .def(
           "getSkeleton",
