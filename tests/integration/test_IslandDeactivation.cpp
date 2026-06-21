@@ -454,6 +454,38 @@ TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
 }
 
 //==============================================================================
+// Some imported worlds, including large generated SDF scenes, start with many
+// zero-velocity bodies already shallowly supported by static geometry. They
+// should not spend the full dwell horizon proving rest from t=0, but they still
+// need the normal final contact solve before the island is frozen.
+TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isResting())
+      << "the initial rest credit must still allow one final solved impulse";
+  EXPECT_GE(
+      box->getRestDwellTime(), world->getDeactivationOptions().mTimeUntilSleep);
+
+  world->step();
+
+  EXPECT_TRUE(box->isResting());
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 // A candidate island whose contacts have not physically converged must be kept
 // awake. Otherwise default-on sleeping can leave downstream integrations with a
 // residual velocity before the contact solver has actually settled the body.

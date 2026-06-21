@@ -1456,151 +1456,160 @@ void ConstraintSolver::solveConstrainedGroups()
 {
   DART_PROFILE_SCOPED;
 
-  if (!mDeactivationActive) {
-    auto solveGroupAt = [&](std::size_t i) {
-      solveConstrainedGroup(mConstrainedGroups[i]);
-    };
+  auto solveGroupAt = [&](std::size_t i) {
+    solveConstrainedGroup(mConstrainedGroups[i]);
+  };
 
-    auto solveGroupsSerial = [&]() {
-      for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
-        solveGroupAt(i);
-    };
+  auto solveGroupsSerial = [&](const auto& solve) {
+    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+      solve(i);
+  };
 
-    auto hasCustomContactConstraint = [&]() {
-      for (const auto& group : mConstrainedGroups) {
-        for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
-          const auto* constraint = group.getConstraint(i).get();
-          const auto* contact
-              = dynamic_cast<const ContactConstraint*>(constraint);
-          if (contact != nullptr
-              && !isExactDynamicType<ContactConstraint>(contact))
+  auto hasCustomContactConstraint = [&]() {
+    for (const auto& group : mConstrainedGroups) {
+      for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+        const auto* constraint = group.getConstraint(i).get();
+        const auto* contact
+            = dynamic_cast<const ContactConstraint*>(constraint);
+        if (contact != nullptr
+            && !isExactDynamicType<ContactConstraint>(contact))
+          return true;
+      }
+    }
+
+    return false;
+  };
+
+  auto hasSharedNonReactiveDependency = [&]() {
+    std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
+    std::unordered_map<const dynamics::Skeleton*, std::size_t>
+        touchedSkeletonToGroup;
+    std::unordered_map<const dynamics::Skeleton*, std::size_t>
+        nonReactiveSkeletonToGroup;
+
+    auto touchesSharedDependency
+        = [&](const dynamics::BodyNode* body, std::size_t groupIndex) {
+            if (body == nullptr)
+              return false;
+
+            const auto skeleton = body->getSkeleton().get();
+            const bool reactive = body->isReactive();
+            const bool sharedFixedContactSupport
+                = !reactive && skeleton != nullptr && !skeleton->isMobile()
+                  && groupIndex < mConstrainedGroups.size()
+                  && mConstrainedGroups[groupIndex].mAllSingleReactiveContacts;
+            if (sharedFixedContactSupport) {
+              return false;
+            }
+
+            if (skeleton != nullptr) {
+              const auto nonReactiveSkeleton
+                  = nonReactiveSkeletonToGroup.find(skeleton);
+              if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
+                  && nonReactiveSkeleton->second != groupIndex) {
+                return true;
+              }
+
+              const auto touchedSkeleton
+                  = touchedSkeletonToGroup.emplace(skeleton, groupIndex);
+              if (!reactive && !touchedSkeleton.second
+                  && touchedSkeleton.first->second != groupIndex) {
+                return true;
+              }
+            }
+
+            if (reactive)
+              return false;
+
+            const auto bodyResult = bodyToGroup.emplace(body, groupIndex);
+            if (!bodyResult.second && bodyResult.first->second != groupIndex)
+              return true;
+
+            if (skeleton == nullptr)
+              return false;
+
+            const auto skeletonResult
+                = nonReactiveSkeletonToGroup.emplace(skeleton, groupIndex);
+            return !skeletonResult.second
+                   && skeletonResult.first->second != groupIndex;
+          };
+
+    for (std::size_t groupIndex = 0; groupIndex < mConstrainedGroups.size();
+         ++groupIndex) {
+      const auto& group = mConstrainedGroups[groupIndex];
+      for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+        const auto* constraint = group.getConstraint(i).get();
+
+        if (const auto* contact
+            = dynamic_cast<const ContactConstraint*>(constraint)) {
+          if (touchesSharedDependency(contact->mBodyNodeA, groupIndex)
+              || touchesSharedDependency(contact->mBodyNodeB, groupIndex)) {
+            return true;
+          }
+        }
+
+        if (const auto* softContact
+            = dynamic_cast<const SoftContactConstraint*>(constraint)) {
+          if (touchesSharedDependency(softContact->mBodyNode1, groupIndex)
+              || touchesSharedDependency(softContact->mBodyNode2, groupIndex)) {
+            return true;
+          }
+        }
+
+        if (const auto* dynamicJoint
+            = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
+          if (touchesSharedDependency(dynamicJoint->getBodyNode1(), groupIndex)
+              || touchesSharedDependency(
+                  dynamicJoint->getBodyNode2(), groupIndex)) {
+            return true;
+          }
+        }
+
+        if (const auto* joint
+            = dynamic_cast<const JointConstraint*>(constraint)) {
+          if (touchesSharedDependency(joint->mBodyNode, groupIndex))
+            return true;
+        }
+
+        if (const auto* mimicMotor
+            = dynamic_cast<const MimicMotorConstraint*>(constraint)) {
+          if (touchesSharedDependency(mimicMotor->mBodyNode, groupIndex))
+            return true;
+        }
+
+        if (const auto* jointFriction
+            = dynamic_cast<const JointCoulombFrictionConstraint*>(constraint)) {
+          if (touchesSharedDependency(jointFriction->mBodyNode, groupIndex))
             return true;
         }
       }
+    }
 
-      return false;
-    };
+    return false;
+  };
 
-    auto hasSharedNonReactiveDependency = [&]() {
-      std::unordered_map<const dynamics::BodyNode*, std::size_t> bodyToGroup;
-      std::unordered_map<const dynamics::Skeleton*, std::size_t>
-          touchedSkeletonToGroup;
-      std::unordered_map<const dynamics::Skeleton*, std::size_t>
-          nonReactiveSkeletonToGroup;
+  auto canSolveGroupsInParallel = [&]() {
+    return mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
+           && mConstrainedGroups.size() >= 128u && mManualConstraints.empty()
+           && canUseParallelBuiltInBoxedSolvers(*this)
+           && !hasCustomContactConstraint()
+           && !hasSharedNonReactiveDependency();
+  };
 
-      auto touchesSharedDependency
-          = [&](const dynamics::BodyNode* body, std::size_t groupIndex) {
-              if (body == nullptr)
-                return false;
-
-              const auto skeleton = body->getSkeleton().get();
-              if (skeleton != nullptr) {
-                const auto nonReactiveSkeleton
-                    = nonReactiveSkeletonToGroup.find(skeleton);
-                if (nonReactiveSkeleton != nonReactiveSkeletonToGroup.end()
-                    && nonReactiveSkeleton->second != groupIndex) {
-                  return true;
-                }
-
-                const auto touchedSkeleton
-                    = touchedSkeletonToGroup.emplace(skeleton, groupIndex);
-                if (!body->isReactive() && !touchedSkeleton.second
-                    && touchedSkeleton.first->second != groupIndex) {
-                  return true;
-                }
-              }
-
-              if (body->isReactive())
-                return false;
-
-              const auto bodyResult = bodyToGroup.emplace(body, groupIndex);
-              if (!bodyResult.second && bodyResult.first->second != groupIndex)
-                return true;
-
-              if (skeleton == nullptr)
-                return false;
-
-              const auto skeletonResult
-                  = nonReactiveSkeletonToGroup.emplace(skeleton, groupIndex);
-              return !skeletonResult.second
-                     && skeletonResult.first->second != groupIndex;
-            };
-
-      for (std::size_t groupIndex = 0; groupIndex < mConstrainedGroups.size();
-           ++groupIndex) {
-        const auto& group = mConstrainedGroups[groupIndex];
-        for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
-          const auto* constraint = group.getConstraint(i).get();
-
-          if (const auto* contact
-              = dynamic_cast<const ContactConstraint*>(constraint)) {
-            if (touchesSharedDependency(contact->mBodyNodeA, groupIndex)
-                || touchesSharedDependency(contact->mBodyNodeB, groupIndex)) {
-              return true;
-            }
-          }
-
-          if (const auto* softContact
-              = dynamic_cast<const SoftContactConstraint*>(constraint)) {
-            if (touchesSharedDependency(softContact->mBodyNode1, groupIndex)
-                || touchesSharedDependency(
-                    softContact->mBodyNode2, groupIndex)) {
-              return true;
-            }
-          }
-
-          if (const auto* dynamicJoint
-              = dynamic_cast<const DynamicJointConstraint*>(constraint)) {
-            if (touchesSharedDependency(
-                    dynamicJoint->getBodyNode1(), groupIndex)
-                || touchesSharedDependency(
-                    dynamicJoint->getBodyNode2(), groupIndex)) {
-              return true;
-            }
-          }
-
-          if (const auto* joint
-              = dynamic_cast<const JointConstraint*>(constraint)) {
-            if (touchesSharedDependency(joint->mBodyNode, groupIndex))
-              return true;
-          }
-
-          if (const auto* mimicMotor
-              = dynamic_cast<const MimicMotorConstraint*>(constraint)) {
-            if (touchesSharedDependency(mimicMotor->mBodyNode, groupIndex))
-              return true;
-          }
-
-          if (const auto* jointFriction
-              = dynamic_cast<const JointCoulombFrictionConstraint*>(
-                  constraint)) {
-            if (touchesSharedDependency(jointFriction->mBodyNode, groupIndex))
-              return true;
-          }
-        }
-      }
-
-      return false;
-    };
-
-    if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
-        && mConstrainedGroups.size() >= 128u && mManualConstraints.empty()
-        && canUseParallelBuiltInBoxedSolvers(*this)
-        && !hasCustomContactConstraint() && !hasSharedNonReactiveDependency()) {
+  if (!mDeactivationActive) {
+    if (canSolveGroupsInParallel()) {
       DART_PROFILE_SCOPED_N("parallel solve groups");
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
     } else {
-      solveGroupsSerial();
+      solveGroupsSerial(solveGroupAt);
     }
 
     return;
   }
 
-  static thread_local std::vector<char> groupAlreadyResting;
-  groupAlreadyResting.assign(mConstrainedGroups.size(), 1);
-  static thread_local std::vector<char> groupSolvedToRest;
-  groupSolvedToRest.assign(mConstrainedGroups.size(), 0);
+  mGroupAlreadyRestingScratch.assign(mConstrainedGroups.size(), 1);
+  mGroupSolvedToRestScratch.assign(mConstrainedGroups.size(), 0);
 
   for (const auto& skeleton : mSkeletons) {
     const int island = skeleton->getIslandIndex();
@@ -1608,30 +1617,37 @@ void ConstraintSolver::solveConstrainedGroups()
       continue;
 
     const auto groupIndex = static_cast<std::size_t>(island);
-    if (groupIndex >= groupAlreadyResting.size())
+    if (groupIndex >= mGroupAlreadyRestingScratch.size())
       continue;
 
     if (!skeleton->isResting())
-      groupAlreadyResting[groupIndex] = 0;
+      mGroupAlreadyRestingScratch[groupIndex] = 0;
   }
 
-  auto solveGroupAt = [&](std::size_t i) {
+  auto solveDeactivationGroupAt = [&](std::size_t i) {
     const bool groupCanRest = i < mGroupResting.size() && mGroupResting[i];
 
     // Skip only islands that were already frozen at the start of this solve. A
     // newly eligible island still needs one final solve to refresh the contact
     // impulse and body-force caches before it is frozen for subsequent steps.
-    if (groupCanRest && groupAlreadyResting[i])
+    if (groupCanRest && mGroupAlreadyRestingScratch[i])
       return;
 
     solveConstrainedGroup(mConstrainedGroups[i]);
 
     if (groupCanRest)
-      groupSolvedToRest[i] = 1;
+      mGroupSolvedToRestScratch[i] = 1;
   };
 
-  for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
-    solveGroupAt(i);
+  if (canSolveGroupsInParallel()) {
+    DART_PROFILE_SCOPED_N("parallel solve deactivation groups");
+    mConstraintThreadPool->parallelFor(
+        mConstrainedGroups.size(),
+        mNumSimulationThreads,
+        solveDeactivationGroupAt);
+  } else {
+    solveGroupsSerial(solveDeactivationGroupAt);
+  }
 
   for (const auto& skeleton : mSkeletons) {
     const int island = skeleton->getIslandIndex();
@@ -1639,8 +1655,8 @@ void ConstraintSolver::solveConstrainedGroups()
       continue;
 
     const auto groupIndex = static_cast<std::size_t>(island);
-    if (groupIndex < groupSolvedToRest.size()
-        && groupSolvedToRest[groupIndex]) {
+    if (groupIndex < mGroupSolvedToRestScratch.size()
+        && mGroupSolvedToRestScratch[groupIndex]) {
       skeleton->setResting(true);
     }
   }

@@ -65,6 +65,13 @@
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
 
+  * Accelerate large imported worlds that begin with zero-velocity bodies on
+    shallow support contacts by allowing the initial contact pass to consume the
+    configured quiet dwell before the normal final solved impulse freezes the
+    island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
