@@ -58,7 +58,7 @@
     (`CollisionOption::enableContact = false`) with more than one contact
     requested, which aborted asserts-enabled builds (and logged repeated
     `addObjectToCaches` nullptr errors otherwise):
-    [#3112](https://github.com/dartsim/dart/pull/3112)
+    [#3114](https://github.com/dartsim/dart/pull/3114)
 
 * Simulation
 
