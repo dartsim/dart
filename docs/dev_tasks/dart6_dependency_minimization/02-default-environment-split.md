@@ -14,7 +14,8 @@ DART 6.20 still hard-requires **FCL** as a core collision dependency, so demotin
 only hides alternatives. The lane therefore pivoted to:
 
 1. **Remove genuinely-unnecessary / deprecated dependencies outright** (not just
-   shuffle them into feature envs) — optimizer backends (done), `boost` (next).
+   shuffle them into feature envs) — optimizer backends (done). A follow-up sweep
+   found no other *standalone*-removable dep (boost is OSG-coupled; see "Next").
 2. **Defer the one large, high-value reduction** — a native collision detector
    that would make FCL/Bullet/ODE optional — to a separate, evidence-driven
    initiative (see "Deferred").
@@ -50,7 +51,7 @@ are documented breaking changes for 6.20.
 | Eigen3, assimp, fmt, **FCL**, ccd, tinyxml2, urdfdom, console_bridge | required-core | **Keep.** FCL can only drop via the native-collision backport (deferred). `console_bridge` is linked by `dart/utils/urdf`. |
 | spdlog | optional logging | Keep (used). |
 | **ipopt, nlopt, pagmo, snopt** | deprecated optimizer backends | ✅ **REMOVED** — extracted to [dart-optimization](https://github.com/dartsim/dart-optimization); merged #3105. |
-| **boost (`libboost-devel`)** | was pulled in only for pagmo | ⏭ **REMOVE next** — orphaned by #3105; no `#include <boost…>` / `boost::` usage remains (only a vestigial `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define + an `ikfast.h` doc comment). |
+| **boost (`libboost-devel`)** | declared for pagmo (now gone), but still pulled by `openscenegraph → collada-dom` | **Not independently removable** — OSG keeps boost in the default env, so dropping the explicit entry is cosmetic. DART has no boost usage; it drops out **with the GUI/OSG demotion** (slice 3). |
 | bullet-cpp, libode | optional collision backends; gz-physics uses them | **Demotion abandoned** (#3106 closed). Folds into the deferred native-collision initiative. |
 | openscenegraph, freeglut, imgui (GUI) | `DART_BUILD_GUI_OSG=ON` pulls them | **Deferred** (blocker below). |
 | octomap | optional, but in exported `DART_PKG_EXTERNAL_DEPS` | **Keep** — demotion changes installed headers (`config.hpp`/`VoxelGridShape.hpp`) + the `dart.pc` contract. |
@@ -72,17 +73,22 @@ ctest + lint.
 
 ## Next
 
-### Remove `boost` (`libboost-devel`)
+### Standalone dep removals are exhausted — the next lever is GUI/OSG
 
-- **Why:** orphaned by #3105 — pagmo was the only boost consumer. Verified on
-  release-6.20: zero `#include <boost…>` and zero `boost::` usage; the only
-  residue is the `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` compile-define
-  (`dart/CMakeLists.txt`) and a doc comment in `dart/dynamics/ikfast.h`.
-- **Plan:** remove `libboost-devel` from `pixi.toml`; drop the vestigial
-  `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define + comment; CHANGELOG Build entry;
-  regenerate `pixi.lock`.
-- **Gate:** default `pixi run config` + `build` (compiles without boost) +
-  `pixi run test` + `pixi run test-py` + `check-lint`. No gz impact.
+A sweep for "other unnecessary dependencies" after the optimizer removal found
+none that are independently removable:
+
+- **boost is not standalone-removable.** `openscenegraph → collada-dom →
+  libboost` keeps boost in the default env (`pixi tree -i libboost`), so dropping
+  the explicit `libboost-devel` is cosmetic. DART itself has no boost usage —
+  `dart` + `dartpy` + ctest (100/100) + pytest (52) all pass without the explicit
+  dep — so when the GUI/OSG chain is demoted, also drop `libboost-devel` + the
+  vestigial `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define.
+
+The remaining real default-footprint reductions are both **deferred**:
+- **GUI/OSG chain** (OSG + collada-dom + boost + freeglut + libgl/glu + imgui) →
+  slice 3 (GUI demotion). The largest remaining non-collision chunk.
+- **FCL** → native-collision backport.
 
 ## Deferred
 
@@ -145,17 +151,20 @@ ctest + lint.
   `test-all`) on this doc — incorporated into the validation gates above.
 - 2026-06-20: Per maintainer decision, **closed #3106** (collision pixi-demotion
   is marginal while FCL is core) and **deferred the native-collision backport**.
-  Pivoted to removing genuinely-unnecessary deps; identified **boost
-  (`libboost-devel`)** as orphaned by the optimizer removal — next target.
+- 2026-06-21: Swept for other removable deps. **boost is not independently
+  removable** — `openscenegraph → collada-dom → libboost` keeps it in the default
+  env (`pixi tree -i libboost`); DART has no boost usage and builds/tests clean
+  without the explicit dep, but the removal only lands with the GUI/OSG demotion.
+  Standalone easy removals are exhausted; the remaining wins (GUI/OSG, FCL) are
+  the deferred initiatives.
 
 ## Resume prompt
 
 > Continue the DART 6.20 dependency-reduction lane (task_3). Read this file and
 > the task `README.md`. Optimizer backends are removed (#3105 merged); the
 > collision pixi-demotion was abandoned (#3106 closed) and the native-collision
-> backport is deferred. **Next: remove `boost` (`libboost-devel`)**, orphaned by
-> the pagmo removal — drop it from `pixi.toml` and the vestigial
-> `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define, verify with
-> config + build + `test` + `test-py` + `check-lint`, add a CHANGELOG entry, and
-> open a PR to `release-6.20`. Feature-env CI (if any) must use `test`/`test-py`,
-> never `test-all`.
+> backport is deferred. Standalone dep removals are exhausted — **boost is not
+> independently removable** (`openscenegraph → collada-dom → libboost`), so the
+> next real footprint lever is the **GUI/OSG demotion** (slice 3), which would
+> also drop boost (+ collada-dom + freeglut). Feature-env CI (if any) must use
+> `test`/`test-py`, never `test-all`.
