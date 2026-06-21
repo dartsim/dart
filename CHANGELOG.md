@@ -53,6 +53,13 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
+  * Fix the FCL collision detector adding a default-constructed contact with
+    null collision objects when contact generation is disabled
+    (`CollisionOption::enableContact = false`) with more than one contact
+    requested, which aborted asserts-enabled builds (and logged repeated
+    `addObjectToCaches` nullptr errors otherwise):
+    [#3114](https://github.com/dartsim/dart/pull/3114)
+
 * Simulation
 
   * Enable resting-world deactivation by default with wake-aware invalidation
