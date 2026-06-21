@@ -69,6 +69,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart {
@@ -985,6 +986,23 @@ void ConstraintSolver::updateConstraints()
 
     for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
       auto& contact = mCollisionResult.getContact(i);
+
+      // Skip contacts with non-finite geometry. A collision shape with an
+      // invalid (infinite or NaN) dimension, a malformed mesh, or a third-party
+      // collision backend can report a contact whose point, normal, or
+      // penetration depth is not finite. Such a contact would otherwise inject
+      // NaN/Inf into the contact constraint Jacobians, corrupting the LCP solve
+      // in release builds and tripping an assertion in ContactConstraint in
+      // debug builds. See gz-physics issue #1010.
+      if (!contact.point.allFinite() || !contact.normal.allFinite()
+          || !std::isfinite(contact.penetrationDepth)) {
+        dtwarn
+            << "[ConstraintSolver] Ignoring contact with non-finite geometry "
+            << "(point, normal, or penetration depth). This usually indicates "
+            << "a malformed collision mesh or a collision backend that "
+               "produced an invalid contact.\n";
+        continue;
+      }
 
       if (collision::Contact::isZeroNormal(contact.normal)) {
         // Skip this contact. This is because we assume that a contact with

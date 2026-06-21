@@ -81,7 +81,7 @@ protected:
 
 private:
   /// \brief Side lengths of the box
-  Eigen::Vector3d mSize;
+  Eigen::Vector3d mSize{Eigen::Vector3d::Ones()};
 };
 
 } // namespace dynamics
