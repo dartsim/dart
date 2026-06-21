@@ -64,21 +64,20 @@ node to a ``Viewer``.
 WorldPtr world = World::create();
 world->addSkeleton(pendulum);
 
-auto controller = std::make_unique<Controller>(pendulum);
-auto handler = new PendulumEventHandler(world, controller.get());
-
-::osg::ref_ptr<CustomWorldNode> node
-    = new CustomWorldNode(world, controller.get());
-
+auto controller = std::make_unique<Controller>(pendulum, world);
 auto viewer = Viewer();
+auto handler = new PendulumEventHandler(world, controller.get(), &viewer);
+
+::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
+
 viewer.addWorldNode(node);
 viewer.addEventHandler(handler);
 ```
 
 Every single time step, the ``Viewer`` drives the world through
-``CustomWorldNode::customPreStep()``, which we override to call
-``Controller::update()``. For example, one can incorporate sensors, actuators,
-or user interaction in the forward simulation.
+``CustomWorldNode::customPreStep()``, which we override to call the event
+handler's update path and then ``Controller::update()``. For example, one can
+incorporate sensors, actuators, or user interaction in the forward simulation.
 
 
 ## Lesson 1: Change shapes and applying forces

@@ -60,8 +60,9 @@ class Controller
 {
 public:
   /// Constructor
-  Controller(const SkeletonPtr& pendulum)
+  Controller(const SkeletonPtr& pendulum, WorldPtr world)
     : mPendulum(pendulum),
+      mWorld(world),
       mBallConstraint(nullptr),
       mPositiveSign(true),
       mBodyForce(false)
@@ -170,8 +171,11 @@ protected:
   /// The pendulum that we will be perturbing
   SkeletonPtr mPendulum;
 
+  /// World pointer needed for constraints
+  WorldPtr mWorld;
+
   /// Pointer to the ball constraint that we will be turning on and off
-  dart::constraint::BallJointConstraint* mBallConstraint;
+  dart::constraint::BallJointConstraintPtr mBallConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> mForceCountDown;
@@ -477,7 +481,7 @@ int main()
   world->addSkeleton(pendulum);
 
   // Create controller and event handler
-  auto controller = std::make_unique<Controller>(pendulum);
+  auto controller = std::make_unique<Controller>(pendulum, world);
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
