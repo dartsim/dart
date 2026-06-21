@@ -2,6 +2,21 @@
 
 ## DART 6
 
+### [DART 6.19.3 (TBD)](https://github.com/dartsim/dart/milestone/101?closed=1)
+
+* Simulation
+
+  * Harden contact handling against invalid geometry, fixing a crash reported
+    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
+    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
+    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
+    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
+    is non-finite before contact-constraint creation. Together these stop an
+    invalid shape dimension (or a non-finite contact from a mesh or collision
+    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
+    or corrupting the LCP solve with NaN/Inf:
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
