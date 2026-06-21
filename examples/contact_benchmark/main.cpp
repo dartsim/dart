@@ -123,6 +123,7 @@ struct Options
   bool quiet = false;
   bool profile = false;
   bool primitiveShapes = false;
+  bool sdfPlaneShapes = false;
   bool disableDeactivation = false;
   bool disableSecondaryLcp = false;
   bool sleepStateColors = false;
@@ -131,6 +132,7 @@ struct Options
   double guiTargetRtf = 1.0;
   std::optional<std::string> guiCapturePath;
   std::size_t guiCaptureSteps = 0;
+  std::size_t worldThreads = 1;
   double dropHeight = 0.0;
   std::optional<double> sleepLinearThreshold;
   std::optional<double> sleepAngularThreshold;
@@ -239,6 +241,8 @@ void printUsage(const std::string& programName)
          "legacy behavior.\n"
       << "  --primitive-shapes        Use FCL primitive shapes when FCL is "
          "used.\n"
+      << "  --sdf-plane-shapes        Parse SDF <plane> geometries as "
+         "PlaneShape.\n"
       << "  --disable-deactivation    Disable automatic "
          "sleeping/deactivation.\n"
       << "  --disable-secondary-lcp   Disable the boxed-LCP fallback solver "
@@ -256,6 +260,9 @@ void printUsage(const std::string& programName)
       << "                            With --gui-capture, rebuild the "
          "generated "
          "scene once before capture.\n"
+      << "  --world-threads N         Worker threads for independent "
+         "simulation "
+         "work; 0 uses hardware concurrency.\n"
       << "  --drop-height Z           Raise mobile objects by Z meters before "
          "simulation.\n"
       << "  --sleep-linear-threshold V\n"
@@ -386,6 +393,8 @@ Options parseOptions(int argc, char* argv[])
       options.profile = true;
     } else if (arg == "--primitive-shapes") {
       options.primitiveShapes = true;
+    } else if (arg == "--sdf-plane-shapes") {
+      options.sdfPlaneShapes = true;
     } else if (arg == "--disable-deactivation") {
       options.disableDeactivation = true;
     } else if (arg == "--disable-secondary-lcp") {
@@ -402,6 +411,8 @@ Options parseOptions(int argc, char* argv[])
       options.guiCaptureSteps = parseSize(needValue(arg), arg);
     } else if (arg == "--gui-capture-exercise-widget") {
       options.guiCaptureExerciseWidget = true;
+    } else if (arg == "--world-threads") {
+      options.worldThreads = parseSize(needValue(arg), arg);
     } else if (arg == "--drop-height") {
       options.dropHeight = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--sleep-linear-threshold") {
@@ -459,6 +470,11 @@ Options parseOptions(int argc, char* argv[])
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
         "--generate-objects cannot be combined with an SDF path");
+  }
+
+  if (options.sdfPlaneShapes && options.generatedObjects.has_value()) {
+    throw std::invalid_argument(
+        "--sdf-plane-shapes requires an SDF input scene");
   }
 
   if (options.guiCaptureExerciseWidget && !options.guiCapturePath.has_value()) {
@@ -1143,6 +1159,8 @@ std::size_t replaceGuiPlaneVisualsWithFloorBoxes(
 void applyOptions(
     const dart::simulation::WorldPtr& world, const Options& options)
 {
+  world->setNumSimulationThreads(options.worldThreads);
+
   auto deactivation = world->getDeactivationOptions();
   deactivation.mEnabled = !options.disableDeactivation;
   if (options.sleepLinearThreshold.has_value())
@@ -1227,8 +1245,14 @@ void printWorldSummary(
             << " rad/s\n";
   std::cout << "  Sleep quiet time: "
             << world->getDeactivationOptions().mTimeUntilSleep << " s\n";
+  std::cout << "  World simulation threads: "
+            << world->getNumSimulationThreads() << "\n";
   std::cout << "  Collision detector requested: "
             << collisionEngineName(options.collisionEngine) << "\n";
+  if (options.sdfPath.has_value()) {
+    std::cout << "  SDF plane shapes: "
+              << (options.sdfPlaneShapes ? "true" : "false") << "\n";
+  }
   std::cout << "  Physics pipeline: DART 6 dynamics, constraints, and solver";
   if (options.collisionEngine != CollisionEngine::Default
       || options.primitiveShapes) {
@@ -2223,7 +2247,12 @@ int main(int argc, char* argv[])
 
     std::cout << "Loading SDF world file: " << absoluteSdfPath << "\n";
 
-    world = dart::utils::SdfParser::readWorld(absoluteSdfPath);
+    dart::utils::SdfParser::Options parserOptions;
+    parserOptions.mUsePlaneShapeForPlane = options.sdfPlaneShapes;
+    if (auto detector = makeCollisionDetector(options))
+      parserOptions.mCollisionDetector = detector;
+
+    world = dart::utils::SdfParser::readWorld(absoluteSdfPath, parserOptions);
   }
 
   if (!world) {

@@ -58,6 +58,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 #include <vector>
 
 #include <cmath>
@@ -664,7 +665,7 @@ void World::step(bool _resetCommand)
 
   if (deactivationEnabled
       && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0) {
-    updateAllRestingKinematicSnapshot();
+    updateAllRestingKinematicSnapshot(_resetCommand);
   } else {
     invalidateAllRestingKinematicSnapshot();
   }
@@ -699,7 +700,73 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   constexpr double kSleepContactPenetrationTolerance = 1e-5;
   constexpr double kFinalSleepLinearSpeed = 1e-3;
   constexpr double kFinalSleepAngularSpeed = 1e-2;
+  constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
+  const double gravityNorm = mGravity.norm();
+  Eigen::Vector3d up = Eigen::Vector3d::Zero();
+  if (gravityNorm > 0.0)
+    up = -mGravity / gravityNorm;
+
+  auto isShallowSupportContact = [&](const auto& bodyNode,
+                                     const auto& supportBodyNode,
+                                     const Eigen::Vector3d& normal) {
+    if (!bodyNode || !supportBodyNode || gravityNorm <= 0.0)
+      return false;
+
+    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+    if (skeleton == nullptr || !skeleton->isMobile())
+      return false;
+
+    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
+    const bool supportInactive = supportSkeleton == nullptr
+                                 || !supportSkeleton->isMobile()
+                                 || supportSkeleton->isResting();
+    if (!supportInactive)
+      return false;
+
+    const double normalNorm = normal.norm();
+    if (normalNorm <= 0.0)
+      return false;
+
+    const double verticalComponent = std::abs(normal.dot(up)) / normalNorm;
+    if (verticalComponent < kSupportNormalMinVerticalComponent)
+      return false;
+
+    const double bodyHeightAboveSupport
+        = (bodyNode->getTransform().translation()
+           - supportBodyNode->getTransform().translation())
+              .dot(up);
+    return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
+  };
+
+  std::unordered_set<const dynamics::Skeleton*> deepInitialContactSkeletons;
+  std::unordered_set<const dynamics::Skeleton*>
+      supportedInitialContactSkeletons;
+  if (mFrame == 0) {
+    for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
+      const auto& contact = contacts.getContact(i);
+      auto markMobileSkeleton = [](auto bodyNode, auto& skeletons) {
+        if (!bodyNode)
+          return;
+        const auto* skeleton = bodyNode->getSkeletonRawPtr();
+        if (skeleton != nullptr && skeleton->isMobile())
+          skeletons.insert(skeleton);
+      };
+
+      const auto bodyNode1 = contact.getBodyNodePtr1();
+      const auto bodyNode2 = contact.getBodyNodePtr2();
+      if (contact.penetrationDepth > kSleepContactPenetrationTolerance) {
+        markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
+        markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
+        continue;
+      }
+
+      if (isShallowSupportContact(bodyNode1, bodyNode2, contact.normal))
+        markMobileSkeleton(bodyNode1, supportedInitialContactSkeletons);
+      if (isShallowSupportContact(bodyNode2, bodyNode1, contact.normal))
+        markMobileSkeleton(bodyNode2, supportedInitialContactSkeletons);
+    }
+  }
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
@@ -744,10 +811,20 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const bool quiet = canAccumulateDwell && (linSpeed < linSleep)
                          && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
-        const double dwell = skel->getRestDwellTime() + mTimeStep;
-        skel->setRestDwellTime(dwell);
         const bool finalQuiet = linSpeed < kFinalSleepLinearSpeed
                                 && angSpeed < kFinalSleepAngularSpeed;
+        double dwell = skel->getRestDwellTime() + mTimeStep;
+        const bool deepInitialContact
+            = deepInitialContactSkeletons.find(skel.get())
+              != deepInitialContactSkeletons.end();
+        const bool supportedInitialContact
+            = supportedInitialContactSkeletons.find(skel.get())
+              != supportedInitialContactSkeletons.end();
+        if (mFrame == 0 && islanded && finalQuiet && !deepInitialContact
+            && supportedInitialContact) {
+          dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
+        }
+        skel->setRestDwellTime(dwell);
         if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet) {
           skel->setSleepCandidate(true);
         }
@@ -786,6 +863,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                    || !supportSkel->isMobile()
                                    || supportSkel->isResting();
       if (!supportInactive)
+        return;
+
+      if (!isShallowSupportContact(bodyNode, supportBodyNode, contact.normal))
         return;
 
       if (skel->getSmoothedLinearSpeed() > linWake
@@ -917,9 +997,30 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalDeactivationStateVersion()
       && collisionDetectorUnchanged && collisionFilterUnchanged
       && collisionOptionScalarsUnchanged) {
+    if (_resetCommand && !mAllRestingSnapshotResetCommand) {
+      for (const auto& skel : mSkeletons) {
+        if (!skel->isMobile())
+          continue;
+
+        if (skel->checkExternalDisturbanceAndReset(true)) {
+          markSnapshotStale();
+          return false;
+        }
+      }
+      mAllRestingSnapshotResetCommand = true;
+    }
+
+    // The global guards above cover structure, poses/transforms, external
+    // force/command writes, sleep-state edits, and collision filtering. Direct
+    // velocity edits are intentionally not part of the kinematic version, so
+    // keep this cheap DOF scan to wake externally nudged sleepers without
+    // redoing the expensive per-body speed and disturbance scan every cached
+    // step.
     for (const auto& skel : mSkeletons) {
-      if (skel->isMobile() && restingSkeletonNeedsWake(skel))
+      if (skel->isMobile() && hasNonzeroGeneralizedVelocity(*skel)) {
+        markSnapshotStale();
         return false;
+      }
     }
     return true;
   }
@@ -986,16 +1087,18 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   if (hasMobileSkeleton) {
     mAllRestingSnapshotReady = true;
+    mAllRestingSnapshotResetCommand = _resetCommand;
     updateAllRestingSnapshotGlobalVersions();
   } else {
     mAllRestingSnapshotReady = false;
+    mAllRestingSnapshotResetCommand = true;
   }
 
   return hasMobileSkeleton;
 }
 
 //==============================================================================
-void World::updateAllRestingKinematicSnapshot()
+void World::updateAllRestingKinematicSnapshot(bool _resetCommand)
 {
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   if (!isCollisionFilterSnapshotTrackable(
@@ -1008,6 +1111,7 @@ void World::updateAllRestingKinematicSnapshot()
   mAllRestingKinematicSnapshot.reserve(mSkeletons.size());
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
+  mAllRestingSnapshotResetCommand = _resetCommand;
 
   for (const auto& skel : mSkeletons) {
     AllRestingKinematicSnapshot snapshot;
@@ -1216,6 +1320,7 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingKinematicSnapshotValid = false;
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
+  mAllRestingSnapshotResetCommand = true;
   mAllRestingSnapshotCollisionDetector = nullptr;
   mAllRestingSnapshotCollisionGroup = nullptr;
   mAllRestingSnapshotCollisionGroupVersion = 0u;

@@ -215,6 +215,38 @@ public:
     mConstrainedGroups.push_back(group);
   }
 
+  void setGroupRestingForTest(std::size_t groupIndex, bool resting)
+  {
+    if (mGroupResting.size() < mConstrainedGroups.size())
+      mGroupResting.assign(mConstrainedGroups.size(), false);
+
+    ASSERT_LT(groupIndex, mGroupResting.size());
+    mGroupResting[groupIndex] = resting;
+  }
+
+  void addSkeletonForTest(const dynamics::SkeletonPtr& skeleton)
+  {
+    mSkeletons.push_back(skeleton);
+  }
+
+  void addActiveConstraintForTest(
+      const constraint::ConstraintBasePtr& constraint)
+  {
+    mActiveConstraints.push_back(constraint);
+    if (mActiveConstraints.size() == 1u)
+      mActiveConstraintsAllSingleReactiveContacts = true;
+
+    const auto* contact
+        = dynamic_cast<const constraint::ContactConstraint*>(constraint.get());
+    if (contact == nullptr)
+      mActiveConstraintsAllSingleReactiveContacts = false;
+  }
+
+  void buildGroupsForTest()
+  {
+    buildConstrainedGroups();
+  }
+
   void solveGroupsForTest()
   {
     solveConstrainedGroups();
@@ -364,6 +396,158 @@ TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
 {
   ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addConstraint(std::make_shared<FakeConstraint>(1));
+  solver.addFakeConstrainedGroups(130, 100);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DeactivationActiveAwakeGroupsSolveInParallel)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+
+  const auto candidate = dynamics::Skeleton::create("candidate");
+  candidate->setSleepCandidate(true);
+  candidate->setResting(false);
+  candidate->setIslandIndex(0);
+  solver.addSkeletonForTest(candidate);
+  solver.setGroupRestingForTest(0, true);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_TRUE(candidate->isResting());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DeactivationActiveSkipsAlreadyRestingGroupsInParallel)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+
+  const auto resting = dynamics::Skeleton::create("resting");
+  resting->setSleepCandidate(true);
+  resting->setResting(true);
+  resting->setIslandIndex(0);
+  solver.addSkeletonForTest(resting);
+  solver.setGroupRestingForTest(0, true);
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(129, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_TRUE(resting->isResting());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  for (std::size_t i = 0; i < 130u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+    auto contact = createContact(&dynamicObject, &fixedObject);
+    solver.addActiveConstraintForTest(
+        createContactConstraint<constraint::ContactConstraint>(contact));
+  }
+
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  for (std::size_t i = 0; i < 129u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+    auto contact = createContact(&dynamicObject, &fixedObject);
+    solver.addActiveConstraintForTest(
+        createContactConstraint<constraint::ContactConstraint>(contact));
+  }
+
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
+
+  auto* softBody = createSoftBody("soft", true, skeletons);
+  auto* softShapeNode = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionObject softObject(&detector, softShapeNode);
+  auto softContact = createContact(&softObject, &fixedObject);
+  solver.addConstrainedGroup({
+      std::make_shared<FakeConstraint>(100),
+      createSoftContactConstraint(softContact),
+  });
+  solver.addSkeletonForTest(skeletons.back());
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ManualConstraintsForceSerialDeactivationGroupSolves)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
   solver.setNumSimulationThreads(4);
   solver.addConstraint(std::make_shared<FakeConstraint>(1));
   solver.addFakeConstrainedGroups(130, 100);
