@@ -53,6 +53,13 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
+  * Fix the FCL collision detector adding a default-constructed contact with
+    null collision objects when contact generation is disabled
+    (`CollisionOption::enableContact = false`) with more than one contact
+    requested, which aborted asserts-enabled builds (and logged repeated
+    `addObjectToCaches` nullptr errors otherwise):
+    [#3114](https://github.com/dartsim/dart/pull/3114)
+
 * Simulation
 
   * Enable resting-world deactivation by default with wake-aware invalidation
@@ -64,6 +71,13 @@
     manual constraints, custom contact constraints, custom LCP solvers, and
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
+
+  * Accelerate large imported worlds that begin with zero-velocity bodies on
+    shallow support contacts by allowing the initial contact pass to consume the
+    configured quiet dwell before the normal final solved impulse freezes the
+    island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
 
 * Python
 

@@ -8,6 +8,66 @@ numbers are not dead-code artifacts. Follow-up PRs must compare baseline,
 previous PR, and current PR on the same command line whenever they claim a
 speedup.
 
+- Current active branch:
+  `jslee02/issue-3056-deactivation-parallel-solve`, based on
+  `origin/release-6.20`.
+- Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
+  3003 mobile sphere/box/cylinder bodies plus the static ground plane from the
+  original issue report. The ground link warning about missing `<inertial>` is
+  from that static ground model in the issue input; the mobile bodies have
+  inertials.
+- Current exact-scene command:
+  `pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision bullet --sdf-plane-shapes --world-threads 16 --max-contacts 12000`.
+  This uses Bullet only for collision detection; DART 6 still owns dynamics,
+  constraints, sleep/deactivation, and the LCP solve.
+- Current exact-scene result, default deactivation enabled: RTF `1.50` across
+  repeated 16-thread samples (`1.47286`, `1.50528`, `1.51054`, `1.51119`,
+  `1.50657`, `1.51609` through `pixi run ex contact_benchmark -- ...`),
+  finite final state, final hash `0x2375f1927218cd43`, final resting
+  `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
+  `3000 / 3000` steps.
+- Same exact command with `--world-threads 1` gives RTF `1.46391`; with
+  `--world-threads 4` gives RTF `1.49184`. The current win is therefore from
+  prompt deactivation of the initially settled issue scene, not from thread
+  scaling.
+- Same exact command with `--disable-deactivation` gives RTF `0.0559457` to
+  `0.0604573`, finite final state, final hash `0x8aa3ab9f1fe495c6`, final
+  contacts `7005`, and final contact pairs `3003`.
+- Exact-scene final dump comparison, default-on vs disabled deactivation,
+  matched all `3003` mobile shapes: max position delta
+  `3.4147863965736968e-06` m, mean position delta
+  `1.8350550992622476e-06` m, max quaternion L2 delta
+  `1.9714098667727154e-06`.
+- Current profiler shape on the exact scene: only `3` full
+  constraint/collision solves, followed by `2997` all-resting cached steps.
+  Inclusive simulation time was `1.993 s`; all-resting readiness was `1.221 s`,
+  all-resting fast path was `265 ms`, and the three Bullet collision calls were
+  `452 ms` total. The next measured hotspot is the readiness scan, not the
+  LCP solve.
+- FCL and ODE exact-scene attempts with the same SDF plane-shape command did
+  not reach the setup summary within practical local budgets (FCL stopped after
+  about `5m57s`, ODE after about `1m42s`). These are incomplete setup attempts,
+  not valid RTF numbers. Bullet is the only complete exact-scene collision
+  backend sample in the current pass.
+- Correctness coverage added for the prompt initial-rest path:
+  `IslandDeactivation.InitiallySettledShallowContactCanSleepPromptly` proves a
+  shallow zero-velocity support contact can consume initial dwell but still
+  takes one final solved impulse before freezing.
+  `IslandDeactivation.InitialMobilePairContactDoesNotSleepPromptly` and
+  `IslandDeactivation.InitialWallContactDoesNotSleepPromptly` prove the dwell
+  credit is not granted to unsupported mobile-mobile contacts or vertical wall
+  contacts. The existing
+  `IslandDeactivation.UnconvergedContactClearsSleepCandidate` guards the deep
+  penetration case.
+- Downstream gate status on this branch: gz-physics passed in the previous
+  full `pixi run -e gazebo test-gz` attempt. The gz-sim portion initially
+  failed before exercising physics because the source-built gz-physics install
+  placed engine plugins under `lib64` and left the unversioned installed engine
+  alias broken; `scripts/run_gz_sim_task.sh` now discovers `lib64` and includes
+  the valid source-build plugin alias for the local integration gate. A fresh
+  `pixi run -e gazebo test-gz-sim` rerun passed
+  `INTEGRATION_entity_system`.
+
 - PR0 `jslee02/issue-3056-baseline-sdf-perf` / #3089 adds the baseline
   benchmark, GUI verifier, reset path, HUD, drop-state scene generation, and
   final-state checks. Review fix `a2621f80185` rejects signed size arguments
@@ -210,3 +270,20 @@ bug until proven otherwise.
   randomized PGS, manual constraints, custom contact constraints, and shared
   non-reactive dependencies, then passed both integration test binaries through
   focused CTest.
+- For the deactivation parallel-solve / exact-issue pass, rebuilt
+  `contact_benchmark`, `test_IslandDeactivation`, and `test_ConstraintSolver`;
+  ran `test_IslandDeactivation` (50 tests passed) and `test_ConstraintSolver`
+  (18 tests passed), then ran `pixi run lint` and reran the same focused build
+  and tests successfully. Exact issue SDF evidence used Bullet collision
+  detection with SDF plane shapes, 3000 measured steps, final-state consumption,
+  and final scene dumps for default-on vs `--disable-deactivation`.
+- For the same branch, a full `pixi run -e gazebo test-gz` attempt passed the
+  gz-physics build, 199/199 gz-physics tests, and 4/4 gz-physics performance
+  tests, then the gz-sim clone hit a network timeout. A later
+  `pixi run -e gazebo test-gz-sim` reached `INTEGRATION_entity_system` but
+  failed with `Failed to find plugin [gz-physics-dartsim-plugin]`; inspection
+  showed the source-built gz-physics install under `lib64` and a broken
+  installed unversioned engine-plugin symlink. After updating
+  `scripts/run_gz_sim_task.sh` to discover `lib64` and include the valid
+  build-tree plugin alias, a fresh `pixi run -e gazebo test-gz-sim` rerun passed
+  `INTEGRATION_entity_system`.
