@@ -91,7 +91,7 @@
     `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
     raise the coverage CTest timeout above the 1500s default, fixing spurious
     `test_Issue1193` timeouts under Debug coverage instrumentation:
-    [#3116](https://github.com/dartsim/dart/pull/3116)
+    [#3120](https://github.com/dartsim/dart/pull/3120)
 
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
