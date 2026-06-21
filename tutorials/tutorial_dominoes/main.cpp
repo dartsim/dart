@@ -49,6 +49,7 @@ const double default_domino_mass
 [[maybe_unused]] const double default_push_force = 8.0; // N
 const int default_force_duration = 200;                 // # iterations
 const int default_push_duration = 1000;                 // # iterations
+const int default_playback_frame_step = 16;
 
 [[maybe_unused]] const double defaultmEndEffectormOffset = 0.05;
 
@@ -135,11 +136,15 @@ protected:
 class DominoEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  DominoEventHandler(const WorldPtr& world, Controller* controller)
+  DominoEventHandler(
+      const WorldPtr& world, Controller* controller, Viewer* viewer)
     : mWorld(world),
       mController(controller),
+      mViewer(viewer),
       mTotalAngle(0.0),
       mHasEverRun(false),
+      mPlayingBack(false),
+      mPlayFrame(0),
       mForceCountDown(0),
       mPushCountDown(0)
   {
@@ -151,6 +156,11 @@ public:
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
     if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 'p') {
+        togglePlayback();
+        return true;
+      }
+
       if (!mHasEverRun) {
         switch (ea.getKey()) {
           case 'q':
@@ -167,12 +177,18 @@ public:
             return true;
           case ' ':
             mHasEverRun = true;
+            stopPlayback();
+            if (mViewer)
+              mViewer->simulate(true);
             return true;
           default:
             return false;
         }
       } else {
         switch (ea.getKey()) {
+          case ' ':
+            stopPlayback();
+            return false;
           case 'f':
             mForceCountDown = default_force_duration;
             return true;
@@ -185,6 +201,38 @@ public:
       }
     }
     return false;
+  }
+
+  void showPlaybackFrame()
+  {
+    if (!mPlayingBack)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numFrames = recording->getNumFrames();
+    if (numFrames == 0) {
+      stopPlayback();
+      return;
+    }
+
+    if (recording->getNumSkeletons()
+        != static_cast<int>(mWorld->getNumSkeletons())) {
+      stopPlayback();
+      return;
+    }
+
+    if (mPlayFrame >= numFrames)
+      mPlayFrame = 0;
+
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
+      mWorld->getSkeleton(i)->setPositions(recording->getConfig(mPlayFrame, i));
+
+    mPlayFrame += default_playback_frame_step;
+  }
+
+  void bakeFrame()
+  {
+    mWorld->bake();
   }
 
   void update()
@@ -225,8 +273,30 @@ public:
   }
 
 protected:
+  void togglePlayback()
+  {
+    Recording* recording = mWorld->getRecording();
+    if (recording->getNumFrames() == 0) {
+      std::cout << "No recorded frames are available for replay." << std::endl;
+      return;
+    }
+
+    mPlayingBack = !mPlayingBack;
+    if (mPlayingBack && mViewer)
+      mViewer->simulate(false);
+
+    if (mPlayingBack && mPlayFrame >= recording->getNumFrames())
+      mPlayFrame = 0;
+  }
+
+  void stopPlayback()
+  {
+    mPlayingBack = false;
+  }
+
   WorldPtr mWorld;
   Controller* mController;
+  Viewer* mViewer;
 
   /// Base domino. Used to clone new dominoes.
   SkeletonPtr mFirstDomino;
@@ -246,6 +316,12 @@ protected:
   /// Set to true the first time spacebar is pressed
   bool mHasEverRun;
 
+  /// Set to true when replaying recorded simulation frames
+  bool mPlayingBack;
+
+  /// Index of the recorded frame currently shown during replay
+  int mPlayFrame;
+
   /// The first domino will be pushed by a disembodied force while the value of
   /// this is greater than zero
   int mForceCountDown;
@@ -263,9 +339,19 @@ public:
   {
   }
 
+  void customPreRefresh() override
+  {
+    mHandler->showPlaybackFrame();
+  }
+
   void customPreStep() override
   {
     mHandler->update();
+  }
+
+  void customPostStep() override
+  {
+    mHandler->bakeFrame();
   }
 
 protected:
@@ -343,13 +429,14 @@ int main()
 
   // Create controller and event handler
   auto controller = std::make_unique<Controller>(manipulator, domino);
-  auto handler = new DominoEventHandler(world, controller.get());
+
+  // Create a Viewer and set it up with the WorldNode
+  auto viewer = Viewer();
+  auto handler = new DominoEventHandler(world, controller.get(), &viewer);
 
   // Create a WorldNode and wrap it around the world
   ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
   viewer.addWorldNode(node);
   viewer.addEventHandler(handler);
 

@@ -41,6 +41,7 @@ const double default_depth = 0.2;  // m
 [[maybe_unused]] const double default_torque = 15.0; // N-m
 [[maybe_unused]] const double default_force = 15.0;  // N
 const int default_countdown = 200; // Number of timesteps for applying force
+const int default_playback_frame_step = 16;
 
 const double default_rest_position = 0.0;
 const double delta_rest_position = dart::math::toRadian(10.0);
@@ -186,8 +187,13 @@ protected:
 class PendulumEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  PendulumEventHandler(const WorldPtr& world, Controller* controller)
-    : mWorld(world), mController(controller)
+  PendulumEventHandler(
+      const WorldPtr& world, Controller* controller, Viewer* viewer)
+    : mWorld(world),
+      mController(controller),
+      mViewer(viewer),
+      mPlayingBack(false),
+      mPlayFrame(0)
   {
   }
 
@@ -256,6 +262,12 @@ public:
         case 'f':
           mController->toggleBodyForce();
           return true;
+        case 'p':
+          togglePlayback();
+          return true;
+        case ' ':
+          stopPlayback();
+          return false;
         default:
           return false;
       }
@@ -263,26 +275,97 @@ public:
     return false;
   }
 
+  void update()
+  {
+    mController->update();
+  }
+
+  void bakeFrame()
+  {
+    mWorld->bake();
+  }
+
+  void showPlaybackFrame()
+  {
+    if (!mPlayingBack)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numFrames = recording->getNumFrames();
+    if (numFrames == 0) {
+      stopPlayback();
+      return;
+    }
+
+    if (recording->getNumSkeletons()
+        != static_cast<int>(mWorld->getNumSkeletons())) {
+      stopPlayback();
+      return;
+    }
+
+    if (mPlayFrame >= numFrames)
+      mPlayFrame = 0;
+
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
+      mWorld->getSkeleton(i)->setPositions(recording->getConfig(mPlayFrame, i));
+
+    mPlayFrame += default_playback_frame_step;
+  }
+
 protected:
+  void togglePlayback()
+  {
+    Recording* recording = mWorld->getRecording();
+    if (recording->getNumFrames() == 0) {
+      std::cout << "No recorded frames are available for replay." << std::endl;
+      return;
+    }
+
+    mPlayingBack = !mPlayingBack;
+    if (mPlayingBack && mViewer)
+      mViewer->simulate(false);
+
+    if (mPlayingBack && mPlayFrame >= recording->getNumFrames())
+      mPlayFrame = 0;
+  }
+
+  void stopPlayback()
+  {
+    mPlayingBack = false;
+  }
+
   WorldPtr mWorld;
   Controller* mController;
+  Viewer* mViewer;
+  bool mPlayingBack;
+  int mPlayFrame;
 };
 
 class CustomWorldNode : public RealTimeWorldNode
 {
 public:
-  CustomWorldNode(const WorldPtr& world, Controller* controller)
-    : RealTimeWorldNode(world), mController(controller)
+  CustomWorldNode(const WorldPtr& world, PendulumEventHandler* handler)
+    : RealTimeWorldNode(world), mHandler(handler)
   {
+  }
+
+  void customPreRefresh() override
+  {
+    mHandler->showPlaybackFrame();
   }
 
   void customPreStep() override
   {
-    mController->update();
+    mHandler->update();
+  }
+
+  void customPostStep() override
+  {
+    mHandler->bakeFrame();
   }
 
 protected:
-  Controller* mController;
+  PendulumEventHandler* mHandler;
 };
 
 void setGeometry(const BodyNodePtr& bn)
@@ -395,32 +478,32 @@ int main()
 
   // Create controller and event handler
   auto controller = std::make_unique<Controller>(pendulum);
-  auto handler = new PendulumEventHandler(world, controller.get());
-
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<CustomWorldNode> node
-      = new CustomWorldNode(world, controller.get());
 
   // Create a Viewer and set it up with the WorldNode
   auto viewer = Viewer();
+  auto handler = new PendulumEventHandler(world, controller.get(), &viewer);
+
+  // Create a WorldNode and wrap it around the world
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
+
   viewer.addWorldNode(node);
   viewer.addEventHandler(handler);
 
   // Print instructions
-  viewer.addInstructionText("space bar: simulation on/off");
-  viewer.addInstructionText("'p': replay simulation");
-  viewer.addInstructionText("'1' -> '9': apply torque to a pendulum body");
-  viewer.addInstructionText("'-': Change sign of applied joint torques");
-  viewer.addInstructionText("'q': Increase joint rest positions");
-  viewer.addInstructionText("'a': Decrease joint rest positions");
-  viewer.addInstructionText("'w': Increase joint spring stiffness");
-  viewer.addInstructionText("'s': Decrease joint spring stiffness");
-  viewer.addInstructionText("'e': Increase joint damping");
-  viewer.addInstructionText("'d': Decrease joint damping");
+  viewer.addInstructionText("space bar: simulation on/off\n");
+  viewer.addInstructionText("'p': replay simulation\n");
+  viewer.addInstructionText("'1' -> '9': apply torque to a pendulum body\n");
+  viewer.addInstructionText("'-': Change sign of applied joint torques\n");
+  viewer.addInstructionText("'q': Increase joint rest positions\n");
+  viewer.addInstructionText("'a': Decrease joint rest positions\n");
+  viewer.addInstructionText("'w': Increase joint spring stiffness\n");
+  viewer.addInstructionText("'s': Decrease joint spring stiffness\n");
+  viewer.addInstructionText("'e': Increase joint damping\n");
+  viewer.addInstructionText("'d': Decrease joint damping\n");
   viewer.addInstructionText(
-      "'r': add/remove constraint on the end of the chain");
+      "'r': add/remove constraint on the end of the chain\n");
   viewer.addInstructionText(
-      "'f': switch between applying joint torques and body forces");
+      "'f': switch between applying joint torques and body forces\n");
   std::cout << viewer.getInstructions() << std::endl;
 
   // Set up the window to be 640x480
