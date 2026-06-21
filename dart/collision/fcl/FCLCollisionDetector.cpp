@@ -1914,7 +1914,13 @@ void postProcessDART(
     }
 
     unfiltered.push_back(pair1);
-    unfiltered.push_back(pair2);
+    // pair2 is only populated inside the option.enableContact branch above
+    // (via pair2 = pair1 plus the mesh contact-point computation). When
+    // contact geometry is disabled it stays default-constructed with null
+    // collision objects, so adding it would trip the nullptr guard in
+    // CollisionResult::addObjectToCaches. Only emit it when it is valid.
+    if (option.enableContact)
+      unfiltered.push_back(pair2);
   }
 
   const auto tol = 1e-12;
