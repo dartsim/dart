@@ -27,6 +27,10 @@ are documented breaking changes for 6.20.
 
 - task_2 owns `convhull` (merged), `imgui`, `ikfast`, `lodepng` (native PNG),
   `odelcpsolver` (native Dantzig, #3088 merged) — `dart/external/*` + source.
+- Branch setup (per `AGENTS.md`): create topic branches with
+  `git switch --no-track -c <type>/<topic> origin/release-6.20` — **never let a
+  topic branch track `origin/release-*`** (prevents accidental release-branch
+  pushes).
 - Shared hot files are `pixi.toml`/`pixi.lock`; **merge** `origin/release-6.20`
   before pushing (never rebase a published PR branch). Do not edit the task
   `README.md` (task_2's SSOT).

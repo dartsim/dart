@@ -51,20 +51,20 @@ The port is **not a copy**:
 
 ## Feature-parity matrix (native must match the default detector)
 
-Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries**, **raycast**, **CCD**, **persistent manifolds**, and **VoxelGrid/octree** (today FCL-only). Parity bar = **identical `contact_benchmark` final-state hash** vs the incumbent detector on the corpus (see below).
+Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries**, **raycast**, **CCD**, **persistent manifolds**, and **VoxelGrid/octree** (today FCL-only). Parity bar = **native determinism** (a stable `contact_benchmark` final-state hash with native held fixed) **plus tolerance-based scene-dump diffs** vs the incumbent detectors on the corpus — bit-exact match vs FCL/Bullet/ODE is *not* required (see Risks).
 
 ## Evidence-driven performance plan (your bar: native ≥ Bullet/ODE/FCL)
 
 - **Harness exists:** `examples/contact_benchmark` takes `--collision dart|fcl|bullet|ode` and emits **RTF + final-state hash + contact stats** → same scene, swap detector, compare.
 - **Macro:** parametrize `BM_INTEGRATION_boxes` (currently hardcodes Bullet, `boxes_scene.hpp:91`) across all four detectors; run `contact_benchmark` at 10/30/120 objects × {default, `--disable-deactivation`}.
 - **Micro:** port DART 7 #2688's comparative benchmarks (`bm_narrow_phase`, `bm_stacked_scenes`) for broadphase pairs/s + narrowphase contacts/s.
-- **Success = RTF(native) ≥ RTF(bullet/ode/fcl) AND identical final-state hash** (correctness gate from `docs/dev_tasks/issue_3056_dart6_performance`).
+- **Success** = perf: RTF(native) ≥ RTF(bullet/ode/fcl); **and** correctness: a stable native final-state hash + tolerance-based scene-dump diffs vs incumbents (per the parity bar — *not* bit-exact hash equality; see `docs/dev_tasks/issue_3056_dart6_performance` + Risks).
 
 ## Phased plan (each phase = its own reviewable PR; gz gate every phase)
 
 0. **This scoping** + stand up the benchmark/parity harness (parametrize `BM_boxes`, port comparative benchmarks). No behavior change.
 1. **Land the native engine** adapted to DART 6 (C++17, **no EnTT**) as an internal library, exposed via the existing `dart` detector (broadphase + core narrowphase). FCL stays default. Unit tests per shape pair.
-2. **Feature parity**: distance, raycast, CCD, manifolds, all shape pairs; correctness = identical `contact_benchmark` hash vs FCL/Bullet/ODE.
+2. **Feature parity**: distance, raycast, CCD, manifolds, all shape pairs; correctness = stable native hash + tolerance-based scene-dump diffs vs FCL/Bullet/ODE (not bit-exact hash equality — see Risks).
 3. **Performance**: meet the evidence bar (macro + micro benchmarks); fix hot paths.
 4. **Flip the default** to native in `ConstraintSolver`; make FCL/Bullet/ODE **optional** (facade or optional components) while keeping gz's `collision-bullet`/`collision-ode` components subclassable + `test-gz` green.
 5. **Decouple FCL from core**: native VoxelGrid/octree path → drop `fcl` from the `dart` target and `DART_PKG_EXTERNAL_DEPS` → **the dependency win** (FCL/Bullet/ODE/ccd no longer required by a default build).
