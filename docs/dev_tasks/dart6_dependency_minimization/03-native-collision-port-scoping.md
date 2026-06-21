@@ -26,7 +26,7 @@ complete**, and **evidence-driven faster** than Bullet/ODE/FCL.
 ## The target (DART 6.20) — `dart/collision/`
 
 - Clean factory interface: `CollisionDetector` (virtuals: `collide×2`, `distance×2`, `raycast`, `createCollisionGroup`, `createCollisionObject`, `refreshCollisionObject`, `getType`, `cloneWithoutCollisionObjects`), `CollisionGroup`, `CollisionObject`, `CollisionResult`, `Contact`, `CollisionOption`.
-- Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** at `dart/constraint/ConstraintSolver.cpp:59`; core), `ode`, `bullet`.
+- Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** created in *both* `ConstraintSolver` constructors via `FCLCollisionDetector::create()` — `dart/constraint/ConstraintSolver.cpp:322` & `:342`; core), `ode`, `bullet`.
 - FCL coupling to break: default detector · `VoxelGridShape`/octree (only FCL via `fcl::OcTree`) · distance queries (only FCL/Bullet).
 
 ## ⚠️ The DART 6 ↔ DART 7 gap (dominant effort/risk)
@@ -66,7 +66,7 @@ Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries*
 1. **Land the native engine** adapted to DART 6 (C++17, **no EnTT**) as an internal library, exposed via the existing `dart` detector (broadphase + core narrowphase). FCL stays default. Unit tests per shape pair.
 2. **Feature parity**: distance, raycast, CCD, manifolds, all shape pairs; correctness = stable native hash + tolerance-based scene-dump diffs vs FCL/Bullet/ODE (not bit-exact hash equality — see Risks).
 3. **Performance**: meet the evidence bar (macro + micro benchmarks); fix hot paths.
-4. **Flip the default** to native in `ConstraintSolver`; make FCL/Bullet/ODE **optional** (facade or optional components) while keeping gz's `collision-bullet`/`collision-ode` components subclassable + `test-gz` green.
+4. **Flip the default** to native in *both* `ConstraintSolver` constructors (`ConstraintSolver.cpp:322` & `:342`) — not just one — and confirm the runtime `setCollisionDetector` path (`:578`) is unaffected; make FCL/Bullet/ODE **optional** (facade or optional components) while keeping gz's `collision-bullet`/`collision-ode` components subclassable + `test-gz` green.
 5. **Decouple FCL from core**: native VoxelGrid/octree path → drop `fcl` from the `dart` target and `DART_PKG_EXTERNAL_DEPS` → **the dependency win** (FCL/Bullet/ODE/ccd no longer required by a default build).
 
 ## Risks / open questions (for maintainer)
