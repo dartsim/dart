@@ -71,24 +71,26 @@ Pixi deps, and the now-stale non-Pixi install instructions (`Dockerfile`,
 neither core nor backends (verified). Verified by `dart`+`dartpy`+IK build +
 ctest + lint.
 
-## Next
+## Next — HELD for the native-collision port (maintainer decision 2026-06-21)
 
-### Standalone dep removals are exhausted — the next lever is GUI/OSG
+After the optimizer removal, no other dependency is *independently* removable
+(boost is OSG-coupled — `openscenegraph → collada-dom → libboost`; dropping the
+explicit `libboost-devel` is cosmetic — DART has no boost usage, verified by a
+clean `dart`+`dartpy`+ctest(100/100)+pytest(52) build without the explicit dep).
+The remaining real reductions, with measured default-env footprint (236 pkgs):
 
-A sweep for "other unnecessary dependencies" after the optimizer removal found
-none that are independently removable:
+| Lever | Removes from default env | Status |
+| --- | --- | --- |
+| Collision extras (bullet/ode) — was #3106 | `bullet-cpp` 40.6 MiB + `libode` 0.5 MiB ≈ **41 MiB** | held (closed) |
+| GUI/OSG chain — slice 3 | OSG 9.1 + boost 3.1 + collada-dom 1.9 + imgui 0.9 + GL/glu/glut ~0.6 ≈ **15.6 MiB** | deferred |
+| FCL (core) | `fcl` 1.5 MiB | only via native collision |
 
-- **boost is not standalone-removable.** `openscenegraph → collada-dom →
-  libboost` keeps boost in the default env (`pixi tree -i libboost`), so dropping
-  the explicit `libboost-devel` is cosmetic. DART itself has no boost usage —
-  `dart` + `dartpy` + ctest (100/100) + pytest (52) all pass without the explicit
-  dep — so when the GUI/OSG chain is demoted, also drop `libboost-devel` + the
-  vestigial `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define.
-
-The remaining real default-footprint reductions are both **deferred**:
-- **GUI/OSG chain** (OSG + collada-dom + boost + freeglut + libgl/glu + imgui) →
-  slice 3 (GUI demotion). The largest remaining non-collision chunk.
-- **FCL** → native-collision backport.
+**Decision (c):** hold ALL interim Pixi demotions — including the ~41 MiB
+collision one — and pursue only the **native-collision detector port** (DART 7
+PLAN-035) as the path that eliminates the external collision deps
+(FCL/Bullet/ODE) *and* is evidence-driven faster. That port is an XL, separately
+scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
+`BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define drop out with the GUI/native work.
 
 ## Deferred
 
@@ -157,6 +159,12 @@ The remaining real default-footprint reductions are both **deferred**:
   without the explicit dep, but the removal only lands with the GUI/OSG demotion.
   Standalone easy removals are exhausted; the remaining wins (GUI/OSG, FCL) are
   the deferred initiatives.
+- 2026-06-21: Measured per-lever default-env footprint (collision extras ≈41 MiB,
+  GUI/OSG ≈15.6 MiB, FCL 1.5 MiB). **Maintainer decision (c): hold ALL interim
+  Pixi demotions and pursue only the native-collision port.** task_3's active
+  removals are therefore complete (optimizer #3105 merged); #3107 is the durable
+  record. Retired the obsolete local integration branch
+  `chore/default-env-split-release-6.20` (fully superseded by #3102/#3105/#3107).
 
 ## Resume prompt
 
