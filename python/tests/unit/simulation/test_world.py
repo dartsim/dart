@@ -10,6 +10,27 @@ def test_empty_world():
     assert world.getNumSimpleFrames() == 0
 
 
+def test_num_simulation_threads_binding():
+    world = dart.simulation.World("threaded world")
+    solver = world.getConstraintSolver()
+
+    assert world.getNumSimulationThreads() == 1
+    assert solver.getNumSimulationThreads() == 1
+
+    world.setNumSimulationThreads(4)
+    assert world.getNumSimulationThreads() == 4
+    assert solver.getNumSimulationThreads() == 4
+
+    world.setNumSimulationThreads(0)
+    assert world.getNumSimulationThreads() >= 1
+    assert solver.getNumSimulationThreads() == world.getNumSimulationThreads()
+
+    world.setNumSimulationThreads(3)
+    clone = world.clone()
+    assert clone.getNumSimulationThreads() == 3
+    assert clone.getConstraintSolver().getNumSimulationThreads() == 3
+
+
 def test_collision_detector_change():
     world = dart.simulation.World("world")
     solver = world.getConstraintSolver()

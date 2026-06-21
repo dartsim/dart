@@ -3,13 +3,59 @@
 ## Current Snapshot
 
 Bottom line: DART 6 performance work is continuing on `release-6.20` as a PR
-stack. The baseline PR records the workload and consumes final state so RTF
-numbers are not dead-code artifacts. Follow-up PRs must compare baseline,
-previous PR, and current PR on the same command line whenever they claim a
-speedup.
+stack. The current managed PR, #3071 `perf/dart6-parallel-islands`, is the
+parallel-stepping follow-up after #3111 and #3112 landed the core
+`setNumSimulationThreads` path on the base branch. It should only be merged as
+a performance PR with evidence that the thread knob preserves final state and
+has a real scaling window.
 
-- Current active branch:
-  `jslee02/issue-3056-deactivation-parallel-solve`, based on
+Current #3071 evidence on an Intel i7-13800H (14 cores / 20 logical CPUs),
+pinned to CPUs 0-15:
+
+- Original #3056 SDF, Bullet collision detection, DART 6 dynamics/constraints,
+  default deactivation, 3000 steps: RTF `1.50858` at 1 thread, `1.52074` at 2,
+  `1.5381` at 4, `1.55879` at 8, and `1.51651` at 16. All runs advanced
+  exactly `3000 / 3000` frames, ended finite, and matched final hash
+  `0x2375f1927218cd43`. This scene is already resting-fast-path dominated, so
+  thread scaling is intentionally modest.
+- Same original SDF with `--disable-deactivation`, 300 active steps: RTF
+  `0.0228284` at 1 thread, `0.0489761` at 8, and `0.046549` at 16, with
+  identical final hash `0x1b1e6f3c78c0e01e` and `5005` final contacts across
+  `3003` contact pairs. This shows a real active-pipeline speedup to 8 threads,
+  while also showing that active contact/collision work remains below real
+  time.
+- Deterministic articulated workload
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 16 300 0`:
+  `1793.239 ms` at 1 thread, `1353.723 ms` at 2, `1293.283 ms` at 4,
+  `1006.875 ms` at 8, and `1182.029 ms` at 16, with identical final checksum
+  at every thread count. Peak local speedup is `1.78x` at 8 threads; 16 threads
+  regresses on this machine.
+- Larger deterministic articulated workload
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 24 300 0`:
+  `4986.764 ms` at 1 thread, `3985.350 ms` at 2, `3439.460 ms` at 4,
+  `3134.201 ms` at 8, `3085.127 ms` at 12, and `3378.107 ms` at 16, again
+  with identical final checksum at every thread count. This confirms a useful
+  scaling window through 8-12 threads (`1.62x` peak), while 16 logical threads
+  still regresses.
+- A still larger check
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 32 200 0`:
+  `9134.861 ms` at 1 thread, `6931.920 ms` at 4, `6753.507 ms` at 8,
+  `6407.391 ms` at 12, and `6674.239 ms` at 16, with identical final checksum.
+  This supports the same conclusion: the PR is beneficial and scales on larger
+  independent articulated workloads, but the current implementation should be
+  described as a mid-core scaling win rather than a linear all-core speedup.
+- Smaller workloads are not good proof points: 512 falling boxes improved only
+  from `8806.970 ms` to `8168.554 ms` at 8 threads and regressed at 16, while
+  the 64-chain workload regressed at every tested thread count. The PR evidence
+  should present this caveat instead of implying unlimited CPU scaling.
+
+If #3071 lands, the next performance phase should import and benchmark the DART
+7 native collision detector into DART 6.20's `dart/collision/dart/` path,
+compare it against Bullet/FCL/ODE on the same original #3056 commands, and only
+prefer it if it beats Bullet while preserving final-state and focused collision
+correctness.
+
+- Current active branch: `perf/dart6-parallel-islands`, based on
   `origin/release-6.20`.
 - Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
   3003 mobile sphere/box/cylinder bodies plus the static ground plane from the
@@ -150,14 +196,12 @@ speedup.
 - Current PR2 custom-filter fix disables all-resting snapshot reuse for filters
   whose decision state is not revision-tracked, so stateful custom filters
   cannot hide changed contact decisions behind the cached fast path.
-- Parallel-safety follow-up: open PR #3071 is related but predates the current
-  `setNumSimulationThreads` / `ConstraintThreadPool` path from #3086 and now
-  conflicts heavily with `release-6.20`. The useful part is a correctness gate,
-  not the obsolete API: opt-in parallel island solving should stay serial when
-  manual constraints, custom contact constraints, custom LCP solvers, or shared
-  non-reactive bodies/skeletons make island independence uncertain. This
-  follow-up does not claim an RTF speedup; it protects fidelity before more
-  parallel performance work.
+- Parallel follow-up: #3071 has been reconciled with the current
+  `setNumSimulationThreads` / `ConstraintThreadPool` API. The useful remaining
+  diff exposes the control in dartpy, adds an in-tree Pixi benchmark task for
+  `boxes_headless`, and records deterministic scaling evidence. It should not
+  claim the resting original #3056 scene scales linearly; the active original
+  scene and larger articulated workload are the evidence for the thread knob.
 
 ## Default-On Correctness Rule
 
