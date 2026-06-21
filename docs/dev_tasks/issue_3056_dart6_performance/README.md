@@ -17,11 +17,12 @@ speedup.
   from that static ground model in the issue input; the mobile bodies have
   inertials.
 - Current exact-scene command:
-  `pixi run ./build/default/cpp/Release/bin/contact_benchmark /tmp/3k_shapes.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision bullet --sdf-plane-shapes --world-threads 16 --max-contacts 12000`.
+  `pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision bullet --sdf-plane-shapes --world-threads 16 --max-contacts 12000`.
   This uses Bullet only for collision detection; DART 6 still owns dynamics,
   constraints, sleep/deactivation, and the LCP solve.
 - Current exact-scene result, default deactivation enabled: RTF `1.50` across
-  repeated 16-thread samples (`1.47286`, `1.50528`, `1.51054`, `1.51119`),
+  repeated 16-thread samples (`1.47286`, `1.50528`, `1.51054`, `1.51119`,
+  `1.50657` through `pixi run ex contact_benchmark -- ...`),
   finite final state, final hash `0x2375f1927218cd43`, final resting
   `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
   `3000 / 3000` steps.
