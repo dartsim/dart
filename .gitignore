@@ -54,6 +54,9 @@ TAGS
 
 # Python bytecode
 *.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
 
 # Web files
 *.htm

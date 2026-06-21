@@ -63,7 +63,7 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ sudo apt install \
-      freeglut3-dev libxi-dev libxmu-dev libbullet-dev \
+      libbullet-dev \
       libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
       libopenscenegraph-dev liboctomap-dev libode-dev \
       libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
@@ -83,7 +83,7 @@ The following command will install the optional dependencies:
 
 .. code-block:: bash
 
-   $ brew install bullet freeglut octomap ode \
+   $ brew install bullet octomap ode \
       open-scene-graph --HEAD \
       spdlog tinyxml2 urdfdom yaml-cpp
 
@@ -102,7 +102,7 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ vcpkg install --triplet x64-windows \
-      assimp eigen3 fcl fmt spdlog bullet3 freeglut glfw3 ode \
+      assimp eigen3 fcl fmt spdlog bullet3 ode \
       opencl opengl osg pybind11 tinyxml2 urdfdom yaml-cpp
 
 Arch Linux (experimental)
@@ -120,7 +120,7 @@ The following command will install the optional dependencies:
 .. code-block:: bash
 
    $ yay -S \
-      bullet freeglut octomap ode opencl-clhpp \
+      bullet octomap ode opencl-clhpp \
       opencl-headers opencl-icd-loader openscenegraph spdlog tinyxml2 \
       urdfdom pybind11
 

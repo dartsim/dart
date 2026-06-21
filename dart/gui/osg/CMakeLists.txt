@@ -11,7 +11,7 @@ set(component_dependency_packages )
 set(link_libraries )
 
 # Dependency checks
-dart_check_dependent_target(${target_name} dart-gui)
+dart_check_dependent_target(${target_name} dart-utils)
 
 # OpenSceneGraph
 dart_find_package(OpenSceneGraph)
@@ -44,12 +44,12 @@ if(NOT DART_USE_SYSTEM_IMGUI)
       $<INSTALL_INTERFACE:include/dart/external/imgui>
   )
 endif()
-target_link_libraries(${target_name} dart-gui ${link_libraries} osg::osg)
+target_link_libraries(${target_name} dart-utils ${link_libraries} osg::osg)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} gui ${component_dependencies})
+add_component_dependencies(${PROJECT_NAME} ${component_name} utils ${component_dependencies})
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
 
 # Generate header for this namespace
