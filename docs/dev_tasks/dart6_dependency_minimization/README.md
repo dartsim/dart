@@ -10,8 +10,9 @@ This task is for the DART 6.20 support lane.
 - DART 7 reference: use `origin/main` directly, or create a local worktree from
   `origin/main` for comparisons. Do not rely on a developer-specific checkout
   path.
-- Do not use the `task_2` worktree on `main` for this task. Use a separate main
-  worktree, or remote refs, only as comparison evidence.
+- Do not rely on any per-machine worktree directory name for comparisons; use
+  `origin/main` or remote refs (or your own separate `main` worktree) as
+  comparison evidence only.
 
 Evidence was collected on 2026-06-19 after fetching `origin/main`,
 `origin/release-6.20`, and `origin/release-6.19`.
