@@ -373,7 +373,7 @@ protected:
   bool isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale);
 
   /// Saves the current skeleton versions for the all-resting fast path.
-  void updateAllRestingKinematicSnapshot();
+  void updateAllRestingKinematicSnapshot(bool _resetCommand);
 
   /// Refreshes the global generation counters on a validated all-resting
   /// snapshot.
@@ -503,6 +503,11 @@ protected:
   /// Whether the snapshot has passed the full per-skeleton all-resting
   /// readiness scan at least once.
   bool mAllRestingSnapshotReady = false;
+
+  /// Whether the current snapshot has already observed step(true)'s command /
+  /// force reset contract. A step(false) snapshot may keep quiet commands
+  /// cached, so the next step(true) must run the reset check once.
+  bool mAllRestingSnapshotResetCommand = true;
 
   /// Global generation counters captured with mAllRestingKinematicSnapshot.
   std::size_t mAllRestingSnapshotStructuralVersion = 0;
