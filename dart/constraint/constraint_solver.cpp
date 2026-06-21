@@ -540,7 +540,8 @@ void ConstraintSolver::updateConstraints()
       DART_WARN(
           "[ConstraintSolver] Ignoring contact with non-finite geometry "
           "(point, normal, or penetration depth). This usually indicates a "
-          "collision shape with an invalid (infinite or NaN) dimension.");
+          "malformed collision mesh or a collision backend that produced an "
+          "invalid contact.");
       continue;
     }
 
