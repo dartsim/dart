@@ -9,7 +9,8 @@ parallel-stepping follow-up after #3111 and #3112 landed the core
 a performance PR with evidence that the thread knob preserves final state and
 has a real scaling window.
 
-Current #3071 evidence on an Intel i7-13800H, pinned to CPUs 0-15:
+Current #3071 evidence on an Intel i7-13800H (14 cores / 20 logical CPUs),
+pinned to CPUs 0-15:
 
 - Original #3056 SDF, Bullet collision detection, DART 6 dynamics/constraints,
   default deactivation, 3000 steps: RTF `1.50858` at 1 thread, `1.52074` at 2,
@@ -29,6 +30,20 @@ Current #3071 evidence on an Intel i7-13800H, pinned to CPUs 0-15:
   `1006.875 ms` at 8, and `1182.029 ms` at 16, with identical final checksum
   at every thread count. Peak local speedup is `1.78x` at 8 threads; 16 threads
   regresses on this machine.
+- Larger deterministic articulated workload
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 24 300 0`:
+  `4986.764 ms` at 1 thread, `3985.350 ms` at 2, `3439.460 ms` at 4,
+  `3134.201 ms` at 8, `3085.127 ms` at 12, and `3378.107 ms` at 16, again
+  with identical final checksum at every thread count. This confirms a useful
+  scaling window through 8-12 threads (`1.62x` peak), while 16 logical threads
+  still regresses.
+- A still larger check
+  `SCENE=chains LINKS=8 THREADS=N pixi run bm-boxes-headless 32 200 0`:
+  `9134.861 ms` at 1 thread, `6931.920 ms` at 4, `6753.507 ms` at 8,
+  `6407.391 ms` at 12, and `6674.239 ms` at 16, with identical final checksum.
+  This supports the same conclusion: the PR is beneficial and scales on larger
+  independent articulated workloads, but the current implementation should be
+  described as a mid-core scaling win rather than a linear all-core speedup.
 - Smaller workloads are not good proof points: 512 falling boxes improved only
   from `8806.970 ms` to `8168.554 ms` at 8 threads and regressed at 16, while
   the 64-chain workload regressed at every tested thread count. The PR evidence
