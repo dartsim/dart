@@ -27,7 +27,8 @@ complete**, and **evidence-driven faster** than Bullet/ODE/FCL.
 
 - Clean factory interface: `CollisionDetector` (virtuals: `collide×2`, `distance×2`, `raycast`, `createCollisionGroup`, `createCollisionObject`, `refreshCollisionObject`, `getType`, `cloneWithoutCollisionObjects`), `CollisionGroup`, `CollisionObject`, `CollisionResult`, `Contact`, `CollisionOption`.
 - Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** created in *both* `ConstraintSolver` constructors via `FCLCollisionDetector::create()` — `dart/constraint/ConstraintSolver.cpp:322` & `:342`; core), `ode`, `bullet`.
-- FCL coupling to break: default detector · `VoxelGridShape`/octree (only FCL via `fcl::OcTree`) · distance queries (only FCL/Bullet).
+- FCL coupling to break: default detector · `VoxelGridShape`/octree (only FCL, via `fcl::OcTree`) · distance queries (**FCL-only** — Bullet/ODE/DART `distance()` are warn-and-return stubs).
+- Capability incumbents (verified in-tree, for parity targeting): **distance → FCL only** (`::fcl::distance`; others stub), **raycast → Bullet only** (only `BulletCollisionDetector` overrides `raycast()`; FCL/ODE/DART fall back to the base "not supported"), **VoxelGrid/octree → FCL only**.
 
 ## ⚠️ The DART 6 ↔ DART 7 gap (dominant effort/risk)
 
@@ -51,7 +52,7 @@ The port is **not a copy**:
 
 ## Feature-parity matrix (native must match the default detector)
 
-Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries**, **raycast**, **CCD**, **persistent manifolds**, and **VoxelGrid/octree** (today FCL-only). Parity bar = **native determinism** (a stable `contact_benchmark` final-state hash with native held fixed) **plus tolerance-based scene-dump diffs** vs the incumbent detectors on the corpus — bit-exact match vs FCL/Bullet/ODE is *not* required (see Risks).
+Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries** (incumbent: **FCL only**), **raycast** (incumbent: **Bullet only**), **CCD**, **persistent manifolds**, and **VoxelGrid/octree** (**FCL only**, via `fcl::OcTree`). Parity bar = **native determinism** (a stable `contact_benchmark` final-state hash with native held fixed) **plus tolerance-based scene-dump diffs** vs the incumbent detectors on the corpus — bit-exact match vs FCL/Bullet/ODE is *not* required (see Risks).
 
 ## Evidence-driven performance plan (your bar: native ≥ Bullet/ODE/FCL)
 
@@ -64,7 +65,7 @@ Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries*
 
 0. **This scoping** + stand up the benchmark/parity harness (parametrize `BM_boxes`, port comparative benchmarks). No behavior change.
 1. **Land the native engine** adapted to DART 6 (C++17, **no EnTT**) as an internal library, exposed via the existing `dart` detector (broadphase + core narrowphase). FCL stays default. Unit tests per shape pair.
-2. **Feature parity**: distance, raycast, CCD, manifolds, all shape pairs; correctness = stable native hash + tolerance-based scene-dump diffs vs FCL/Bullet/ODE (not bit-exact hash equality — see Risks).
+2. **Feature parity**: distance, raycast, CCD, manifolds, all shape pairs; correctness = stable native hash + tolerance-based scene-dump diffs vs the **capability's incumbent** (distance vs **FCL**, raycast vs **Bullet**, contacts vs FCL/Bullet/ODE) — not bit-exact hash equality (see Risks).
 3. **Performance**: meet the evidence bar (macro + micro benchmarks); fix hot paths.
 4. **Flip the default** to native in *both* `ConstraintSolver` constructors (`ConstraintSolver.cpp:322` & `:342`) — not just one — and confirm the runtime `setCollisionDetector` path (`:578`) is unaffected; make FCL/Bullet/ODE **optional** (facade or optional components) while keeping gz's `collision-bullet`/`collision-ode` components subclassable + `test-gz` green.
 5. **Decouple FCL from core**: native VoxelGrid/octree path → drop `fcl` from the `dart` target and `DART_PKG_EXTERNAL_DEPS` → **the dependency win** (FCL/Bullet/ODE/ccd no longer required by a default build).
