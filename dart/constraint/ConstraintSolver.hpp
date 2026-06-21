@@ -361,6 +361,12 @@ protected:
   /// skipped entirely, so every entry is false and no group is ever skipped.
   std::vector<bool> mGroupResting;
 
+  /// Scratch arrays for deactivation-aware group solves. These intentionally
+  /// use byte storage rather than vector<bool> so parallel group workers can
+  /// write distinct entries without sharing packed bits.
+  std::vector<char> mGroupAlreadyRestingScratch;
+  std::vector<char> mGroupSolvedToRestScratch;
+
   /// Whether automatic body deactivation is active (mirrors the World's
   /// DeactivationOptions::mEnabled). When false, the solver performs no
   /// rest-detection work and behaves exactly as before the feature.

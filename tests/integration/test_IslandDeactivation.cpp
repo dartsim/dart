@@ -84,6 +84,27 @@ SkeletonPtr createFloor()
 }
 
 //==============================================================================
+// Builds a vertical static wall whose right face sits at x = 0.
+SkeletonPtr createWall()
+{
+  auto wall = Skeleton::create("wall");
+  auto body = wall->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+
+  const double width = 10.0;
+  const double thickness = 0.1;
+  auto shape
+      = std::make_shared<BoxShape>(Eigen::Vector3d(thickness, width, width));
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(-thickness / 2.0, 0.0, 0.0);
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  wall->setMobile(false);
+  return wall;
+}
+
+//==============================================================================
 // Builds a free-floating unit-density box of the given half-extent-ish size,
 // placed at the given center.
 SkeletonPtr createFreeBox(
@@ -451,6 +472,93 @@ TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
   EXPECT_NEAR(body->getTransform().translation().z(), kHalf, 1e-5);
   EXPECT_NEAR(body->getLinearVelocity().norm(), 0.0, 1e-12);
   EXPECT_NEAR(body->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// Some imported worlds, including large generated SDF scenes, start with many
+// zero-velocity bodies already shallowly supported by static geometry. They
+// should not spend the full dwell horizon proving rest from t=0, but they still
+// need the normal final contact solve before the island is frozen.
+TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_FALSE(box->isResting())
+      << "the initial rest credit must still allow one final solved impulse";
+  EXPECT_GE(
+      box->getRestDwellTime(), world->getDeactivationOptions().mTimeUntilSleep);
+
+  world->step();
+
+  EXPECT_TRUE(box->isResting());
+  EXPECT_TRUE(box->isSleepCandidate());
+  EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
+  EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+// The first-frame dwell credit is only for gravity-supported shallow contacts.
+// A mobile pair touching in midair must keep falling instead of sleeping as a
+// frozen island.
+TEST(IslandDeactivation, InitialMobilePairContactDoesNotSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->setTimeStep(1e-4);
+
+  auto lower = createFreeBox(
+      "lower", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(0, 0, 1.0));
+  auto upper = createFreeBox(
+      "upper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, 1.0 + kBoxSize - 5e-7));
+  world->addSkeleton(lower);
+  world->addSkeleton(upper);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(lower->isSleepCandidate());
+  EXPECT_FALSE(upper->isSleepCandidate());
+
+  world->step();
+
+  EXPECT_FALSE(lower->isResting());
+  EXPECT_FALSE(upper->isResting());
+}
+
+//==============================================================================
+// A shallow wall contact is not support against gravity, even if the first
+// timestep is small enough that gravity has not yet moved the body beyond the
+// final quiet threshold.
+TEST(IslandDeactivation, InitialWallContactDoesNotSleepPromptly)
+{
+  auto world = makeSleepWorld();
+  world->setTimeStep(1e-4);
+  world->addSkeleton(createWall());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(kHalf - 5e-7, 0, 1.0));
+  world->addSkeleton(box);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(box->isSleepCandidate());
+
+  world->step();
+
+  EXPECT_FALSE(box->isResting());
 }
 
 //==============================================================================
@@ -981,7 +1089,7 @@ TEST(IslandDeactivation, WakeOnCollisionOptionChange)
 
   ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
 
-  world->getConstraintSolver()->getCollisionOption().enableContact = false;
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 0u;
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
 }
@@ -1003,7 +1111,7 @@ TEST(IslandDeactivation, WakeOnCollisionOptionChangeBeforeFastPath)
 
   ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
 
-  world->getConstraintSolver()->getCollisionOption().enableContact = false;
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 0u;
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
 }
