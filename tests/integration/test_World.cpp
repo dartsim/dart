@@ -498,9 +498,9 @@ TEST(World, SimulationThreadCount)
 }
 
 //==============================================================================
-TEST(World, RandomizedPgsUsesSerialIndependentGroupSolve)
+TEST(World, ManualConstraintGroupsUseSerialIndependentGroupSolve)
 {
-  EXPECT_GT(countConcurrentIndependentSolves(false), 1u);
+  EXPECT_EQ(countConcurrentIndependentSolves(false), 1u);
   EXPECT_EQ(countConcurrentIndependentSolves(true), 1u);
 }
 

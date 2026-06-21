@@ -12,6 +12,21 @@
     `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
     [#3076](https://github.com/dartsim/dart/pull/3076)
 
+  * Remove the deprecated external optimizer backends (IPOPT, NLopt, pagmo,
+    SNOPT) and the pagmo-based multi-objective optimization API
+    (`MultiObjectiveProblem`/`MultiObjectiveSolver`, `Population`,
+    `GenericMultiObjectiveProblem`), which were extracted to the separate
+    [dart-optimization](https://github.com/dartsim/dart-optimization) package.
+    The `optimizer-ipopt` / `optimizer-nlopt` / `optimizer-pagmo` CMake
+    components and their installed headers, the `dart.optimizer.NloptSolver`
+    Python binding, and the `HAVE_IPOPT` / `HAVE_NLOPT` / `HAVE_PAGMO` /
+    `HAVE_SNOPT` macros in the installed `dart/config.hpp` are removed, and the
+    non-Pixi install instructions (apt/brew/vcpkg/Arch), root `Dockerfile`, and
+    `Brewfile` no longer pull these packages. The optimizer core (`Function`,
+    `Problem`, `Solver`, `GradientDescentSolver`) used by DART's
+    `InverseKinematics` is retained:
+    [#3105](https://github.com/dartsim/dart/pull/3105)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
@@ -45,6 +60,11 @@
     contact-heavy scenes while preserving an explicit deactivation opt-out:
     [#3086](https://github.com/dartsim/dart/pull/3086)
 
+  * Keep opt-in parallel constraint-island solving on the serial path for
+    manual constraints, custom contact constraints, custom LCP solvers, and
+    groups that share non-reactive bodies or skeletons across islands:
+    [#3111](https://github.com/dartsim/dart/pull/3111)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
@@ -60,6 +80,12 @@
     (the selected branch opaque, the rest translucent), a draggable
     `InteractiveFrame` target re-solves the IK live, and arms can be switched
     online without a restart:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
+  * Add a dartpy `ssik_analytical_ik` example that plugs an ssik prebuilt solver
+    into DART's analytical IK through `setPythonAnalytical` and drives a
+    draggable `InteractiveFrame` target in an `ImGuiViewer`, mirroring the C++
+    example from pure Python:
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
