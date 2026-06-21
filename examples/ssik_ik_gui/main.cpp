@@ -1108,6 +1108,14 @@ public:
   }
 
 private:
+  // Attaches an explanatory tooltip to the most recently submitted widget,
+  // shown after a short hover. Keeps the panel usable by newcomers who may not
+  // know the IK terminology without cluttering the controls themselves.
+  static void itemTooltip(const char* text)
+  {
+    ImGui::SetItemTooltip("%s", text);
+  }
+
   void renderArmSelector()
   {
     if (ImGui::BeginCombo("Arm", mArms[mArmIndex].label.c_str())) {
@@ -1122,12 +1130,24 @@ private:
       }
       ImGui::EndCombo();
     }
+    itemTooltip(
+        "Robot arm to control. Each entry is an ssik prebuilt analytical IK "
+        "module; switching rebuilds the arm and re-solves immediately.");
 
     if (mLoaded) {
       ImGui::Text("Module: ssik.prebuilt.%s", mArms[mArmIndex].module.c_str());
+      itemTooltip(
+          "The Python module providing this arm's closed-form IK and "
+          "kinematics.");
       ImGui::Text(
           "Chain: %s -> %s", mInfo.baseLink.c_str(), mInfo.eeLink.c_str());
+      itemTooltip(
+          "Kinematic chain solved: from the base link to the end-effector "
+          "(tip) link.");
       ImGui::Text("DOF: %d", mInfo.dof);
+      itemTooltip(
+          "Degrees of freedom: the number of independently actuated joints in "
+          "the arm.");
     } else {
       ImGui::TextColored(
           ImVec4(1.0f, 0.78f, 0.20f, 1.0f), "ssik is not available");
@@ -1142,7 +1162,13 @@ private:
   {
     bool changed = false;
     changed |= ImGui::DragFloat3("Position", mTargetXyz.data(), 0.005f);
+    itemTooltip(
+        "Desired end-effector position (x, y, z) in meters, in the arm's base "
+        "frame. Drag a value to edit, or drag the gizmo in the 3D view.");
     changed |= ImGui::DragFloat3("RPY deg", mTargetRpyDegrees.data(), 0.5f);
+    itemTooltip(
+        "Desired end-effector orientation as roll, pitch, yaw (degrees) about "
+        "the X, Y, Z axes.");
 
     if (changed) {
       syncTargetFrame();
@@ -1156,6 +1182,7 @@ private:
       if (mAutoSolve)
         solveCurrent();
     }
+    itemTooltip("Reset the target to the arm's home (rest) pose.");
     ImGui::SameLine();
     if (ImGui::Button("Read dragged")) {
       setTargetControlsFromTransform(
@@ -1163,22 +1190,45 @@ private:
       if (mAutoSolve)
         solveCurrent();
     }
+    itemTooltip(
+        "Copy the pose of the draggable gizmo in the 3D view back into these "
+        "fields.");
   }
 
   void renderSolverControls()
   {
     bool changed = false;
     changed |= ImGui::Checkbox("Auto solve", &mAutoSolve);
+    itemTooltip(
+        "Re-run the IK automatically whenever the target or an option changes "
+        "(including while dragging the gizmo).");
     changed |= ImGui::Checkbox("Respect limits", &mRespectLimits);
+    itemTooltip(
+        "Discard solutions that violate the arm's joint limits. Turn off to "
+        "also see out-of-limit branches.");
     changed |= ImGui::Checkbox("Allow refinement", &mAllowRefinement);
+    itemTooltip(
+        "Let ssik numerically refine near-singular solutions for extra "
+        "accuracy, at some extra cost.");
     changed |= ImGui::Checkbox("Use q seed", &mUseSeed);
+    itemTooltip(
+        "Provide a seed (reference) joint configuration so solutions are "
+        "ranked by closeness to it, keeping motion continuous.");
     changed |= ImGui::SliderInt("Max solutions", &mMaxSolutions, 0, 256);
+    itemTooltip(
+        "Maximum number of IK branches to return (0 = all). Analytical IK "
+        "yields several distinct elbow/wrist configurations for one target.");
 
     const char* metrics[] = {"wrap_linf", "wrap_l2"};
     changed |= ImGui::Combo("Seed metric", &mSeedMetricIndex, metrics, 2);
+    itemTooltip(
+        "How distance to the seed is measured when ranking solutions: "
+        "wrap_linf = largest single-joint angular distance; "
+        "wrap_l2 = Euclidean distance across joints.");
 
     if (ImGui::Button("Solve"))
       solveCurrent();
+    itemTooltip("Run the analytical IK once for the current target.");
 
     ImGui::SameLine();
     if (ImGui::Button("Seed from selection")) {
@@ -1190,6 +1240,9 @@ private:
           solveCurrent();
       }
     }
+    itemTooltip(
+        "Use the currently selected solution below as the seed configuration "
+        "and enable 'Use q seed'.");
 
     if (changed && mAutoSolve)
       solveCurrent();
@@ -1209,16 +1262,28 @@ private:
     if (mSolutions.size() > 1) {
       if (ImGui::SliderInt("Solution", &mSelectedSolution, 0, maxIndex))
         updateSolvedFrame();
+      itemTooltip(
+          "Browse the IK solutions: distinct joint configurations that all "
+          "reach the same target. The selected one is opaque; the others are "
+          "shown translucent.");
     }
 
     const SsikSolution& solution = mSolutions[mSelectedSolution];
     ImGui::Text("fk residual: %.3e", solution.fkResidual);
+    itemTooltip(
+        "Forward-kinematics residual: how far this solution's actual "
+        "end-effector pose is from the target (smaller is better).");
     ImGui::Text("refinement: %s", solution.refinementUsed.c_str());
+    itemTooltip("Whether ssik numerically refined this solution.");
     ImGui::TextWrapped("q: %s", formatVector(solution.q).c_str());
+    itemTooltip("Joint angles of this solution in radians, one per DOF.");
 
     if (solution.hasFkPose) {
       const Eigen::Vector3d& p = solution.fkPose.translation();
       ImGui::Text("FK xyz: %.3f, %.3f, %.3f", p.x(), p.y(), p.z());
+      itemTooltip(
+          "End-effector position computed by forward kinematics from q; should "
+          "match the target position.");
     }
   }
 
