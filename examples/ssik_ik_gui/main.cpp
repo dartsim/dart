@@ -1077,13 +1077,25 @@ public:
   // Test hook: switches to the given arm (the same path as choosing it in the
   // combo) and returns a one-line summary. Used by --self-test to exercise
   // online arm switching across every prebuilt module without opening a window.
-  std::string selectArmForTest(int index)
+  std::string selectArmForTest(int index, bool& loaded, int& solutionCount)
   {
+    loaded = false;
+    solutionCount = 0;
     if (index < 0 || index >= static_cast<int>(mArms.size()))
       return "invalid arm index";
 
     mArmIndex = index;
     loadSelectedArm();
+
+    // "loaded" means ssik imported and the kinematic chain was read, i.e. the
+    // optional IK integration is healthy. Zero solutions for a particular
+    // target is not a per-arm failure: several arms' home pose sits on a
+    // joint-limit boundary, so ssik legitimately returns no limit-valid
+    // solution there. The caller fails the self-test when any arm fails to
+    // load, or when no arm produces any solution at all (which would indicate a
+    // broken solver).
+    loaded = mLoaded;
+    solutionCount = static_cast<int>(mSolutions.size());
 
     std::ostringstream stream;
     stream << mArms[index].label << " (" << mArms[index].module << "): ";
@@ -1530,10 +1542,30 @@ int main(int argc, char* argv[])
   viewer->getImGuiHandler()->addWidget(widget);
 
   if (options.selfTest) {
-    for (int i = 0; i < widget->armCount(); ++i)
-      std::cout << "[self-test] " << widget->selectArmForTest(i) << "\n";
-    std::cout << "[self-test] cycled " << widget->armCount()
-              << " arms without crashing\n";
+    int notLoaded = 0;
+    long long totalSolutions = 0;
+    for (int i = 0; i < widget->armCount(); ++i) {
+      bool loaded = false;
+      int solutionCount = 0;
+      std::cout << "[self-test] "
+                << widget->selectArmForTest(i, loaded, solutionCount)
+                << (loaded ? "" : "  [FAIL]") << "\n";
+      if (!loaded)
+        ++notLoaded;
+      totalSolutions += solutionCount;
+    }
+    if (notLoaded > 0) {
+      std::cout << "[self-test] " << notLoaded << " of " << widget->armCount()
+                << " arms failed to load (is ssik installed?)\n";
+      return 1;
+    }
+    if (totalSolutions == 0) {
+      std::cout << "[self-test] no arm produced any IK solution; the solver "
+                   "integration looks broken\n";
+      return 1;
+    }
+    std::cout << "[self-test] all " << widget->armCount() << " arms loaded ("
+              << totalSolutions << " total solutions)\n";
     return 0;
   }
 

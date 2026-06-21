@@ -154,6 +154,18 @@ def test_python_analytical_rejects_wrong_solution_dimension():
         analytical.getSolutions(dart.math.Isometry3())
 
 
+def test_python_analytical_rejects_out_of_range_dof():
+    skel, body, ik, dofs = _create_free_joint_ik()
+
+    def solve(target):
+        return []
+
+    # A nonexistent DOF index (e.g. a stale solver chain for another skeleton)
+    # must raise instead of segfaulting later in checkSolutionJointLimits().
+    with pytest.raises(ValueError, match="out of range"):
+        ik.setPythonAnalytical(solve, [len(dofs) + 5])
+
+
 class FailingSolver(dart.optimizer.Solver):
     def __init__(self, constant):
         super(FailingSolver, self).__init__()

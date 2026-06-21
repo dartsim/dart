@@ -764,6 +764,23 @@ void InverseKinematics(py::module& m)
             else
               resolvedDofs = dofs.cast<std::vector<std::size_t>>();
 
+            // Validate the registered DOF indices against the skeleton up
+            // front. Otherwise a stale/incorrect index only warns in
+            // constructDofMap() and later segfaults in
+            // checkSolutionJointLimits(), which dereferences
+            // Skeleton::getDof(index) without a null check.
+            const dart::dynamics::JacobianNode* node = self->getNode();
+            const auto skeleton = node ? node->getSkeleton() : nullptr;
+            const std::size_t numDofs = skeleton ? skeleton->getNumDofs() : 0u;
+            for (std::size_t dof : resolvedDofs) {
+              if (dof >= numDofs) {
+                throw py::value_error(
+                    "setPythonAnalytical: DOF index " + std::to_string(dof)
+                    + " is out of range for the skeleton with "
+                    + std::to_string(numDofs) + " DOF(s)");
+              }
+            }
+
             return self->setGradientMethod<PythonAnalyticalIk>(
                 resolvedDofs, std::move(solve), methodName);
           },
