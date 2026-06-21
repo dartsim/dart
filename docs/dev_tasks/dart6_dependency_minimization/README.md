@@ -238,9 +238,10 @@ OpenSceneGraph and GLUT GUI dependencies
   GLUT screenshot path remains.
 - Validation: OSG feature-parity smoke for every migrated GLUT example,
   tutorial/example builds, GUI screenshot smoke, package-component smoke for
-  `gui-osg`, absence checks for installed `dart/gui/glut` headers and the
-  `gui-glut` component, default configure/build without GLUT packages, and an
-  explicit GUI build with OSG enabled.
+  `gui-osg`, absence checks for installed `dart/gui/glut` headers, and package
+  smokes proving the public `gui`/`dart-gui` component no longer advertises or
+  links GLUT while `gui-osg` remains usable. Also run a default configure/build
+  without GLUT packages and an explicit GUI build with OSG enabled.
 
 ## Sequenced Workstreams
 
