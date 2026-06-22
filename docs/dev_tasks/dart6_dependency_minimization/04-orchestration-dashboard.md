@@ -75,8 +75,16 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
-3. **CI runner backlog:** GitHub Actions jobs have been queueing for hours; PRs sit
-   `BLOCKED` on pending (not failing). Factor into merge-timing expectations.
+3. **CI health (backlog now draining):**
+   - **`coverage` is failing on multiple PRs** (#3118, #3121) — a recurring
+     coverage-job issue, **not** content-specific (#3121 is docs-only). **#3120
+     directly targets this job** ("stop coverage running tests twice"), so
+     prioritizing #3120 (its only conflict is the trivial `CHANGELOG.md` one in
+     flag 1) likely improves CI health effort-wide.
+   - **#3121's `Debug` + `API Documentation` failures are flaky** — the same jobs
+     **pass** on sibling PRs #3116/#3118 (same base); a re-trigger should clear
+     them. (Coverage log also shows benign `Cannot generate a safe runtime search
+     path` RPATH warnings across pre-existing targets.)
 4. **Native-collision lane has WIP branches but no PR** — no gz-compat / parity /
    perf evidence visible yet. Watch for the PR; its scope/requirements are in `03`.
 
