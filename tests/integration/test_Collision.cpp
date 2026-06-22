@@ -795,6 +795,49 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartSphereCylinderOrderSymmetry)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.25));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  sphereFrame->setTranslation(Eigen::Vector3d(0.6, 0.0, 0.0));
+
+  auto sphereGroup = cd->createCollisionGroup(sphereFrame.get());
+  auto cylinderGroup = cd->createCollisionGroup(cylinderFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  CollisionResult sphereFirst;
+  ASSERT_TRUE(sphereGroup->collide(cylinderGroup.get(), option, &sphereFirst));
+  ASSERT_EQ(sphereFirst.getNumContacts(), 1u);
+  const auto& sphereContact = sphereFirst.getContact(0);
+  EXPECT_EQ(sphereContact.collisionObject1->getShapeFrame(), sphereFrame.get());
+  EXPECT_EQ(
+      sphereContact.collisionObject2->getShapeFrame(), cylinderFrame.get());
+  EXPECT_TRUE(sphereContact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(sphereContact.penetrationDepth, 0.075, 1e-12);
+
+  CollisionResult cylinderFirst;
+  ASSERT_TRUE(
+      cylinderGroup->collide(sphereGroup.get(), option, &cylinderFirst));
+  ASSERT_EQ(cylinderFirst.getNumContacts(), 1u);
+  const auto& cylinderContact = cylinderFirst.getContact(0);
+  EXPECT_EQ(
+      cylinderContact.collisionObject1->getShapeFrame(), cylinderFrame.get());
+  EXPECT_EQ(
+      cylinderContact.collisionObject2->getShapeFrame(), sphereFrame.get());
+  EXPECT_TRUE(cylinderContact.normal.isApprox(-sphereContact.normal, 1e-12));
+  EXPECT_TRUE(cylinderContact.point.isApprox(sphereContact.point, 1e-12));
+  EXPECT_NEAR(
+      cylinderContact.penetrationDepth, sphereContact.penetrationDepth, 1e-12);
+}
+
+//==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
