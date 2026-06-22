@@ -25,9 +25,6 @@ RUN apt-get update \
     liboctomap-dev \
     libtinyxml2-dev \
     liburdfdom-dev \
-    libxi-dev \
-    libxmu-dev \
-    freeglut3-dev \
     libopenscenegraph-dev \
     libspdlog-dev \
     && rm -rf /var/lib/apt/lists/*

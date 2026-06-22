@@ -544,7 +544,7 @@ if(mRandomize)
 
 ``mDistribution(mMT)`` will generate a random value in the range \[-1, 1\] 
 inclusive because of how we initialized the classes in the constructor of
-``MyWindow``.
+``CollisionsEventHandler``.
 
 Then we always set the height to the default value:
 ```cpp
@@ -790,9 +790,9 @@ for(size_t i=6; i < ring->getNumDofs(); ++i)
 
 ## Lesson 5: Create a closed kinematic chain
 
-Find the ``addRing`` function in ``MyWindow``. In here, we'll want to create a
-dynamic constraint that attaches the first and last BodyNodes of the chain
-together by a BallJoint-style constraint.
+Find the ``CollisionsEventHandler::addRing`` function. In here, we'll want to
+create a dynamic constraint that attaches the first and last BodyNodes of the
+chain together by a BallJoint-style constraint.
 
 First we'll grab the BodyNodes that we care about:
 
