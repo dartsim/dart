@@ -21,7 +21,7 @@
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
 | **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress — first PR open (#3123)**, + WIP branches |
-| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Largely merged; one PR open (#3118) |
+| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Merged (incl. #3118 profiling driver) |
 
 ## PR tracker
 
@@ -44,8 +44,14 @@
 ### ✅ Merged — perf/parallelism + enabling fixes (issue #3056)
 - **#3071** opt-in simulation threading · **#3085** plane/contact-cap collision ·
   **#3086** resting-world deactivation · **#3089** contact benchmark example ·
-  **#3111** constrain unsafe parallel island solves · **#3112** accelerate settled worlds
+  **#3111** constrain unsafe parallel island solves · **#3112** accelerate settled worlds ·
+  **#3118** inverse-dynamics profiling driver (merged 2026-06-22)
 - **#3114** FCL null-contact fix (unblocked the coverage/Asserts CI regression)
+
+### ✅ Merged — code-footprint
+- **#3122** Remove legacy `dart/integration` module (merged 2026-06-22) — deletes the unused
+  `Integrator`/`EulerIntegrator`/`RK4Integrator`/`SemiImplicitEulerIntegrator`/`IntegrableSystem`
+  + their installed `include/dart/integration` headers (a public-surface footprint reduction).
 
 ### ✅ Merged — CI / hygiene
 - **#3120** stop coverage job double-running tests (merged 2026-06-22) — the coverage-job fix
@@ -54,9 +60,7 @@
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3123** | **native-collision-port** | Speed up DART primitive plane collision | **first native-collision PR** — dependency-free primitive plane contacts + finite-shape broadphase pruning (branch `perf/dart6-native-collision`). `MERGEABLE`, CI pending. Milestone 6.20.0. _Verify vs `03` gz-compat/parity/perf bar._ |
-| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ✅ conflict **resolved** (GLUT-example deletion accepted) — `MERGEABLE`, CI pending. Milestone 6.20.0 |
-| **#3118** | perf | Inverse-dynamics profiling driver | `MERGEABLE`, CI pending |
+| **#3123** | **native-collision-port** | Speed up DART primitive plane collision | **the lone substantive dep-min PR open** — dependency-free primitive plane contacts + finite-shape broadphase pruning (branch `perf/dart6-native-collision`). `MERGEABLE`, CI pending. Milestone 6.20.0. _Verify vs `03` gz-compat/parity/perf bar._ |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
@@ -108,8 +112,9 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
     dependency**; it folds into the GUI/OSG work, not the removed set.
 - **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut
   **and removes lodepng** (`dart/external/lodepng` deleted in the same PR).
-- **In flight:** native-collision port — first PR **#3123** (primitive plane contacts +
-  broadphase pruning); legacy `dart/integration` dead-code removal (#3122, mergeable).
+- **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122).
+- **In flight:** native-collision port — **#3123** (primitive plane contacts +
+  broadphase pruning) — the lone substantive dep-min PR still open.
 - **Largest remaining win (now in flight, #3123):** native-collision port → makes
   FCL/Bullet/ODE optional and eventually drops `fcl` from core.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
