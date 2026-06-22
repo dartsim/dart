@@ -67,7 +67,7 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ## Coordination flags / blockers
 
-1. **Open PRs behind `release-6.20`** (after #3119): #3116/#3118/#3121 are 1 commit
+1. **Open PRs behind `release-6.20`** (after #3119): #3116/#3118 are 1 commit
    behind — a simple merge-up. **#3120 has flipped to a hard conflict
    (`CONFLICTING`/`DIRTY`)** — it needs real conflict resolution, not just a
    catch-up merge. All owned by the maintainer.
