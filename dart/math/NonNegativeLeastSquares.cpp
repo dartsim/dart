@@ -32,6 +32,8 @@
 
 #include "dart/math/NonNegativeLeastSquares.hpp"
 
+#include "dart/common/Profile.hpp"
+
 #include <Eigen/Dense>
 
 #include <algorithm>
@@ -49,6 +51,7 @@ bool solveNonNegativeLeastSquares(
     double tolerance,
     std::size_t maxIterations)
 {
+  DART_PROFILE_SCOPED_N("solveNonNegativeLeastSquares (NNLS)");
   const Eigen::Index m = A.rows();
   const Eigen::Index n = A.cols();
 

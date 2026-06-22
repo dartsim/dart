@@ -33,6 +33,7 @@
 #include "dart/dynamics/ContactInverseDynamics.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -193,6 +194,7 @@ std::vector<std::size_t> ContactInverseDynamics::getUnactuatedDofs() const
 ContactInverseDynamics::Result ContactInverseDynamics::compute(
     bool withExternalForces, bool withDampingForces, bool withSpringForces)
 {
+  DART_PROFILE_SCOPED_N("ContactID::compute");
   Result result;
 
   if (!mSkeleton) {
@@ -296,17 +298,20 @@ ContactInverseDynamics::Result ContactInverseDynamics::compute(
   mGenerators.resize(mContacts.size());
   mFullColumns.resize(static_cast<Eigen::Index>(numDofs), numColumns);
   Eigen::Index column = 0;
-  for (std::size_t k = 0; k < mContacts.size(); ++k) {
-    const Contact& contact = mContacts[k];
-    mGenerators[k] = computeConeGenerators(
-        contact.normal.normalized(), contact.frictionCoeff, contact.numBasis);
+  {
+    DART_PROFILE_SCOPED_N("ContactID: cone generators + Jacobians");
+    for (std::size_t k = 0; k < mContacts.size(); ++k) {
+      const Contact& contact = mContacts[k];
+      mGenerators[k] = computeConeGenerators(
+          contact.normal.normalized(), contact.frictionCoeff, contact.numBasis);
 
-    const math::LinearJacobian jacobian = mSkeleton->getLinearJacobian(
-        contact.bodyNode, contact.localOffset, Frame::World());
+      const math::LinearJacobian jacobian = mSkeleton->getLinearJacobian(
+          contact.bodyNode, contact.localOffset, Frame::World());
 
-    mFullColumns.middleCols(column, mGenerators[k].cols()).noalias()
-        = jacobian.transpose() * mGenerators[k];
-    column += mGenerators[k].cols();
+      mFullColumns.middleCols(column, mGenerators[k].cols()).noalias()
+          = jacobian.transpose() * mGenerators[k];
+      column += mGenerators[k].cols();
+    }
   }
 
   // Nonnegative least squares on the unactuated rows with Tikhonov

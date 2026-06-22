@@ -61,6 +61,12 @@ if(TARGET dart-collision-bullet)
 
 endif()
 
+# Headless contact-aware inverse-dynamics driver (checksum oracle + stepping-
+# loop timer + text-profiler dump). Core dynamics only; no collision backend
+# needed. Not a Google Benchmark target.
+add_executable(id_headless id_headless.cpp)
+target_link_libraries(id_headless PRIVATE dart)
+
 if(TARGET dart-utils)
 
   dart_benchmarks(
