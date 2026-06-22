@@ -472,7 +472,6 @@ docs-clean = { cmd = """
 
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
-freeglut = ">=3.2.2,<3.3"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
 
@@ -545,7 +544,6 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 ################################################################################
 
 [target.win-64.dependencies]
-freeglut = ">=3.2.2"
 
 [target.win-64.tasks]
 # Keep Visual Studio selection external: CMake defaults to the installed VS

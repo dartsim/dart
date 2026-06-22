@@ -59,7 +59,7 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
-          pixi run coverage-report
+          pixi run --skip-deps coverage-report
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

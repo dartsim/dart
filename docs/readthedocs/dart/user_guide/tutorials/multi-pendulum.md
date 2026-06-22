@@ -55,23 +55,29 @@ the pendulum in the function ``addBody``:
 BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
       parent, properties, BodyNode::AspectProperties(name)).second;
 ```
-The simplest way to set up a simulation program in DART is to use
-``SimWindow`` class. A SimWindow owns an instance of ``World``  and
-simulates all the Skeletons in the World. In this example, we create a World with the
-pendulum skeleton in it, and assign the World to an instance of
-``MyWindow``, a subclass derived from SimWindow.
+These tutorials use the OSG viewer utilities under ``dart::gui::osg``. After we
+create the ``World`` and pendulum skeleton, we instantiate a ``Controller`` plus
+a GUI event handler, wrap the world in a ``RealTimeWorldNode``, and send that
+node to a ``Viewer``.
 
 ```cpp
-WorldPtr world(new World);
+WorldPtr world = World::create();
 world->addSkeleton(pendulum);
-MyWindow window(world);
+
+auto controller = std::make_unique<Controller>(pendulum, world);
+auto viewer = Viewer();
+auto handler = new PendulumEventHandler(world, controller.get(), &viewer);
+
+::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
+
+viewer.addWorldNode(node);
+viewer.addEventHandler(handler);
 ```
 
-Every single time step, the ``MyWindow::timeStepping`` function will be called
-and the state of the World will be simulated. The user can override
-the default timeStepping function to customize the simulation
-routine. For example, one can incorporate sensors, actuators, or user
-interaction in the forward simulation.
+Every single time step, the ``Viewer`` drives the world through
+``CustomWorldNode::customPreStep()``, which we override to call the event
+handler's update path and then ``Controller::update()``. For example, one can
+incorporate sensors, actuators, or user interaction in the forward simulation.
 
 
 ## Lesson 1: Change shapes and applying forces
@@ -87,8 +93,8 @@ At each step, we'll want to make sure that everything starts out with its defaul
 appearance. The default is for everything to be blue and there not to be any
 arrow attached to any body.
 
-Find the function named ``timeStepping`` in the ``MyWindow`` class. The top of
-this function is where we will want to reset everything to the default appearance.
+Find the ``Controller::update`` function. The top of this function is where we
+reset everything to the default appearance before advancing the simulation.
 
 Each BodyNode contains visualization ``Shape``s that will be rendered during
 simulation. In our case, each BodyNode has two shapes:
@@ -129,11 +135,10 @@ Now everything will be reset to the default appearance.
 
 ### Lesson 1b: Apply joint torques based on user input
 
-The ``MyWindow`` class in this tutorial has a variable called ``mForceCountDown``
-which is a ``std::vector<int>`` whose entries get set to a value of
-``default_countdown`` each time the user presses a number key. If an entry in
-``mForceCountDown`` is greater than zero, then that implies that the user wants
-a force to be applied for that entry.
+The ``Controller`` class keeps a ``mForceCountDown`` vector whose entries get
+set to ``default_countdown`` whenever ``PendulumEventHandler`` sees a numeric key
+press. If an entry in ``mForceCountDown`` is greater than zero, then that implies
+that the user wants a force to be applied for that entry.
 
 There are two ways that forces can be applied:
 
@@ -232,8 +237,8 @@ the 1-index visualization shape, because we trust that it is the shape for the
 body.
 
 Now we'll want to add an arrow to the visualization shapes of the body to
-represent the applied force. The ``MyWindow`` class already provides the arrow
-shape; we just need to add it:
+represent the applied force. The ``Controller`` already owns an ``ArrowShape``
+that visualizes the currently applied body force; we just need to show it:
 
 ```cpp
 bn->createShapeNodeWith<VisualAspect>(mArrow);
@@ -253,8 +258,8 @@ order to improve numerical stability.
 
 First let's see how to get and set the rest positions.
 
-Find the function named ``changeRestPosition`` in the ``MyWindow`` class. This
-function will be called whenever the user presses the 'q' or 'a' button. We want
+Find the function named ``Controller::changeRestPosition``. This function is
+triggered whenever ``PendulumEventHandler`` sees the 'q' or 'a' key. We want
 those buttons to curl and uncurl the rest positions for the pendulum. To start,
 we'll go through all the generalized coordinates and change their rest positions
 by ``delta``:

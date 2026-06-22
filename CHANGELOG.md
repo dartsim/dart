@@ -27,6 +27,13 @@
     `InverseKinematics` is retained:
     [#3105](https://github.com/dartsim/dart/pull/3105)
 
+  * Remove the deprecated GLUT-backed `dart-gui` component and installed GLUT
+    headers, along with the vendored `lodepng` screenshot dependency. The
+    remaining deprecated GLUT examples and tutorials are available through the
+    `dart-gui-osg` viewer instead, and DART no longer lists GLUT/freeglut as an
+    explicit package dependency:
+    [#3116](https://github.com/dartsim/dart/pull/3116)
+
 * Build
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/gui.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/urdf/urdf.hpp>
 
@@ -51,12 +51,16 @@ const double default_domino_mass
 const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
 const int default_push_duration = 1000; // # iterations
+const int default_playback_frame_step = 16;
+const double default_contact_force_scale = 0.1;
 
 const double default_endeffector_offset = 0.05;
 
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+using namespace dart::gui;
+using namespace dart::gui::osg;
 using namespace dart::math;
 
 class Controller
@@ -222,21 +226,161 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::glut::SimWindow
+class DominoEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  MyWindow(const WorldPtr& world)
-    : mTotalAngle(0.0),
+  DominoEventHandler(
+      const WorldPtr& world, Controller* controller, Viewer* viewer)
+    : mWorld(world),
+      mController(controller),
+      mViewer(viewer),
+      mTotalAngle(0.0),
       mHasEverRun(false),
+      mPlayingBack(false),
+      mShowContactForces(false),
+      mPlayFrame(0),
       mForceCountDown(0),
       mPushCountDown(0)
   {
-    setWorld(world);
     mFirstDomino = world->getSkeleton("domino");
     mFloor = world->getSkeleton("floor");
+  }
 
-    mController = std::make_unique<Controller>(
-        world->getSkeleton("manipulator"), mFirstDomino);
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  {
+    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
+      if (ea.getKey() == 'p') {
+        togglePlayback();
+        return true;
+      }
+
+      if (ea.getKey() == 'v') {
+        toggleContactForces();
+        return true;
+      }
+
+      if (!mHasEverRun) {
+        switch (ea.getKey()) {
+          case 'q':
+            attemptToCreateDomino(default_angle);
+            return true;
+          case 'w':
+            attemptToCreateDomino(0.0);
+            return true;
+          case 'e':
+            attemptToCreateDomino(-default_angle);
+            return true;
+          case 'd':
+            deleteLastDomino();
+            return true;
+          case ' ':
+            mHasEverRun = true;
+            stopPlayback();
+            if (mViewer)
+              mViewer->simulate(true);
+            return true;
+          default:
+            return false;
+        }
+      } else {
+        switch (ea.getKey()) {
+          case ' ':
+            stopPlayback();
+            return false;
+          case 'f':
+            mForceCountDown = default_force_duration;
+            return true;
+          case 'r':
+            mPushCountDown = default_push_duration;
+            return true;
+          default:
+            return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  void showPlaybackFrame()
+  {
+    if (!mPlayingBack)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numFrames = recording->getNumFrames();
+    if (numFrames == 0) {
+      stopPlayback();
+      return;
+    }
+
+    if (recording->getNumSkeletons()
+        != static_cast<int>(mWorld->getNumSkeletons())) {
+      stopPlayback();
+      return;
+    }
+
+    if (mPlayFrame >= numFrames)
+      mPlayFrame = 0;
+
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
+      mWorld->getSkeleton(i)->setPositions(recording->getConfig(mPlayFrame, i));
+
+    updateRecordedContactForces(mPlayFrame);
+
+    mPlayFrame += default_playback_frame_step;
+  }
+
+  void bakeFrame()
+  {
+    mWorld->bake();
+  }
+
+  void update()
+  {
+    // If the user has pressed the 'f' key, apply a force to the first domino in
+    // order to push it over
+    if (mForceCountDown > 0) {
+      Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
+      Eigen::Vector3d location
+          = default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+      mFirstDomino->getBodyNode(0)->addExtForce(force, location);
+
+      --mForceCountDown;
+    }
+
+    // Run the controller for the manipulator
+    if (mPushCountDown > 0) {
+      mController->setOperationalSpaceForces();
+      --mPushCountDown;
+    } else {
+      mController->setPDForces();
+    }
+  }
+
+  void updateContactForces()
+  {
+    if (!mShowContactForces) {
+      hideContactForces();
+      return;
+    }
+
+    if (mPlayingBack)
+      return;
+
+    const auto& result
+        = mWorld->getConstraintSolver()->getLastCollisionResult();
+    const auto& contacts = result.getContacts();
+    ensureContactForceVisuals(contacts.size());
+
+    for (std::size_t i = 0; i < contacts.size(); ++i) {
+      setContactForceVisual(
+          i,
+          contacts[i].point,
+          default_contact_force_scale * contacts[i].force);
+    }
+
+    hideContactForces(contacts.size());
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
@@ -313,66 +457,121 @@ public:
     }
   }
 
-  void keyboard(unsigned char key, int x, int y) override
-  {
-    if (!mHasEverRun) {
-      switch (key) {
-        case 'q':
-          attemptToCreateDomino(default_angle);
-          break;
-        case 'w':
-          attemptToCreateDomino(0.0);
-          break;
-        case 'e':
-          attemptToCreateDomino(-default_angle);
-          break;
-        case 'd':
-          deleteLastDomino();
-          break;
-        case ' ':
-          mHasEverRun = true;
-          break;
-      }
-    } else {
-      switch (key) {
-        case 'f':
-          mForceCountDown = default_force_duration;
-          break;
-
-        case 'r':
-          mPushCountDown = default_push_duration;
-          break;
-      }
-    }
-
-    SimWindow::keyboard(key, x, y);
-  }
-
-  void timeStepping() override
-  {
-    // If the user has pressed the 'f' key, apply a force to the first domino in
-    // order to push it over
-    if (mForceCountDown > 0) {
-      Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
-      Eigen::Vector3d location
-          = default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
-      mFirstDomino->getBodyNode(0)->addExtForce(force, location);
-
-      --mForceCountDown;
-    }
-
-    // Run the controller for the manipulator
-    if (mPushCountDown > 0) {
-      mController->setOperationalSpaceForces();
-      --mPushCountDown;
-    } else {
-      mController->setPDForces();
-    }
-
-    SimWindow::timeStepping();
-  }
-
 protected:
+  void togglePlayback()
+  {
+    Recording* recording = mWorld->getRecording();
+    if (recording->getNumFrames() == 0) {
+      std::cout << "No recorded frames are available for replay." << std::endl;
+      return;
+    }
+
+    mPlayingBack = !mPlayingBack;
+    if (mPlayingBack && mViewer)
+      mViewer->simulate(false);
+
+    if (mPlayingBack && mPlayFrame >= recording->getNumFrames())
+      mPlayFrame = 0;
+  }
+
+  void toggleContactForces()
+  {
+    mShowContactForces = !mShowContactForces;
+
+    if (!mShowContactForces) {
+      hideContactForces();
+      std::cout << "Contact force visualization disabled." << std::endl;
+      return;
+    }
+
+    std::cout << "Contact force visualization enabled." << std::endl;
+
+    if (mPlayingBack) {
+      Recording* recording = mWorld->getRecording();
+      const int numFrames = recording->getNumFrames();
+      if (numFrames == 0) {
+        hideContactForces();
+        return;
+      }
+
+      if (mPlayFrame >= numFrames)
+        mPlayFrame = 0;
+
+      updateRecordedContactForces(mPlayFrame);
+      return;
+    }
+
+    updateContactForces();
+  }
+
+  void stopPlayback()
+  {
+    mPlayingBack = false;
+  }
+
+  void updateRecordedContactForces(int frame)
+  {
+    if (!mShowContactForces)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numContacts = recording->getNumContacts(frame);
+    ensureContactForceVisuals(static_cast<std::size_t>(numContacts));
+
+    for (int i = 0; i < numContacts; ++i) {
+      const Eigen::Vector3d point = recording->getContactPoint(frame, i);
+      const Eigen::Vector3d force
+          = default_contact_force_scale * recording->getContactForce(frame, i);
+      setContactForceVisual(static_cast<std::size_t>(i), point, force);
+    }
+
+    hideContactForces(static_cast<std::size_t>(numContacts));
+  }
+
+  void ensureContactForceVisuals(std::size_t count)
+  {
+    while (mContactForceFrames.size() < count) {
+      auto frame = std::make_shared<SimpleFrame>(Frame::World());
+      auto arrow = std::make_shared<ArrowShape>(
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::UnitZ() * 0.01,
+          ArrowShape::Properties(0.002, 2.0, 0.15),
+          Eigen::Vector4d(0.2, 0.2, 0.8, 1.0));
+
+      frame->setShape(arrow);
+      frame->getVisualAspect(true)->setHidden(true);
+      mWorld->addSimpleFrame(frame);
+
+      mContactForceFrames.push_back(frame);
+      mContactForceArrows.push_back(arrow);
+    }
+  }
+
+  void setContactForceVisual(
+      std::size_t index,
+      const Eigen::Vector3d& point,
+      const Eigen::Vector3d& force)
+  {
+    auto* visual = mContactForceFrames[index]->getVisualAspect(true);
+    if (force.norm() < 1e-8) {
+      visual->setHidden(true);
+      return;
+    }
+
+    visual->setHidden(false);
+    mContactForceArrows[index]->setPositions(point, point + force);
+  }
+
+  void hideContactForces(std::size_t start = 0)
+  {
+    for (std::size_t i = start; i < mContactForceFrames.size(); ++i)
+      mContactForceFrames[i]->getVisualAspect(true)->setHidden(true);
+  }
+
+  WorldPtr mWorld;
+  Controller* mController;
+  Viewer* mViewer;
+
   /// Base domino. Used to clone new dominoes.
   SkeletonPtr mFirstDomino;
 
@@ -391,6 +590,15 @@ protected:
   /// Set to true the first time spacebar is pressed
   bool mHasEverRun;
 
+  /// Set to true when replaying recorded simulation frames
+  bool mPlayingBack;
+
+  /// Set to true when contact force arrows are visible
+  bool mShowContactForces;
+
+  /// Index of the recorded frame currently shown during replay
+  int mPlayFrame;
+
   /// The first domino will be pushed by a disembodied force while the value of
   /// this is greater than zero
   int mForceCountDown;
@@ -399,7 +607,39 @@ protected:
   /// of this is greater than zero
   int mPushCountDown;
 
-  std::unique_ptr<Controller> mController;
+  /// World-owned frames used to display contact force arrows
+  std::vector<SimpleFramePtr> mContactForceFrames;
+
+  /// Arrow shapes attached to the contact force frames
+  std::vector<std::shared_ptr<ArrowShape>> mContactForceArrows;
+};
+
+class CustomWorldNode : public RealTimeWorldNode
+{
+public:
+  CustomWorldNode(const WorldPtr& world, DominoEventHandler* handler)
+    : RealTimeWorldNode(world), mHandler(handler)
+  {
+  }
+
+  void customPreRefresh() override
+  {
+    mHandler->showPlaybackFrame();
+  }
+
+  void customPreStep() override
+  {
+    mHandler->update();
+  }
+
+  void customPostStep() override
+  {
+    mHandler->bakeFrame();
+    mHandler->updateContactForces();
+  }
+
+protected:
+  DominoEventHandler* mHandler;
 };
 
 SkeletonPtr createDomino()
@@ -474,7 +714,7 @@ SkeletonPtr createManipulator()
   return manipulator;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
   SkeletonPtr domino = createDomino();
   SkeletonPtr floor = createFloor();
@@ -485,28 +725,55 @@ int main(int argc, char* argv[])
   world->addSkeleton(floor);
   world->addSkeleton(manipulator);
 
-  MyWindow window(world);
+  // Create controller and event handler
+  auto controller = std::make_unique<Controller>(manipulator, domino);
 
-  std::cout << "Before simulation has started, you can create new dominoes:"
-            << std::endl;
-  std::cout << "'w': Create new domino angled forward" << std::endl;
-  std::cout << "'q': Create new domino angled to the left" << std::endl;
-  std::cout << "'e': Create new domino angled to the right" << std::endl;
-  std::cout << "'d': Delete the last domino that was created" << std::endl;
-  std::cout << std::endl;
-  std::cout << "spacebar: Begin simulation (you can no longer create or remove "
-               "dominoes)"
-            << std::endl;
-  std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'f': Push the first domino with a disembodied force so that it "
-               "falls over"
-            << std::endl;
-  std::cout
-      << "'r': Push the first domino with the manipulator so that it falls over"
-      << std::endl;
-  std::cout << "'v': Turn contact force visualization on/off" << std::endl;
+  // Create a Viewer and set it up with the WorldNode
+  auto viewer = Viewer();
+  auto handler = new DominoEventHandler(world, controller.get(), &viewer);
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Dominoes");
-  glutMainLoop();
+  // Create a WorldNode and wrap it around the world
+  ::osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world, handler);
+
+  viewer.addWorldNode(node);
+  viewer.addEventHandler(handler);
+
+  // Print instructions
+  viewer.addInstructionText(
+      "Before simulation has started, you can create new dominoes:\n");
+  viewer.addInstructionText("'w': Create new domino angled forward\n");
+  viewer.addInstructionText("'q': Create new domino angled to the left\n");
+  viewer.addInstructionText("'e': Create new domino angled to the right\n");
+  viewer.addInstructionText("'d': Delete the last domino that was created\n");
+  viewer.addInstructionText("\n");
+  viewer.addInstructionText(
+      "spacebar: Begin simulation (you can no longer create or remove "
+      "dominoes)\n");
+  viewer.addInstructionText("'p': replay simulation\n");
+  viewer.addInstructionText(
+      "'f': Push the first domino with a disembodied force so that it falls "
+      "over\n");
+  viewer.addInstructionText(
+      "'r': Push the first domino with the manipulator so that it falls "
+      "over\n");
+  viewer.addInstructionText("'v': Turn contact force visualization on/off\n");
+  std::cout << viewer.getInstructions() << std::endl;
+
+  // Set up the window to be 640x480
+  viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  // Adjust the viewpoint of the Viewer
+  viewer.getCameraManipulator()->setHomePosition(
+      ::osg::Vec3(2.0f, 1.0f, 2.0f),
+      ::osg::Vec3(0.0f, 0.0f, 0.0f),
+      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+
+  // We need to re-dirty the CameraManipulator by passing it into the viewer
+  // again, so that the viewer knows to update its HomePosition setting
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  // Begin running the application loop
+  viewer.run();
+
+  return 0;
 }
