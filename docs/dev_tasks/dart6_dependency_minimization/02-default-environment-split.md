@@ -1,9 +1,14 @@
-# Lane: DART 6.20 dependency reduction (task_3)
+# Lane: DART 6.20 dependency reduction (default-environment split)
 
 > Sub-document of the `dart6_dependency_minimization` task. The task `README.md`
 > is the single source of truth for the overall effort (owned by the
-> native-replacement lane). **This file owns the task_3 lane only.** Link to the
-> README; do not duplicate it.
+> native-replacement lane). **This file owns the dependency-reduction lane only.**
+> Link to the README; do not duplicate it.
+>
+> _Naming note: lanes are referred to by their **work scope** (dependency-reduction
+> lane, native-replacement lane, native-collision-port lane), not by any local
+> working-directory name — those are per-machine and meaningless to other
+> developers._
 
 ## Scope (evolved)
 
@@ -16,30 +21,43 @@ only hides alternatives. The lane therefore pivoted to:
 1. **Remove genuinely-unnecessary / deprecated dependencies outright** (not just
    shuffle them into feature envs) — optimizer backends (done). A follow-up sweep
    found no other *standalone*-removable dep (boost is OSG-coupled; see "Next").
-2. **Defer the one large, high-value reduction** — a native collision detector
+2. **Hand off the one large, high-value reduction** — a native collision detector
    that would make FCL/Bullet/ODE optional — to a separate, evidence-driven
-   initiative (see "Deferred").
+   initiative (now owned by another lane; see "Owned by other lanes").
 
 Retained features keep source-compat; removals of deprecated/optional surfaces
 are documented breaking changes for 6.20.
 
-## Coordination with task_2 (native-replacement lane)
+## Coordination — lane ownership (parallel, non-overlapping)
 
-- task_2 owns `convhull` (merged), `imgui`, `ikfast`, `lodepng` (native PNG),
-  `odelcpsolver` (native Dantzig, #3088 merged) — `dart/external/*` + source.
+> **This lane is complete.** Every remaining dependency-reduction lever is
+> either done, non-removable, or **owned by another lane** — do not pick these up
+> here (avoids overlap). Ownership as of 2026-06-21:
+>
+> - **This (dependency-reduction) lane:** optimizer removal (#3105, merged) + the
+>   planning docs (#3107, merged). No remaining executable work.
+> - **The native-collision-port lane:** the **native-collision detector port**
+>   (the FCL/Bullet/ODE reduction; scoped in `03-native-collision-port-scoping.md`).
+> - **The native-replacement lane:** the **GUI/OSG demotion** (which also drops
+>   boost + collada-dom + freeglut), plus its `dart/external/*` work below.
+
+- The native-replacement lane owns `convhull` (merged), `imgui`, `ikfast`,
+  `lodepng` (native PNG), `odelcpsolver` (native Dantzig, #3088 merged) —
+  `dart/external/*` + source — **and the GUI/OSG demotion** (slice 3).
 - Branch setup (per `AGENTS.md`): create topic branches with
   `git switch --no-track -c <type>/<topic> origin/release-6.20` — **never let a
   topic branch track `origin/release-*`** (prevents accidental release-branch
   pushes).
 - Shared hot files are `pixi.toml`/`pixi.lock`; **merge** `origin/release-6.20`
   before pushing (never rebase a published PR branch). Do not edit the task
-  `README.md` (task_2's SSOT).
+  `README.md` (the native-replacement lane's SSOT).
 
 ## Locked decisions
 
 1. **Optimizer backends → REMOVED** (not demoted): merged in #3105.
 2. **Collision pixi-demotion → ABANDONED** (#3106 closed): marginal while FCL is
-   core. The meaningful reduction is the native collision detector, **deferred**.
+   core. The meaningful reduction is the native collision detector, handed off to
+   the native-collision-port lane.
 3. **Compatibility bar:** retained features keep source-compat (old `#include`
    paths, component names, exported CMake targets). Removing deprecated optional
    surfaces (e.g. optimizer components/macros) is a documented breaking change.
@@ -52,12 +70,12 @@ are documented breaking changes for 6.20.
 
 | Dependency | State | Disposition |
 | --- | --- | --- |
-| Eigen3, assimp, fmt, **FCL**, ccd, tinyxml2, urdfdom, console_bridge | required-core | **Keep.** FCL can only drop via the native-collision backport (deferred). `console_bridge` is linked by `dart/utils/urdf`. |
+| Eigen3, assimp, fmt, **FCL**, ccd, tinyxml2, urdfdom, console_bridge | required-core | **Keep.** FCL can only drop via the native-collision backport (native-collision-port lane). `console_bridge` is linked by `dart/utils/urdf`. |
 | spdlog | optional logging | Keep (used). |
 | **ipopt, nlopt, pagmo, snopt** | deprecated optimizer backends | ✅ **REMOVED** — extracted to [dart-optimization](https://github.com/dartsim/dart-optimization); merged #3105. |
 | **boost (`libboost-devel`)** | declared for pagmo (now gone), but still pulled by `openscenegraph → collada-dom` | **Not independently removable** — OSG keeps boost in the default env, so dropping the explicit entry is cosmetic. DART has no boost usage; it drops out **with the GUI/OSG demotion** (slice 3). |
-| bullet-cpp, libode | optional collision backends; gz-physics uses them | **Demotion abandoned** (#3106 closed). Folds into the deferred native-collision initiative. |
-| openscenegraph, freeglut, imgui (GUI) | `DART_BUILD_GUI_OSG=ON` pulls them | **Deferred** (blocker below). |
+| bullet-cpp, libode | optional collision backends; gz-physics uses them | **Demotion abandoned** (#3106 closed). Folds into the native-collision initiative (native-collision-port lane). |
+| openscenegraph, freeglut, imgui (GUI) | `DART_BUILD_GUI_OSG=ON` pulls them | **Owned by the native-replacement lane** (blocker below). |
 | octomap | optional, but in exported `DART_PKG_EXTERNAL_DEPS` | **Keep** — demotion changes installed headers (`config.hpp`/`VoxelGridShape.hpp`) + the `dart.pc` contract. |
 
 ## Done
@@ -75,7 +93,13 @@ Pixi deps, and the now-stale non-Pixi install instructions (`Dockerfile`,
 neither core nor backends (verified). Verified by `dart`+`dartpy`+IK build +
 ctest + lint.
 
-## Next — HELD for the native-collision port (maintainer decision 2026-06-21)
+## Next — none in this lane (remaining levers owned elsewhere, 2026-06-21)
+
+This lane's executable work is **done** (optimizer #3105 + planning #3107, both
+merged). The two real remaining reductions are now owned by other lanes — the
+**native-collision port** by the native-collision-port lane and the **GUI/OSG
+demotion** by the native-replacement lane (see Coordination above) — so this lane
+does not pursue them.
 
 After the optimizer removal, no other dependency is *independently* removable
 (boost is OSG-coupled — `openscenegraph → collada-dom → libboost`; dropping the
@@ -83,22 +107,24 @@ explicit `libboost-devel` is cosmetic — DART has no boost usage, verified by a
 clean `dart`+`dartpy`+ctest(100/100)+pytest(52) build without the explicit dep).
 The remaining real reductions, with measured default-env footprint (236 pkgs):
 
-| Lever | Removes from default env | Status |
+| Lever | Removes from default env | Owner |
 | --- | --- | --- |
 | Collision extras (bullet/ode) — was #3106 | `bullet-cpp` 40.6 MiB + `libode` 0.5 MiB ≈ **41 MiB** | held (closed) |
-| GUI/OSG chain — slice 3 | OSG 9.1 + boost 3.1 + collada-dom 1.9 + imgui 0.9 + GL/glu/glut ~0.6 ≈ **15.6 MiB** | deferred |
-| FCL (core) | `fcl` 1.5 MiB | only via native collision |
+| GUI/OSG chain — slice 3 | OSG 9.1 + boost 3.1 + collada-dom 1.9 + imgui 0.9 + GL/glu/glut ~0.6 ≈ **15.6 MiB** | native-replacement lane |
+| FCL (core) | `fcl` 1.5 MiB | only via native collision (native-collision-port lane) |
 
-**Decision (c):** hold ALL interim Pixi demotions — including the ~41 MiB
-collision one — and pursue only the **native-collision detector port** (DART 7
-PLAN-035) as the path that eliminates the external collision deps
-(FCL/Bullet/ODE) *and* is evidence-driven faster. That port is an XL, separately
-scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
-`BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define drop out with the GUI/native work.
+**Decision (c) — superseded by the 2026-06-21 handoff:** the original call was to
+hold ALL interim Pixi demotions and pursue only the **native-collision detector
+port** (DART 7 PLAN-035) as the path that eliminates the external collision deps
+(FCL/Bullet/ODE) *and* is evidence-driven faster. That port is now owned by the
+**native-collision-port lane**, and the ~15.6 MiB GUI/OSG chain (which also drops
+`boost` + the vestigial `BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS` define + collada-dom +
+freeglut) is owned by the **native-replacement lane**. Both stay held *in this
+lane* — this lane takes no further action on them.
 
-## Deferred
+## Owned by other lanes (not this one)
 
-### Native collision detector (the real FCL/Bullet/ODE reduction)
+### Native collision detector (the real FCL/Bullet/ODE reduction) — native-collision-port lane
 
 - Port DART 7's `dart/collision/native/` (broadphase; narrowphase GJK/MPR/SAT;
   SDF; CCD; raycast; persistent contact manifolds — DART 7 PLAN-035, PRs
@@ -107,16 +133,17 @@ scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
 - **Requirements (maintainer):** backward-compat with gz-physics/gz-sim (gz's
   `find_package` requires `DART COMPONENTS collision-bullet collision-ode`), full
   feature/contact parity, and **evidence-driven** performance ≥ Bullet/ODE/FCL.
-- **Status:** deferred — XL multi-PR initiative needing its own design doc,
-  phased plan, and benchmark harness. Not pursued for 6.20 now.
+- **Owner:** the **native-collision-port lane** (as of 2026-06-21). This lane's
+  scoping artifact (`03-native-collision-port-scoping.md`, merged in #3107) is the
+  hand-off reference; this lane takes no further action.
 
-### GUI stack (OSG/GLUT/imgui)
+### GUI stack (OSG/GLUT/imgui) — native-replacement lane
 
-- Deferred. Blocker: default `config` sets `-DDART_BUILD_DARTPY=ON`, and
-  `python/dartpy/CMakeLists.txt` *hard-requires* `dart-gui-osg` via
-  `FATAL_ERROR` (not `if(TARGET)`-guarded). Demotion needs that guard + a Windows
-  wheel-publish repoint + keeping GUI in the publishing env; coordinate with
-  task_2's imgui branch.
+- **Owned by the native-replacement lane.** Blocker: default `config` sets
+  `-DDART_BUILD_DARTPY=ON`, and `python/dartpy/CMakeLists.txt` *hard-requires*
+  `dart-gui-osg` via `FATAL_ERROR` (not `if(TARGET)`-guarded). Demotion needs that
+  guard + a Windows wheel-publish repoint + keeping GUI in the publishing env;
+  coordinate with the native-replacement lane's imgui branch.
 
 ## Validation gates (select by touched surface)
 
@@ -137,12 +164,12 @@ scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
    (`config.hpp`, `VoxelGridShape.hpp`) and the `dart.pc` `Requires` contract.
    A true-optional `VoxelGridShape` componentization is a separate future effort
    — file a tracking issue? (defaulting to no for now).
-2. **GUI demotion — deferred:** OK to later guard dartpy's `dart-gui-osg`
-   requirement with `if(TARGET)` (so a default GUI-less build/wheel is possible
-   while feature/publish envs keep GUI), or keep GUI in the default env?
-3. **Native collision backport — deferred:** confirm when to start the dedicated
-   design/scoping effort (gz-compat matrix, feature-parity matrix, benchmark
-   plan).
+2. **GUI demotion — moved to the native-replacement lane.** (The `if(TARGET)`
+   guard for dartpy's `dart-gui-osg` requirement + Windows wheel-publish repoint
+   is that lane's call.)
+3. **Native collision backport — moved to the native-collision-port lane.**
+   Scoping (gz-compat matrix, feature-parity matrix, benchmark plan) is captured
+   in `03-native-collision-port-scoping.md`; execution is not this lane's.
 
 ## Progress log
 
@@ -165,22 +192,27 @@ scoped initiative (see "Deferred"); not started yet. `boost` + the vestigial
   the deferred initiatives.
 - 2026-06-21: Measured per-lever default-env footprint (collision extras ≈41 MiB,
   GUI/OSG ≈15.6 MiB, FCL 1.5 MiB). **Maintainer decision (c): hold ALL interim
-  Pixi demotions and pursue only the native-collision port.** task_3's active
+  Pixi demotions and pursue only the native-collision port.** This lane's active
   removals are therefore complete (optimizer #3105 merged); #3107 is the durable
-  record. Retired the obsolete local integration branch
-  `chore/default-env-split-release-6.20` (fully superseded by #3102/#3105/#3107).
+  record. Retired the obsolete local integration branch (fully superseded by
+  #3102/#3105/#3107).
+- 2026-06-21: **#3107 merged** (squash `ef86c40e1ce`) — the lane plan +
+  native-collision scoping docs are now in `release-6.20`; 7 Codex review findings
+  addressed, `gz-physics` gate green. **Lane handoff:** the native-collision port
+  is now owned by the **native-collision-port lane** and the GUI/OSG demotion by
+  the **native-replacement lane**; both removed from this lane's scope. **This
+  dependency-reduction lane is complete** — no remaining executable work.
 
 ## Resume prompt
 
-> Continue the DART 6.20 dependency-reduction lane (task_3). Read this file and
-> the task `README.md`. Optimizer backends are removed (#3105 merged); the
-> collision pixi-demotion was abandoned (#3106 closed). Per **maintainer decision
-> (c)**, ALL interim Pixi demotions are **held** — including the GUI/OSG (slice 3)
-> and collision-extras footprint levers — and the lane pursues only the
-> **native-collision detector port** (deferred, XL, awaiting the maintainer's
-> explicit go-ahead; scoped in `03-native-collision-port-scoping.md`). Standalone
-> dep removals are exhausted (**boost is not independently removable** —
-> `openscenegraph → collada-dom → libboost`; it only drops with the held GUI/OSG
-> work). Do **not** start the GUI/OSG demotion or any other interim demotion
-> without a new maintainer decision — task_3's active removals are complete
-> (#3105). Feature-env CI (if any) must use `test`/`test-py`, never `test-all`.
+> This DART 6.20 dependency-reduction lane is **COMPLETE** — nothing to resume
+> here. Delivered: optimizer backends removed (#3105, merged) and the lane plan +
+> native-collision scoping docs (#3107, merged). All other levers are owned by
+> other lanes or non-removable: the **native-collision port** is owned by the
+> native-collision-port lane (scoped in `03-native-collision-port-scoping.md`); the
+> **GUI/OSG demotion** (which also drops boost + collada-dom + freeglut) is owned
+> by the **native-replacement lane**; **boost** is not independently removable
+> (`openscenegraph → collada-dom → libboost`). **Do not** pick up the native-port
+> or GUI/OSG work in this lane (avoids overlap). If reactivated, get a fresh
+> maintainer scope first. Feature-env CI (if any) must use `test`/`test-py`,
+> never `test-all`.

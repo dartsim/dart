@@ -49,38 +49,6 @@
 
 using namespace dart;
 
-namespace {
-
-constexpr double kDefaultGuiScale = 1.0;
-constexpr double kMinGuiScale = 0.75;
-constexpr double kMaxGuiScale = 4.0;
-
-//==============================================================================
-double parseGuiScale(const std::string& value)
-{
-  try {
-    const double scale = std::stod(value);
-    if (scale >= kMinGuiScale && scale <= kMaxGuiScale) {
-      return scale;
-    }
-    std::cerr << "--gui-scale must be in [" << kMinGuiScale << ", "
-              << kMaxGuiScale << "]; got '" << value << "'. Falling back to "
-              << kDefaultGuiScale << ".\n";
-  } catch (const std::exception&) {
-    std::cerr << "Invalid --gui-scale value '" << value << "'. Falling back "
-              << "to " << kDefaultGuiScale << ".\n";
-  }
-  return kDefaultGuiScale;
-}
-
-//==============================================================================
-int scaleWindowExtent(int extent, double scale)
-{
-  return std::max(1, static_cast<int>(extent * scale + 0.5));
-}
-
-} // namespace
-
 //==============================================================================
 class ContactInverseDynamicsWidget : public dart::gui::osg::ImGuiWidget
 {
@@ -112,19 +80,6 @@ public:
 
   void render() override
   {
-    // ImGuiHandler works in framebuffer pixels, so the default style and
-    // font are tiny on HiDPI/scaled displays; scale the style once and the
-    // font every frame (matching the dynamic_joint_constraints example).
-    if (!mStyleScaled) {
-      ImGui::GetStyle().ScaleAllSizes(mGuiScale);
-      mStyleScaled = true;
-    }
-#if IMGUI_VERSION_NUM >= 19200
-    ImGui::GetStyle().FontScaleMain = mGuiScale;
-#else
-    ImGui::GetIO().FontGlobalScale = mGuiScale;
-#endif
-
     ImGui::SetNextWindowPos(ImVec2(10 * mGuiScale, 20 * mGuiScale));
     ImGui::SetNextWindowSize(ImVec2(420 * mGuiScale, 680 * mGuiScale));
     ImGui::SetNextWindowBgAlpha(0.5f);
@@ -286,7 +241,6 @@ protected:
   dart::simulation::WorldPtr mWorld;
   dart::dynamics::SkeletonPtr mBiped;
   float mGuiScale;
-  bool mStyleScaled = false;
   std::function<void()> mRegenerateCallback;
 
   bool mPlaying;
@@ -680,9 +634,10 @@ int main(int argc, char* argv[])
 {
   int maxFrames = -1;
   std::string screenshotPath;
-  double guiScale = kDefaultGuiScale;
+  double guiScale = dart::gui::osg::getDefaultGuiScale();
   if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
-    guiScale = parseGuiScale(envScale);
+    guiScale = dart::gui::osg::parseGuiScale(
+        envScale, dart::gui::osg::getDefaultGuiScale(), &std::cerr);
   }
 
   const std::string guiScalePrefix = "--gui-scale=";
@@ -693,14 +648,18 @@ int main(int argc, char* argv[])
     } else if (arg == "--screenshot" && i + 1 < argc) {
       screenshotPath = argv[++i];
     } else if (arg == "--gui-scale" && i + 1 < argc) {
-      guiScale = parseGuiScale(argv[++i]);
+      guiScale = dart::gui::osg::parseGuiScale(
+          argv[++i], dart::gui::osg::getDefaultGuiScale(), &std::cerr);
     } else if (arg.rfind(guiScalePrefix, 0) == 0) {
-      guiScale = parseGuiScale(arg.substr(guiScalePrefix.size()));
+      guiScale = dart::gui::osg::parseGuiScale(
+          arg.substr(guiScalePrefix.size()),
+          dart::gui::osg::getDefaultGuiScale(),
+          &std::cerr);
     }
   }
 
-  const int windowWidth = scaleWindowExtent(1280, guiScale);
-  const int windowHeight = scaleWindowExtent(720, guiScale);
+  const int windowWidth = dart::gui::osg::scaleWindowExtent(1280, guiScale);
+  const int windowHeight = dart::gui::osg::scaleWindowExtent(720, guiScale);
 
   auto world
       = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
@@ -743,6 +702,7 @@ int main(int argc, char* argv[])
     osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
         = new dart::gui::osg::ImGuiViewer();
     viewer->addWorldNode(node);
+    viewer->getImGuiHandler()->setGuiScale(guiScale);
 
     auto widget = std::make_shared<ContactInverseDynamicsWidget>(
         viewer, world, biped, guiScale, [nodePtr = node.get()]() {
@@ -796,6 +756,7 @@ int main(int argc, char* argv[])
   auto shadow = gui::osg::WorldNode::createDefaultShadowTechnique(viewer);
   node->setShadowTechnique(shadow);
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(guiScale);
 
   auto widget = std::make_shared<ContactInverseDynamicsWidget>(
       viewer, world, biped, guiScale, [nodePtr = node.get()]() {
