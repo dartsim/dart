@@ -39,6 +39,7 @@
 #include "AtlasSimbiconWidget.hpp"
 
 #include "AtlasSimbiconWorldNode.hpp"
+#include "dart/gui/osg/ImGuiHandler.hpp"
 
 //==============================================================================
 AtlasSimbiconWidget::AtlasSimbiconWidget(
@@ -57,8 +58,10 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 //==============================================================================
 void AtlasSimbiconWidget::render()
 {
-  ImGui::SetNextWindowPos(ImVec2(10, 20));
-  ImGui::SetNextWindowSize(ImVec2(360, 400));
+  const auto guiScale
+      = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+  ImGui::SetNextWindowPos(ImVec2(10 * guiScale, 20 * guiScale));
+  ImGui::SetNextWindowSize(ImVec2(360 * guiScale, 400 * guiScale));
   ImGui::SetNextWindowBgAlpha(0.5f);
   if (!ImGui::Begin(
           "Atlas Control",

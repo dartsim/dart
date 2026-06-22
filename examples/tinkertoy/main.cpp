@@ -37,6 +37,8 @@
 
 #include <dart/dart.hpp>
 
+#include <iostream>
+
 //==============================================================================
 class TinkertoyInputHandler : public osgGA::GUIEventHandler
 {
@@ -130,8 +132,15 @@ public:
 };
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
@@ -157,6 +166,7 @@ int main()
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
 
   // Add control widget for atlas
   viewer->getImGuiHandler()->addWidget(
@@ -173,7 +183,11 @@ int main()
   viewer->getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   // Set the dimensions for the window
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1280, options.scale),
+      dart::gui::osg::scaleWindowExtent(720, options.scale));
 
   // Set the window name
   viewer->realize();

@@ -37,7 +37,16 @@
 #include <osg/Camera>
 #include <osg/Matrix>
 
+#include <iosfwd>
+#include <string>
+
 namespace dart::gui::osg {
+
+struct GuiScaleOptions
+{
+  double scale = 1.0;
+  bool showHelp = false;
+};
 
 /// Returns the alpha threshold for demining if the object is a transparent
 /// object or not
@@ -112,6 +121,37 @@ Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec);
 
 /// Creates a osg::Geode of quad shape
 ::osg::Geode* createScreenQuad(float width, float height, float scale = 1.0f);
+
+/// Returns the default GUI scale.
+double getDefaultGuiScale();
+
+/// Returns the minimum accepted GUI scale.
+double getMinGuiScale();
+
+/// Returns the maximum accepted GUI scale.
+double getMaxGuiScale();
+
+/// Returns a finite GUI scale clamped to the supported range.
+double sanitizeGuiScale(double scale);
+
+/// Parses a GUI scale value and returns fallback on invalid input.
+double parseGuiScale(
+    const std::string& value,
+    double fallback = 1.0,
+    std::ostream* errorStream = nullptr);
+
+/// Parses --gui-scale, --gui-scale=, -h, and --help from an argv vector.
+GuiScaleOptions parseGuiScaleOptions(
+    int argc, char* argv[], std::ostream* errorStream = nullptr);
+
+/// Prints common GUI scale usage text.
+void printGuiScaleUsage(std::ostream& os, const char* executable);
+
+/// Scales a viewer window extent by a GUI scale.
+int scaleWindowExtent(int extent, double scale);
+
+/// Applies common ImGui style and font scaling.
+void applyImGuiScale(double scale, double* appliedScale = nullptr);
 
 } // namespace dart::gui::osg
 
