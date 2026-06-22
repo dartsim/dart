@@ -35,6 +35,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -3617,6 +3618,8 @@ void Skeleton::computeForwardDynamics()
 void Skeleton::computeInverseDynamics(
     bool _withExternalForces, bool _withDampingForces, bool _withSpringForces)
 {
+  DART_PROFILE_SCOPED_N("Skeleton::computeInverseDynamics (RNEA)");
+
   // Skip immobile or 0-dof skeleton
   if (getNumDofs() == 0)
     return;
