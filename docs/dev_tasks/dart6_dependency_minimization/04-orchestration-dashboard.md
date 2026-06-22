@@ -65,16 +65,14 @@
   the FCL-optional default-flip.
 
 ### 🔄 Open — monitoring
-**No open dependency-minimization PRs** (besides this board's own refresh PR). Every dep-min
-PR — #3092, #3116, #3118, #3119, #3120, #3121, #3122, #3123 — is **MERGED & closed** (see the
-merged sections), so the work queue is clear. Next activity is expected from the
+**No open dependency-minimization PRs** — the work queue is clear; all tracked dep-min PRs
+have merged (see the merged sections above). Next activity is expected from the
 native-collision-port lane's WIP branches (`feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`).
 
-_(Note for automated reviewers: if a just-merged PR briefly still shows "Open" on its page,
-that is GitHub merge-state lag — confirm via `gh pr view <n> --json state` (→ `MERGED`) and
-`git log -1 origin/release-6.20` before treating it as an open/active PR. #3123 in particular
-is merged: squash `22f1a13d61b`.)_
+_(Note for automated reviewers: a just-merged PR can briefly still show "Open" on its page
+due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and `git log`
+before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
 - **#3123 merged** — first piece (primitive plane contacts + broadphase pruning).
