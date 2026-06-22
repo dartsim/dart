@@ -52,10 +52,12 @@
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **1 behind**, CI pending — _key dep-min PR; also enables lodepng drop_ |
-| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | mergeable, **1 behind**, CI pending |
+| **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **1 behind** `release-6.20`, CI pending — _key dep-min PR; also enables lodepng drop_ |
 | **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
-| **#3092** | feature (not dep-min) | ssik analytical IK | mergeable, **1 behind**, CI pending |
+| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ⚠️ **CONFLICTING with `release-6.20`** — needs conflict resolution before it can land |
+| **#3121** | dependency-reduction | This orchestration board | **1 behind**, CI pending |
+
+_(#3092 "ssik analytical IK" — a non-dep-min feature — merged 2026-06-22 00:04; no longer tracked here.)_
 
 ### 🛠️ Active branches without a PR yet (native-collision-port lane)
 - `feature/native-occupancy-grid` — tip _"Checkpoint native occupancy grid performance"_
@@ -64,8 +66,10 @@
 
 ## Coordination flags / blockers
 
-1. **Open PRs are 1 commit behind `release-6.20`** (after #3119): #3116/#3118/#3120/#3092
-   each need `release-6.20` merged up before merge. All owned by the maintainer.
+1. **Open PRs behind `release-6.20`** (after #3119): #3116/#3118/#3121 are 1 commit
+   behind — a simple merge-up. **#3120 has flipped to a hard conflict
+   (`CONFLICTING`/`DIRTY`)** — it needs real conflict resolution, not just a
+   catch-up merge. All owned by the maintainer.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
