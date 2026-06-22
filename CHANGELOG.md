@@ -6,6 +6,14 @@
 
 * Breaking Changes
 
+  * Remove the legacy `dart/integration` module (`Integrator`,
+    `EulerIntegrator`, `RK4Integrator`, `SemiImplicitEulerIntegrator`, and
+    `IntegrableSystem`) along with its installed `include/dart/integration`
+    headers. The module was unused within DART itself: time integration
+    happens inside `dart::simulation::World::step()` via the built-in
+    semi-implicit Euler scheme (`Skeleton::integratePositions` /
+    `integrateVelocities`).
+
   * Remove the previously installed `dart/external/convhull_3d` C headers
     (`convhull_3d.h` and `safe_convhull_3d.h`) as part of replacing the
     vendored dependency. Downstream code should include
