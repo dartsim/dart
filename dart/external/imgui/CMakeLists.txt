@@ -1,5 +1,6 @@
 set(target_name ${PROJECT_NAME}-external-imgui)
 set(component_name external-imgui)
+set(component_dependency_packages OpenGL)
 
 set(imgui_header_names
   imconfig.h
@@ -513,8 +514,11 @@ endif()
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 if(DART_USE_SYSTEM_IMGUI)
-  add_component_dependency_packages(${PROJECT_NAME} ${component_name} imgui OpenGL)
+  list(APPEND component_dependency_packages imgui)
 endif()
+add_component_dependency_packages(
+  ${PROJECT_NAME} ${component_name} ${component_dependency_packages}
+)
 
 install(
   FILES ${imgui_compat_headers}

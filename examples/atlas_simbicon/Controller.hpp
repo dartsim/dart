@@ -56,7 +56,7 @@ public:
   /// \brief Destructor
   virtual ~Controller();
 
-  /// \brief Called before every simulation time step in MyWindow class.
+  /// \brief Called before every simulation time step.
   /// Compute control force and apply it to Atlas robot
   virtual void update();
 
