@@ -94,6 +94,11 @@ check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
 
+# ssik is an optional, PyPI-only analytical IK solver used only by the
+# ssik_ik_gui (C++) and ssik_analytical_ik (Python) examples. It is not a
+# dependency of DART or dartpy; install it on demand with this convenience task.
+install-ssik = { cmd = "python -m pip install 'ssik>=2.3.0'" }
+
 build = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \

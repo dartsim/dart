@@ -92,6 +92,41 @@
     micrometer-scale agreement with the always-active path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+* Python
+
+  * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
+    including a Python analytical callback bridge that lets ssik-like solvers
+    feed DART's native analytical and whole-body IK pipeline:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
+* Examples
+
+  * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
+    prebuilt IK modules and changing target and solver options online. Every IK
+    solution is shown at once as a DART skeleton built from the arm's kinematics
+    (the selected branch opaque, the rest translucent), a draggable
+    `InteractiveFrame` target re-solves the IK live, and arms can be switched
+    online without a restart:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
+  * Add a dartpy `ssik_analytical_ik` example that plugs an ssik prebuilt solver
+    into DART's analytical IK through `setPythonAnalytical` and drives a
+    draggable `InteractiveFrame` target in an `ImGuiViewer`, mirroring the C++
+    example from pure Python:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
+* GUI
+
+  * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
+    route ImGui font/style scaling through `ImGuiHandler`:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
+  * Fix `InteractiveFrame` drag handles (and other geometry) not rendering under
+    `ImGuiViewer`: the ImGui OpenGL2 draw leaked fixed-function GL state that its
+    own save/restore did not cover, so bracket it with a full attribute
+    save/restore and re-dirty `osg::State`:
+    [#3092](https://github.com/dartsim/dart/pull/3092)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic

@@ -38,6 +38,8 @@
 
 #include <osgShadow/ShadowMap>
 
+#include <iostream>
+
 using namespace dart;
 
 [[nodiscard]] dynamics::SkeletonPtr createBox(
@@ -72,8 +74,15 @@ using namespace dart;
   return boxSkel;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   // Create an empty world
   auto world = simulation::World::create();
 
@@ -138,7 +147,11 @@ int main()
   std::cout << viewer.getInstructions() << std::endl;
 
   // Set up the window to be 1360x768 (HD)
-  viewer.setUpViewInWindow(0, 0, 1360, 768);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1360, options.scale),
+      dart::gui::osg::scaleWindowExtent(768, options.scale));
 
   // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(

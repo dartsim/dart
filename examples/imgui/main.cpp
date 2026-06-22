@@ -34,6 +34,8 @@
 
 #include <dart/dart.hpp>
 
+#include <iostream>
+
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::WorldNode
 {
@@ -142,8 +144,10 @@ public:
   // Documentation inherited
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(240, 320));
+    const auto guiScale
+        = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+    ImGui::SetNextWindowPos(ImVec2(10 * guiScale, 20 * guiScale));
+    ImGui::SetNextWindowSize(ImVec2(240 * guiScale, 320 * guiScale));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Tinkertoy Control",
@@ -244,8 +248,15 @@ protected:
 };
 
 //==============================================================================
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
@@ -261,6 +272,7 @@ int main()
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
 
   // Add control widget for atlas
   viewer->getImGuiHandler()->addWidget(
@@ -273,7 +285,11 @@ int main()
   viewer->addEventHandler(new CustomEventHandler);
 
   // Set up the window to be 640x480
-  viewer->setUpViewInWindow(0, 0, 640, 480);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(640, options.scale),
+      dart::gui::osg::scaleWindowExtent(480, options.scale));
 
   // Adjust the viewpoint of the Viewer
   viewer->getCameraManipulator()->setHomePosition(

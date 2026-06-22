@@ -40,9 +40,9 @@
 
 #include <dart/utils/utils.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/common/Macros.hpp>
 
-#include <fcl/config.h>
+#include <dart/dart.hpp>
 
 #include <iostream>
 
@@ -215,10 +215,17 @@ public:
   void customPreStep() override {}
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
-  assert(myWorld != nullptr);
+  DART_ASSERT(myWorld != nullptr);
 
   auto handler = new RigidShapesEventHandler(myWorld);
 
@@ -235,7 +242,11 @@ int main()
   viewer.addInstructionText("'a': delete a spawned object at last\n");
   std::cout << viewer.getInstructions() << std::endl;
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(640, options.scale),
+      dart::gui::osg::scaleWindowExtent(480, options.scale));
 
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(2.0f, 2.0f, 2.0f),

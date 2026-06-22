@@ -69,6 +69,12 @@ public:
 
   void setCameraCallbacks(::osg::Camera* camera);
 
+  /// Sets the GUI scale applied to ImGui font and style sizes.
+  void setGuiScale(double scale);
+
+  /// Gets the GUI scale applied to ImGui font and style sizes.
+  double getGuiScale() const;
+
   //----------------------------------------------------------------------------
   /// \{ \name Widget management
   //----------------------------------------------------------------------------

@@ -40,6 +40,8 @@
 
 #include <dart/dart.hpp>
 
+#include <iostream>
+
 using namespace dart;
 
 class FetchWorldNode : public gui::osg::RealTimeWorldNode
@@ -87,8 +89,10 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(360, 600));
+    const auto guiScale
+        = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+    ImGui::SetNextWindowPos(ImVec2(10 * guiScale, 20 * guiScale));
+    ImGui::SetNextWindowSize(ImVec2(360 * guiScale, 600 * guiScale));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Fetch robot example",
@@ -149,8 +153,15 @@ protected:
   osg::ref_ptr<gui::osg::GridVisual> mGrid;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  const gui::osg::GuiScaleOptions options
+      = gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   using namespace math::suffixes;
 
   // Create a world from ant.xml
@@ -216,6 +227,7 @@ int main()
   // Create a Viewer and set it up with the WorldNode
   auto viewer = gui::osg::ImGuiViewer();
   viewer.addWorldNode(node);
+  viewer.getImGuiHandler()->setGuiScale(options.scale);
 
   // Create grid
   ::osg::ref_ptr<gui::osg::GridVisual> grid = new gui::osg::GridVisual();
@@ -229,7 +241,11 @@ int main()
   viewer.enableDragAndDrop(frame.get());
 
   // Set up the window to be 1280x960
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      gui::osg::scaleWindowExtent(1280, options.scale),
+      gui::osg::scaleWindowExtent(960, options.scale));
 
   // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(
