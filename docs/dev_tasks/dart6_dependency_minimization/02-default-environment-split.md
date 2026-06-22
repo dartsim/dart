@@ -5,6 +5,9 @@
 > native-replacement lane). **This file owns the dependency-reduction lane only.**
 > Link to the README; do not duplicate it.
 >
+> **Live cross-lane status board:** `04-orchestration-dashboard.md` (this lane now
+> also runs orchestration/monitoring for the whole effort).
+>
 > _Naming note: lanes are referred to by their **work scope** (dependency-reduction
 > lane, native-replacement lane, native-collision-port lane), not by any local
 > working-directory name — those are per-machine and meaningless to other
