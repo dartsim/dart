@@ -40,7 +40,7 @@ jobs:
             }
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: ./.github/actions/ci-scope
@@ -83,7 +83,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The Debug + --coverage build instruments every translation unit, so its
       # object files (debug info + gcov arcs) are several times larger than a
@@ -162,7 +162,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -235,7 +235,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The Release job builds a normal tree, dartpy, examples, and then a
       # separate ASAN tree in the same workspace. Reclaim unused hosted-runner
@@ -334,7 +334,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -414,7 +414,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -478,7 +478,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The Debug build keeps full debug info for every test executable. Recent
       # full-CI runs can exhaust the GitHub-hosted runner before the final test
@@ -556,7 +556,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -629,7 +629,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -671,7 +671,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -753,7 +753,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci

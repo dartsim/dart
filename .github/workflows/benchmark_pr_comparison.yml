@@ -45,7 +45,7 @@ jobs:
       BENCHMARK_SERIES: DART 7 World Performance
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # This job never pushes; do not leave the token in .git/config where
           # PR-author build code could read it.

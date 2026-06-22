@@ -24,7 +24,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: ./.github/actions/ci-scope
@@ -51,7 +51,7 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci

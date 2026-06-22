@@ -74,7 +74,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CUDA)
         uses: ./.github/actions/setup-pixi-ci

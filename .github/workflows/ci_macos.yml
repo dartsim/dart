@@ -40,7 +40,7 @@ jobs:
             }
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dorny/paths-filter@v4
@@ -59,7 +59,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
@@ -107,7 +107,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
