@@ -47,15 +47,15 @@
   **#3111** constrain unsafe parallel island solves · **#3112** accelerate settled worlds
 - **#3114** FCL null-contact fix (unblocked the coverage/Asserts CI regression)
 
-### ✅ Merged — hygiene
+### ✅ Merged — CI / hygiene
+- **#3120** stop coverage job double-running tests (merged 2026-06-22) — the coverage-job fix
 - **#3102** ignore `.omo` · **#3100** pixi lockfile · **#3074/#3075** plan + AI workflows import
 
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind** (after #3116), CI pending |
-| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ✅ **conflict resolved** — now `MERGEABLE`, CI pending (this is the coverage-job fix; see flag 3) |
-| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ⚠️ **`CONFLICTING` (now real, after #3116)** — `modify/delete` on `examples/deprecated_examples/glut_joint_constraints/MyWindow.hpp` (#3116 **deleted** the GLUT examples; #3122 modified that file). **Resolve by accepting the deletion.** Milestone 6.20.0 |
+| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
+| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ✅ conflict **resolved** (GLUT-example deletion accepted) — now `MERGEABLE`, **1 behind**, CI pending. Milestone 6.20.0 |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
@@ -68,23 +68,18 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ## Coordination flags / blockers
 
-1. **Base / conflict status** (base now `18d31ca283e`, after #3116 merged):
-   - **#3120** — conflict **resolved**; now `MERGEABLE` (CI pending).
-   - **#3118** — fell 1 behind after #3116; simple merge-up.
-   - **#3122** — now a **real** `modify/delete` conflict: #3116 **deleted** the GLUT
-     example `glut_joint_constraints/MyWindow.hpp` that #3122 modified — **resolve
-     by accepting the deletion**, then merge-up. (Its earlier `CONFLICTING` was a
-     stale flag; this one is genuine.)
+1. **Base / conflict status** (base now `9b0c68a5a82`, after #3116 + #3120 merged):
+   - **#3122** — `modify/delete` conflict **resolved** (the GLUT-example deletion
+     was accepted, as diagnosed); now `MERGEABLE`, 1 behind → simple merge-up.
+   - **#3118** — 1 behind; simple merge-up.
    - All owned by the maintainer.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
 3. **CI health (backlog now draining):**
-   - **`coverage` is failing on open PRs** (e.g. #3118) — a recurring coverage-job
-     issue, **not** content-specific (it also appears on docs-only PRs). **#3120
-     directly targets this job** ("stop coverage running tests twice") and is now
-     **`MERGEABLE`** (its conflict cleared) — landing it should improve CI health
-     effort-wide.
+   - **`coverage`** had a recurring failure; **#3120 — the coverage-job fix —
+     is now MERGED** (2026-06-22), so coverage CI should improve on subsequent
+     runs. Watch the next coverage results to confirm.
    - **`Debug` / `API Documentation` show flaky failures** on some runs while
      **passing** on sibling PRs with the same base — re-trigger to clear; not a
      base regression. (Coverage logs also show benign `Cannot generate a safe
@@ -104,7 +99,7 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
     dependency**; it folds into the GUI/OSG work, not the removed set.
 - **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut;
   **lodepng removal now unblocked** (next in the native-replacement lane).
-- **In flight:** legacy `dart/integration` dead-code removal (#3122, conflict to resolve).
+- **In flight:** legacy `dart/integration` dead-code removal (#3122 — conflict resolved, now mergeable).
 - **Largest remaining win (not yet PR'd):** native-collision port → makes
   FCL/Bullet/ODE optional and drops `fcl` from core.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
