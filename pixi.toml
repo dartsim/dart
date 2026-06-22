@@ -224,14 +224,23 @@ config-coverage = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Debug" } }
 
+# Coverage instrumentation (Debug + DART_CODECOV) makes tests run several times
+# slower, so raise the per-test timeout above CTest's 1500s default to keep slow
+# regression tests (e.g. test_Issue1193, ~1350s here) from flaking on timeout.
 build-coverage = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target all tests \
     && ctest \
         --output-on-failure \
         --parallel 4 \
+        --timeout 3000 \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """, depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
 
+# Captures coverage from the .gcda data produced by a prior `build-coverage`
+# run (the CI coverage job runs `build-coverage` then `coverage-report` as
+# separate steps). It intentionally does NOT depend on `build-coverage` so the
+# test suite is not re-run a second time just to regenerate the report; run
+# `pixi run build-coverage` first when invoking this standalone.
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
 coverage-report = { cmd = """
     lcov \
@@ -248,7 +257,7 @@ coverage-report = { cmd = """
         '*/tutorials/*' \
         --output-file coverage.info \
     && lcov --list coverage.info
-""", depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+""", env = { BUILD_TYPE = "Debug" } }
 
 ex = { cmd = """
     cmake \
