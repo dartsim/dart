@@ -38,20 +38,66 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+
+#include <algorithm>
+#include <limits>
+#include <vector>
 
 namespace dart {
 namespace collision {
 
 namespace {
 
+struct BroadphaseEntry
+{
+  CollisionObject* object{nullptr};
+  Eigen::Vector3d min{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d max{Eigen::Vector3d::Zero()};
+  bool finite{false};
+  bool plane{false};
+};
+
+struct BroadphaseScratch
+{
+  std::vector<BroadphaseEntry> finiteEntries1;
+  std::vector<BroadphaseEntry> planeEntries1;
+  std::vector<BroadphaseEntry> otherEntries1;
+  std::vector<BroadphaseEntry> finiteEntries2;
+  std::vector<BroadphaseEntry> planeEntries2;
+  std::vector<BroadphaseEntry> otherEntries2;
+  std::vector<const BroadphaseEntry*> sortedEntries1;
+  std::vector<const BroadphaseEntry*> sortedEntries2;
+  CollisionResult pairResult;
+
+  void clear();
+};
+
+BroadphaseScratch& getBroadphaseScratch();
+
 bool checkPair(
     CollisionObject* o1,
     CollisionObject* o2,
     const CollisionOption& option,
+    CollisionResult& pairResult,
     CollisionResult* result = nullptr);
+
+bool processPair(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult);
+
+bool shouldStopAfterPair(
+    bool pairCollision,
+    const CollisionOption& option,
+    const CollisionResult* result);
 
 bool isClose(
     const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol);
@@ -62,6 +108,59 @@ void postProcess(
     const CollisionOption& option,
     CollisionResult& totalResult,
     const CollisionResult& pairResult);
+
+bool isPlaneShape(const CollisionObject* object);
+
+BroadphaseEntry makeBroadphaseEntry(CollisionObject* object);
+
+void buildBroadphaseEntries(
+    const std::vector<CollisionObject*>& objects,
+    std::vector<BroadphaseEntry>& finiteEntries,
+    std::vector<BroadphaseEntry>& planeEntries,
+    std::vector<BroadphaseEntry>& otherEntries);
+
+bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2);
+
+bool processFinitePlanePairs(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    const std::vector<BroadphaseEntry>& planeEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult,
+    bool planeFirst = true);
+
+bool processPlanePlanePairs(
+    const std::vector<BroadphaseEntry>& planeEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult);
+
+bool processPlanePlanePairs(
+    const std::vector<BroadphaseEntry>& planeEntries1,
+    const std::vector<BroadphaseEntry>& planeEntries2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult);
+
+bool processFiniteFinitePairs(
+    const std::vector<BroadphaseEntry>& entries,
+    std::vector<const BroadphaseEntry*>& sortedEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult);
+
+bool processFiniteFinitePairs(
+    const std::vector<BroadphaseEntry>& entries1,
+    const std::vector<BroadphaseEntry>& entries2,
+    std::vector<const BroadphaseEntry*>& sortedEntries2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult);
 
 } // anonymous namespace
 
@@ -140,27 +239,93 @@ bool DARTCollisionDetector::collide(
   if (objects.empty())
     return false;
 
+  auto& scratch = getBroadphaseScratch();
+  scratch.clear();
+  buildBroadphaseEntries(
+      objects,
+      scratch.finiteEntries1,
+      scratch.planeEntries1,
+      scratch.otherEntries1);
+
   auto collisionFound = false;
+  if (processFinitePlanePairs(
+          scratch.finiteEntries1,
+          scratch.planeEntries1,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
+  if (processFiniteFinitePairs(
+          scratch.finiteEntries1,
+          scratch.sortedEntries1,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
+  if (processPlanePlanePairs(
+          scratch.planeEntries1,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
   const auto& filter = option.collisionFilter;
-
-  for (auto i = 0u; i < objects.size() - 1; ++i) {
-    auto* collObj1 = objects[i];
-
-    for (auto j = i + 1u; j < objects.size(); ++j) {
-      auto* collObj2 = objects[j];
-
+  for (auto i = 0u; i < scratch.otherEntries1.size(); ++i) {
+    for (auto j = i + 1u; j < scratch.otherEntries1.size(); ++j) {
+      auto* collObj1 = scratch.otherEntries1[i].object;
+      auto* collObj2 = scratch.otherEntries1[j].object;
       if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
+  }
 
-      collisionFound = checkPair(collObj1, collObj2, option, result);
+  for (const auto& otherEntry : scratch.otherEntries1) {
+    for (const auto& finiteEntry : scratch.finiteEntries1) {
+      auto* collObj1 = otherEntry.object;
+      auto* collObj2 = finiteEntry.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
 
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
-          return true;
-      } else {
-        // If no result is passed, stop checking when the first contact is found
-        if (collisionFound)
-          return true;
+    for (const auto& planeEntry : scratch.planeEntries1) {
+      auto* collObj1 = otherEntry.object;
+      auto* collObj2 = planeEntry.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
       }
     }
   }
@@ -197,27 +362,145 @@ bool DARTCollisionDetector::collide(
   if (objects1.empty() || objects2.empty())
     return false;
 
+  auto& scratch = getBroadphaseScratch();
+  scratch.clear();
+  buildBroadphaseEntries(
+      objects1,
+      scratch.finiteEntries1,
+      scratch.planeEntries1,
+      scratch.otherEntries1);
+  buildBroadphaseEntries(
+      objects2,
+      scratch.finiteEntries2,
+      scratch.planeEntries2,
+      scratch.otherEntries2);
+
   auto collisionFound = false;
+  if (processFinitePlanePairs(
+          scratch.finiteEntries1,
+          scratch.planeEntries2,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult,
+          false)) {
+    return true;
+  }
+
+  if (processFinitePlanePairs(
+          scratch.finiteEntries2,
+          scratch.planeEntries1,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
+  if (processFiniteFinitePairs(
+          scratch.finiteEntries1,
+          scratch.finiteEntries2,
+          scratch.sortedEntries2,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
+  if (processPlanePlanePairs(
+          scratch.planeEntries1,
+          scratch.planeEntries2,
+          option,
+          result,
+          collisionFound,
+          scratch.pairResult)) {
+    return true;
+  }
+
   const auto& filter = option.collisionFilter;
-
-  for (auto i = 0u; i < objects1.size(); ++i) {
-    auto* collObj1 = objects1[i];
-
-    for (auto j = 0u; j < objects2.size(); ++j) {
-      auto* collObj2 = objects2[j];
-
+  for (const auto& entry1 : scratch.otherEntries1) {
+    for (const auto& entry2 : scratch.otherEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
       if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
 
-      collisionFound = checkPair(collObj1, collObj2, option, result);
+    for (const auto& entry2 : scratch.finiteEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
 
-      if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
-          return true;
-      } else {
-        // If no result is passed, stop checking when the first contact is found
-        if (collisionFound)
-          return true;
+    for (const auto& entry2 : scratch.planeEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  for (const auto& entry1 : scratch.finiteEntries1) {
+    for (const auto& entry2 : scratch.otherEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  for (const auto& entry1 : scratch.planeEntries1) {
+    for (const auto& entry2 : scratch.otherEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1,
+              collObj2,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
       }
     }
   }
@@ -272,6 +555,12 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
   if (shapeType == dynamics::BoxShape::getStaticType())
     return;
 
+  if (shapeType == dynamics::PlaneShape::getStaticType())
+    return;
+
+  if (shapeType == dynamics::CylinderShape::getStaticType())
+    return;
+
   if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
@@ -282,9 +571,10 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 
   dterr << "[DARTCollisionDetector] Attempting to create shape type ["
         << shapeType << "] that is not supported "
-        << "by DARTCollisionDetector. Currently, only BoxShape and "
-        << "EllipsoidShape (only when all the radii are equal) are "
-        << "supported. This shape will always get penetrated by other "
+        << "by DARTCollisionDetector. Currently, only SphereShape, BoxShape, "
+        << "CylinderShape, PlaneShape, and EllipsoidShape (only when all the "
+        << "radii are equal) are supported. This shape will always get "
+        << "penetrated by other "
         << "objects.\n";
 }
 
@@ -307,13 +597,35 @@ void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
 namespace {
 
 //==============================================================================
+void BroadphaseScratch::clear()
+{
+  finiteEntries1.clear();
+  planeEntries1.clear();
+  otherEntries1.clear();
+  finiteEntries2.clear();
+  planeEntries2.clear();
+  otherEntries2.clear();
+  sortedEntries1.clear();
+  sortedEntries2.clear();
+  pairResult.clear();
+}
+
+//==============================================================================
+BroadphaseScratch& getBroadphaseScratch()
+{
+  thread_local BroadphaseScratch scratch;
+  return scratch;
+}
+
+//==============================================================================
 bool checkPair(
     CollisionObject* o1,
     CollisionObject* o2,
     const CollisionOption& option,
+    CollisionResult& pairResult,
     CollisionResult* result)
 {
-  CollisionResult pairResult;
+  pairResult.clear();
 
   // Perform narrow-phase detection
   collide(o1, o2, pairResult);
@@ -325,6 +637,32 @@ bool checkPair(
   postProcess(o1, o2, option, *result, pairResult);
 
   return pairResult.isCollision();
+}
+
+//==============================================================================
+bool processPair(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  const auto pairCollision = checkPair(o1, o2, option, pairResult, result);
+  collisionFound = collisionFound || pairCollision;
+  return shouldStopAfterPair(pairCollision, option, result);
+}
+
+//==============================================================================
+bool shouldStopAfterPair(
+    bool pairCollision,
+    const CollisionOption& option,
+    const CollisionResult* result)
+{
+  if (!result)
+    return pairCollision;
+
+  return result->getNumContacts() >= option.maxNumContacts;
 }
 
 //==============================================================================
@@ -375,6 +713,266 @@ void postProcess(
     if (totalResult.getNumContacts() >= option.maxNumContacts)
       break;
   }
+}
+
+//==============================================================================
+bool isPlaneShape(const CollisionObject* object)
+{
+  if (!object)
+    return false;
+
+  const auto& shape = object->getShape();
+  return shape && shape->getType() == dynamics::PlaneShape::getStaticType();
+}
+
+//==============================================================================
+BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
+{
+  BroadphaseEntry entry;
+  entry.object = object;
+  entry.plane = isPlaneShape(object);
+
+  if (!object || entry.plane)
+    return entry;
+
+  const auto& shape = object->getShape();
+  if (!shape)
+    return entry;
+
+  const auto& localBox = shape->getBoundingBox();
+  const auto& transform = object->getTransform();
+  const auto& localMin = localBox.getMin();
+  const auto& localMax = localBox.getMax();
+
+  if (!localMin.allFinite() || !localMax.allFinite())
+    return entry;
+
+  entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+  entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
+
+  for (int x = 0; x < 2; ++x) {
+    for (int y = 0; y < 2; ++y) {
+      for (int z = 0; z < 2; ++z) {
+        const Eigen::Vector3d localCorner(
+            x ? localMax.x() : localMin.x(),
+            y ? localMax.y() : localMin.y(),
+            z ? localMax.z() : localMin.z());
+        const Eigen::Vector3d worldCorner = transform * localCorner;
+        entry.min = entry.min.cwiseMin(worldCorner);
+        entry.max = entry.max.cwiseMax(worldCorner);
+      }
+    }
+  }
+
+  entry.finite = entry.min.allFinite() && entry.max.allFinite();
+  return entry;
+}
+
+//==============================================================================
+void buildBroadphaseEntries(
+    const std::vector<CollisionObject*>& objects,
+    std::vector<BroadphaseEntry>& finiteEntries,
+    std::vector<BroadphaseEntry>& planeEntries,
+    std::vector<BroadphaseEntry>& otherEntries)
+{
+  finiteEntries.reserve(objects.size());
+  planeEntries.reserve(objects.size());
+  otherEntries.reserve(objects.size());
+
+  for (auto* object : objects) {
+    auto entry = makeBroadphaseEntry(object);
+    if (entry.finite)
+      finiteEntries.push_back(entry);
+    else if (entry.plane)
+      planeEntries.push_back(entry);
+    else
+      otherEntries.push_back(entry);
+  }
+}
+
+//==============================================================================
+bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
+{
+  if (!entry1.finite || !entry2.finite)
+    return true;
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (entry1.max[axis] < entry2.min[axis]
+        || entry2.max[axis] < entry1.min[axis]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool processFinitePlanePairs(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    const std::vector<BroadphaseEntry>& planeEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult,
+    bool planeFirst)
+{
+  const auto& filter = option.collisionFilter;
+  for (const auto& planeEntry : planeEntries) {
+    for (const auto& finiteEntry : finiteEntries) {
+      auto* collObj1 = planeFirst ? planeEntry.object : finiteEntry.object;
+      auto* collObj2 = planeFirst ? finiteEntry.object : planeEntry.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool processPlanePlanePairs(
+    const std::vector<BroadphaseEntry>& planeEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  const auto& filter = option.collisionFilter;
+  for (std::size_t i = 0u; i + 1u < planeEntries.size(); ++i) {
+    for (std::size_t j = i + 1u; j < planeEntries.size(); ++j) {
+      auto* collObj1 = planeEntries[i].object;
+      auto* collObj2 = planeEntries[j].object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool processPlanePlanePairs(
+    const std::vector<BroadphaseEntry>& planeEntries1,
+    const std::vector<BroadphaseEntry>& planeEntries2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  const auto& filter = option.collisionFilter;
+  for (const auto& entry1 : planeEntries1) {
+    for (const auto& entry2 : planeEntries2) {
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool processFiniteFinitePairs(
+    const std::vector<BroadphaseEntry>& entries,
+    std::vector<const BroadphaseEntry*>& sortedEntries,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  sortedEntries.reserve(entries.size());
+  for (const auto& entry : entries)
+    sortedEntries.push_back(&entry);
+
+  std::sort(
+      sortedEntries.begin(),
+      sortedEntries.end(),
+      [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
+        return lhs->min.x() < rhs->min.x();
+      });
+
+  const auto& filter = option.collisionFilter;
+  for (std::size_t i = 0u; i + 1u < sortedEntries.size(); ++i) {
+    const auto& entry1 = *sortedEntries[i];
+    for (std::size_t j = i + 1u; j < sortedEntries.size(); ++j) {
+      const auto& entry2 = *sortedEntries[j];
+      if (entry2.min.x() > entry1.max.x())
+        break;
+
+      if (!overlaps(entry1, entry2))
+        continue;
+
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool processFiniteFinitePairs(
+    const std::vector<BroadphaseEntry>& entries1,
+    const std::vector<BroadphaseEntry>& entries2,
+    std::vector<const BroadphaseEntry*>& sortedEntries2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  sortedEntries2.reserve(entries2.size());
+  for (const auto& entry : entries2)
+    sortedEntries2.push_back(&entry);
+
+  std::sort(
+      sortedEntries2.begin(),
+      sortedEntries2.end(),
+      [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
+        return lhs->min.x() < rhs->min.x();
+      });
+
+  const auto& filter = option.collisionFilter;
+  for (const auto& entry1 : entries1) {
+    for (const auto* entry2Ptr : sortedEntries2) {
+      const auto& entry2 = *entry2Ptr;
+      if (entry2.max.x() < entry1.min.x())
+        continue;
+      if (entry2.min.x() > entry1.max.x())
+        break;
+      if (!overlaps(entry1, entry2))
+        continue;
+
+      auto* collObj1 = entry1.object;
+      auto* collObj2 = entry2.object;
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
+        continue;
+      if (processPair(
+              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 } // anonymous namespace

@@ -37,9 +37,12 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 
 namespace dart {
@@ -1251,6 +1254,202 @@ int collideSphereSphere(
   return 1;
 }
 
+int collidePlaneSphere(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T0,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = T0.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T0.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d sphereCenter = T1.translation();
+  const double signedDist = worldNormal.dot(sphereCenter - planePoint);
+
+  if (signedDist > sphere_rad)
+    return 0;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = sphereCenter - worldNormal * signedDist;
+  contact.normal = -worldNormal;
+  contact.penetrationDepth = sphere_rad - signedDist;
+  result.addContact(contact);
+  return 1;
+}
+
+int collideSpherePlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = T1.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T1.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d sphereCenter = T0.translation();
+  const double signedDist = worldNormal.dot(sphereCenter - planePoint);
+
+  if (signedDist > sphere_rad)
+    return 0;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = sphereCenter - worldNormal * signedDist;
+  contact.normal = worldNormal;
+  contact.penetrationDepth = sphere_rad - signedDist;
+  result.addContact(contact);
+  return 1;
+}
+
+int collidePlaneBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& size1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = T0.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T0.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d halfExtents = 0.5 * size1;
+
+  double minDist = std::numeric_limits<double>::max();
+  Eigen::Vector3d worldCorners[8];
+  double signedDistances[8];
+
+  for (int i = 0; i < 8; ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4) ? halfExtents.z() : -halfExtents.z());
+
+    const Eigen::Vector3d worldCorner = T1 * localCorner;
+    worldCorners[i] = worldCorner;
+    const double signedDist = worldNormal.dot(worldCorner - planePoint);
+    signedDistances[i] = signedDist;
+
+    if (signedDist < minDist)
+      minDist = signedDist;
+  }
+
+  if (minDist > 0.0)
+    return 0;
+
+  auto numContacts = 0;
+  constexpr double contactTolerance = 1e-9;
+  for (int i = 0; i < 8; ++i) {
+    const double signedDist = signedDistances[i];
+    if (signedDist > contactTolerance)
+      continue;
+
+    Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
+    contact.point = worldCorners[i] - worldNormal * signedDist;
+    contact.normal = -worldNormal;
+    contact.penetrationDepth = std::max(0.0, -signedDist);
+    result.addContact(contact);
+    ++numContacts;
+    if (numContacts >= 3)
+      break;
+  }
+
+  if (numContacts > 0)
+    return numContacts;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = worldCorners[0] - worldNormal * signedDistances[0];
+  contact.normal = -worldNormal;
+  contact.penetrationDepth = 0.0;
+  result.addContact(contact);
+  return 1;
+}
+
+int collideBoxPlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size0,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = T1.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T1.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d halfExtents = 0.5 * size0;
+
+  double minDist = std::numeric_limits<double>::max();
+  Eigen::Vector3d worldCorners[8];
+  double signedDistances[8];
+
+  for (int i = 0; i < 8; ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4) ? halfExtents.z() : -halfExtents.z());
+
+    const Eigen::Vector3d worldCorner = T0 * localCorner;
+    worldCorners[i] = worldCorner;
+    const double signedDist = worldNormal.dot(worldCorner - planePoint);
+    signedDistances[i] = signedDist;
+
+    if (signedDist < minDist)
+      minDist = signedDist;
+  }
+
+  if (minDist > 0.0)
+    return 0;
+
+  auto numContacts = 0;
+  constexpr double contactTolerance = 1e-9;
+  for (int i = 0; i < 8; ++i) {
+    const double signedDist = signedDistances[i];
+    if (signedDist > contactTolerance)
+      continue;
+
+    Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
+    contact.point = worldCorners[i] - worldNormal * signedDist;
+    contact.normal = worldNormal;
+    contact.penetrationDepth = std::max(0.0, -signedDist);
+    result.addContact(contact);
+    ++numContacts;
+    if (numContacts >= 3)
+      break;
+  }
+
+  if (numContacts > 0)
+    return numContacts;
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = worldCorners[0] - worldNormal * signedDistances[0];
+  contact.normal = worldNormal;
+  contact.penetrationDepth = 0.0;
+  result.addContact(contact);
+  return 1;
+}
+
 int collideCylinderSphere(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -1332,75 +1531,105 @@ int collideCylinderPlane(
     const double& half_height,
     const Eigen::Isometry3d& T0,
     const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
     const Eigen::Isometry3d& T1,
     CollisionResult& result)
 {
-  Eigen::Vector3d normal = T1.linear() * plane_normal;
-  Eigen::Vector3d Rx = T0.linear().rightCols(1);
-  Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
-  double mag = Ry.norm();
-  Ry.normalize();
-  if (mag < DART_COLLISION_EPS) {
-    if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
-      Ry = Eigen::Vector3d::UnitX();
-    else
-      Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
+  const Eigen::Vector3d worldNormal = T1.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T1.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d cylAxis = T0.linear().col(2);
+  const Eigen::Vector3d cylCenter = T0.translation();
+  const Eigen::Vector3d cylTop = cylCenter + cylAxis * half_height;
+  const Eigen::Vector3d cylBot = cylCenter - cylAxis * half_height;
+  const double dotAxis = cylAxis.dot(worldNormal);
+  const Eigen::Vector3d radialRaw = worldNormal - cylAxis * dotAxis;
+
+  Eigen::Vector3d deepestPoint;
+  if (radialRaw.squaredNorm() < 1e-10) {
+    const double distTop = worldNormal.dot(cylTop - planePoint);
+    const double distBot = worldNormal.dot(cylBot - planePoint);
+    deepestPoint = (distTop < distBot) ? cylTop : cylBot;
+  } else {
+    const Eigen::Vector3d radialDir = radialRaw.normalized();
+    const Eigen::Vector3d rimOffset = -radialDir * cyl_rad;
+    const Eigen::Vector3d topRim = cylTop + rimOffset;
+    const Eigen::Vector3d botRim = cylBot + rimOffset;
+
+    const double distTopRim = worldNormal.dot(topRim - planePoint);
+    const double distBotRim = worldNormal.dot(botRim - planePoint);
+
+    deepestPoint = (distTopRim < distBotRim) ? topRim : botRim;
   }
 
-  Eigen::Vector3d Rz = Rx.cross(Ry);
-  Eigen::Isometry3d T;
-  T.linear().col(0) = Rx;
-  T.linear().col(1) = Ry;
-  T.linear().col(2) = Rz;
-  T.translation() = T0.translation();
+  const double signedDist = worldNormal.dot(deepestPoint - planePoint);
+  if (signedDist > 0.0)
+    return 0;
 
-  Eigen::Vector3d nn = T.linear().transpose() * normal;
-  Eigen::Vector3d pn = T.inverse() * T1.translation();
+  const double penetration = -signedDist;
 
-  // four corners c0 = ( -h/2, -r ), c1 = ( +h/2, -r ), c2 = ( +h/2, +r ), c3 =
-  // ( -h/2, +r )
-  Eigen::Vector3d c[4]
-      = {Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
-         Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
-         Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
-         Eigen::Vector3d(-half_height, +cyl_rad, 0.0)};
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = deepestPoint + worldNormal * (penetration * 0.5);
+  contact.normal = worldNormal;
+  contact.penetrationDepth = penetration;
+  result.addContact(contact);
+  return 1;
+}
 
-  double depth[4]
-      = {(pn - c[0]).dot(nn),
-         (pn - c[1]).dot(nn),
-         (pn - c[2]).dot(nn),
-         (pn - c[3]).dot(nn)};
+int collidePlaneCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T0,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = T0.linear() * plane_normal;
+  const Eigen::Vector3d planePoint
+      = T0.translation() + worldNormal * plane_offset;
+  const Eigen::Vector3d cylAxis = T1.linear().col(2);
+  const Eigen::Vector3d cylCenter = T1.translation();
+  const Eigen::Vector3d cylTop = cylCenter + cylAxis * half_height;
+  const Eigen::Vector3d cylBot = cylCenter - cylAxis * half_height;
+  const double dotAxis = cylAxis.dot(worldNormal);
+  const Eigen::Vector3d radialRaw = worldNormal - cylAxis * dotAxis;
 
-  double penetration = -1.0;
-  int found = -1;
-  for (int i = 0; i < 4; i++) {
-    if (depth[i] > penetration) {
-      penetration = depth[i];
-      found = i;
-    }
+  Eigen::Vector3d deepestPoint;
+  if (radialRaw.squaredNorm() < 1e-10) {
+    const double distTop = worldNormal.dot(cylTop - planePoint);
+    const double distBot = worldNormal.dot(cylBot - planePoint);
+    deepestPoint = (distTop < distBot) ? cylTop : cylBot;
+  } else {
+    const Eigen::Vector3d radialDir = radialRaw.normalized();
+    const Eigen::Vector3d rimOffset = -radialDir * cyl_rad;
+    const Eigen::Vector3d topRim = cylTop + rimOffset;
+    const Eigen::Vector3d botRim = cylBot + rimOffset;
+
+    const double distTopRim = worldNormal.dot(topRim - planePoint);
+    const double distBotRim = worldNormal.dot(botRim - planePoint);
+
+    deepestPoint = (distTopRim < distBotRim) ? topRim : botRim;
   }
 
-  Eigen::Vector3d point;
+  const double signedDist = worldNormal.dot(deepestPoint - planePoint);
+  if (signedDist > 0.0)
+    return 0;
 
-  if (std::abs(depth[found] - depth[(found + 1) % 4]) < DART_COLLISION_EPS)
-    point = T * (0.5 * (c[found] + c[(found + 1) % 4]));
-  else if (std::abs(depth[found] - depth[(found + 3) % 4]) < DART_COLLISION_EPS)
-    point = T * (0.5 * (c[found] + c[(found + 3) % 4]));
-  else
-    point = T * c[found];
+  const double penetration = -signedDist;
 
-  if (penetration > 0.0) {
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = point;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-    return 1;
-  }
-
-  return 0;
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = deepestPoint + worldNormal * (penetration * 0.5);
+  contact.normal = -worldNormal;
+  contact.penetrationDepth = penetration;
+  result.addContact(contact);
+  return 1;
 }
 
 //==============================================================================
@@ -1433,6 +1662,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereBox(
           o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideSpherePlane(
+          o1,
+          o2,
+          sphere0->getRadius(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1460,6 +1702,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideBoxBox(
           o1, o2, box0->getSize(), T1, box1->getSize(), T2, result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideBoxPlane(
+          o1,
+          o2,
+          box0->getSize(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1488,6 +1743,21 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereBox(
           o1, o2, ellipsoid0->getRadii()[0], T1, box1->getSize(), T2, result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      if (ellipsoid0->isSphere()) {
+        return collideSpherePlane(
+            o1,
+            o2,
+            ellipsoid0->getRadii()[0],
+            T1,
+            plane1->getNormal(),
+            plane1->getOffset(),
+            T2,
+            result);
+      }
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1500,6 +1770,96 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           ellipsoid1->getRadii()[0],
           T2,
           result);
+    }
+  } else if (dynamics::CylinderShape::getStaticType() == shapeType1) {
+    const auto* cylinder0
+        = static_cast<const dynamics::CylinderShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collideCylinderSphere(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          sphere1->getRadius(),
+          T2,
+          result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideCylinderPlane(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
+    }
+  } else if (dynamics::PlaneShape::getStaticType() == shapeType1) {
+    const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collidePlaneSphere(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          sphere1->getRadius(),
+          T2,
+          result);
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collidePlaneBox(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          box1->getSize(),
+          T2,
+          result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collidePlaneCylinder(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      if (ellipsoid1->isSphere()) {
+        return collidePlaneSphere(
+            o1,
+            o2,
+            plane0->getNormal(),
+            plane0->getOffset(),
+            T1,
+            ellipsoid1->getRadii()[0],
+            T2,
+            result);
+      }
     }
   }
 

@@ -718,6 +718,83 @@ TEST_F(Collision, BoxBox)
 }
 
 //==============================================================================
+TEST_F(Collision, DartPlanePrimitiveContacts)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto farSphereFrame = SimpleFrame::createShared(Frame::World());
+
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  farSphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+
+  sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.45));
+  boxFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.49));
+  cylinderFrame->setTranslation(Eigen::Vector3d(4.0, 0.0, 0.49));
+  farSphereFrame->setTranslation(Eigen::Vector3d(6.0, 0.0, 0.6));
+
+  auto group = cd->createCollisionGroup(
+      planeFrame.get(),
+      sphereFrame.get(),
+      boxFrame.get(),
+      cylinderFrame.get(),
+      farSphereFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 16u;
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(result.getNumContacts(), 5u);
+
+  bool sawSphere = false;
+  auto boxContacts = 0u;
+  bool sawCylinder = false;
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_EQ(contact.collisionObject1->getShapeFrame(), planeFrame.get());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+
+    const auto* shapeFrame = contact.collisionObject2->getShapeFrame();
+    if (shapeFrame == sphereFrame.get()) {
+      sawSphere = true;
+      EXPECT_NEAR(contact.penetrationDepth, 0.05, 1e-12);
+    } else if (shapeFrame == boxFrame.get()) {
+      ++boxContacts;
+      EXPECT_NEAR(contact.penetrationDepth, 0.01, 1e-12);
+    } else if (shapeFrame == cylinderFrame.get()) {
+      sawCylinder = true;
+      EXPECT_NEAR(contact.penetrationDepth, 0.01, 1e-12);
+    } else {
+      FAIL() << "Unexpected contact shape";
+    }
+  }
+  EXPECT_TRUE(sawSphere);
+  EXPECT_EQ(boxContacts, 3u);
+  EXPECT_TRUE(sawCylinder);
+
+  auto sphereGroup = cd->createCollisionGroup(sphereFrame.get());
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  result.clear();
+  ASSERT_TRUE(sphereGroup->collide(planeGroup.get(), option, &result));
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  EXPECT_EQ(
+      result.getContact(0).collisionObject1->getShapeFrame(),
+      sphereFrame.get());
+  EXPECT_EQ(
+      result.getContact(0).collisionObject2->getShapeFrame(), planeFrame.get());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+//==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());

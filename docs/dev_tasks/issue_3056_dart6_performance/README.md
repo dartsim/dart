@@ -2,12 +2,50 @@
 
 ## Current Snapshot
 
-Bottom line: DART 6 performance work is continuing on `release-6.20` as a PR
-stack. The current managed PR, #3071 `perf/dart6-parallel-islands`, is the
-parallel-stepping follow-up after #3111 and #3112 landed the core
-`setNumSimulationThreads` path on the base branch. It should only be merged as
-a performance PR with evidence that the thread knob preserves final state and
-has a real scaling window.
+Bottom line: #3071 is merged, so the performance stack has moved to the native
+collision phase on `perf/dart6-native-collision`, based on `release-6.20`. This
+phase is intentionally evidence-gated: the DART 7 native detector cannot be
+copied literally into DART 6 because the main-branch collision world depends on
+EnTT and C++23 APIs, while DART 6.20 remains C++17 and gz-physics compatible.
+The first implementation slice ports the useful primitive contact behavior into
+the existing `dart/collision/dart/` backend without adding dependencies:
+finite-shape broadphase filtering plus plane contacts for the original #3056
+sphere/box/cylinder workload. The success bar is still the same original issue
+scene, final-state/hash correctness, focused collision tests, and RTF compared
+against Bullet/FCL/ODE where those backends complete.
+
+Current native-collision evidence on the original `/tmp/3k_shapes.sdf` issue
+scene, 3000 steps, `--sdf-plane-shapes --world-threads 16 --max-contacts 12000`,
+and default deactivation enabled:
+
+| Collision backend | RTF | Final state |
+| --- | ---: | --- |
+| DART native, current branch | `1.77572` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Bullet | `1.49504` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
+| ODE | `0.0257735` | finite, hash `0x4e5f6556657720`, resting `3003 / 3003`, contacts `0` |
+| FCL primitive | no RTF | did not complete setup within a 180 s local timeout |
+
+DART native and Bullet settle to the same shape keys. Final-scene dump deltas
+after 3000 steps are small: max position delta `3.432794147777784e-06` m, mean
+position delta `1.8434777525926603e-06` m, max quaternion delta
+`1.9819543267524604e-06`, and max z delta `2.8028646514299815e-06` m. Spheres
+match exactly; boxes and cylinders account for the tiny residual differences.
+
+Active-mode caveat: with `--disable-deactivation` and 300 steps, DART native is
+still slower than Bullet even with the same final contact count (`5005` contacts
+across `3003` pairs). Current DART native: RTF `0.0207091`, final hash
+`0x6b50e84cd691f6e2`, profiler `collide` time `10.84 s` / `36.12 ms` per
+call. Bullet: RTF `0.0553424`, final hash `0x1b1e6f3c78c0e01e`, profiler
+`collide` time `1.484 s` / `4.948 ms` per call. The default issue-scene win is
+real, but the active no-sleep path still needs deeper DART-native narrow-phase
+optimization before claiming a broad replacement for Bullet.
+
+The previous managed PR, #3071 `perf/dart6-parallel-islands`, landed as the
+parallel-stepping follow-up after #3111 and #3112 added the core
+`setNumSimulationThreads` path on the base branch. Its evidence showed that the
+thread knob preserves final state and has a real, bounded scaling window on
+active independent articulated workloads; the original #3056 scene remains
+mostly collision/resting-fast-path dominated.
 
 Current #3071 evidence on an Intel i7-13800H (14 cores / 20 logical CPUs),
 pinned to CPUs 0-15:
@@ -49,29 +87,29 @@ pinned to CPUs 0-15:
   the 64-chain workload regressed at every tested thread count. The PR evidence
   should present this caveat instead of implying unlimited CPU scaling.
 
-If #3071 lands, the next performance phase should import and benchmark the DART
-7 native collision detector into DART 6.20's `dart/collision/dart/` path,
-compare it against Bullet/FCL/ODE on the same original #3056 commands, and only
-prefer it if it beats Bullet while preserving final-state and focused collision
-correctness.
+Native-collision follow-up: continue porting DART 7 native algorithms into
+DART 6.20's `dart/collision/dart/` path in dependency-free slices. The current
+slice adds finite-shape broadphase filtering, plane/sphere/box/cylinder
+contacts, and per-thread scratch reuse in the existing DART backend. It beats
+Bullet on the default sleeping issue scene while preserving close settled-state
+agreement, but Bullet still wins active no-deactivation collision time.
 
-- Current active branch: `perf/dart6-parallel-islands`, based on
+- Current active branch: `perf/dart6-native-collision`, based on
   `origin/release-6.20`.
 - Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
   3003 mobile sphere/box/cylinder bodies plus the static ground plane from the
   original issue report. The ground link warning about missing `<inertial>` is
   from that static ground model in the issue input; the mobile bodies have
   inertials.
-- Current exact-scene command:
-  `pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision bullet --sdf-plane-shapes --world-threads 16 --max-contacts 12000`.
-  This uses Bullet only for collision detection; DART 6 still owns dynamics,
-  constraints, sleep/deactivation, and the LCP solve.
-- Current exact-scene result, default deactivation enabled: RTF `1.50` across
-  repeated 16-thread samples (`1.47286`, `1.50528`, `1.51054`, `1.51119`,
-  `1.50657`, `1.51609` through `pixi run ex contact_benchmark -- ...`),
-  finite final state, final hash `0x2375f1927218cd43`, final resting
-  `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
-  `3000 / 3000` steps.
+- Current exact-scene native command:
+  `pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision dart --sdf-plane-shapes --world-threads 16 --max-contacts 12000`.
+  This uses the dependency-free DART collision backend for collision detection;
+  DART 6 also owns dynamics, constraints, sleep/deactivation, and the LCP solve.
+- Current exact-scene native result, default deactivation enabled: RTF
+  `1.77572`, finite final state, final hash `0x131b6af79a44ff90`, final
+  resting `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
+  `3000 / 3000` steps. The same command with Bullet collision detection gives
+  RTF `1.49504`.
 - Same exact command with `--world-threads 1` gives RTF `1.46391`; with
   `--world-threads 4` gives RTF `1.49184`. The current win is therefore from
   prompt deactivation of the initially settled issue scene, not from thread
@@ -90,11 +128,9 @@ correctness.
   all-resting fast path was `265 ms`, and the three Bullet collision calls were
   `452 ms` total. The next measured hotspot is the readiness scan, not the
   LCP solve.
-- FCL and ODE exact-scene attempts with the same SDF plane-shape command did
-  not reach the setup summary within practical local budgets (FCL stopped after
-  about `5m57s`, ODE after about `1m42s`). These are incomplete setup attempts,
-  not valid RTF numbers. Bullet is the only complete exact-scene collision
-  backend sample in the current pass.
+- FCL and ODE exact-scene comparison: FCL primitive did not complete setup
+  within a 180 s timeout. ODE completed but measured RTF `0.0257735`, far below
+  DART native and Bullet on this scene.
 - Correctness coverage added for the prompt initial-rest path:
   `IslandDeactivation.InitiallySettledShallowContactCanSleepPromptly` proves a
   shallow zero-velocity support contact can consume initial dwell but still
