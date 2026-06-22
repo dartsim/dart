@@ -45,6 +45,9 @@ if(NOT DART_USE_SYSTEM_IMGUI)
   )
 endif()
 target_link_libraries(${target_name} dart-utils ${link_libraries} osg::osg)
+if(APPLE)
+  target_compile_definitions(${target_name} PRIVATE GL_SILENCE_DEPRECATION)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
