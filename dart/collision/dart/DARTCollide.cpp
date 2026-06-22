@@ -2306,6 +2306,19 @@ int collideSphereCylinder(
   return 0;
 }
 
+static Eigen::Vector3d getDeepestCylinderPlanePoint(
+    const Eigen::Vector3d& firstPoint,
+    double firstDistance,
+    const Eigen::Vector3d& secondPoint,
+    double secondDistance)
+{
+  constexpr double tieTolerance = 1e-12;
+  if (std::abs(firstDistance - secondDistance) <= tieTolerance)
+    return 0.5 * (firstPoint + secondPoint);
+
+  return (firstDistance < secondDistance) ? firstPoint : secondPoint;
+}
+
 int collideCylinderPlane(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -2331,7 +2344,8 @@ int collideCylinderPlane(
   if (radialRaw.squaredNorm() < 1e-10) {
     const double distTop = worldNormal.dot(cylTop - planePoint);
     const double distBot = worldNormal.dot(cylBot - planePoint);
-    deepestPoint = (distTop < distBot) ? cylTop : cylBot;
+    deepestPoint
+        = getDeepestCylinderPlanePoint(cylTop, distTop, cylBot, distBot);
   } else {
     const Eigen::Vector3d radialDir = radialRaw.normalized();
     const Eigen::Vector3d rimOffset = -radialDir * cyl_rad;
@@ -2341,7 +2355,8 @@ int collideCylinderPlane(
     const double distTopRim = worldNormal.dot(topRim - planePoint);
     const double distBotRim = worldNormal.dot(botRim - planePoint);
 
-    deepestPoint = (distTopRim < distBotRim) ? topRim : botRim;
+    deepestPoint
+        = getDeepestCylinderPlanePoint(topRim, distTopRim, botRim, distBotRim);
   }
 
   const double signedDist = worldNormal.dot(deepestPoint - planePoint);
@@ -2399,7 +2414,8 @@ int collidePlaneCylinder(
   if (radialRaw.squaredNorm() < 1e-10) {
     const double distTop = worldNormal.dot(cylTop - planePoint);
     const double distBot = worldNormal.dot(cylBot - planePoint);
-    deepestPoint = (distTop < distBot) ? cylTop : cylBot;
+    deepestPoint
+        = getDeepestCylinderPlanePoint(cylTop, distTop, cylBot, distBot);
   } else {
     const Eigen::Vector3d radialDir = radialRaw.normalized();
     const Eigen::Vector3d rimOffset = -radialDir * cyl_rad;
@@ -2409,7 +2425,8 @@ int collidePlaneCylinder(
     const double distTopRim = worldNormal.dot(topRim - planePoint);
     const double distBotRim = worldNormal.dot(botRim - planePoint);
 
-    deepestPoint = (distTopRim < distBotRim) ? topRim : botRim;
+    deepestPoint
+        = getDeepestCylinderPlanePoint(topRim, distTopRim, botRim, distBotRim);
   }
 
   const double signedDist = worldNormal.dot(deepestPoint - planePoint);

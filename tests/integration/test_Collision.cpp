@@ -793,6 +793,51 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
       result.getContact(0).collisionObject2->getShapeFrame(), planeFrame.get());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+
+  auto horizontalCylinderFrame = SimpleFrame::createShared(Frame::World());
+  horizontalCylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+
+  Eigen::Isometry3d horizontalCylinderTf = Eigen::Isometry3d::Identity();
+  horizontalCylinderTf.linear()
+      = Eigen::AngleAxisd(0.5 * constantsd::pi(), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  horizontalCylinderTf.translation() = Eigen::Vector3d(8.0, 0.0, 0.49);
+  horizontalCylinderFrame->setTransform(horizontalCylinderTf);
+
+  auto horizontalCylinderGroup
+      = cd->createCollisionGroup(horizontalCylinderFrame.get());
+  result.clear();
+  ASSERT_TRUE(
+      planeGroup->collide(horizontalCylinderGroup.get(), option, &result));
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  const auto& planeFirstCylinderContact = result.getContact(0);
+  EXPECT_TRUE(planeFirstCylinderContact.normal.isApprox(
+      -Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(planeFirstCylinderContact.penetrationDepth, 0.01, 1e-12);
+  EXPECT_NEAR(planeFirstCylinderContact.point.x(), 8.0, 1e-12);
+  EXPECT_NEAR(planeFirstCylinderContact.point.y(), 0.0, 1e-12);
+
+  result.clear();
+  ASSERT_TRUE(
+      horizontalCylinderGroup->collide(planeGroup.get(), option, &result));
+  ASSERT_EQ(result.getNumContacts(), 1u);
+  const auto& cylinderFirstPlaneContact = result.getContact(0);
+  const auto* cylinderFirstShapeFrame
+      = cylinderFirstPlaneContact.collisionObject1->getShapeFrame();
+  if (cylinderFirstShapeFrame == horizontalCylinderFrame.get()) {
+    EXPECT_TRUE(cylinderFirstPlaneContact.normal.isApprox(
+        Eigen::Vector3d::UnitZ(), 1e-12));
+  } else {
+    EXPECT_EQ(cylinderFirstShapeFrame, planeFrame.get());
+    EXPECT_TRUE(cylinderFirstPlaneContact.normal.isApprox(
+        -Eigen::Vector3d::UnitZ(), 1e-12));
+  }
+  EXPECT_TRUE(cylinderFirstPlaneContact.point.isApprox(
+      planeFirstCylinderContact.point, 1e-12));
+  EXPECT_NEAR(
+      cylinderFirstPlaneContact.penetrationDepth,
+      planeFirstCylinderContact.penetrationDepth,
+      1e-12);
 }
 
 //==============================================================================
