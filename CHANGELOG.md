@@ -63,6 +63,12 @@
 
 * Collision
 
+  * Add dependency-free primitive plane contacts and broadphase pruning to the
+    DART collision backend for sphere, box, cylinder, and plane workloads,
+    improving the original 3003-body issue scene while preserving close
+    settled-state agreement with Bullet:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add primitive plane collision support and configurable per-pair contact caps
     for contact-heavy scenes, with regression coverage for FCL halfspace
     distances, shared-object refreshes, and collision-result cache lifetime:
