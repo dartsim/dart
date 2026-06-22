@@ -20,8 +20,8 @@ and default deactivation enabled:
 
 | Collision backend | RTF | Final state |
 | --- | ---: | --- |
-| DART native, current branch | `1.77572` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Bullet | `1.49504` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
+| DART native, current branch | `1.7432` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Bullet | `1.55674` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
 | ODE | `0.0257735` | finite, hash `0x4e5f6556657720`, resting `3003 / 3003`, contacts `0` |
 | FCL primitive | no RTF | did not complete setup within a 180 s local timeout |
 
@@ -106,10 +106,10 @@ agreement, but Bullet still wins active no-deactivation collision time.
   This uses the dependency-free DART collision backend for collision detection;
   DART 6 also owns dynamics, constraints, sleep/deactivation, and the LCP solve.
 - Current exact-scene native result, default deactivation enabled: RTF
-  `1.77572`, finite final state, final hash `0x131b6af79a44ff90`, final
+  `1.7432`, finite final state, final hash `0x131b6af79a44ff90`, final
   resting `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
   `3000 / 3000` steps. The same command with Bullet collision detection gives
-  RTF `1.49504`.
+  RTF `1.55674`.
 - Same exact command with `--world-threads 1` gives RTF `1.46391`; with
   `--world-threads 4` gives RTF `1.49184`. The current win is therefore from
   prompt deactivation of the initially settled issue scene, not from thread
