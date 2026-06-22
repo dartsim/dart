@@ -56,6 +56,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <deque>
 #include <memory>
 #include <string>
 #include <thread>
@@ -468,16 +469,19 @@ TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
   solver.setDeactivationActive(true);
   solver.setNumSimulationThreads(4);
 
+  std::deque<FakeCollisionObject> dynamicObjects;
+  std::deque<collision::Contact> contacts;
   for (std::size_t i = 0; i < 130u; ++i) {
     auto* dynamicBody
         = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
     auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
         dynamics::CollisionAspect,
         dynamics::DynamicsAspect>(shape);
-    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
-    auto contact = createContact(&dynamicObject, &fixedObject);
+    dynamicObjects.emplace_back(&detector, dynamicShapeNode);
+    contacts.push_back(createContact(&dynamicObjects.back(), &fixedObject));
     solver.addActiveConstraintForTest(
-        createContactConstraint<constraint::ContactConstraint>(contact));
+        createContactConstraint<constraint::ContactConstraint>(
+            contacts.back()));
   }
 
   for (const auto& skeleton : skeletons)
@@ -508,16 +512,19 @@ TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
   solver.setDeactivationActive(true);
   solver.setNumSimulationThreads(4);
 
+  std::deque<FakeCollisionObject> dynamicObjects;
+  std::deque<collision::Contact> contacts;
   for (std::size_t i = 0; i < 129u; ++i) {
     auto* dynamicBody
         = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
     auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
         dynamics::CollisionAspect,
         dynamics::DynamicsAspect>(shape);
-    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
-    auto contact = createContact(&dynamicObject, &fixedObject);
+    dynamicObjects.emplace_back(&detector, dynamicShapeNode);
+    contacts.push_back(createContact(&dynamicObjects.back(), &fixedObject));
     solver.addActiveConstraintForTest(
-        createContactConstraint<constraint::ContactConstraint>(contact));
+        createContactConstraint<constraint::ContactConstraint>(
+            contacts.back()));
   }
 
   for (const auto& skeleton : skeletons)

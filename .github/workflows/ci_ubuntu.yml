@@ -47,7 +47,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: "2"
 
       - name: Build with coverage
         run: |
@@ -89,7 +89,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: "2"
 
       - name: Check Lint
         run: |
@@ -133,7 +133,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
+          version: "2"
 
       - name: Build with assertions (no -DNDEBUG)
         run: |
