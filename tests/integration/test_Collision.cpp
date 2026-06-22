@@ -841,6 +841,52 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto sphere1 = SimpleFrame::createShared(Frame::World());
+  auto sphere2 = SimpleFrame::createShared(Frame::World());
+  auto sphere3 = SimpleFrame::createShared(Frame::World());
+
+  sphere1->setShape(std::make_shared<SphereShape>(0.5));
+  sphere2->setShape(std::make_shared<SphereShape>(0.5));
+  sphere3->setShape(std::make_shared<SphereShape>(0.5));
+
+  sphere1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.45));
+  sphere2->setTranslation(Eigen::Vector3d(1.0e-12, 0.0, 0.45));
+  sphere3->setTranslation(Eigen::Vector3d(1.0e-10, 0.0, 0.45));
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto sphereGroup
+      = cd->createCollisionGroup(sphere1.get(), sphere2.get(), sphere3.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 8u;
+
+  CollisionResult result;
+  ASSERT_TRUE(planeGroup->collide(sphereGroup.get(), option, &result));
+  ASSERT_EQ(result.getNumContacts(), 2u);
+
+  std::vector<double> contactXs;
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_EQ(contact.collisionObject1->getShapeFrame(), planeFrame.get());
+    EXPECT_NEAR(contact.penetrationDepth, 0.05, 1e-12);
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    contactXs.push_back(contact.point.x());
+  }
+
+  std::sort(contactXs.begin(), contactXs.end());
+  EXPECT_NEAR(contactXs[0], 0.0, 1e-12);
+  EXPECT_NEAR(contactXs[1], 1.0e-10, 1e-12);
+}
+
+//==============================================================================
 TEST_F(Collision, DartSphereCylinderOrderSymmetry)
 {
   auto cd = DARTCollisionDetector::create();

@@ -2,43 +2,50 @@
 
 ## Current Snapshot
 
-Bottom line: #3071 is merged, so the performance stack has moved to the native
-collision phase on `perf/dart6-native-collision`, based on `release-6.20`. This
-phase is intentionally evidence-gated: the DART 7 native detector cannot be
-copied literally into DART 6 because the main-branch collision world depends on
-EnTT and C++23 APIs, while DART 6.20 remains C++17 and gz-physics compatible.
-The first implementation slice ports the useful primitive contact behavior into
-the existing `dart/collision/dart/` backend without adding dependencies:
-finite-shape broadphase filtering plus plane contacts for the original #3056
-sphere/box/cylinder workload. The success bar is still the same original issue
-scene, final-state/hash correctness, focused collision tests, and RTF compared
-against Bullet/FCL/ODE where those backends complete.
+Bottom line: #3123 is merged, so the next slice is active-mode native collision
+performance on `perf/dart6-native-active-collision`, based on `release-6.20`.
+The long-term target remains DART 7 native-collision feature, test, and
+benchmark parity inside DART 6.20's dependency-free `dart/collision/dart/`
+backend. Once that path proves correctness and performance across the required
+shape set, FCL, Bullet, and ODE should become optional comparison and regression
+dependencies for tests/benchmarks rather than required production collision
+backends. Middle PRs are acceptable, but each one must keep gz-physics-facing
+API behavior compatible and show measured baseline-vs-current evidence.
 
-Current native-collision evidence on the original `/tmp/3k_shapes.sdf` issue
-scene, 3000 steps, `--sdf-plane-shapes --world-threads 16 --max-contacts 12000`,
-and default deactivation enabled:
+Current active-mode evidence uses the original `/tmp/3k_shapes.sdf` issue scene:
+3003 mobile sphere/box/cylinder bodies, DART 6 dynamics/constraints/solver,
+300 steps, `--disable-deactivation --sdf-plane-shapes --world-threads 16
+--max-contacts 12000`, with final-state consumption enabled.
 
-| Collision backend | RTF | Final state |
-| --- | ---: | --- |
-| DART native, current branch | `1.90971` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Bullet | `1.5567` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
-| ODE | `0.0257735` | finite, hash `0x4e5f6556657720`, resting `3003 / 3003`, contacts `0` |
-| FCL primitive | no RTF | did not complete setup within a 180 s local timeout |
+| Run | RTF | Collision time | Final state |
+| --- | ---: | ---: | --- |
+| Merged #3123 DART native baseline | `0.0198059` | `37.16 ms/step` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current DART native | `0.0536378` | `6.316 ms/step` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current Bullet comparison | `0.0607573` | `4.227 ms/step` | finite, hash `0x1b1e6f3c78c0e01e`, contacts `5005`, pairs `3003` |
 
-DART native and Bullet settle to the same shape keys. Final-scene dump deltas
-after 3000 steps are small: max position delta `3.432794147777784e-06` m, mean
-position delta `1.8434777525926603e-06` m, max quaternion delta
+The current native slice preserves the DART-native final hash while raising
+active no-sleep RTF by `2.7x` and reducing DART-native collision time by `5.9x`
+on the same workload. It does not yet beat Bullet in active mode; Bullet remains
+about `13%` faster end-to-end on this run. The profile-driven cause of the
+native gain was the previous all-contact duplicate scan in DART-native contact
+post-processing, plus shared `CollisionResult` lookup-cache work on temporary
+per-pair results.
+
+The original default sleeping issue case remains above real time after this
+slice. Current DART native command:
+`pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 3000 --warmup 0
+--checkpoint 0 --quiet --collision dart --sdf-plane-shapes --world-threads 16
+--max-contacts 12000 --profile`. Result: RTF `1.88616`, finite final state,
+hash `0x131b6af79a44ff90`, frame/time advanced `3000 / 3000`, final resting
+`3003 / 3003`, final contacts `0`.
+
+DART native and Bullet settle to the same shape keys in the earlier #3123
+3000-step comparison. Final-scene dump deltas were small: max position delta
+`3.432794147777784e-06` m, mean position delta
+`1.8434777525926603e-06` m, max quaternion delta
 `1.9819543267524604e-06`, and max z delta `2.8028646514299815e-06` m. Spheres
-match exactly; boxes and cylinders account for the tiny residual differences.
-
-Active-mode caveat: with `--disable-deactivation` and 300 steps, DART native is
-still slower than Bullet even with the same final contact count (`5005` contacts
-across `3003` pairs). Current DART native: RTF `0.0207091`, final hash
-`0x6b50e84cd691f6e2`, profiler `collide` time `10.84 s` / `36.12 ms` per
-call. Bullet: RTF `0.0553424`, final hash `0x1b1e6f3c78c0e01e`, profiler
-`collide` time `1.484 s` / `4.948 ms` per call. The default issue-scene win is
-real, but the active no-sleep path still needs deeper DART-native narrow-phase
-optimization before claiming a broad replacement for Bullet.
+matched exactly; boxes and cylinders accounted for the tiny residual
+differences.
 
 The previous managed PR, #3071 `perf/dart6-parallel-islands`, landed as the
 parallel-stepping follow-up after #3111 and #3112 added the core
@@ -89,12 +96,15 @@ pinned to CPUs 0-15:
 
 Native-collision follow-up: continue porting DART 7 native algorithms into
 DART 6.20's `dart/collision/dart/` path in dependency-free slices. The current
-slice adds finite-shape broadphase filtering, plane/sphere/box/cylinder
-contacts, and per-thread scratch reuse in the existing DART backend. It beats
-Bullet on the default sleeping issue scene while preserving close settled-state
-agreement, but Bullet still wins active no-deactivation collision time.
+merged slice added finite-shape broadphase filtering, plane/sphere/box/cylinder
+contacts, and per-thread scratch reuse in the existing DART backend. The active
+follow-up replaces the all-contact duplicate scan with a reusable spatial index
+and avoids eager unordered lookup-cache work for temporary per-pair collision
+results. DART native beats Bullet on the default sleeping issue scene while
+preserving close settled-state agreement; Bullet remains the active-mode target
+to beat.
 
-- Current active branch: `perf/dart6-native-collision`, based on
+- Current active branch: `perf/dart6-native-active-collision`, based on
   `origin/release-6.20`.
 - Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
   3003 mobile sphere/box/cylinder bodies plus the static ground plane from the
@@ -106,28 +116,30 @@ agreement, but Bullet still wins active no-deactivation collision time.
   This uses the dependency-free DART collision backend for collision detection;
   DART 6 also owns dynamics, constraints, sleep/deactivation, and the LCP solve.
 - Current exact-scene native result, default deactivation enabled: RTF
-  `1.90971`, finite final state, final hash `0x131b6af79a44ff90`, final
+  `1.88616`, finite final state, final hash `0x131b6af79a44ff90`, final
   resting `3003 / 3003`, final contacts `0`, and frame/time advanced exactly
-  `3000 / 3000` steps. The same command with Bullet collision detection gives
-  RTF `1.5567`.
+  `3000 / 3000` steps. The earlier same-scene Bullet comparison on the merged
+  native slice gave RTF `1.5567`.
 - Same exact command with `--world-threads 1` gives RTF `1.46391`; with
   `--world-threads 4` gives RTF `1.49184`. The current win is therefore from
   prompt deactivation of the initially settled issue scene, not from thread
   scaling.
-- Same exact command with `--disable-deactivation` gives RTF `0.0559457` to
-  `0.0604573`, finite final state, final hash `0x8aa3ab9f1fe495c6`, final
-  contacts `7005`, and final contact pairs `3003`.
+- Same exact command with `--steps 300 --disable-deactivation --profile` gives
+  current DART native RTF `0.0536378`, finite final state, hash
+  `0x6b50e84cd691f6e2`, final contacts `5005`, and final contact pairs `3003`.
+  The current Bullet comparison gives RTF `0.0607573`, hash
+  `0x1b1e6f3c78c0e01e`, final contacts `5005`, and final contact pairs `3003`.
 - Exact-scene final dump comparison, default-on vs disabled deactivation,
   matched all `3003` mobile shapes: max position delta
   `3.4147863965736968e-06` m, mean position delta
   `1.8350550992622476e-06` m, max quaternion L2 delta
   `1.9714098667727154e-06`.
-- Current profiler shape on the exact scene: only `3` full
+- Current default-sleeping profiler shape on the exact scene: only `3` full
   constraint/collision solves, followed by `2997` all-resting cached steps.
-  Inclusive simulation time was `1.993 s`; all-resting readiness was `1.221 s`,
-  all-resting fast path was `265 ms`, and the three Bullet collision calls were
-  `452 ms` total. The next measured hotspot is the readiness scan, not the
-  LCP solve.
+  Inclusive simulation time was `1.588 s`; all-resting readiness was `1.249 s`,
+  all-resting fast path was `267 ms`, and the three native collision calls were
+  `14.33 ms` total. The next measured default-sleeping hotspot is the readiness
+  scan, not the LCP solve.
 - FCL and ODE exact-scene comparison: FCL primitive did not complete setup
   within a 180 s timeout. ODE completed but measured RTF `0.0257735`, far below
   DART native and Bullet on this scene.

@@ -48,6 +48,9 @@
 #include <limits>
 #include <vector>
 
+#include <cmath>
+#include <cstdint>
+
 namespace dart {
 namespace collision {
 
@@ -62,6 +65,48 @@ struct BroadphaseEntry
   bool plane{false};
 };
 
+constexpr double kContactDuplicateTolerance = 3.0e-12;
+constexpr std::size_t kInvalidContactPointIndex
+    = std::numeric_limits<std::size_t>::max();
+
+struct ContactPointKey
+{
+  std::int64_t x{0};
+  std::int64_t y{0};
+  std::int64_t z{0};
+};
+
+bool operator==(const ContactPointKey& lhs, const ContactPointKey& rhs);
+
+struct ContactPointBucket
+{
+  ContactPointKey key;
+  std::size_t head{kInvalidContactPointIndex};
+  bool occupied{false};
+};
+
+class ContactPointIndex
+{
+public:
+  void clear();
+  void prepare(std::size_t maxContacts);
+  bool containsClose(const Eigen::Vector3d& point) const;
+  void add(const Eigen::Vector3d& point);
+
+private:
+  bool containsCloseLinear(const Eigen::Vector3d& point) const;
+  void ensureBucketCapacity(std::size_t requiredPoints);
+  void rehash(std::size_t bucketCount);
+  std::size_t findBucketIndex(const ContactPointKey& key) const;
+  std::size_t findOrCreateBucketIndex(const ContactPointKey& key);
+
+  std::vector<ContactPointBucket> buckets;
+  std::vector<std::size_t> usedBuckets;
+  std::vector<Eigen::Vector3d> points;
+  std::vector<std::size_t> nextPoint;
+  std::size_t bucketMask{0u};
+};
+
 struct BroadphaseScratch
 {
   std::vector<BroadphaseEntry> finiteEntries1;
@@ -73,6 +118,7 @@ struct BroadphaseScratch
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
   CollisionResult pairResult;
+  ContactPointIndex contactPointIndex;
 
   void clear();
 };
@@ -241,6 +287,8 @@ bool DARTCollisionDetector::collide(
 
   auto& scratch = getBroadphaseScratch();
   scratch.clear();
+  if (result)
+    scratch.contactPointIndex.prepare(option.maxNumContacts);
   buildBroadphaseEntries(
       objects,
       scratch.finiteEntries1,
@@ -364,6 +412,8 @@ bool DARTCollisionDetector::collide(
 
   auto& scratch = getBroadphaseScratch();
   scratch.clear();
+  if (result)
+    scratch.contactPointIndex.prepare(option.maxNumContacts);
   buildBroadphaseEntries(
       objects1,
       scratch.finiteEntries1,
@@ -597,6 +647,268 @@ void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
 namespace {
 
 //==============================================================================
+bool operator==(const ContactPointKey& lhs, const ContactPointKey& rhs)
+{
+  return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+}
+
+//==============================================================================
+std::size_t hashContactPointKey(const ContactPointKey& key)
+{
+  auto mix = [](std::uint64_t value) {
+    value ^= value >> 30;
+    value *= 0xbf58476d1ce4e5b9ULL;
+    value ^= value >> 27;
+    value *= 0x94d049bb133111ebULL;
+    value ^= value >> 31;
+    return value;
+  };
+
+  auto hash = mix(static_cast<std::uint64_t>(key.x));
+  hash ^= mix(
+      static_cast<std::uint64_t>(key.y) + 0x9e3779b97f4a7c15ULL + (hash << 6)
+      + (hash >> 2));
+  hash ^= mix(
+      static_cast<std::uint64_t>(key.z) + 0x9e3779b97f4a7c15ULL + (hash << 6)
+      + (hash >> 2));
+
+  return static_cast<std::size_t>(hash);
+}
+
+//==============================================================================
+std::size_t nextPowerOfTwo(std::size_t value)
+{
+  std::size_t power = 1u;
+  while (power < value
+         && power <= std::numeric_limits<std::size_t>::max() / 2u) {
+    power <<= 1u;
+  }
+
+  return power;
+}
+
+//==============================================================================
+bool makeContactPointKey(const Eigen::Vector3d& point, ContactPointKey& key)
+{
+  for (auto i = 0; i < 3; ++i) {
+    if (!std::isfinite(point[i]))
+      return false;
+
+    const auto cell = std::floor(point[i] / kContactDuplicateTolerance);
+    if (cell < static_cast<double>(std::numeric_limits<std::int64_t>::min())
+        || cell > static_cast<double>(
+               std::numeric_limits<std::int64_t>::max())) {
+      return false;
+    }
+
+    if (i == 0)
+      key.x = static_cast<std::int64_t>(cell);
+    else if (i == 1)
+      key.y = static_cast<std::int64_t>(cell);
+    else
+      key.z = static_cast<std::int64_t>(cell);
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool offsetCell(std::int64_t cell, int offset, std::int64_t& result)
+{
+  if (offset > 0) {
+    if (cell > std::numeric_limits<std::int64_t>::max() - offset)
+      return false;
+  } else if (offset < 0) {
+    if (cell < std::numeric_limits<std::int64_t>::min() - offset)
+      return false;
+  }
+
+  result = cell + offset;
+  return true;
+}
+
+//==============================================================================
+void ContactPointIndex::clear()
+{
+  for (const auto bucketIndex : usedBuckets)
+    buckets[bucketIndex] = ContactPointBucket();
+
+  usedBuckets.clear();
+  points.clear();
+  nextPoint.clear();
+}
+
+//==============================================================================
+void ContactPointIndex::prepare(std::size_t maxContacts)
+{
+  clear();
+
+  const auto reserveContacts
+      = std::max<std::size_t>(16u, std::min<std::size_t>(maxContacts, 65536u));
+  points.reserve(reserveContacts);
+  nextPoint.reserve(reserveContacts);
+  usedBuckets.reserve(reserveContacts);
+  ensureBucketCapacity(reserveContacts);
+}
+
+//==============================================================================
+bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
+{
+  ContactPointKey key;
+  if (buckets.empty() || !makeContactPointKey(point, key))
+    return containsCloseLinear(point);
+
+  for (auto dx = -1; dx <= 1; ++dx) {
+    ContactPointKey neighbor;
+    if (!offsetCell(key.x, dx, neighbor.x))
+      continue;
+
+    for (auto dy = -1; dy <= 1; ++dy) {
+      if (!offsetCell(key.y, dy, neighbor.y))
+        continue;
+
+      for (auto dz = -1; dz <= 1; ++dz) {
+        if (!offsetCell(key.z, dz, neighbor.z))
+          continue;
+
+        const auto bucketIndex = findBucketIndex(neighbor);
+        if (bucketIndex == kInvalidContactPointIndex)
+          continue;
+
+        for (auto pointIndex = buckets[bucketIndex].head;
+             pointIndex != kInvalidContactPointIndex;
+             pointIndex = nextPoint[pointIndex]) {
+          if (isClose(point, points[pointIndex], kContactDuplicateTolerance))
+            return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+void ContactPointIndex::add(const Eigen::Vector3d& point)
+{
+  ensureBucketCapacity(points.size() + 1u);
+
+  const auto pointIndex = points.size();
+  points.push_back(point);
+  nextPoint.push_back(kInvalidContactPointIndex);
+
+  ContactPointKey key;
+  if (!makeContactPointKey(point, key))
+    return;
+
+  const auto bucketIndex = findOrCreateBucketIndex(key);
+  if (bucketIndex == kInvalidContactPointIndex)
+    return;
+
+  nextPoint[pointIndex] = buckets[bucketIndex].head;
+  buckets[bucketIndex].head = pointIndex;
+}
+
+//==============================================================================
+bool ContactPointIndex::containsCloseLinear(const Eigen::Vector3d& point) const
+{
+  for (const auto& existingPoint : points) {
+    if (isClose(point, existingPoint, kContactDuplicateTolerance))
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void ContactPointIndex::ensureBucketCapacity(std::size_t requiredPoints)
+{
+  const auto minBucketCount = 64u;
+  auto desiredBucketCount = minBucketCount;
+  if (requiredPoints <= std::numeric_limits<std::size_t>::max() / 4u) {
+    desiredBucketCount
+        = std::max<std::size_t>(minBucketCount, requiredPoints * 4u);
+  }
+
+  desiredBucketCount = nextPowerOfTwo(desiredBucketCount);
+  if (buckets.size() >= desiredBucketCount)
+    return;
+
+  rehash(desiredBucketCount);
+}
+
+//==============================================================================
+void ContactPointIndex::rehash(std::size_t bucketCount)
+{
+  buckets.assign(bucketCount, ContactPointBucket());
+  usedBuckets.clear();
+  bucketMask = buckets.empty() ? 0u : buckets.size() - 1u;
+
+  for (auto i = 0u; i < points.size(); ++i) {
+    nextPoint[i] = kInvalidContactPointIndex;
+
+    ContactPointKey key;
+    if (!makeContactPointKey(points[i], key))
+      continue;
+
+    const auto bucketIndex = findOrCreateBucketIndex(key);
+    if (bucketIndex == kInvalidContactPointIndex)
+      continue;
+
+    nextPoint[i] = buckets[bucketIndex].head;
+    buckets[bucketIndex].head = i;
+  }
+}
+
+//==============================================================================
+std::size_t ContactPointIndex::findBucketIndex(const ContactPointKey& key) const
+{
+  if (buckets.empty())
+    return kInvalidContactPointIndex;
+
+  auto bucketIndex = hashContactPointKey(key) & bucketMask;
+  for (auto probe = 0u; probe < buckets.size(); ++probe) {
+    const auto& bucket = buckets[bucketIndex];
+    if (!bucket.occupied)
+      return kInvalidContactPointIndex;
+
+    if (bucket.key == key)
+      return bucketIndex;
+
+    bucketIndex = (bucketIndex + 1u) & bucketMask;
+  }
+
+  return kInvalidContactPointIndex;
+}
+
+//==============================================================================
+std::size_t ContactPointIndex::findOrCreateBucketIndex(
+    const ContactPointKey& key)
+{
+  if (buckets.empty())
+    return kInvalidContactPointIndex;
+
+  auto bucketIndex = hashContactPointKey(key) & bucketMask;
+  for (auto probe = 0u; probe < buckets.size(); ++probe) {
+    auto& bucket = buckets[bucketIndex];
+    if (!bucket.occupied) {
+      bucket.occupied = true;
+      bucket.key = key;
+      bucket.head = kInvalidContactPointIndex;
+      usedBuckets.push_back(bucketIndex);
+      return bucketIndex;
+    }
+
+    if (bucket.key == key)
+      return bucketIndex;
+
+    bucketIndex = (bucketIndex + 1u) & bucketMask;
+  }
+
+  return kInvalidContactPointIndex;
+}
+
+//==============================================================================
 void BroadphaseScratch::clear()
 {
   finiteEntries1.clear();
@@ -608,6 +920,7 @@ void BroadphaseScratch::clear()
   sortedEntries1.clear();
   sortedEntries2.clear();
   pairResult.clear();
+  contactPointIndex.clear();
 }
 
 //==============================================================================
@@ -683,31 +996,22 @@ void postProcess(
   if (!pairResult.isCollision())
     return;
 
-  // Don't add repeated points
-  const auto tol = 3.0e-12;
-
+  auto& contactPointIndex = getBroadphaseScratch().contactPointIndex;
   const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
   std::size_t pairContacts = 0u;
-  for (auto pairContact : pairResult.getContacts()) {
+  for (const auto& pairContact : pairResult.getContacts()) {
     if (pairContacts >= maxContactsPerPair)
       break;
 
-    auto foundClose = false;
-
-    for (auto totalContact : totalResult.getContacts()) {
-      if (isClose(pairContact.point, totalContact.point, tol)) {
-        foundClose = true;
-        break;
-      }
-    }
-
-    if (foundClose)
+    // Don't add repeated points.
+    if (contactPointIndex.containsClose(pairContact.point))
       continue;
 
     auto contact = pairContact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
+    contactPointIndex.add(contact.point);
     ++pairContacts;
 
     if (totalResult.getNumContacts() >= option.maxNumContacts)

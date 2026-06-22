@@ -93,7 +93,7 @@ public:
 protected:
   void updateCollidingObjectCaches() const;
 
-  void addObjectToCaches(CollisionObject* object) const;
+  void addObjectToCaches(CollisionObject* object);
 
   /// List of contact information for each contact
   std::vector<Contact> mContacts;
@@ -104,9 +104,14 @@ protected:
   /// Set of ShapeFrames that are colliding
   mutable std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
 
-  /// Kept for subclasses that may have called updateCollidingObjectCaches().
-  /// addContact() populates the caches eagerly because CollisionObject
-  /// instances can be shorter-lived than the result that stores their contacts.
+  /// Captured eagerly because CollisionObject instances can be shorter-lived
+  /// than the result that stores their contacts. The unordered lookup sets are
+  /// rebuilt lazily from these stable pointers only when queried.
+  std::vector<const dynamics::BodyNode*> mCollidingBodyNodeCandidates;
+  std::vector<const dynamics::ShapeFrame*> mCollidingShapeFrameCandidates;
+
+  /// Whether the unordered lookup sets need to be rebuilt from the eagerly
+  /// captured candidate vectors.
   mutable bool mCollidingObjectCachesDirty = false;
 };
 
