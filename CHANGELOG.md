@@ -127,6 +127,14 @@
     save/restore and re-dirty `osg::State`:
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
+* Tests
+
+  * Stop the coverage CI job from running the full test suite twice (the
+    `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
+    raise the coverage CTest timeout above the 1500s default, fixing spurious
+    `test_Issue1193` timeouts under Debug coverage instrumentation:
+    [#3120](https://github.com/dartsim/dart/pull/3120)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
