@@ -35,6 +35,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
@@ -2061,7 +2062,724 @@ int collideSupportMappedShapes(
   return 1;
 }
 
+void addDartContact(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& point,
+    Eigen::Vector3d normal,
+    double penetration,
+    CollisionResult& result)
+{
+  if (normal.squaredNorm() < 1e-12)
+    normal = Eigen::Vector3d::UnitZ();
+  else
+    normal.normalize();
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = point;
+  contact.normal = normal;
+  contact.penetrationDepth = penetration;
+  result.addContact(contact);
+}
+
+Eigen::Vector3d closestPointOnSegment(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& segmentStart,
+    const Eigen::Vector3d& segmentEnd)
+{
+  const Eigen::Vector3d segment = segmentEnd - segmentStart;
+  const double segmentLengthSq = segment.squaredNorm();
+
+  if (segmentLengthSq < 1e-10)
+    return segmentStart;
+
+  const double t = std::clamp(
+      (point - segmentStart).dot(segment) / segmentLengthSq, 0.0, 1.0);
+  return segmentStart + segment * t;
+}
+
+struct SegmentClosestPointResult
+{
+  Eigen::Vector3d point1;
+  Eigen::Vector3d point2;
+  double distSquared;
+};
+
+SegmentClosestPointResult closestPointsBetweenSegments(
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& q1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& q2)
+{
+  const Eigen::Vector3d d1 = q1 - p1;
+  const Eigen::Vector3d d2 = q2 - p2;
+  const Eigen::Vector3d r = p1 - p2;
+
+  const double a = d1.squaredNorm();
+  const double e = d2.squaredNorm();
+  const double f = d2.dot(r);
+
+  double s = 0.0;
+  double t = 0.0;
+
+  constexpr double epsilon = 1e-10;
+  if (a <= epsilon && e <= epsilon) {
+    s = t = 0.0;
+  } else if (a <= epsilon) {
+    s = 0.0;
+    t = std::clamp(f / e, 0.0, 1.0);
+  } else {
+    const double c = d1.dot(r);
+    if (e <= epsilon) {
+      t = 0.0;
+      s = std::clamp(-c / a, 0.0, 1.0);
+    } else {
+      const double b = d1.dot(d2);
+      const double denom = a * e - b * b;
+
+      if (denom != 0.0)
+        s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
+      else
+        s = 0.0;
+
+      t = (b * s + f) / e;
+
+      if (t < 0.0) {
+        t = 0.0;
+        s = std::clamp(-c / a, 0.0, 1.0);
+      } else if (t > 1.0) {
+        t = 1.0;
+        s = std::clamp((b - c) / a, 0.0, 1.0);
+      }
+    }
+  }
+
+  SegmentClosestPointResult result;
+  result.point1 = p1 + d1 * s;
+  result.point2 = p2 + d2 * t;
+  result.distSquared = (result.point1 - result.point2).squaredNorm();
+  return result;
+}
+
+Eigen::Vector3d closestPointOnBox(
+    const Eigen::Vector3d& point, const Eigen::Vector3d& halfExtents)
+{
+  return Eigen::Vector3d(
+      std::clamp(point.x(), -halfExtents.x(), halfExtents.x()),
+      std::clamp(point.y(), -halfExtents.y(), halfExtents.y()),
+      std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
+}
+
+Eigen::Vector3d closestPointOnSegmentInBoxSpace(
+    const Eigen::Vector3d& segmentStart,
+    const Eigen::Vector3d& segmentEnd,
+    const Eigen::Vector3d& halfExtents,
+    Eigen::Vector3d& closestOnSegment)
+{
+  const Eigen::Vector3d segment = segmentEnd - segmentStart;
+  const double segmentLengthSq = segment.squaredNorm();
+
+  if (segmentLengthSq < 1e-10) {
+    closestOnSegment = segmentStart;
+    return closestPointOnBox(segmentStart, halfExtents);
+  }
+
+  double bestDistSq = std::numeric_limits<double>::max();
+  double bestInteriorMargin = -std::numeric_limits<double>::infinity();
+  Eigen::Vector3d bestOnBox = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestOnSegment = segmentStart;
+
+  auto computeInteriorMargin = [&](const Eigen::Vector3d& point) {
+    double margin = std::numeric_limits<double>::infinity();
+    for (int axis = 0; axis < 3; ++axis) {
+      const double axisMargin = halfExtents[axis] - std::abs(point[axis]);
+      if (axisMargin < 0.0)
+        return -std::numeric_limits<double>::infinity();
+      margin = std::min(margin, axisMargin);
+    }
+    return margin;
+  };
+
+  auto testCandidate = [&](double t) {
+    const Eigen::Vector3d pointOnSegment = segmentStart + segment * t;
+    const Eigen::Vector3d pointOnBox
+        = closestPointOnBox(pointOnSegment, halfExtents);
+    const double distSq = (pointOnSegment - pointOnBox).squaredNorm();
+    const double interiorMargin = computeInteriorMargin(pointOnSegment);
+
+    if (distSq < bestDistSq - 1e-18
+        || (std::abs(distSq - bestDistSq) <= 1e-18
+            && interiorMargin > bestInteriorMargin)) {
+      bestDistSq = distSq;
+      bestInteriorMargin = interiorMargin;
+      bestOnBox = pointOnBox;
+      bestOnSegment = pointOnSegment;
+    }
+  };
+
+  std::array<double, 8> breakpoints{};
+  std::size_t numBreakpoints = 0;
+  breakpoints[numBreakpoints++] = 0.0;
+  breakpoints[numBreakpoints++] = 1.0;
+
+  constexpr double kAxisEps = 1e-12;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (std::abs(segment[axis]) <= kAxisEps)
+      continue;
+
+    for (const double face : {-halfExtents[axis], halfExtents[axis]}) {
+      const double t = (face - segmentStart[axis]) / segment[axis];
+      if (t > 0.0 && t < 1.0)
+        breakpoints[numBreakpoints++] = t;
+    }
+  }
+
+  std::sort(breakpoints.begin(), breakpoints.begin() + numBreakpoints);
+
+  std::array<double, 8> uniqueBreakpoints{};
+  std::size_t numUniqueBreakpoints = 0;
+  for (std::size_t i = 0; i < numBreakpoints; ++i) {
+    if (numUniqueBreakpoints == 0
+        || std::abs(
+               breakpoints[i] - uniqueBreakpoints[numUniqueBreakpoints - 1])
+               > kAxisEps) {
+      uniqueBreakpoints[numUniqueBreakpoints++] = breakpoints[i];
+      testCandidate(breakpoints[i]);
+    }
+  }
+
+  for (std::size_t i = 0; i + 1 < numUniqueBreakpoints; ++i) {
+    const double lo = uniqueBreakpoints[i];
+    const double hi = uniqueBreakpoints[i + 1];
+    if (hi - lo <= kAxisEps)
+      continue;
+
+    const double mid = 0.5 * (lo + hi);
+    double numerator = 0.0;
+    double denominator = 0.0;
+    for (int axis = 0; axis < 3; ++axis) {
+      const double coord = segmentStart[axis] + segment[axis] * mid;
+      double face = 0.0;
+      if (coord < -halfExtents[axis])
+        face = -halfExtents[axis];
+      else if (coord > halfExtents[axis])
+        face = halfExtents[axis];
+      else
+        continue;
+
+      numerator += segment[axis] * (face - segmentStart[axis]);
+      denominator += segment[axis] * segment[axis];
+    }
+
+    if (denominator > kAxisEps)
+      testCandidate(std::clamp(numerator / denominator, lo, hi));
+    else
+      testCandidate(mid);
+  }
+
+  closestOnSegment = bestOnSegment;
+  return bestOnBox;
+}
+
+int collideCapsuleSphereImpl(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    double capsuleRadius,
+    double halfHeight,
+    const Eigen::Isometry3d& capsuleTransform,
+    double sphereRadius,
+    const Eigen::Isometry3d& sphereTransform,
+    bool flipNormal,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d localTop(0.0, 0.0, halfHeight);
+  const Eigen::Vector3d localBottom(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d top = capsuleTransform * localTop;
+  const Eigen::Vector3d bottom = capsuleTransform * localBottom;
+  const Eigen::Vector3d sphereCenter = sphereTransform.translation();
+
+  const Eigen::Vector3d closestOnCapsule
+      = closestPointOnSegment(sphereCenter, bottom, top);
+  const Eigen::Vector3d diff = sphereCenter - closestOnCapsule;
+  const double distSquared = diff.squaredNorm();
+  const double sumRadii = capsuleRadius + sphereRadius;
+
+  if (distSquared > sumRadii * sumRadii)
+    return 0;
+
+  const double dist = std::sqrt(distSquared);
+  const double penetration = sumRadii - dist;
+  Eigen::Vector3d rawNormal;
+  if (dist < 1e-10)
+    rawNormal = Eigen::Vector3d::UnitZ();
+  else
+    rawNormal = -diff / dist;
+  Eigen::Vector3d normal = rawNormal;
+  if (flipNormal)
+    normal = -normal;
+
+  const Eigen::Vector3d contactPoint
+      = closestOnCapsule + (-rawNormal) * (capsuleRadius - penetration * 0.5);
+
+  addDartContact(o1, o2, contactPoint, normal, penetration, result);
+  return 1;
+}
+
+int collideCapsulesImpl(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    double radius1,
+    double halfHeight1,
+    const Eigen::Isometry3d& transform1,
+    double radius2,
+    double halfHeight2,
+    const Eigen::Isometry3d& transform2,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d localTop1(0.0, 0.0, halfHeight1);
+  const Eigen::Vector3d localBottom1(0.0, 0.0, -halfHeight1);
+  const Eigen::Vector3d localTop2(0.0, 0.0, halfHeight2);
+  const Eigen::Vector3d localBottom2(0.0, 0.0, -halfHeight2);
+
+  const Eigen::Vector3d top1 = transform1 * localTop1;
+  const Eigen::Vector3d bottom1 = transform1 * localBottom1;
+  const Eigen::Vector3d top2 = transform2 * localTop2;
+  const Eigen::Vector3d bottom2 = transform2 * localBottom2;
+
+  auto closest = closestPointsBetweenSegments(bottom1, top1, bottom2, top2);
+
+  const double sumRadii = radius1 + radius2;
+  if (closest.distSquared > sumRadii * sumRadii)
+    return 0;
+
+  const double dist = std::sqrt(closest.distSquared);
+  const double penetration = sumRadii - dist;
+  Eigen::Vector3d normal;
+  if (dist < 1e-10)
+    normal = Eigen::Vector3d::UnitZ();
+  else
+    normal = (closest.point1 - closest.point2) / dist;
+  const Eigen::Vector3d contactPoint
+      = closest.point2 + normal * (radius2 - penetration * 0.5);
+
+  addDartContact(o1, o2, contactPoint, normal, penetration, result);
+  return 1;
+}
+
+int collideCapsuleBoxImpl(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    double capsuleRadius,
+    double halfHeight,
+    const Eigen::Isometry3d& capsuleTransform,
+    const Eigen::Vector3d& boxSize,
+    const Eigen::Isometry3d& boxTransform,
+    bool flipNormal,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d halfExtents = 0.5 * boxSize;
+  const Eigen::Vector3d localTop(0.0, 0.0, halfHeight);
+  const Eigen::Vector3d localBottom(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d worldTop = capsuleTransform * localTop;
+  const Eigen::Vector3d worldBottom = capsuleTransform * localBottom;
+
+  const Eigen::Isometry3d boxInverse = boxTransform.inverse();
+  const Eigen::Vector3d boxTop = boxInverse * worldTop;
+  const Eigen::Vector3d boxBottom = boxInverse * worldBottom;
+
+  Eigen::Vector3d closestOnSegment;
+  closestPointOnSegmentInBoxSpace(
+      boxBottom, boxTop, halfExtents, closestOnSegment);
+
+  std::array<Eigen::Vector3d, 3> contactPoints;
+  std::array<Eigen::Vector3d, 3> contactNormals;
+  std::size_t numContacts = 0;
+
+  auto addContactForAxisPoint = [&](const Eigen::Vector3d& axisPointLocal) {
+    const Eigen::Vector3d pointOnBoxLocal
+        = closestPointOnBox(axisPointLocal, halfExtents);
+    const Eigen::Vector3d diff = axisPointLocal - pointOnBoxLocal;
+    const double distSquared = diff.squaredNorm();
+
+    if (distSquared > capsuleRadius * capsuleRadius)
+      return false;
+
+    const double dist = std::sqrt(distSquared);
+
+    Eigen::Vector3d normalLocal;
+    Eigen::Vector3d contactOnBoxLocal = pointOnBoxLocal;
+    double penetration = capsuleRadius - dist;
+    if (dist < 1e-10) {
+      const Eigen::Vector3d absAxisPoint = axisPointLocal.cwiseAbs();
+      const Eigen::Vector3d distToFace = halfExtents - absAxisPoint;
+      int minAxis = 0;
+      if (distToFace.y() < distToFace.x())
+        minAxis = 1;
+      if (distToFace.z() < distToFace[minAxis])
+        minAxis = 2;
+      normalLocal = Eigen::Vector3d::Zero();
+      normalLocal[minAxis] = (axisPointLocal[minAxis] >= 0.0) ? 1.0 : -1.0;
+      contactOnBoxLocal[minAxis] = normalLocal[minAxis] > 0.0
+                                       ? halfExtents[minAxis]
+                                       : -halfExtents[minAxis];
+      penetration = capsuleRadius + distToFace[minAxis];
+    } else {
+      normalLocal = diff / dist;
+    }
+
+    const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
+    Eigen::Vector3d contactNormal = -normalWorld;
+    if (flipNormal)
+      contactNormal = -contactNormal;
+
+    const Eigen::Vector3d contactPoint
+        = boxTransform * contactOnBoxLocal + normalWorld * (penetration * 0.5);
+
+    for (std::size_t i = 0; i < numContacts; ++i) {
+      if ((contactPoints[i] - contactPoint).squaredNorm() < 1e-12
+          && contactNormals[i].dot(contactNormal) > 0.999) {
+        return false;
+      }
+    }
+
+    addDartContact(o1, o2, contactPoint, contactNormal, penetration, result);
+    contactPoints[numContacts] = contactPoint;
+    contactNormals[numContacts] = contactNormal;
+    ++numContacts;
+    return true;
+  };
+
+  bool hit = addContactForAxisPoint(closestOnSegment);
+  hit = addContactForAxisPoint(boxBottom) || hit;
+  hit = addContactForAxisPoint(boxTop) || hit;
+  return hit ? static_cast<int>(numContacts) : 0;
+}
+
+int collidePlaneCapsuleImpl(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& planeNormal,
+    double planeOffset,
+    const Eigen::Isometry3d& planeTransform,
+    double capsuleRadius,
+    double halfHeight,
+    const Eigen::Isometry3d& capsuleTransform,
+    bool flipNormal,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d worldNormal = planeTransform.linear() * planeNormal;
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * planeOffset;
+
+  const Eigen::Vector3d localTop(0.0, 0.0, halfHeight);
+  const Eigen::Vector3d localBottom(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d worldTop = capsuleTransform * localTop;
+  const Eigen::Vector3d worldBottom = capsuleTransform * localBottom;
+
+  const double distTop = worldNormal.dot(worldTop - planePoint);
+  const double distBottom = worldNormal.dot(worldBottom - planePoint);
+
+  const Eigen::Vector3d* closestEndpoint = &worldBottom;
+  double minDist = distBottom;
+  if (distTop < distBottom) {
+    closestEndpoint = &worldTop;
+    minDist = distTop;
+  }
+
+  if (minDist > capsuleRadius)
+    return 0;
+
+  const double penetration = capsuleRadius - minDist;
+  const Eigen::Vector3d contactPoint
+      = *closestEndpoint - worldNormal * (minDist - penetration * 0.5);
+
+  Eigen::Vector3d normal = worldNormal;
+  if (flipNormal)
+    normal = -normal;
+
+  addDartContact(o1, o2, contactPoint, normal, penetration, result);
+  return 1;
+}
+
+int collideCylinderCapsuleImpl(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    double cylRadius,
+    double cylHalfHeight,
+    const Eigen::Isometry3d& cylinderTransform,
+    double capRadius,
+    double capHalfHeight,
+    const Eigen::Isometry3d& capsuleTransform,
+    bool flipNormal,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d capAxis = capsuleTransform.linear().col(2);
+  const Eigen::Vector3d capCenter = capsuleTransform.translation();
+  const Eigen::Vector3d capTop = capCenter + capAxis * capHalfHeight;
+  const Eigen::Vector3d capBot = capCenter - capAxis * capHalfHeight;
+
+  const Eigen::Isometry3d cylInv = cylinderTransform.inverse();
+  const Eigen::Vector3d capTopLocal = cylInv * capTop;
+  const Eigen::Vector3d capBotLocal = cylInv * capBot;
+
+  double bestPenetration = -std::numeric_limits<double>::max();
+  Eigen::Vector3d bestCylPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestCapPoint = Eigen::Vector3d::Zero();
+  bool foundCollision = false;
+
+  auto checkCapsuleEndpoint = [&](const Eigen::Vector3d& capEndLocal) {
+    const double lateralDistSq
+        = capEndLocal.x() * capEndLocal.x() + capEndLocal.y() * capEndLocal.y();
+    const double lateralDist = std::sqrt(lateralDistSq);
+
+    Eigen::Vector3d closestOnCyl;
+    if (std::abs(capEndLocal.z()) <= cylHalfHeight) {
+      if (lateralDist <= cylRadius) {
+        const double lateralPen = cylRadius - lateralDist;
+        const double axialPen = cylHalfHeight - std::abs(capEndLocal.z());
+        if (lateralPen < axialPen && lateralDist > 1e-10) {
+          closestOnCyl = Eigen::Vector3d(
+              capEndLocal.x() * cylRadius / lateralDist,
+              capEndLocal.y() * cylRadius / lateralDist,
+              capEndLocal.z());
+        } else {
+          const double cappedZ
+              = capEndLocal.z() > 0.0 ? cylHalfHeight : -cylHalfHeight;
+          closestOnCyl
+              = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+        }
+      } else {
+        closestOnCyl = Eigen::Vector3d(
+            capEndLocal.x() * cylRadius / lateralDist,
+            capEndLocal.y() * cylRadius / lateralDist,
+            capEndLocal.z());
+      }
+    } else {
+      const double cappedZ
+          = std::clamp(capEndLocal.z(), -cylHalfHeight, cylHalfHeight);
+      if (lateralDist <= cylRadius) {
+        closestOnCyl
+            = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+      } else {
+        closestOnCyl = Eigen::Vector3d(
+            capEndLocal.x() * cylRadius / lateralDist,
+            capEndLocal.y() * cylRadius / lateralDist,
+            cappedZ);
+      }
+    }
+
+    const double dist = (capEndLocal - closestOnCyl).norm();
+    const double penetration = capRadius - dist;
+    if (penetration > 0.0 && penetration > bestPenetration) {
+      bestPenetration = penetration;
+      bestCylPoint = closestOnCyl;
+      bestCapPoint = capEndLocal;
+      foundCollision = true;
+    }
+  };
+
+  checkCapsuleEndpoint(capTopLocal);
+  checkCapsuleEndpoint(capBotLocal);
+
+  if (!foundCollision)
+    return 0;
+
+  Eigen::Vector3d normalLocal = bestCapPoint - bestCylPoint;
+  if (normalLocal.squaredNorm() < 1e-10)
+    normalLocal = Eigen::Vector3d::UnitZ();
+  else
+    normalLocal.normalize();
+
+  const Eigen::Vector3d normalWorld = cylinderTransform.linear() * normalLocal;
+  const Eigen::Vector3d contactWorld = cylinderTransform * bestCylPoint
+                                       + normalWorld * (bestPenetration * 0.5);
+
+  Eigen::Vector3d contactNormal = -normalWorld;
+  if (flipNormal)
+    contactNormal = -contactNormal;
+
+  addDartContact(o1, o2, contactWorld, contactNormal, bestPenetration, result);
+  return 1;
+}
+
 } // namespace
+
+int collideCapsuleSphere(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCapsuleSphereImpl(
+      o1, o2, capsule_rad, half_height, T0, sphere_rad, T1, false, result);
+}
+
+int collideSphereCapsule(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& sphere_rad,
+    const Eigen::Isometry3d& T0,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCapsuleSphereImpl(
+      o1, o2, capsule_rad, half_height, T1, sphere_rad, T0, true, result);
+}
+
+int collideCapsuleCapsule(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& capsule_rad1,
+    const double& half_height1,
+    const Eigen::Isometry3d& T0,
+    const double& capsule_rad2,
+    const double& half_height2,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCapsulesImpl(
+      o1,
+      o2,
+      capsule_rad1,
+      half_height1,
+      T0,
+      capsule_rad2,
+      half_height2,
+      T1,
+      result);
+}
+
+int collideCapsuleBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& size1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCapsuleBoxImpl(
+      o1, o2, capsule_rad, half_height, T0, size1, T1, true, result);
+}
+
+int collideBoxCapsule(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size0,
+    const Eigen::Isometry3d& T0,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCapsuleBoxImpl(
+      o1, o2, capsule_rad, half_height, T1, size0, T0, false, result);
+}
+
+int collideCapsulePlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collidePlaneCapsuleImpl(
+      o1,
+      o2,
+      plane_normal,
+      plane_offset,
+      T1,
+      capsule_rad,
+      half_height,
+      T0,
+      false,
+      result);
+}
+
+int collidePlaneCapsule(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& plane_normal,
+    const double& plane_offset,
+    const Eigen::Isometry3d& T0,
+    const double& capsule_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collidePlaneCapsuleImpl(
+      o1,
+      o2,
+      plane_normal,
+      plane_offset,
+      T0,
+      capsule_rad,
+      half_height,
+      T1,
+      true,
+      result);
+}
+
+int collideCapsuleCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& capsule_rad,
+    const double& capsule_half_height,
+    const Eigen::Isometry3d& T0,
+    const double& cyl_rad,
+    const double& cyl_half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCylinderCapsuleImpl(
+      o1,
+      o2,
+      cyl_rad,
+      cyl_half_height,
+      T1,
+      capsule_rad,
+      capsule_half_height,
+      T0,
+      true,
+      result);
+}
+
+int collideCylinderCapsule(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& cyl_half_height,
+    const Eigen::Isometry3d& T0,
+    const double& capsule_rad,
+    const double& capsule_half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCylinderCapsuleImpl(
+      o1,
+      o2,
+      cyl_rad,
+      cyl_half_height,
+      T0,
+      capsule_rad,
+      capsule_half_height,
+      T1,
+      false,
+      result);
+}
 
 int collideBoxCylinder(
     CollisionObject* o1,
@@ -2501,6 +3219,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           0.5 * cylinder1->getHeight(),
           T2,
           result);
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      return collideSphereCapsule(
+          o1,
+          o2,
+          sphere0->getRadius(),
+          T1,
+          capsule1->getRadius(),
+          0.5 * capsule1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -2554,6 +3285,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           0.5 * cylinder1->getHeight(),
           T2,
           result);
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      return collideBoxCapsule(
+          o1,
+          o2,
+          box0->getSize(),
+          T1,
+          capsule1->getRadius(),
+          0.5 * capsule1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -2594,6 +3338,21 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             T1,
             cylinder1->getRadius(),
             0.5 * cylinder1->getHeight(),
+            T2,
+            result);
+      }
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      if (ellipsoid0->isSphere()) {
+        return collideSphereCapsule(
+            o1,
+            o2,
+            ellipsoid0->getRadii()[0],
+            T1,
+            capsule1->getRadius(),
+            0.5 * capsule1->getHeight(),
             T2,
             result);
       }
@@ -2697,6 +3456,107 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           plane1->getOffset(),
           T2,
           result);
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      return collideCylinderCapsule(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          capsule1->getRadius(),
+          0.5 * capsule1->getHeight(),
+          T2,
+          result);
+    }
+  } else if (dynamics::CapsuleShape::getStaticType() == shapeType1) {
+    const auto* capsule0
+        = static_cast<const dynamics::CapsuleShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2) {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collideCapsuleSphere(
+          o1,
+          o2,
+          capsule0->getRadius(),
+          0.5 * capsule0->getHeight(),
+          T1,
+          sphere1->getRadius(),
+          T2,
+          result);
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      if (ellipsoid1->isSphere()) {
+        return collideCapsuleSphere(
+            o1,
+            o2,
+            capsule0->getRadius(),
+            0.5 * capsule0->getHeight(),
+            T1,
+            ellipsoid1->getRadii()[0],
+            T2,
+            result);
+      }
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideCapsuleBox(
+          o1,
+          o2,
+          capsule0->getRadius(),
+          0.5 * capsule0->getHeight(),
+          T1,
+          box1->getSize(),
+          T2,
+          result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideCapsuleCylinder(
+          o1,
+          o2,
+          capsule0->getRadius(),
+          0.5 * capsule0->getHeight(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      return collideCapsuleCapsule(
+          o1,
+          o2,
+          capsule0->getRadius(),
+          0.5 * capsule0->getHeight(),
+          T1,
+          capsule1->getRadius(),
+          0.5 * capsule1->getHeight(),
+          T2,
+          result);
+    } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
+      const auto* plane1
+          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+
+      return collideCapsulePlane(
+          o1,
+          o2,
+          capsule0->getRadius(),
+          0.5 * capsule0->getHeight(),
+          T1,
+          plane1->getNormal(),
+          plane1->getOffset(),
+          T2,
+          result);
     }
   } else if (dynamics::PlaneShape::getStaticType() == shapeType1) {
     const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1.get());
@@ -2738,6 +3598,20 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T1,
           cylinder1->getRadius(),
           0.5 * cylinder1->getHeight(),
+          T2,
+          result);
+    } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
+      const auto* capsule1
+          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+
+      return collidePlaneCapsule(
+          o1,
+          o2,
+          plane0->getNormal(),
+          plane0->getOffset(),
+          T1,
+          capsule1->getRadius(),
+          0.5 * capsule1->getHeight(),
           T2,
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {

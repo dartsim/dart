@@ -1732,8 +1732,80 @@ TEST_F(Collision, testCapsuleCapsule)
   testCapsuleCapsule(bullet);
 #endif
 
-  // auto dart = DARTCollisionDetector::create();
-  // testCapsuleCapsule(dart);
+  auto dart = DARTCollisionDetector::create();
+  testCapsuleCapsule(dart);
+}
+
+//==============================================================================
+TEST_F(Collision, DartCapsulePrimitivePairs)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto capsuleFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto capsule2Frame = SimpleFrame::createShared(Frame::World());
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+
+  capsuleFrame->setShape(std::make_shared<CapsuleShape>(0.25, 1.0));
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.25));
+  boxFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.4)));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.25, 1.0));
+  capsule2Frame->setShape(std::make_shared<CapsuleShape>(0.25, 1.0));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  capsuleFrame->setTranslation(Eigen::Vector3d::Zero());
+  sphereFrame->setTranslation(Eigen::Vector3d(0.45, 0.0, 0.0));
+  boxFrame->setTranslation(Eigen::Vector3d(0.4, 0.0, 0.0));
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.45, 0.0, 0.0));
+  capsule2Frame->setTranslation(Eigen::Vector3d(0.45, 0.0, 0.0));
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 8u;
+
+  auto expectContact = [&](const std::shared_ptr<SimpleFrame>& first,
+                           const std::shared_ptr<SimpleFrame>& second,
+                           const Eigen::Vector3d& expectedNormal,
+                           double expectedDepth) {
+    auto firstGroup = cd->createCollisionGroup(first.get());
+    auto secondGroup = cd->createCollisionGroup(second.get());
+
+    CollisionResult result;
+    ASSERT_TRUE(firstGroup->collide(secondGroup.get(), option, &result));
+    ASSERT_GE(result.getNumContacts(), 1u);
+
+    const auto& contact = result.getContact(0);
+    EXPECT_EQ(contact.collisionObject1->getShapeFrame(), first.get());
+    EXPECT_EQ(contact.collisionObject2->getShapeFrame(), second.get());
+    EXPECT_TRUE(contact.point.allFinite());
+    EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
+        << contact.normal.transpose();
+    EXPECT_NEAR(contact.penetrationDepth, expectedDepth, 1e-12);
+  };
+
+  expectContact(capsuleFrame, sphereFrame, -Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(sphereFrame, capsuleFrame, Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(capsuleFrame, boxFrame, -Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(boxFrame, capsuleFrame, Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(capsuleFrame, cylinderFrame, -Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(cylinderFrame, capsuleFrame, Eigen::Vector3d::UnitX(), 0.05);
+  expectContact(capsuleFrame, capsule2Frame, -Eigen::Vector3d::UnitX(), 0.05);
+
+  capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.7));
+  expectContact(capsuleFrame, planeFrame, Eigen::Vector3d::UnitZ(), 0.05);
+  expectContact(planeFrame, capsuleFrame, -Eigen::Vector3d::UnitZ(), 0.05);
+
+  Eigen::Isometry3d horizontalCapsuleTf = Eigen::Isometry3d::Identity();
+  horizontalCapsuleTf.linear()
+      = Eigen::AngleAxisd(0.5 * constantsd::pi(), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  capsuleFrame->setTransform(horizontalCapsuleTf);
+  sphereFrame->setTranslation(Eigen::Vector3d(0.95, 0.0, 0.0));
+  expectContact(capsuleFrame, sphereFrame, -Eigen::Vector3d::UnitX(), 0.05);
 }
 
 //==============================================================================
