@@ -42,14 +42,15 @@ using namespace dynamics;
 using namespace simulation;
 using namespace constraint;
 
-class RigidLoopWorldNode : public dart::gui::osg::WorldNode
+class RigidLoopWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
   RigidLoopWorldNode(dart::simulation::WorldPtr world)
-    : dart::gui::osg::WorldNode(world), mWorld(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
   }
 
+protected:
   void customPreStep() override
   {
     Eigen::VectorXd damping = computeDamping();
@@ -67,8 +68,6 @@ private:
         damping[i] *= 0.1;
     return damping;
   }
-
-  dart::simulation::WorldPtr mWorld;
 };
 
 int main()
