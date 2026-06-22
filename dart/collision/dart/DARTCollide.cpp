@@ -1450,6 +1450,15 @@ int collideBoxPlane(
   return 1;
 }
 
+Eigen::Vector3d getCylinderRadialDirection(
+    const Eigen::Vector3d& center, double dist)
+{
+  if (dist <= 1e-12)
+    return Eigen::Vector3d::UnitX();
+
+  return Eigen::Vector3d(center[0] / dist, center[1] / dist, 0.0);
+}
+
 int collideCylinderSphere(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -1463,14 +1472,35 @@ int collideCylinderSphere(
   Eigen::Vector3d center = T0.inverse() * T1.translation();
 
   double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
+  const double penetration = cyl_rad + sphere_rad - dist;
+  const double absZ = std::abs(center[2]);
 
-  if (dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad) {
+  if (dist < cyl_rad && absZ < half_height + sphere_rad) {
     const double capSign = center[2] >= 0.0 ? 1.0 : -1.0;
+    const double capPenetration
+        = half_height + sphere_rad - capSign * center[2];
+
+    if (absZ <= half_height && penetration <= capPenetration) {
+      Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
+      Eigen::Vector3d normal = -(T0.linear() * point);
+      point *= (cyl_rad - 0.5 * penetration);
+      point[2] = center[2];
+      point = T0 * point;
+
+      Contact contact;
+      contact.collisionObject1 = o1;
+      contact.collisionObject2 = o2;
+      contact.point = point;
+      contact.normal = normal;
+      contact.penetrationDepth = penetration;
+      result.addContact(contact);
+      return 1;
+    }
 
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.penetrationDepth = half_height + sphere_rad - capSign * center[2];
+    contact.penetrationDepth = capPenetration;
     contact.point
         = T0
           * Eigen::Vector3d(
@@ -1481,32 +1511,29 @@ int collideCylinderSphere(
     result.addContact(contact);
     return 1;
   } else {
-    double penetration = cyl_rad + sphere_rad - dist;
     if (penetration > 0.0) {
       if (std::abs(center[2]) > half_height) {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
+        Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         point *= cyl_rad;
         point[2] = math::sign(center[2]) * half_height;
         Eigen::Vector3d normal = point - center;
-        penetration = sphere_rad - normal.norm();
+        const double edgePenetration = sphere_rad - normal.norm();
         normal = (T0.linear() * normal).normalized();
         point = T0 * point;
 
-        if (penetration > 0.0) {
+        if (edgePenetration > 0.0) {
           Contact contact;
           contact.collisionObject1 = o1;
           contact.collisionObject2 = o2;
           contact.point = point;
           contact.normal = normal;
-          contact.penetrationDepth = penetration;
+          contact.penetrationDepth = edgePenetration;
           result.addContact(contact);
           return 1;
         }
       } else // if( center[2] >= -half_height && center[2] <= half_height )
       {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
+        Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         Eigen::Vector3d normal = -(T0.linear() * point);
         point *= (cyl_rad - 0.5 * penetration);
         point[2] = center[2];
@@ -1539,14 +1566,35 @@ int collideSphereCylinder(
   Eigen::Vector3d center = T1.inverse() * T0.translation();
 
   double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
+  const double penetration = cyl_rad + sphere_rad - dist;
+  const double absZ = std::abs(center[2]);
 
-  if (dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad) {
+  if (dist < cyl_rad && absZ < half_height + sphere_rad) {
     const double capSign = center[2] >= 0.0 ? 1.0 : -1.0;
+    const double capPenetration
+        = half_height + sphere_rad - capSign * center[2];
+
+    if (absZ <= half_height && penetration <= capPenetration) {
+      Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
+      Eigen::Vector3d normal = T1.linear() * point;
+      point *= (cyl_rad - 0.5 * penetration);
+      point[2] = center[2];
+      point = T1 * point;
+
+      Contact contact;
+      contact.collisionObject1 = o1;
+      contact.collisionObject2 = o2;
+      contact.point = point;
+      contact.normal = normal;
+      contact.penetrationDepth = penetration;
+      result.addContact(contact);
+      return 1;
+    }
 
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.penetrationDepth = half_height + sphere_rad - capSign * center[2];
+    contact.penetrationDepth = capPenetration;
     contact.point
         = T1
           * Eigen::Vector3d(
@@ -1557,32 +1605,29 @@ int collideSphereCylinder(
     result.addContact(contact);
     return 1;
   } else {
-    double penetration = cyl_rad + sphere_rad - dist;
     if (penetration > 0.0) {
       if (std::abs(center[2]) > half_height) {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
+        Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         point *= cyl_rad;
         point[2] = math::sign(center[2]) * half_height;
         Eigen::Vector3d normal = point - center;
-        penetration = sphere_rad - normal.norm();
+        const double edgePenetration = sphere_rad - normal.norm();
         normal = -(T1.linear() * normal).normalized();
         point = T1 * point;
 
-        if (penetration > 0.0) {
+        if (edgePenetration > 0.0) {
           Contact contact;
           contact.collisionObject1 = o1;
           contact.collisionObject2 = o2;
           contact.point = point;
           contact.normal = normal;
-          contact.penetrationDepth = penetration;
+          contact.penetrationDepth = edgePenetration;
           result.addContact(contact);
           return 1;
         }
       } else // if( center[2] >= -half_height && center[2] <= half_height )
       {
-        Eigen::Vector3d point
-            = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
+        Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         Eigen::Vector3d normal = T1.linear() * point;
         point *= (cyl_rad - 0.5 * penetration);
         point[2] = center[2];

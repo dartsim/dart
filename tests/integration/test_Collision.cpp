@@ -841,6 +841,31 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
   EXPECT_NEAR(
       cylinderContact.penetrationDepth, sphereContact.penetrationDepth, 1e-12);
 
+  sphereFrame->setTranslation(Eigen::Vector3d(0.4, 0.0, 0.0));
+
+  CollisionResult sphereInsideFirst;
+  ASSERT_TRUE(
+      sphereGroup->collide(cylinderGroup.get(), option, &sphereInsideFirst));
+  ASSERT_EQ(sphereInsideFirst.getNumContacts(), 1u);
+  const auto& sphereInsideContact = sphereInsideFirst.getContact(0);
+  EXPECT_TRUE(
+      sphereInsideContact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(sphereInsideContact.penetrationDepth, 0.35, 1e-12);
+
+  CollisionResult cylinderInsideFirst;
+  ASSERT_TRUE(
+      cylinderGroup->collide(sphereGroup.get(), option, &cylinderInsideFirst));
+  ASSERT_EQ(cylinderInsideFirst.getNumContacts(), 1u);
+  const auto& cylinderInsideContact = cylinderInsideFirst.getContact(0);
+  EXPECT_TRUE(cylinderInsideContact.normal.isApprox(
+      -sphereInsideContact.normal, 1e-12));
+  EXPECT_TRUE(
+      cylinderInsideContact.point.isApprox(sphereInsideContact.point, 1e-12));
+  EXPECT_NEAR(
+      cylinderInsideContact.penetrationDepth,
+      sphereInsideContact.penetrationDepth,
+      1e-12);
+
   auto ellipsoidGroup = cd->createCollisionGroup(ellipsoidFrame.get());
 
   CollisionResult ellipsoidFirst;
