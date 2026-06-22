@@ -468,16 +468,24 @@ TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
   solver.setDeactivationActive(true);
   solver.setNumSimulationThreads(4);
 
+  std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+  std::vector<collision::Contact> contacts;
+  dynamicObjects.reserve(130u);
+  contacts.reserve(130u);
+
   for (std::size_t i = 0; i < 130u; ++i) {
     auto* dynamicBody
         = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
     auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
         dynamics::CollisionAspect,
         dynamics::DynamicsAspect>(shape);
-    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
-    auto contact = createContact(&dynamicObject, &fixedObject);
+    dynamicObjects.push_back(
+        std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    contacts.push_back(
+        createContact(dynamicObjects.back().get(), &fixedObject));
     solver.addActiveConstraintForTest(
-        createContactConstraint<constraint::ContactConstraint>(contact));
+        createContactConstraint<constraint::ContactConstraint>(
+            contacts.back()));
   }
 
   for (const auto& skeleton : skeletons)
@@ -508,16 +516,24 @@ TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
   solver.setDeactivationActive(true);
   solver.setNumSimulationThreads(4);
 
+  std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+  std::vector<collision::Contact> contacts;
+  dynamicObjects.reserve(129u);
+  contacts.reserve(129u);
+
   for (std::size_t i = 0; i < 129u; ++i) {
     auto* dynamicBody
         = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
     auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
         dynamics::CollisionAspect,
         dynamics::DynamicsAspect>(shape);
-    FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
-    auto contact = createContact(&dynamicObject, &fixedObject);
+    dynamicObjects.push_back(
+        std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    contacts.push_back(
+        createContact(dynamicObjects.back().get(), &fixedObject));
     solver.addActiveConstraintForTest(
-        createContactConstraint<constraint::ContactConstraint>(contact));
+        createContactConstraint<constraint::ContactConstraint>(
+            contacts.back()));
   }
 
   for (const auto& skeleton : skeletons)
