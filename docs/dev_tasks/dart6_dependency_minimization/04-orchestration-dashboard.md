@@ -58,11 +58,11 @@
 - **#3102** ignore `.omo` · **#3100** pixi lockfile · **#3074/#3075** plan + AI workflows import
 
 ### ✅ Merged — native-collision-port lane
-- **#3123** Speed up DART primitive plane collision — **MERGED & PR closed 2026-06-22 19:05**;
-  squash commit `22f1a13d61b` is the current `release-6.20` HEAD (`git log -1 origin/release-6.20`).
-  Dependency-free primitive plane contacts + finite-shape broadphase pruning — **first piece**
-  of the native collision port (the FCL/Bullet/ODE-reduction lever); not yet the FCL-optional
-  default-flip.
+- **#3123** Speed up DART primitive plane collision — **MERGED & PR closed 2026-06-22 19:05**
+  (squash commit `22f1a13d61b`, now in `release-6.20`'s history; `gh pr view 3123 --json state`
+  → `MERGED`). Dependency-free primitive plane contacts + finite-shape broadphase pruning —
+  **first piece** of the native collision port (the FCL/Bullet/ODE-reduction lever); not yet
+  the FCL-optional default-flip.
 
 ### 🔄 Open — monitoring
 **No open dependency-minimization PRs as of 2026-06-22** — the whole effort's queue is
