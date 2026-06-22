@@ -42,8 +42,11 @@
 #include "dart/math/Helpers.hpp"
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <memory>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -1450,6 +1453,83 @@ int collideBoxPlane(
   return 1;
 }
 
+namespace {
+
+enum class SupportShapeType
+{
+  Box,
+  Cylinder
+};
+
+struct SupportShape
+{
+  SupportShapeType type = SupportShapeType::Box;
+  Eigen::Vector3d size = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+  double halfHeight = 0.0;
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d center() const
+  {
+    return transform.translation();
+  }
+
+  Eigen::Vector3d support(const Eigen::Vector3d& direction) const
+  {
+    const Eigen::Vector3d localDir = transform.linear().transpose() * direction;
+    Eigen::Vector3d localSupport;
+
+    if (type == SupportShapeType::Box) {
+      const Eigen::Vector3d halfExtents = 0.5 * size;
+      localSupport.x()
+          = (localDir.x() >= 0.0) ? halfExtents.x() : -halfExtents.x();
+      localSupport.y()
+          = (localDir.y() >= 0.0) ? halfExtents.y() : -halfExtents.y();
+      localSupport.z()
+          = (localDir.z() >= 0.0) ? halfExtents.z() : -halfExtents.z();
+    } else {
+      const double xyLen = std::sqrt(
+          localDir.x() * localDir.x() + localDir.y() * localDir.y());
+      if (xyLen < 1e-10) {
+        localSupport.x() = radius;
+        localSupport.y() = 0.0;
+      } else {
+        localSupport.x() = radius * localDir.x() / xyLen;
+        localSupport.y() = radius * localDir.y() / xyLen;
+      }
+      localSupport.z() = (localDir.z() >= 0.0) ? halfHeight : -halfHeight;
+    }
+
+    return transform * localSupport;
+  }
+};
+
+struct SupportPoint
+{
+  Eigen::Vector3d v = Eigen::Vector3d::Zero();
+  Eigen::Vector3d v1 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d v2 = Eigen::Vector3d::Zero();
+};
+
+struct MprPortal
+{
+  std::array<SupportPoint, 4> points;
+  int size = 0;
+};
+
+struct MprResult
+{
+  bool success = false;
+  double depth = 0.0;
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointOnA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointOnB = Eigen::Vector3d::Zero();
+};
+
+constexpr double kMprEpsilon = 1e-12;
+constexpr double kMprTolerance = 1e-6;
+constexpr int kMprMaxIterations = 64;
+
 Eigen::Vector3d getCylinderRadialDirection(
     const Eigen::Vector3d& center, double dist)
 {
@@ -1457,6 +1537,545 @@ Eigen::Vector3d getCylinderRadialDirection(
     return Eigen::Vector3d::UnitX();
 
   return Eigen::Vector3d(center[0] / dist, center[1] / dist, 0.0);
+}
+
+SupportPoint computeSupport(
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    const Eigen::Vector3d& direction)
+{
+  Eigen::Vector3d dir = direction;
+  if (dir.squaredNorm() < kMprEpsilon)
+    dir = Eigen::Vector3d::UnitX();
+
+  SupportPoint point;
+  point.v1 = supportA.support(dir);
+  point.v2 = supportB.support(-dir);
+  point.v = point.v1 - point.v2;
+  return point;
+}
+
+SupportPoint makeCenterPoint(
+    const Eigen::Vector3d& centerA, const Eigen::Vector3d& centerB)
+{
+  SupportPoint point;
+  point.v1 = centerA;
+  point.v2 = centerB;
+  point.v = centerA - centerB;
+  return point;
+}
+
+bool isZero(double value)
+{
+  return std::abs(value) < kMprEpsilon;
+}
+
+bool normalizeSafe(Eigen::Vector3d& v)
+{
+  const double norm = v.norm();
+  if (norm < kMprEpsilon)
+    return false;
+
+  v /= norm;
+  return true;
+}
+
+void portalDir(const MprPortal& portal, Eigen::Vector3d& dir)
+{
+  const Eigen::Vector3d v2v1 = portal.points[2].v - portal.points[1].v;
+  const Eigen::Vector3d v3v1 = portal.points[3].v - portal.points[1].v;
+  dir = v2v1.cross(v3v1);
+  if (!normalizeSafe(dir))
+    dir = Eigen::Vector3d::UnitX();
+}
+
+bool portalEncapsulatesOrigin(
+    const MprPortal& portal, const Eigen::Vector3d& dir)
+{
+  const double dot = dir.dot(portal.points[1].v);
+  return isZero(dot) || dot > 0.0;
+}
+
+bool portalReachTolerance(
+    const MprPortal& portal, const SupportPoint& v4, const Eigen::Vector3d& dir)
+{
+  const double dv1 = portal.points[1].v.dot(dir);
+  const double dv2 = portal.points[2].v.dot(dir);
+  const double dv3 = portal.points[3].v.dot(dir);
+  const double dv4 = v4.v.dot(dir);
+
+  const double delta = std::min({dv4 - dv1, dv4 - dv2, dv4 - dv3});
+  return delta <= kMprTolerance || isZero(delta - kMprTolerance);
+}
+
+bool portalCanEncapsulateOrigin(
+    const SupportPoint& v4, const Eigen::Vector3d& dir)
+{
+  const double dot = v4.v.dot(dir);
+  return isZero(dot) || dot > 0.0;
+}
+
+void expandPortal(MprPortal& portal, const SupportPoint& v4)
+{
+  const Eigen::Vector3d v4v0 = v4.v.cross(portal.points[0].v);
+  double dot = portal.points[1].v.dot(v4v0);
+  if (dot > 0.0) {
+    dot = portal.points[2].v.dot(v4v0);
+    if (dot > 0.0)
+      portal.points[1] = v4;
+    else
+      portal.points[3] = v4;
+  } else {
+    dot = portal.points[3].v.dot(v4v0);
+    if (dot > 0.0)
+      portal.points[2] = v4;
+    else
+      portal.points[1] = v4;
+  }
+}
+
+int discoverPortal(
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    const Eigen::Vector3d& centerA,
+    const Eigen::Vector3d& centerB,
+    MprPortal& portal)
+{
+  portal.points[0] = makeCenterPoint(centerA, centerB);
+  portal.size = 1;
+
+  if (portal.points[0].v.squaredNorm() < kMprEpsilon)
+    portal.points[0].v += Eigen::Vector3d(kMprTolerance * 10.0, 0.0, 0.0);
+
+  Eigen::Vector3d dir = -portal.points[0].v;
+  if (!normalizeSafe(dir))
+    dir = Eigen::Vector3d::UnitX();
+
+  portal.points[1] = computeSupport(supportA, supportB, dir);
+  portal.size = 2;
+
+  double dot = portal.points[1].v.dot(dir);
+  if (isZero(dot) || dot < 0.0)
+    return -1;
+
+  dir = portal.points[0].v.cross(portal.points[1].v);
+  if (dir.squaredNorm() < kMprEpsilon) {
+    if (portal.points[1].v.squaredNorm() < kMprEpsilon)
+      return 1;
+
+    return 2;
+  }
+
+  dir.normalize();
+  portal.points[2] = computeSupport(supportA, supportB, dir);
+  dot = portal.points[2].v.dot(dir);
+  if (isZero(dot) || dot < 0.0)
+    return -1;
+
+  portal.size = 3;
+
+  Eigen::Vector3d va = portal.points[1].v - portal.points[0].v;
+  Eigen::Vector3d vb = portal.points[2].v - portal.points[0].v;
+  dir = va.cross(vb);
+  if (!normalizeSafe(dir))
+    return -1;
+
+  dot = dir.dot(portal.points[0].v);
+  if (dot > 0.0) {
+    std::swap(portal.points[1], portal.points[2]);
+    dir = -dir;
+  }
+
+  while (portal.size < 4) {
+    portal.points[3] = computeSupport(supportA, supportB, dir);
+    dot = portal.points[3].v.dot(dir);
+    if (isZero(dot) || dot < 0.0)
+      return -1;
+
+    auto shouldContinue = false;
+    Eigen::Vector3d cross = portal.points[1].v.cross(portal.points[3].v);
+    dot = cross.dot(portal.points[0].v);
+    if (dot < 0.0 && !isZero(dot)) {
+      portal.points[2] = portal.points[3];
+      shouldContinue = true;
+    }
+
+    if (!shouldContinue) {
+      cross = portal.points[3].v.cross(portal.points[2].v);
+      dot = cross.dot(portal.points[0].v);
+      if (dot < 0.0 && !isZero(dot)) {
+        portal.points[1] = portal.points[3];
+        shouldContinue = true;
+      }
+    }
+
+    if (shouldContinue) {
+      va = portal.points[1].v - portal.points[0].v;
+      vb = portal.points[2].v - portal.points[0].v;
+      dir = va.cross(vb);
+      if (!normalizeSafe(dir))
+        return -1;
+    } else {
+      portal.size = 4;
+    }
+  }
+
+  return 0;
+}
+
+int refinePortal(
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    MprPortal& portal)
+{
+  for (int iter = 0; iter < kMprMaxIterations; ++iter) {
+    Eigen::Vector3d dir;
+    portalDir(portal, dir);
+
+    if (portalEncapsulatesOrigin(portal, dir))
+      return 0;
+
+    SupportPoint v4 = computeSupport(supportA, supportB, dir);
+    if (!portalCanEncapsulateOrigin(v4, dir)
+        || portalReachTolerance(portal, v4, dir)) {
+      return -1;
+    }
+
+    expandPortal(portal, v4);
+  }
+
+  return -1;
+}
+
+struct SegmentClosestResult
+{
+  Eigen::Vector3d closest = Eigen::Vector3d::Zero();
+  double t = 0.0;
+};
+
+SegmentClosestResult closestPointOnSegmentToOrigin(
+    const Eigen::Vector3d& a, const Eigen::Vector3d& b)
+{
+  SegmentClosestResult result;
+  const Eigen::Vector3d ab = b - a;
+  const double abLen2 = ab.squaredNorm();
+  if (abLen2 < kMprEpsilon) {
+    result.closest = a;
+    result.t = 0.0;
+    return result;
+  }
+
+  result.t = std::clamp(-a.dot(ab) / abLen2, 0.0, 1.0);
+  result.closest = a + result.t * ab;
+  return result;
+}
+
+Eigen::Vector3d closestPointOnTriangleToOrigin(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  const Eigen::Vector3d ab = b - a;
+  const Eigen::Vector3d ac = c - a;
+  const Eigen::Vector3d ap = -a;
+
+  const double d1 = ab.dot(ap);
+  const double d2 = ac.dot(ap);
+  if (d1 <= 0.0 && d2 <= 0.0)
+    return a;
+
+  const Eigen::Vector3d bp = -b;
+  const double d3 = ab.dot(bp);
+  const double d4 = ac.dot(bp);
+  if (d3 >= 0.0 && d4 <= d3)
+    return b;
+
+  const Eigen::Vector3d cp = -c;
+  const double d5 = ab.dot(cp);
+  const double d6 = ac.dot(cp);
+  if (d6 >= 0.0 && d5 <= d6)
+    return c;
+
+  const double vc = d1 * d4 - d3 * d2;
+  if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0)
+    return a + (d1 / (d1 - d3)) * ab;
+
+  const double vb = d5 * d2 - d1 * d6;
+  if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0)
+    return a + (d2 / (d2 - d6)) * ac;
+
+  const double va = d3 * d6 - d5 * d4;
+  if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0)
+    return b + ((d4 - d3) / ((d4 - d3) + (d5 - d6))) * (c - b);
+
+  const double denom = va + vb + vc;
+  if (isZero(denom)) {
+    auto closest = closestPointOnSegmentToOrigin(a, b).closest;
+    double bestDist2 = closest.squaredNorm();
+
+    const Eigen::Vector3d acClosest
+        = closestPointOnSegmentToOrigin(a, c).closest;
+    double dist2 = acClosest.squaredNorm();
+    if (dist2 < bestDist2) {
+      closest = acClosest;
+      bestDist2 = dist2;
+    }
+
+    const Eigen::Vector3d bcClosest
+        = closestPointOnSegmentToOrigin(b, c).closest;
+    dist2 = bcClosest.squaredNorm();
+    if (dist2 < bestDist2)
+      closest = bcClosest;
+
+    return closest;
+  }
+
+  const double inv = 1.0 / denom;
+  const double v = vb * inv;
+  const double w = vc * inv;
+  const double u = 1.0 - v - w;
+  return u * a + v * b + w * c;
+}
+
+void findPos(
+    const MprPortal& portal, Eigen::Vector3d& pointA, Eigen::Vector3d& pointB)
+{
+  Eigen::Vector3d dir;
+  portalDir(portal, dir);
+
+  std::array<double, 4> b{};
+  Eigen::Vector3d vec;
+
+  vec = portal.points[1].v.cross(portal.points[2].v);
+  b[0] = vec.dot(portal.points[3].v);
+
+  vec = portal.points[3].v.cross(portal.points[2].v);
+  b[1] = vec.dot(portal.points[0].v);
+
+  vec = portal.points[0].v.cross(portal.points[1].v);
+  b[2] = vec.dot(portal.points[3].v);
+
+  vec = portal.points[2].v.cross(portal.points[1].v);
+  b[3] = vec.dot(portal.points[0].v);
+
+  double sum = b[0] + b[1] + b[2] + b[3];
+  if (isZero(sum) || sum < 0.0) {
+    b[0] = 0.0;
+    vec = portal.points[2].v.cross(portal.points[3].v);
+    b[1] = vec.dot(dir);
+    vec = portal.points[3].v.cross(portal.points[1].v);
+    b[2] = vec.dot(dir);
+    vec = portal.points[1].v.cross(portal.points[2].v);
+    b[3] = vec.dot(dir);
+    sum = b[1] + b[2] + b[3];
+  }
+
+  if (isZero(sum)) {
+    pointA = portal.points[1].v1;
+    pointB = portal.points[1].v2;
+    return;
+  }
+
+  const double inv = 1.0 / sum;
+
+  pointA.setZero();
+  pointB.setZero();
+  for (int i = 0; i < 4; ++i) {
+    pointA += b[i] * portal.points[i].v1;
+    pointB += b[i] * portal.points[i].v2;
+  }
+  pointA *= inv;
+  pointB *= inv;
+}
+
+void findPenetration(
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    MprPortal& portal,
+    MprResult& result)
+{
+  for (int iter = 0; iter < kMprMaxIterations; ++iter) {
+    Eigen::Vector3d dir;
+    portalDir(portal, dir);
+    SupportPoint v4 = computeSupport(supportA, supportB, dir);
+
+    if (portalReachTolerance(portal, v4, dir)
+        || iter + 1 >= kMprMaxIterations) {
+      const Eigen::Vector3d closest = closestPointOnTriangleToOrigin(
+          portal.points[1].v, portal.points[2].v, portal.points[3].v);
+      result.depth = closest.norm();
+      if (result.depth < kMprEpsilon)
+        result.normal = Eigen::Vector3d::Zero();
+      else
+        result.normal = closest / result.depth;
+      findPos(portal, result.pointOnA, result.pointOnB);
+      result.success = true;
+      return;
+    }
+
+    expandPortal(portal, v4);
+  }
+}
+
+void findPenetrationTouch(MprPortal& portal, MprResult& result)
+{
+  result.depth = 0.0;
+  result.normal = Eigen::Vector3d::Zero();
+  result.pointOnA = portal.points[1].v1;
+  result.pointOnB = portal.points[1].v2;
+  result.success = true;
+}
+
+void findPenetrationSegment(MprPortal& portal, MprResult& result)
+{
+  result.pointOnA = portal.points[1].v1;
+  result.pointOnB = portal.points[1].v2;
+  result.normal = portal.points[1].v;
+  result.depth = result.normal.norm();
+  if (result.depth > kMprEpsilon)
+    result.normal /= result.depth;
+  else
+    result.normal = Eigen::Vector3d::Zero();
+
+  result.success = true;
+}
+
+MprResult computeMprPenetration(
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    const Eigen::Vector3d& centerA,
+    const Eigen::Vector3d& centerB)
+{
+  MprResult result;
+  MprPortal portal;
+
+  const int res = discoverPortal(supportA, supportB, centerA, centerB, portal);
+  if (res < 0)
+    return result;
+
+  if (res == 1) {
+    findPenetrationTouch(portal, result);
+    return result;
+  }
+
+  if (res == 2) {
+    findPenetrationSegment(portal, result);
+    return result;
+  }
+
+  if (refinePortal(supportA, supportB, portal) < 0)
+    return result;
+
+  findPenetration(supportA, supportB, portal, result);
+  return result;
+}
+
+SupportShape makeBoxSupportShape(
+    const Eigen::Vector3d& size, const Eigen::Isometry3d& transform)
+{
+  SupportShape shape;
+  shape.type = SupportShapeType::Box;
+  shape.size = size;
+  shape.transform = transform;
+  return shape;
+}
+
+SupportShape makeCylinderSupportShape(
+    double radius, double halfHeight, const Eigen::Isometry3d& transform)
+{
+  SupportShape shape;
+  shape.type = SupportShapeType::Cylinder;
+  shape.radius = radius;
+  shape.halfHeight = halfHeight;
+  shape.transform = transform;
+  return shape;
+}
+
+int collideSupportMappedShapes(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const SupportShape& supportA,
+    const SupportShape& supportB,
+    CollisionResult& result)
+{
+  const auto mpr = computeMprPenetration(
+      supportA, supportB, supportA.center(), supportB.center());
+  if (!mpr.success)
+    return 0;
+  if (!mpr.pointOnA.allFinite() || !mpr.pointOnB.allFinite()
+      || !mpr.normal.allFinite() || !std::isfinite(mpr.depth)) {
+    return 0;
+  }
+
+  Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
+  contact.point = 0.5 * (mpr.pointOnA + mpr.pointOnB);
+  contact.normal = -mpr.normal;
+  if (contact.normal.squaredNorm() < 1e-12)
+    contact.normal = Eigen::Vector3d::UnitZ();
+  else
+    contact.normal.normalize();
+  contact.penetrationDepth = std::abs(mpr.depth);
+  result.addContact(contact);
+  return 1;
+}
+
+} // namespace
+
+int collideBoxCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const Eigen::Vector3d& size0,
+    const Eigen::Isometry3d& T0,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideSupportMappedShapes(
+      o1,
+      o2,
+      makeBoxSupportShape(size0, T0),
+      makeCylinderSupportShape(cyl_rad, half_height, T1),
+      result);
+}
+
+int collideCylinderBox(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& size1,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideSupportMappedShapes(
+      o1,
+      o2,
+      makeCylinderSupportShape(cyl_rad, half_height, T0),
+      makeBoxSupportShape(size1, T1),
+      result);
+}
+
+int collideCylinderCylinder(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad1,
+    const double& half_height1,
+    const Eigen::Isometry3d& T0,
+    const double& cyl_rad2,
+    const double& half_height2,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideSupportMappedShapes(
+      o1,
+      o2,
+      makeCylinderSupportShape(cyl_rad1, half_height1, T0),
+      makeCylinderSupportShape(cyl_rad2, half_height2, T1),
+      result);
 }
 
 int collideCylinderSphere(
@@ -1865,6 +2484,19 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           plane1->getOffset(),
           T2,
           result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideBoxCylinder(
+          o1,
+          o2,
+          box0->getSize(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
@@ -1968,6 +2600,32 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             T2,
             result);
       }
+    } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideCylinderBox(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          box1->getSize(),
+          T2,
+          result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      return collideCylinderCylinder(
+          o1,
+          o2,
+          cylinder0->getRadius(),
+          0.5 * cylinder0->getHeight(),
+          T1,
+          cylinder1->getRadius(),
+          0.5 * cylinder1->getHeight(),
+          T2,
+          result);
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
       const auto* plane1
           = static_cast<const dynamics::PlaneShape*>(shape2.get());

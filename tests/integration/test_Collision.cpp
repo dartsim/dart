@@ -970,6 +970,73 @@ TEST_F(Collision, DartCylinderPlaneLegacyHelperLinkage)
 }
 
 //==============================================================================
+TEST_F(Collision, DartCylinderFinitePrimitivePairs)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto cylinder2Frame = SimpleFrame::createShared(Frame::World());
+
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  cylinder2Frame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+
+  auto cylinderGroup = cd->createCollisionGroup(cylinderFrame.get());
+  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
+  auto cylinder2Group = cd->createCollisionGroup(cylinder2Frame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  boxFrame->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  CollisionResult cylinderBox;
+  ASSERT_TRUE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
+  ASSERT_EQ(cylinderBox.getNumContacts(), 1u);
+  EXPECT_EQ(
+      cylinderBox.getContact(0).collisionObject1->getShapeFrame(),
+      cylinderFrame.get());
+  EXPECT_EQ(
+      cylinderBox.getContact(0).collisionObject2->getShapeFrame(),
+      boxFrame.get());
+  EXPECT_TRUE(cylinderBox.getContact(0).point.allFinite());
+  EXPECT_TRUE(cylinderBox.getContact(0).normal.allFinite());
+  EXPECT_GT(cylinderBox.getContact(0).penetrationDepth, 0.0);
+
+  CollisionResult boxCylinder;
+  ASSERT_TRUE(boxGroup->collide(cylinderGroup.get(), option, &boxCylinder));
+  ASSERT_EQ(boxCylinder.getNumContacts(), 1u);
+  EXPECT_TRUE(boxCylinder.getContact(0).normal.isApprox(
+      -cylinderBox.getContact(0).normal, 1e-8));
+  EXPECT_NEAR(
+      boxCylinder.getContact(0).penetrationDepth,
+      cylinderBox.getContact(0).penetrationDepth,
+      1e-8);
+
+  boxFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  cylinderBox.clear();
+  EXPECT_FALSE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
+  EXPECT_EQ(cylinderBox.getNumContacts(), 0u);
+
+  cylinder2Frame->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  CollisionResult cylinderCylinder;
+  ASSERT_TRUE(
+      cylinderGroup->collide(cylinder2Group.get(), option, &cylinderCylinder));
+  ASSERT_EQ(cylinderCylinder.getNumContacts(), 1u);
+  EXPECT_TRUE(cylinderCylinder.getContact(0).point.allFinite());
+  EXPECT_TRUE(cylinderCylinder.getContact(0).normal.allFinite());
+  EXPECT_GT(cylinderCylinder.getContact(0).penetrationDepth, 0.0);
+
+  cylinder2Frame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  cylinderCylinder.clear();
+  EXPECT_FALSE(
+      cylinderGroup->collide(cylinder2Group.get(), option, &cylinderCylinder));
+  EXPECT_EQ(cylinderCylinder.getNumContacts(), 0u);
+}
+
+//==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
@@ -1103,8 +1170,8 @@ TEST_F(Collision, testCylinderCylinder)
   testCylinderCylinder(bullet);
 #endif
 
-  // auto dart = DARTCollisionDetector::create();
-  // testCylinderCylinder(dart);
+  auto dart = DARTCollisionDetector::create();
+  testCylinderCylinder(dart);
 }
 
 //==============================================================================
