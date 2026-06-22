@@ -1767,10 +1767,11 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
   option.enableContact = true;
   option.maxNumContacts = 8u;
 
-  auto expectContact = [&](const std::shared_ptr<SimpleFrame>& first,
-                           const std::shared_ptr<SimpleFrame>& second,
-                           const Eigen::Vector3d& expectedNormal,
-                           double expectedDepth) {
+  auto expectContactWithPoint = [&](const std::shared_ptr<SimpleFrame>& first,
+                                    const std::shared_ptr<SimpleFrame>& second,
+                                    const Eigen::Vector3d& expectedNormal,
+                                    double expectedDepth,
+                                    const Eigen::Vector3d* expectedPoint) {
     auto firstGroup = cd->createCollisionGroup(first.get());
     auto secondGroup = cd->createCollisionGroup(second.get());
 
@@ -1785,6 +1786,18 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
     EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
         << contact.normal.transpose();
     EXPECT_NEAR(contact.penetrationDepth, expectedDepth, 1e-12);
+    if (expectedPoint != nullptr) {
+      EXPECT_TRUE(contact.point.isApprox(*expectedPoint, 1e-12))
+          << contact.point.transpose();
+    }
+  };
+
+  auto expectContact = [&](const std::shared_ptr<SimpleFrame>& first,
+                           const std::shared_ptr<SimpleFrame>& second,
+                           const Eigen::Vector3d& expectedNormal,
+                           double expectedDepth) {
+    expectContactWithPoint(
+        first, second, expectedNormal, expectedDepth, nullptr);
   };
 
   auto expectPositiveContact = [&](const std::shared_ptr<SimpleFrame>& first,
@@ -1820,6 +1833,22 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
   horizontalCapsuleTf.linear()
       = Eigen::AngleAxisd(0.5 * constantsd::pi(), Eigen::Vector3d::UnitY())
             .toRotationMatrix();
+  capsuleFrame->setTransform(horizontalCapsuleTf);
+  capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
+  const Eigen::Vector3d centeredPlaneContact(0.0, 0.0, 0.025);
+  expectContactWithPoint(
+      capsuleFrame,
+      planeFrame,
+      Eigen::Vector3d::UnitZ(),
+      0.05,
+      &centeredPlaneContact);
+  expectContactWithPoint(
+      planeFrame,
+      capsuleFrame,
+      -Eigen::Vector3d::UnitZ(),
+      0.05,
+      &centeredPlaneContact);
+
   capsuleFrame->setTransform(horizontalCapsuleTf);
   sphereFrame->setTranslation(Eigen::Vector3d(0.95, 0.0, 0.0));
   expectContact(capsuleFrame, sphereFrame, -Eigen::Vector3d::UnitX(), 0.05);

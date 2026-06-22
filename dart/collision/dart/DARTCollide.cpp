@@ -2481,11 +2481,16 @@ int collidePlaneCapsuleImpl(
   const double distTop = worldNormal.dot(worldTop - planePoint);
   const double distBottom = worldNormal.dot(worldBottom - planePoint);
 
-  const Eigen::Vector3d* closestEndpoint = &worldBottom;
+  Eigen::Vector3d closestPointOnAxis = worldBottom;
   double minDist = distBottom;
-  if (distTop < distBottom) {
-    closestEndpoint = &worldTop;
+  const double distanceTolerance
+      = 1e-12 * std::max({1.0, std::abs(distTop), std::abs(distBottom)});
+  if (distTop < distBottom - distanceTolerance) {
+    closestPointOnAxis = worldTop;
     minDist = distTop;
+  } else if (std::abs(distTop - distBottom) <= distanceTolerance) {
+    closestPointOnAxis = 0.5 * (worldTop + worldBottom);
+    minDist = 0.5 * (distTop + distBottom);
   }
 
   if (minDist > capsuleRadius)
@@ -2493,7 +2498,7 @@ int collidePlaneCapsuleImpl(
 
   const double penetration = capsuleRadius - minDist;
   const Eigen::Vector3d contactPoint
-      = *closestEndpoint - worldNormal * (minDist - penetration * 0.5);
+      = closestPointOnAxis - worldNormal * (minDist - penetration * 0.5);
 
   Eigen::Vector3d normal = worldNormal;
   if (flipNormal)
