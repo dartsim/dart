@@ -46,6 +46,8 @@ using namespace dart::gui::osg;
 using namespace dart::utils;
 using namespace dart::math;
 
+const int default_playback_frame_step = 16;
+
 class RigidCubesWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
@@ -53,8 +55,37 @@ public:
       dart::simulation::WorldPtr world,
       ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
     : dart::gui::osg::RealTimeWorldNode(std::move(world), std::move(shadow)),
-      mForce(Eigen::Vector3d::Zero())
+      mForce(Eigen::Vector3d::Zero()),
+      mPlayingBack(false),
+      mPlayFrame(0)
   {
+  }
+
+  void customPreRefresh() override
+  {
+    if (!mPlayingBack)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numFrames = recording->getNumFrames();
+    if (numFrames == 0) {
+      stopPlayback();
+      return;
+    }
+
+    if (recording->getNumSkeletons()
+        != static_cast<int>(mWorld->getNumSkeletons())) {
+      stopPlayback();
+      return;
+    }
+
+    if (mPlayFrame >= numFrames)
+      mPlayFrame = 0;
+
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
+      mWorld->getSkeleton(i)->setPositions(recording->getConfig(mPlayFrame, i));
+
+    mPlayFrame += default_playback_frame_step;
   }
 
   void customPreStep() override
@@ -68,23 +99,49 @@ public:
     mForce /= 2.0;
   }
 
+  void customPostStep() override
+  {
+    mWorld->bake();
+  }
+
   void setForce(const Eigen::Vector3d& force)
   {
     mForce = force;
   }
 
+  void togglePlayback()
+  {
+    Recording* recording = mWorld->getRecording();
+    if (recording->getNumFrames() == 0) {
+      std::cout << "No recorded frames are available for playback.\n";
+      return;
+    }
+
+    mPlayingBack = !mPlayingBack;
+    if (mPlayingBack && mViewer)
+      mViewer->simulate(false);
+
+    if (mPlayingBack && mPlayFrame >= recording->getNumFrames())
+      mPlayFrame = 0;
+  }
+
+  void stopPlayback()
+  {
+    mPlayingBack = false;
+  }
+
 protected:
   Eigen::Vector3d mForce;
+  bool mPlayingBack;
+  int mPlayFrame;
 };
 
 class RigidCubesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
   RigidCubesEventHandler(
-      dart::gui::osg::Viewer* viewer,
-      RigidCubesWorldNode* worldNode,
-      const WorldPtr& world)
-    : mViewer(viewer), mWorldNode(worldNode), mWorld(world)
+      dart::gui::osg::Viewer* viewer, RigidCubesWorldNode* worldNode)
+    : mViewer(viewer), mWorldNode(worldNode)
   {
   }
 
@@ -94,14 +151,13 @@ public:
     if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
       switch (ea.getKey()) {
         case ' ': // Space bar: toggle simulation
+          if (mWorldNode)
+            mWorldNode->stopPlayback();
           mViewer->simulate(!mViewer->isSimulating());
           return true;
         case 'p': // Toggle playback mode
-          // Note: There's no way to query the current state, so we just toggle
-          // by switching to false and then back to true on next press
-          static bool eventHandlerOn = true;
-          eventHandlerOn = !eventHandlerOn;
-          mViewer->switchDefaultEventHandler(eventHandlerOn);
+          if (mWorldNode)
+            mWorldNode->togglePlayback();
           return true;
         case 'v': // Toggle visualization markers
           if (mWorldNode) {
@@ -144,7 +200,6 @@ public:
 protected:
   dart::gui::osg::Viewer* mViewer;
   RigidCubesWorldNode* mWorldNode;
-  WorldPtr mWorld;
 };
 
 int main()
@@ -172,7 +227,7 @@ int main()
 
   // Create and add event handler
   ::osg::ref_ptr<RigidCubesEventHandler> eventHandler
-      = new RigidCubesEventHandler(&viewer, worldNode, world);
+      = new RigidCubesEventHandler(&viewer, worldNode);
   viewer.addEventHandler(eventHandler);
 
   // Set up the viewer window
