@@ -1830,6 +1830,21 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereBox(
           o1, o2, ellipsoid0->getRadii()[0], T1, box1->getSize(), T2, result);
+    } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
+      const auto* cylinder1
+          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+
+      if (ellipsoid0->isSphere()) {
+        return collideSphereCylinder(
+            o1,
+            o2,
+            ellipsoid0->getRadii()[0],
+            T1,
+            cylinder1->getRadius(),
+            0.5 * cylinder1->getHeight(),
+            T2,
+            result);
+      }
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
       const auto* plane1
           = static_cast<const dynamics::PlaneShape*>(shape2.get());
@@ -1875,6 +1890,21 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           sphere1->getRadius(),
           T2,
           result);
+    } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      if (ellipsoid1->isSphere()) {
+        return collideCylinderSphere(
+            o1,
+            o2,
+            cylinder0->getRadius(),
+            0.5 * cylinder0->getHeight(),
+            T1,
+            ellipsoid1->getRadii()[0],
+            T2,
+            result);
+      }
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
       const auto* plane1
           = static_cast<const dynamics::PlaneShape*>(shape2.get());

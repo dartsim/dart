@@ -800,11 +800,15 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
   auto cd = DARTCollisionDetector::create();
 
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto ellipsoidFrame = SimpleFrame::createShared(Frame::World());
   auto cylinderFrame = SimpleFrame::createShared(Frame::World());
 
   sphereFrame->setShape(std::make_shared<SphereShape>(0.25));
+  ellipsoidFrame->setShape(
+      std::make_shared<EllipsoidShape>(Eigen::Vector3d::Constant(0.5)));
   cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
   sphereFrame->setTranslation(Eigen::Vector3d(0.6, 0.0, 0.0));
+  ellipsoidFrame->setTranslation(Eigen::Vector3d(0.6, 0.0, 0.0));
 
   auto sphereGroup = cd->createCollisionGroup(sphereFrame.get());
   auto cylinderGroup = cd->createCollisionGroup(cylinderFrame.get());
@@ -835,6 +839,41 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
   EXPECT_TRUE(cylinderContact.point.isApprox(sphereContact.point, 1e-12));
   EXPECT_NEAR(
       cylinderContact.penetrationDepth, sphereContact.penetrationDepth, 1e-12);
+
+  auto ellipsoidGroup = cd->createCollisionGroup(ellipsoidFrame.get());
+
+  CollisionResult ellipsoidFirst;
+  ASSERT_TRUE(
+      ellipsoidGroup->collide(cylinderGroup.get(), option, &ellipsoidFirst));
+  ASSERT_EQ(ellipsoidFirst.getNumContacts(), 1u);
+  const auto& ellipsoidContact = ellipsoidFirst.getContact(0);
+  EXPECT_EQ(
+      ellipsoidContact.collisionObject1->getShapeFrame(), ellipsoidFrame.get());
+  EXPECT_EQ(
+      ellipsoidContact.collisionObject2->getShapeFrame(), cylinderFrame.get());
+  EXPECT_TRUE(
+      ellipsoidContact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(ellipsoidContact.penetrationDepth, 0.075, 1e-12);
+
+  CollisionResult cylinderEllipsoid;
+  ASSERT_TRUE(
+      cylinderGroup->collide(ellipsoidGroup.get(), option, &cylinderEllipsoid));
+  ASSERT_EQ(cylinderEllipsoid.getNumContacts(), 1u);
+  const auto& cylinderEllipsoidContact = cylinderEllipsoid.getContact(0);
+  EXPECT_EQ(
+      cylinderEllipsoidContact.collisionObject1->getShapeFrame(),
+      cylinderFrame.get());
+  EXPECT_EQ(
+      cylinderEllipsoidContact.collisionObject2->getShapeFrame(),
+      ellipsoidFrame.get());
+  EXPECT_TRUE(cylinderEllipsoidContact.normal.isApprox(
+      -ellipsoidContact.normal, 1e-12));
+  EXPECT_TRUE(
+      cylinderEllipsoidContact.point.isApprox(ellipsoidContact.point, 1e-12));
+  EXPECT_NEAR(
+      cylinderEllipsoidContact.penetrationDepth,
+      ellipsoidContact.penetrationDepth,
+      1e-12);
 }
 
 //==============================================================================
