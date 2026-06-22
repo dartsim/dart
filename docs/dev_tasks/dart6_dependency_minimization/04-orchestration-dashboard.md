@@ -19,8 +19,8 @@
 | Lane (work scope) | Charter | State |
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
-| **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements **done**; GLUT removal **in flight** (#3116) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress** (WIP branches, no PR yet) |
+| **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress — first PR open (#3123)**, + WIP branches |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Largely merged; one PR open (#3118) |
 
 ## PR tracker
@@ -39,7 +39,7 @@
 
 ### ✅ Merged — GUI/OSG (native-replacement lane)
 - **#3113** GLUT-to-OSG removal plan
-- **#3116** Remove GLUT GUI stack (merged 2026-06-22) — drops GLUT/Xi/Xmu/freeglut; **unblocks lodepng removal**
+- **#3116** Remove GLUT GUI stack (merged 2026-06-22) — drops GLUT/Xi/Xmu/freeglut **and removes lodepng** (`dart/external/lodepng` deleted in the same PR)
 
 ### ✅ Merged — perf/parallelism + enabling fixes (issue #3056)
 - **#3071** opt-in simulation threading · **#3085** plane/contact-cap collision ·
@@ -54,17 +54,18 @@
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
+| **#3123** | **native-collision-port** | Speed up DART primitive plane collision | **first native-collision PR** — dependency-free primitive plane contacts + finite-shape broadphase pruning (branch `perf/dart6-native-collision`). `MERGEABLE`, CI pending. Milestone 6.20.0. _Verify vs `03` gz-compat/parity/perf bar._ |
 | **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ✅ conflict **resolved** (GLUT-example deletion accepted) — now `MERGEABLE`, **1 behind**, CI pending. Milestone 6.20.0 |
+| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
 a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
-### 🛠️ Active branches without a PR yet (native-collision-port lane)
-- `feature/native-occupancy-grid` — tip _"Checkpoint native occupancy grid performance"_
-- `task/native-collision-performance-exec` — tip _"Improve native collision primitive hot paths"_
-- _Monitor for PR creation; this is the FCL/Bullet/ODE-reduction lever (the largest dependency win)._
+### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
+- **#3123 is its first PR** (see Open table) — primitive plane contacts + broadphase pruning.
+- WIP branches (no PR yet): `feature/native-occupancy-grid`, `task/native-collision-performance-exec`.
+- _As these land, hold them to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`), feature/contact parity, and evidence-driven perf ≥ Bullet/ODE/FCL._
 
 ## Coordination flags / blockers
 
@@ -84,8 +85,10 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
      **passing** on sibling PRs with the same base — re-trigger to clear; not a
      base regression. (Coverage logs also show benign `Cannot generate a safe
      runtime search path` RPATH warnings across pre-existing targets.)
-4. **Native-collision lane has WIP branches but no PR** — no gz-compat / parity /
-   perf evidence visible yet. Watch for the PR; its scope/requirements are in `03`.
+4. **Native-collision lane: first PR is open (#3123)** — "dependency-free primitive
+   plane contacts + finite-shape broadphase pruning". The largest dependency lever
+   is now in flight; hold it (and follow-ups) to `03`'s gz-compat / parity / perf
+   bar. WIP branches `feature/native-occupancy-grid` + `task/native-collision-performance-exec` continue.
 
 ## Effort-level status
 
@@ -94,14 +97,17 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
   - _Vendored `dart/external` source replaced with native/DART-owned code:_
     convhull_3d (→ native math), ikfast (→ `dart/dynamics` header), odelcpsolver
     (→ native Dantzig).
+  - _Vendored source + packages deleted (GLUT chain, #3116):_ the `lodepng` tree
+    + GLUT/Xi/Xmu/freeglut.
   - _Not removed — rehomed:_ ImGui's vendored tree was swapped for a
     FetchContent/system target (#3081), but `imgui` is **still a declared
     dependency**; it folds into the GUI/OSG work, not the removed set.
-- **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut;
-  **lodepng removal now unblocked** (next in the native-replacement lane).
-- **In flight:** legacy `dart/integration` dead-code removal (#3122 — conflict resolved, now mergeable).
-- **Largest remaining win (not yet PR'd):** native-collision port → makes
-  FCL/Bullet/ODE optional and drops `fcl` from core.
+- **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut
+  **and removes lodepng** (`dart/external/lodepng` deleted in the same PR).
+- **In flight:** native-collision port — first PR **#3123** (primitive plane contacts +
+  broadphase pruning); legacy `dart/integration` dead-code removal (#3122, mergeable).
+- **Largest remaining win (now in flight, #3123):** native-collision port → makes
+  FCL/Bullet/ODE optional and eventually drops `fcl` from core.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 
