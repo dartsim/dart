@@ -1836,6 +1836,13 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
   capsuleFrame->setTransform(horizontalCapsuleTf);
   expectContact(capsuleFrame, cylinderFrame, Eigen::Vector3d::UnitY(), 0.35);
   expectContact(cylinderFrame, capsuleFrame, -Eigen::Vector3d::UnitY(), 0.35);
+
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  Eigen::Isometry3d horizontalCapsuleAboveCapTf = horizontalCapsuleTf;
+  horizontalCapsuleAboveCapTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.55);
+  capsuleFrame->setTransform(horizontalCapsuleAboveCapTf);
+  expectContact(capsuleFrame, cylinderFrame, Eigen::Vector3d::UnitZ(), 0.05);
+  expectContact(cylinderFrame, capsuleFrame, -Eigen::Vector3d::UnitZ(), 0.05);
 }
 
 //==============================================================================

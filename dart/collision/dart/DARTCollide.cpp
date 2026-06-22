@@ -2582,6 +2582,79 @@ int collideCylinderCapsuleImpl(
     }
   };
 
+  auto checkCapsuleCap = [&](double capZ) {
+    const Eigen::Vector3d segment = capTopLocal - capBotLocal;
+
+    auto evaluateAt = [&](double t) {
+      t = std::clamp(t, 0.0, 1.0);
+      const Eigen::Vector3d pointOnSegment = capBotLocal + segment * t;
+      const double radialDist = std::sqrt(
+          pointOnSegment.x() * pointOnSegment.x()
+          + pointOnSegment.y() * pointOnSegment.y());
+
+      Eigen::Vector3d pointOnCap;
+      if (radialDist <= cylRadius || radialDist < 1e-10) {
+        pointOnCap
+            = Eigen::Vector3d(pointOnSegment.x(), pointOnSegment.y(), capZ);
+      } else {
+        pointOnCap = Eigen::Vector3d(
+            pointOnSegment.x() * cylRadius / radialDist,
+            pointOnSegment.y() * cylRadius / radialDist,
+            capZ);
+      }
+
+      Eigen::Vector3d normal = pointOnCap - pointOnSegment;
+      const double distance = normal.norm();
+      const double penetration = capRadius - distance;
+      if (penetration < 0.0)
+        return;
+
+      if (distance < 1e-10) {
+        normal = Eigen::Vector3d(0.0, 0.0, capZ >= 0.0 ? -1.0 : 1.0);
+      } else {
+        normal /= distance;
+      }
+
+      recordCandidate(
+          pointOnCap + normal * (0.5 * penetration), normal, penetration);
+    };
+
+    auto distanceSquaredAt = [&](double t) {
+      t = std::clamp(t, 0.0, 1.0);
+      const Eigen::Vector3d pointOnSegment = capBotLocal + segment * t;
+      const double radialDist = std::sqrt(
+          pointOnSegment.x() * pointOnSegment.x()
+          + pointOnSegment.y() * pointOnSegment.y());
+      const double radialExcess = std::max(0.0, radialDist - cylRadius);
+      const double axialDistance = pointOnSegment.z() - capZ;
+      return radialExcess * radialExcess + axialDistance * axialDistance;
+    };
+
+    double lo = 0.0;
+    double hi = 1.0;
+    for (int i = 0; i < 24; ++i) {
+      const double m1 = lo + (hi - lo) / 3.0;
+      const double m2 = hi - (hi - lo) / 3.0;
+      if (distanceSquaredAt(m1) < distanceSquaredAt(m2))
+        hi = m2;
+      else
+        lo = m1;
+    }
+
+    evaluateAt(0.0);
+    evaluateAt(1.0);
+    evaluateAt(0.5 * (lo + hi));
+
+    if (std::abs(segment.z()) > 1e-10)
+      evaluateAt((capZ - capBotLocal.z()) / segment.z());
+
+    const Eigen::Vector2d start2d(capBotLocal.x(), capBotLocal.y());
+    const Eigen::Vector2d segment2d(segment.x(), segment.y());
+    const double segment2dLengthSq = segment2d.squaredNorm();
+    if (segment2dLengthSq > 1e-10)
+      evaluateAt(-start2d.dot(segment2d) / segment2dLengthSq);
+  };
+
   auto checkCapsuleSegment = [&]() {
     const Eigen::Vector3d axisBottom(0.0, 0.0, -cylHalfHeight);
     const Eigen::Vector3d axisTop(0.0, 0.0, cylHalfHeight);
@@ -2619,6 +2692,8 @@ int collideCylinderCapsuleImpl(
 
   checkCapsuleEndpoint(capTopLocal);
   checkCapsuleEndpoint(capBotLocal);
+  checkCapsuleCap(cylHalfHeight);
+  checkCapsuleCap(-cylHalfHeight);
   checkCapsuleSegment();
 
   if (!foundCollision)
