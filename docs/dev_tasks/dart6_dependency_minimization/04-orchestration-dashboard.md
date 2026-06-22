@@ -37,8 +37,9 @@
 - **#3107** default-env split lane plan + native-collision scoping docs
 - **#3119** work-based lane names + lane handoff record
 
-### ✅ Merged — GUI/OSG planning (native-replacement lane)
+### ✅ Merged — GUI/OSG (native-replacement lane)
 - **#3113** GLUT-to-OSG removal plan
+- **#3116** Remove GLUT GUI stack (merged 2026-06-22) — drops GLUT/Xi/Xmu/freeglut; **unblocks lodepng removal**
 
 ### ✅ Merged — perf/parallelism + enabling fixes (issue #3056)
 - **#3071** opt-in simulation threading · **#3085** plane/contact-cap collision ·
@@ -52,10 +53,9 @@
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **caught up** with `release-6.20`, CI queued — _key dep-min PR; also enables lodepng drop_ |
-| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **caught up**, CI queued |
-| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ⚠️ **`CONFLICTING` (real)** — conflict is **`CHANGELOG.md` only** (`pixi.toml` auto-merges); resolve by merging `release-6.20` up and keeping both changelog entries |
-| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | GitHub shows `CONFLICTING` but it's **stale** — `merge-tree --write-tree` is clean and the branch is 0 behind; a no-op nudge/recompute clears it. Milestone: 6.20.0 |
+| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind** (after #3116), CI pending |
+| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ✅ **conflict resolved** — now `MERGEABLE`, CI pending (this is the coverage-job fix; see flag 3) |
+| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ⚠️ **`CONFLICTING` (now real, after #3116)** — `modify/delete` on `examples/deprecated_examples/glut_joint_constraints/MyWindow.hpp` (#3116 **deleted** the GLUT examples; #3122 modified that file). **Resolve by accepting the deletion.** Milestone 6.20.0 |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
@@ -68,22 +68,23 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ## Coordination flags / blockers
 
-1. **Base catch-up:** #3116/#3118 are now caught up with `release-6.20` (CI-queued
-   only). **#3120 is `CONFLICTING`**, but narrowly — the conflict is in
-   `CHANGELOG.md` only (`pixi.toml` auto-merges); a `release-6.20` merge-up that
-   keeps both changelog entries resolves it. **#3122's `CONFLICTING` is stale**,
-   by contrast (`merge-tree` clean, 0 behind) — it needs only a recompute, not
-   resolution. All owned by the maintainer.
-   _(Latest base merge: #3092 ssik IK → `release-6.20` HEAD `6bca946b40`.)_
+1. **Base / conflict status** (base now `18d31ca283e`, after #3116 merged):
+   - **#3120** — conflict **resolved**; now `MERGEABLE` (CI pending).
+   - **#3118** — fell 1 behind after #3116; simple merge-up.
+   - **#3122** — now a **real** `modify/delete` conflict: #3116 **deleted** the GLUT
+     example `glut_joint_constraints/MyWindow.hpp` that #3122 modified — **resolve
+     by accepting the deletion**, then merge-up. (Its earlier `CONFLICTING` was a
+     stale flag; this one is genuine.)
+   - All owned by the maintainer.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
 3. **CI health (backlog now draining):**
    - **`coverage` is failing on open PRs** (e.g. #3118) — a recurring coverage-job
      issue, **not** content-specific (it also appears on docs-only PRs). **#3120
-     directly targets this job** ("stop coverage running tests twice"), so
-     prioritizing #3120 (its only conflict is the trivial `CHANGELOG.md` one in
-     flag 1) likely improves CI health effort-wide.
+     directly targets this job** ("stop coverage running tests twice") and is now
+     **`MERGEABLE`** (its conflict cleared) — landing it should improve CI health
+     effort-wide.
    - **`Debug` / `API Documentation` show flaky failures** on some runs while
      **passing** on sibling PRs with the same base — re-trigger to clear; not a
      base regression. (Coverage logs also show benign `Cannot generate a safe
@@ -101,7 +102,9 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
   - _Not removed — rehomed:_ ImGui's vendored tree was swapped for a
     FetchContent/system target (#3081), but `imgui` is **still a declared
     dependency**; it folds into the GUI/OSG work, not the removed set.
-- **In flight:** GLUT removal (#3116) → also drops lodepng + GLUT/Xi/Xmu/freeglut.
+- **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut;
+  **lodepng removal now unblocked** (next in the native-replacement lane).
+- **In flight:** legacy `dart/integration` dead-code removal (#3122, conflict to resolve).
 - **Largest remaining win (not yet PR'd):** native-collision port → makes
   FCL/Bullet/ODE optional and drops `fcl` from core.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
