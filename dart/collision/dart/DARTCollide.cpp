@@ -1736,8 +1736,11 @@ int discoverPortal(
 int refinePortal(
     const SupportShape& supportA,
     const SupportShape& supportB,
-    MprPortal& portal)
+    MprPortal& portal,
+    bool& mayTouch)
 {
+  mayTouch = false;
+
   for (int iter = 0; iter < kMprMaxIterations; ++iter) {
     Eigen::Vector3d dir;
     portalDir(portal, dir);
@@ -1746,8 +1749,11 @@ int refinePortal(
       return 0;
 
     SupportPoint v4 = computeSupport(supportA, supportB, dir);
-    if (!portalCanEncapsulateOrigin(v4, dir)
-        || portalReachTolerance(portal, v4, dir)) {
+    if (!portalCanEncapsulateOrigin(v4, dir))
+      return -1;
+
+    if (portalReachTolerance(portal, v4, dir)) {
+      mayTouch = true;
       return -1;
     }
 
@@ -1950,6 +1956,21 @@ void findPenetrationSegment(MprPortal& portal, MprResult& result)
   result.success = true;
 }
 
+void findPenetrationDegenerateTouch(MprPortal& portal, MprResult& result)
+{
+  const Eigen::Vector3d closest = closestPointOnTriangleToOrigin(
+      portal.points[1].v, portal.points[2].v, portal.points[3].v);
+  if (closest.norm() > kMprTolerance)
+    return;
+
+  result.depth = 0.0;
+  result.normal = Eigen::Vector3d::Zero();
+  portalDir(portal, result.normal);
+  findPos(portal, result.pointOnA, result.pointOnB);
+  result.success = result.pointOnA.allFinite() && result.pointOnB.allFinite()
+                   && result.normal.allFinite();
+}
+
 MprResult computeMprPenetration(
     const SupportShape& supportA,
     const SupportShape& supportB,
@@ -1973,8 +1994,12 @@ MprResult computeMprPenetration(
     return result;
   }
 
-  if (refinePortal(supportA, supportB, portal) < 0)
+  bool mayTouch = false;
+  if (refinePortal(supportA, supportB, portal, mayTouch) < 0) {
+    if (mayTouch)
+      findPenetrationDegenerateTouch(portal, result);
     return result;
+  }
 
   findPenetration(supportA, supportB, portal, result);
   return result;
