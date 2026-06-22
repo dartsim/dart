@@ -9,8 +9,8 @@
 >   (this lane) + `03-native-collision-port-scoping.md` (native-collision scope).
 >   This board does **not** duplicate plans — it tracks **status**.
 > - **Naming:** lanes are named by **work scope**, never by local working-directory
->   names (per [[feedback-no-local-dir-names-in-repo]] convention; see the naming
->   note in `02`).
+>   names (a project convention; see the naming note in
+>   `02-default-environment-split.md`).
 >
 > _Last updated: 2026-06-22._
 
