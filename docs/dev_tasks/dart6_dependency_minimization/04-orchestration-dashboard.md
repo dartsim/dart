@@ -55,9 +55,10 @@
 | **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **1 behind** `release-6.20`, CI pending — _key dep-min PR; also enables lodepng drop_ |
 | **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
 | **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ⚠️ **CONFLICTING with `release-6.20`** — needs conflict resolution before it can land |
-| **#3121** | dependency-reduction | This orchestration board | **1 behind**, CI pending |
 
-_(#3092 "ssik analytical IK" — a non-dep-min feature — merged 2026-06-22 00:04; no longer tracked here.)_
+_(This board itself is PR #3121 — intentionally **not** listed above, so the
+committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
+a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ### 🛠️ Active branches without a PR yet (native-collision-port lane)
 - `feature/native-occupancy-grid` — tip _"Checkpoint native occupancy grid performance"_
@@ -80,8 +81,14 @@ _(#3092 "ssik analytical IK" — a non-dep-min feature — merged 2026-06-22 00:
 
 ## Effort-level status
 
-- **Dependency footprint removed so far:** optimizer backends (ipopt/nlopt/pagmo/snopt)
-  + the four vendored `dart/external` trees (convhull/ikfast/imgui/odelcpsolver).
+- **Removed so far:**
+  - _Package/pixi dependencies removed:_ optimizer backends (ipopt/nlopt/pagmo/snopt).
+  - _Vendored `dart/external` source replaced with native/DART-owned code:_
+    convhull_3d (→ native math), ikfast (→ `dart/dynamics` header), odelcpsolver
+    (→ native Dantzig).
+  - _Not removed — rehomed:_ ImGui's vendored tree was swapped for a
+    FetchContent/system target (#3081), but `imgui` is **still a declared
+    dependency**; it folds into the GUI/OSG work, not the removed set.
 - **In flight:** GLUT removal (#3116) → also drops lodepng + GLUT/Xi/Xmu/freeglut.
 - **Largest remaining win (not yet PR'd):** native-collision port → makes
   FCL/Bullet/ODE optional and drops `fcl` from core.
