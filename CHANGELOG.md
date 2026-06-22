@@ -63,6 +63,11 @@
 
 * Collision
 
+  * Speed up active DART-native contact-heavy scenes by replacing global
+    contact-point duplicate scans with reusable indexed contact aggregation and
+    deferring collision-result lookup-set construction until queried:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
     improving the original 3003-body issue scene while preserving close

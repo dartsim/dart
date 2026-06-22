@@ -47,7 +47,6 @@ void CollisionResult::addContact(const Contact& contact)
   mContacts.push_back(contact);
   addObjectToCaches(contact.collisionObject1);
   addObjectToCaches(contact.collisionObject2);
-  mCollidingObjectCachesDirty = false;
 }
 
 //==============================================================================
@@ -124,6 +123,8 @@ CollisionResult::operator bool() const
 void CollisionResult::clear()
 {
   mContacts.clear();
+  mCollidingBodyNodeCandidates.clear();
+  mCollidingShapeFrameCandidates.clear();
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
   mCollidingObjectCachesDirty = false;
@@ -132,16 +133,26 @@ void CollisionResult::clear()
 //==============================================================================
 void CollisionResult::updateCollidingObjectCaches() const
 {
-  if (!mCollidingObjectCachesDirty)
+  if (!mCollidingObjectCachesDirty) {
+    mCollidingObjectCachesMaterialized = true;
     return;
+  }
 
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
+
+  for (const auto* frame : mCollidingShapeFrameCandidates)
+    mCollidingShapeFrames.insert(frame);
+
+  for (const auto* bodyNode : mCollidingBodyNodeCandidates)
+    mCollidingBodyNodes.insert(bodyNode);
+
   mCollidingObjectCachesDirty = false;
+  mCollidingObjectCachesMaterialized = true;
 }
 
 //==============================================================================
-void CollisionResult::addObjectToCaches(CollisionObject* object) const
+void CollisionResult::addObjectToCaches(CollisionObject* object)
 {
   if (!object) {
     dterr << "[CollisionResult::addObjectToCaches] Attempting to add a "
@@ -152,10 +163,17 @@ void CollisionResult::addObjectToCaches(CollisionObject* object) const
   }
 
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
-  mCollidingShapeFrames.insert(frame);
+  mCollidingShapeFrameCandidates.push_back(frame);
+  if (mCollidingObjectCachesMaterialized)
+    mCollidingShapeFrames.insert(frame);
 
-  if (const auto* bodyNode = object->getBodyNode())
-    mCollidingBodyNodes.insert(bodyNode);
+  if (const auto* bodyNode = object->getBodyNode()) {
+    mCollidingBodyNodeCandidates.push_back(bodyNode);
+    if (mCollidingObjectCachesMaterialized)
+      mCollidingBodyNodes.insert(bodyNode);
+  }
+
+  mCollidingObjectCachesDirty = !mCollidingObjectCachesMaterialized;
 }
 
 } // namespace collision

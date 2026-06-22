@@ -841,6 +841,63 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto sphere1 = SimpleFrame::createShared(Frame::World());
+  auto sphere2 = SimpleFrame::createShared(Frame::World());
+  auto sphere3 = SimpleFrame::createShared(Frame::World());
+  auto sphere4 = SimpleFrame::createShared(Frame::World());
+  auto sphere5 = SimpleFrame::createShared(Frame::World());
+
+  sphere1->setShape(std::make_shared<SphereShape>(0.5));
+  sphere2->setShape(std::make_shared<SphereShape>(0.5));
+  sphere3->setShape(std::make_shared<SphereShape>(0.5));
+  sphere4->setShape(std::make_shared<SphereShape>(0.5));
+  sphere5->setShape(std::make_shared<SphereShape>(0.5));
+
+  sphere1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.45));
+  sphere2->setTranslation(Eigen::Vector3d(1.0e-12, 0.0, 0.45));
+  sphere3->setTranslation(Eigen::Vector3d(1.0e-10, 0.0, 0.45));
+  sphere4->setTranslation(Eigen::Vector3d(3.0e7, 0.0, 0.45));
+  sphere5->setTranslation(Eigen::Vector3d(3.0e7, 0.0, 0.45));
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto sphereGroup = cd->createCollisionGroup(
+      sphere1.get(),
+      sphere2.get(),
+      sphere3.get(),
+      sphere4.get(),
+      sphere5.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 8u;
+
+  CollisionResult result;
+  ASSERT_TRUE(planeGroup->collide(sphereGroup.get(), option, &result));
+  ASSERT_EQ(result.getNumContacts(), 3u);
+
+  std::vector<double> contactXs;
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_EQ(contact.collisionObject1->getShapeFrame(), planeFrame.get());
+    EXPECT_NEAR(contact.penetrationDepth, 0.05, 1e-12);
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    contactXs.push_back(contact.point.x());
+  }
+
+  std::sort(contactXs.begin(), contactXs.end());
+  EXPECT_NEAR(contactXs[0], 0.0, 1e-12);
+  EXPECT_NEAR(contactXs[1], 1.0e-10, 1e-12);
+  EXPECT_NEAR(contactXs[2], 3.0e7, 1e-6);
+}
+
+//==============================================================================
 TEST_F(Collision, DartSphereCylinderOrderSymmetry)
 {
   auto cd = DARTCollisionDetector::create();
@@ -2464,6 +2521,67 @@ TEST_F(Collision, CollisionResultCachesCollidingFramesEagerly)
 
   replacementA->~TestCollisionObject();
   replacementB->~TestCollisionObject();
+}
+
+//==============================================================================
+TEST_F(Collision, CollisionResultKeepsMaterializedCollidingSetsCurrent)
+{
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("result_set_a");
+  auto skelB = Skeleton::create("result_set_b");
+  auto skelC = Skeleton::create("result_set_c");
+  auto skelD = Skeleton::create("result_set_d");
+
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+  auto pairC = skelC->createJointAndBodyNodePair<FreeJoint>();
+  auto pairD = skelD->createJointAndBodyNodePair<FreeJoint>();
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* nodeA = pairA.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeB = pairB.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeC = pairC.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeD = pairD.second->createShapeNodeWith<CollisionAspect>(box);
+
+  TestCollisionObject objectA(detector.get(), nodeA);
+  TestCollisionObject objectB(detector.get(), nodeB);
+  TestCollisionObject objectC(detector.get(), nodeC);
+  TestCollisionObject objectD(detector.get(), nodeD);
+
+  CollisionResult result;
+  const auto& frames = result.getCollidingShapeFrames();
+  const auto& bodies = result.getCollidingBodyNodes();
+  EXPECT_TRUE(frames.empty());
+  EXPECT_TRUE(bodies.empty());
+
+  Contact contactAB;
+  contactAB.collisionObject1 = &objectA;
+  contactAB.collisionObject2 = &objectB;
+  result.addContact(contactAB);
+
+  EXPECT_TRUE(frames.count(nodeA));
+  EXPECT_TRUE(frames.count(nodeB));
+  EXPECT_TRUE(bodies.count(pairA.second));
+  EXPECT_TRUE(bodies.count(pairB.second));
+
+  result.clear();
+  EXPECT_TRUE(frames.empty());
+  EXPECT_TRUE(bodies.empty());
+
+  Contact contactCD;
+  contactCD.collisionObject1 = &objectC;
+  contactCD.collisionObject2 = &objectD;
+  result.addContact(contactCD);
+
+  EXPECT_FALSE(frames.count(nodeA));
+  EXPECT_FALSE(frames.count(nodeB));
+  EXPECT_TRUE(frames.count(nodeC));
+  EXPECT_TRUE(frames.count(nodeD));
+  EXPECT_FALSE(bodies.count(pairA.second));
+  EXPECT_FALSE(bodies.count(pairB.second));
+  EXPECT_TRUE(bodies.count(pairC.second));
+  EXPECT_TRUE(bodies.count(pairD.second));
 }
 
 //==============================================================================
