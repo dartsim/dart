@@ -64,7 +64,9 @@
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
-a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
+a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.
+**#3116 (GLUT), #3120, #3122, #3118 have all MERGED** (see the merged sections) —
+they are closed, not open, so they are deliberately out of open-monitoring.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
 - **#3123 is its first PR** (see Open table) — primitive plane contacts + broadphase pruning.
