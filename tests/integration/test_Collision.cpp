@@ -852,18 +852,28 @@ TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
   auto sphere1 = SimpleFrame::createShared(Frame::World());
   auto sphere2 = SimpleFrame::createShared(Frame::World());
   auto sphere3 = SimpleFrame::createShared(Frame::World());
+  auto sphere4 = SimpleFrame::createShared(Frame::World());
+  auto sphere5 = SimpleFrame::createShared(Frame::World());
 
   sphere1->setShape(std::make_shared<SphereShape>(0.5));
   sphere2->setShape(std::make_shared<SphereShape>(0.5));
   sphere3->setShape(std::make_shared<SphereShape>(0.5));
+  sphere4->setShape(std::make_shared<SphereShape>(0.5));
+  sphere5->setShape(std::make_shared<SphereShape>(0.5));
 
   sphere1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.45));
   sphere2->setTranslation(Eigen::Vector3d(1.0e-12, 0.0, 0.45));
   sphere3->setTranslation(Eigen::Vector3d(1.0e-10, 0.0, 0.45));
+  sphere4->setTranslation(Eigen::Vector3d(3.0e7, 0.0, 0.45));
+  sphere5->setTranslation(Eigen::Vector3d(3.0e7, 0.0, 0.45));
 
   auto planeGroup = cd->createCollisionGroup(planeFrame.get());
-  auto sphereGroup
-      = cd->createCollisionGroup(sphere1.get(), sphere2.get(), sphere3.get());
+  auto sphereGroup = cd->createCollisionGroup(
+      sphere1.get(),
+      sphere2.get(),
+      sphere3.get(),
+      sphere4.get(),
+      sphere5.get());
 
   CollisionOption option;
   option.enableContact = true;
@@ -871,7 +881,7 @@ TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
 
   CollisionResult result;
   ASSERT_TRUE(planeGroup->collide(sphereGroup.get(), option, &result));
-  ASSERT_EQ(result.getNumContacts(), 2u);
+  ASSERT_EQ(result.getNumContacts(), 3u);
 
   std::vector<double> contactXs;
   for (const auto& contact : result.getContacts()) {
@@ -884,6 +894,7 @@ TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
   std::sort(contactXs.begin(), contactXs.end());
   EXPECT_NEAR(contactXs[0], 0.0, 1e-12);
   EXPECT_NEAR(contactXs[1], 1.0e-10, 1e-12);
+  EXPECT_NEAR(contactXs[2], 3.0e7, 1e-6);
 }
 
 //==============================================================================

@@ -66,6 +66,8 @@ struct BroadphaseEntry
 };
 
 constexpr double kContactDuplicateTolerance = 3.0e-12;
+constexpr double kContactPointKeyLowerBound = -9223372036854775808.0;
+constexpr double kContactPointKeyUpperBound = 9223372036854775808.0;
 constexpr std::size_t kInvalidContactPointIndex
     = std::numeric_limits<std::size_t>::max();
 
@@ -695,9 +697,8 @@ bool makeContactPointKey(const Eigen::Vector3d& point, ContactPointKey& key)
       return false;
 
     const auto cell = std::floor(point[i] / kContactDuplicateTolerance);
-    if (cell < static_cast<double>(std::numeric_limits<std::int64_t>::min())
-        || cell > static_cast<double>(
-               std::numeric_limits<std::int64_t>::max())) {
+    if (cell < kContactPointKeyLowerBound
+        || cell >= kContactPointKeyUpperBound) {
       return false;
     }
 
