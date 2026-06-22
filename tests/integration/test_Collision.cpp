@@ -31,6 +31,7 @@
  */
 
 #include "dart/collision/collision.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
@@ -920,6 +921,27 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
       cylinderBottomCapContact.penetrationDepth,
       sphereBottomCapContact.penetrationDepth,
       1e-12);
+}
+
+//==============================================================================
+TEST_F(Collision, DartCylinderPlaneLegacyHelperLinkage)
+{
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  cylinderTf.translation() = Eigen::Vector3d(0.0, 0.0, 10.0);
+
+  CollisionResult result;
+  EXPECT_EQ(
+      collideCylinderPlane(
+          nullptr,
+          nullptr,
+          0.5,
+          0.5,
+          cylinderTf,
+          Eigen::Vector3d::UnitZ(),
+          Eigen::Isometry3d::Identity(),
+          result),
+      0);
+  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================

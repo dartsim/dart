@@ -1656,6 +1656,20 @@ int collideCylinderPlane(
   return 1;
 }
 
+int collideCylinderPlane(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const double& cyl_rad,
+    const double& half_height,
+    const Eigen::Isometry3d& T0,
+    const Eigen::Vector3d& plane_normal,
+    const Eigen::Isometry3d& T1,
+    CollisionResult& result)
+{
+  return collideCylinderPlane(
+      o1, o2, cyl_rad, half_height, T0, plane_normal, 0.0, T1, result);
+}
+
 int collidePlaneCylinder(
     CollisionObject* o1,
     CollisionObject* o2,
