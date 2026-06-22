@@ -40,6 +40,8 @@
 
 #include <dart/utils/utils.hpp>
 
+#include <dart/collision/bullet/bullet.hpp>
+
 #include <dart/common/Macros.hpp>
 
 #include <dart/dart.hpp>
@@ -224,8 +226,11 @@ int main(int argc, char* argv[])
     return 0;
   }
 
+  auto bulletDetector = dart::collision::BulletCollisionDetector::create();
+
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/shapes.skel");
   DART_ASSERT(myWorld != nullptr);
+  myWorld->getConstraintSolver()->setCollisionDetector(bulletDetector);
 
   auto handler = new RigidShapesEventHandler(myWorld);
 
