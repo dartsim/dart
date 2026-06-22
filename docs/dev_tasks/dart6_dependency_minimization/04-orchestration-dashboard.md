@@ -52,9 +52,9 @@
 ### 🔄 Open — monitoring
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
-| **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **1 behind** `release-6.20`, CI pending — _key dep-min PR; also enables lodepng drop_ |
-| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
-| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ⚠️ **CONFLICTING with `release-6.20`** — needs conflict resolution before it can land |
+| **#3116** | native-replacement | Remove GLUT GUI stack | mergeable, **caught up** with `release-6.20`, CI queued — _key dep-min PR; also enables lodepng drop_ |
+| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **caught up**, CI queued |
+| **#3120** | dependency-reduction/CI | Stop coverage job double-running tests | ⚠️ **`CONFLICTING`** — but the conflict is **`CHANGELOG.md` only** (`pixi.toml` auto-merges); resolve by merging `release-6.20` up and keeping both changelog entries |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
@@ -67,10 +67,11 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ## Coordination flags / blockers
 
-1. **Open PRs behind `release-6.20`** (after #3119): #3116/#3118 are 1 commit
-   behind — a simple merge-up. **#3120 has flipped to a hard conflict
-   (`CONFLICTING`/`DIRTY`)** — it needs real conflict resolution, not just a
-   catch-up merge. All owned by the maintainer.
+1. **Base catch-up:** #3116/#3118 are now caught up with `release-6.20` (CI-queued
+   only). **#3120 is `CONFLICTING`**, but narrowly — the conflict is in
+   `CHANGELOG.md` only (`pixi.toml` auto-merges); a `release-6.20` merge-up that
+   keeps both changelog entries resolves it. All owned by the maintainer.
+   _(Latest base merge: #3092 ssik IK → `release-6.20` HEAD `6bca946b40`.)_
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
