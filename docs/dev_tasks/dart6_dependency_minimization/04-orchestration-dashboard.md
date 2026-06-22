@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress — first PR open (#3123)**, + WIP branches |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress — first PR merged (#3123)**; WIP branches continue |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Merged (incl. #3118 profiling driver) |
 
 ## PR tracker
@@ -57,21 +57,27 @@
 - **#3120** stop coverage job double-running tests (merged 2026-06-22) — the coverage-job fix
 - **#3102** ignore `.omo` · **#3100** pixi lockfile · **#3074/#3075** plan + AI workflows import
 
-### 🔄 Open — monitoring
-| PR | Lane | Title | Health |
-| --- | --- | --- | --- |
-| **#3123** | **native-collision-port** | Speed up DART primitive plane collision | **the lone substantive dep-min PR open** — dependency-free primitive plane contacts + finite-shape broadphase pruning (branch `perf/dart6-native-collision`). `MERGEABLE`, CI pending. Milestone 6.20.0. _Verify vs `03` gz-compat/parity/perf bar._ |
+### ✅ Merged — native-collision-port lane
+- **#3123** Speed up DART primitive plane collision — **MERGED & PR closed 2026-06-22 19:05**
+  (squash commit `22f1a13d61b`, now in `release-6.20`'s history; `gh pr view 3123 --json state`
+  → `MERGED`). Dependency-free primitive plane contacts + finite-shape broadphase pruning —
+  **first piece** of the native collision port (the FCL/Bullet/ODE-reduction lever); not yet
+  the FCL-optional default-flip.
 
-_(This board itself is PR #3121 — intentionally **not** listed above, so the
-committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
-a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.
-**#3116 (GLUT), #3120, #3122, #3118 have all MERGED** (see the merged sections) —
-they are closed, not open, so they are deliberately out of open-monitoring.)_
+### 🔄 Open — monitoring
+**No open dependency-minimization PRs** — the work queue is clear; all tracked dep-min PRs
+have merged (see the merged sections above). Next activity is expected from the
+native-collision-port lane's WIP branches (`feature/native-occupancy-grid`,
+`task/native-collision-performance-exec`).
+
+_(Note for automated reviewers: a just-merged PR can briefly still show "Open" on its page
+due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and `git log`
+before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
-- **#3123 is its first PR** (see Open table) — primitive plane contacts + broadphase pruning.
-- WIP branches (no PR yet): `feature/native-occupancy-grid`, `task/native-collision-performance-exec`.
-- _As these land, hold them to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`), feature/contact parity, and evidence-driven perf ≥ Bullet/ODE/FCL._
+- **#3123 merged** — first piece (primitive plane contacts + broadphase pruning).
+- WIP branches (no PR yet): `feature/native-occupancy-grid`, `task/native-collision-performance-exec` — expect follow-up PRs.
+- _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`), feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL. The FCL-optional default-flip (the actual dependency drop) is still ahead._
 
 ## Coordination flags / blockers
 
@@ -95,10 +101,10 @@ they are closed, not open, so they are deliberately out of open-monitoring.)_
      this lane only flags it rather than acting. (Coverage logs also show benign
      `Cannot generate a safe runtime search path` RPATH warnings across
      pre-existing targets.)
-4. **Native-collision lane: first PR is open (#3123)** — "dependency-free primitive
+4. **Native-collision lane: first PR merged (#3123)** — "dependency-free primitive
    plane contacts + finite-shape broadphase pruning". The largest dependency lever
-   is now in flight; hold it (and follow-ups) to `03`'s gz-compat / parity / perf
-   bar. WIP branches `feature/native-occupancy-grid` + `task/native-collision-performance-exec` continue.
+   has begun landing; hold each follow-up to `03`'s gz-compat / parity / perf bar.
+   WIP branches `feature/native-occupancy-grid` + `task/native-collision-performance-exec` continue.
 
 ## Effort-level status
 
@@ -114,11 +120,13 @@ they are closed, not open, so they are deliberately out of open-monitoring.)_
     dependency**; it folds into the GUI/OSG work, not the removed set.
 - **Just landed:** GLUT removal (#3116, merged 2026-06-22) → drops GLUT/Xi/Xmu/freeglut
   **and removes lodepng** (`dart/external/lodepng` deleted in the same PR).
-- **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122).
-- **In flight:** native-collision port — **#3123** (primitive plane contacts +
-  broadphase pruning) — the lone substantive dep-min PR still open.
-- **Largest remaining win (now in flight, #3123):** native-collision port → makes
-  FCL/Bullet/ODE optional and eventually drops `fcl` from core.
+- **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
+  native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
+  piece of the native collision port.
+- **Open queue: empty** — all dep-min PRs merged; next from the native-collision WIP branches.
+- **Largest remaining win (started, #3123 merged):** native-collision port → makes
+  FCL/Bullet/ODE optional and eventually drops `fcl` from core. The default-flip
+  (the actual dependency drop) is still ahead, via the WIP branches' follow-up PRs.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 
