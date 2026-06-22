@@ -153,8 +153,7 @@ public:
         case ' ': // Space bar: toggle simulation
           if (mWorldNode)
             mWorldNode->stopPlayback();
-          mViewer->simulate(!mViewer->isSimulating());
-          return true;
+          return false;
         case 'p': // Toggle playback mode
           if (mWorldNode)
             mWorldNode->togglePlayback();

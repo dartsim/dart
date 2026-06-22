@@ -135,9 +135,6 @@ protected:
   /// \brief Step the simulation forward one time step
   void stepSimulation();
 
-  /// \brief Toggle simulation play/pause
-  void toggleSimulation();
-
   /// \brief Print current simulation state
   void printSimulationState();
 
@@ -165,9 +162,6 @@ private:
 
   /// Simulation time step
   double mTimeStep;
-
-  /// Whether simulation is running
-  bool mSimulationRunning;
 
   /// Force magnitude for applied forces
   double mForceMagnitude;

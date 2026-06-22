@@ -55,7 +55,6 @@ SimulationEventHandler::SimulationEventHandler(
     mSelectedBody(nullptr),
     mSelectedBodyIndex(0),
     mTimeStep(DEFAULT_TIME_STEP),
-    mSimulationRunning(false),
     mForceMagnitude(DEFAULT_FORCE_MAGNITUDE),
     mTorqueMagnitude(DEFAULT_TORQUE_MAGNITUDE),
     mShowForceArrows(true),
@@ -83,10 +82,6 @@ bool SimulationEventHandler::handle(
 
   switch (ea.getKey()) {
     // Simulation control
-    case ' ': // Space bar - toggle simulation
-      toggleSimulation();
-      return true;
-
     case 's': // Step simulation
     case 'S':
       stepSimulation();
@@ -457,18 +452,6 @@ void SimulationEventHandler::stepSimulation()
             << mWorld->getTime() << " seconds" << std::endl;
 }
 
-void SimulationEventHandler::toggleSimulation()
-{
-  mSimulationRunning = mViewer ? !mViewer->isSimulating() : !mSimulationRunning;
-
-  if (mViewer) {
-    mViewer->simulate(mSimulationRunning);
-  }
-
-  std::cout << "Simulation " << (mSimulationRunning ? "STARTED" : "PAUSED")
-            << std::endl;
-}
-
 void SimulationEventHandler::printSimulationState()
 {
   if (!mWorld) {
@@ -479,7 +462,8 @@ void SimulationEventHandler::printSimulationState()
   std::cout << "Time: " << std::fixed << std::setprecision(4)
             << mWorld->getTime() << " seconds" << std::endl;
   std::cout << "Time step: " << mTimeStep << " seconds" << std::endl;
-  std::cout << "Running: " << (mSimulationRunning ? "YES" : "NO") << std::endl;
+  std::cout << "Running: "
+            << (mViewer && mViewer->isSimulating() ? "YES" : "NO") << std::endl;
   std::cout << "Force magnitude: " << mForceMagnitude << " N" << std::endl;
   std::cout << "Torque magnitude: " << mTorqueMagnitude << " Nm" << std::endl;
   std::cout << "Show arrows: " << (mShowForceArrows ? "YES" : "NO")
