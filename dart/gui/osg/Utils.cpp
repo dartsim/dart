@@ -32,12 +32,28 @@
 
 #include "dart/gui/osg/Utils.hpp"
 
+#include "dart/gui/osg/IncludeImGui.hpp"
+
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/PolygonMode>
 #include <osg/Texture2D>
 
+#include <algorithm>
+#include <iostream>
+
+#include <cmath>
+#include <cstdlib>
+
 namespace dart::gui::osg {
+
+namespace {
+
+constexpr double kDefaultGuiScale = 1.0;
+constexpr double kMinGuiScale = 0.5;
+constexpr double kMaxGuiScale = 4.0;
+
+} // namespace
 
 //==============================================================================
 Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec)
@@ -130,6 +146,140 @@ Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
   quad->getOrCreateStateSet()->setMode(GL_LIGHTING, values);
 
   return quad.release();
+}
+
+//==============================================================================
+double getDefaultGuiScale()
+{
+  return kDefaultGuiScale;
+}
+
+//==============================================================================
+double getMinGuiScale()
+{
+  return kMinGuiScale;
+}
+
+//==============================================================================
+double getMaxGuiScale()
+{
+  return kMaxGuiScale;
+}
+
+//==============================================================================
+double sanitizeGuiScale(double scale)
+{
+  if (!std::isfinite(scale))
+    return kDefaultGuiScale;
+
+  return std::clamp(scale, kMinGuiScale, kMaxGuiScale);
+}
+
+//==============================================================================
+double parseGuiScale(
+    const std::string& value, double fallback, std::ostream* errorStream)
+{
+  char* end = nullptr;
+  const double parsed = std::strtod(value.c_str(), &end);
+  if (end == value.c_str() || *end != '\0') {
+    if (errorStream) {
+      *errorStream << "Invalid --gui-scale value '" << value
+                   << "'. Falling back to " << fallback << ".\n";
+    }
+    return fallback;
+  }
+
+  if (!std::isfinite(parsed) || parsed < kMinGuiScale
+      || parsed > kMaxGuiScale) {
+    if (errorStream) {
+      *errorStream << "--gui-scale must be in [" << kMinGuiScale << ", "
+                   << kMaxGuiScale << "]; got '" << value
+                   << "'. Falling back to " << fallback << ".\n";
+    }
+    return fallback;
+  }
+
+  return parsed;
+}
+
+//==============================================================================
+GuiScaleOptions parseGuiScaleOptions(
+    int argc, char* argv[], std::ostream* errorStream)
+{
+  GuiScaleOptions options;
+
+  if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
+    options.scale = parseGuiScale(envScale, getDefaultGuiScale(), errorStream);
+  }
+
+  const std::string guiScalePrefix = "--gui-scale=";
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
+    if (arg == "-h" || arg == "--help") {
+      options.showHelp = true;
+    } else if (arg == "--gui-scale") {
+      if (i + 1 >= argc) {
+        if (errorStream) {
+          *errorStream << "--gui-scale requires a value. Falling back to "
+                       << options.scale << ".\n";
+        }
+        continue;
+      }
+
+      options.scale = parseGuiScale(argv[++i], options.scale, errorStream);
+    } else if (arg.compare(0, guiScalePrefix.size(), guiScalePrefix) == 0) {
+      options.scale = parseGuiScale(
+          arg.substr(guiScalePrefix.size()), options.scale, errorStream);
+    } else if (errorStream) {
+      *errorStream << "Ignoring unknown option '" << arg << "'.\n";
+    }
+  }
+
+  return options;
+}
+
+//==============================================================================
+void printGuiScaleUsage(std::ostream& os, const char* executable)
+{
+  os << "Usage: " << executable << " [--gui-scale SCALE]\n"
+     << "\n"
+     << "Options:\n"
+     << "  --gui-scale SCALE   Scale the ImGui panel, ImGui style, and "
+        "initial viewer window.\n"
+     << "  --gui-scale=SCALE   Same as --gui-scale SCALE.\n"
+     << "  -h, --help          Show this help message.\n";
+}
+
+//==============================================================================
+int scaleWindowExtent(int extent, double scale)
+{
+  return std::max(1, static_cast<int>(extent * sanitizeGuiScale(scale) + 0.5));
+}
+
+//==============================================================================
+void applyImGuiScale(double scale, double* appliedScale)
+{
+  const double sanitized = sanitizeGuiScale(scale);
+
+  if (appliedScale == nullptr) {
+    ImGui::GetStyle().ScaleAllSizes(static_cast<float>(sanitized));
+  } else {
+    const double previous = sanitizeGuiScale(*appliedScale);
+    if (std::abs(previous - sanitized) > 1e-6) {
+      ImGui::GetStyle().ScaleAllSizes(static_cast<float>(sanitized / previous));
+      *appliedScale = sanitized;
+    }
+  }
+
+  // ImGui 1.92 moved the global font scale from `io.FontGlobalScale` to
+  // `style.FontScaleMain` and gates the legacy field behind
+  // IMGUI_DISABLE_OBSOLETE_FUNCTIONS, which the bundled `external-imgui` target
+  // enables. Use the new field where available and fall back for older ImGui.
+#if IMGUI_VERSION_NUM >= 19200
+  ImGui::GetStyle().FontScaleMain = static_cast<float>(sanitized);
+#else
+  ImGui::GetIO().FontGlobalScale = static_cast<float>(sanitized);
+#endif
 }
 
 } // namespace dart::gui::osg

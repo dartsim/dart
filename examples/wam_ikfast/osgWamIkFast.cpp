@@ -40,8 +40,15 @@
 
 #include <iostream>
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   // Create the world.
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
@@ -81,7 +88,11 @@ int main()
       << std::endl;
 
   // Set up the window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1280, options.scale),
+      dart::gui::osg::scaleWindowExtent(960, options.scale));
 
   // Set up the default viewing position
   viewer.getCameraManipulator()->setHomePosition(

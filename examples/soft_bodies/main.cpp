@@ -38,6 +38,8 @@
 
 #include <osgViewer/Viewer>
 
+#include <iostream>
+
 using namespace dart::dynamics;
 
 class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
@@ -196,8 +198,15 @@ public:
   RecordingWorld* mRecWorld;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
+  const dart::gui::osg::GuiScaleOptions options
+      = dart::gui::osg::parseGuiScaleOptions(argc, argv, &std::cerr);
+  if (options.showHelp) {
+    dart::gui::osg::printGuiScaleUsage(std::cout, argv[0]);
+    return 0;
+  }
+
   using namespace dart::dynamics;
 
   dart::simulation::WorldPtr world = dart::utils::SkelParser::readWorld(
@@ -213,7 +222,11 @@ int main()
 
   std::cout << viewer.getInstructions() << std::endl;
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  viewer.setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(640, options.scale),
+      dart::gui::osg::scaleWindowExtent(480, options.scale));
 
   viewer.run();
 }
