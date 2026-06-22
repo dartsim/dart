@@ -1655,8 +1655,10 @@ int discoverPortal(
   portal.size = 2;
 
   double dot = portal.points[1].v.dot(dir);
-  if (isZero(dot) || dot < 0.0)
+  if (dot < 0.0 && !isZero(dot))
     return -1;
+  if (isZero(dot))
+    return 1;
 
   dir = portal.points[0].v.cross(portal.points[1].v);
   if (dir.squaredNorm() < kMprEpsilon) {
@@ -1669,8 +1671,12 @@ int discoverPortal(
   dir.normalize();
   portal.points[2] = computeSupport(supportA, supportB, dir);
   dot = portal.points[2].v.dot(dir);
-  if (isZero(dot) || dot < 0.0)
+  if (dot < 0.0 && !isZero(dot))
     return -1;
+  if (isZero(dot)) {
+    portal.points[1] = portal.points[2];
+    return 1;
+  }
 
   portal.size = 3;
 
@@ -1689,8 +1695,12 @@ int discoverPortal(
   while (portal.size < 4) {
     portal.points[3] = computeSupport(supportA, supportB, dir);
     dot = portal.points[3].v.dot(dir);
-    if (isZero(dot) || dot < 0.0)
+    if (dot < 0.0 && !isZero(dot))
       return -1;
+    if (isZero(dot)) {
+      portal.points[1] = portal.points[3];
+      return 1;
+    }
 
     auto shouldContinue = false;
     Eigen::Vector3d cross = portal.points[1].v.cross(portal.points[3].v);
@@ -2012,10 +2022,15 @@ int collideSupportMappedShapes(
   contact.collisionObject2 = o2;
   contact.point = 0.5 * (mpr.pointOnA + mpr.pointOnB);
   contact.normal = -mpr.normal;
-  if (contact.normal.squaredNorm() < 1e-12)
-    contact.normal = Eigen::Vector3d::UnitZ();
-  else
+  if (contact.normal.squaredNorm() < 1e-12) {
+    contact.normal = supportA.center() - supportB.center();
+    if (contact.normal.squaredNorm() < 1e-12)
+      contact.normal = Eigen::Vector3d::UnitZ();
+    else
+      contact.normal.normalize();
+  } else {
     contact.normal.normalize();
+  }
   contact.penetrationDepth = std::abs(mpr.depth);
   result.addContact(contact);
   return 1;
@@ -2094,7 +2109,7 @@ int collideCylinderSphere(
   const double penetration = cyl_rad + sphere_rad - dist;
   const double absZ = std::abs(center[2]);
 
-  if (dist < cyl_rad && absZ < half_height + sphere_rad) {
+  if (dist <= cyl_rad && absZ <= half_height + sphere_rad) {
     const double capSign = center[2] >= 0.0 ? 1.0 : -1.0;
     const double capPenetration
         = half_height + sphere_rad - capSign * center[2];
@@ -2130,7 +2145,7 @@ int collideCylinderSphere(
     result.addContact(contact);
     return 1;
   } else {
-    if (penetration > 0.0) {
+    if (penetration >= 0.0) {
       if (std::abs(center[2]) > half_height) {
         Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         point *= cyl_rad;
@@ -2140,7 +2155,7 @@ int collideCylinderSphere(
         normal = (T0.linear() * normal).normalized();
         point = T0 * point;
 
-        if (edgePenetration > 0.0) {
+        if (edgePenetration >= 0.0) {
           Contact contact;
           contact.collisionObject1 = o1;
           contact.collisionObject2 = o2;
@@ -2188,7 +2203,7 @@ int collideSphereCylinder(
   const double penetration = cyl_rad + sphere_rad - dist;
   const double absZ = std::abs(center[2]);
 
-  if (dist < cyl_rad && absZ < half_height + sphere_rad) {
+  if (dist <= cyl_rad && absZ <= half_height + sphere_rad) {
     const double capSign = center[2] >= 0.0 ? 1.0 : -1.0;
     const double capPenetration
         = half_height + sphere_rad - capSign * center[2];
@@ -2224,7 +2239,7 @@ int collideSphereCylinder(
     result.addContact(contact);
     return 1;
   } else {
-    if (penetration > 0.0) {
+    if (penetration >= 0.0) {
       if (std::abs(center[2]) > half_height) {
         Eigen::Vector3d point = getCylinderRadialDirection(center, dist);
         point *= cyl_rad;
@@ -2234,7 +2249,7 @@ int collideSphereCylinder(
         normal = -(T1.linear() * normal).normalized();
         point = T1 * point;
 
-        if (edgePenetration > 0.0) {
+        if (edgePenetration >= 0.0) {
           Contact contact;
           contact.collisionObject1 = o1;
           contact.collisionObject2 = o2;
