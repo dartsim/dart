@@ -47,7 +47,6 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 
 #include <algorithm>
 #include <condition_variable>

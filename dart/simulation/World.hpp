@@ -63,10 +63,6 @@
 
 namespace dart {
 
-namespace integration {
-class Integrator;
-} // namespace integration
-
 namespace dynamics {
 class Skeleton;
 } // namespace dynamics
