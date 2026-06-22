@@ -52,6 +52,7 @@ const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
 const int default_push_duration = 1000; // # iterations
 const int default_playback_frame_step = 16;
+const double default_contact_force_scale = 0.1;
 
 const double default_endeffector_offset = 0.05;
 
@@ -236,6 +237,7 @@ public:
       mTotalAngle(0.0),
       mHasEverRun(false),
       mPlayingBack(false),
+      mShowContactForces(false),
       mPlayFrame(0),
       mForceCountDown(0),
       mPushCountDown(0)
@@ -250,6 +252,11 @@ public:
     if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
       if (ea.getKey() == 'p') {
         togglePlayback();
+        return true;
+      }
+
+      if (ea.getKey() == 'v') {
+        toggleContactForces();
         return true;
       }
 
@@ -319,6 +326,8 @@ public:
     for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
       mWorld->getSkeleton(i)->setPositions(recording->getConfig(mPlayFrame, i));
 
+    updateRecordedContactForces(mPlayFrame);
+
     mPlayFrame += default_playback_frame_step;
   }
 
@@ -347,6 +356,31 @@ public:
     } else {
       mController->setPDForces();
     }
+  }
+
+  void updateContactForces()
+  {
+    if (!mShowContactForces) {
+      hideContactForces();
+      return;
+    }
+
+    if (mPlayingBack)
+      return;
+
+    const auto& result
+        = mWorld->getConstraintSolver()->getLastCollisionResult();
+    const auto& contacts = result.getContacts();
+    ensureContactForceVisuals(contacts.size());
+
+    for (std::size_t i = 0; i < contacts.size(); ++i) {
+      setContactForceVisual(
+          i,
+          contacts[i].point,
+          default_contact_force_scale * contacts[i].force);
+    }
+
+    hideContactForces(contacts.size());
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
@@ -440,9 +474,98 @@ protected:
       mPlayFrame = 0;
   }
 
+  void toggleContactForces()
+  {
+    mShowContactForces = !mShowContactForces;
+
+    if (!mShowContactForces) {
+      hideContactForces();
+      std::cout << "Contact force visualization disabled." << std::endl;
+      return;
+    }
+
+    std::cout << "Contact force visualization enabled." << std::endl;
+
+    if (mPlayingBack) {
+      Recording* recording = mWorld->getRecording();
+      const int numFrames = recording->getNumFrames();
+      if (numFrames == 0) {
+        hideContactForces();
+        return;
+      }
+
+      if (mPlayFrame >= numFrames)
+        mPlayFrame = 0;
+
+      updateRecordedContactForces(mPlayFrame);
+      return;
+    }
+
+    updateContactForces();
+  }
+
   void stopPlayback()
   {
     mPlayingBack = false;
+  }
+
+  void updateRecordedContactForces(int frame)
+  {
+    if (!mShowContactForces)
+      return;
+
+    Recording* recording = mWorld->getRecording();
+    const int numContacts = recording->getNumContacts(frame);
+    ensureContactForceVisuals(static_cast<std::size_t>(numContacts));
+
+    for (int i = 0; i < numContacts; ++i) {
+      const Eigen::Vector3d point = recording->getContactPoint(frame, i);
+      const Eigen::Vector3d force
+          = default_contact_force_scale * recording->getContactForce(frame, i);
+      setContactForceVisual(static_cast<std::size_t>(i), point, force);
+    }
+
+    hideContactForces(static_cast<std::size_t>(numContacts));
+  }
+
+  void ensureContactForceVisuals(std::size_t count)
+  {
+    while (mContactForceFrames.size() < count) {
+      auto frame = std::make_shared<SimpleFrame>(Frame::World());
+      auto arrow = std::make_shared<ArrowShape>(
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::UnitZ() * 0.01,
+          ArrowShape::Properties(0.002, 2.0, 0.15),
+          Eigen::Vector4d(0.2, 0.2, 0.8, 1.0));
+
+      frame->setShape(arrow);
+      frame->getVisualAspect(true)->setHidden(true);
+      mWorld->addSimpleFrame(frame);
+
+      mContactForceFrames.push_back(frame);
+      mContactForceArrows.push_back(arrow);
+    }
+  }
+
+  void setContactForceVisual(
+      std::size_t index,
+      const Eigen::Vector3d& point,
+      const Eigen::Vector3d& force)
+  {
+    auto* visual = mContactForceFrames[index]->getVisualAspect(true);
+    if (force.norm() < 1e-8) {
+      visual->setHidden(true);
+      return;
+    }
+
+    visual->setHidden(false);
+    mContactForceArrows[index]->setPositions(point, point + force);
+  }
+
+  void hideContactForces(std::size_t start = 0)
+  {
+    for (std::size_t i = start; i < mContactForceFrames.size(); ++i)
+      mContactForceFrames[i]->getVisualAspect(true)->setHidden(true);
   }
 
   WorldPtr mWorld;
@@ -470,6 +593,9 @@ protected:
   /// Set to true when replaying recorded simulation frames
   bool mPlayingBack;
 
+  /// Set to true when contact force arrows are visible
+  bool mShowContactForces;
+
   /// Index of the recorded frame currently shown during replay
   int mPlayFrame;
 
@@ -480,6 +606,12 @@ protected:
   /// The manipulator will attempt to push on the first domino while the value
   /// of this is greater than zero
   int mPushCountDown;
+
+  /// World-owned frames used to display contact force arrows
+  std::vector<SimpleFramePtr> mContactForceFrames;
+
+  /// Arrow shapes attached to the contact force frames
+  std::vector<std::shared_ptr<ArrowShape>> mContactForceArrows;
 };
 
 class CustomWorldNode : public RealTimeWorldNode
@@ -503,6 +635,7 @@ public:
   void customPostStep() override
   {
     mHandler->bakeFrame();
+    mHandler->updateContactForces();
   }
 
 protected:
