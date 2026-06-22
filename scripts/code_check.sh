@@ -23,7 +23,6 @@ CHECK_FILES=`\
   -name "*.cpp"\
   -not -name "DARTCollide.cpp"\
   -not -name "BulletCollisionDetector.cpp"\
-  -not -name "lodepng.cpp"\
   -not -name "error.cpp"\
   -not -name "fastdot.cpp"\
   -not -name "fastldlt.cpp"\
@@ -37,7 +36,6 @@ CHECK_FILES=`\
   -or -name "*.h"\
   -not -name "tri_tri_intersection_test.h"\
   -not -name "Jitter.h"\
-  -not -name "lodepng.h"\
   -not -name "common.h"\
   -not -name "error.h"\
   -not -name "lcp.h"\
