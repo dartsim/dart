@@ -28,6 +28,7 @@ endif()
 add_subdirectory(rigid_shapes)
 add_subdirectory(sleeping)
 add_subdirectory(soft_bodies)
+add_subdirectory(ssik_ik_gui)
 add_subdirectory(tinkertoy)
 add_subdirectory(wam_ikfast)
 
