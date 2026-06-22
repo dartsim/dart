@@ -133,8 +133,10 @@ void CollisionResult::clear()
 //==============================================================================
 void CollisionResult::updateCollidingObjectCaches() const
 {
-  if (!mCollidingObjectCachesDirty)
+  if (!mCollidingObjectCachesDirty) {
+    mCollidingObjectCachesMaterialized = true;
     return;
+  }
 
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
@@ -146,6 +148,7 @@ void CollisionResult::updateCollidingObjectCaches() const
     mCollidingBodyNodes.insert(bodyNode);
 
   mCollidingObjectCachesDirty = false;
+  mCollidingObjectCachesMaterialized = true;
 }
 
 //==============================================================================
@@ -161,11 +164,16 @@ void CollisionResult::addObjectToCaches(CollisionObject* object)
 
   const dynamics::ShapeFrame* frame = object->getShapeFrame();
   mCollidingShapeFrameCandidates.push_back(frame);
+  if (mCollidingObjectCachesMaterialized)
+    mCollidingShapeFrames.insert(frame);
 
-  if (const auto* bodyNode = object->getBodyNode())
+  if (const auto* bodyNode = object->getBodyNode()) {
     mCollidingBodyNodeCandidates.push_back(bodyNode);
+    if (mCollidingObjectCachesMaterialized)
+      mCollidingBodyNodes.insert(bodyNode);
+  }
 
-  mCollidingObjectCachesDirty = true;
+  mCollidingObjectCachesDirty = !mCollidingObjectCachesMaterialized;
 }
 
 } // namespace collision

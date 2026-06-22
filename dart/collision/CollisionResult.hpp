@@ -113,6 +113,10 @@ protected:
   /// Whether the unordered lookup sets need to be rebuilt from the eagerly
   /// captured candidate vectors.
   mutable bool mCollidingObjectCachesDirty = false;
+
+  /// Whether the unordered lookup sets have been exposed to callers. Once a
+  /// caller can hold a reference to them, future mutations keep them current.
+  mutable bool mCollidingObjectCachesMaterialized = false;
 };
 
 } // namespace collision

@@ -2524,6 +2524,67 @@ TEST_F(Collision, CollisionResultCachesCollidingFramesEagerly)
 }
 
 //==============================================================================
+TEST_F(Collision, CollisionResultKeepsMaterializedCollidingSetsCurrent)
+{
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("result_set_a");
+  auto skelB = Skeleton::create("result_set_b");
+  auto skelC = Skeleton::create("result_set_c");
+  auto skelD = Skeleton::create("result_set_d");
+
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+  auto pairC = skelC->createJointAndBodyNodePair<FreeJoint>();
+  auto pairD = skelD->createJointAndBodyNodePair<FreeJoint>();
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* nodeA = pairA.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeB = pairB.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeC = pairC.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeD = pairD.second->createShapeNodeWith<CollisionAspect>(box);
+
+  TestCollisionObject objectA(detector.get(), nodeA);
+  TestCollisionObject objectB(detector.get(), nodeB);
+  TestCollisionObject objectC(detector.get(), nodeC);
+  TestCollisionObject objectD(detector.get(), nodeD);
+
+  CollisionResult result;
+  const auto& frames = result.getCollidingShapeFrames();
+  const auto& bodies = result.getCollidingBodyNodes();
+  EXPECT_TRUE(frames.empty());
+  EXPECT_TRUE(bodies.empty());
+
+  Contact contactAB;
+  contactAB.collisionObject1 = &objectA;
+  contactAB.collisionObject2 = &objectB;
+  result.addContact(contactAB);
+
+  EXPECT_TRUE(frames.count(nodeA));
+  EXPECT_TRUE(frames.count(nodeB));
+  EXPECT_TRUE(bodies.count(pairA.second));
+  EXPECT_TRUE(bodies.count(pairB.second));
+
+  result.clear();
+  EXPECT_TRUE(frames.empty());
+  EXPECT_TRUE(bodies.empty());
+
+  Contact contactCD;
+  contactCD.collisionObject1 = &objectC;
+  contactCD.collisionObject2 = &objectD;
+  result.addContact(contactCD);
+
+  EXPECT_FALSE(frames.count(nodeA));
+  EXPECT_FALSE(frames.count(nodeB));
+  EXPECT_TRUE(frames.count(nodeC));
+  EXPECT_TRUE(frames.count(nodeD));
+  EXPECT_FALSE(bodies.count(pairA.second));
+  EXPECT_FALSE(bodies.count(pairB.second));
+  EXPECT_TRUE(bodies.count(pairC.second));
+  EXPECT_TRUE(bodies.count(pairD.second));
+}
+
+//==============================================================================
 TEST_F(Collision, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
