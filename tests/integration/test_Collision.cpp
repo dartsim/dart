@@ -1787,6 +1787,23 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
     EXPECT_NEAR(contact.penetrationDepth, expectedDepth, 1e-12);
   };
 
+  auto expectPositiveContact = [&](const std::shared_ptr<SimpleFrame>& first,
+                                   const std::shared_ptr<SimpleFrame>& second) {
+    auto firstGroup = cd->createCollisionGroup(first.get());
+    auto secondGroup = cd->createCollisionGroup(second.get());
+
+    CollisionResult result;
+    ASSERT_TRUE(firstGroup->collide(secondGroup.get(), option, &result));
+    ASSERT_GE(result.getNumContacts(), 1u);
+
+    const auto& contact = result.getContact(0);
+    EXPECT_EQ(contact.collisionObject1->getShapeFrame(), first.get());
+    EXPECT_EQ(contact.collisionObject2->getShapeFrame(), second.get());
+    EXPECT_TRUE(contact.point.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+  };
+
   expectContact(capsuleFrame, sphereFrame, -Eigen::Vector3d::UnitX(), 0.05);
   expectContact(sphereFrame, capsuleFrame, Eigen::Vector3d::UnitX(), 0.05);
   expectContact(capsuleFrame, boxFrame, -Eigen::Vector3d::UnitX(), 0.05);
@@ -1806,6 +1823,19 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
   capsuleFrame->setTransform(horizontalCapsuleTf);
   sphereFrame->setTranslation(Eigen::Vector3d(0.95, 0.0, 0.0));
   expectContact(capsuleFrame, sphereFrame, -Eigen::Vector3d::UnitX(), 0.05);
+
+  capsuleFrame->setShape(std::make_shared<CapsuleShape>(0.1, 0.2));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  capsuleFrame->setTransform(Eigen::Isometry3d::Identity());
+  cylinderFrame->setTransform(Eigen::Isometry3d::Identity());
+  expectPositiveContact(capsuleFrame, cylinderFrame);
+  expectPositiveContact(cylinderFrame, capsuleFrame);
+
+  capsuleFrame->setShape(std::make_shared<CapsuleShape>(0.1, 2.0));
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.25, 1.0));
+  capsuleFrame->setTransform(horizontalCapsuleTf);
+  expectContact(capsuleFrame, cylinderFrame, Eigen::Vector3d::UnitY(), 0.35);
+  expectContact(cylinderFrame, capsuleFrame, -Eigen::Vector3d::UnitY(), 0.35);
 }
 
 //==============================================================================

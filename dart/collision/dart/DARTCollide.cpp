@@ -2525,82 +2525,122 @@ int collideCylinderCapsuleImpl(
   const Eigen::Vector3d capBotLocal = cylInv * capBot;
 
   double bestPenetration = -std::numeric_limits<double>::max();
-  Eigen::Vector3d bestCylPoint = Eigen::Vector3d::Zero();
-  Eigen::Vector3d bestCapPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestContactPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestNormal = Eigen::Vector3d::Zero();
   bool foundCollision = false;
 
-  auto checkCapsuleEndpoint = [&](const Eigen::Vector3d& capEndLocal) {
-    const double lateralDistSq
-        = capEndLocal.x() * capEndLocal.x() + capEndLocal.y() * capEndLocal.y();
-    const double lateralDist = std::sqrt(lateralDistSq);
+  auto recordCandidate = [&](const Eigen::Vector3d& point,
+                             const Eigen::Vector3d& normal,
+                             double penetration) {
+    if (penetration < 0.0 || penetration <= bestPenetration)
+      return;
 
-    Eigen::Vector3d closestOnCyl;
-    if (std::abs(capEndLocal.z()) <= cylHalfHeight) {
-      if (lateralDist <= cylRadius) {
-        const double lateralPen = cylRadius - lateralDist;
-        const double axialPen = cylHalfHeight - std::abs(capEndLocal.z());
-        if (lateralPen < axialPen && lateralDist > 1e-10) {
-          closestOnCyl = Eigen::Vector3d(
-              capEndLocal.x() * cylRadius / lateralDist,
-              capEndLocal.y() * cylRadius / lateralDist,
-              capEndLocal.z());
-        } else {
-          const double cappedZ
-              = capEndLocal.z() > 0.0 ? cylHalfHeight : -cylHalfHeight;
-          closestOnCyl
-              = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
-        }
+    bestPenetration = penetration;
+    bestContactPoint = point;
+    bestNormal = normal;
+    foundCollision = true;
+  };
+
+  auto checkCapsuleEndpoint = [&](const Eigen::Vector3d& center) {
+    const double radialDist
+        = std::sqrt(center.x() * center.x() + center.y() * center.y());
+    const Eigen::Vector3d radialDir
+        = getCylinderRadialDirection(center, radialDist);
+    const double sidePenetration = cylRadius + capRadius - radialDist;
+    const double absZ = std::abs(center.z());
+
+    if (radialDist <= cylRadius && absZ <= cylHalfHeight + capRadius) {
+      const double capSign = center.z() >= 0.0 ? 1.0 : -1.0;
+      const double capPenetration
+          = cylHalfHeight + capRadius - capSign * center.z();
+
+      if (absZ <= cylHalfHeight && sidePenetration <= capPenetration) {
+        Eigen::Vector3d point = radialDir * (cylRadius - 0.5 * sidePenetration);
+        point.z() = center.z();
+        recordCandidate(point, -radialDir, sidePenetration);
       } else {
-        closestOnCyl = Eigen::Vector3d(
-            capEndLocal.x() * cylRadius / lateralDist,
-            capEndLocal.y() * cylRadius / lateralDist,
-            capEndLocal.z());
+        const Eigen::Vector3d normal(0.0, 0.0, -capSign);
+        const Eigen::Vector3d point(
+            center.x(),
+            center.y(),
+            capSign * (cylHalfHeight - 0.5 * capPenetration));
+        recordCandidate(point, normal, capPenetration);
       }
+    } else if (sidePenetration >= 0.0) {
+      if (absZ > cylHalfHeight) {
+        Eigen::Vector3d point = radialDir * cylRadius;
+        point.z() = math::sign(center.z()) * cylHalfHeight;
+
+        const Eigen::Vector3d normal = point - center;
+        const double edgePenetration = capRadius - normal.norm();
+        recordCandidate(point, normal, edgePenetration);
+      } else {
+        Eigen::Vector3d point = radialDir * (cylRadius - 0.5 * sidePenetration);
+        point.z() = center.z();
+        recordCandidate(point, -radialDir, sidePenetration);
+      }
+    }
+  };
+
+  auto checkCapsuleSegment = [&]() {
+    const Eigen::Vector3d axisBottom(0.0, 0.0, -cylHalfHeight);
+    const Eigen::Vector3d axisTop(0.0, 0.0, cylHalfHeight);
+    const auto closest = closestPointsBetweenSegments(
+        capBotLocal, capTopLocal, axisBottom, axisTop);
+
+    if (std::abs(closest.point1.z()) > cylHalfHeight)
+      return;
+
+    Eigen::Vector3d radial = closest.point1 - closest.point2;
+    radial.z() = 0.0;
+    double radialDist = radial.norm();
+    if (radialDist > cylRadius + capRadius)
+      return;
+
+    const double closestRadialDist = radialDist;
+    if (radialDist < 1e-10) {
+      const Eigen::Vector3d segment = capTopLocal - capBotLocal;
+      radial = Eigen::Vector3d::UnitZ().cross(segment);
+      radial.z() = 0.0;
+      radialDist = radial.norm();
+      if (radialDist < 1e-10)
+        radial = Eigen::Vector3d::UnitX();
+      else
+        radial /= radialDist;
     } else {
-      const double cappedZ
-          = std::clamp(capEndLocal.z(), -cylHalfHeight, cylHalfHeight);
-      if (lateralDist <= cylRadius) {
-        closestOnCyl
-            = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
-      } else {
-        closestOnCyl = Eigen::Vector3d(
-            capEndLocal.x() * cylRadius / lateralDist,
-            capEndLocal.y() * cylRadius / lateralDist,
-            cappedZ);
-      }
+      radial /= radialDist;
     }
 
-    const double dist = (capEndLocal - closestOnCyl).norm();
-    const double penetration = capRadius - dist;
-    if (penetration > 0.0 && penetration > bestPenetration) {
-      bestPenetration = penetration;
-      bestCylPoint = closestOnCyl;
-      bestCapPoint = capEndLocal;
-      foundCollision = true;
-    }
+    const double penetration = cylRadius + capRadius - closestRadialDist;
+    Eigen::Vector3d point = radial * (cylRadius - 0.5 * penetration);
+    point.z() = std::clamp(closest.point1.z(), -cylHalfHeight, cylHalfHeight);
+    recordCandidate(point, -radial, penetration);
   };
 
   checkCapsuleEndpoint(capTopLocal);
   checkCapsuleEndpoint(capBotLocal);
+  checkCapsuleSegment();
 
   if (!foundCollision)
     return 0;
 
-  Eigen::Vector3d normalLocal = bestCapPoint - bestCylPoint;
-  if (normalLocal.squaredNorm() < 1e-10)
-    normalLocal = Eigen::Vector3d::UnitZ();
-  else
-    normalLocal.normalize();
+  if (bestNormal.squaredNorm() < 1e-10) {
+    bestNormal = Eigen::Vector3d::UnitZ();
+  } else {
+    bestNormal.normalize();
+  }
 
-  const Eigen::Vector3d normalWorld = cylinderTransform.linear() * normalLocal;
-  const Eigen::Vector3d contactWorld = cylinderTransform * bestCylPoint
-                                       + normalWorld * (bestPenetration * 0.5);
-
-  Eigen::Vector3d contactNormal = -normalWorld;
+  Eigen::Vector3d contactNormal = cylinderTransform.linear() * bestNormal;
   if (flipNormal)
     contactNormal = -contactNormal;
 
-  addDartContact(o1, o2, contactWorld, contactNormal, bestPenetration, result);
+  addDartContact(
+      o1,
+      o2,
+      cylinderTransform * bestContactPoint,
+      contactNormal,
+      bestPenetration,
+      result);
   return 1;
 }
 
