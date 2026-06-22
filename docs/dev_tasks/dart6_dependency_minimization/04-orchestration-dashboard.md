@@ -55,8 +55,8 @@
 | PR | Lane | Title | Health |
 | --- | --- | --- | --- |
 | **#3123** | **native-collision-port** | Speed up DART primitive plane collision | **first native-collision PR** — dependency-free primitive plane contacts + finite-shape broadphase pruning (branch `perf/dart6-native-collision`). `MERGEABLE`, CI pending. Milestone 6.20.0. _Verify vs `03` gz-compat/parity/perf bar._ |
-| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ✅ conflict **resolved** (GLUT-example deletion accepted) — now `MERGEABLE`, **1 behind**, CI pending. Milestone 6.20.0 |
-| **#3118** | perf | Inverse-dynamics profiling driver | mergeable, **1 behind**, CI pending |
+| **#3122** | code-footprint | Remove legacy `dart/integration` module (dead code + installed headers) | ✅ conflict **resolved** (GLUT-example deletion accepted) — `MERGEABLE`, CI pending. Milestone 6.20.0 |
+| **#3118** | perf | Inverse-dynamics profiling driver | `MERGEABLE`, CI pending |
 
 _(This board itself is PR #3121 — intentionally **not** listed above, so the
 committed copy is not permanently stale once it merges. #3092 "ssik analytical IK",
@@ -69,10 +69,11 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
 
 ## Coordination flags / blockers
 
-1. **Base / conflict status** (base now `9b0c68a5a82`, after #3116 + #3120 merged):
-   - **#3122** — `modify/delete` conflict **resolved** (the GLUT-example deletion
-     was accepted, as diagnosed); now `MERGEABLE`, 1 behind → simple merge-up.
-   - **#3118** — 1 behind; simple merge-up.
+1. **Base / conflict status** (base `9b0c68a5a82`+, advancing as PRs merge):
+   - **No real conflicts open.** (#3122's earlier `modify/delete` on the deleted
+     GLUT example was resolved by accepting the deletion, as diagnosed.)
+   - Open PRs routinely fall ~1 behind as the base advances; a maintainer merge-up
+     clears it. Exact behind-counts aren't tracked here (too volatile).
    - All owned by the maintainer.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
@@ -82,9 +83,12 @@ a non-dep-min feature, merged 2026-06-22 00:04 and is no longer tracked.)_
      is now MERGED** (2026-06-22), so coverage CI should improve on subsequent
      runs. Watch the next coverage results to confirm.
    - **`Debug` / `API Documentation` show flaky failures** on some runs while
-     **passing** on sibling PRs with the same base — re-trigger to clear; not a
-     base regression. (Coverage logs also show benign `Cannot generate a safe
-     runtime search path` RPATH warnings across pre-existing targets.)
+     **passing** on sibling PRs with the same base — i.e. not a base regression.
+     A CI re-run would confirm/clear them, but **rerunning CI needs explicit
+     maintainer approval** (`docs/onboarding/ai-tools.md` Approval Boundaries), so
+     this lane only flags it rather than acting. (Coverage logs also show benign
+     `Cannot generate a safe runtime search path` RPATH warnings across
+     pre-existing targets.)
 4. **Native-collision lane: first PR is open (#3123)** — "dependency-free primitive
    plane contacts + finite-shape broadphase pruning". The largest dependency lever
    is now in flight; hold it (and follow-ups) to `03`'s gz-compat / parity / perf
