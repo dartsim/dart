@@ -90,9 +90,13 @@ _(#3092 "ssik analytical IK" — a non-dep-min feature — merged 2026-06-22 00:
 
 ## How this board is maintained
 
-- Refresh on each orchestration pass: `gh pr list` (open + recently merged),
-  per-PR `mergeable`/`mergeStateStatus`/checks, and `git ls-remote` for new
-  lane branches.
+- Refresh on each orchestration pass (note: `gh pr list` defaults to
+  `--state open`, so query merged **explicitly** — otherwise PRs that merged
+  since the last pass are missed and the merged/no-longer-tracked sections go
+  stale):
+  - `gh pr list --state open` **and** `gh pr list --state merged --base release-6.20`,
+  - per-PR `mergeable`/`mergeStateStatus`/checks,
+  - `git ls-remote --heads origin` for new lane branches.
 - Flag: PRs gone red, PRs fallen behind `release-6.20`, new PRs from any lane,
   shared-file collisions, and the native-collision PR when it appears.
 - This lane does **not** execute other lanes' code — it tracks, flags, and
