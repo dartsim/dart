@@ -80,7 +80,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The C++ build plus the CodeQL database fills the ~14 GB free on the
       # default ubuntu-latest image (CodeQL DB creation fails with

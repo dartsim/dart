@@ -52,7 +52,7 @@ jobs:
       matrix:
         base: ${{ fromJSON(needs.discover-base-branches.outputs.bases) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ matrix.base }}
       - name: Setup pixi (CI)
