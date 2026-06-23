@@ -538,18 +538,28 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
   // Fix mimic joint references
   for (std::size_t i = 0; i < getNumJoints(); ++i) {
     Joint* joint = skelClone->getJoint(i);
-    if (joint->getActuatorType() == Joint::MIMIC) {
-      const Joint* mimicJoint
-          = skelClone->getJoint(joint->getMimicJoint()->getName());
-      if (mimicJoint) {
-        joint->setMimicJoint(
-            mimicJoint, joint->getMimicMultiplier(), joint->getMimicOffset());
-      } else {
+    const auto& mimicProps = joint->getMimicDofProperties();
+    const std::size_t dofCount
+        = std::min(joint->getNumDofs(), mimicProps.size());
+    for (std::size_t dofIndex = 0; dofIndex < dofCount; ++dofIndex) {
+      const auto* sourceJoint = mimicProps[dofIndex].mReferenceJoint;
+      if (sourceJoint == nullptr
+          || joint->getActuatorType(dofIndex) != Joint::MIMIC)
+        continue;
+
+      const Joint* clonedReference
+          = skelClone->getJoint(sourceJoint->getName());
+      if (clonedReference == nullptr) {
         dterr << "[Skeleton::clone] Failed to clone mimic joint successfully: "
-              << "Unable to find the mimic joint ["
-              << joint->getMimicJoint()->getName()
-              << "] in the cloned Skeleton. Please report this as a bug!\n";
+              << "Unable to find the mimic joint [" << sourceJoint->getName()
+              << "] for DoF " << dofIndex
+              << " in the cloned Skeleton. Please report this as a bug!\n";
+        continue;
       }
+
+      auto updatedProp = mimicProps[dofIndex];
+      updatedProp.mReferenceJoint = clonedReference;
+      joint->setMimicJointDof(dofIndex, updatedProp);
     }
   }
 

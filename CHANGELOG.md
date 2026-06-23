@@ -127,6 +127,15 @@
 
 * Dynamics
 
+  * Add an opt-in per-DoF actuator type API to `Joint`
+    (`setActuatorType(index, type)`, `setActuatorTypes(vector)`,
+    `getActuatorType(index)`, `getActuatorTypes()`, `hasActuatorType()`) so
+    individual DoFs of a multi-DoF joint can be set to `MIMIC` while the rest
+    keep the joint-wide type. The existing joint-wide
+    `setActuatorType(ActuatorType)` / `getActuatorType()` API and its default
+    behavior are unchanged:
+    [#2222](https://github.com/dartsim/dart/pull/2222)
+
   * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
     the legacy Assimp `aiScene` APIs available as deprecated DART 6
     compatibility shims, and route mesh collision backends through the new
