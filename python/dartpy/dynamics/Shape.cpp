@@ -33,6 +33,8 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+#include <dart/common/Deprecated.hpp>
+
 #include <dart/dart.hpp>
 
 #include <pybind11/pybind11.h>
@@ -42,6 +44,8 @@ namespace py = pybind11;
 
 namespace dart {
 namespace python {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 void Shape(py::module& m)
 {
@@ -1275,3 +1279,5 @@ void Shape(py::module& m)
 
 } // namespace python
 } // namespace dart
+
+DART_SUPPRESS_DEPRECATED_END

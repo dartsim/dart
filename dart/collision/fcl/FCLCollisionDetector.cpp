@@ -54,6 +54,7 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
+#include "dart/math/TriMesh.hpp"
 
 #include <assimp/scene.h>
 
@@ -628,6 +629,33 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
+::fcl::BVHModel<BV>* createMesh(
+    float _scaleX,
+    float _scaleY,
+    float _scaleZ,
+    const math::TriMesh<double>* _mesh)
+{
+  DART_ASSERT(_mesh);
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+  model->beginModel();
+
+  const auto& vertices = _mesh->getVertices();
+  for (const auto& triangle : _mesh->getTriangles()) {
+    fcl::Vector3 fclVertices[3];
+    for (std::size_t i = 0; i < 3; ++i) {
+      const Eigen::Vector3d& vertex = vertices[triangle[i]];
+      fclVertices[i] = fcl::Vector3(
+          vertex.x() * _scaleX, vertex.y() * _scaleY, vertex.z() * _scaleZ);
+    }
+    model->addTriangle(fclVertices[0], fclVertices[1], fclVertices[2]);
+  }
+
+  model->endModel();
+  return model;
+}
+
+//==============================================================================
+template <class BV>
 ::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 {
   // Create FCL mesh from Assimp mesh
@@ -1097,9 +1125,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     auto shapeMesh = static_cast<const MeshShape*>(shape.get());
     const Eigen::Vector3d& scale = shapeMesh->getScale();
-    auto aiScene = shapeMesh->getMesh();
+    auto triMesh = shapeMesh->getTriMesh();
 
-    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], triMesh.get());
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape.get()));
 

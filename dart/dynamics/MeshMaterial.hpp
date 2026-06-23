@@ -30,66 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
+#define DART_DYNAMICS_MESHMATERIAL_HPP_
 
-#include <dart/collision/ode/detail/OdeGeom.hpp>
+#include <Eigen/Core>
 
-#include <dart/math/TriMesh.hpp>
-
-#include <assimp/scene.h>
-#include <ode/ode.h>
+#include <string>
+#include <vector>
 
 namespace dart {
-namespace collision {
-namespace detail {
+namespace dynamics {
 
-class OdeMesh : public OdeGeom
+/// Simple material representation for mesh rendering.
+struct MeshMaterial
 {
-public:
-  /// Constructor
-  OdeMesh(
-      const OdeCollisionObject* parent,
-      const aiScene* scene,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+  Eigen::Vector4f ambient{0.2f, 0.2f, 0.2f, 1.0f};
+  Eigen::Vector4f diffuse{0.8f, 0.8f, 0.8f, 1.0f};
+  Eigen::Vector4f specular{0.0f, 0.0f, 0.0f, 1.0f};
+  Eigen::Vector4f emissive{0.0f, 0.0f, 0.0f, 1.0f};
 
-  /// Constructor
-  OdeMesh(
-      const OdeCollisionObject* parent,
-      const math::TriMesh<double>* mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-
-  /// Destructor
-  virtual ~OdeMesh();
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-private:
-  void fillArrays(
-      const aiScene* scene,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-
-  void fillArrays(
-      const math::TriMesh<double>* mesh,
-      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
-
-private:
-  /// Array of vertex values.
-  std::vector<double> mVertices;
-
-  /// Array of normals values.
-  std::vector<double> mNormals;
-
-  /// Array of index values.
-  std::vector<int> mIndices;
-
-  /// ODE trimesh data.
-  dTriMeshDataID mOdeTriMeshDataId;
+  float shininess{0.0f};
+  std::vector<std::string> textureImagePaths;
 };
 
-} // namespace detail
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

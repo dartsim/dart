@@ -107,6 +107,12 @@
 
 * Dynamics
 
+  * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
+    the legacy Assimp `aiScene` APIs available as deprecated DART 6
+    compatibility shims, and route mesh collision backends through the new
+    representation:
+    [#3145](https://github.com/dartsim/dart/pull/3145)
+
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
     joint instead of self-copying, add the missing aligned allocation hook for
