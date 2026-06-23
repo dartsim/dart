@@ -3799,6 +3799,190 @@ int collide(
 }
 
 //==============================================================================
+int collidePlaneShape(
+    DARTCollisionObject* planeObject,
+    DARTCollisionObject* otherObject,
+    const Eigen::Isometry3d& planeTransform,
+    const Eigen::Isometry3d& otherTransform,
+    bool planeFirst,
+    CollisionResult& result)
+{
+  const auto* cachedPlaneShape = planeObject->getCachedShape();
+  const auto* otherShape = otherObject->getCachedShape();
+  if (cachedPlaneShape == nullptr || otherShape == nullptr) {
+    return planeFirst ? collide(planeObject, otherObject, result)
+                      : collide(otherObject, planeObject, result);
+  }
+
+  const auto& planeType = dynamics::PlaneShape::getStaticType();
+  if (planeObject->getCachedShapeType() != planeType) {
+    return planeFirst ? collide(planeObject, otherObject, result)
+                      : collide(otherObject, planeObject, result);
+  }
+  const auto* planeShape
+      = static_cast<const dynamics::PlaneShape*>(cachedPlaneShape);
+
+  const auto& otherType = otherObject->getCachedShapeType();
+  const auto& planeNormal = planeShape->getNormal();
+  const auto planeOffset = planeShape->getOffset();
+
+  if (otherType == dynamics::SphereShape::getStaticType()) {
+    const auto* sphere = static_cast<const dynamics::SphereShape*>(otherShape);
+    if (planeFirst) {
+      return collidePlaneSphere(
+          planeObject,
+          otherObject,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          sphere->getRadius(),
+          otherTransform,
+          result);
+    }
+
+    return collideSpherePlane(
+        otherObject,
+        planeObject,
+        sphere->getRadius(),
+        otherTransform,
+        planeNormal,
+        planeOffset,
+        planeTransform,
+        result);
+  }
+
+  if (otherType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto* ellipsoid
+        = static_cast<const dynamics::EllipsoidShape*>(otherShape);
+    if (ellipsoid->isSphere()) {
+      if (planeFirst) {
+        return collidePlaneSphere(
+            planeObject,
+            otherObject,
+            planeNormal,
+            planeOffset,
+            planeTransform,
+            ellipsoid->getRadii()[0],
+            otherTransform,
+            result);
+      }
+
+      return collideSpherePlane(
+          otherObject,
+          planeObject,
+          ellipsoid->getRadii()[0],
+          otherTransform,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          result);
+    }
+  }
+
+  if (otherType == dynamics::BoxShape::getStaticType()) {
+    const auto* box = static_cast<const dynamics::BoxShape*>(otherShape);
+    if (planeFirst) {
+      return collidePlaneBox(
+          planeObject,
+          otherObject,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          box->getSize(),
+          otherTransform,
+          result);
+    }
+
+    return collideBoxPlane(
+        otherObject,
+        planeObject,
+        box->getSize(),
+        otherTransform,
+        planeNormal,
+        planeOffset,
+        planeTransform,
+        result);
+  }
+
+  if (otherType == dynamics::CylinderShape::getStaticType()) {
+    const auto* cylinder
+        = static_cast<const dynamics::CylinderShape*>(otherShape);
+    if (planeFirst) {
+      return collidePlaneCylinder(
+          planeObject,
+          otherObject,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          cylinder->getRadius(),
+          0.5 * cylinder->getHeight(),
+          otherTransform,
+          result);
+    }
+
+    return collideCylinderPlane(
+        otherObject,
+        planeObject,
+        cylinder->getRadius(),
+        0.5 * cylinder->getHeight(),
+        otherTransform,
+        planeNormal,
+        planeOffset,
+        planeTransform,
+        result);
+  }
+
+  if (otherType == dynamics::CapsuleShape::getStaticType()) {
+    const auto* capsule
+        = static_cast<const dynamics::CapsuleShape*>(otherShape);
+    if (planeFirst) {
+      return collidePlaneCapsule(
+          planeObject,
+          otherObject,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          capsule->getRadius(),
+          0.5 * capsule->getHeight(),
+          otherTransform,
+          result);
+    }
+
+    return collideCapsulePlane(
+        otherObject,
+        planeObject,
+        capsule->getRadius(),
+        0.5 * capsule->getHeight(),
+        otherTransform,
+        planeNormal,
+        planeOffset,
+        planeTransform,
+        result);
+  }
+
+  return planeFirst ? collide(planeObject, otherObject, result)
+                    : collide(otherObject, planeObject, result);
+}
+
+//==============================================================================
+int collidePlaneShape(
+    DARTCollisionObject* planeObject,
+    DARTCollisionObject* otherObject,
+    bool planeFirst,
+    CollisionResult& result)
+{
+  const auto& planeTransform = planeObject->getTransform();
+  const auto& otherTransform = otherObject->getTransform();
+  return collidePlaneShape(
+      planeObject,
+      otherObject,
+      planeTransform,
+      otherTransform,
+      planeFirst,
+      result);
+}
+
+//==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
   const auto shape1 = o1->getShape();

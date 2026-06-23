@@ -148,6 +148,17 @@ bool canUseParallelBuiltInBoxedSolvers(const ConstraintSolver& solver)
 }
 
 //==============================================================================
+void configureDARTCollisionThreads(
+    const collision::CollisionDetectorPtr& collisionDetector,
+    std::size_t numThreads)
+{
+  auto* dartCollisionDetector = dynamic_cast<collision::DARTCollisionDetector*>(
+      collisionDetector.get());
+  if (dartCollisionDetector != nullptr)
+    dartCollisionDetector->setNumCollisionThreads(numThreads);
+}
+
+//==============================================================================
 class ConstraintThreadPool
 {
 public:
@@ -535,6 +546,7 @@ void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
   }
 
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
+  configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
   if (mNumSimulationThreads <= 1u) {
     mConstraintThreadPool.reset();
     return;
@@ -574,6 +586,7 @@ void ConstraintSolver::setCollisionDetector(
     return;
 
   mCollisionDetector = collisionDetector;
+  configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 

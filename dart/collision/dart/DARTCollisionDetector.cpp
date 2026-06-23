@@ -46,7 +46,13 @@
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <algorithm>
+#include <condition_variable>
 #include <limits>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -55,11 +61,187 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
+class CollisionThreadPool
+{
+public:
+  CollisionThreadPool() = default;
+
+  ~CollisionThreadPool()
+  {
+    setWorkerCount(0u);
+  }
+
+  void setWorkerCount(std::size_t workerCount)
+  {
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
+
+    if (workerCount == mWorkers.size())
+      return;
+
+    stopWorkers();
+    if (workerCount == 0u)
+      return;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = false;
+    }
+
+    mWorkers.reserve(workerCount);
+    for (std::size_t i = 0; i < workerCount; ++i)
+      mWorkers.emplace_back([this] { workerLoop(); });
+  }
+
+  template <typename Func>
+  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  {
+    if (count == 0u)
+      return;
+
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
+
+    const std::size_t totalParticipants = std::min<std::size_t>(
+        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
+    if (totalParticipants <= 1u) {
+      for (std::size_t i = 0; i < count; ++i)
+        func(i);
+      return;
+    }
+
+    const std::size_t chunkSize
+        = (count + totalParticipants - 1u) / totalParticipants;
+    const std::size_t workerCount = totalParticipants - 1u;
+    using Function = typename std::remove_reference<Func>::type;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mTaskActive = true;
+      mTaskCallable = static_cast<void*>(std::addressof(func));
+      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
+        auto& task = *static_cast<Function*>(callable);
+        for (std::size_t i = begin; i < end; ++i)
+          task(i);
+      };
+      mTaskCount = count;
+      mTaskChunkSize = chunkSize;
+      mWorkerLimit = totalParticipants;
+      mNextWorkerIndex = 1u;
+      mActiveWorkerCount = workerCount;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
+    for (std::size_t i = 0; i < mainEnd; ++i)
+      func(i);
+
+    {
+      std::unique_lock<std::mutex> lock(mMutex);
+      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
+      mTaskActive = false;
+      mTaskCallable = nullptr;
+      mTaskInvoker = nullptr;
+      mWorkerLimit = 1u;
+    }
+  }
+
+private:
+  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
+
+  void stopWorkers()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = true;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    for (auto& worker : mWorkers) {
+      if (worker.joinable())
+        worker.join();
+    }
+    mWorkers.clear();
+
+    std::lock_guard<std::mutex> lock(mMutex);
+    mStop = false;
+    mTaskActive = false;
+    mTaskCallable = nullptr;
+    mTaskInvoker = nullptr;
+    mActiveWorkerCount = 0u;
+    mWorkerLimit = 1u;
+    mNextWorkerIndex = 1u;
+  }
+
+  void workerLoop()
+  {
+    std::size_t observedGeneration = 0u;
+
+    while (true) {
+      void* callable = nullptr;
+      TaskInvoker invoker = nullptr;
+      std::size_t begin = 0u;
+      std::size_t end = 0u;
+
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mTaskCv.wait(lock, [&] {
+          return mStop || observedGeneration != mTaskGeneration;
+        });
+
+        if (mStop)
+          return;
+
+        observedGeneration = mTaskGeneration;
+        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
+          continue;
+
+        const std::size_t workerIndex = mNextWorkerIndex++;
+        begin = workerIndex * mTaskChunkSize;
+        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
+        callable = mTaskCallable;
+        invoker = mTaskInvoker;
+      }
+
+      if (begin < end)
+        invoker(callable, begin, end);
+
+      {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mActiveWorkerCount > 0u)
+          --mActiveWorkerCount;
+        if (mActiveWorkerCount == 0u)
+          mDoneCv.notify_one();
+      }
+    }
+  }
+
+  std::vector<std::thread> mWorkers;
+  std::mutex mSubmitMutex;
+  std::mutex mMutex;
+  std::condition_variable mTaskCv;
+  std::condition_variable mDoneCv;
+  bool mStop = false;
+  bool mTaskActive = false;
+  std::size_t mTaskGeneration = 0u;
+  std::size_t mTaskCount = 0u;
+  std::size_t mTaskChunkSize = 0u;
+  std::size_t mWorkerLimit = 1u;
+  std::size_t mNextWorkerIndex = 1u;
+  std::size_t mActiveWorkerCount = 0u;
+  void* mTaskCallable = nullptr;
+  TaskInvoker mTaskInvoker = nullptr;
+};
+
 namespace {
 
 struct BroadphaseEntry
 {
   CollisionObject* object{nullptr};
+  Eigen::Isometry3d transform{Eigen::Isometry3d::Identity()};
   Eigen::Vector3d min{Eigen::Vector3d::Zero()};
   Eigen::Vector3d max{Eigen::Vector3d::Zero()};
   bool finite{false};
@@ -120,10 +302,14 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  std::vector<std::size_t> parallelPairIndices;
+  std::vector<CollisionResult> parallelPairResults;
+  std::vector<char> parallelPairCollisions;
   CollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
   void clear();
+  void prepareParallelPairResults(std::size_t pairCount);
 };
 
 BroadphaseScratch& getBroadphaseScratch();
@@ -176,7 +362,9 @@ bool processFinitePlanePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult,
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads,
     bool planeFirst = true);
 
 bool processPlanePlanePairs(
@@ -228,10 +416,15 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
+DARTCollisionDetector::~DARTCollisionDetector() = default;
+
+//==============================================================================
 std::shared_ptr<CollisionDetector>
 DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return DARTCollisionDetector::create();
+  auto clone = DARTCollisionDetector::create();
+  clone->setNumCollisionThreads(mNumCollisionThreads);
+  return clone;
 }
 
 //==============================================================================
@@ -245,6 +438,32 @@ const std::string& DARTCollisionDetector::getStaticType()
 {
   static const std::string type = "dart";
   return type;
+}
+
+//==============================================================================
+void DARTCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
+{
+  if (numThreads == 0u) {
+    numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0u)
+      numThreads = 1u;
+  }
+
+  mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);
+  if (mNumCollisionThreads <= 1u) {
+    mCollisionThreadPool.reset();
+    return;
+  }
+
+  if (!mCollisionThreadPool)
+    mCollisionThreadPool = std::make_unique<CollisionThreadPool>();
+  mCollisionThreadPool->setWorkerCount(mNumCollisionThreads - 1u);
+}
+
+//==============================================================================
+std::size_t DARTCollisionDetector::getNumCollisionThreads() const
+{
+  return mNumCollisionThreads;
 }
 
 //==============================================================================
@@ -306,7 +525,9 @@ bool DARTCollisionDetector::collide(
           option,
           result,
           collisionFound,
-          scratch.pairResult)) {
+          scratch,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads)) {
     return true;
   }
 
@@ -439,7 +660,9 @@ bool DARTCollisionDetector::collide(
           option,
           result,
           collisionFound,
-          scratch.pairResult,
+          scratch,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads,
           false)) {
     return true;
   }
@@ -450,7 +673,9 @@ bool DARTCollisionDetector::collide(
           option,
           result,
           collisionFound,
-          scratch.pairResult)) {
+          scratch,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads)) {
     return true;
   }
 
@@ -929,8 +1154,16 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  parallelPairIndices.clear();
   pairResult.clear();
   contactPointIndex.clear();
+}
+
+//==============================================================================
+void BroadphaseScratch::prepareParallelPairResults(std::size_t pairCount)
+{
+  parallelPairResults.resize(pairCount);
+  parallelPairCollisions.assign(pairCount, 0);
 }
 
 //==============================================================================
@@ -995,7 +1228,7 @@ bool shouldStopAfterPair(
 bool isClose(
     const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol)
 {
-  return (pos1 - pos2).norm() < tol;
+  return (pos1 - pos2).squaredNorm() < tol * tol;
 }
 
 //==============================================================================
@@ -1042,13 +1275,58 @@ bool isPlaneShape(const CollisionObject* object)
 }
 
 //==============================================================================
+bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
+{
+  if (finiteEntry.object == nullptr)
+    return false;
+
+  const auto* dartObject
+      = static_cast<const DARTCollisionObject*>(finiteEntry.object);
+  const auto* shape = dartObject->getCachedShape();
+  if (shape == nullptr)
+    return false;
+
+  const auto& shapeType = dartObject->getCachedShapeType();
+  if (shapeType == dynamics::SphereShape::getStaticType()
+      || shapeType == dynamics::BoxShape::getStaticType()
+      || shapeType == dynamics::CylinderShape::getStaticType()
+      || shapeType == dynamics::CapsuleShape::getStaticType()) {
+    return true;
+  }
+
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(shape);
+    return ellipsoid->isSphere();
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool allFiniteEntriesHaveCachedPlaneCollisionPath(
+    const std::vector<BroadphaseEntry>& finiteEntries)
+{
+  for (const auto& finiteEntry : finiteEntries) {
+    if (!hasCachedPlaneCollisionPath(finiteEntry))
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
   entry.object = object;
   entry.plane = isPlaneShape(object);
 
-  if (!object || entry.plane)
+  if (!object)
+    return entry;
+
+  entry.transform = object->getTransform();
+
+  if (entry.plane)
     return entry;
 
   const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
@@ -1060,7 +1338,6 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!dartObject->hasFiniteCachedLocalBounds())
     return entry;
 
-  const auto& transform = object->getTransform();
   entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
   entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
 
@@ -1071,7 +1348,7 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
             x ? localMax.x() : localMin.x(),
             y ? localMax.y() : localMin.y(),
             z ? localMax.z() : localMin.z());
-        const Eigen::Vector3d worldCorner = transform * localCorner;
+        const Eigen::Vector3d worldCorner = entry.transform * localCorner;
         entry.min = entry.min.cwiseMin(worldCorner);
         entry.max = entry.max.cwiseMax(worldCorner);
       }
@@ -1127,20 +1404,142 @@ bool processFinitePlanePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult,
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads,
     bool planeFirst)
 {
+  constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
+  const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
+  const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
+  const bool allPairsHaveCachedPlaneCollisionPath
+      = allFiniteEntriesHaveCachedPlaneCollisionPath(finiteEntries);
+  const bool canConsiderParallel
+      = result != nullptr && threadPool != nullptr && numCollisionThreads > 1u
+        && !contactCapCanShortCircuit && allPairsHaveCachedPlaneCollisionPath
+        && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
-  for (const auto& planeEntry : planeEntries) {
-    for (const auto& finiteEntry : finiteEntries) {
-      auto* collObj1 = planeFirst ? planeEntry.object : finiteEntry.object;
-      auto* collObj2 = planeFirst ? finiteEntry.object : planeEntry.object;
+
+  auto getPairEntries = [&](std::size_t pairIndex) {
+    const auto planeIndex = pairIndex / finiteEntries.size();
+    const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
+    return std::make_pair(
+        &planeEntries[planeIndex], &finiteEntries[finiteIndex]);
+  };
+
+  auto processSerialPairAt = [&](std::size_t pairIndex) {
+    const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+    auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+    auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+
+    scratch.pairResult.clear();
+    const auto pairCollision = collidePlaneShape(
+        static_cast<DARTCollisionObject*>(planeEntry->object),
+        static_cast<DARTCollisionObject*>(finiteEntry->object),
+        planeEntry->transform,
+        finiteEntry->transform,
+        planeFirst,
+        scratch.pairResult);
+    if (result != nullptr)
+      postProcess(collObj1, collObj2, option, *result, scratch.pairResult);
+
+    collisionFound = collisionFound || (pairCollision > 0);
+    return shouldStopAfterPair(pairCollision > 0, option, result);
+  };
+
+  std::size_t parallelPairCount = pairCount;
+  if (canConsiderParallel && filter) {
+    scratch.parallelPairIndices.clear();
+    scratch.parallelPairIndices.reserve(pairCount);
+    for (std::size_t pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+      if (!filter->ignoresCollision(collObj1, collObj2))
+        scratch.parallelPairIndices.push_back(pairIndex);
+    }
+
+    parallelPairCount = scratch.parallelPairIndices.size();
+    if (parallelPairCount == 0u)
+      return false;
+  }
+
+  const bool canParallelize
+      = canConsiderParallel
+        && parallelPairCount >= kMinParallelFinitePlanePairs;
+
+  if (canParallelize) {
+    scratch.prepareParallelPairResults(parallelPairCount);
+
+    auto collidePairAt = [&](std::size_t workIndex) {
+      const auto pairIndex
+          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+      auto& pairResult = scratch.parallelPairResults[workIndex];
+      pairResult.clear();
+
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+
+      collidePlaneShape(
+          static_cast<DARTCollisionObject*>(planeEntry->object),
+          static_cast<DARTCollisionObject*>(finiteEntry->object),
+          planeEntry->transform,
+          finiteEntry->transform,
+          planeFirst,
+          pairResult);
+      scratch.parallelPairCollisions[workIndex]
+          = pairResult.isCollision() ? 1 : 0;
+    };
+
+    threadPool->parallelFor(
+        parallelPairCount, numCollisionThreads, collidePairAt);
+
+    for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
+         ++workIndex) {
+      if (scratch.parallelPairCollisions[workIndex] == 0)
+        continue;
+
+      const auto pairIndex
+          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+
+      collisionFound = true;
+      postProcess(
+          collObj1,
+          collObj2,
+          option,
+          *result,
+          scratch.parallelPairResults[workIndex]);
+
+      if (shouldStopAfterPair(true, option, result))
+        return true;
+    }
+
+    return false;
+  }
+
+  if (canConsiderParallel && filter) {
+    for (const auto pairIndex : scratch.parallelPairIndices) {
+      if (processSerialPairAt(pairIndex))
+        return true;
+    }
+    return false;
+  }
+
+  for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
+       ++planeIndex) {
+    for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
+         ++finiteIndex) {
+      const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
       if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
-      if (processPair(
-              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+
+      if (processSerialPairAt(pairIndex))
         return true;
-      }
     }
   }
 
