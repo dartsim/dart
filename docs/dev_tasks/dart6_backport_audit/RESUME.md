@@ -90,9 +90,10 @@ nanobind) — see the recipe in section 2.
   - Cherry-pick: `git cherry-pick -x a99369923c7`.
   - Gate: build + `constraint` focused unit tests **+ gz gate** — constraint
     surface.
-- [ ] **[#2233](https://github.com/dartsim/dart/pull/2233) — URDF multidof joint
+- [x] **[#2233](https://github.com/dartsim/dart/pull/2233) — URDF multidof joint
   limits + vector-form GenericJoint setters** *(parser correctness,
   gz-physics-facing)*
+  - Backported by [#3134](https://github.com/dartsim/dart/pull/3134).
   - Commit `5e8ca03720bd1b5cc4cc65c0b056a49a207fb50d`. On release-6.20, URDF
     joints with >1 DOF get limits only on DOF[0], leaving other DOFs unbounded.
   - Port the multidof limit handling in `dart/utils/urdf/DartLoader.cpp`
