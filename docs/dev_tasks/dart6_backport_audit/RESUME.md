@@ -56,8 +56,9 @@ nanobind) — see the recipe in section 2.
     `dart/dynamics/detail/TranslationalJoint2DAspect.hpp`.
   - Gate: build + `dynamics`/`math` focused unit tests. No collision/constraint
     surface, so the gz gate is not required.
-- [ ] **[#2339](https://github.com/dartsim/dart/pull/2339) — FCL primitive
+- [x] **[#2339](https://github.com/dartsim/dart/pull/2339) — FCL primitive
   contact-normal normalization** *(collision correctness, gz-physics-facing)*
+  - Backported by [#3131](https://github.com/dartsim/dart/pull/3131).
   - Commit `a1d6e416984`. FCL detector still lives at
     `dart/collision/fcl/FCLCollisionDetector.cpp` on release-6.20, so the fix
     applies directly there.

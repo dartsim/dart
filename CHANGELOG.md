@@ -78,6 +78,12 @@
     benchmark scenes for comparing native and external collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Fix FCL primitive contact normal orientation and switch default FCL primitive
+    handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
+    solver, and SKEL parser fallback paths. Users needing legacy mesh
+    approximation can still select `MESH` or `fcl_mesh`:
+    [#3131](https://github.com/dartsim/dart/pull/3131)
+
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
     improving the original 3003-body issue scene while preserving close
