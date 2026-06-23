@@ -325,39 +325,39 @@ inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 namespace suffixes {
 
 //==============================================================================
-constexpr double operator"" _pi(long double x)
+constexpr double operator""_pi(long double x)
 {
   return x * constants<double>::pi();
 }
 
 //==============================================================================
-constexpr double operator"" _pi(unsigned long long int x)
+constexpr double operator""_pi(unsigned long long int x)
 {
-  return operator"" _pi(static_cast<long double>(x));
+  return operator""_pi(static_cast<long double>(x));
 }
 
 //==============================================================================
-constexpr double operator"" _rad(long double angle)
+constexpr double operator""_rad(long double angle)
 {
   return angle;
 }
 
 //==============================================================================
-constexpr double operator"" _rad(unsigned long long int angle)
+constexpr double operator""_rad(unsigned long long int angle)
 {
-  return operator"" _rad(static_cast<long double>(angle));
+  return operator""_rad(static_cast<long double>(angle));
 }
 
 //==============================================================================
-constexpr double operator"" _deg(long double angle)
+constexpr double operator""_deg(long double angle)
 {
   return toRadian(angle);
 }
 
 //==============================================================================
-constexpr double operator"" _deg(unsigned long long int angle)
+constexpr double operator""_deg(unsigned long long int angle)
 {
-  return operator"" _deg(static_cast<long double>(angle));
+  return operator""_deg(static_cast<long double>(angle));
 }
 
 } // namespace suffixes
