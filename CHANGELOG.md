@@ -138,6 +138,12 @@
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
 
+  * Make mimic motor constraints robust for Gazebo mimic repros by using
+    ERP-scaled position correction, clamped force-mixing and ERP parameters,
+    and finite fallback force and velocity limits for joints with unbounded
+    limits:
+    [#3137](https://github.com/dartsim/dart/pull/3137)
+
   * Expose the opt-in simulation thread controls to dartpy via
     `World.setNumSimulationThreads()` and
     `ConstraintSolver.setNumSimulationThreads()`, and add a Pixi task for the
