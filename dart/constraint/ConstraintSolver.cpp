@@ -45,6 +45,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
@@ -1140,6 +1141,7 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous joint constraints
   mJointConstraints.clear();
   mMimicMotorConstraints.clear();
+  mCouplerConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   {
@@ -1158,8 +1160,14 @@ void ConstraintSolver::updateConstraints()
 
       if (joint->getActuatorType() == dynamics::Joint::MIMIC
           && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
+        if (joint->isUsingCouplerConstraint()) {
+          mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+              joint, joint->getMimicDofProperties()));
+        } else {
+          mMimicMotorConstraints.push_back(
+              std::make_shared<MimicMotorConstraint>(
+                  joint, joint->getMimicDofProperties()));
+        }
       }
     }
   }
@@ -1182,6 +1190,15 @@ void ConstraintSolver::updateConstraints()
       if (mimicMotorConstraint->isActive()) {
         mActiveConstraintsAllSingleReactiveContacts = false;
         mActiveConstraints.push_back(mimicMotorConstraint);
+      }
+    }
+
+    for (auto& couplerConstraint : mCouplerConstraints) {
+      couplerConstraint->update();
+
+      if (couplerConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(couplerConstraint);
       }
     }
 
