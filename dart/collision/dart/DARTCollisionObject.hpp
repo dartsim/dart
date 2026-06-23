@@ -54,6 +54,17 @@ class DARTCollisionObject : public CollisionObject
 public:
   friend class DARTCollisionDetector;
 
+  enum class CachedShapeKind
+  {
+    Unknown,
+    Sphere,
+    SphereEllipsoid,
+    Box,
+    Cylinder,
+    Capsule,
+    Plane,
+  };
+
 protected:
   /// Constructor
   DARTCollisionObject(
@@ -64,6 +75,8 @@ public:
   const dynamics::Shape* getCachedShape() const;
 
   const std::string& getCachedShapeType() const;
+
+  CachedShapeKind getCachedShapeKind() const;
 
   const Eigen::Vector3d& getCachedLocalBoundsMin() const;
 
@@ -83,6 +96,7 @@ private:
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType{nullptr};
   std::size_t mCachedShapeFrameVersion{std::numeric_limits<std::size_t>::max()};
+  CachedShapeKind mCachedShapeKind{CachedShapeKind::Unknown};
   Eigen::Vector3d mCachedLocalBoundsMin{Eigen::Vector3d::Zero()};
   Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
   bool mHasFiniteCachedLocalBounds{false};

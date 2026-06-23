@@ -7,14 +7,14 @@ Bottom line: #3129 is merged, and the active DART-native performance stack is
 `perf/dart6-native-contact-selection`, #3139
 `perf/dart6-native-aabb-bounds`, #3140
 `perf/dart6-single-body-lcp-fast-path`, and #3141
-`perf/dart6-native-scratch-result-cache`. The next local candidate is
-`perf/dart6-single-reactive-solve-fast-path`, stacked on #3141.
+`perf/dart6-native-scratch-result-cache`, with #3142
+`perf/dart6-single-reactive-solve-fast-path` stacked on top. The next local
+candidate is `perf/dart6-native-shape-kind-dispatch`, stacked on #3142.
 
-The current local candidate skips two redundant parallel-safety scans in the
-large single-reactive fixed-support contact case that dominates the original
-issue scene. It keeps the scans for manual constraints, custom contact
-constraints, mixed constrained groups, custom solvers, and any single-reactive
-group whose non-reactive side may still create a shared dependency.
+The current local candidate adds a cached primitive shape-kind enum to the
+DART-native collision object cache. The primitive plane dispatch path switches
+on that cheap kind for sphere/box/cylinder/capsule/plane cases while preserving
+the existing fallback for unsupported shapes.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
@@ -22,19 +22,18 @@ Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3141 stack, no profile | `0.0641852` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
-| Current local candidate, no profile | `0.0696281` | finite, same hash, contacts `5005`, pairs `3003` |
-| #3141 stack, text profile | `0.062875` | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local candidate, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3142 stack, no profile | `0.0696281` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| Current local candidate, no profile | `0.0751396` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3142 stack, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local candidate, text profile | `0.0754405` | finite, same hash, contacts `5005`, pairs `3003` |
 
 The profile movement is concentrated where expected:
-`solveConstrainedGroups` drops from about `1.23 s` on #3141 to `534.39 ms`
-over 300 active steps, and the `solveConstrainedGroups` self time drops from
-about `694 ms` to `3.069 ms`. The next largest measured costs are now
-`collide` at about `1.68 s`, `build contact constraints` at about `738 ms`,
-and velocity/position integration at about `701 ms` combined, so the next
-larger wins should continue in native collision/contact construction or
-integration hot paths rather than more solve-dispatch bookkeeping.
+the DART-native `collide` scope drops from about `1.680 s` on #3142 to
+`1.629 s` over 300 active steps. The next largest measured costs are now
+`build contact constraints` at about `729 ms`, `solveConstrainedGroups` at
+about `527 ms`, and velocity/position integration at about `669 ms` combined,
+so the next larger wins should continue in native collision/contact
+construction or integration hot paths.
 
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
@@ -46,7 +45,9 @@ of visiting all eight local bounding-box corners. #3140 enables the existing
 direct LCP assembly path for single-free-body groups, but only when every
 constraint is an exact built-in `ContactConstraint`. #3141 trims two small
 DART-native collision hot-path costs: unused scratch-result lookup caches and
-single-plane pair-index division.
+single-plane pair-index division. #3142 skips redundant parallel-safety scans
+once the active contact set and built constrained groups prove they are exact
+built-in fixed-support contact groups.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
