@@ -880,6 +880,8 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
   auto planeFrame = SimpleFrame::createShared(Frame::World());
   planeFrame->setShape(
       std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  const Eigen::Vector3d planeTranslation(0.0, 0.0, 0.01);
+  planeFrame->setTranslation(planeTranslation);
 
   std::vector<std::shared_ptr<SimpleFrame>> boxFrames;
   boxFrames.reserve(kNumBoxes);
@@ -904,6 +906,11 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
   CollisionResult serialResult;
   ASSERT_TRUE(group->collide(option, &serialResult));
   ASSERT_GT(serialResult.getNumContacts(), kNumBoxes);
+
+  // Leave the plane frame dirty before the threaded query. The detector should
+  // copy transforms on the main thread instead of warming them in workers.
+  planeFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.02));
+  planeFrame->setTranslation(planeTranslation);
 
   cd->setNumCollisionThreads(4u);
   EXPECT_EQ(cd->getNumCollisionThreads(), 4u);

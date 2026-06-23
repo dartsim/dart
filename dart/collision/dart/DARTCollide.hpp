@@ -52,6 +52,14 @@ int collide(
 int collidePlaneShape(
     DARTCollisionObject* planeObject,
     DARTCollisionObject* otherObject,
+    const Eigen::Isometry3d& planeTransform,
+    const Eigen::Isometry3d& otherTransform,
+    bool planeFirst,
+    CollisionResult& result);
+
+int collidePlaneShape(
+    DARTCollisionObject* planeObject,
+    DARTCollisionObject* otherObject,
     bool planeFirst,
     CollisionResult& result);
 

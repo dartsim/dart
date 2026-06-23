@@ -43,11 +43,12 @@ and solver; only collision detection changes:
 | Current DART native active, 16 threads | `0.0624274` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | Current DART native default sleeping, 16 threads | `1.96845` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
 
-A no-profile rerun after the solver-filter fix measured RTF `0.0598292`, with
-the same final hash, contact count, and contact-pair count. Earlier no-rebuild
-repeats after the direct plane dispatch were RTF `0.0599254`, `0.0577443`, and
-`0.058838`, all with the same DART-native final hash and contact counts.
-Active-thread scaling on the same scene was:
+A no-profile rerun after the transform-copy review fix measured RTF
+`0.059358`, with the same final hash, contact count, and contact-pair count. A
+prior no-profile rerun after the solver-filter fix measured RTF `0.0598292`;
+earlier no-rebuild repeats after the direct plane dispatch were RTF
+`0.0599254`, `0.0577443`, and `0.058838`, all with the same DART-native final
+hash and contact counts. Active-thread scaling on the same scene was:
 
 | Threads | RTF | Final state |
 | ---: | ---: | --- |
