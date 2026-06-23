@@ -38,11 +38,15 @@
 
 #include "dart/simulation/World.hpp"
 
+#include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -64,6 +68,87 @@
 
 namespace dart {
 namespace simulation {
+
+namespace {
+
+using dart::collision::CollisionDetector;
+using dart::collision::CollisionDetectorPtr;
+
+std::string toCollisionDetectorKey(CollisionDetectorType type)
+{
+  switch (type) {
+    case CollisionDetectorType::Dart:
+      return "dart";
+    case CollisionDetectorType::Fcl:
+      return "fcl";
+    case CollisionDetectorType::Bullet:
+      return "bullet";
+    case CollisionDetectorType::Ode:
+      return "ode";
+  }
+
+  DART_FATAL(
+      "Encountered unsupported CollisionDetectorType value: {}.",
+      static_cast<int>(type));
+  return "fcl";
+}
+
+CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
+{
+  if (requestedKey.empty())
+    return nullptr;
+
+  auto key = common::toLower(requestedKey);
+
+  auto* factory = CollisionDetector::getFactory();
+  DART_ASSERT(factory);
+  if (!factory->canCreate(key))
+    return nullptr;
+
+  auto detector = factory->create(key);
+  if (!detector) {
+    DART_WARN(
+        "Failed to create collision detector '{}' even though the factory "
+        "reported it was available.",
+        key);
+  }
+
+  return detector;
+}
+
+CollisionDetectorPtr tryCreateCollisionDetector(CollisionDetectorType type)
+{
+  return tryCreateCollisionDetector(toCollisionDetectorKey(type));
+}
+
+// Resolves a collision detector for a World constructed from a WorldConfig.
+//
+// Returns nullptr when the requested detector is the default 'fcl' backend so
+// the World keeps the constraint solver's existing default detector untouched.
+// This keeps the default World construction path byte-for-byte equivalent to
+// the pre-WorldConfig behavior (FCL with PRIMITIVE shapes), which downstream
+// consumers such as gz-physics rely on. Only an explicitly non-default request
+// triggers a detector swap.
+CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
+{
+  const auto requestedType = config.collisionDetector;
+
+  // Default request: leave the constraint solver's default detector in place.
+  if (requestedType == CollisionDetectorType::Fcl)
+    return nullptr;
+
+  const auto requestedKey = toCollisionDetectorKey(requestedType);
+  if (auto detector = tryCreateCollisionDetector(requestedType))
+    return detector;
+
+  DART_WARN(
+      "WorldConfig requested collision detector '{}', but it is not "
+      "available. Keeping the world's default collision detector.",
+      requestedKey);
+  return nullptr;
+}
+
+} // namespace
 
 //==============================================================================
 static bool hasNonzeroGeneralizedVelocity(const dynamics::Skeleton& skel)
@@ -276,10 +361,19 @@ std::shared_ptr<World> World::create(const std::string& name)
 }
 
 //==============================================================================
-World::World(const std::string& _name)
-  : mName(_name),
-    mNameMgrForSkeletons("World::Skeleton | " + _name, "skeleton"),
-    mNameMgrForSimpleFrames("World::SimpleFrame | " + _name, "frame"),
+std::shared_ptr<World> World::create(const WorldConfig& config)
+{
+  return std::make_shared<World>(config);
+}
+
+//==============================================================================
+World::World(const std::string& _name) : World(WorldConfig(_name)) {}
+
+//==============================================================================
+World::World(const WorldConfig& config)
+  : mName(config.name),
+    mNameMgrForSkeletons("World::Skeleton | " + config.name, "skeleton"),
+    mNameMgrForSimpleFrames("World::SimpleFrame | " + config.name, "frame"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
@@ -291,6 +385,12 @@ World::World(const std::string& _name)
 
   auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
   setConstraintSolver(std::move(solver));
+
+  // Only swap the collision detector when a non-default backend is requested.
+  // The default 'fcl' request resolves to nullptr so the constraint solver's
+  // default detector (FCL with PRIMITIVE shapes) is preserved unchanged.
+  if (auto detector = resolveCollisionDetector(config))
+    setCollisionDetector(detector);
 }
 
 //==============================================================================
@@ -316,8 +416,9 @@ WorldPtr World::clone() const
   worldClone->setNumSimulationThreads(mNumSimulationThreads);
 
   auto cd = getConstraintSolver()->getCollisionDetector();
-  worldClone->getConstraintSolver()->setCollisionDetector(
-      cd->cloneWithoutCollisionObjects());
+  if (cd) {
+    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+  }
 
   // Clone and add each Skeleton
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
@@ -1717,6 +1818,49 @@ bool World::checkCollision(
 const collision::CollisionResult& World::getLastCollisionResult() const
 {
   return mConstraintSolver->getLastCollisionResult();
+}
+
+//==============================================================================
+void World::setCollisionDetector(
+    const collision::CollisionDetectorPtr& collisionDetector)
+{
+  if (!collisionDetector) {
+    DART_WARN(
+        "Attempted to assign a null collision detector to world '{}'.", mName);
+    return;
+  }
+
+  mConstraintSolver->setCollisionDetector(collisionDetector);
+}
+
+//==============================================================================
+void World::setCollisionDetector(CollisionDetectorType collisionDetector)
+{
+  auto detector = tryCreateCollisionDetector(collisionDetector);
+  if (!detector) {
+    auto current = mConstraintSolver->getCollisionDetector();
+    DART_WARN(
+        "Collision detector '{}' is not available for world '{}'. Keeping the "
+        "current detector '{}'.",
+        toCollisionDetectorKey(collisionDetector),
+        mName,
+        current ? current->getType() : "unknown");
+    return;
+  }
+
+  setCollisionDetector(detector);
+}
+
+//==============================================================================
+collision::CollisionDetectorPtr World::getCollisionDetector()
+{
+  return mConstraintSolver->getCollisionDetector();
+}
+
+//==============================================================================
+collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
+{
+  return mConstraintSolver->getCollisionDetector();
 }
 
 //==============================================================================
