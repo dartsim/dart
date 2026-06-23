@@ -48,11 +48,11 @@ Active-thread scaling on the same scene was:
 
 | Threads | RTF | Final state |
 | ---: | ---: | --- |
-| 1 | `0.0216211` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| 2 | `0.0310443` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| 4 | `0.0413746` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| 8 | `0.0468071` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| 16 | `0.057766` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 1 | `0.0219988` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 2 | `0.0308776` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 4 | `0.037332` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 8 | `0.0476012` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 16 | `0.0593455` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 
 The measured win is real but modest. The profiler moved the inclusive
 `collide` scope from the #3129 baseline `1.840 s` to `1.585 s` over 300 active
