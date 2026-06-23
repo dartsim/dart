@@ -30,37 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionOption.hpp"
+#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
+#define DART_DYNAMICS_MESHMATERIAL_HPP_
 
-#include <algorithm>
+#include <Eigen/Core>
+
+#include <string>
+#include <vector>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-//==============================================================================
-CollisionOption::CollisionOption(
-    bool enableContact,
-    std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts),
-    maxNumContactsPerPair(0u),
-    allowNegativePenetrationDepthContacts(
-        allowNegativePenetrationDepthContacts),
-    collisionFilter(collisionFilter)
+/// Simple material representation for mesh rendering.
+struct MeshMaterial
 {
-  // Do nothing
-}
+  Eigen::Vector4f ambient{0.2f, 0.2f, 0.2f, 1.0f};
+  Eigen::Vector4f diffuse{0.8f, 0.8f, 0.8f, 1.0f};
+  Eigen::Vector4f specular{0.0f, 0.0f, 0.0f, 1.0f};
+  Eigen::Vector4f emissive{0.0f, 0.0f, 0.0f, 1.0f};
 
-//==============================================================================
-std::size_t CollisionOption::getEffectiveMaxNumContactsPerPair() const
-{
-  if (maxNumContactsPerPair == 0u)
-    return maxNumContacts;
+  float shininess{0.0f};
+  std::vector<std::string> textureImagePaths;
+};
 
-  return std::min(maxNumContactsPerPair, maxNumContacts);
-}
-
-} // namespace collision
+} // namespace dynamics
 } // namespace dart
+
+#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

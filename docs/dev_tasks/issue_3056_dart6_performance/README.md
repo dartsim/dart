@@ -2,12 +2,9 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged and cleaned up locally. The active performance
-stack is #3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, and #3139
-`perf/dart6-native-aabb-bounds`. The stack is already based on current
-`origin/release-6.20`, including the merged #3129 shape-cache work and the
-unrelated #3128 release-audit docs PR.
+Bottom line: #3129, #3133, #3135, and #3139 are merged. The current follow-up
+is #3140 `perf/dart6-single-body-lcp-fast-path`, refreshed on current
+`origin/release-6.20`.
 
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
@@ -44,12 +41,6 @@ steps, with `Construct LCP` dropping from about `504 ms` to `159 ms`.
 The profiled active total RTF is noisy, but the `collide` scope moved from the
 #3135 parent `1.715 s` to `1.628 s` over 300 active steps. This is a small
 setup improvement, not the major collision-algorithm win.
-
-PR-management note: #3138 is the narrow release-6.20 compiler-warning unblocker
-for the macOS CI failure seen by the performance stack. It has a clean Codex
-review and is waiting on hosted checks; once that or the equivalent existing
-backport lands, merge the refreshed `release-6.20` through #3133 and
-descendants.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active

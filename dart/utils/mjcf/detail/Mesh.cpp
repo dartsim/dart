@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/Mesh.hpp"
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -114,13 +115,17 @@ Errors Mesh::postprocess(const Compiler& /*compiler*/)
 //==============================================================================
 dynamics::MeshShapePtr Mesh::createMeshShape() const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* model = dynamics::MeshShape::loadMesh(mMeshUri, mRetriever);
+  DART_SUPPRESS_DEPRECATED_END
   if (model == nullptr) {
     return nullptr;
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto shape = std::make_shared<dynamics::MeshShape>(
       mScale, model, mMeshUri, mRetriever);
+  DART_SUPPRESS_DEPRECATED_END
   shape->setColorMode(dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
   return shape;
 }

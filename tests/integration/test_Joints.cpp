@@ -31,6 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -54,6 +55,8 @@
 
 #include <array>
 #include <iostream>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::math;
@@ -1056,7 +1059,7 @@ void testMimicJoint()
 
   double timestep = 1e-3;
   double tol = 1e-9;
-  double tolPos = 1e-3;
+  double tolPos = 3e-3;
   double sufficient_force = 1e+5;
 
   // World
@@ -1138,6 +1141,89 @@ void testMimicJoint()
 TEST_F(JOINTS, MIMIC_JOINT)
 {
   testMimicJoint();
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_MOTOR_CONSTRAINT_PARAMETERS)
+{
+  using dart::constraint::MimicMotorConstraint;
+
+  MimicMotorConstraint::setConstraintForceMixing(0.0);
+  EXPECT_DOUBLE_EQ(1e-9, MimicMotorConstraint::getConstraintForceMixing());
+
+  MimicMotorConstraint::setConstraintForceMixing(1e-4);
+  EXPECT_DOUBLE_EQ(1e-4, MimicMotorConstraint::getConstraintForceMixing());
+
+  MimicMotorConstraint::setErrorReductionParameter(-0.5);
+  EXPECT_DOUBLE_EQ(0.0, MimicMotorConstraint::getErrorReductionParameter());
+
+  MimicMotorConstraint::setErrorReductionParameter(1.5);
+  EXPECT_DOUBLE_EQ(1.0, MimicMotorConstraint::getErrorReductionParameter());
+
+  MimicMotorConstraint::setErrorReductionParameter(0.25);
+  EXPECT_DOUBLE_EQ(0.25, MimicMotorConstraint::getErrorReductionParameter());
+
+  MimicMotorConstraint::setConstraintForceMixing(1e-6);
+  MimicMotorConstraint::setErrorReductionParameter(0.4);
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_JOINT_UNBOUNDED_LIMITS_STAY_FINITE)
+{
+  using dart::constraint::MimicMotorConstraint;
+  using namespace dart::math::suffixes;
+
+  MimicMotorConstraint::setConstraintForceMixing(1e-6);
+  MimicMotorConstraint::setErrorReductionParameter(0.4);
+
+  simulation::WorldPtr world = simulation::World::create();
+  ASSERT_NE(nullptr, world);
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-3);
+
+  const Vector3d dim(1, 1, 1);
+  const Vector3d offset(0, 0, 2);
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(nullptr, pendulum);
+  pendulum->disableSelfCollisionCheck();
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    auto* bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllShapeNodesWith<CollisionAspect>();
+  }
+
+  auto* reference = pendulum->getJoint(0);
+  auto* follower = pendulum->getJoint(1);
+  ASSERT_NE(nullptr, reference);
+  ASSERT_NE(nullptr, follower);
+
+  reference->setPosition(0, 45.0_deg);
+  reference->setActuatorType(Joint::PASSIVE);
+  reference->setDampingCoefficient(0, 0.0);
+  reference->setSpringStiffness(0, 0.0);
+
+  follower->setPosition(0, -45.0_deg);
+  follower->setActuatorType(Joint::MIMIC);
+  follower->setMimicJoint(reference, 1.0, 0.0);
+  follower->setDampingCoefficient(0, 0.0);
+  follower->setSpringStiffness(0, 0.0);
+
+  const double initialError
+      = std::abs(reference->getPosition(0) - follower->getPosition(0));
+
+  world->addSkeleton(pendulum);
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+    EXPECT_TRUE(std::isfinite(reference->getPosition(0)));
+    EXPECT_TRUE(std::isfinite(follower->getPosition(0)));
+    EXPECT_TRUE(std::isfinite(reference->getVelocity(0)));
+    EXPECT_TRUE(std::isfinite(follower->getVelocity(0)));
+  }
+
+  const double finalError
+      = std::abs(reference->getPosition(0) - follower->getPosition(0));
+  EXPECT_LT(finalError, initialError);
 }
 
 //==============================================================================

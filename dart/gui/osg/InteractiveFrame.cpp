@@ -33,6 +33,7 @@
 #include "dart/gui/osg/InteractiveFrame.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -443,8 +444,10 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    DART_SUPPRESS_DEPRECATED_END
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -527,8 +530,10 @@ void InteractiveFrame::createStandardVisualizationShapes(
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
+    DART_SUPPRESS_DEPRECATED_BEGIN
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    DART_SUPPRESS_DEPRECATED_END
     shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

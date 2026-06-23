@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/CapsuleShape.hpp"
 
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -43,11 +44,10 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-CapsuleShape::CapsuleShape(double radius, double height)
-  : Shape(CAPSULE), mRadius(radius), mHeight(height)
+CapsuleShape::CapsuleShape(double radius, double height) : Shape(CAPSULE)
 {
-  DART_ASSERT(0.0 < radius);
-  DART_ASSERT(0.0 < height);
+  setRadius(radius);
+  setHeight(height);
 }
 
 //==============================================================================
@@ -72,7 +72,14 @@ double CapsuleShape::getRadius() const
 //==============================================================================
 void CapsuleShape::setRadius(double radius)
 {
-  DART_ASSERT(0.0 < radius);
+  if (!std::isfinite(radius) || radius <= 0.0) {
+    DART_WARN(
+        "CapsuleShape::setRadius: Invalid radius '{}'. "
+        "Radius must be a positive finite value. Ignoring request.",
+        radius);
+    return;
+  }
+
   mRadius = radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -89,7 +96,14 @@ double CapsuleShape::getHeight() const
 //==============================================================================
 void CapsuleShape::setHeight(double height)
 {
-  DART_ASSERT(0.0 < height);
+  if (!std::isfinite(height) || height <= 0.0) {
+    DART_WARN(
+        "CapsuleShape::setHeight: Invalid height '{}'. "
+        "Height must be a positive finite value. Ignoring request.",
+        height);
+    return;
+  }
+
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
