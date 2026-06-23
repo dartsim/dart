@@ -2,52 +2,46 @@
 
 ## Current Snapshot
 
-Bottom line: #3129, #3133, #3135, #3139, and #3140 are merged. The current
-follow-up is #3141 `perf/dart6-native-scratch-result-cache`, refreshed on
-current `origin/release-6.20`.
+Bottom line: #3129, #3133, #3135, #3139, #3140, and #3141 are merged. The
+current follow-up is #3142 `perf/dart6-single-reactive-solve-fast-path`,
+refreshed on current `origin/release-6.20`.
 
+The current local candidate skips two redundant parallel-safety scans in the
+large single-reactive fixed-support contact case that dominates the original
+issue scene. It keeps the scans for manual constraints, custom contact
+constraints, mixed constrained groups, custom solvers, and any single-reactive
+group whose non-reactive side may still create a shared dependency.
+
+Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
+300 active steps, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, and deactivation disabled:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3141 stack, no profile | `0.0641852` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| Current local candidate, no profile | `0.0696281` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3141 stack, text profile | `0.062875` | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local candidate, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
+
+The profile movement is concentrated where expected:
+`solveConstrainedGroups` drops from about `1.23 s` on #3141 to `534.39 ms`
+over 300 active steps, and the `solveConstrainedGroups` self time drops from
+about `694 ms` to `3.069 ms`. The next largest measured costs are now
+`collide` at about `1.68 s`, `build contact constraints` at about `738 ms`,
+and velocity/position integration at about `701 ms` combined, so the next
+larger wins should continue in native collision/contact construction or
+integration hot paths rather than more solve-dispatch bookkeeping.
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
 serial early-exit path. #3135 makes explicit per-pair contact caps select the
 deepest contact plus spatially distributed support points instead of preserving
 backend iteration-order truncation. #3139 reduces broadphase setup work by
 computing transformed cached local bounds from center and half-extents instead
-of visiting all eight local bounding-box corners.
-
-Latest #3139 evidence on the original issue scene, using DART-native collision
-with DART 6 dynamics/constraints/solver:
-
-| Run | RTF | Final state |
-| --- | ---: | --- |
-| #3135 parent, active, no profile repeat range | `0.0598792` - `0.0606051` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3139 current, active, no profile repeat range | `0.0609436` - `0.0611608` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3139 current, default sleeping, 3000 steps | `1.88586` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
-
-Current local candidate after #3140: trim two small DART-native collision
-hot-path costs. Internal pair scratch `CollisionResult` instances no longer
-maintain BodyNode/ShapeFrame lookup caches that are never queried, and the
-finite-shape-vs-plane loop avoids the grid-index division path for the common
-single-plane case. On the same active issue scene, the latest no-profile run
-measured RTF `0.0641852`; the latest profile run measured RTF `0.0638646`.
-Both runs preserved the #3140 final hash `0x6a043ac1e7558218`, final contacts
-`5005`, and contact pairs `3003`. The current profile puts `collide` at about
-`1.672 s` over 300 active steps, with `build contact constraints` at about
-`716 ms` and `solveConstrainedGroups` at about `1.212 s`, so the next larger
-win is still native collision/contact construction rather than bookkeeping.
-
-#3140 enables the existing direct LCP assembly path for single-free-body groups,
-but only when every constraint is an exact built-in `ContactConstraint`. Custom
-contact constraints and manual constraints stay on the legacy assembly path.
-On the same active issue scene, the no-profile repeat range moved to RTF
-`0.0624277` - `0.0656493`. The default-sleeping sanity run stayed above real
-time at RTF `1.88692`, with unchanged final hash `0x131b6af79a44ff90` and all
-`3003 / 3003` mobile bodies resting. The active state hash changes because the
-LCP assembly arithmetic order changes, so #3140 also dumps final geometry and
-compares against the legacy assembly path: all `3004` shapes match, max
-position delta is `1.86e-19 m`, max quaternion L2 delta is `2.80e-19`, and
-sleep/island state differences are `0`. The active text-profiler run moves
-`solveConstrainedGroups` from about `1.610 s` to `1.192 s` over 300 active
-steps, with `Construct LCP` dropping from about `504 ms` to `159 ms`.
+of visiting all eight local bounding-box corners. #3140 enables the existing
+direct LCP assembly path for single-free-body groups, but only when every
+constraint is an exact built-in `ContactConstraint`. #3141 trims two small
+DART-native collision hot-path costs: unused scratch-result lookup caches and
+single-plane pair-index division.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active

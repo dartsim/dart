@@ -832,6 +832,8 @@ void ConstraintSolver::updateConstraints()
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;
+  mActiveConstraintsHaveCustomContactConstraint = false;
+  mActiveSingleReactiveContactsNeedSharedDependencyScan = false;
 
   //----------------------------------------------------------------------------
   // Update manual constraints
@@ -1114,8 +1116,27 @@ void ConstraintSolver::updateConstraints()
                                 ? contactConstraint->mActive
                                 : contactConstraint->isActive();
       if (isActive) {
-        if (contactConstraint->getSingleReactiveSkeleton() == nullptr)
+        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+          mActiveConstraintsHaveCustomContactConstraint = true;
+
+        if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
           mActiveConstraintsAllSingleReactiveContacts = false;
+        } else {
+          const bool nonReactiveSideIsSkipped
+              = (contactConstraint->mIsReactiveA
+                 && contactConstraint->mSkipRelVelocityB)
+                || (contactConstraint->mIsReactiveB
+                    && contactConstraint->mSkipRelVelocityA);
+          const bool nonReactiveSideIsFixed
+              = (contactConstraint->mIsReactiveA
+                 && contactConstraint->mSkeletonB != nullptr
+                 && !contactConstraint->mSkeletonB->isMobile())
+                || (contactConstraint->mIsReactiveB
+                    && contactConstraint->mSkeletonA != nullptr
+                    && !contactConstraint->mSkeletonA->isMobile());
+          if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
+            mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
+        }
         mActiveConstraints.push_back(contactConstraint);
       }
     }
@@ -1637,11 +1658,27 @@ void ConstraintSolver::solveConstrainedGroups()
   };
 
   auto canSolveGroupsInParallel = [&]() {
+    const bool allGroupsAreSingleReactiveContacts = std::all_of(
+        mConstrainedGroups.begin(),
+        mConstrainedGroups.end(),
+        [](const ConstrainedGroup& group) {
+          return group.mAllSingleReactiveContacts;
+        });
+    const bool canSkipCustomContactScan
+        = mActiveConstraintsAllSingleReactiveContacts
+          && allGroupsAreSingleReactiveContacts
+          && !mActiveConstraintsHaveCustomContactConstraint;
+    const bool canSkipSharedDependencyScan
+        = mActiveConstraintsAllSingleReactiveContacts
+          && allGroupsAreSingleReactiveContacts
+          && !mActiveSingleReactiveContactsNeedSharedDependencyScan;
+
     return mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
            && mConstrainedGroups.size() >= 128u && mManualConstraints.empty()
            && canUseParallelBuiltInBoxedSolvers(*this)
-           && !hasCustomContactConstraint()
-           && !hasSharedNonReactiveDependency();
+           && (canSkipCustomContactScan || !hasCustomContactConstraint())
+           && (canSkipSharedDependencyScan
+               || !hasSharedNonReactiveDependency());
   };
 
   if (!mDeactivationActive) {

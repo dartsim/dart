@@ -198,6 +198,11 @@
     path for custom contact constraints and manual constraints:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up large single-reactive contact scenes by skipping redundant
+    parallel-safety scans once the active contact set and built constrained
+    groups prove they are exact built-in fixed-support contact groups:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
