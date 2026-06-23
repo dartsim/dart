@@ -1,3 +1,4 @@
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
@@ -14,6 +15,8 @@
 #include <string>
 
 using namespace dart;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
@@ -136,6 +139,33 @@ double readColladaUnitScale(const std::string& path)
 }
 
 } // namespace
+
+TEST(MeshShapeTest, TriMeshConstructorUpdatesBoundsAndAssimpBridge)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->reserveVertices(3);
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(2.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 3.0, 4.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->computeVertexNormals();
+
+  dynamics::MeshShape shape(Eigen::Vector3d(2.0, 3.0, 4.0), triMesh);
+  EXPECT_EQ(shape.getTriMesh(), triMesh);
+  EXPECT_TRUE(shape.getBoundingBox().computeFullExtents().isApprox(
+      Eigen::Vector3d(4.0, 9.0, 16.0), 1e-12));
+
+  const aiScene* scene = shape.getMesh();
+  ASSERT_NE(scene, nullptr);
+  ASSERT_GT(scene->mNumMeshes, 0u);
+  EXPECT_EQ(shape.getMesh(), scene);
+
+  auto clone = std::dynamic_pointer_cast<dynamics::MeshShape>(shape.clone());
+  ASSERT_NE(clone, nullptr);
+  EXPECT_NE(clone->getTriMesh(), triMesh);
+  EXPECT_TRUE(clone->getBoundingBox().computeFullExtents().isApprox(
+      shape.getBoundingBox().computeFullExtents(), 1e-12));
+}
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
 {
@@ -263,3 +293,5 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();
 }
+
+DART_SUPPRESS_DEPRECATED_END

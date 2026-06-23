@@ -55,7 +55,10 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
-ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+ArrowShape::ArrowShape()
+  : MeshShape(Eigen::Vector3d::Ones(), std::shared_ptr<math::TriMesh<double>>())
+{
+}
 
 //==============================================================================
 ArrowShape::ArrowShape(
@@ -64,7 +67,8 @@ ArrowShape::ArrowShape(
     const Properties& _properties,
     const Eigen::Vector4d& _color,
     std::size_t _resolution)
-  : MeshShape(Eigen::Vector3d::Ones(), nullptr),
+  : MeshShape(
+      Eigen::Vector3d::Ones(), std::shared_ptr<math::TriMesh<double>>()),
     mTail(_tail),
     mHead(_head),
     mProperties(_properties)
