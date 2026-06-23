@@ -41,9 +41,10 @@ branch `backport/<pr>-to-release-6.20` off `origin/release-6.20`, milestone
 PascalCase `dart/utils/...`; main is snake_case `dart/io|...`; pybind11 not
 nanobind) — see the recipe in section 2.
 
-- [ ] **[#2509](https://github.com/dartsim/dart/pull/2509) — ARM64 SEGFAULT
+- [x] **[#2509](https://github.com/dartsim/dart/pull/2509) — ARM64 SEGFAULT
   (TranslationalJoint2D / Icosphere) + self-copy bugs** *(MOST URGENT — crash
   class)*
+  - Backported by [#3130](https://github.com/dartsim/dart/pull/3130).
   - Commit `25b77a15984`.
   - Three sub-fixes, DART 6 PascalCase paths:
     (1) `copy(*this)` -> `copy(*otherJoint…)` in
