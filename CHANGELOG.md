@@ -171,7 +171,9 @@
   * Reuse built-in default contact constraint objects across simulation steps
     and avoid constructing full inverse transforms for local contact points so
     contact-heavy scenes reduce contact-constraint setup work after the first
-    frame, while preserving custom contact-surface handler behavior:
+    frame. Consecutive contacts from the same collision pair also skip repeated
+    scratch-table probes while preserving custom contact-surface handler
+    behavior:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up single-free-body contact groups by using direct LCP assembly for

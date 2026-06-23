@@ -916,6 +916,15 @@ void ConstraintSolver::updateConstraints()
     collision::CollisionObject* first;
     collision::CollisionObject* second;
   };
+  const auto makeContactPair = [](collision::CollisionObject* object1,
+                                  collision::CollisionObject* object2) {
+    ContactPair pair{object1, object2};
+    if (reinterpret_cast<std::uintptr_t>(pair.first)
+        > reinterpret_cast<std::uintptr_t>(pair.second)) {
+      std::swap(pair.first, pair.second);
+    }
+    return pair;
+  };
   struct ContactPairHash
   {
     std::size_t operator()(const ContactPair& pair) const
@@ -971,15 +980,12 @@ void ConstraintSolver::updateConstraints()
       contactPairBucketsInitialized = true;
     };
 
+    std::size_t lastContactPairIndex = invalidContactPairIndex;
+    ContactPair lastContactPair{nullptr, nullptr};
+
     const auto findOrCreateContactPairIndex
-        = [&](collision::CollisionObject* object1,
-              collision::CollisionObject* object2) -> std::size_t {
+        = [&](const ContactPair& pair) -> std::size_t {
       initializeContactPairBuckets();
-      ContactPair pair{object1, object2};
-      if (reinterpret_cast<std::uintptr_t>(pair.first)
-          > reinterpret_cast<std::uintptr_t>(pair.second)) {
-        std::swap(pair.first, pair.second);
-      }
 
       const std::size_t bucketMask = contactPairBuckets.size() - 1u;
       std::size_t bucket = contactPairHash(pair) & bucketMask;
@@ -1001,6 +1007,21 @@ void ConstraintSolver::updateConstraints()
 
         bucket = (bucket + 1u) & bucketMask;
       }
+    };
+    const auto findContactPairIndex
+        = [&](collision::CollisionObject* object1,
+              collision::CollisionObject* object2) -> std::size_t {
+      const auto pair = makeContactPair(object1, object2);
+      if (lastContactPairIndex != invalidContactPairIndex
+          && lastContactPair.first == pair.first
+          && lastContactPair.second == pair.second) {
+        return lastContactPairIndex;
+      }
+
+      const auto contactPairIndex = findOrCreateContactPairIndex(pair);
+      lastContactPair = pair;
+      lastContactPairIndex = contactPairIndex;
+      return contactPairIndex;
     };
 
     for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
@@ -1047,7 +1068,7 @@ void ConstraintSolver::updateConstraints()
         mSoftContactConstraints.push_back(
             std::make_shared<SoftContactConstraint>(contact, mTimeStep));
       } else {
-        const std::size_t contactPairIndex = findOrCreateContactPairIndex(
+        const std::size_t contactPairIndex = findContactPairIndex(
             contact.collisionObject1, contact.collisionObject2);
         ++contactPairCounts[contactPairIndex].count;
 
