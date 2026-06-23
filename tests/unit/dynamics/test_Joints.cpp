@@ -100,3 +100,26 @@ TEST(Joints, SimulationSurvivesOverflowTransforms)
     EXPECT_NO_THROW(world->step());
   }
 }
+
+TEST(Joints, BulkPassiveForceSetters)
+{
+  auto skel = Skeleton::create("test");
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+
+  joint->setRestPositions(Eigen::VectorXd::Constant(joint->getNumDofs(), 0.25));
+  EXPECT_TRUE(joint->getRestPositions().isConstant(0.25));
+
+  joint->setDampingCoefficients(
+      Eigen::VectorXd::Constant(joint->getNumDofs(), 0.5));
+  EXPECT_TRUE(joint->getDampingCoefficients().isConstant(0.5));
+
+  EXPECT_FALSE(joint->hasCoulombFriction());
+  joint->setFrictions(Eigen::VectorXd::Constant(joint->getNumDofs(), 0.75));
+  EXPECT_TRUE(joint->getFrictions().isConstant(0.75));
+  EXPECT_TRUE(joint->hasCoulombFriction());
+
+  joint->setFrictions(Eigen::VectorXd::Zero(joint->getNumDofs()));
+  EXPECT_TRUE(joint->getFrictions().isZero());
+  EXPECT_FALSE(joint->hasCoulombFriction());
+}
