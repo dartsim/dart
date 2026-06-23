@@ -1441,6 +1441,21 @@ bool findNearestLocalSupportPoint(
     return true;
   }
 
+  if (const auto* cone = dynamic_cast<const fcl::Cone*>(geometry.get())) {
+    const double radialNorm = std::hypot(localNormal[0], localNormal[1]);
+    fcl::Vector3 basePoint(0.0, 0.0, -0.5 * cone->lz);
+    if (radialNorm > 0.0) {
+      basePoint[0] = -cone->radius * localNormal[0] / radialNorm;
+      basePoint[1] = -cone->radius * localNormal[1] / radialNorm;
+    }
+
+    nearestLocalPoint = fcl::Vector3(0.0, 0.0, 0.5 * cone->lz);
+    minLocalDistance = localNormal.dot(nearestLocalPoint);
+    updateNearestLocalSupportPoint(
+        localNormal, basePoint, minLocalDistance, nearestLocalPoint);
+    return true;
+  }
+
   return false;
 }
 

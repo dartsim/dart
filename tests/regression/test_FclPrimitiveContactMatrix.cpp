@@ -31,6 +31,8 @@
  */
 
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -672,6 +674,87 @@ TEST(FclPrimitiveContacts, RotatedPlaneNormal)
         EXPECT_LE(std::abs(dist), contact.penetrationDepth + kPlaneTol);
       }
     }
+  }
+}
+
+TEST(FclPrimitiveContacts, PrimitiveConePlaneDistance)
+{
+  constexpr double kGap = 0.2;
+  constexpr double kTol = 1e-9;
+
+  struct DistanceCase
+  {
+    const char* name;
+    Eigen::Vector3d normal;
+    bool planeFirst;
+  };
+
+  const std::vector<DistanceCase> cases = {
+      {"plane_cone_axial", Eigen::Vector3d::UnitZ(), true},
+      {"cone_plane_axial", Eigen::Vector3d::UnitZ(), false},
+      {"plane_cone_radial", Eigen::Vector3d::UnitX(), true},
+      {"cone_plane_radial", Eigen::Vector3d::UnitX(), false},
+  };
+
+  for (const auto& distanceCase : cases) {
+    SCOPED_TRACE(distanceCase.name);
+
+    auto detector = dart::collision::FCLCollisionDetector::create();
+    detector->setPrimitiveShapeType(
+        dart::collision::FCLCollisionDetector::PRIMITIVE);
+
+    auto planeFrame = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(), "plane");
+    auto coneFrame = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(), "cone");
+
+    auto planeShape = std::make_shared<dart::dynamics::PlaneShape>(
+        distanceCase.normal, 0.0);
+    auto coneShape
+        = std::make_shared<dart::dynamics::ConeShape>(kConeRadius, kConeHeight);
+    planeFrame->setShape(planeShape);
+    coneFrame->setShape(coneShape);
+
+    double extent = 0.0;
+    ASSERT_TRUE(
+        getExtentAlongDirection(*coneShape, distanceCase.normal, extent));
+    coneFrame->setTranslation(distanceCase.normal * (extent + kGap));
+
+    auto group = distanceCase.planeFirst ? detector->createCollisionGroup(
+                     planeFrame.get(), coneFrame.get())
+                                         : detector->createCollisionGroup(
+                                             coneFrame.get(), planeFrame.get());
+
+    dart::collision::DistanceOption option;
+    option.enableNearestPoints = true;
+    dart::collision::DistanceResult result;
+    const double distance = group->distance(option, &result);
+
+    EXPECT_TRUE(result.found());
+    EXPECT_NEAR(distance, kGap, kTol);
+    EXPECT_NEAR(result.minDistance, kGap, kTol);
+    EXPECT_NEAR(result.unclampedMinDistance, kGap, kTol);
+
+    const auto* shapeFrame1 = result.shapeFrame1;
+    const auto* shapeFrame2 = result.shapeFrame2;
+    ASSERT_TRUE(shapeFrame1);
+    ASSERT_TRUE(shapeFrame2);
+
+    const auto assertNearestPoint = [&](const dart::dynamics::ShapeFrame* frame,
+                                        const Eigen::Vector3d& point) {
+      if (frame == planeFrame.get()) {
+        EXPECT_NEAR(
+            planeSignedDistance(*planeShape, *planeFrame, point), 0.0, kTol);
+      } else if (frame == coneFrame.get()) {
+        EXPECT_NEAR(
+            planeSignedDistance(*planeShape, *planeFrame, point), kGap, kTol);
+      } else {
+        ADD_FAILURE() << "Unexpected shape frame in distance result.";
+      }
+    };
+
+    assertNearestPoint(shapeFrame1, result.nearestPoint1);
+    assertNearestPoint(shapeFrame2, result.nearestPoint2);
   }
 }
 
