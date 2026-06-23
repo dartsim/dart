@@ -165,7 +165,7 @@ and `/dart-backport-pr`. Run once per queue row.
 ```bash
 # 0. Confirm the source PR/commit is merged on main and not already on release.
 gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit
-git fetch origin release-6.20 main
+git fetch origin release-6.20 release-6.19 main  # release-6.19 carries the #3115 LTS twin a99369923c7
 git cherry -v --abbrev=40 origin/release-6.20 origin/main | grep <COMMIT_HASH>
 
 # 1. Branch off release-6.20 without resetting an existing local branch.
