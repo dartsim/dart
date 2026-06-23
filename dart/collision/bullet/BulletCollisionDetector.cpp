@@ -168,7 +168,7 @@ static bool checkGroupValidity(
 }
 
 //==============================================================================
-static bool isCollision(btCollisionWorld* world)
+static bool isCollision(btCollisionWorld* world, const CollisionOption& option)
 {
   DART_ASSERT(world);
 
@@ -180,8 +180,12 @@ static bool isCollision(btCollisionWorld* world)
   for (auto i = 0; i < numManifolds; ++i) {
     const auto* contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
-    if (contactManifold->getNumContacts() > 0)
-      return true;
+    const auto numContacts = contactManifold->getNumContacts();
+    for (auto j = 0; j < numContacts; ++j) {
+      if (bullet::detail::shouldReportContact(
+              contactManifold->getContactPoint(j), option))
+        return true;
+    }
   }
 
   return false;
@@ -292,7 +296,7 @@ bool BulletCollisionDetector::collide(
 
     return result->isCollision();
   } else {
-    return isCollision(collisionWorld);
+    return isCollision(collisionWorld, option);
   }
 }
 
@@ -343,7 +347,7 @@ bool BulletCollisionDetector::collide(
     reportContacts(bulletCollisionWorld, option, *result);
     hasCollision = result->isCollision();
   } else {
-    hasCollision = isCollision(bulletCollisionWorld);
+    hasCollision = isCollision(bulletCollisionWorld, option);
   }
 
   // The overlap filter callback is owned by this call and must not outlive it,
