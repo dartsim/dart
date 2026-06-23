@@ -107,6 +107,7 @@
     invalid shape dimension (or a non-finite contact from a mesh or collision
     backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
     or corrupting the LCP solve with NaN/Inf:
+    [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
