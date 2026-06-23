@@ -1506,8 +1506,12 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   const Eigen::Vector3d worldCenter = entry.transform * localCenter;
   const Eigen::Vector3d worldHalfExtents
       = entry.transform.linear().cwiseAbs() * localHalfExtents;
-  entry.min = worldCenter - worldHalfExtents;
-  entry.max = worldCenter + worldHalfExtents;
+  entry.min = (worldCenter - worldHalfExtents).unaryExpr([](double value) {
+    return std::nextafter(value, -std::numeric_limits<double>::infinity());
+  });
+  entry.max = (worldCenter + worldHalfExtents).unaryExpr([](double value) {
+    return std::nextafter(value, std::numeric_limits<double>::infinity());
+  });
 
   entry.finite = entry.min.allFinite() && entry.max.allFinite();
   return entry;
