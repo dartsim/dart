@@ -369,6 +369,22 @@ BoxedLcpSolverKind parseBoxedLcpSolver(const std::string& value)
   throw std::invalid_argument("Invalid --lcp-solver value: " + value);
 }
 
+void normalizeGeneratedCapsuleCollisionOptions(Options& options)
+{
+  if (!options.generateCapsules)
+    return;
+
+  if (options.collisionEngine == CollisionEngine::Default)
+    options.collisionEngine = CollisionEngine::Dart;
+
+  if (options.collisionEngine == CollisionEngine::Fcl
+      || options.primitiveShapes) {
+    throw std::invalid_argument(
+        "--generate-capsules cannot use the DART 6 FCL backend because FCL "
+        "capsule geometry is not wired through this backend");
+  }
+}
+
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
@@ -485,18 +501,7 @@ Options parseOptions(int argc, char* argv[])
         "--sdf-plane-shapes requires an SDF input scene");
   }
 
-  if (options.generateCapsules
-      && options.collisionEngine == CollisionEngine::Default) {
-    options.collisionEngine = CollisionEngine::Dart;
-  }
-
-  if (options.generateCapsules
-      && (options.collisionEngine == CollisionEngine::Fcl
-          || options.primitiveShapes)) {
-    throw std::invalid_argument(
-        "--generate-capsules cannot use the DART 6 FCL backend because FCL "
-        "capsule geometry is not wired through this backend");
-  }
+  normalizeGeneratedCapsuleCollisionOptions(options);
 
   if (options.guiCaptureExerciseWidget && !options.guiCapturePath.has_value()) {
     throw std::invalid_argument(
@@ -1830,7 +1835,7 @@ private:
     return options;
   }
 
-  bool replaceGeneratedScene(const Options& options, std::string* error)
+  bool replaceGeneratedScene(Options options, std::string* error)
   {
     if (!mViewer || !mNode || !mEventHandler) {
       if (error)
@@ -1839,6 +1844,7 @@ private:
     }
 
     try {
+      normalizeGeneratedCapsuleCollisionOptions(options);
       auto newWorld = createGeneratedWorld(options);
       applyOptions(newWorld, options);
       if (options.dropHeight > 0.0)
