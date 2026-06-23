@@ -100,3 +100,45 @@ TEST(Joints, SimulationSurvivesOverflowTransforms)
     EXPECT_NO_THROW(world->step());
   }
 }
+
+TEST(Joints, TranslationalJoint2DCopyPointerUsesSource)
+{
+  auto skel = Skeleton::create("translational_2d_copy");
+  auto [joint, body] = skel->createJointAndBodyNodePair<TranslationalJoint2D>();
+  (void)body;
+
+  joint->setXYPlane(false);
+  joint->copy(static_cast<const TranslationalJoint2D*>(nullptr));
+  joint->copy(joint);
+
+  auto [otherJoint, otherBody]
+      = skel->createJointAndBodyNodePair<TranslationalJoint2D>();
+  (void)otherBody;
+  otherJoint->setYZPlane(false);
+
+  joint->copy(otherJoint);
+  EXPECT_EQ(joint->getPlaneType(), TranslationalJoint2D::PlaneType::YZ);
+}
+
+TEST(Joints, UniversalJointCopyPointerUsesSource)
+{
+  auto skel = Skeleton::create("universal_copy");
+  auto [joint, body] = skel->createJointAndBodyNodePair<UniversalJoint>();
+  (void)body;
+
+  UniversalJoint::Properties props;
+  props.mAxis[0] = Eigen::Vector3d::UnitX();
+  props.mAxis[1] = Eigen::Vector3d::UnitZ();
+  joint->setProperties(props);
+
+  joint->copy(static_cast<const UniversalJoint*>(nullptr));
+  joint->copy(joint);
+
+  auto [otherJoint, otherBody]
+      = skel->createJointAndBodyNodePair<UniversalJoint>();
+  (void)otherBody;
+  otherJoint->setAxis1(Eigen::Vector3d::UnitY());
+
+  joint->copy(otherJoint);
+  EXPECT_TRUE(joint->getAxis1().isApprox(Eigen::Vector3d::UnitY()));
+}
