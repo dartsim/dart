@@ -112,7 +112,7 @@
     ERP-scaled position correction, clamped force-mixing and ERP parameters,
     and finite fallback force and velocity limits for joints with unbounded
     limits:
-    [#2247](https://github.com/dartsim/dart/pull/2247)
+    [#3137](https://github.com/dartsim/dart/pull/3137)
 
   * Expose the opt-in simulation thread controls to dartpy via
     `World.setNumSimulationThreads()` and
