@@ -1095,6 +1095,33 @@ TEST(IslandDeactivation, WakeOnCollisionOptionChange)
 }
 
 //==============================================================================
+TEST(IslandDeactivation, WakeOnAllowNegativePenetrationDepthContactChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  world->getConstraintSolver()
+      ->getCollisionOption()
+      .allowNegativePenetrationDepthContacts
+      = true;
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "contact-option flag edit reused the all-resting fast path";
+  EXPECT_FALSE(sleeper->isResting())
+      << "contact-option flag edit did not wake the sleeping body";
+}
+
+//==============================================================================
 // The between-step resting-world state guard must also track collision-option
 // scalar edits before the first no-contact fast-path snapshot is built.
 TEST(IslandDeactivation, WakeOnCollisionOptionChangeBeforeFastPath)
@@ -1114,6 +1141,35 @@ TEST(IslandDeactivation, WakeOnCollisionOptionChangeBeforeFastPath)
   world->getConstraintSolver()->getCollisionOption().maxNumContacts = 0u;
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+TEST(
+    IslandDeactivation,
+    WakeOnAllowNegativePenetrationDepthContactChangeBeforeFastPath)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+
+  world->getConstraintSolver()
+      ->getCollisionOption()
+      .allowNegativePenetrationDepthContacts
+      = true;
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "contact-option flag edit reused the previous resting-world state";
+  EXPECT_FALSE(sleeper->isResting())
+      << "contact-option flag edit did not wake the sleeping body";
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,37 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+#define DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+
 #include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/collision/bullet/BulletInclude.hpp"
 
-#include <algorithm>
+namespace dart::collision::bullet::detail {
 
-namespace dart {
-namespace collision {
-
-//==============================================================================
-CollisionOption::CollisionOption(
-    bool enableContact,
-    std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts),
-    maxNumContactsPerPair(0u),
-    allowNegativePenetrationDepthContacts(
-        allowNegativePenetrationDepthContacts),
-    collisionFilter(collisionFilter)
+/// Returns true if the manifold point should be reported as a contact for the
+/// given collision option.
+inline bool shouldReportContact(
+    const btManifoldPoint& cp, const CollisionOption& option)
 {
-  // Do nothing
+  if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
+    return false;
+
+  if (!option.allowNegativePenetrationDepthContacts && cp.m_distance1 > 0.0)
+    return false;
+
+  return true;
 }
 
-//==============================================================================
-std::size_t CollisionOption::getEffectiveMaxNumContactsPerPair() const
-{
-  if (maxNumContactsPerPair == 0u)
-    return maxNumContacts;
+} // namespace dart::collision::bullet::detail
 
-  return std::min(maxNumContactsPerPair, maxNumContacts);
-}
-
-} // namespace collision
-} // namespace dart
+#endif // DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_

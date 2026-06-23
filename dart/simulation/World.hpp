@@ -517,6 +517,8 @@ protected:
   bool mAllRestingSnapshotCollisionEnableContact = false;
   std::size_t mAllRestingSnapshotCollisionMaxNumContacts = 0;
   std::size_t mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0;
+  bool mAllRestingSnapshotCollisionAllowNegativePenetrationDepthContacts
+      = false;
   const collision::CollisionFilter* mAllRestingSnapshotCollisionFilter
       = nullptr;
   std::size_t mAllRestingSnapshotCollisionFilterRevision = 0;
@@ -536,6 +538,8 @@ protected:
   bool mLastStepRestingWorldStateCollisionEnableContact = false;
   std::size_t mLastStepRestingWorldStateCollisionMaxNumContacts = 0;
   std::size_t mLastStepRestingWorldStateCollisionMaxNumContactsPerPair = 0;
+  bool mLastStepRestingWorldStateCollisionAllowNegativePenetrationDepthContacts
+      = false;
   const collision::CollisionFilter* mLastStepRestingWorldStateCollisionFilter
       = nullptr;
   std::size_t mLastStepRestingWorldStateCollisionFilterRevision = 0;

@@ -2,13 +2,9 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged, and the active DART-native performance stack is
-#3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, #3139
-`perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, and #3141
-`perf/dart6-native-scratch-result-cache`. The next local candidate is
-`perf/dart6-single-reactive-solve-fast-path`, stacked on #3141.
+Bottom line: #3129, #3133, #3135, #3139, #3140, and #3141 are merged. The
+current follow-up is #3142 `perf/dart6-single-reactive-solve-fast-path`,
+refreshed on current `origin/release-6.20`.
 
 The current local candidate skips two redundant parallel-safety scans in the
 large single-reactive fixed-support contact case that dominates the original
@@ -35,7 +31,6 @@ about `694 ms` to `3.069 ms`. The next largest measured costs are now
 and velocity/position integration at about `701 ms` combined, so the next
 larger wins should continue in native collision/contact construction or
 integration hot paths rather than more solve-dispatch bookkeeping.
-
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
 serial early-exit path. #3135 makes explicit per-pair contact caps select the

@@ -30,37 +30,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionOption.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/math/Helpers.hpp"
 
-#include <algorithm>
+#include <gtest/gtest.h>
 
-namespace dart {
-namespace collision {
+using namespace dart;
+using namespace dart::math::suffixes;
 
 //==============================================================================
-CollisionOption::CollisionOption(
-    bool enableContact,
-    std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter,
-    bool allowNegativePenetrationDepthContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts),
-    maxNumContactsPerPair(0u),
-    allowNegativePenetrationDepthContacts(
-        allowNegativePenetrationDepthContacts),
-    collisionFilter(collisionFilter)
+TEST(Helpers, AngleLiteralOperatorsFloat)
 {
-  // Do nothing
+  // The floating-point (long double) overloads of the user-defined literal
+  // operators.
+  EXPECT_DOUBLE_EQ(1.0_pi, math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(0.5_pi, math::constantsd::pi() / 2.0);
+  EXPECT_DOUBLE_EQ(2.0_pi, 2.0 * math::constantsd::pi());
+
+  EXPECT_DOUBLE_EQ(1.5_rad, 1.5);
+  EXPECT_DOUBLE_EQ(0.0_rad, 0.0);
+
+  EXPECT_DOUBLE_EQ(90.0_deg, math::constantsd::pi() / 2.0);
+  EXPECT_DOUBLE_EQ(180.0_deg, math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(0.0_deg, 0.0);
 }
 
 //==============================================================================
-std::size_t CollisionOption::getEffectiveMaxNumContactsPerPair() const
+TEST(Helpers, AngleLiteralOperatorsInteger)
 {
-  if (maxNumContactsPerPair == 0u)
-    return maxNumContacts;
+  // The integer (unsigned long long int) overloads of the user-defined literal
+  // operators. These forward to the long double overloads, so the results must
+  // match the floating-point equivalents exactly.
+  EXPECT_DOUBLE_EQ(0_pi, 0.0);
+  EXPECT_DOUBLE_EQ(1_pi, math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(2_pi, 2.0 * math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(1_pi, 1.0_pi);
 
-  return std::min(maxNumContactsPerPair, maxNumContacts);
+  EXPECT_DOUBLE_EQ(0_rad, 0.0);
+  EXPECT_DOUBLE_EQ(2_rad, 2.0);
+  EXPECT_DOUBLE_EQ(2_rad, 2.0_rad);
+
+  EXPECT_DOUBLE_EQ(0_deg, 0.0);
+  EXPECT_DOUBLE_EQ(90_deg, math::constantsd::pi() / 2.0);
+  EXPECT_DOUBLE_EQ(180_deg, math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(360_deg, 2.0 * math::constantsd::pi());
+  EXPECT_DOUBLE_EQ(90_deg, 90.0_deg);
 }
-
-} // namespace collision
-} // namespace dart

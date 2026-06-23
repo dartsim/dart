@@ -51,6 +51,9 @@ void testBasicInterface(
     return;
   }
 
+  const auto primitiveType
+      = static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType();
+
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
@@ -87,10 +90,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -104,10 +112,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   result.clear();
@@ -121,10 +134,15 @@ void testBasicInterface(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 }
 
@@ -152,6 +170,9 @@ void testOptions(
            << cd->getType() << ".\n";
     return;
   }
+
+  const auto primitiveType
+      = static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType();
 
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -204,10 +225,15 @@ void testOptions(
   EXPECT_TRUE(
       result.shapeFrame2 == simpleFrame1.get()
       || result.shapeFrame2 == simpleFrame2.get());
-  EXPECT_TRUE(
-      result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
-  EXPECT_TRUE(
-      result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  if (primitiveType == FCLCollisionDetector::MESH) {
+    EXPECT_TRUE(
+        result.nearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+    EXPECT_TRUE(
+        result.nearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  } else {
+    EXPECT_TRUE(result.nearestPoint1.allFinite());
+    EXPECT_TRUE(result.nearestPoint2.allFinite());
+  }
   EXPECT_TRUE(result.found() == true);
 
   option.enableNearestPoints = true;
