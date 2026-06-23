@@ -314,6 +314,12 @@ protected:
 
   void releaseMesh();
 
+  /// Replaces the legacy Assimp mesh while preserving cache invariants.
+  void setLegacyMesh(const aiScene* mesh, MeshOwnership ownership);
+
+  /// Rebuilds TriMesh/material caches after in-place Assimp mesh updates.
+  void notifyLegacyMeshChanged();
+
   MeshHandle mMesh;
 
   /// Converts aiScene to TriMesh for internal use.

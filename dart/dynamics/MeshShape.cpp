@@ -233,6 +233,41 @@ void MeshShape::releaseMesh()
 }
 
 //==============================================================================
+void MeshShape::setLegacyMesh(const aiScene* mesh, MeshOwnership ownership)
+{
+  if (mesh == mMesh.get()) {
+    notifyLegacyMeshChanged();
+    return;
+  }
+
+  const bool meshIsCached = mesh && mesh == mCachedAiScene;
+  const MeshOwnership effectiveOwnership
+      = meshIsCached ? MeshOwnership::Imported : ownership;
+
+  if (mCachedAiScene) {
+    if (meshIsCached)
+      mCachedAiScene = nullptr;
+    else
+      aiReleaseImport(mCachedAiScene);
+  }
+
+  releaseMesh();
+  mMesh.set(mesh, effectiveOwnership);
+  notifyLegacyMeshChanged();
+}
+
+//==============================================================================
+void MeshShape::notifyLegacyMeshChanged()
+{
+  mTriMesh = convertAssimpMesh(mMesh.get(), &mSubMeshRanges);
+  extractMaterialsFromScene(mMesh.get());
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
+  incrementVersion();
+}
+
+//==============================================================================
 std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
     const aiScene* mesh, MeshOwnership ownership)
 {
@@ -262,7 +297,7 @@ std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
 //==============================================================================
 MeshShape::MeshHandle& MeshShape::MeshHandle::operator=(const aiScene* mesh)
 {
-  set(mesh, MeshOwnership::Manual);
+  set(mesh, MeshOwnership::None);
   return *this;
 }
 

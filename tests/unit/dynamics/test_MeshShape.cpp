@@ -2,6 +2,7 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 
@@ -10,7 +11,9 @@
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -138,6 +141,15 @@ double readColladaUnitScale(const std::string& path)
   }
 }
 
+double maxVertexZ(const math::TriMesh<double>& mesh)
+{
+  double maxZ = -std::numeric_limits<double>::infinity();
+  for (const auto& vertex : mesh.getVertices())
+    maxZ = std::max(maxZ, vertex.z());
+
+  return maxZ;
+}
+
 } // namespace
 
 TEST(MeshShapeTest, TriMeshConstructorUpdatesBoundsAndAssimpBridge)
@@ -226,6 +238,26 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
   EXPECT_EQ(mesh->getMesh(), scene);
   EXPECT_EQ(mesh->getMeshUri(), otherUri);
   EXPECT_EQ(mesh->getMeshPath(), retriever->getFilePath(common::Uri(otherUri)));
+}
+
+TEST(MeshShapeTest, ArrowShapeRefreshesTriMeshAfterPositionUpdates)
+{
+  dynamics::ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+
+  const auto originalMesh = arrow.getTriMesh();
+  ASSERT_NE(originalMesh, nullptr);
+  const double originalMaxZ = maxVertexZ(*originalMesh);
+
+  arrow.setPositions(Eigen::Vector3d::Zero(), 2.0 * Eigen::Vector3d::UnitZ());
+
+  const auto updatedMesh = arrow.getTriMesh();
+  ASSERT_NE(updatedMesh, nullptr);
+  EXPECT_NE(updatedMesh, originalMesh);
+  EXPECT_GT(maxVertexZ(*updatedMesh), originalMaxZ * 1.5);
+
+  auto clone = std::dynamic_pointer_cast<dynamics::ArrowShape>(arrow.clone());
+  ASSERT_NE(clone, nullptr);
+  EXPECT_GT(clone->getBoundingBox().computeFullExtents().z(), 1.5);
 }
 
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
