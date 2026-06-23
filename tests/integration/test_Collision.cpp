@@ -976,6 +976,108 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
 }
 
 //==============================================================================
+TEST_F(Collision, DartParallelBodyNodeFinitePlaneContactsMatchSerial)
+{
+  constexpr std::size_t kNumBoxes = 140u;
+
+  auto cd = DARTCollisionDetector::create();
+
+  auto ground = Skeleton::create("ground");
+  auto groundPair = ground->createJointAndBodyNodePair<FreeJoint>();
+  auto* groundBody = groundPair.second;
+  groundBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  ground->setMobile(false);
+
+  std::vector<SkeletonPtr> boxes;
+  std::vector<BodyNode*> boxBodies;
+  boxes.reserve(kNumBoxes);
+  boxBodies.reserve(kNumBoxes);
+  for (std::size_t i = 0u; i < kNumBoxes; ++i) {
+    auto box = Skeleton::create("box_" + std::to_string(i));
+    auto boxPair = box->createJointAndBodyNodePair<FreeJoint>();
+    auto* boxJoint = boxPair.first;
+    auto* boxBody = boxPair.second;
+    boxBody->createShapeNodeWith<CollisionAspect>(
+        std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = Eigen::Vector3d(1.25 * i, 0.0, 0.49);
+    boxJoint->setPositions(FreeJoint::convertToPositions(transform));
+
+    boxBodies.push_back(boxBody);
+    boxes.push_back(box);
+  }
+
+  auto group = cd->createCollisionGroup();
+  group->addShapeFramesOf(groundBody);
+  for (const auto* boxBody : boxBodies)
+    group->addShapeFramesOf(boxBody);
+
+  auto expectParallelMatchesSerial
+      = [&](const std::shared_ptr<CollisionFilter>& filter) -> std::size_t {
+    CollisionOption option;
+    option.enableContact = true;
+    option.maxNumContacts = 2048u;
+    option.collisionFilter = filter;
+
+    cd->setNumCollisionThreads(1u);
+    CollisionResult serialResult;
+    if (!group->collide(option, &serialResult)) {
+      ADD_FAILURE() << "serial query should report finite-plane contacts";
+      return 0u;
+    }
+
+    cd->setNumCollisionThreads(4u);
+    CollisionResult parallelResult;
+    if (!group->collide(option, &parallelResult)) {
+      ADD_FAILURE() << "parallel query should report finite-plane contacts";
+      return serialResult.getNumContacts();
+    }
+
+    if (parallelResult.getNumContacts() != serialResult.getNumContacts()) {
+      ADD_FAILURE() << "serial and parallel contact counts differ";
+      return serialResult.getNumContacts();
+    }
+    for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+      SCOPED_TRACE(i);
+      const auto& serialContact = serialResult.getContact(i);
+      const auto& parallelContact = parallelResult.getContact(i);
+      EXPECT_EQ(
+          parallelContact.collisionObject1->getShapeFrame(),
+          serialContact.collisionObject1->getShapeFrame());
+      EXPECT_EQ(
+          parallelContact.collisionObject2->getShapeFrame(),
+          serialContact.collisionObject2->getShapeFrame());
+      EXPECT_TRUE(parallelContact.point.isApprox(serialContact.point, 1e-12));
+      EXPECT_TRUE(parallelContact.normal.isApprox(serialContact.normal, 1e-12));
+      EXPECT_NEAR(
+          parallelContact.penetrationDepth,
+          serialContact.penetrationDepth,
+          1e-12);
+    }
+
+    return serialResult.getNumContacts();
+  };
+
+  const auto unfilteredContactCount = expectParallelMatchesSerial(
+      std::make_shared<BodyNodeCollisionFilter>());
+  ASSERT_GT(unfilteredContactCount, kNumBoxes);
+
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  bodyNodeFilter->addBodyNodePairToBlackList(groundBody, boxBodies.front());
+  const auto blacklistedContactCount
+      = expectParallelMatchesSerial(bodyNodeFilter);
+  EXPECT_LT(blacklistedContactCount, unfilteredContactCount);
+
+  auto subclassFilter = std::make_shared<ToggleBodyNodeCollisionFilter>(
+      groundBody, boxBodies.back(), true);
+  const auto subclassFilteredContactCount
+      = expectParallelMatchesSerial(subclassFilter);
+  EXPECT_LT(subclassFilteredContactCount, unfilteredContactCount);
+}
+
+//==============================================================================
 TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
 {
   auto cd = DARTCollisionDetector::create();

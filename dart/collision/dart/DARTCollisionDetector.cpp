@@ -38,12 +38,14 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <algorithm>
@@ -53,6 +55,7 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -62,6 +65,26 @@
 
 namespace dart {
 namespace collision {
+
+namespace detail {
+
+//==============================================================================
+class BodyNodeCollisionFilterAccessor
+{
+public:
+  static bool hasBodyNodePairBlackList(const BodyNodeCollisionFilter& filter)
+  {
+    return filter.hasBodyNodePairBlackList();
+  }
+
+  static bool isSolverRestingContactFilterActive(
+      const BodyNodeCollisionFilter& filter)
+  {
+    return filter.isSolverRestingContactFilterActive();
+  }
+};
+
+} // namespace detail
 
 //==============================================================================
 class CollisionThreadPool
@@ -1512,6 +1535,69 @@ bool isPlaneShape(const CollisionObject* object)
 }
 
 //==============================================================================
+bool isExactBodyNodeCollisionFilter(
+    const std::shared_ptr<CollisionFilter>& filter)
+{
+  if (!filter)
+    return false;
+
+  return typeid(*filter) == typeid(BodyNodeCollisionFilter);
+}
+
+//==============================================================================
+bool canSkipBodyNodeFilterForFinitePlanePairs(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    const std::vector<BroadphaseEntry>& planeEntries,
+    const std::shared_ptr<CollisionFilter>& filter)
+{
+  if (!isExactBodyNodeCollisionFilter(filter))
+    return false;
+
+  const auto* bodyNodeFilter
+      = static_cast<const BodyNodeCollisionFilter*>(filter.get());
+  if (detail::BodyNodeCollisionFilterAccessor::hasBodyNodePairBlackList(
+          *bodyNodeFilter)
+      || detail::BodyNodeCollisionFilterAccessor::
+          isSolverRestingContactFilterActive(*bodyNodeFilter)) {
+    return false;
+  }
+
+  if (finiteEntries.empty() || planeEntries.empty())
+    return false;
+
+  for (const auto& planeEntry : planeEntries) {
+    const auto* planeBody
+        = planeEntry.object ? planeEntry.object->getBodyNode() : nullptr;
+    const auto* planeSkeleton
+        = planeBody ? planeBody->getSkeletonRawPtr() : nullptr;
+    if (planeBody == nullptr || planeSkeleton == nullptr
+        || !planeBody->isCollidable() || planeSkeleton->isMobile()) {
+      return false;
+    }
+  }
+
+  for (const auto& finiteEntry : finiteEntries) {
+    const auto* finiteBody
+        = finiteEntry.object ? finiteEntry.object->getBodyNode() : nullptr;
+    const auto* finiteSkeleton
+        = finiteBody ? finiteBody->getSkeletonRawPtr() : nullptr;
+    if (finiteBody == nullptr || finiteSkeleton == nullptr
+        || !finiteBody->isCollidable() || !finiteSkeleton->isMobile()) {
+      return false;
+    }
+
+    for (const auto& planeEntry : planeEntries) {
+      const auto* planeBody = planeEntry.object->getBodyNode();
+      const auto* planeSkeleton = planeBody->getSkeletonRawPtr();
+      if (finiteBody == planeBody || finiteSkeleton == planeSkeleton)
+        return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
 {
   if (finiteEntry.object == nullptr)
@@ -1716,6 +1802,8 @@ bool processFinitePlanePairs(
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
   const bool hasSinglePlane = planeEntries.size() == 1u;
+  const bool skipBodyNodeFilter = canSkipBodyNodeFilterForFinitePlanePairs(
+      finiteEntries, planeEntries, filter);
   const bool canSkipCrossPairDuplicateCheck
       = canConsiderParallel && hasSinglePlane
         && haveMutuallyDisjointContactBounds(
@@ -1752,7 +1840,7 @@ bool processFinitePlanePairs(
   };
 
   std::size_t parallelPairCount = pairCount;
-  if (canConsiderParallel && filter) {
+  if (canConsiderParallel && filter && !skipBodyNodeFilter) {
     DART_PROFILE_SCOPED_N("DART native finite-plane prefilter");
 
     scratch.parallelPairIndices.clear();
@@ -1778,8 +1866,9 @@ bool processFinitePlanePairs(
     scratch.prepareParallelPairResults(parallelPairCount);
 
     auto collidePairAt = [&](std::size_t workIndex) {
-      const auto pairIndex
-          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+      const auto pairIndex = (filter && !skipBodyNodeFilter)
+                                 ? scratch.parallelPairIndices[workIndex]
+                                 : workIndex;
       auto& pairResult = scratch.parallelPairResults[workIndex];
       pairResult.clear();
 
@@ -1809,8 +1898,9 @@ bool processFinitePlanePairs(
         if (scratch.parallelPairCollisions[workIndex] == 0)
           continue;
 
-        const auto pairIndex
-            = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+        const auto pairIndex = (filter && !skipBodyNodeFilter)
+                                   ? scratch.parallelPairIndices[workIndex]
+                                   : workIndex;
         const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
         auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
         auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
@@ -1832,7 +1922,7 @@ bool processFinitePlanePairs(
     return false;
   }
 
-  if (canConsiderParallel && filter) {
+  if (canConsiderParallel && filter && !skipBodyNodeFilter) {
     for (const auto pairIndex : scratch.parallelPairIndices) {
       if (processSerialPairAt(pairIndex))
         return true;
@@ -1850,7 +1940,8 @@ bool processFinitePlanePairs(
         const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
         auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
         auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
-        if (filter && filter->ignoresCollision(collObj1, collObj2))
+        if (filter && !skipBodyNodeFilter
+            && filter->ignoresCollision(collObj1, collObj2))
           continue;
 
         if (processSerialPairAt(pairIndex))
