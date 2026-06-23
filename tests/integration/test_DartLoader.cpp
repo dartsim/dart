@@ -284,6 +284,10 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
       Eigen::VectorXd::Constant(joint->getNumDofs(), 0.6)));
   EXPECT_TRUE(joint->getDampingCoefficients().isConstant(0.3));
   EXPECT_TRUE(joint->getFrictions().isConstant(0.7));
+  EXPECT_TRUE(joint->hasCoulombFriction());
+
+  joint->setFrictions(Eigen::VectorXd::Zero(joint->getNumDofs()));
+  EXPECT_FALSE(joint->hasCoulombFriction());
 }
 
 //==============================================================================
@@ -367,6 +371,10 @@ TEST(DartLoader, parseFloatingJointLimits)
   EXPECT_TRUE(joint->getRestPositions().isConstant(0.15));
   EXPECT_TRUE(joint->getDampingCoefficients().isConstant(0.4));
   EXPECT_TRUE(joint->getFrictions().isConstant(0.5));
+  EXPECT_TRUE(joint->hasCoulombFriction());
+
+  joint->setFrictions(Eigen::VectorXd::Zero(joint->getNumDofs()));
+  EXPECT_FALSE(joint->hasCoulombFriction());
 }
 
 //==============================================================================

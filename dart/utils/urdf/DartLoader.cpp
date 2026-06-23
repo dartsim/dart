@@ -627,11 +627,17 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       if (_jt->dynamics) {
         properties.mDampingCoefficients.setConstant(_jt->dynamics->damping);
-        properties.mFrictions.setConstant(_jt->dynamics->friction);
       }
 
-      pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-          _parent, properties, _body);
+      auto freeJointPair
+          = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+              _parent, properties, _body);
+      if (_jt->dynamics) {
+        freeJointPair.first->setFrictions(Eigen::VectorXd::Constant(
+            freeJointPair.first->getNumDofs(), _jt->dynamics->friction));
+      }
+
+      pair = freeJointPair;
       break;
     }
     case urdf::Joint::PLANAR: {
@@ -687,11 +693,17 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       if (_jt->dynamics) {
         properties.mDampingCoefficients.setConstant(_jt->dynamics->damping);
-        properties.mFrictions.setConstant(_jt->dynamics->friction);
       }
 
-      pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
-          _parent, properties, _body);
+      auto planarJointPair
+          = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
+              _parent, properties, _body);
+      if (_jt->dynamics) {
+        planarJointPair.first->setFrictions(Eigen::VectorXd::Constant(
+            planarJointPair.first->getNumDofs(), _jt->dynamics->friction));
+      }
+
+      pair = planarJointPair;
       break;
     }
     default: {
