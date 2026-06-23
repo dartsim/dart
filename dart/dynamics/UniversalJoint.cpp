@@ -89,7 +89,7 @@ void UniversalJoint::copy(const UniversalJoint* _otherJoint)
   if (nullptr == _otherJoint)
     return;
 
-  copy(*this);
+  copy(*_otherJoint);
 }
 
 //==============================================================================
