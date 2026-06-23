@@ -1358,9 +1358,11 @@ bool processFinitePlanePairs(
 {
   constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
   const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
+  const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
   const bool canParallelize
       = result != nullptr && threadPool != nullptr && numCollisionThreads > 1u
-        && !option.collisionFilter && pairCount >= kMinParallelFinitePlanePairs;
+        && !option.collisionFilter && !contactCapCanShortCircuit
+        && pairCount >= kMinParallelFinitePlanePairs;
 
   if (canParallelize) {
     scratch.prepareParallelPairResults(pairCount);
