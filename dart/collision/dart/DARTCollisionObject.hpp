@@ -86,6 +86,8 @@ public:
 
   bool isCachedPlaneShape() const;
 
+  const Eigen::Isometry3d& getWorldTransformForCollision() const;
+
 protected:
   // Documentation inherited
   void updateEngineData() override;
@@ -101,6 +103,7 @@ private:
   Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
   bool mHasFiniteCachedLocalBounds{false};
   bool mIsCachedPlaneShape{false};
+  bool mUseBodyNodeWorldTransform{false};
 };
 
 } // namespace collision

@@ -2,38 +2,39 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged. #3146
-`perf/dart6-resting-velocity-version` is open on top of the active
-DART-native stack through #3144, and the current local candidate is
-`perf/dart6-reuse-default-contact-constraints` stacked on #3146.
+Bottom line: #3129 is merged. #3133 and #3147 are open, with hosted CI still
+queued or running rather than failing. The current local candidate is
+`perf/dart6-contact-solve-hot-path`, stacked on #3147
+`perf/dart6-reuse-default-contact-constraints`.
 
-#3146 targets the settled-scene hot path by tracking explicit joint-velocity
-edits with a global generation counter. The current local candidate targets the
-remaining active contact-construction cost by reusing exact built-in default
-`ContactConstraint` objects across steps and by computing local contact points
-without constructing full inverse transforms. It also reuses the previous
-contact-pair scratch-table index for consecutive contacts from the same pair.
-Custom contact-surface handlers stay on the existing construction path.
+#3147 targets the remaining active contact-construction cost by reusing exact
+built-in default `ContactConstraint` objects across steps, computing local
+contact points without constructing full inverse transforms, and reusing the
+previous contact-pair scratch-table index for consecutive contacts from the
+same pair. The current local candidate targets the next DART-native collision
+hot path: identity-relative `ShapeNode` collision objects now reuse the owning
+`BodyNode` world transform instead of recomputing the same world transform
+through the `ShapeFrame` path. The fast path is refreshed from the
+`ShapeFrame` version and falls back automatically when the shape-node relative
+transform is not exactly identity.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
 dynamics, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`:
+`--max-contacts-per-pair 4`, deactivation disabled:
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3146 parent, default deactivation, 3000 steps | `10.4855` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Current candidate, default deactivation, 3000 steps | `10.6412` latest rerun, `10.6538` prior run | finite, same hash, resting `3003 / 3003`, contacts `0` |
-| #3146 parent, deactivation disabled, 300 active steps, text profile | `0.0923224` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `build contact constraints` `717.46 ms` |
-| Current candidate, deactivation disabled, 300 active steps, text profile | `0.0936375` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `606.17 ms`, `collect contact candidates` `127.61 ms` |
-| Current candidate, deactivation disabled, 300 active steps, no profile | `0.0965788` latest rerun, `0.0913109` / `0.089246` prior runs | finite, same hash, contacts `5005`, pairs `3003` |
+| #3147 parent, 300 active steps, text profile | `0.0919981` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `1.045 s`, `build contact constraints` `624.05 ms` |
+| Current candidate, 300 active steps, text profile | `0.0985385` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.02 ms`, `build contact constraints` `615.18 ms` |
+| Current candidate, 300 active steps, no profile | `0.0970198` latest rerun, `0.0964616` / `0.0913842` prior runs | finite, same hash, contacts `5005`, pairs `3003` |
 
-The settled scene remains dominated by the #3146 all-resting fast path. The
-current candidate preserves both consumed final-state hashes and trims the
-measured active contact-construction scope by about 15% in the text profiler
-(`717.46 ms` to `606.17 ms`). Whole-run active RTF remains noisy and dominated
-by collision, constraint solving, and integration; those stay the stress paths
-for the next native-collision improvements.
+A temporary local profile split, not committed, isolated the broadphase-entry
+transform setup cost from `114.10 ms` to `83.36 ms` over 100 active steps, with
+the same consumed final-state hash `0xf13037a0e2b6daa7`. Whole-run active RTF
+remains noisy and dominated by collision, constraint solving, and integration;
+this candidate is a narrow transform-setup improvement, not the larger native
+detector endpoint.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,

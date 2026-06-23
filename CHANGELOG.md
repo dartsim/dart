@@ -101,6 +101,11 @@
     boundary, while preserving the exact distance-based duplicate check:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up DART-native collision transform setup for identity-relative
+    `ShapeNode` collision objects by reusing the owning `BodyNode` world
+    transform while refreshing the fast path when shape-node geometry changes:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:

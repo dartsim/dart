@@ -3338,8 +3338,10 @@ int collideShapes(
   if (!shape1 || !shape2)
     return false;
 
-  const Eigen::Isometry3d& T1 = o1->getTransform();
-  const Eigen::Isometry3d& T2 = o2->getTransform();
+  const Eigen::Isometry3d& T1
+      = static_cast<DARTCollisionObject*>(o1)->getWorldTransformForCollision();
+  const Eigen::Isometry3d& T2
+      = static_cast<DARTCollisionObject*>(o2)->getWorldTransformForCollision();
 
   if (dynamics::SphereShape::getStaticType() == shapeType1) {
     const auto* sphere0 = static_cast<const dynamics::SphereShape*>(shape1);
@@ -3976,8 +3978,8 @@ int collidePlaneShape(
     bool planeFirst,
     CollisionResult& result)
 {
-  const auto& planeTransform = planeObject->getTransform();
-  const auto& otherTransform = otherObject->getTransform();
+  const auto& planeTransform = planeObject->getWorldTransformForCollision();
+  const auto& otherTransform = otherObject->getWorldTransformForCollision();
   return collidePlaneShape(
       planeObject,
       otherObject,

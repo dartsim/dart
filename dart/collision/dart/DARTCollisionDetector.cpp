@@ -1528,12 +1528,12 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!object)
     return entry;
 
-  entry.transform = object->getTransform();
+  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  entry.transform = dartObject->getWorldTransformForCollision();
 
   if (entry.plane)
     return entry;
 
-  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
   if (!dartObject->getCachedShape())
     return entry;
 

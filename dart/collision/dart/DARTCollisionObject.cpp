@@ -32,6 +32,7 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -99,6 +100,14 @@ bool DARTCollisionObject::isCachedPlaneShape() const
 }
 
 //==============================================================================
+const Eigen::Isometry3d& DARTCollisionObject::getWorldTransformForCollision()
+    const
+{
+  return mUseBodyNodeWorldTransform ? mBodyNode->getWorldTransform()
+                                    : getTransform();
+}
+
+//==============================================================================
 void DARTCollisionObject::refreshShapeCache()
 {
   const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
@@ -113,6 +122,12 @@ void DARTCollisionObject::refreshShapeCache()
   mCachedLocalBoundsMax.setZero();
   mHasFiniteCachedLocalBounds = false;
   mIsCachedPlaneShape = false;
+  mUseBodyNodeWorldTransform = false;
+
+  if (mShapeNode != nullptr && mBodyNode != nullptr) {
+    mUseBodyNodeWorldTransform = mShapeNode->getRelativeTransform().matrix()
+                                 == Eigen::Isometry3d::Identity().matrix();
+  }
 
   if (!mCachedShape)
     return;

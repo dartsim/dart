@@ -498,6 +498,44 @@ TEST_F(Collision, DARTCollisionDetectorRefreshesChangedShapeGeometry)
 }
 
 //==============================================================================
+TEST_F(Collision, DARTCollisionDetectorRefreshesShapeNodeRelativeTransform)
+{
+  auto cd = DARTCollisionDetector::create();
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto sphereSkeleton = Skeleton::create("shape_node_relative_transform");
+  auto pair = sphereSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* sphereJoint = pair.first;
+  auto* sphereBody = pair.second;
+  auto* sphereNode = sphereBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<SphereShape>(0.5));
+
+  Eigen::Isometry3d bodyPose = Eigen::Isometry3d::Identity();
+  bodyPose.translation() = Eigen::Vector3d(0.0, 0.0, 0.45);
+  sphereJoint->setRelativeTransform(bodyPose);
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto sphereGroup = cd->createCollisionGroup(sphereNode);
+
+  CollisionOption option;
+  option.enableContact = true;
+
+  CollisionResult result;
+  EXPECT_TRUE(planeGroup->collide(sphereGroup.get(), option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  Eigen::Isometry3d shapeOffset = Eigen::Isometry3d::Identity();
+  shapeOffset.translation() = Eigen::Vector3d(0.0, 0.0, 2.0);
+  sphereNode->setRelativeTransform(shapeOffset);
+
+  result.clear();
+  EXPECT_FALSE(planeGroup->collide(sphereGroup.get(), option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
 void testSphereSphere(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {
