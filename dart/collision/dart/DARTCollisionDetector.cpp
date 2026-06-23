@@ -293,6 +293,15 @@ private:
   std::size_t bucketMask{0u};
 };
 
+class ScratchCollisionResult final : public CollisionResult
+{
+public:
+  ScratchCollisionResult()
+  {
+    setCollidingObjectCacheEnabled(false);
+  }
+};
+
 struct BroadphaseScratch
 {
   std::vector<BroadphaseEntry> finiteEntries1;
@@ -304,12 +313,12 @@ struct BroadphaseScratch
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
   std::vector<std::size_t> parallelPairIndices;
-  std::vector<CollisionResult> parallelPairResults;
+  std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
   std::vector<std::size_t> contactSelectionReserve;
   std::vector<std::size_t> selectedContactIndices;
-  CollisionResult pairResult;
+  ScratchCollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
   void clear();
@@ -1601,10 +1610,14 @@ bool processFinitePlanePairs(
         && !contactCapCanShortCircuit && allPairsHaveCachedPlaneCollisionPath
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
+  const bool hasSinglePlane = planeEntries.size() == 1u;
 
   auto getPairEntries = [&](std::size_t pairIndex) {
-    const auto planeIndex = pairIndex / finiteEntries.size();
-    const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
+    const auto planeIndex
+        = hasSinglePlane ? 0u : pairIndex / finiteEntries.size();
+    const auto finiteIndex
+        = hasSinglePlane ? pairIndex
+                         : pairIndex - planeIndex * finiteEntries.size();
     return std::make_pair(
         &planeEntries[planeIndex], &finiteEntries[finiteIndex]);
   };
