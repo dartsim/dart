@@ -61,6 +61,9 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Update the math user-defined literal declarations to the C++23 spelling
+    accepted by newer AppleClang warning-as-error builds.
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
@@ -77,6 +80,12 @@
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Fix FCL primitive contact normal orientation and switch default FCL primitive
+    handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
+    solver, and SKEL parser fallback paths. Users needing legacy mesh
+    approximation can still select `MESH` or `fcl_mesh`:
+    [#3131](https://github.com/dartsim/dart/pull/3131)
 
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
@@ -106,6 +115,18 @@
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
 * Simulation
+
+  * Harden contact handling against invalid geometry, fixing a crash reported
+    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
+    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
+    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
+    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
+    is non-finite before contact-constraint creation. Together these stop an
+    invalid shape dimension (or a non-finite contact from a mesh or collision
+    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
+    or corrupting the LCP solve with NaN/Inf:
+    [#3132](https://github.com/dartsim/dart/pull/3132),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
