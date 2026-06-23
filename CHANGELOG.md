@@ -101,6 +101,11 @@
     boundary, while preserving the exact distance-based duplicate check:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up DART-native finite-shape-vs-plane contact merging by using
+    contact-bound separation to bypass global duplicate-contact grid checks
+    when different finite shapes cannot contribute duplicate contact points:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up DART-native collision transform setup for identity-relative
     `ShapeNode` collision objects by reusing the owning `BodyNode` world
     transform while refreshing the fast path when shape-node geometry changes:

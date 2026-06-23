@@ -37,6 +37,7 @@
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -277,10 +278,11 @@ class ContactPointIndex
 public:
   void clear();
   void prepare(std::size_t maxContacts);
-  bool containsClose(const Eigen::Vector3d& point) const;
-  void add(const Eigen::Vector3d& point);
+  bool insertIfAbsent(const Eigen::Vector3d& point);
 
 private:
+  bool containsClose(
+      const Eigen::Vector3d& point, const ContactPointKey& key) const;
   bool containsCloseLinear(const Eigen::Vector3d& point) const;
   void ensureBucketCapacity(std::size_t requiredPoints);
   void rehash(std::size_t bucketCount);
@@ -313,12 +315,14 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  std::vector<const BroadphaseEntry*> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
   std::vector<std::size_t> contactSelectionReserve;
   std::vector<std::size_t> selectedContactIndices;
+  std::vector<Eigen::Vector3d> localContactPoints;
   ScratchCollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
@@ -362,7 +366,8 @@ void postProcess(
     CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& totalResult,
-    const CollisionResult& pairResult);
+    const CollisionResult& pairResult,
+    bool skipCrossPairDuplicateCheck = false);
 
 bool isPlaneShape(const CollisionObject* object);
 
@@ -375,6 +380,15 @@ void buildBroadphaseEntries(
     std::vector<BroadphaseEntry>& otherEntries);
 
 bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2);
+
+bool contactBoundsOverlap(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    double padding);
+
+bool haveMutuallyDisjointContactBounds(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    std::vector<const BroadphaseEntry*>& sortedEntries);
 
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
@@ -1028,12 +1042,9 @@ void ContactPointIndex::prepare(std::size_t maxContacts)
 }
 
 //==============================================================================
-bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
+bool ContactPointIndex::containsClose(
+    const Eigen::Vector3d& point, const ContactPointKey& key) const
 {
-  ContactPointKey key;
-  if (buckets.empty() || !makeContactPointKey(point, key))
-    return containsCloseLinear(point);
-
   int firstDx = 0;
   int lastDx = 0;
   int firstDy = 0;
@@ -1075,24 +1086,33 @@ bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
 }
 
 //==============================================================================
-void ContactPointIndex::add(const Eigen::Vector3d& point)
+bool ContactPointIndex::insertIfAbsent(const Eigen::Vector3d& point)
 {
+  ContactPointKey key;
+  if (!makeContactPointKey(point, key)) {
+    if (containsCloseLinear(point))
+      return false;
+
+    points.push_back(point);
+    nextPoint.push_back(kInvalidContactPointIndex);
+    return true;
+  }
+
   ensureBucketCapacity(points.size() + 1u);
+  if (containsClose(point, key))
+    return false;
 
   const auto pointIndex = points.size();
   points.push_back(point);
   nextPoint.push_back(kInvalidContactPointIndex);
 
-  ContactPointKey key;
-  if (!makeContactPointKey(point, key))
-    return;
-
   const auto bucketIndex = findOrCreateBucketIndex(key);
   if (bucketIndex == kInvalidContactPointIndex)
-    return;
+    return true;
 
   nextPoint[pointIndex] = buckets[bucketIndex].head;
   buckets[bucketIndex].head = pointIndex;
+  return true;
 }
 
 //==============================================================================
@@ -1205,9 +1225,11 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  contactBoundEntries.clear();
   parallelPairIndices.clear();
   pairResult.clear();
   contactPointIndex.clear();
+  localContactPoints.clear();
 }
 
 //==============================================================================
@@ -1393,13 +1415,18 @@ void postProcess(
     CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& totalResult,
-    const CollisionResult& pairResult)
+    const CollisionResult& pairResult,
+    bool skipCrossPairDuplicateCheck)
 {
   if (!pairResult.isCollision())
     return;
 
   auto& scratch = getBroadphaseScratch();
   auto& contactPointIndex = scratch.contactPointIndex;
+  auto& localContactPoints = scratch.localContactPoints;
+  if (skipCrossPairDuplicateCheck)
+    localContactPoints.clear();
+
   const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
   const auto& pairContacts = pairResult.getContacts();
   if (totalResult.getNumContacts() >= option.maxNumContacts)
@@ -1410,14 +1437,20 @@ void postProcess(
       return std::make_pair(false, false);
 
     // Don't add repeated points.
-    if (contactPointIndex.containsClose(pairContact.point))
+    if (skipCrossPairDuplicateCheck) {
+      for (const auto& point : localContactPoints) {
+        if (isClose(point, pairContact.point, kContactDuplicateTolerance))
+          return std::make_pair(true, false);
+      }
+      localContactPoints.push_back(pairContact.point);
+    } else if (!contactPointIndex.insertIfAbsent(pairContact.point)) {
       return std::make_pair(true, false);
+    }
 
     auto contact = pairContact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
-    contactPointIndex.add(contact.point);
     return std::make_pair(
         totalResult.getNumContacts() < option.maxNumContacts, true);
   };
@@ -1565,6 +1598,8 @@ void buildBroadphaseEntries(
     std::vector<BroadphaseEntry>& planeEntries,
     std::vector<BroadphaseEntry>& otherEntries)
 {
+  DART_PROFILE_SCOPED_N("DART native build broadphase entries");
+
   finiteEntries.reserve(objects.size());
   planeEntries.reserve(objects.size());
   otherEntries.reserve(objects.size());
@@ -1597,6 +1632,66 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 }
 
 //==============================================================================
+bool contactBoundsOverlap(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    double padding)
+{
+  if (!entry1.finite || !entry2.finite)
+    return true;
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (entry1.max[axis] + padding < entry2.min[axis]
+        || entry2.max[axis] + padding < entry1.min[axis]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool haveMutuallyDisjointContactBounds(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    std::vector<const BroadphaseEntry*>& sortedEntries)
+{
+  if (finiteEntries.size() < 2u)
+    return true;
+
+  DART_PROFILE_SCOPED_N("DART native contact-bound separation check");
+
+  sortedEntries.clear();
+  sortedEntries.reserve(finiteEntries.size());
+  for (const auto& entry : finiteEntries) {
+    if (!entry.finite)
+      return false;
+    sortedEntries.push_back(&entry);
+  }
+
+  std::sort(
+      sortedEntries.begin(),
+      sortedEntries.end(),
+      [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
+        return lhs->min.x() < rhs->min.x();
+      });
+
+  for (std::size_t i = 0u; i + 1u < sortedEntries.size(); ++i) {
+    const auto& entry1 = *sortedEntries[i];
+    const auto maxX = entry1.max.x() + kContactDuplicateTolerance;
+    for (std::size_t j = i + 1u; j < sortedEntries.size(); ++j) {
+      const auto& entry2 = *sortedEntries[j];
+      if (entry2.min.x() > maxX)
+        break;
+
+      if (contactBoundsOverlap(entry1, entry2, kContactDuplicateTolerance))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -1608,6 +1703,8 @@ bool processFinitePlanePairs(
     std::size_t numCollisionThreads,
     bool planeFirst)
 {
+  DART_PROFILE_SCOPED_N("DART native finite-plane pairs");
+
   constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
   const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
   const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
@@ -1619,6 +1716,10 @@ bool processFinitePlanePairs(
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
   const bool hasSinglePlane = planeEntries.size() == 1u;
+  const bool canSkipCrossPairDuplicateCheck
+      = canConsiderParallel && hasSinglePlane
+        && haveMutuallyDisjointContactBounds(
+            finiteEntries, scratch.contactBoundEntries);
 
   auto getPairEntries = [&](std::size_t pairIndex) {
     const auto planeIndex
@@ -1652,6 +1753,8 @@ bool processFinitePlanePairs(
 
   std::size_t parallelPairCount = pairCount;
   if (canConsiderParallel && filter) {
+    DART_PROFILE_SCOPED_N("DART native finite-plane prefilter");
+
     scratch.parallelPairIndices.clear();
     scratch.parallelPairIndices.reserve(pairCount);
     for (std::size_t pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
@@ -1693,30 +1796,37 @@ bool processFinitePlanePairs(
           = pairResult.isCollision() ? 1 : 0;
     };
 
-    threadPool->parallelFor(
-        parallelPairCount, numCollisionThreads, collidePairAt);
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-plane collide workers");
+      threadPool->parallelFor(
+          parallelPairCount, numCollisionThreads, collidePairAt);
+    }
 
-    for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
-         ++workIndex) {
-      if (scratch.parallelPairCollisions[workIndex] == 0)
-        continue;
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-plane merge contacts");
+      for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
+           ++workIndex) {
+        if (scratch.parallelPairCollisions[workIndex] == 0)
+          continue;
 
-      const auto pairIndex
-          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
-      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
-      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
-      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+        const auto pairIndex
+            = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+        const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+        auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+        auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
 
-      collisionFound = true;
-      postProcess(
-          collObj1,
-          collObj2,
-          option,
-          *result,
-          scratch.parallelPairResults[workIndex]);
+        collisionFound = true;
+        postProcess(
+            collObj1,
+            collObj2,
+            option,
+            *result,
+            scratch.parallelPairResults[workIndex],
+            canSkipCrossPairDuplicateCheck);
 
-      if (shouldStopAfterPair(true, option, result))
-        return true;
+        if (shouldStopAfterPair(true, option, result))
+          return true;
+      }
     }
 
     return false;
@@ -1730,19 +1840,22 @@ bool processFinitePlanePairs(
     return false;
   }
 
-  for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
-       ++planeIndex) {
-    for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
-         ++finiteIndex) {
-      const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
-      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
-      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
-      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
-        continue;
+  {
+    DART_PROFILE_SCOPED_N("DART native finite-plane serial pairs");
+    for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
+         ++planeIndex) {
+      for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
+           ++finiteIndex) {
+        const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
+        const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+        auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+        auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+        if (filter && filter->ignoresCollision(collObj1, collObj2))
+          continue;
 
-      if (processSerialPairAt(pairIndex))
-        return true;
+        if (processSerialPairAt(pairIndex))
+          return true;
+      }
     }
   }
 

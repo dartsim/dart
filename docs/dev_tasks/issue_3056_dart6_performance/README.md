@@ -2,10 +2,10 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged. #3133, #3147, and #3148 are open and waiting on
-hosted checks rather than local failures. The current local candidate is
-`perf/dart6-parallel-default-contact-constraints`, stacked on #3148
-`perf/dart6-contact-solve-hot-path`.
+Bottom line: #3129 is merged. The active stack is now in the DART-native
+collision and DART 6 constraint hot path. The current local candidate is
+`perf/dart6-native-disjoint-plane-merge`, stacked on #3149
+`perf/dart6-parallel-default-contact-constraints`.
 
 #3147 targets active contact-construction cost by reusing exact built-in default
 `ContactConstraint` objects across steps, computing local contact points without
@@ -14,12 +14,13 @@ scratch-table index for consecutive contacts from the same pair. #3148 targets
 DART-native collision transform setup for identity-relative `ShapeNode`
 collision objects by reusing the owning `BodyNode` world transform.
 
-The current local candidate attacks the next measured constraint hot path:
-large built-in default contact sets are rebuilt by collision pair in parallel,
-while custom contact handlers, small contact sets, and pairs that share a
-non-skipped body stay on the existing serial path. A pair-result cache
-experiment was rejected because it preserved the final hash but regressed the
-same issue workload.
+The current local candidate attacks the measured DART-native finite-plane merge
+hot path. When a one-plane query can prove the finite shapes' padded contact
+bounds are mutually disjoint, contacts from different finite/plane pairs cannot
+be duplicate points. That lets the merge path keep the existing per-pair
+duplicate check while bypassing the global duplicate-contact grid for those
+pair results. Overlapping or multi-plane queries keep the existing global
+duplicate path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -30,13 +31,21 @@ dynamics, `--world-threads 16`, `--max-contacts 12000`,
 | --- | ---: | --- |
 | #3148 parent, 300 active steps, text profile | `0.0917877` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `951.72 ms`, `build contact constraints` `644.65 ms` |
 | Rejected pair-result cache, 300 active steps, text profile | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
-| Current candidate, 300 active steps, text profile | `0.0992175` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `925.20 ms`, `build contact constraints` `542.58 ms` |
-| Current candidate, 300 active steps, no profile | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
+| #3149 constraint-build candidate, 300 active steps, text profile | `0.0998668` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.84 ms`, `build contact constraints` `542.53 ms` |
+| #3149 constraint-build candidate, 300 active steps, no profile | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
+| Current disjoint finite-plane merge candidate, 300 active steps, text profile | `0.105801` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `654.80 ms`, finite-plane merge `110.98 ms`, contact-bound separation check `24.10 ms` |
+| Current disjoint finite-plane merge candidate, 300 active steps, no profile | `0.110214` latest rerun, `0.11603` prior run | finite, same hash, contacts `5005`, pairs `3003` |
 
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane
 contacts over repeated steps, including final positions, velocities,
 transforms, spatial velocities, and contact counts.
+
+Focused collision evidence: `test_Collision` compares serial and threaded
+DART-native finite-plane contacts in legacy order, and
+`test_DARTCollisionDetector` keeps duplicate-contact coverage for overlapping
+finite shapes near duplicate-grid boundaries. The current candidate also passed
+`test_CollisionGroups`.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
