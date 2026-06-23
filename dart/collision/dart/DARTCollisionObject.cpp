@@ -32,6 +32,11 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/math/Geometry.hpp"
+
 namespace dart {
 namespace collision {
 
@@ -41,13 +46,77 @@ DARTCollisionObject::DARTCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
   : CollisionObject(collisionDetector, shapeFrame)
 {
-  // Do nothing
+  refreshShapeCache();
+}
+
+//==============================================================================
+const dynamics::Shape* DARTCollisionObject::getCachedShape() const
+{
+  return mCachedShape.get();
+}
+
+//==============================================================================
+const std::string& DARTCollisionObject::getCachedShapeType() const
+{
+  static const std::string empty;
+  return mCachedShapeType ? *mCachedShapeType : empty;
+}
+
+//==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsMin() const
+{
+  return mCachedLocalBoundsMin;
+}
+
+//==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsMax() const
+{
+  return mCachedLocalBoundsMax;
+}
+
+//==============================================================================
+bool DARTCollisionObject::hasFiniteCachedLocalBounds() const
+{
+  return mHasFiniteCachedLocalBounds;
+}
+
+//==============================================================================
+bool DARTCollisionObject::isCachedPlaneShape() const
+{
+  return mIsCachedPlaneShape;
+}
+
+//==============================================================================
+void DARTCollisionObject::refreshShapeCache()
+{
+  const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
+  if (mCachedShapeFrameVersion == shapeFrameVersion)
+    return;
+
+  mCachedShapeFrameVersion = shapeFrameVersion;
+  mCachedShape = mShapeFrame ? mShapeFrame->getShape() : nullptr;
+  mCachedShapeType = mCachedShape ? &mCachedShape->getType() : nullptr;
+  mCachedLocalBoundsMin.setZero();
+  mCachedLocalBoundsMax.setZero();
+  mHasFiniteCachedLocalBounds = false;
+  mIsCachedPlaneShape
+      = mCachedShapeType
+        && *mCachedShapeType == dynamics::PlaneShape::getStaticType();
+
+  if (!mCachedShape || mIsCachedPlaneShape)
+    return;
+
+  const auto& localBox = mCachedShape->getBoundingBox();
+  mCachedLocalBoundsMin = localBox.getMin();
+  mCachedLocalBoundsMax = localBox.getMax();
+  mHasFiniteCachedLocalBounds
+      = mCachedLocalBoundsMin.allFinite() && mCachedLocalBoundsMax.allFinite();
 }
 
 //==============================================================================
 void DARTCollisionObject::updateEngineData()
 {
-  // Do nothing
+  refreshShapeCache();
 }
 
 } // namespace collision

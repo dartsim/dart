@@ -33,6 +33,7 @@
 #include "dart/collision/dart/DARTCollide.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -47,6 +48,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <cmath>
 
@@ -3319,38 +3321,41 @@ int collidePlaneCylinder(
 }
 
 //==============================================================================
-int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
+namespace {
+
+int collideShapes(
+    CollisionObject* o1,
+    CollisionObject* o2,
+    const dynamics::Shape* shape1,
+    const dynamics::Shape* shape2,
+    const std::string& shapeType1,
+    const std::string& shapeType2,
+    CollisionResult& result)
 {
   // TODO(JS): We could make the contact point computation as optional for
   // the case that we want only binary check.
 
-  const auto& shape1 = o1->getShape();
-  const auto& shape2 = o2->getShape();
-
-  const auto& shapeType1 = shape1->getType();
-  const auto& shapeType2 = shape2->getType();
+  if (!shape1 || !shape2)
+    return false;
 
   const Eigen::Isometry3d& T1 = o1->getTransform();
   const Eigen::Isometry3d& T2 = o2->getTransform();
 
   if (dynamics::SphereShape::getStaticType() == shapeType1) {
-    const auto* sphere0
-        = static_cast<const dynamics::SphereShape*>(shape1.get());
+    const auto* sphere0 = static_cast<const dynamics::SphereShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collideSphereSphere(
           o1, o2, sphere0->getRadius(), T1, sphere1->getRadius(), T2, result);
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collideSphereBox(
           o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
-      const auto* plane1
-          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+      const auto* plane1 = static_cast<const dynamics::PlaneShape*>(shape2);
 
       return collideSpherePlane(
           o1,
@@ -3363,7 +3368,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       return collideSphereCylinder(
           o1,
@@ -3375,8 +3380,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       return collideSphereCapsule(
           o1,
@@ -3389,7 +3393,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       return collideSphereSphere(
           o1,
@@ -3401,22 +3405,20 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     }
   } else if (dynamics::BoxShape::getStaticType() == shapeType1) {
-    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
+    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, sphere1->getRadius(), T2, result);
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collideBoxBox(
           o1, o2, box0->getSize(), T1, box1->getSize(), T2, result);
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
-      const auto* plane1
-          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+      const auto* plane1 = static_cast<const dynamics::PlaneShape*>(shape2);
 
       return collideBoxPlane(
           o1,
@@ -3429,7 +3431,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       return collideBoxCylinder(
           o1,
@@ -3441,8 +3443,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       return collideBoxCapsule(
           o1,
@@ -3455,18 +3456,17 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       return collideBoxSphere(
           o1, o2, box0->getSize(), T1, ellipsoid1->getRadii()[0], T2, result);
     }
   } else if (dynamics::EllipsoidShape::getStaticType() == shapeType1) {
     const auto* ellipsoid0
-        = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+        = static_cast<const dynamics::EllipsoidShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collideSphereSphere(
           o1,
@@ -3477,13 +3477,13 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collideSphereBox(
           o1, o2, ellipsoid0->getRadii()[0], T1, box1->getSize(), T2, result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       if (ellipsoid0->isSphere()) {
         return collideSphereCylinder(
@@ -3497,8 +3497,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             result);
       }
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       if (ellipsoid0->isSphere()) {
         return collideSphereCapsule(
@@ -3512,8 +3511,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             result);
       }
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
-      const auto* plane1
-          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+      const auto* plane1 = static_cast<const dynamics::PlaneShape*>(shape2);
 
       if (ellipsoid0->isSphere()) {
         return collideSpherePlane(
@@ -3528,7 +3526,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
       }
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       return collideSphereSphere(
           o1,
@@ -3540,12 +3538,10 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     }
   } else if (dynamics::CylinderShape::getStaticType() == shapeType1) {
-    const auto* cylinder0
-        = static_cast<const dynamics::CylinderShape*>(shape1.get());
+    const auto* cylinder0 = static_cast<const dynamics::CylinderShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collideCylinderSphere(
           o1,
@@ -3558,7 +3554,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       if (ellipsoid1->isSphere()) {
         return collideCylinderSphere(
@@ -3572,7 +3568,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             result);
       }
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collideCylinderBox(
           o1,
@@ -3585,7 +3581,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       return collideCylinderCylinder(
           o1,
@@ -3598,8 +3594,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
-      const auto* plane1
-          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+      const auto* plane1 = static_cast<const dynamics::PlaneShape*>(shape2);
 
       return collideCylinderPlane(
           o1,
@@ -3612,8 +3607,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       return collideCylinderCapsule(
           o1,
@@ -3627,12 +3621,10 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     }
   } else if (dynamics::CapsuleShape::getStaticType() == shapeType1) {
-    const auto* capsule0
-        = static_cast<const dynamics::CapsuleShape*>(shape1.get());
+    const auto* capsule0 = static_cast<const dynamics::CapsuleShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collideCapsuleSphere(
           o1,
@@ -3645,7 +3637,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       if (ellipsoid1->isSphere()) {
         return collideCapsuleSphere(
@@ -3659,7 +3651,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
             result);
       }
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collideCapsuleBox(
           o1,
@@ -3672,7 +3664,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       return collideCapsuleCylinder(
           o1,
@@ -3685,8 +3677,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       return collideCapsuleCapsule(
           o1,
@@ -3699,8 +3690,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::PlaneShape::getStaticType() == shapeType2) {
-      const auto* plane1
-          = static_cast<const dynamics::PlaneShape*>(shape2.get());
+      const auto* plane1 = static_cast<const dynamics::PlaneShape*>(shape2);
 
       return collideCapsulePlane(
           o1,
@@ -3714,11 +3704,10 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     }
   } else if (dynamics::PlaneShape::getStaticType() == shapeType1) {
-    const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1.get());
+    const auto* plane0 = static_cast<const dynamics::PlaneShape*>(shape1);
 
     if (dynamics::SphereShape::getStaticType() == shapeType2) {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = static_cast<const dynamics::SphereShape*>(shape2);
 
       return collidePlaneSphere(
           o1,
@@ -3730,7 +3719,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::BoxShape::getStaticType() == shapeType2) {
-      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = static_cast<const dynamics::BoxShape*>(shape2);
 
       return collidePlaneBox(
           o1,
@@ -3743,7 +3732,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::CylinderShape::getStaticType() == shapeType2) {
       const auto* cylinder1
-          = static_cast<const dynamics::CylinderShape*>(shape2.get());
+          = static_cast<const dynamics::CylinderShape*>(shape2);
 
       return collidePlaneCylinder(
           o1,
@@ -3756,8 +3745,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           T2,
           result);
     } else if (dynamics::CapsuleShape::getStaticType() == shapeType2) {
-      const auto* capsule1
-          = static_cast<const dynamics::CapsuleShape*>(shape2.get());
+      const auto* capsule1 = static_cast<const dynamics::CapsuleShape*>(shape2);
 
       return collidePlaneCapsule(
           o1,
@@ -3771,7 +3759,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           result);
     } else if (dynamics::EllipsoidShape::getStaticType() == shapeType2) {
       const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+          = static_cast<const dynamics::EllipsoidShape*>(shape2);
 
       if (ellipsoid1->isSphere()) {
         return collidePlaneSphere(
@@ -3788,10 +3776,42 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   }
 
   dterr << "[DARTCollisionDetector] Attempting to check for an "
-        << "unsupported shape pair: [" << shape1->getType() << "] - ["
-        << shape2->getType() << "]. Returning false.\n";
+        << "unsupported shape pair: [" << shapeType1 << "] - [" << shapeType2
+        << "]. Returning false.\n";
 
   return false;
+}
+
+} // namespace
+
+//==============================================================================
+int collide(
+    DARTCollisionObject* o1, DARTCollisionObject* o2, CollisionResult& result)
+{
+  return collideShapes(
+      o1,
+      o2,
+      o1->getCachedShape(),
+      o2->getCachedShape(),
+      o1->getCachedShapeType(),
+      o2->getCachedShapeType(),
+      result);
+}
+
+//==============================================================================
+int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
+{
+  const auto shape1 = o1->getShape();
+  const auto shape2 = o2->getShape();
+
+  return collideShapes(
+      o1,
+      o2,
+      shape1.get(),
+      shape2.get(),
+      shape1 ? shape1->getType() : std::string(),
+      shape2 ? shape2->getType() : std::string(),
+      result);
 }
 
 } // namespace collision

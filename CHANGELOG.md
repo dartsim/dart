@@ -63,6 +63,11 @@
 
 * Collision
 
+  * Speed up the DART-native collision backend by caching collision-object
+    shape metadata and local bounds, refreshing the cache only when the
+    associated `ShapeFrame` geometry version changes:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up active DART-native contact-heavy scenes by replacing global
     contact-point duplicate scans with reusable indexed contact aggregation and
     deferring collision-result lookup-set construction until queried:

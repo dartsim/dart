@@ -42,7 +42,12 @@
 namespace dart {
 namespace collision {
 
+class DARTCollisionObject;
+
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
+
+int collide(
+    DARTCollisionObject* o1, DARTCollisionObject* o2, CollisionResult& result);
 
 int collideBoxBox(
     CollisionObject* o1,
