@@ -3,11 +3,28 @@
 ## Current Snapshot
 
 Bottom line: #3129 is merged. The active stack is now in the DART-native
-collision and DART 6 constraint hot path. #3152 is the current published stack
-tip. The next local candidate is `perf/dart6-native-body-filter-fast-path`,
-stacked on #3152.
+collision and DART 6 constraint hot path. #3153 is the current published stack
+tip. The next local candidate is `perf/dart6-contact-surface-positional-cache`,
+stacked on #3153.
 
-The local candidate targets active DART-native finite-shape-vs-plane collision
+The local candidate trims default contact construction by remembering the most
+recent first-side and second-side `ShapeNode` default-surface-property lookups
+inside each solver update. This preserves the existing per-step 16-entry
+surface-property cache, but avoids repeatedly scanning it for the common
+static-plane-vs-mobile-object contact ordering in the issue scene.
+
+Active issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, deactivation disabled, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, 300 steps:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3153 parent, text profile | `0.112936` latest rerun, `0.123591` prior run | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; latest `build contact constraints` `500.20 ms`, surface params `177.94 ms`, serial fallback `316.37 ms` |
+| Local positional surface cache, text profile | `0.116314` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `476.32 ms`, surface params `172.58 ms`, serial fallback `298.06 ms` |
+| Local positional surface cache, no profile repeats | `0.118679`, `0.116484` | finite, same hash, contacts `5005`, pairs `3003` |
+
+#3153 targets active DART-native finite-shape-vs-plane collision
 for the default solver filter. For exact `BodyNodeCollisionFilter` queries where
 all finite objects belong to mobile skeletons, all plane objects belong to
 static skeletons, there are no explicit body-node pair blacklists, and the

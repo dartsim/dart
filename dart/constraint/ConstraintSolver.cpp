@@ -1134,7 +1134,7 @@ void ConstraintSolver::updateConstraints()
 
       return collisionObject->getShapeNode();
     };
-    const auto hasDefaultContactSurfaceProperties
+    const auto queryDefaultContactSurfaceProperties
         = [&](const dynamics::ShapeNode* shapeNode) {
             if (shapeNode == nullptr)
               return false;
@@ -1165,6 +1165,26 @@ void ConstraintSolver::updateConstraints()
                                           % defaultSurfaceCache.size();
             return hasDefaultProperties;
           };
+    const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
+    const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
+    bool lastContactShapeNode1HasDefaultProperties = false;
+    bool lastContactShapeNode2HasDefaultProperties = false;
+    const auto hasDefaultContactSurfaceProperties
+        = [&](const dynamics::ShapeNode* shapeNode, bool firstShapeNode) {
+            auto& lastShapeNode = firstShapeNode ? lastContactShapeNode1
+                                                 : lastContactShapeNode2;
+            auto& lastHasDefaultProperties
+                = firstShapeNode ? lastContactShapeNode1HasDefaultProperties
+                                 : lastContactShapeNode2HasDefaultProperties;
+            if (shapeNode == lastShapeNode)
+              return lastHasDefaultProperties;
+
+            const bool hasDefaultProperties
+                = queryDefaultContactSurfaceProperties(shapeNode);
+            lastShapeNode = shapeNode;
+            lastHasDefaultProperties = hasDefaultProperties;
+            return hasDefaultProperties;
+          };
 
     const auto initializeDefaultSurfaceParams =
         [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
@@ -1177,8 +1197,8 @@ void ConstraintSolver::updateConstraints()
               = getContactShapeNode(contact.collisionObject2);
           const bool canUseDefaultSurfaceParams
               = builtInDefaultContactHandler->mParent == nullptr
-                && hasDefaultContactSurfaceProperties(shapeNode1)
-                && hasDefaultContactSurfaceProperties(shapeNode2);
+                && hasDefaultContactSurfaceProperties(shapeNode1, true)
+                && hasDefaultContactSurfaceProperties(shapeNode2, false);
 
           contactPairCount.surfaceParams
               = canUseDefaultSurfaceParams
