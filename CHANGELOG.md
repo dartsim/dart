@@ -116,6 +116,18 @@
 
 * Simulation
 
+  * Harden contact handling against invalid geometry, fixing a crash reported
+    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
+    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
+    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
+    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
+    is non-finite before contact-constraint creation. Together these stop an
+    invalid shape dimension (or a non-finite contact from a mesh or collision
+    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
+    or corrupting the LCP solve with NaN/Inf:
+    [#3132](https://github.com/dartsim/dart/pull/3132),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
     contact-heavy scenes while preserving an explicit deactivation opt-out:

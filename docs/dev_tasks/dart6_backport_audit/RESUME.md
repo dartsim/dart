@@ -71,8 +71,9 @@ nanobind) — see the recipe in section 2.
     release notes.
   - Gate: build + `collision` focused unit tests **+ gz gate**
     (`pixi run -e gazebo test-gz`) — collision surface.
-- [ ] **[#3115](https://github.com/dartsim/dart/pull/3115) — skip non-finite
+- [x] **[#3115](https://github.com/dartsim/dart/pull/3115) — skip non-finite
   contacts + validate shape dimensions** *(forward-port; 6.19 is ahead of 6.20)*
+  - Backported by [#3132](https://github.com/dartsim/dart/pull/3132).
   - Do **not** cherry-pick the main commit `15c0567ff50` (snake_case). Instead
     **forward-port the #3117 DART 6 LTS twin** — commit `a99369923c7`, already on
     `release-6.19`, confirmed **not** on `release-6.20`. It is already in DART 6
@@ -83,7 +84,8 @@ nanobind) — see the recipe in section 2.
     `isZeroNormal` check at line 989), plus `setSize()` validation across
     Box/Capsule/Cone/Cylinder/Ellipsoid/Pyramid, plus the
     `NonFiniteContact` / `ShapeDimensionValidation` tests.
-  - Motivated by gz-physics [issue #1010](https://github.com/dartsim/dart/issues/1010)
+  - Motivated by gz-physics
+    [issue #1010](https://github.com/gazebosim/gz-physics/issues/1010)
     (NaN/Inf corrupting the LCP solve).
   - Cherry-pick: `git cherry-pick -x a99369923c7`.
   - Gate: build + `constraint` focused unit tests **+ gz gate** — constraint
