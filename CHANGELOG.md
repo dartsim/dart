@@ -61,6 +61,9 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Update the math user-defined literal declarations to the C++23 spelling
+    accepted by newer AppleClang warning-as-error builds.
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
@@ -77,6 +80,12 @@
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Fix FCL primitive contact normal orientation and switch default FCL primitive
+    handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
+    solver, and SKEL parser fallback paths. Users needing legacy mesh
+    approximation can still select `MESH` or `fcl_mesh`:
+    [#3131](https://github.com/dartsim/dart/pull/3131)
 
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,

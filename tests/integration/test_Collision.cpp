@@ -1600,6 +1600,48 @@ TEST_F(Collision, FCLDeterministicPairOrderingMeshPaths)
 }
 
 //==============================================================================
+TEST_F(Collision, FCLPrimitiveSharedShapeNormalsFollowCanonicalOrder)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  detector->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+
+  auto frameA = SimpleFrame::createShared(Frame::World(), "A");
+  auto frameB = SimpleFrame::createShared(Frame::World(), "B");
+
+  ShapePtr boxShape(new BoxShape(Eigen::Vector3d::Constant(0.1)));
+  frameA->setShape(boxShape);
+  frameB->setShape(boxShape);
+
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  auto groupA = detector->createCollisionGroup(frameA.get());
+  auto groupB = detector->createCollisionGroup(frameB.get());
+
+  for (const bool abOrder : {true, false}) {
+    collision::CollisionResult result;
+    auto* g1 = abOrder ? groupA.get() : groupB.get();
+    auto* g2 = abOrder ? groupB.get() : groupA.get();
+
+    EXPECT_TRUE(g1->collide(g2, option, &result));
+    ASSERT_GE(result.getNumContacts(), 1u);
+
+    for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      EXPECT_EQ(contact.getShapeFrame1()->getName(), "A");
+      EXPECT_EQ(contact.getShapeFrame2()->getName(), "B");
+      EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-8))
+          << contact.normal.transpose();
+    }
+  }
+}
+
+//==============================================================================
 TEST_F(Collision, FCLDeterministicEqualKeyOrdering)
 {
   // Two identically-named SimpleFrames produce the SAME deterministic key, so
