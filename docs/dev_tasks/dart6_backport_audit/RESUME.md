@@ -101,9 +101,14 @@ nanobind) — see the recipe in section 2.
     hunks from the PR — unrelated infra churn.
   - Gate: build + `io`/`utils` (DartLoader) focused unit tests **+ gz gate** —
     parser surface.
-- [ ] **[#2271](https://github.com/dartsim/dart/pull/2271) — Bullet phantom /
+- [x] **[#2271](https://github.com/dartsim/dart/pull/2271) — Bullet phantom /
   negative-penetration-depth contact filter** *(gz-physics Bullet users,
   non-trivial new file)*
+  - Backport PR [#3136](https://github.com/dartsim/dart/pull/3136) opened as a
+    draft against `release-6.20`.
+  - Local gates passed: `pixi run lint`, `pixi run build`, `test_BulletContact`
+    build + CTest, `pixi run test-py`, and
+    `DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run -e gazebo test-gz`.
   - Commit `c70716324c0ccaba9a01c90a39a4695d08acb8c4`. Resolves
     [issue #1184](https://github.com/dartsim/dart/issues/1184). The DART 6 Bullet
     detector still exists on release-6.20, so the fix applies there.

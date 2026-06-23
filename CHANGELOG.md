@@ -96,6 +96,11 @@
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
 
+  * Filter Bullet collision contacts with negative penetration depth by default,
+    while adding `CollisionOption::allowNegativePenetrationDepthContacts` for
+    applications that intentionally consume Bullet proximity hits:
+    [#3136](https://github.com/dartsim/dart/pull/3136)
+
 * Simulation
 
   * Enable resting-world deactivation by default with wake-aware invalidation
