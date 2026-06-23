@@ -61,6 +61,9 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Update the math user-defined literal declarations to the C++23 spelling
+    accepted by newer AppleClang warning-as-error builds.
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
