@@ -51,6 +51,7 @@
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <new>
 
@@ -1141,6 +1142,75 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartPerPairContactCapCoalescesNearDuplicatePairContacts)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  // Keep the emitted box-plane support points within duplicate tolerance while
+  // making a later emitted point the deepest duplicate.
+  const auto tinySize = Eigen::Vector3d::Constant(1.0e-13);
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(tinySize));
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear()
+      = Eigen::AngleAxisd(-0.4, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  boxFrame->setTransform(boxTf);
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
+
+  std::vector<double> rawDepths;
+  std::vector<Eigen::Vector3d> rawPoints;
+  const auto halfExtents = 0.5 * tinySize;
+  for (int i = 0; i < 8 && rawDepths.size() < 3u; ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4) ? halfExtents.z() : -halfExtents.z());
+
+    const auto worldCorner = boxTf * localCorner;
+    const auto signedDist = worldCorner.z();
+    if (signedDist > 1e-9)
+      continue;
+
+    rawDepths.push_back(std::max(0.0, -signedDist));
+    rawPoints.push_back(Eigen::Vector3d(worldCorner.x(), worldCorner.y(), 0.0));
+  }
+
+  ASSERT_EQ(rawDepths.size(), 3u);
+  ASSERT_LT((rawPoints[0] - rawPoints[1]).norm(), 3.0e-12);
+  ASSERT_LT((rawPoints[0] - rawPoints[2]).norm(), 3.0e-12);
+
+  const auto deepestDepth
+      = *std::max_element(rawDepths.begin(), rawDepths.end());
+  ASSERT_GT(deepestDepth, rawDepths[0]);
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult uncappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
+  ASSERT_EQ(uncappedResult.getNumContacts(), 1u);
+  EXPECT_NEAR(
+      uncappedResult.getContact(0).penetrationDepth, rawDepths[0], 1e-18);
+
+  option.maxNumContactsPerPair = 2u;
+  CollisionResult cappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
+  ASSERT_EQ(cappedResult.getNumContacts(), 1u);
+  EXPECT_NEAR(cappedResult.getContact(0).penetrationDepth, deepestDepth, 1e-18);
+  EXPECT_GT(
+      cappedResult.getContact(0).penetrationDepth,
+      uncappedResult.getContact(0).penetrationDepth);
+}
+
+//==============================================================================
 TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
 {
   auto cd = DARTCollisionDetector::create();
@@ -1867,6 +1937,48 @@ TEST_F(Collision, FCLDeterministicPairOrderingMeshPaths)
 
   SCOPED_TRACE("FCL mesh contact via FCL path");
   checkDeterministicPairOrderingForMethod(FCLCollisionDetector::FCL);
+}
+
+//==============================================================================
+TEST_F(Collision, FCLPrimitiveSharedShapeNormalsFollowCanonicalOrder)
+{
+  auto detector = FCLCollisionDetector::create();
+  detector->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  detector->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+
+  auto frameA = SimpleFrame::createShared(Frame::World(), "A");
+  auto frameB = SimpleFrame::createShared(Frame::World(), "B");
+
+  ShapePtr boxShape(new BoxShape(Eigen::Vector3d::Constant(0.1)));
+  frameA->setShape(boxShape);
+  frameB->setShape(boxShape);
+
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  auto groupA = detector->createCollisionGroup(frameA.get());
+  auto groupB = detector->createCollisionGroup(frameB.get());
+
+  for (const bool abOrder : {true, false}) {
+    collision::CollisionResult result;
+    auto* g1 = abOrder ? groupA.get() : groupB.get();
+    auto* g2 = abOrder ? groupB.get() : groupA.get();
+
+    EXPECT_TRUE(g1->collide(g2, option, &result));
+    ASSERT_GE(result.getNumContacts(), 1u);
+
+    for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      EXPECT_EQ(contact.getShapeFrame1()->getName(), "A");
+      EXPECT_EQ(contact.getShapeFrame2()->getName(), "B");
+      EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-8))
+          << contact.normal.transpose();
+    }
+  }
 }
 
 //==============================================================================
@@ -2782,6 +2894,42 @@ TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterAfterUntrackedQuery)
   result.clear();
   EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
   EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST_F(Collision, BulletBinaryCollideFiltersProximityContacts)
+{
+  auto detector = BulletCollisionDetector::create();
+
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+  auto shape1 = std::make_shared<CylinderShape>(0.5, 1.0);
+  auto shape2 = std::make_shared<CylinderShape>(0.5, 1.0);
+  frame1->setShape(shape1);
+  frame2->setShape(shape2);
+  frame2->setTranslation(Eigen::Vector3d(1.01, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  CollisionOption option;
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+  EXPECT_FALSE(group->collide(option));
+  EXPECT_FALSE(group->collide(option, nullptr));
+  EXPECT_FALSE(group1->collide(group2.get(), option));
+  EXPECT_FALSE(group1->collide(group2.get(), option, nullptr));
+
+  option.allowNegativePenetrationDepthContacts = true;
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+  EXPECT_TRUE(group->collide(option));
+  EXPECT_TRUE(group->collide(option, nullptr));
+  EXPECT_TRUE(group1->collide(group2.get(), option));
+  EXPECT_TRUE(group1->collide(group2.get(), option, nullptr));
 }
 #endif
 
