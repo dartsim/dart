@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/ConeShape.hpp"
 
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -43,11 +44,10 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ConeShape::ConeShape(double radius, double height)
-  : Shape(CONE), mRadius(radius), mHeight(height)
+ConeShape::ConeShape(double radius, double height) : Shape(CONE)
 {
-  DART_ASSERT(0.0 < radius);
-  DART_ASSERT(0.0 < height);
+  setRadius(radius);
+  setHeight(height);
 }
 
 //==============================================================================
@@ -72,7 +72,14 @@ double ConeShape::getRadius() const
 //==============================================================================
 void ConeShape::setRadius(double radius)
 {
-  DART_ASSERT(0.0 < radius);
+  if (!std::isfinite(radius) || radius <= 0.0) {
+    DART_WARN(
+        "ConeShape::setRadius: Invalid radius '{}'. "
+        "Radius must be a positive finite value. Ignoring request.",
+        radius);
+    return;
+  }
+
   mRadius = radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
@@ -89,7 +96,14 @@ double ConeShape::getHeight() const
 //==============================================================================
 void ConeShape::setHeight(double height)
 {
-  DART_ASSERT(0.0 < height);
+  if (!std::isfinite(height) || height <= 0.0) {
+    DART_WARN(
+        "ConeShape::setHeight: Invalid height '{}'. "
+        "Height must be a positive finite value. Ignoring request.",
+        height);
+    return;
+  }
+
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

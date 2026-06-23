@@ -30,67 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_CYLINDERSHAPE_HPP_
-#define DART_DYNAMICS_CYLINDERSHAPE_HPP_
+#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
+#define DART_DYNAMICS_MESHMATERIAL_HPP_
 
-#include <dart/dynamics/Shape.hpp>
+#include <Eigen/Core>
+
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
 
-class CylinderShape : public Shape
+/// Simple material representation for mesh rendering.
+struct MeshMaterial
 {
-public:
-  /// \brief Constructor.
-  CylinderShape(double _radius, double _height);
+  Eigen::Vector4f ambient{0.2f, 0.2f, 0.2f, 1.0f};
+  Eigen::Vector4f diffuse{0.8f, 0.8f, 0.8f, 1.0f};
+  Eigen::Vector4f specular{0.0f, 0.0f, 0.0f, 1.0f};
+  Eigen::Vector4f emissive{0.0f, 0.0f, 0.0f, 1.0f};
 
-  // Documentation inherited.
-  const std::string& getType() const override;
-
-  /// Returns shape type for this class
-  static const std::string& getStaticType();
-
-  /// \brief
-  double getRadius() const;
-
-  /// \brief
-  void setRadius(double _radius);
-
-  /// \brief
-  double getHeight() const;
-
-  /// \brief
-  void setHeight(double _height);
-
-  /// \brief Compute volume from given properties
-  static double computeVolume(double radius, double height);
-
-  /// \brief Compute moments of inertia of a cylinder
-  static Eigen::Matrix3d computeInertia(
-      double radius, double height, double mass);
-
-  // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
-
-  // Documentation inherited.
-  ShapePtr clone() const override;
-
-protected:
-  // Documentation inherited.
-  void updateBoundingBox() const override;
-
-  // Documentation inherited.
-  void updateVolume() const override;
-
-private:
-  /// \brief
-  double mRadius{1.0};
-
-  /// \brief Height along z-axis.
-  double mHeight{1.0};
+  float shininess{0.0f};
+  std::vector<std::string> textureImagePaths;
 };
 
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_CYLINDERSHAPE_HPP_
+#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

@@ -35,6 +35,8 @@
 
 #include <dart/collision/ode/detail/OdeGeom.hpp>
 
+#include <dart/math/TriMesh.hpp>
+
 #include <assimp/scene.h>
 #include <ode/ode.h>
 
@@ -51,6 +53,12 @@ public:
       const aiScene* scene,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
+  /// Constructor
+  OdeMesh(
+      const OdeCollisionObject* parent,
+      const math::TriMesh<double>* mesh,
+      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+
   /// Destructor
   virtual ~OdeMesh();
 
@@ -60,6 +68,10 @@ public:
 private:
   void fillArrays(
       const aiScene* scene,
+      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+
+  void fillArrays(
+      const math::TriMesh<double>* mesh,
       const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
 private:

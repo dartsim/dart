@@ -61,6 +61,9 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Update the math user-defined literal declarations to the C++23 spelling
+    accepted by newer AppleClang warning-as-error builds.
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
@@ -77,6 +80,12 @@
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Fix FCL primitive contact normal orientation and switch default FCL primitive
+    handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
+    solver, and SKEL parser fallback paths. Users needing legacy mesh
+    approximation can still select `MESH` or `fcl_mesh`:
+    [#3131](https://github.com/dartsim/dart/pull/3131)
 
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
@@ -103,6 +112,12 @@
 
 * Dynamics
 
+  * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
+    the legacy Assimp `aiScene` APIs available as deprecated DART 6
+    compatibility shims, and route mesh collision backends through the new
+    representation:
+    [#3145](https://github.com/dartsim/dart/pull/3145)
+
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
     joint instead of self-copying, add the missing aligned allocation hook for
@@ -111,6 +126,18 @@
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
 * Simulation
+
+  * Harden contact handling against invalid geometry, fixing a crash reported
+    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
+    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
+    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
+    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
+    is non-finite before contact-constraint creation. Together these stop an
+    invalid shape dimension (or a non-finite contact from a mesh or collision
+    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
+    or corrupting the LCP solve with NaN/Inf:
+    [#3132](https://github.com/dartsim/dart/pull/3132),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
@@ -121,6 +148,17 @@
     manual constraints, custom contact constraints, custom LCP solvers, and
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
+
+  * Make mimic motor constraints robust for Gazebo mimic repros by using
+    ERP-scaled position correction, clamped force-mixing and ERP parameters,
+    and finite fallback force and velocity limits for joints with unbounded
+    limits:
+    [#3137](https://github.com/dartsim/dart/pull/3137)
+
+  * Apply URDF planar and floating joint limits, velocity limits, force limits,
+    rest positions, damping, and Coulomb friction uniformly across their
+    degrees of freedom, and derive planar joint axes from the URDF `<axis>` tag:
+    [#3134](https://github.com/dartsim/dart/pull/3134)
 
   * Expose the opt-in simulation thread controls to dartpy via
     `World.setNumSimulationThreads()` and
