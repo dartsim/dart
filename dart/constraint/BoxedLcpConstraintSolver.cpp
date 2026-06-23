@@ -49,6 +49,7 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
+#include <typeinfo>
 
 #include <cassert>
 #include <cmath>
@@ -58,10 +59,23 @@ namespace constraint {
 
 namespace {
 
-// Keep the direct single-body LCP shortcut off until it has bitwise/fidelity
-// evidence against the legacy impulse-test assembly path. The resting-world
-// speedup must not depend on a solver path that changes the disabled baseline.
-constexpr bool kEnableDirectSingleBodyLcpShortcut = false;
+bool isExactContactConstraint(const ConstraintBase* constraint)
+{
+  const auto* contact = dynamic_cast<const ContactConstraint*>(constraint);
+  if (contact == nullptr)
+    return false;
+
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
+#endif
+  const bool exact = typeid(*contact) == typeid(ContactConstraint);
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
+
+  return exact;
+}
 
 } // namespace
 
@@ -281,13 +295,18 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   std::array<ContactConstraint*, kInlineConstraintCount> inlineContactPtrs;
   dynamics::BodyNode* directBody = group.mSingleReactiveBodyNode;
   dynamics::Skeleton* directSkeleton = group.mSingleReactiveSkeleton;
-  bool useDirectSingleFreeBody
-      = kEnableDirectSingleBodyLcpShortcut && group.mAllSingleReactiveContacts
-        && group.mSingleReactiveContactsShareBody && directBody != nullptr
-        && directSkeleton != nullptr
-        && numConstraints <= kInlineConstraintCount;
+  bool useDirectSingleFreeBody = group.mAllSingleReactiveContacts
+                                 && group.mSingleReactiveContactsShareBody
+                                 && directBody != nullptr
+                                 && directSkeleton != nullptr
+                                 && numConstraints <= kInlineConstraintCount;
   if (useDirectSingleFreeBody) {
     for (std::size_t i = 0; i < numConstraints; ++i) {
+      if (!isExactContactConstraint(constraintPtrs[i])) {
+        useDirectSingleFreeBody = false;
+        break;
+      }
+
       inlineContactPtrs[i] = static_cast<ContactConstraint*>(constraintPtrs[i]);
     }
   }

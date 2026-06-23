@@ -34,6 +34,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -47,9 +48,11 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
@@ -111,6 +114,24 @@ class CustomContactConstraint final : public constraint::ContactConstraint
 {
 public:
   using ContactConstraint::ContactConstraint;
+};
+
+class CustomContactSurfaceHandler final
+  : public constraint::DefaultContactSurfaceHandler
+{
+public:
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      const size_t numContactsOnCollisionObject,
+      const double timeStep) const override
+  {
+    auto params = createParams(contact, numContactsOnCollisionObject);
+    const auto contactCount = static_cast<double>(numContactsOnCollisionObject);
+    params.mPrimarySlipCompliance *= contactCount;
+    params.mSecondarySlipCompliance *= contactCount;
+
+    return std::make_shared<CustomContactConstraint>(contact, timeStep, params);
+  }
 };
 
 class FakeCollisionObject final : public collision::CollisionObject
@@ -314,6 +335,49 @@ dynamics::SoftBodyNode* createSoftBody(
   return body;
 }
 
+dynamics::SkeletonPtr createSolverTestBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& position,
+    bool mobile)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
+      name + "_joint");
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties(name + "_body"));
+  bodyProperties.mInertia.setMass(1.0);
+
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<dynamics::BoxShape>(size);
+  body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  skeleton->setMobile(mobile);
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createSolverTestPlane(const std::string& name)
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto body
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
+  body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  skeleton->setMobile(false);
+  return skeleton;
+}
+
 std::pair<dynamics::BodyNode*, dynamics::BodyNode*> createMixedReactiveSkeleton(
     const std::string& name, std::vector<dynamics::SkeletonPtr>& skeletons)
 {
@@ -377,6 +441,76 @@ bool solvesGroupsInParallel(ExposedThreadedConstraintSolver& solver)
 std::shared_ptr<World> createWorld()
 {
   return simulation::World::create();
+}
+
+//==============================================================================
+std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  if (legacyAssembly) {
+    auto defaultHandler = solver->getLastContactSurfaceHandler();
+    auto customHandler = std::make_shared<CustomContactSurfaceHandler>();
+    solver->addContactSurfaceHandler(customHandler);
+    solver->removeContactSurfaceHandler(defaultHandler);
+  }
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  return world;
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
+{
+  auto directWorld = createSingleFreeBodyContactWorld(false);
+  auto legacyWorld = createSingleFreeBodyContactWorld(true);
+
+  for (std::size_t i = 0u; i < 300u; ++i) {
+    directWorld->step();
+    legacyWorld->step();
+  }
+
+  EXPECT_GT(
+      directWorld->getConstraintSolver()
+          ->getLastCollisionResult()
+          .getNumContacts(),
+      0u);
+  EXPECT_GT(
+      legacyWorld->getConstraintSolver()
+          ->getLastCollisionResult()
+          .getNumContacts(),
+      0u);
+
+  const auto directBox = directWorld->getSkeleton("box");
+  const auto legacyBox = legacyWorld->getSkeleton("box");
+  ASSERT_NE(nullptr, directBox);
+  ASSERT_NE(nullptr, legacyBox);
+
+  EXPECT_TRUE(
+      directBox->getPositions().isApprox(legacyBox->getPositions(), 1e-12));
+  EXPECT_TRUE(
+      directBox->getVelocities().isApprox(legacyBox->getVelocities(), 1e-12));
+
+  const auto* directBody = directBox->getBodyNode(0);
+  const auto* legacyBody = legacyBox->getBodyNode(0);
+  ASSERT_NE(nullptr, directBody);
+  ASSERT_NE(nullptr, legacyBody);
+  EXPECT_TRUE(directBody->getWorldTransform().matrix().isApprox(
+      legacyBody->getWorldTransform().matrix(), 1e-12));
+  EXPECT_TRUE(directBody->getSpatialVelocity().isApprox(
+      legacyBody->getSpatialVelocity(), 1e-12));
 }
 
 //==============================================================================

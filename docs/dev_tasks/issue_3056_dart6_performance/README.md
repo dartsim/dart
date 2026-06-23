@@ -26,6 +26,21 @@ with DART 6 dynamics/constraints/solver:
 | #3139 current, active, no profile repeat range | `0.0609436` - `0.0611608` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | #3139 current, default sleeping, 3000 steps | `1.88586` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
 
+Current local candidate after #3139: enable the existing direct LCP assembly
+path for single-free-body groups, but only when every constraint is an exact
+built-in `ContactConstraint`. Custom contact constraints and manual
+constraints stay on the legacy assembly path. On the same active issue scene,
+the no-profile repeat range moves to RTF `0.0624277` - `0.0656493`. The
+default-sleeping sanity run is still above real time at RTF `1.88692`, with
+unchanged final hash `0x131b6af79a44ff90` and all `3003 / 3003` mobile bodies
+resting. The active state hash changes because the LCP assembly arithmetic
+order changes, so the candidate also dumps final geometry and compares against
+the legacy assembly path: all `3004` shapes match, max position delta is
+`1.86e-19 m`, max quaternion L2 delta is `2.80e-19`, and sleep/island state
+differences are `0`. The active text-profiler run moves
+`solveConstrainedGroups` from about `1.610 s` to `1.192 s` over 300 active
+steps, with `Construct LCP` dropping from about `504 ms` to `159 ms`.
+
 The profiled active total RTF is noisy, but the `collide` scope moved from the
 #3135 parent `1.715 s` to `1.628 s` over 300 active steps. This is a small
 setup improvement, not the major collision-algorithm win.
