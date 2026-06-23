@@ -6,15 +6,17 @@ Bottom line: #3129 is merged, and the active DART-native performance stack is
 #3133 `perf/dart6-native-collision-parallel`, #3135
 `perf/dart6-native-contact-selection`, #3139
 `perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, and #3141
-`perf/dart6-native-scratch-result-cache`, with #3142
-`perf/dart6-single-reactive-solve-fast-path` stacked on top. The next local
-candidate is `perf/dart6-native-shape-kind-dispatch`, stacked on #3142.
+`perf/dart6-single-body-lcp-fast-path`, #3141
+`perf/dart6-native-scratch-result-cache`, #3142
+`perf/dart6-single-reactive-solve-fast-path`, and #3143
+`perf/dart6-native-shape-kind-dispatch`. The next local candidate is
+`perf/dart6-native-contact-merge-grid`, stacked on #3143.
 
-The current local candidate adds a cached primitive shape-kind enum to the
-DART-native collision object cache. The primitive plane dispatch path switches
-on that cheap kind for sphere/box/cylinder/capsule/plane cases while preserving
-the existing fallback for unsupported shapes.
+The current local candidate keeps the exact distance-based duplicate-contact
+check, but changes the DART-native contact merge grid from fixed 27-cell
+neighbor probing to larger cells with boundary-only neighbor probes. Public
+collision tests cover near-duplicate plane contacts across a grid-cell boundary
+and distinct nearby contacts in neighboring cells.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
@@ -23,17 +25,20 @@ Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 | Run | RTF | Final state |
 | --- | ---: | --- |
 | #3142 stack, no profile | `0.0696281` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
-| Current local candidate, no profile | `0.0751396` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3143 stack, no profile | `0.0751396` | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local candidate, no profile | `0.0817217` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3142 stack, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local candidate, text profile | `0.0754405` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3143 stack, text profile | `0.0754405` | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local candidate, text profile | `0.0824554` | finite, same hash, contacts `5005`, pairs `3003` |
 
 The profile movement is concentrated where expected:
 the DART-native `collide` scope drops from about `1.680 s` on #3142 to
-`1.629 s` over 300 active steps. The next largest measured costs are now
-`build contact constraints` at about `729 ms`, `solveConstrainedGroups` at
-about `527 ms`, and velocity/position integration at about `669 ms` combined,
-so the next larger wins should continue in native collision/contact
-construction or integration hot paths.
+`1.629 s` on #3143 and `1.101 s` on the current candidate over 300 active
+steps. The next largest measured costs are now `build contact constraints` at
+about `762 ms`, `solveConstrainedGroups` at about `562 ms`, and
+velocity/position integration at about `741 ms` combined, so the next larger
+wins should continue in contact construction, constrained-group solving,
+integration, or deeper native collision algorithm changes.
 
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
@@ -47,7 +52,9 @@ constraint is an exact built-in `ContactConstraint`. #3141 trims two small
 DART-native collision hot-path costs: unused scratch-result lookup caches and
 single-plane pair-index division. #3142 skips redundant parallel-safety scans
 once the active contact set and built constrained groups prove they are exact
-built-in fixed-support contact groups.
+built-in fixed-support contact groups. #3143 caches a compact primitive shape
+kind for DART-native plane dispatch. The current candidate reduces serial
+contact-merge duplicate-grid probes while preserving duplicate behavior.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
