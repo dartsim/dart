@@ -47,6 +47,8 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
+#include <dart/common/Deprecated.hpp>
+
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
 
@@ -91,11 +93,13 @@ void runIssue1234Test(
     std::function<dart::collision::CollisionDetectorPtr()> detectorFactory)
 {
   const std::string meshUri = "dart://sample/obj/BoxSmall.obj";
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const auto aiscene = dart::dynamics::MeshShape::loadMesh(
       meshUri, dart::utils::DartResourceRetriever::create());
   ASSERT_TRUE(aiscene);
   const auto mesh = std::make_shared<dart::dynamics::MeshShape>(
       100.0 * Eigen::Vector3d::Ones(), aiscene, meshUri);
+  DART_SUPPRESS_DEPRECATED_END
 
   const auto bb = mesh->getBoundingBox();
   for (int i = 0; i < 3; ++i) {

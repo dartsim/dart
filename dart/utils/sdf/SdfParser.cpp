@@ -33,6 +33,7 @@
 #include "dart/utils/sdf/SdfParser.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
@@ -1014,12 +1015,16 @@ dynamics::ShapePtr readShape(
                                 : Eigen::Vector3d::Ones();
 
     const std::string meshUri = common::Uri::getRelativeUri(baseUri, uri);
+    DART_SUPPRESS_DEPRECATED_BEGIN
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
+    DART_SUPPRESS_DEPRECATED_END
 
-    if (model)
+    if (model) {
+      DART_SUPPRESS_DEPRECATED_BEGIN
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, model, meshUri, _retriever);
-    else {
+      DART_SUPPRESS_DEPRECATED_END
+    } else {
       dtwarn << "[SdfParser::readShape] Failed to load mesh model [" << meshUri
              << "].\n";
       return nullptr;
