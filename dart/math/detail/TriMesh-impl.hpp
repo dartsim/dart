@@ -61,6 +61,69 @@ void TriMesh<S>::setTriangles(
 
 //==============================================================================
 template <typename S>
+void TriMesh<S>::reserveVertices(std::size_t n)
+{
+  this->mVertices.reserve(n);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertex(S x, S y, S z)
+{
+  this->mVertices.emplace_back(x, y, z);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertex(const Vector3& vertex)
+{
+  this->mVertices.push_back(vertex);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::reserveTriangles(std::size_t n)
+{
+  mTriangles.reserve(n);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addTriangle(Index idx0, Index idx1, Index idx2)
+{
+  mTriangles.emplace_back(idx0, idx1, idx2);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addTriangle(const Triangle& triangle)
+{
+  mTriangles.push_back(triangle);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::reserveVertexNormals(std::size_t n)
+{
+  this->mVertexNormals.reserve(n);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertexNormal(S x, S y, S z)
+{
+  this->mVertexNormals.emplace_back(x, y, z);
+}
+
+//==============================================================================
+template <typename S>
+void TriMesh<S>::addVertexNormal(const Vector3& normal)
+{
+  this->mVertexNormals.push_back(normal);
+}
+
+//==============================================================================
+template <typename S>
 void TriMesh<S>::computeVertexNormals()
 {
   computeTriangleNormals();

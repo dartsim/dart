@@ -32,6 +32,7 @@
 
 #include "dart/utils/urdf/DartLoader.hpp"
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -977,14 +978,18 @@ dynamics::ShapePtr DartLoader::createShape(
 
       // Load the mesh.
       const std::string resolvedUri = absoluteUri.toString();
+      DART_SUPPRESS_DEPRECATED_BEGIN
       const aiScene* scene
           = dynamics::MeshShape::loadMesh(resolvedUri, _resourceRetriever);
+      DART_SUPPRESS_DEPRECATED_END
       if (!scene)
         return nullptr;
 
       const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
+      DART_SUPPRESS_DEPRECATED_BEGIN
       shape = std::make_shared<dynamics::MeshShape>(
           scale, scene, resolvedUri, _resourceRetriever);
+      DART_SUPPRESS_DEPRECATED_END
       break;
     }
     default:
