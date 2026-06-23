@@ -81,28 +81,39 @@ bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
   return true;
 }
 
-std::set<std::string> collectJointsWithAxisElement(
+JointXmlElementMetadata collectJointXmlElementMetadata(
     const std::string& urdfString)
 {
-  std::set<std::string> jointsWithAxisElement;
+  JointXmlElementMetadata metadata;
 
   tinyxml2::XMLDocument xmlDoc;
   if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
-    return jointsWithAxisElement;
+    return metadata;
 
   auto* robotXml = xmlDoc.FirstChildElement("robot");
   if (!robotXml)
-    return jointsWithAxisElement;
+    return metadata;
 
   for (auto* jointXml = robotXml->FirstChildElement("joint");
        jointXml != nullptr;
        jointXml = jointXml->NextSiblingElement("joint")) {
     const char* name = jointXml->Attribute("name");
-    if (name && jointXml->FirstChildElement("axis"))
-      jointsWithAxisElement.emplace(name);
+    if (!name)
+      continue;
+
+    if (jointXml->FirstChildElement("axis"))
+      metadata.jointsWithAxisElement.emplace(name);
+
+    auto* limitXml = jointXml->FirstChildElement("limit");
+    if (limitXml) {
+      if (limitXml->Attribute("lower"))
+        metadata.jointsWithLimitLowerAttribute.emplace(name);
+      if (limitXml->Attribute("upper"))
+        metadata.jointsWithLimitUpperAttribute.emplace(name);
+    }
   }
 
-  return jointsWithAxisElement;
+  return metadata;
 }
 
 } // namespace
@@ -203,8 +214,8 @@ std::shared_ptr<World> parseWorldURDF(
 
         // Parse model
         const auto xml_model_string = retriever->readAll(absoluteUri);
-        entity.jointsWithAxisElement
-            = collectJointsWithAxisElement(xml_model_string);
+        entity.jointXmlElementMetadata
+            = collectJointXmlElementMetadata(xml_model_string);
         entity.model = urdf::parseURDF(xml_model_string);
 
         if (!entity.model) {

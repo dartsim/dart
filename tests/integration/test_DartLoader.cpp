@@ -291,6 +291,48 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
 }
 
 //==============================================================================
+TEST(DartLoader, parsePlanarJointEffortVelocityOnlyKeepsPositionUnbounded)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <limit velocity="2.5" effort="3.5"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd velocityUpper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 2.5);
+  const Eigen::VectorXd effortUpper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 3.5);
+
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(i), -dart::math::constantsd::inf());
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(i), dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getVelocityLowerLimits().isApprox(-velocityUpper));
+  EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velocityUpper));
+  EXPECT_TRUE(joint->getForceLowerLimits().isApprox(-effortUpper));
+  EXPECT_TRUE(joint->getForceUpperLimits().isApprox(effortUpper));
+}
+
+//==============================================================================
 TEST(DartLoader, parsePlanarJointOmittedAxisKeepsDefaultPlane)
 {
   // clang-format off
@@ -470,6 +512,48 @@ TEST(DartLoader, parseFloatingJointLimits)
 
   joint->setFrictions(Eigen::VectorXd::Zero(joint->getNumDofs()));
   EXPECT_FALSE(joint->hasCoulombFriction());
+}
+
+//==============================================================================
+TEST(DartLoader, parseFloatingJointEffortVelocityOnlyKeepsPositionUnbounded)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="floating_example">
+      <link name="base"/>
+      <link name="child"/>
+      <joint name="floating_joint" type="floating">
+        <parent link="base"/>
+        <child link="child"/>
+        <limit velocity="1.1" effort="2.2"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::FreeJoint*>(robot->getJoint("floating_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd velocityUpper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 1.1);
+  const Eigen::VectorXd effortUpper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 2.2);
+
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(i), -dart::math::constantsd::inf());
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(i), dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getVelocityLowerLimits().isApprox(-velocityUpper));
+  EXPECT_TRUE(joint->getVelocityUpperLimits().isApprox(velocityUpper));
+  EXPECT_TRUE(joint->getForceLowerLimits().isApprox(-effortUpper));
+  EXPECT_TRUE(joint->getForceUpperLimits().isApprox(effortUpper));
 }
 
 //==============================================================================

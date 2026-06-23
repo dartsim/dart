@@ -66,36 +66,68 @@ using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
 
 namespace {
 
-std::set<std::string> collectJointsWithAxisElement(
+JointXmlElementMetadata collectJointXmlElementMetadata(
     const std::string& urdfString)
 {
-  std::set<std::string> jointsWithAxisElement;
+  JointXmlElementMetadata metadata;
 
   tinyxml2::XMLDocument xmlDoc;
   if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
-    return jointsWithAxisElement;
+    return metadata;
 
   auto* robotXml = xmlDoc.FirstChildElement("robot");
   if (!robotXml)
-    return jointsWithAxisElement;
+    return metadata;
 
   for (auto* jointXml = robotXml->FirstChildElement("joint");
        jointXml != nullptr;
        jointXml = jointXml->NextSiblingElement("joint")) {
     const char* name = jointXml->Attribute("name");
-    if (name && jointXml->FirstChildElement("axis"))
-      jointsWithAxisElement.emplace(name);
+    if (!name)
+      continue;
+
+    if (jointXml->FirstChildElement("axis"))
+      metadata.jointsWithAxisElement.emplace(name);
+
+    auto* limitXml = jointXml->FirstChildElement("limit");
+    if (limitXml) {
+      if (limitXml->Attribute("lower"))
+        metadata.jointsWithLimitLowerAttribute.emplace(name);
+      if (limitXml->Attribute("upper"))
+        metadata.jointsWithLimitUpperAttribute.emplace(name);
+    }
   }
 
-  return jointsWithAxisElement;
+  return metadata;
 }
 
 bool hasAxisElement(
     const urdf::Joint* joint,
-    const std::set<std::string>* jointsWithAxisElement)
+    const JointXmlElementMetadata* jointXmlElementMetadata)
 {
-  return joint && jointsWithAxisElement
-         && jointsWithAxisElement->count(joint->name) > 0;
+  return joint && jointXmlElementMetadata
+         && jointXmlElementMetadata->jointsWithAxisElement.count(joint->name)
+                > 0;
+}
+
+bool hasPositionLowerLimitAttribute(
+    const urdf::Joint* joint,
+    const JointXmlElementMetadata* jointXmlElementMetadata)
+{
+  return joint && jointXmlElementMetadata
+         && jointXmlElementMetadata->jointsWithLimitLowerAttribute.count(
+                joint->name)
+                > 0;
+}
+
+bool hasPositionUpperLimitAttribute(
+    const urdf::Joint* joint,
+    const JointXmlElementMetadata* jointXmlElementMetadata)
+{
+  return joint && jointXmlElementMetadata
+         && jointXmlElementMetadata->jointsWithLimitUpperAttribute.count(
+                joint->name)
+                > 0;
 }
 
 } // namespace
@@ -180,13 +212,13 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(const common::Uri& uri)
     return nullptr;
   }
 
-  const auto jointsWithAxisElement = collectJointsWithAxisElement(content);
+  const auto jointXmlElementMetadata = collectJointXmlElementMetadata(content);
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       uri,
       resourceRetriever,
       mOptions,
-      &jointsWithAxisElement);
+      &jointXmlElementMetadata);
 }
 
 //==============================================================================
@@ -225,13 +257,14 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     return nullptr;
   }
 
-  const auto jointsWithAxisElement = collectJointsWithAxisElement(urdfString);
+  const auto jointXmlElementMetadata
+      = collectJointXmlElementMetadata(urdfString);
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       baseUri,
       getResourceRetriever(mOptions.mResourceRetriever),
       mOptions,
-      &jointsWithAxisElement);
+      &jointXmlElementMetadata);
 }
 
 //==============================================================================
@@ -316,7 +349,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
         entity.uri,
         resourceRetriever,
         mOptions,
-        &entity.jointsWithAxisElement);
+        &entity.jointXmlElementMetadata);
 
     if (!skeleton) {
       dtwarn << "[DartLoader::parseWorldString] Robot "
@@ -347,7 +380,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
     const Options& options,
-    const std::set<std::string>* jointsWithAxisElement)
+    const JointXmlElementMetadata* jointXmlElementMetadata)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
@@ -375,7 +408,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
               baseUri,
               resourceRetriever,
               options,
-              jointsWithAxisElement)) {
+              jointXmlElementMetadata)) {
         return nullptr;
       }
     }
@@ -388,7 +421,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
             baseUri,
             resourceRetriever,
             options,
-            jointsWithAxisElement)) {
+            jointXmlElementMetadata)) {
       return nullptr;
     }
   }
@@ -409,7 +442,7 @@ bool DartLoader::createSkeletonRecursive(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
     const Options& options,
-    const std::set<std::string>* jointsWithAxisElement)
+    const JointXmlElementMetadata* jointXmlElementMetadata)
 {
   DART_ASSERT(lk);
 
@@ -429,7 +462,7 @@ bool DartLoader::createSkeletonRecursive(
       parentNode,
       skel,
       options,
-      jointsWithAxisElement);
+      jointXmlElementMetadata);
 
   if (!node)
     return false;
@@ -449,7 +482,7 @@ bool DartLoader::createSkeletonRecursive(
             baseUri,
             resourceRetriever,
             options,
-            jointsWithAxisElement)) {
+            jointXmlElementMetadata)) {
       return false;
     }
   }
@@ -559,7 +592,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
     const Options& options,
-    const std::set<std::string>* jointsWithAxisElement)
+    const JointXmlElementMetadata* jointXmlElementMetadata)
 {
   // Special case for the root link (A root link doesn't have the parent joint).
   // We don't have sufficient information what the joint type should be for the
@@ -664,21 +697,28 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
             "URDF joint '{}' provides 1D limits for a floating joint. Applying "
             "the same limits uniformly to all six degrees of freedom.",
             _jt->name);
-        properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
-        properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
+        const bool hasLower
+            = hasPositionLowerLimitAttribute(_jt, jointXmlElementMetadata);
+        const bool hasUpper
+            = hasPositionUpperLimitAttribute(_jt, jointXmlElementMetadata);
+        if (hasLower)
+          properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
+        if (hasUpper)
+          properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
         properties.mVelocityLowerLimits.setConstant(-_jt->limits->velocity);
         properties.mVelocityUpperLimits.setConstant(_jt->limits->velocity);
         properties.mForceLowerLimits.setConstant(-_jt->limits->effort);
         properties.mForceUpperLimits.setConstant(_jt->limits->effort);
 
-        if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
+        if ((hasLower && _jt->limits->lower > 0)
+            || (hasUpper && _jt->limits->upper < 0)) {
           if (std::isfinite(_jt->limits->lower)
-              && std::isfinite(_jt->limits->upper)) {
+              && std::isfinite(_jt->limits->upper) && hasLower && hasUpper) {
             properties.mInitialPositions.setConstant(
                 (_jt->limits->lower + _jt->limits->upper) / 2.0);
-          } else if (std::isfinite(_jt->limits->lower)) {
+          } else if (hasLower && std::isfinite(_jt->limits->lower)) {
             properties.mInitialPositions.setConstant(_jt->limits->lower);
-          } else if (std::isfinite(_jt->limits->upper)) {
+          } else if (hasUpper && std::isfinite(_jt->limits->upper)) {
             properties.mInitialPositions.setConstant(_jt->limits->upper);
           }
 
@@ -704,7 +744,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PLANAR: {
       dynamics::PlanarJoint::Properties properties{
           dynamics::GenericJoint<math::R3Space>::Properties(basicProperties)};
-      if (hasAxisElement(_jt, jointsWithAxisElement)
+      if (hasAxisElement(_jt, jointXmlElementMetadata)
           && jointAxis.norm() > 1e-9) {
         const Eigen::Vector3d axis = jointAxis.normalized();
         if (axis.isApprox(Eigen::Vector3d::UnitZ())) {
@@ -726,21 +766,28 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
             "URDF joint '{}' provides 1D limits for a planar joint. Applying "
             "the same limits uniformly to all three degrees of freedom.",
             _jt->name);
-        properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
-        properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
+        const bool hasLower
+            = hasPositionLowerLimitAttribute(_jt, jointXmlElementMetadata);
+        const bool hasUpper
+            = hasPositionUpperLimitAttribute(_jt, jointXmlElementMetadata);
+        if (hasLower)
+          properties.mPositionLowerLimits.setConstant(_jt->limits->lower);
+        if (hasUpper)
+          properties.mPositionUpperLimits.setConstant(_jt->limits->upper);
         properties.mVelocityLowerLimits.setConstant(-_jt->limits->velocity);
         properties.mVelocityUpperLimits.setConstant(_jt->limits->velocity);
         properties.mForceLowerLimits.setConstant(-_jt->limits->effort);
         properties.mForceUpperLimits.setConstant(_jt->limits->effort);
 
-        if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
+        if ((hasLower && _jt->limits->lower > 0)
+            || (hasUpper && _jt->limits->upper < 0)) {
           if (std::isfinite(_jt->limits->lower)
-              && std::isfinite(_jt->limits->upper)) {
+              && std::isfinite(_jt->limits->upper) && hasLower && hasUpper) {
             properties.mInitialPositions.setConstant(
                 (_jt->limits->lower + _jt->limits->upper) / 2.0);
-          } else if (std::isfinite(_jt->limits->lower)) {
+          } else if (hasLower && std::isfinite(_jt->limits->lower)) {
             properties.mInitialPositions.setConstant(_jt->limits->lower);
-          } else if (std::isfinite(_jt->limits->upper)) {
+          } else if (hasUpper && std::isfinite(_jt->limits->upper)) {
             properties.mInitialPositions.setConstant(_jt->limits->upper);
           }
 

@@ -75,6 +75,13 @@ class World;
 
 namespace utils {
 
+struct JointXmlElementMetadata
+{
+  std::set<std::string> jointsWithAxisElement;
+  std::set<std::string> jointsWithLimitLowerAttribute;
+  std::set<std::string> jointsWithLimitUpperAttribute;
+};
+
 /**
  * @class DartLoader
  */
@@ -215,7 +222,7 @@ private:
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& resourceRetriever,
       const Options& options,
-      const std::set<std::string>* jointsWithAxisElement = nullptr);
+      const JointXmlElementMetadata* jointXmlElementMetadata = nullptr);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -225,7 +232,7 @@ private:
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever,
       const Options& options,
-      const std::set<std::string>* jointsWithAxisElement);
+      const JointXmlElementMetadata* jointXmlElementMetadata);
 
   static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
@@ -244,7 +251,7 @@ private:
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
       const Options& options,
-      const std::set<std::string>* jointsWithAxisElement);
+      const JointXmlElementMetadata* jointXmlElementMetadata);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,
