@@ -1246,6 +1246,9 @@ protected:
   /// changes.
   void incrementDeactivationStateVersion();
 
+  /// Increments when joint velocities change.
+  void incrementVelocityVersion();
+
   /// Increments when joint positions change. Used internally by World to
   /// invalidate all-resting simulation fast paths after external pose edits.
   std::size_t incrementKinematicVersion();
@@ -1260,6 +1263,7 @@ protected:
   static std::size_t getGlobalKinematicVersion();
   static std::size_t getGlobalExternalDisturbanceVersion();
   static std::size_t getGlobalDeactivationStateVersion();
+  static std::size_t getGlobalVelocityVersion();
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();

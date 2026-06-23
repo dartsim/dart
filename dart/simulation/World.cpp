@@ -994,6 +994,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
       && mAllRestingSnapshotDeactivationStateVersion
              == dynamics::Skeleton::getGlobalDeactivationStateVersion()
+      && mAllRestingSnapshotVelocityVersion
+             == dynamics::Skeleton::getGlobalVelocityVersion()
       && collisionDetectorUnchanged && collisionFilterUnchanged
       && collisionOptionScalarsUnchanged) {
     if (_resetCommand && !mAllRestingSnapshotResetCommand) {
@@ -1009,18 +1011,6 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       mAllRestingSnapshotResetCommand = true;
     }
 
-    // The global guards above cover structure, poses/transforms, external
-    // force/command writes, sleep-state edits, and collision filtering. Direct
-    // velocity edits are intentionally not part of the kinematic version, so
-    // keep this cheap DOF scan to wake externally nudged sleepers without
-    // redoing the expensive per-body speed and disturbance scan every cached
-    // step.
-    for (const auto& skel : mSkeletons) {
-      if (skel->isMobile() && hasNonzeroGeneralizedVelocity(*skel)) {
-        markSnapshotStale();
-        return false;
-      }
-    }
     return true;
   }
 
@@ -1142,6 +1132,8 @@ void World::updateAllRestingSnapshotGlobalVersions()
       = dynamics::Skeleton::getGlobalExternalDisturbanceVersion();
   mAllRestingSnapshotDeactivationStateVersion
       = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  mAllRestingSnapshotVelocityVersion
+      = dynamics::Skeleton::getGlobalVelocityVersion();
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   mAllRestingSnapshotCollisionDetector = collisionDetector.get();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
@@ -1328,6 +1320,7 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0u;
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
+  mAllRestingSnapshotVelocityVersion = 0u;
 }
 
 //==============================================================================

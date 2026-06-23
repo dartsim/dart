@@ -792,13 +792,21 @@ GenericJoint<ConfigSpaceT>::getPositionsStatic() const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(const Vector& velocities)
 {
+  setVelocitiesStaticInternal(velocities, true);
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setVelocitiesStaticInternal(
+    const Vector& velocities, bool trackVelocityVersion)
+{
   detail::assertFiniteState(velocities, this, "setVelocities", "velocities");
 
   if (this->mAspectState.mVelocities == velocities)
     return;
 
   this->mAspectState.mVelocities = velocities;
-  this->notifyVelocityUpdated();
+  this->notifyVelocityUpdated(trackVelocityVersion);
 }
 
 //==============================================================================
@@ -1478,8 +1486,10 @@ void GenericJoint<ConfigSpaceT>::integratePositions(
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::integrateVelocities(double dt)
 {
-  setVelocitiesStatic(math::integrateVelocity<ConfigSpaceT>(
-      getVelocitiesStatic(), getAccelerationsStatic(), dt));
+  setVelocitiesStaticInternal(
+      math::integrateVelocity<ConfigSpaceT>(
+          getVelocitiesStatic(), getAccelerationsStatic(), dt),
+      false);
 }
 
 //==============================================================================
@@ -2282,7 +2292,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalForce(
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
     case Joint::LOCKED:
-      setVelocitiesStatic(Vector::Zero());
+      setVelocitiesStaticInternal(Vector::Zero(), false);
       setAccelerationsStatic(Vector::Zero());
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
@@ -2590,8 +2600,8 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
 
-  setVelocitiesStatic(
-      getVelocitiesStatic() + this->mAspectState.mVelocityChanges);
+  setVelocitiesStaticInternal(
+      getVelocitiesStatic() + this->mAspectState.mVelocityChanges, false);
   setAccelerationsStatic(
       getAccelerationsStatic()
       + this->mAspectState.mVelocityChanges * invTimeStep);

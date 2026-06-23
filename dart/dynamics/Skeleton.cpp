@@ -90,6 +90,7 @@ std::atomic<std::size_t> gStructuralVersion{0};
 std::atomic<std::size_t> gKinematicVersion{0};
 std::atomic<std::size_t> gExternalDisturbanceVersion{0};
 std::atomic<std::size_t> gDeactivationStateVersion{0};
+std::atomic<std::size_t> gVelocityVersion{0};
 
 std::size_t incrementGlobal(std::atomic<std::size_t>& counter)
 {
@@ -4075,6 +4076,12 @@ void Skeleton::incrementDeactivationStateVersion()
 }
 
 //==============================================================================
+void Skeleton::incrementVelocityVersion()
+{
+  incrementGlobal(gVelocityVersion);
+}
+
+//==============================================================================
 std::size_t Skeleton::incrementKinematicVersion()
 {
   ++mKinematicVersion;
@@ -4110,6 +4117,12 @@ std::size_t Skeleton::getGlobalExternalDisturbanceVersion()
 std::size_t Skeleton::getGlobalDeactivationStateVersion()
 {
   return loadGlobal(gDeactivationStateVersion);
+}
+
+//==============================================================================
+std::size_t Skeleton::getGlobalVelocityVersion()
+{
+  return loadGlobal(gVelocityVersion);
 }
 
 //==============================================================================
