@@ -3028,6 +3028,60 @@ TEST_F(Collision, CollisionResultKeepsMaterializedCollidingSetsCurrent)
 }
 
 //==============================================================================
+TEST_F(Collision, CollisionResultCanSkipCollidingObjectCachesForScratchUse)
+{
+  class ScratchCollisionResult final : public CollisionResult
+  {
+  public:
+    ScratchCollisionResult()
+    {
+      setCollidingObjectCacheEnabled(false);
+    }
+
+    void enableCollidingObjectCache()
+    {
+      setCollidingObjectCacheEnabled(true);
+    }
+  };
+
+  auto detector = FCLCollisionDetector::create();
+
+  auto skelA = Skeleton::create("scratch_result_a");
+  auto skelB = Skeleton::create("scratch_result_b");
+  auto pairA = skelA->createJointAndBodyNodePair<FreeJoint>();
+  auto pairB = skelB->createJointAndBodyNodePair<FreeJoint>();
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  auto* nodeA = pairA.second->createShapeNodeWith<CollisionAspect>(box);
+  auto* nodeB = pairB.second->createShapeNodeWith<CollisionAspect>(box);
+
+  TestCollisionObject objectA(detector.get(), nodeA);
+  TestCollisionObject objectB(detector.get(), nodeB);
+
+  Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+
+  ScratchCollisionResult result;
+  result.addContact(contact);
+
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_FALSE(result.inCollision(nodeA));
+  EXPECT_FALSE(result.inCollision(nodeB));
+  EXPECT_FALSE(result.inCollision(pairA.second));
+  EXPECT_FALSE(result.inCollision(pairB.second));
+
+  result.clear();
+  result.enableCollidingObjectCache();
+  result.addContact(contact);
+
+  EXPECT_TRUE(result.inCollision(nodeA));
+  EXPECT_TRUE(result.inCollision(nodeB));
+  EXPECT_TRUE(result.inCollision(pairA.second));
+  EXPECT_TRUE(result.inCollision(pairB.second));
+}
+
+//==============================================================================
 TEST_F(Collision, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();

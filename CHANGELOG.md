@@ -86,6 +86,11 @@
     deferring collision-result lookup-set construction until queried:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Reduce DART-native finite-plane collision bookkeeping by using internal
+    scratch collision results that skip unused lookup caches and a direct
+    single-plane pair-index path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:

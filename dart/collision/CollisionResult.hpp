@@ -91,6 +91,12 @@ public:
   void clear();
 
 protected:
+  /// Enables/disables tracking the colliding BodyNode/ShapeFrame lookup caches.
+  /// This is intended for short-lived internal scratch results whose contacts
+  /// are copied into a user-visible result before the scratch result is
+  /// cleared.
+  void setCollidingObjectCacheEnabled(bool enabled);
+
   void updateCollidingObjectCaches() const;
 
   void addObjectToCaches(CollisionObject* object);
@@ -117,6 +123,11 @@ protected:
   /// Whether the unordered lookup sets have been exposed to callers. Once a
   /// caller can hold a reference to them, future mutations keep them current.
   mutable bool mCollidingObjectCachesMaterialized = false;
+
+  /// Whether contacts added to this result should track colliding object lookup
+  /// caches. Internal pair-scratch results can disable this because only their
+  /// contact vector is consumed before they are cleared.
+  bool mCollidingObjectCacheEnabled = true;
 };
 
 } // namespace collision
