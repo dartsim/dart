@@ -50,6 +50,7 @@
 #include <Eigen/Geometry>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace urdf {
@@ -213,7 +214,8 @@ private:
       const urdf::ModelInterface* model,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& resourceRetriever,
-      const Options& options);
+      const Options& options,
+      const std::set<std::string>* jointsWithAxisElement = nullptr);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -222,7 +224,8 @@ private:
       dynamics::BodyNode* parent,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever,
-      const Options& options);
+      const Options& options,
+      const std::set<std::string>* jointsWithAxisElement);
 
   static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
@@ -240,7 +243,8 @@ private:
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
-      const Options& options);
+      const Options& options,
+      const std::set<std::string>* jointsWithAxisElement);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,

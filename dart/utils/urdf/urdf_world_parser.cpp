@@ -81,6 +81,30 @@ bool parsePose(urdf::Pose& pose, tinyxml2::XMLElement* xml)
   return true;
 }
 
+std::set<std::string> collectJointsWithAxisElement(
+    const std::string& urdfString)
+{
+  std::set<std::string> jointsWithAxisElement;
+
+  tinyxml2::XMLDocument xmlDoc;
+  if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
+    return jointsWithAxisElement;
+
+  auto* robotXml = xmlDoc.FirstChildElement("robot");
+  if (!robotXml)
+    return jointsWithAxisElement;
+
+  for (auto* jointXml = robotXml->FirstChildElement("joint");
+       jointXml != nullptr;
+       jointXml = jointXml->NextSiblingElement("joint")) {
+    const char* name = jointXml->Attribute("name");
+    if (name && jointXml->FirstChildElement("axis"))
+      jointsWithAxisElement.emplace(name);
+  }
+
+  return jointsWithAxisElement;
+}
+
 } // namespace
 
 Entity::Entity(const urdf::Entity& urdfEntity)
@@ -179,6 +203,8 @@ std::shared_ptr<World> parseWorldURDF(
 
         // Parse model
         const auto xml_model_string = retriever->readAll(absoluteUri);
+        entity.jointsWithAxisElement
+            = collectJointsWithAxisElement(xml_model_string);
         entity.model = urdf::parseURDF(xml_model_string);
 
         if (!entity.model) {

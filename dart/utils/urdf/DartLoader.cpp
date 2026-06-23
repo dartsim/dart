@@ -52,14 +52,53 @@
 #include "dart/utils/urdf/IncludeUrdf.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
+#include <tinyxml2.h>
+
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 
 namespace dart {
 namespace utils {
 
 using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
+
+namespace {
+
+std::set<std::string> collectJointsWithAxisElement(
+    const std::string& urdfString)
+{
+  std::set<std::string> jointsWithAxisElement;
+
+  tinyxml2::XMLDocument xmlDoc;
+  if (xmlDoc.Parse(urdfString.c_str()) != tinyxml2::XML_SUCCESS)
+    return jointsWithAxisElement;
+
+  auto* robotXml = xmlDoc.FirstChildElement("robot");
+  if (!robotXml)
+    return jointsWithAxisElement;
+
+  for (auto* jointXml = robotXml->FirstChildElement("joint");
+       jointXml != nullptr;
+       jointXml = jointXml->NextSiblingElement("joint")) {
+    const char* name = jointXml->Attribute("name");
+    if (name && jointXml->FirstChildElement("axis"))
+      jointsWithAxisElement.emplace(name);
+  }
+
+  return jointsWithAxisElement;
+}
+
+bool hasAxisElement(
+    const urdf::Joint* joint,
+    const std::set<std::string>* jointsWithAxisElement)
+{
+  return joint && jointsWithAxisElement
+         && jointsWithAxisElement->count(joint->name) > 0;
+}
+
+} // namespace
 
 //==============================================================================
 DartLoader::Options::Options(
@@ -141,8 +180,13 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(const common::Uri& uri)
     return nullptr;
   }
 
+  const auto jointsWithAxisElement = collectJointsWithAxisElement(content);
   return modelInterfaceToSkeleton(
-      urdfInterface.get(), uri, resourceRetriever, mOptions);
+      urdfInterface.get(),
+      uri,
+      resourceRetriever,
+      mOptions,
+      &jointsWithAxisElement);
 }
 
 //==============================================================================
@@ -181,11 +225,13 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     return nullptr;
   }
 
+  const auto jointsWithAxisElement = collectJointsWithAxisElement(urdfString);
   return modelInterfaceToSkeleton(
       urdfInterface.get(),
       baseUri,
       getResourceRetriever(mOptions.mResourceRetriever),
-      mOptions);
+      mOptions,
+      &jointsWithAxisElement);
 }
 
 //==============================================================================
@@ -266,7 +312,11 @@ simulation::WorldPtr DartLoader::parseWorldString(
   for (std::size_t i = 0; i < worldInterface->models.size(); ++i) {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-        entity.model.get(), entity.uri, resourceRetriever, mOptions);
+        entity.model.get(),
+        entity.uri,
+        resourceRetriever,
+        mOptions,
+        &entity.jointsWithAxisElement);
 
     if (!skeleton) {
       dtwarn << "[DartLoader::parseWorldString] Robot "
@@ -296,7 +346,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    const Options& options)
+    const Options& options,
+    const std::set<std::string>* jointsWithAxisElement)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(model->getName());
 
@@ -323,7 +374,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
               nullptr,
               baseUri,
               resourceRetriever,
-              options)) {
+              options,
+              jointsWithAxisElement)) {
         return nullptr;
       }
     }
@@ -335,7 +387,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
             nullptr,
             baseUri,
             resourceRetriever,
-            options)) {
+            options,
+            jointsWithAxisElement)) {
       return nullptr;
     }
   }
@@ -355,7 +408,8 @@ bool DartLoader::createSkeletonRecursive(
     dynamics::BodyNode* parentNode,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& resourceRetriever,
-    const Options& options)
+    const Options& options,
+    const std::set<std::string>* jointsWithAxisElement)
 {
   DART_ASSERT(lk);
 
@@ -370,7 +424,12 @@ bool DartLoader::createSkeletonRecursive(
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
-      lk->parent_joint.get(), properties, parentNode, skel, options);
+      lk->parent_joint.get(),
+      properties,
+      parentNode,
+      skel,
+      options,
+      jointsWithAxisElement);
 
   if (!node)
     return false;
@@ -389,7 +448,8 @@ bool DartLoader::createSkeletonRecursive(
             node,
             baseUri,
             resourceRetriever,
-            options)) {
+            options,
+            jointsWithAxisElement)) {
       return false;
     }
   }
@@ -498,7 +558,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    const Options& options)
+    const Options& options,
+    const std::set<std::string>* jointsWithAxisElement)
 {
   // Special case for the root link (A root link doesn't have the parent joint).
   // We don't have sufficient information what the joint type should be for the
@@ -643,7 +704,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PLANAR: {
       dynamics::PlanarJoint::Properties properties{
           dynamics::GenericJoint<math::R3Space>::Properties(basicProperties)};
-      if (jointAxis.norm() > 1e-9) {
+      if (hasAxisElement(_jt, jointsWithAxisElement)
+          && jointAxis.norm() > 1e-9) {
         const Eigen::Vector3d axis = jointAxis.normalized();
         if (axis.isApprox(Eigen::Vector3d::UnitZ())) {
           properties.setXYPlane();

@@ -43,6 +43,7 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
+#include <set>
 #include <string>
 
 namespace dart {
@@ -64,6 +65,7 @@ public:
   urdf::Twist twist;
 
   dart::common::Uri uri;
+  std::set<std::string> jointsWithAxisElement;
 };
 
 class World

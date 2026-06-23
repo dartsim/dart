@@ -291,6 +291,63 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
 }
 
 //==============================================================================
+TEST(DartLoader, parsePlanarJointOmittedAxisKeepsDefaultPlane)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  EXPECT_EQ(joint->getPlaneType(), dynamics::PlanarJoint::PlaneType::XY);
+  EXPECT_TRUE(joint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitZ()));
+}
+
+//==============================================================================
+TEST(DartLoader, parsePlanarJointExplicitUnitXAxisUsesYZPlane)
+{
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <axis xyz="1 0 0"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  EXPECT_EQ(joint->getPlaneType(), dynamics::PlanarJoint::PlaneType::YZ);
+  EXPECT_TRUE(joint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitX()));
+}
+
+//==============================================================================
 TEST(DartLoader, parsePlanarJointNegativeCardinalAxes)
 {
   const auto checkAxis
