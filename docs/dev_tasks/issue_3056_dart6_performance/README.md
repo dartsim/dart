@@ -2,13 +2,24 @@
 
 ## Current Snapshot
 
-Bottom line: #3126 is merged and cleaned up locally. The current follow-up is
-`perf/dart6-native-shape-cache`, based on `origin/release-6.20`. This is a
-small DART-native hot-path slice: cache each DART collision object's shape
-pointer, type string, plane flag, and local bounding box, refresh that cache
-only when the `ShapeFrame` version changes, and use the cached data in
-broadphase and narrowphase dispatch. The goal is conservative data locality and
-shared-pointer churn reduction without changing contacts or solver behavior.
+Bottom line: #3129 is merged and cleaned up locally. The current follow-up is
+`perf/dart6-native-collision-parallel`, based on #3129; `origin/release-6.20`
+has also advanced by the unrelated #3128 docs/audit PR and must be merged into
+the topic branch before push.
+
+This slice is a bounded DART-native collision hot-path improvement, not the
+larger native-detector port. It parallelizes finite-shape-vs-plane collision
+queries for the existing `dart/collision/dart/` backend when the query has many
+plane pairs, contact results are requested, and no custom collision filter is
+active. It also adds a direct cached-shape plane dispatch path and a
+squared-distance duplicate-contact check. Pair results are merged serially in
+the same order as the legacy path, so contact ordering and final-state hashes
+remain deterministic.
+
+Threading is wired through the existing `World::setNumSimulationThreads()` /
+`ConstraintSolver::setNumSimulationThreads()` control, only for
+`DARTCollisionDetector`. The default one-thread path remains available and uses
+the same serial code path for small/filter-sensitive queries.
 
 The original issue scene remains the primary active benchmark:
 `/tmp/3k_shapes.sdf`, with `3003` mobile sphere/box/cylinder bodies plus the
@@ -22,30 +33,42 @@ and solver; only collision detection changes:
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3126 DART native active baseline | `0.0545488` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Current DART native active | `0.0573693` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3126 Bullet active comparison | `0.0636858` | finite, hash `0x1b1e6f3c78c0e01e`, contacts `5005`, pairs `3003` |
+| #3129 DART native active baseline | `0.05735` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current DART native active, 16 threads | `0.05845` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current DART native default sleeping, 16 threads | `1.96845` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
 
-No-rebuild repeats of the current DART-native path were RTF `0.0583932`,
-`0.0582933`, and `0.0575822`, all with the same DART-native final hash and
-contact counts. The measured improvement is real but modest: about `5-7%` on
-the active exact issue scene, still behind the Bullet collision backend for
-this workload. The profiler moved the inclusive `collide` scope from the
-recorded #3126 baseline `1.982 s` to `1.839 s` over 300 steps, while
-`updateConstraints` moved from `2.930 s` to `2.745 s`. The remaining active
-hotspots are collision itself, contact-constraint construction, and constrained
-group solving.
+No-rebuild repeats of the current active DART-native path after the direct
+plane dispatch were RTF `0.0599254`, `0.0577443`, and `0.058838`, all with the
+same DART-native final hash and contact counts. Active-thread scaling on the
+same scene was:
+
+| Threads | RTF | Final state |
+| ---: | ---: | --- |
+| 1 | `0.0216211` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 2 | `0.0310443` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 4 | `0.0413746` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 8 | `0.0468071` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| 16 | `0.057766` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+
+The measured win is real but modest. The profiler moved the inclusive
+`collide` scope from the #3129 baseline `1.840 s` to `1.754 s` over 300 active
+steps, while `updateConstraints` moved from `2.650 s` to `2.635 s`. Remaining
+active hotspots are still native collision, contact-constraint construction,
+and constrained-group solving. This is worth a narrowly scoped PR because it
+adds deterministic scaling for the exact issue workload, but it is not the main
+optimization endpoint.
 
 Correctness guardrails for this slice:
 
 - The benchmark consumes the final state and preserves the exact DART-native
   final hash, contact count, and contact-pair count on the original issue scene.
-- `test_Collision` adds a DART-native shape-geometry mutation case where a box
-  is resized after the collision group is created; the cached local bounds must
-  refresh from the `ShapeFrame` version for the second collision query to see
-  the new overlap.
-- `test_Collision` still passes after the cache and DART-specific narrowphase
-  overload changes.
+- `test_Collision` adds a serial-vs-threaded DART-native finite-plane contact
+  regression with more than the parallelization threshold, and compares contact
+  object identity, point, normal, and penetration depth in legacy order.
+- `pixi run build-tests` passed after the current changes.
+- `pixi -q run ctest --test-dir build/default/cpp/Release -R
+  'test_Collision|test_ContactConstraint|test_ConstraintSolver'
+  --output-on-failure` passed after the current changes.
 
 The current slice is worth a small PR if kept narrowly scoped, but it is not the
 major win. The north-star path remains importing/porting the DART 7 native
@@ -385,3 +408,11 @@ bug until proven otherwise.
   `scripts/run_gz_sim_task.sh` to discover `lib64` and include the valid
   build-tree plugin alias, a fresh `pixi run -e gazebo test-gz-sim` rerun passed
   `INTEGRATION_entity_system`.
+- For the native finite-plane parallel collision follow-up after #3129, rebuilt
+  all tests with `pixi run build-tests`, passed the focused CTest selection
+  `test_Collision|test_ContactConstraint|test_ConstraintSolver`, and reran the
+  exact issue scene with final-state hashing. Active DART-native runs preserved
+  hash `0x6b50e84cd691f6e2`, contacts `5005`, and pairs `3003` across 1, 2, 4,
+  8, and 16 simulation threads. The default-sleeping 3000-step run advanced
+  `3000 / 3000` frames, reached RTF `1.96845`, and ended finite with hash
+  `0x131b6af79a44ff90`.

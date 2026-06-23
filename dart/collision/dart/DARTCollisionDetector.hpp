@@ -35,12 +35,14 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
+#include <memory>
 #include <vector>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class CollisionThreadPool;
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -48,6 +50,9 @@ public:
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
+
+  /// Destructor
+  ~DARTCollisionDetector() override;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
@@ -58,6 +63,14 @@ public:
 
   /// Get collision detector type for this class
   static const std::string& getStaticType();
+
+  /// Sets the number of worker participants for parallel native collision
+  /// queries. A value of 0 maps to hardware concurrency.
+  void setNumCollisionThreads(std::size_t numThreads);
+
+  /// Returns the number of worker participants for parallel native collision
+  /// queries.
+  std::size_t getNumCollisionThreads() const;
 
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
@@ -101,6 +114,9 @@ protected:
 
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;
+
+  std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
+  std::size_t mNumCollisionThreads{1u};
 };
 
 } // namespace collision

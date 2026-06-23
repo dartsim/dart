@@ -49,6 +49,12 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 int collide(
     DARTCollisionObject* o1, DARTCollisionObject* o2, CollisionResult& result);
 
+int collidePlaneShape(
+    DARTCollisionObject* planeObject,
+    DARTCollisionObject* otherObject,
+    bool planeFirst,
+    CollisionResult& result);
+
 int collideBoxBox(
     CollisionObject* o1,
     CollisionObject* o2,

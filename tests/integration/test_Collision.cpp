@@ -871,6 +871,65 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
+{
+  constexpr std::size_t kNumBoxes = 140u;
+
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  std::vector<std::shared_ptr<SimpleFrame>> boxFrames;
+  boxFrames.reserve(kNumBoxes);
+  for (std::size_t i = 0u; i < kNumBoxes; ++i) {
+    auto boxFrame = SimpleFrame::createShared(Frame::World());
+    boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+    boxFrame->setTranslation(Eigen::Vector3d(1.25 * i, 0.0, 0.49));
+    boxFrames.push_back(boxFrame);
+  }
+
+  auto group = cd->createCollisionGroup();
+  group->addShapeFrame(planeFrame.get());
+  for (const auto& boxFrame : boxFrames)
+    group->addShapeFrame(boxFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 1024u;
+
+  cd->setNumCollisionThreads(1u);
+  CollisionResult serialResult;
+  ASSERT_TRUE(group->collide(option, &serialResult));
+  ASSERT_GT(serialResult.getNumContacts(), kNumBoxes);
+
+  cd->setNumCollisionThreads(4u);
+  EXPECT_EQ(cd->getNumCollisionThreads(), 4u);
+  CollisionResult parallelResult;
+  ASSERT_TRUE(group->collide(option, &parallelResult));
+
+  ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
+  for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+    SCOPED_TRACE(i);
+    const auto& serialContact = serialResult.getContact(i);
+    const auto& parallelContact = parallelResult.getContact(i);
+    EXPECT_EQ(
+        parallelContact.collisionObject1->getShapeFrame(),
+        serialContact.collisionObject1->getShapeFrame());
+    EXPECT_EQ(
+        parallelContact.collisionObject2->getShapeFrame(),
+        serialContact.collisionObject2->getShapeFrame());
+    EXPECT_TRUE(parallelContact.point.isApprox(serialContact.point, 1e-12));
+    EXPECT_TRUE(parallelContact.normal.isApprox(serialContact.normal, 1e-12));
+    EXPECT_NEAR(
+        parallelContact.penetrationDepth,
+        serialContact.penetrationDepth,
+        1e-12);
+  }
+}
+
+//==============================================================================
 TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
 {
   auto cd = DARTCollisionDetector::create();

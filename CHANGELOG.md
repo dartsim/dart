@@ -68,6 +68,11 @@
     associated `ShapeFrame` geometry version changes:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up contact-heavy DART-native plane workloads by using cached-shape
+    primitive dispatch and deterministic threaded finite-shape-vs-plane contact
+    checks when the simulation thread count is greater than one:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up active DART-native contact-heavy scenes by replacing global
     contact-point duplicate scans with reusable indexed contact aggregation and
     deferring collision-result lookup-set construction until queried:
