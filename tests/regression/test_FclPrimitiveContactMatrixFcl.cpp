@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fcl/fcl.h>
