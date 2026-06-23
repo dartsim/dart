@@ -41,6 +41,7 @@
 #include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/Frame.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PyramidShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
@@ -547,6 +548,62 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
   }
 }
 
+//==============================================================================
+TEST(FclPrimitiveContacts, PrimitiveDefaultPreservesBvhContactProcessing)
+{
+  auto collidePyramids =
+      [](dart::collision::FCLCollisionDetector::PrimitiveShape shapeType) {
+        auto detector = dart::collision::FCLCollisionDetector::create();
+        detector->setPrimitiveShapeType(shapeType);
+        detector->setContactPointComputationMethod(
+            dart::collision::FCLCollisionDetector::DART);
+
+        auto frame1 = dart::dynamics::SimpleFrame::createShared(
+            dart::dynamics::Frame::World(), "pyramid1");
+        auto frame2 = dart::dynamics::SimpleFrame::createShared(
+            dart::dynamics::Frame::World(), "pyramid2");
+
+        frame1->setShape(
+            std::make_shared<dart::dynamics::PyramidShape>(1.0, 0.8, 1.0));
+        frame2->setShape(
+            std::make_shared<dart::dynamics::PyramidShape>(1.0, 0.8, 1.0));
+        frame2->setTranslation(Eigen::Vector3d(0.12, -0.08, 0.65));
+        frame2->setRotation(Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ())
+                                .toRotationMatrix());
+
+        auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+        dart::collision::CollisionOption option;
+        option.enableContact = true;
+        option.maxNumContacts = 20u;
+
+        dart::collision::CollisionResult result;
+        EXPECT_TRUE(group->collide(option, &result));
+        return result;
+      };
+
+  const auto primitiveResult
+      = collidePyramids(dart::collision::FCLCollisionDetector::PRIMITIVE);
+  const auto meshResult
+      = collidePyramids(dart::collision::FCLCollisionDetector::MESH);
+
+  ASSERT_GT(meshResult.getNumContacts(), 0u);
+  ASSERT_EQ(primitiveResult.getNumContacts(), meshResult.getNumContacts());
+
+  for (std::size_t i = 0; i < meshResult.getNumContacts(); ++i) {
+    const auto& primitiveContact = primitiveResult.getContact(i);
+    const auto& meshContact = meshResult.getContact(i);
+
+    EXPECT_TRUE(primitiveContact.point.isApprox(meshContact.point, 1e-12));
+    EXPECT_TRUE(primitiveContact.normal.isApprox(meshContact.normal, 1e-12));
+    EXPECT_NEAR(
+        primitiveContact.penetrationDepth, meshContact.penetrationDepth, 1e-12);
+    EXPECT_EQ(primitiveContact.triID1, meshContact.triID1);
+    EXPECT_EQ(primitiveContact.triID2, meshContact.triID2);
+  }
+}
+
+//==============================================================================
 TEST(FclPrimitiveContacts, RotatedPlaneNormal)
 {
   const double kNormalAlignment = 0.95;

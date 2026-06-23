@@ -1160,6 +1160,17 @@ void FCLCollisionDetector::FCLCollisionGeometryDeleter::operator()(
 namespace {
 
 //==============================================================================
+bool hasMeshGeometry(const fcl::CollisionObject* object)
+{
+  if (!object)
+    return false;
+
+  return dynamic_cast<const ::fcl::BVHModel<fcl::OBBRSS>*>(
+             object->collisionGeometry().get())
+         != nullptr;
+}
+
+//==============================================================================
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata)
 {
@@ -1195,8 +1206,10 @@ bool collisionCallback(
   ::fcl::collide(o1, o2, fclRequest, fclResult);
 
   if (result) {
+    const bool hasBvhBackedShape = hasMeshGeometry(o1) || hasMeshGeometry(o2);
     const bool usingMeshContacts
-        = (collData->primitiveShapeType == FCLCollisionDetector::MESH);
+        = (collData->primitiveShapeType == FCLCollisionDetector::MESH)
+          || hasBvhBackedShape;
     const bool forcingMeshFallback = usingMeshContacts
                                      && collData->contactPointComputationMethod
                                             == FCLCollisionDetector::FCL;
