@@ -1017,6 +1017,37 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
   EXPECT_TRUE(containsPoint(
       cappedResult, uncappedResult.getContact(spreadIndex).point));
   EXPECT_FALSE(containsPoint(cappedResult, uncappedResult.getContact(0).point));
+
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame->setTranslation(Eigen::Vector3d(
+      deepestContact.point.x(), deepestContact.point.y(), 0.45));
+
+  auto mobileGroup
+      = cd->createCollisionGroup(sphereFrame.get(), boxFrame.get());
+  CollisionResult backfilledResult;
+  ASSERT_TRUE(
+      planeGroup->collide(mobileGroup.get(), option, &backfilledResult));
+  ASSERT_EQ(backfilledResult.getNumContacts(), 3u);
+
+  std::size_t sphereContacts = 0u;
+  std::size_t boxContacts = 0u;
+  for (const auto& contact : backfilledResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
+        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 2u);
+  EXPECT_TRUE(containsPoint(backfilledResult, deepestContact.point));
+  EXPECT_TRUE(containsPoint(
+      backfilledResult, uncappedResult.getContact(spreadIndex).point));
 }
 
 //==============================================================================

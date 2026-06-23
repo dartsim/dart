@@ -1269,6 +1269,7 @@ void selectContactIndices(
 
   if (candidates.size() <= maxContacts) {
     selected = candidates;
+    candidates.clear();
     return;
   }
 
@@ -1317,6 +1318,7 @@ void selectContactIndices(
   }
 
   std::sort(selected.begin(), selected.end());
+  std::sort(candidates.begin(), candidates.end());
 }
 
 //==============================================================================
@@ -1360,12 +1362,24 @@ void postProcess(
         scratch.contactSelectionCandidates,
         scratch.selectedContactIndices);
 
-    for (const auto contactIndex : scratch.selectedContactIndices) {
+    std::size_t numPairContacts = 0u;
+    auto tryAppendContact = [&](std::size_t contactIndex) {
       const auto [shouldContinue, added]
           = appendContact(pairContacts[contactIndex]);
-      (void)added;
-      if (!shouldContinue)
-        break;
+      if (added)
+        ++numPairContacts;
+
+      return shouldContinue && numPairContacts < maxContactsPerPair;
+    };
+
+    for (const auto contactIndex : scratch.selectedContactIndices) {
+      if (!tryAppendContact(contactIndex))
+        return;
+    }
+
+    for (const auto contactIndex : scratch.contactSelectionCandidates) {
+      if (!tryAppendContact(contactIndex))
+        return;
     }
     return;
   }

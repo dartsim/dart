@@ -62,8 +62,8 @@ Contact-selection follow-up evidence:
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3133 branch, explicit cap disabled | `0.06155` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Contact selection, `--max-contacts-per-pair 4` | `0.0595282` | finite, same hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| #3133 branch, explicit cap disabled | `0.0576553` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Contact selection, `--max-contacts-per-pair 4` | `0.0576808` | finite, same hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 
 The explicit four-contact cap does not change the original issue scene because
 the DART-native primitive plane pairs already produce at most three contacts
