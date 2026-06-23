@@ -134,9 +134,11 @@ nanobind) — see the recipe in section 2.
   - Gate: build + `dynamics` (MeshShape) focused unit tests **+ gz gate**
     (`pixi run -e gazebo test-gz`). Not a collision/constraint/parser surface,
     but `getMesh()`/`MeshHandle` is an **installed public header** that
-    gz-physics builds against (the PR ships `scripts/patch_gz_physics.py`), so
-    `docs/ai/verification.md` requires the Gazebo gate for installed-header
-    changes that can affect gz-physics.
+    gz-physics builds against, so `docs/ai/verification.md` requires the Gazebo
+    gate for installed-header changes that can affect gz-physics. **Superseded on
+    `main` by #2325** (TriMesh adoption, §4) — prefer porting #2325, whose
+    `getMesh()` stays raw `const aiScene*` (deprecated) so it needs no
+    `shared_ptr` return-type break.
 - [ ] **[#2247](https://github.com/dartsim/dart/pull/2247) — mimic/coupler
   constraint correctness (ERP + force-mixing/limit-clamp)** *(gz mimic repro;
   most surgical — must split bug fix from feature)*
@@ -247,12 +249,13 @@ wants release-6.20 dev ergonomics aligned with main, batch them into a single
 All `feature_optional`, confirmed absent on release-6.20, outside the default
 backport policy. Surface these to the maintainer for an explicit
 keep-on-main-only vs. port decision. Several are Gazebo/URDF-compat-adjacent.
-These 13 rows mirror section 4 of
+These 14 rows mirror section 4 of
 [`01-backport-inventory.md`](01-backport-inventory.md).
 
 | PR | Feature | Port notes if approved |
 | --- | --- | --- |
 | [#2338](https://github.com/dartsim/dart/pull/2338) | Convex mesh collisions/rendering (`ConvexMeshShape`) | **Largest** — needs the brand-new `ConvexMeshShape` Shape type ported too, plus renderer node + FCL/Bullet/ODE integration + tests (~1688 LOC). Not a clean small backport. |
+| [#2325](https://github.com/dartsim/dart/pull/2325) | MeshShape adopts `TriMesh` internal representation (issue [#453](https://github.com/dartsim/dart/issues/453)) | **Supersedes [#2285](https://github.com/dartsim/dart/pull/2285)** — prefer this over #2285 if either is taken; `getMesh()` stays raw `const aiScene*` (deprecated), so no `shared_ptr` return-type break. **Large** (72 files, ~4056/-1116), API-evolution **not** a dependency drop — `dart::math::TriMesh` already on release-6.20, Assimp stays `REQUIRED` on both branches until DART 8. No clean cherry-pick: absent MeshMaterial/MeshLoader/AssimpMeshLoader/detail infra, divergent gui/osg renderer, full nanobind->pybind11 dartpy rewrite. If pursued, KEEP the deprecated `aiScene` ctors/`getMesh()`/`setMesh()`, keep `mMesh`/Shape dirty flags protected, backport `MeshHandle::operator=(const aiScene*)` + the `getTriMesh()` lazy-conversion shim (load-bearing for gz `CustomMeshShape`), scope to #2325 only (exclude later snake_case rename / `string_view`), and gate on `pixi run -e gazebo test-gz`. Minimal alt: port only the additive TriMesh mutator slice (~S) and leave MeshShape on aiScene. |
 | [#2354](https://github.com/dartsim/dart/pull/2354) | Split-impulse contact correction (issue #201) | Invasive: touches BodyNode/Skeleton/ConstraintSolver/ClassicRigidSolver. Existing Baumgarte ERP path on release-6.20 remains correct. |
 | [#2212](https://github.com/dartsim/dart/pull/2212) | `CouplerConstraint` (gear-like ratio coupling) | New public constraint class + Joint/MimicDofProperties surface; PascalCase port. This is the feature split out of #2247 above. |
 | [#2252](https://github.com/dartsim/dart/pull/2252) | `RevoluteJointConstraint` (closed-loop hinges) | Self-contained derived class; base `DynamicJointConstraint` already on release-6.20. (Release has only doc forward-refs, no impl.) |
