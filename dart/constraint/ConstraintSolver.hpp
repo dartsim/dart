@@ -351,6 +351,13 @@ protected:
   /// exactly one reactive skeleton.
   bool mActiveConstraintsAllSingleReactiveContacts = false;
 
+  /// True when the current active set includes a ContactConstraint subclass.
+  bool mActiveConstraintsHaveCustomContactConstraint = false;
+
+  /// True when single-reactive contact groups still need the shared
+  /// non-reactive dependency scan before parallel group solving.
+  bool mActiveSingleReactiveContactsNeedSharedDependencyScan = false;
+
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
 
