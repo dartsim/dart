@@ -2,10 +2,13 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged and cleaned up locally. The current follow-up is
-`perf/dart6-native-collision-parallel`, based on #3129; `origin/release-6.20`
-has also advanced by the unrelated #3128 docs/audit PR and must be merged into
-the topic branch before push.
+Bottom line: #3129 is merged and cleaned up locally. #3133
+`perf/dart6-native-collision-parallel` is open on `release-6.20`; the latest
+Codex review fix preserves early-exit behavior for low `maxNumContacts` finite
+plane queries and has been pushed for re-review. The active follow-up branch is
+`perf/dart6-native-contact-selection`, stacked on #3133, and makes explicit
+per-pair contact caps select the deepest contact plus spatially distributed
+support points instead of preserving backend iteration-order truncation.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
@@ -36,6 +39,20 @@ and solver; only collision detection changes:
 | #3129 DART native active baseline | `0.05735` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | Current DART native active, 16 threads | `0.05845` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | Current DART native default sleeping, 16 threads | `1.96845` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
+
+Contact-selection follow-up evidence:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3133 branch, explicit cap disabled | `0.0606314` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Contact selection, `--max-contacts-per-pair 4` | `0.0587475` | finite, same hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+
+The explicit four-contact cap does not change the original issue scene because
+the DART-native primitive plane pairs already produce at most three contacts
+per pair. The value of this slice is correctness infrastructure for future
+default-on cap/manifold work: focused coverage proves the cap keeps the deepest
+support point and a spatially spread support point instead of taking the first
+backend contacts.
 
 No-rebuild repeats of the current active DART-native path after the direct
 plane dispatch were RTF `0.0599254`, `0.0577443`, and `0.058838`, all with the

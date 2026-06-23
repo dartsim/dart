@@ -94,6 +94,11 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
+  * Improve explicit DART-native per-pair contact caps by selecting the deepest
+    contact and spatially distributed support contacts instead of truncating
+    backend contact output in iteration order:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Fix the FCL collision detector adding a default-constructed contact with
     null collision objects when contact generation is disabled
     (`CollisionOption::enableContact = false`) with more than one contact

@@ -930,6 +930,88 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
 }
 
 //==============================================================================
+TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()))
+                       .toRotationMatrix();
+  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.45);
+  boxFrame->setTransform(boxTf);
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult uncappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
+  ASSERT_EQ(uncappedResult.getNumContacts(), 3u);
+
+  option.maxNumContactsPerPair = 2u;
+  CollisionResult cappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
+  ASSERT_EQ(cappedResult.getNumContacts(), 2u);
+
+  auto containsPoint
+      = [](const CollisionResult& result, const Eigen::Vector3d& point) {
+          for (const auto& contact : result.getContacts()) {
+            if (contact.point.isApprox(point, 1e-12))
+              return true;
+          }
+          return false;
+        };
+
+  std::size_t deepestIndex = 0u;
+  for (std::size_t i = 1u; i < uncappedResult.getNumContacts(); ++i) {
+    if (uncappedResult.getContact(i).penetrationDepth
+        > uncappedResult.getContact(deepestIndex).penetrationDepth) {
+      deepestIndex = i;
+    }
+  }
+
+  ASSERT_NE(deepestIndex, 0u);
+
+  std::size_t spreadIndex = deepestIndex == 0u ? 1u : 0u;
+  double spreadDistance = -1.0;
+  double spreadDepth = -std::numeric_limits<double>::infinity();
+  const auto& deepestContact = uncappedResult.getContact(deepestIndex);
+  for (std::size_t i = 0u; i < uncappedResult.getNumContacts(); ++i) {
+    if (i == deepestIndex)
+      continue;
+
+    const auto& candidate = uncappedResult.getContact(i);
+    const auto distance
+        = (candidate.point - deepestContact.point).squaredNorm();
+    if (distance > spreadDistance
+        || (distance == spreadDistance
+            && candidate.penetrationDepth > spreadDepth)) {
+      spreadDistance = distance;
+      spreadDepth = candidate.penetrationDepth;
+      spreadIndex = i;
+    }
+  }
+
+  ASSERT_NE(spreadIndex, 0u);
+
+  EXPECT_TRUE(containsPoint(cappedResult, deepestContact.point));
+  EXPECT_TRUE(containsPoint(
+      cappedResult, uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPoint(cappedResult, uncappedResult.getContact(0).point));
+}
+
+//==============================================================================
 TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
 {
   auto cd = DARTCollisionDetector::create();
