@@ -18,6 +18,14 @@ neighbor probing to larger cells with boundary-only neighbor probes. Public
 collision tests cover near-duplicate plane contacts across a grid-cell boundary
 and distinct nearby contacts in neighboring cells.
 
+The current stack clears the settled-scene target when deactivation is enabled:
+the same issue-size scene ran 3000 steps at RTF `1.90463` with DART-native
+collision, DART 6 dynamics, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, and default deactivation. The final state was
+finite with hash `0x131b6af79a44ff90`, `3003 / 3003` mobile skeletons resting,
+and zero final contacts. The active no-sleep case below remains the stress path
+for collision and constraint hot-path work.
+
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
 `--max-contacts-per-pair 4`, and deactivation disabled:
@@ -58,10 +66,10 @@ contact-merge duplicate-grid probes while preserving duplicate behavior.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
-RTF, and parallel contact-constraint construction still segfaulted on large
-scenes after the first scratch-buffer fix. Those results point the next larger
-work back toward native collision algorithms and safe constraint-build
-structure, rather than cache-only edits.
+RTF, and parallel contact-constraint construction was repaired past the
+thread-local scratch misuse but did not produce convincing active RTF/profile
+gains. Those results point the next larger work back toward native collision
+algorithms and safe constraint-build structure, rather than cache-only edits.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
