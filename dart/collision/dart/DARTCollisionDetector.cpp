@@ -56,6 +56,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace dart {
@@ -305,6 +306,9 @@ struct BroadphaseScratch
   std::vector<std::size_t> parallelPairIndices;
   std::vector<CollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
+  // Remaining contacts ordered by the same representative-contact priority.
+  std::vector<std::size_t> contactSelectionReserve;
+  std::vector<std::size_t> selectedContactIndices;
   CollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
@@ -336,6 +340,12 @@ bool shouldStopAfterPair(
 
 bool isClose(
     const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2, double tol);
+
+void selectContactIndices(
+    const CollisionResult& pairResult,
+    std::size_t maxContacts,
+    std::vector<std::size_t>& candidates,
+    std::vector<std::size_t>& selected);
 
 void postProcess(
     CollisionObject* o1,
@@ -1232,6 +1242,111 @@ bool isClose(
 }
 
 //==============================================================================
+void selectContactIndices(
+    const CollisionResult& pairResult,
+    std::size_t maxContacts,
+    std::vector<std::size_t>& reserve,
+    std::vector<std::size_t>& selected)
+{
+  selected.clear();
+  reserve.clear();
+
+  auto& candidates = reserve;
+
+  if (maxContacts == 0u)
+    return;
+
+  const auto& contacts = pairResult.getContacts();
+  candidates.reserve(contacts.size());
+  for (std::size_t i = 0u; i < contacts.size(); ++i) {
+    const auto& contact = contacts[i];
+    bool duplicate = false;
+    for (auto& candidateIndex : candidates) {
+      const auto& accepted = contacts[candidateIndex];
+      if (isClose(contact.point, accepted.point, kContactDuplicateTolerance)) {
+        if (contact.penetrationDepth > accepted.penetrationDepth)
+          candidateIndex = i;
+        duplicate = true;
+        break;
+      }
+    }
+
+    if (!duplicate)
+      candidates.push_back(i);
+  }
+
+  if (candidates.size() <= maxContacts) {
+    selected = candidates;
+    candidates.clear();
+    return;
+  }
+
+  selected.reserve(contacts.size());
+
+  std::size_t deepestCandidate = 0u;
+  auto deepestDepth = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0u; i < candidates.size(); ++i) {
+    const auto depth = contacts[candidates[i]].penetrationDepth;
+    if (depth > deepestDepth) {
+      deepestDepth = depth;
+      deepestCandidate = i;
+    }
+  }
+
+  selected.push_back(candidates[deepestCandidate]);
+  candidates.erase(
+      candidates.begin() + static_cast<std::ptrdiff_t>(deepestCandidate));
+
+  auto selectBestRemainingCandidate
+      = [&](const std::vector<std::size_t>& selectedContacts) {
+          std::size_t bestCandidate = 0u;
+          auto bestDistance = -1.0;
+          auto bestDepth = -std::numeric_limits<double>::infinity();
+
+          for (std::size_t i = 0u; i < candidates.size(); ++i) {
+            const auto& candidate = contacts[candidates[i]];
+            auto minDistance = std::numeric_limits<double>::infinity();
+            for (const auto selectedIndex : selectedContacts) {
+              minDistance = std::min(
+                  minDistance,
+                  (candidate.point - contacts[selectedIndex].point)
+                      .squaredNorm());
+            }
+
+            if (minDistance > bestDistance
+                || (minDistance == bestDistance
+                    && candidate.penetrationDepth > bestDepth)) {
+              bestDistance = minDistance;
+              bestDepth = candidate.penetrationDepth;
+              bestCandidate = i;
+            }
+          }
+
+          const auto selectedCandidate = candidates[bestCandidate];
+          candidates.erase(
+              candidates.begin() + static_cast<std::ptrdiff_t>(bestCandidate));
+          return selectedCandidate;
+        };
+
+  while (selected.size() < maxContacts && !candidates.empty()) {
+    selected.push_back(selectBestRemainingCandidate(selected));
+  }
+
+  const auto cappedSelectionSize = selected.size();
+  while (!candidates.empty()) {
+    selected.push_back(selectBestRemainingCandidate(selected));
+  }
+
+  // Keep the remaining unique contacts in the same depth/spread priority order
+  // for duplicate backfill in postProcess().
+  reserve.assign(
+      selected.begin() + static_cast<std::ptrdiff_t>(cappedSelectionSize),
+      selected.end());
+  selected.resize(cappedSelectionSize);
+  std::sort(selected.begin(), selected.end());
+}
+
+//==============================================================================
 void postProcess(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -1242,25 +1357,73 @@ void postProcess(
   if (!pairResult.isCollision())
     return;
 
-  auto& contactPointIndex = getBroadphaseScratch().contactPointIndex;
+  auto& scratch = getBroadphaseScratch();
+  auto& contactPointIndex = scratch.contactPointIndex;
   const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
-  std::size_t pairContacts = 0u;
-  for (const auto& pairContact : pairResult.getContacts()) {
-    if (pairContacts >= maxContactsPerPair)
-      break;
+  const auto& pairContacts = pairResult.getContacts();
+  if (totalResult.getNumContacts() >= option.maxNumContacts)
+    return;
+
+  auto appendContact = [&](const Contact& pairContact) {
+    if (totalResult.getNumContacts() >= option.maxNumContacts)
+      return std::make_pair(false, false);
 
     // Don't add repeated points.
     if (contactPointIndex.containsClose(pairContact.point))
-      continue;
+      return std::make_pair(true, false);
 
     auto contact = pairContact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
     contactPointIndex.add(contact.point);
-    ++pairContacts;
+    return std::make_pair(
+        totalResult.getNumContacts() < option.maxNumContacts, true);
+  };
 
-    if (totalResult.getNumContacts() >= option.maxNumContacts)
+  const auto remainingContacts
+      = option.maxNumContacts - totalResult.getNumContacts();
+  const auto selectionLimit = std::min(maxContactsPerPair, remainingContacts);
+  if (option.maxNumContactsPerPair > 0u
+      && pairContacts.size() > selectionLimit) {
+    selectContactIndices(
+        pairResult,
+        selectionLimit,
+        scratch.contactSelectionReserve,
+        scratch.selectedContactIndices);
+
+    std::size_t numPairContacts = 0u;
+    auto tryAppendContact = [&](std::size_t contactIndex) {
+      const auto [shouldContinue, added]
+          = appendContact(pairContacts[contactIndex]);
+      if (added)
+        ++numPairContacts;
+
+      return shouldContinue && numPairContacts < maxContactsPerPair;
+    };
+
+    for (const auto contactIndex : scratch.selectedContactIndices) {
+      if (!tryAppendContact(contactIndex))
+        return;
+    }
+
+    for (const auto contactIndex : scratch.contactSelectionReserve) {
+      if (!tryAppendContact(contactIndex))
+        return;
+    }
+    return;
+  }
+
+  std::size_t numPairContacts = 0u;
+  for (const auto& pairContact : pairContacts) {
+    if (numPairContacts >= maxContactsPerPair)
+      break;
+
+    const auto [shouldContinue, added] = appendContact(pairContact);
+    if (added)
+      ++numPairContacts;
+
+    if (!shouldContinue)
       break;
   }
 }

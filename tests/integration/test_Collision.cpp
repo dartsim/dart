@@ -51,6 +51,7 @@
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <new>
 
@@ -935,6 +936,278 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
         serialContact.penetrationDepth,
         1e-12);
   }
+}
+
+//==============================================================================
+TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()))
+                       .toRotationMatrix();
+  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.45);
+  boxFrame->setTransform(boxTf);
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult uncappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
+  ASSERT_EQ(uncappedResult.getNumContacts(), 3u);
+
+  option.maxNumContactsPerPair = 2u;
+  CollisionResult cappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
+  ASSERT_EQ(cappedResult.getNumContacts(), 2u);
+
+  auto containsPoint
+      = [](const CollisionResult& result, const Eigen::Vector3d& point) {
+          for (const auto& contact : result.getContacts()) {
+            if (contact.point.isApprox(point, 1e-12))
+              return true;
+          }
+          return false;
+        };
+  auto containsPointForFrame = [](const CollisionResult& result,
+                                  const ShapeFrame* frame,
+                                  const Eigen::Vector3d& point) {
+    for (const auto& contact : result.getContacts()) {
+      if (contact.collisionObject1->getShapeFrame() != frame
+          && contact.collisionObject2->getShapeFrame() != frame) {
+        continue;
+      }
+
+      if (contact.point.isApprox(point, 1e-12))
+        return true;
+    }
+    return false;
+  };
+
+  std::size_t deepestIndex = 0u;
+  for (std::size_t i = 1u; i < uncappedResult.getNumContacts(); ++i) {
+    if (uncappedResult.getContact(i).penetrationDepth
+        > uncappedResult.getContact(deepestIndex).penetrationDepth) {
+      deepestIndex = i;
+    }
+  }
+
+  ASSERT_NE(deepestIndex, 0u);
+
+  std::size_t spreadIndex = deepestIndex == 0u ? 1u : 0u;
+  double spreadDistance = -1.0;
+  double spreadDepth = -std::numeric_limits<double>::infinity();
+  const auto& deepestContact = uncappedResult.getContact(deepestIndex);
+  for (std::size_t i = 0u; i < uncappedResult.getNumContacts(); ++i) {
+    if (i == deepestIndex)
+      continue;
+
+    const auto& candidate = uncappedResult.getContact(i);
+    const auto distance
+        = (candidate.point - deepestContact.point).squaredNorm();
+    if (distance > spreadDistance
+        || (distance == spreadDistance
+            && candidate.penetrationDepth > spreadDepth)) {
+      spreadDistance = distance;
+      spreadDepth = candidate.penetrationDepth;
+      spreadIndex = i;
+    }
+  }
+
+  ASSERT_NE(spreadIndex, 0u);
+
+  EXPECT_TRUE(containsPoint(cappedResult, deepestContact.point));
+  EXPECT_TRUE(containsPoint(
+      cappedResult, uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPoint(cappedResult, uncappedResult.getContact(0).point));
+
+  option.maxNumContacts = 1u;
+  CollisionResult globallyCappedResult;
+  ASSERT_TRUE(
+      planeGroup->collide(boxGroup.get(), option, &globallyCappedResult));
+  ASSERT_EQ(globallyCappedResult.getNumContacts(), 1u);
+  EXPECT_TRUE(containsPoint(globallyCappedResult, deepestContact.point));
+
+  option.maxNumContacts = 10u;
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  sphereFrame->setTranslation(Eigen::Vector3d(
+      deepestContact.point.x(), deepestContact.point.y(), 0.45));
+
+  auto mobileGroup
+      = cd->createCollisionGroup(sphereFrame.get(), boxFrame.get());
+
+  option.maxNumContacts = 2u;
+  CollisionResult priorityBackfilledResult;
+  ASSERT_TRUE(planeGroup->collide(
+      mobileGroup.get(), option, &priorityBackfilledResult));
+  ASSERT_EQ(priorityBackfilledResult.getNumContacts(), 2u);
+
+  std::size_t sphereContacts = 0u;
+  std::size_t boxContacts = 0u;
+  for (const auto& contact : priorityBackfilledResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
+        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 1u);
+  EXPECT_TRUE(containsPoint(
+      priorityBackfilledResult, uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPoint(
+      priorityBackfilledResult, uncappedResult.getContact(0).point));
+
+  auto separateSphereFrame = SimpleFrame::createShared(Frame::World());
+  separateSphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  separateSphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.45));
+
+  auto separateMobileGroup
+      = cd->createCollisionGroup(separateSphereFrame.get(), boxFrame.get());
+
+  option.maxNumContacts = 3u;
+  option.maxNumContactsPerPair = 4u;
+  CollisionResult globallyLimitedPairResult;
+  ASSERT_TRUE(planeGroup->collide(
+      separateMobileGroup.get(), option, &globallyLimitedPairResult));
+  ASSERT_EQ(globallyLimitedPairResult.getNumContacts(), 3u);
+
+  sphereContacts = 0u;
+  boxContacts = 0u;
+  for (const auto& contact : globallyLimitedPairResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == separateSphereFrame.get()
+        || contact.collisionObject2->getShapeFrame()
+               == separateSphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 2u);
+  EXPECT_TRUE(containsPointForFrame(
+      globallyLimitedPairResult,
+      boxFrame.get(),
+      uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPointForFrame(
+      globallyLimitedPairResult,
+      boxFrame.get(),
+      uncappedResult.getContact(0).point));
+
+  option.maxNumContacts = 10u;
+  option.maxNumContactsPerPair = 2u;
+  CollisionResult backfilledResult;
+  ASSERT_TRUE(
+      planeGroup->collide(mobileGroup.get(), option, &backfilledResult));
+  ASSERT_EQ(backfilledResult.getNumContacts(), 3u);
+
+  sphereContacts = 0u;
+  boxContacts = 0u;
+  for (const auto& contact : backfilledResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
+        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 2u);
+  EXPECT_TRUE(containsPoint(backfilledResult, deepestContact.point));
+  EXPECT_TRUE(containsPoint(
+      backfilledResult, uncappedResult.getContact(spreadIndex).point));
+}
+
+//==============================================================================
+TEST_F(Collision, DartPerPairContactCapCoalescesNearDuplicatePairContacts)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  // Keep the emitted box-plane support points within duplicate tolerance while
+  // making a later emitted point the deepest duplicate.
+  const auto tinySize = Eigen::Vector3d::Constant(1.0e-13);
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  boxFrame->setShape(std::make_shared<BoxShape>(tinySize));
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear()
+      = Eigen::AngleAxisd(-0.4, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  boxFrame->setTransform(boxTf);
+
+  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
+  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
+
+  std::vector<double> rawDepths;
+  std::vector<Eigen::Vector3d> rawPoints;
+  const auto halfExtents = 0.5 * tinySize;
+  for (int i = 0; i < 8 && rawDepths.size() < 3u; ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4) ? halfExtents.z() : -halfExtents.z());
+
+    const auto worldCorner = boxTf * localCorner;
+    const auto signedDist = worldCorner.z();
+    if (signedDist > 1e-9)
+      continue;
+
+    rawDepths.push_back(std::max(0.0, -signedDist));
+    rawPoints.push_back(Eigen::Vector3d(worldCorner.x(), worldCorner.y(), 0.0));
+  }
+
+  ASSERT_EQ(rawDepths.size(), 3u);
+  ASSERT_LT((rawPoints[0] - rawPoints[1]).norm(), 3.0e-12);
+  ASSERT_LT((rawPoints[0] - rawPoints[2]).norm(), 3.0e-12);
+
+  const auto deepestDepth
+      = *std::max_element(rawDepths.begin(), rawDepths.end());
+  ASSERT_GT(deepestDepth, rawDepths[0]);
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult uncappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
+  ASSERT_EQ(uncappedResult.getNumContacts(), 1u);
+  EXPECT_NEAR(
+      uncappedResult.getContact(0).penetrationDepth, rawDepths[0], 1e-18);
+
+  option.maxNumContactsPerPair = 2u;
+  CollisionResult cappedResult;
+  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
+  ASSERT_EQ(cappedResult.getNumContacts(), 1u);
+  EXPECT_NEAR(cappedResult.getContact(0).penetrationDepth, deepestDepth, 1e-18);
+  EXPECT_GT(
+      cappedResult.getContact(0).penetrationDepth,
+      uncappedResult.getContact(0).penetrationDepth);
 }
 
 //==============================================================================
