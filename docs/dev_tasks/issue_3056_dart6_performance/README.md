@@ -3,18 +3,21 @@
 ## Current Snapshot
 
 Bottom line: #3129 is merged and cleaned up locally. The current follow-up is
-`perf/dart6-native-collision-parallel`, based on #3129; `origin/release-6.20`
-has also advanced by the unrelated #3128 docs/audit PR and must be merged into
-the topic branch before push.
+#3133 `perf/dart6-native-collision-parallel`, based on #3129 plus the unrelated
+#3128 docs/audit PR already merged from `origin/release-6.20`. The latest review
+fix keeps low `maxNumContacts` queries on the serial early-exit path and
+pre-filters solver/default collision-filter pairs on the main thread before the
+finite-plane worker pool runs.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
 queries for the existing `dart/collision/dart/` backend when the query has many
-plane pairs, contact results are requested, and no custom collision filter is
-active. It also adds a direct cached-shape plane dispatch path and a
-squared-distance duplicate-contact check. Pair results are merged serially in
-the same order as the legacy path, so contact ordering and final-state hashes
-remain deterministic.
+plane pairs and contact results are requested. Collision filters are applied
+serially before parallel work so the normal `ConstraintSolver` default filter
+does not disable the threaded path. It also adds a direct cached-shape plane
+dispatch path and a squared-distance duplicate-contact check. Pair results are
+merged serially in the same order as the legacy path, so contact ordering and
+final-state hashes remain deterministic.
 
 Threading is wired through the existing `World::setNumSimulationThreads()` /
 `ConstraintSolver::setNumSimulationThreads()` control, only for
@@ -34,13 +37,14 @@ and solver; only collision detection changes:
 | Run | RTF | Final state |
 | --- | ---: | --- |
 | #3129 DART native active baseline | `0.05735` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Current DART native active, 16 threads | `0.05845` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current DART native active, 16 threads | `0.0624274` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | Current DART native default sleeping, 16 threads | `1.96845` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
 
-No-rebuild repeats of the current active DART-native path after the direct
-plane dispatch were RTF `0.0599254`, `0.0577443`, and `0.058838`, all with the
-same DART-native final hash and contact counts. Active-thread scaling on the
-same scene was:
+A no-profile rerun after the solver-filter fix measured RTF `0.0598292`, with
+the same final hash, contact count, and contact-pair count. Earlier no-rebuild
+repeats after the direct plane dispatch were RTF `0.0599254`, `0.0577443`, and
+`0.058838`, all with the same DART-native final hash and contact counts.
+Active-thread scaling on the same scene was:
 
 | Threads | RTF | Final state |
 | ---: | ---: | --- |
@@ -51,8 +55,8 @@ same scene was:
 | 16 | `0.057766` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 
 The measured win is real but modest. The profiler moved the inclusive
-`collide` scope from the #3129 baseline `1.840 s` to `1.754 s` over 300 active
-steps, while `updateConstraints` moved from `2.650 s` to `2.635 s`. Remaining
+`collide` scope from the #3129 baseline `1.840 s` to `1.585 s` over 300 active
+steps, while `updateConstraints` moved from `2.650 s` to `2.446 s`. Remaining
 active hotspots are still native collision, contact-constraint construction,
 and constrained-group solving. This is worth a narrowly scoped PR because it
 adds deterministic scaling for the exact issue workload, but it is not the main
@@ -63,8 +67,11 @@ Correctness guardrails for this slice:
 - The benchmark consumes the final state and preserves the exact DART-native
   final hash, contact count, and contact-pair count on the original issue scene.
 - `test_Collision` adds a serial-vs-threaded DART-native finite-plane contact
-  regression with more than the parallelization threshold, and compares contact
-  object identity, point, normal, and penetration depth in legacy order.
+  regression with more than the parallelization threshold and a default
+  `BodyNodeCollisionFilter`, then compares contact object identity, point,
+  normal, and penetration depth in legacy order.
+- A `--max-contacts 1` exact-scene check preserves early exit with final
+  contacts `1`, contact cap hit `true`, and final contact pairs `1`.
 - `pixi run build-tests` passed after the current changes.
 - `pixi -q run ctest --test-dir build/default/cpp/Release -R
   'test_Collision|test_ContactConstraint|test_ConstraintSolver'

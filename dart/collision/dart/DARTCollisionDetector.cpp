@@ -52,6 +52,7 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -295,6 +296,7 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  std::vector<std::size_t> parallelPairIndices;
   std::vector<CollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   CollisionResult pairResult;
@@ -1146,6 +1148,7 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  parallelPairIndices.clear();
   pairResult.clear();
   contactPointIndex.clear();
 }
@@ -1359,44 +1362,91 @@ bool processFinitePlanePairs(
   constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
   const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
   const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
+  const bool canConsiderParallel = result != nullptr && threadPool != nullptr
+                                   && numCollisionThreads > 1u
+                                   && !contactCapCanShortCircuit
+                                   && pairCount >= kMinParallelFinitePlanePairs;
+  const auto& filter = option.collisionFilter;
+
+  auto getPairEntries = [&](std::size_t pairIndex) {
+    const auto planeIndex = pairIndex / finiteEntries.size();
+    const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
+    return std::make_pair(
+        &planeEntries[planeIndex], &finiteEntries[finiteIndex]);
+  };
+
+  auto processSerialPairAt = [&](std::size_t pairIndex) {
+    const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+    auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+    auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+
+    scratch.pairResult.clear();
+    const auto pairCollision = collidePlaneShape(
+        static_cast<DARTCollisionObject*>(planeEntry->object),
+        static_cast<DARTCollisionObject*>(finiteEntry->object),
+        planeFirst,
+        scratch.pairResult);
+    if (result != nullptr)
+      postProcess(collObj1, collObj2, option, *result, scratch.pairResult);
+
+    collisionFound = collisionFound || (pairCollision > 0);
+    return shouldStopAfterPair(pairCollision > 0, option, result);
+  };
+
+  std::size_t parallelPairCount = pairCount;
+  if (canConsiderParallel && filter) {
+    scratch.parallelPairIndices.clear();
+    scratch.parallelPairIndices.reserve(pairCount);
+    for (std::size_t pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+      if (!filter->ignoresCollision(collObj1, collObj2))
+        scratch.parallelPairIndices.push_back(pairIndex);
+    }
+
+    parallelPairCount = scratch.parallelPairIndices.size();
+    if (parallelPairCount == 0u)
+      return false;
+  }
+
   const bool canParallelize
-      = result != nullptr && threadPool != nullptr && numCollisionThreads > 1u
-        && !option.collisionFilter && !contactCapCanShortCircuit
-        && pairCount >= kMinParallelFinitePlanePairs;
+      = canConsiderParallel
+        && parallelPairCount >= kMinParallelFinitePlanePairs;
 
   if (canParallelize) {
-    scratch.prepareParallelPairResults(pairCount);
+    scratch.prepareParallelPairResults(parallelPairCount);
 
-    auto collidePairAt = [&](std::size_t pairIndex) {
-      auto& pairResult = scratch.parallelPairResults[pairIndex];
+    auto collidePairAt = [&](std::size_t workIndex) {
+      const auto pairIndex
+          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+      auto& pairResult = scratch.parallelPairResults[workIndex];
       pairResult.clear();
 
-      const auto planeIndex = pairIndex / finiteEntries.size();
-      const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
-      const auto& planeEntry = planeEntries[planeIndex];
-      const auto& finiteEntry = finiteEntries[finiteIndex];
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
 
       collidePlaneShape(
-          static_cast<DARTCollisionObject*>(planeEntry.object),
-          static_cast<DARTCollisionObject*>(finiteEntry.object),
+          static_cast<DARTCollisionObject*>(planeEntry->object),
+          static_cast<DARTCollisionObject*>(finiteEntry->object),
           planeFirst,
           pairResult);
-      scratch.parallelPairCollisions[pairIndex]
+      scratch.parallelPairCollisions[workIndex]
           = pairResult.isCollision() ? 1 : 0;
     };
 
-    threadPool->parallelFor(pairCount, numCollisionThreads, collidePairAt);
+    threadPool->parallelFor(
+        parallelPairCount, numCollisionThreads, collidePairAt);
 
-    for (std::size_t pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
-      if (scratch.parallelPairCollisions[pairIndex] == 0)
+    for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
+         ++workIndex) {
+      if (scratch.parallelPairCollisions[workIndex] == 0)
         continue;
 
-      const auto planeIndex = pairIndex / finiteEntries.size();
-      const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
-      const auto& planeEntry = planeEntries[planeIndex];
-      const auto& finiteEntry = finiteEntries[finiteIndex];
-      auto* collObj1 = planeFirst ? planeEntry.object : finiteEntry.object;
-      auto* collObj2 = planeFirst ? finiteEntry.object : planeEntry.object;
+      const auto pairIndex
+          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
 
       collisionFound = true;
       postProcess(
@@ -1404,7 +1454,7 @@ bool processFinitePlanePairs(
           collObj2,
           option,
           *result,
-          scratch.parallelPairResults[pairIndex]);
+          scratch.parallelPairResults[workIndex]);
 
       if (shouldStopAfterPair(true, option, result))
         return true;
@@ -1413,26 +1463,27 @@ bool processFinitePlanePairs(
     return false;
   }
 
-  const auto& filter = option.collisionFilter;
-  for (const auto& planeEntry : planeEntries) {
-    for (const auto& finiteEntry : finiteEntries) {
-      auto* collObj1 = planeFirst ? planeEntry.object : finiteEntry.object;
-      auto* collObj2 = planeFirst ? finiteEntry.object : planeEntry.object;
+  if (canConsiderParallel && filter) {
+    for (const auto pairIndex : scratch.parallelPairIndices) {
+      if (processSerialPairAt(pairIndex))
+        return true;
+    }
+    return false;
+  }
+
+  for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
+       ++planeIndex) {
+    for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
+         ++finiteIndex) {
+      const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
+      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
       if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
-      scratch.pairResult.clear();
-      const auto pairCollision = collidePlaneShape(
-          static_cast<DARTCollisionObject*>(planeEntry.object),
-          static_cast<DARTCollisionObject*>(finiteEntry.object),
-          planeFirst,
-          scratch.pairResult);
-      if (result != nullptr) {
-        postProcess(collObj1, collObj2, option, *result, scratch.pairResult);
-      }
-      collisionFound = collisionFound || (pairCollision > 0);
-      if (shouldStopAfterPair(pairCollision > 0, option, result)) {
+
+      if (processSerialPairAt(pairIndex))
         return true;
-      }
     }
   }
 

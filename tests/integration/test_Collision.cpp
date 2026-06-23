@@ -898,6 +898,7 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
   CollisionOption option;
   option.enableContact = true;
   option.maxNumContacts = 1024u;
+  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
 
   cd->setNumCollisionThreads(1u);
   CollisionResult serialResult;
