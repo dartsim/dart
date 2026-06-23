@@ -1273,7 +1273,7 @@ void selectContactIndices(
     return;
   }
 
-  selected.reserve(maxContacts);
+  selected.reserve(contacts.size());
 
   std::size_t deepestCandidate = 0u;
   auto deepestDepth = -std::numeric_limits<double>::infinity();
@@ -1289,36 +1289,51 @@ void selectContactIndices(
   candidates.erase(
       candidates.begin() + static_cast<std::ptrdiff_t>(deepestCandidate));
 
+  auto selectBestRemainingCandidate
+      = [&](const std::vector<std::size_t>& selectedContacts) {
+          std::size_t bestCandidate = 0u;
+          auto bestDistance = -1.0;
+          auto bestDepth = -std::numeric_limits<double>::infinity();
+
+          for (std::size_t i = 0u; i < candidates.size(); ++i) {
+            const auto& candidate = contacts[candidates[i]];
+            auto minDistance = std::numeric_limits<double>::infinity();
+            for (const auto selectedIndex : selectedContacts) {
+              minDistance = std::min(
+                  minDistance,
+                  (candidate.point - contacts[selectedIndex].point)
+                      .squaredNorm());
+            }
+
+            if (minDistance > bestDistance
+                || (minDistance == bestDistance
+                    && candidate.penetrationDepth > bestDepth)) {
+              bestDistance = minDistance;
+              bestDepth = candidate.penetrationDepth;
+              bestCandidate = i;
+            }
+          }
+
+          const auto selectedCandidate = candidates[bestCandidate];
+          candidates.erase(
+              candidates.begin() + static_cast<std::ptrdiff_t>(bestCandidate));
+          return selectedCandidate;
+        };
+
   while (selected.size() < maxContacts && !candidates.empty()) {
-    std::size_t bestCandidate = 0u;
-    auto bestDistance = -1.0;
-    auto bestDepth = -std::numeric_limits<double>::infinity();
-
-    for (std::size_t i = 0u; i < candidates.size(); ++i) {
-      const auto& candidate = contacts[candidates[i]];
-      auto minDistance = std::numeric_limits<double>::infinity();
-      for (const auto selectedIndex : selected) {
-        minDistance = std::min(
-            minDistance,
-            (candidate.point - contacts[selectedIndex].point).squaredNorm());
-      }
-
-      if (minDistance > bestDistance
-          || (minDistance == bestDistance
-              && candidate.penetrationDepth > bestDepth)) {
-        bestDistance = minDistance;
-        bestDepth = candidate.penetrationDepth;
-        bestCandidate = i;
-      }
-    }
-
-    selected.push_back(candidates[bestCandidate]);
-    candidates.erase(
-        candidates.begin() + static_cast<std::ptrdiff_t>(bestCandidate));
+    selected.push_back(selectBestRemainingCandidate(selected));
   }
 
+  const auto cappedSelectionSize = selected.size();
+  while (!candidates.empty()) {
+    selected.push_back(selectBestRemainingCandidate(selected));
+  }
+
+  candidates.assign(
+      selected.begin() + static_cast<std::ptrdiff_t>(cappedSelectionSize),
+      selected.end());
+  selected.resize(cappedSelectionSize);
   std::sort(selected.begin(), selected.end());
-  std::sort(candidates.begin(), candidates.end());
 }
 
 //==============================================================================

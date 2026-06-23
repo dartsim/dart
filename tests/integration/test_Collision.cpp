@@ -1033,13 +1033,41 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
 
   auto mobileGroup
       = cd->createCollisionGroup(sphereFrame.get(), boxFrame.get());
+
+  option.maxNumContacts = 2u;
+  CollisionResult priorityBackfilledResult;
+  ASSERT_TRUE(planeGroup->collide(
+      mobileGroup.get(), option, &priorityBackfilledResult));
+  ASSERT_EQ(priorityBackfilledResult.getNumContacts(), 2u);
+
+  std::size_t sphereContacts = 0u;
+  std::size_t boxContacts = 0u;
+  for (const auto& contact : priorityBackfilledResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
+        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 1u);
+  EXPECT_TRUE(containsPoint(
+      priorityBackfilledResult, uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPoint(
+      priorityBackfilledResult, uncappedResult.getContact(0).point));
+
+  option.maxNumContacts = 10u;
   CollisionResult backfilledResult;
   ASSERT_TRUE(
       planeGroup->collide(mobileGroup.get(), option, &backfilledResult));
   ASSERT_EQ(backfilledResult.getNumContacts(), 3u);
 
-  std::size_t sphereContacts = 0u;
-  std::size_t boxContacts = 0u;
+  sphereContacts = 0u;
+  boxContacts = 0u;
   for (const auto& contact : backfilledResult.getContacts()) {
     if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
         || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
