@@ -200,7 +200,9 @@ git cherry-pick -x <COMMIT_HASH>
 pixi run build && pixi run test <focused-target>
 
 # gz-physics gate — REQUIRED for any collision / constraint / parser /
-# default-solver surface (#2339, #3115, #2233, #2271, #2247):
+# default-solver surface (#2339, #3115, #2233, #2271, #2247) AND any installed
+# public-header change that can affect gz-physics (#2285, #2325 — per
+# docs/ai/verification.md):
 pixi run -e gazebo test-gz
 
 # Always:

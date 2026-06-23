@@ -71,7 +71,7 @@ queue.
 
 | PR | Category | What | Lane status | Scope |
 | --- | --- | --- | --- | --- |
-| CI/tooling action bumps | ci-tooling | GitHub Actions version drift (see table below) | `main` ahead of `release-6.20` | Selective bumps to `release-6.20` workflows; low priority |
+| GitHub Action version bumps | ci-tooling | GitHub Actions version drift (see table below) | `main` ahead of `release-6.20` | **Watch / monitor only — not a porting obligation** (Dependabot updates pins per-branch; see Inventory §5 and RESUME §3). Optional selective bump only if a maintainer prioritizes it. |
 
 ### #3115 / #3117 — the forward-port nuance (do not lose this)
 
@@ -131,11 +131,12 @@ Captured version deltas (2026-06-22):
 | `pypa/gh-action-pypi-publish` | `v1.13.0` | `v1.14.0` |
 | `awalsh128/cache-apt-pkgs-action` | `v1.6.0` | `v1.6.1` |
 
-These are **selective**: only bump actions whose workflows actually exist on
-`release-6.20`. `main`-only actions (`github-script`, `paths-filter`,
-`sccache-action`, `benchmark-action`) belong to DART-7-only workflows and are
-**not** backport targets. Pin to the same SHAs/tags `main` uses where the
-workflow is shared.
+These are **monitor-only, not a backport obligation** — Dependabot updates pins
+per-branch on its own cadence (see Inventory §5 and RESUME §3). Bump a
+`release-6.20` workflow only if a maintainer explicitly prioritizes it, and only
+for actions whose workflows actually exist on `release-6.20`; `main`-only actions
+(`github-script`, `paths-filter`, `sccache-action`, `benchmark-action`) belong to
+DART-7-only workflows and are **not** targets.
 
 ## Maintainer-decision features (NOT auto-backport)
 
@@ -149,8 +150,6 @@ maintainer explicitly approves. The complete 14-item feature inventory lives in
 | --- | --- | --- | --- |
 | [#2338](https://github.com/dartsim/dart/pull/2338) | Support convex mesh collisions and rendering (fixes [#872](https://github.com/dartsim/dart/issues/872)) | Gazebo/URDF-compat-adjacent (convex collision geometry) | **Large** — needs the new `ConvexMeshShape` type ported too |
 | [#2325](https://github.com/dartsim/dart/pull/2325) | MeshShape adopts `TriMesh` internal representation; Assimp APIs deprecated (removed in DART 8) — **the aiScene/aiMesh-removal item; supersedes #2285** | Decouples MeshShape from Assimp *types* (not a dep drop); gz/gz-sim compat preserved under conditions | **Large** (72 files); maintainer go/no-go |
-| [#3109](https://github.com/dartsim/dart/pull/3109) | OFF-by-default OpenUSD scene loader scaffold in `dart/io` | New optional IO surface | Medium; off by default, but new dependency/surface area |
-| [#3101](https://github.com/dartsim/dart/pull/3101) | Differentiable system-identification worked example | Example/doc-only, DART-7-shaped | Low, but DART-7 API-shaped |
 
 ### #2338 — ConvexMesh is bigger than a bug fix
 
@@ -297,8 +296,8 @@ Each backport PR carries its own gate, sized to the touched surface:
    broken-system-fmt mode, and first confirm whether an
    `altlinux-fmt-fetchcontent` branch / open PR exists to avoid duplicate work.
 4. **Maintainer decisions** — get go/no-go on the `feature_optional` list (#2338
-   feature port costed, #3109, #3101, and the rest in the inventory). Default is
-   defer.
+   convex-mesh and #2325 MeshShape TriMesh costed, plus the rest of the 14 in the
+   inventory). Default is defer.
 5. Keep this README and `RESUME.md` in sync as items land; move durable
    outcomes to `release-management.md` / changelog when a backport merges.
 
