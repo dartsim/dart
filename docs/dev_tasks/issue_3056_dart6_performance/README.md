@@ -10,8 +10,9 @@ DART-native stack through #3144, and the current local candidate is
 #3146 targets the settled-scene hot path by tracking explicit joint-velocity
 edits with a global generation counter. The current local candidate targets the
 remaining active contact-construction cost by reusing exact built-in default
-`ContactConstraint` objects across steps. Custom contact-surface handlers stay
-on the existing construction path.
+`ContactConstraint` objects across steps and by computing local contact points
+without constructing full inverse transforms. Custom contact-surface handlers
+stay on the existing construction path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -21,15 +22,15 @@ dynamics, `--world-threads 16`, `--max-contacts 12000`,
 | Run | RTF | Final state |
 | --- | ---: | --- |
 | #3146 parent, default deactivation, 3000 steps | `10.4855` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Current candidate, default deactivation, 3000 steps | `10.5257` | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, 3000 steps | `10.6538` | finite, same hash, resting `3003 / 3003`, contacts `0` |
 | #3146 parent, deactivation disabled, 300 active steps, text profile | `0.0923224` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `build contact constraints` `717.46 ms` |
-| Current candidate, deactivation disabled, 300 active steps, text profile | `0.0919062` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `633.40 ms` |
-| Current candidate, deactivation disabled, 300 active steps, no profile | `0.0919161` | finite, same hash, contacts `5005`, pairs `3003` |
+| Current candidate, deactivation disabled, 300 active steps, text profile | `0.092563` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `607.95 ms` |
+| Current candidate, deactivation disabled, 300 active steps, no profile | `0.0913109` latest rerun, `0.089246` prior run | finite, same hash, contacts `5005`, pairs `3003` |
 
 The settled scene remains dominated by the #3146 all-resting fast path. The
 current candidate preserves both consumed final-state hashes and trims the
-measured active contact-construction scope by about 12% in the text profiler
-(`717.46 ms` to `633.40 ms`). Whole-run active RTF remains noisy and dominated
+measured active contact-construction scope by about 15% in the text profiler
+(`717.46 ms` to `607.95 ms`). Whole-run active RTF remains noisy and dominated
 by collision, constraint solving, and integration; those stay the stress paths
 for the next native-collision improvements.
 

@@ -169,8 +169,9 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Reuse built-in default contact constraint objects across simulation steps
-    so contact-heavy scenes avoid rebuilding the shared control blocks after
-    the first frame, while preserving custom contact-surface handler behavior:
+    and avoid constructing full inverse transforms for local contact points so
+    contact-heavy scenes reduce contact-constraint setup work after the first
+    frame, while preserving custom contact-surface handler behavior:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up single-free-body contact groups by using direct LCP assembly for

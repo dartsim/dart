@@ -281,8 +281,8 @@ void ContactConstraint::initialize(
     if (!mSkipRelVelocityA) {
       const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
       const Eigen::Matrix3d rotationA = tfA.linear().transpose();
-      const Eigen::Isometry3d tfAInv = tfA.inverse();
-      bodyPointA.noalias() = tfAInv * ct.point;
+      bodyPointA.noalias() = rotationA * ct.point;
+      bodyPointA.noalias() -= rotationA * tfA.translation();
 
       // Jacobian for normal contact
       bodyDirectionA.noalias() = rotationA * ct.normal;
@@ -306,8 +306,8 @@ void ContactConstraint::initialize(
     if (!mSkipRelVelocityB) {
       const Eigen::Isometry3d& tfB = mBodyNodeB->getWorldTransform();
       const Eigen::Matrix3d rotationB = tfB.linear().transpose();
-      const Eigen::Isometry3d tfBInv = tfB.inverse();
-      bodyPointB.noalias() = tfBInv * ct.point;
+      bodyPointB.noalias() = rotationB * ct.point;
+      bodyPointB.noalias() -= rotationB * tfB.translation();
 
       // Jacobian for normal contact
       bodyDirectionB.noalias() = rotationB * -ct.normal;
@@ -347,13 +347,14 @@ void ContactConstraint::initialize(
 
     if (!mSkipRelVelocityA) {
       const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
+      const Eigen::Matrix3d rotationA = tfA.linear().transpose();
 
       // Contact normal in the local coordinates
-      const Eigen::Vector3d bodyDirectionA
-          = tfA.linear().transpose() * ct.normal;
+      const Eigen::Vector3d bodyDirectionA = rotationA * ct.normal;
 
       // Contact points in the local coordinates
-      const Eigen::Vector3d bodyPointA = tfA.inverse() * ct.point;
+      Eigen::Vector3d bodyPointA = rotationA * ct.point;
+      bodyPointA.noalias() -= rotationA * tfA.translation();
       mSpatialNormalA.col(0).head<3>().noalias()
           = bodyPointA.cross(bodyDirectionA);
       mSpatialNormalA.col(0).tail<3>().noalias() = bodyDirectionA;
@@ -361,13 +362,14 @@ void ContactConstraint::initialize(
 
     if (!mSkipRelVelocityB) {
       const Eigen::Isometry3d& tfB = mBodyNodeB->getWorldTransform();
+      const Eigen::Matrix3d rotationB = tfB.linear().transpose();
 
       // Contact normal in the local coordinates
-      const Eigen::Vector3d bodyDirectionB
-          = tfB.linear().transpose() * -ct.normal;
+      const Eigen::Vector3d bodyDirectionB = rotationB * -ct.normal;
 
       // Contact points in the local coordinates
-      const Eigen::Vector3d bodyPointB = tfB.inverse() * ct.point;
+      Eigen::Vector3d bodyPointB = rotationB * ct.point;
+      bodyPointB.noalias() -= rotationB * tfB.translation();
       mSpatialNormalB.col(0).head<3>().noalias()
           = bodyPointB.cross(bodyDirectionB);
       mSpatialNormalB.col(0).tail<3>().noalias() = bodyDirectionB;
