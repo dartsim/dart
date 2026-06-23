@@ -167,6 +167,10 @@ and `/dart-backport-pr`. Run once per queue row.
 gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit
 git fetch origin release-6.20 release-6.19 main  # release-6.19 carries the #3115 LTS twin a99369923c7
 git cherry -v --abbrev=40 origin/release-6.20 origin/main | grep <COMMIT_HASH>
+# For #3115's twin #3117 (lives only on release-6.19, not main), check that head
+# instead — `git cherry ... origin/main` will never list it:
+#   git cherry -v origin/release-6.20 origin/release-6.19 | grep a99369923c7
+#   # (present on 6.19, absent on 6.20 => forward-port it)
 
 # 1. Branch off release-6.20 without resetting an existing local branch.
 BRANCH=backport/<SOURCE_PR>-to-release-6.20
