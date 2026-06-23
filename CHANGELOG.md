@@ -101,6 +101,15 @@
     applications that intentionally consume Bullet proximity hits:
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
+* Dynamics
+
+  * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
+    `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
+    joint instead of self-copying, add the missing aligned allocation hook for
+    `TranslationalJoint2DUniqueProperties`, and avoid an ARM64/NEON crash in
+    `Icosphere::computeIcosahedron()` by keeping the triangle table local:
+    [#3130](https://github.com/dartsim/dart/pull/3130)
+
 * Simulation
 
   * Enable resting-world deactivation by default with wake-aware invalidation

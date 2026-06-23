@@ -976,7 +976,9 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
         && mAllRestingSnapshotCollisionMaxNumContacts
                == collisionOption.maxNumContacts
         && mAllRestingSnapshotCollisionMaxNumContactsPerPair
-               == collisionOption.maxNumContactsPerPair;
+               == collisionOption.maxNumContactsPerPair
+        && mAllRestingSnapshotCollisionAllowNegativePenetrationDepthContacts
+               == collisionOption.allowNegativePenetrationDepthContacts;
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const bool collisionDetectorUnchanged
@@ -1153,6 +1155,8 @@ void World::updateAllRestingSnapshotGlobalVersions()
   mAllRestingSnapshotCollisionMaxNumContacts = collisionOption.maxNumContacts;
   mAllRestingSnapshotCollisionMaxNumContactsPerPair
       = collisionOption.maxNumContactsPerPair;
+  mAllRestingSnapshotCollisionAllowNegativePenetrationDepthContacts
+      = collisionOption.allowNegativePenetrationDepthContacts;
   mAllRestingSnapshotCollisionFilter = collisionOption.collisionFilter.get();
   mAllRestingSnapshotCollisionFilterRevision
       = getCollisionFilterSnapshotRevision(mAllRestingSnapshotCollisionFilter);
@@ -1243,6 +1247,8 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
                == collisionOption.maxNumContacts
         && mLastStepRestingWorldStateCollisionMaxNumContactsPerPair
                == collisionOption.maxNumContactsPerPair
+        && mLastStepRestingWorldStateCollisionAllowNegativePenetrationDepthContacts
+               == collisionOption.allowNegativePenetrationDepthContacts
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
                == getCollisionFilterSnapshotRevision(collisionFilter);
@@ -1272,6 +1278,8 @@ void World::updateLastStepRestingWorldState()
       = collisionOption.maxNumContacts;
   mLastStepRestingWorldStateCollisionMaxNumContactsPerPair
       = collisionOption.maxNumContactsPerPair;
+  mLastStepRestingWorldStateCollisionAllowNegativePenetrationDepthContacts
+      = collisionOption.allowNegativePenetrationDepthContacts;
   mLastStepRestingWorldStateCollisionFilter
       = collisionOption.collisionFilter.get();
   mLastStepRestingWorldStateCollisionFilterTrackable
@@ -1309,6 +1317,8 @@ void World::invalidateLastStepRestingWorldState()
   mLastStepRestingWorldStateCollisionEnableContact = false;
   mLastStepRestingWorldStateCollisionMaxNumContacts = 0u;
   mLastStepRestingWorldStateCollisionMaxNumContactsPerPair = 0u;
+  mLastStepRestingWorldStateCollisionAllowNegativePenetrationDepthContacts
+      = false;
   mLastStepRestingWorldStateCollisionFilter = nullptr;
   mLastStepRestingWorldStateCollisionFilterRevision = 0u;
 }
@@ -1326,6 +1336,7 @@ void World::invalidateAllRestingKinematicSnapshot()
   mAllRestingSnapshotCollisionEnableContact = false;
   mAllRestingSnapshotCollisionMaxNumContacts = 0u;
   mAllRestingSnapshotCollisionMaxNumContactsPerPair = 0u;
+  mAllRestingSnapshotCollisionAllowNegativePenetrationDepthContacts = false;
   mAllRestingSnapshotCollisionFilter = nullptr;
   mAllRestingSnapshotCollisionFilterRevision = 0u;
 }
