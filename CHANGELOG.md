@@ -108,6 +108,11 @@
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
 
+  * Apply URDF planar and floating joint limits, velocity limits, force limits,
+    rest positions, damping, and Coulomb friction uniformly across their
+    degrees of freedom, and derive planar joint axes from the URDF `<axis>` tag:
+    [#3134](https://github.com/dartsim/dart/pull/3134)
+
   * Expose the opt-in simulation thread controls to dartpy via
     `World.setNumSimulationThreads()` and
     `ConstraintSolver.setNumSimulationThreads()`, and add a Pixi task for the
