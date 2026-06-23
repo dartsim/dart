@@ -125,6 +125,8 @@ public:
       const size_t numContactsOnCollisionObject,
       const double timeStep) const override
   {
+    ++mNumCreateConstraintCalls;
+
     auto params = createParams(contact, numContactsOnCollisionObject);
     const auto contactCount = static_cast<double>(numContactsOnCollisionObject);
     params.mPrimarySlipCompliance *= contactCount;
@@ -132,6 +134,8 @@ public:
 
     return std::make_shared<CustomContactConstraint>(contact, timeStep, params);
   }
+
+  mutable std::size_t mNumCreateConstraintCalls{0u};
 };
 
 class FakeCollisionObject final : public collision::CollisionObject
@@ -511,6 +515,37 @@ TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
       legacyBody->getWorldTransform().matrix(), 1e-12));
   EXPECT_TRUE(directBody->getSpatialVelocity().isApprox(
       legacyBody->getSpatialVelocity(), 1e-12));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, CustomContactSurfaceHandlerKeepsConstructingConstraints)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  auto defaultHandler = solver->getLastContactSurfaceHandler();
+  auto customHandler = std::make_shared<CustomContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(customHandler);
+  solver->removeContactSurfaceHandler(defaultHandler);
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  world->step();
+  const auto firstStepCalls = customHandler->mNumCreateConstraintCalls;
+  ASSERT_GT(firstStepCalls, 0u);
+
+  world->step();
+  EXPECT_GT(customHandler->mNumCreateConstraintCalls, firstStepCalls);
 }
 
 //==============================================================================
