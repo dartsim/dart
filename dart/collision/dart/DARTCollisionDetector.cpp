@@ -1456,22 +1456,13 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!dartObject->hasFiniteCachedLocalBounds())
     return entry;
 
-  entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
-  entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
-
-  for (int x = 0; x < 2; ++x) {
-    for (int y = 0; y < 2; ++y) {
-      for (int z = 0; z < 2; ++z) {
-        const Eigen::Vector3d localCorner(
-            x ? localMax.x() : localMin.x(),
-            y ? localMax.y() : localMin.y(),
-            z ? localMax.z() : localMin.z());
-        const Eigen::Vector3d worldCorner = entry.transform * localCorner;
-        entry.min = entry.min.cwiseMin(worldCorner);
-        entry.max = entry.max.cwiseMax(worldCorner);
-      }
-    }
-  }
+  const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
+  const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
+  const Eigen::Vector3d worldCenter = entry.transform * localCenter;
+  const Eigen::Vector3d worldHalfExtents
+      = entry.transform.linear().cwiseAbs() * localHalfExtents;
+  entry.min = worldCenter - worldHalfExtents;
+  entry.max = worldCenter + worldHalfExtents;
 
   entry.finite = entry.min.allFinite() && entry.max.allFinite();
   return entry;

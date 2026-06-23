@@ -73,6 +73,11 @@
     checks when the simulation thread count is greater than one:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up DART-native broadphase setup by computing transformed cached local
+    bounds directly from center and half-extents instead of visiting all local
+    bounding-box corners:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up active DART-native contact-heavy scenes by replacing global
     contact-point duplicate scans with reusable indexed contact aggregation and
     deferring collision-result lookup-set construction until queried:

@@ -12,6 +12,23 @@ finite-plane worker pool runs. The stacked follow-up is #3135
 select the deepest contact plus spatially distributed support points instead of
 preserving backend iteration-order truncation.
 
+The current local slice is `perf/dart6-native-aabb-bounds`, stacked on #3135.
+It reduces broadphase setup work by computing transformed cached local bounds
+from center and half-extents instead of visiting all eight local bounding-box
+corners. It preserves the exact active final state on the original issue scene
+(`0x6b50e84cd691f6e2`, `5005` contacts, `3003` contact pairs). Same-session
+no-profile repeats on the #3135 parent were RTF `0.0606051`, `0.0600415`, and
+`0.0598792`; repeats with the local AABB change were RTF `0.0609436`,
+`0.0609812`, and `0.0611608`. The profiled total RTF was noisy, but the
+`collide` scope moved from `1.715 s` to `1.628 s` over 300 active steps. This
+is a small setup improvement, not the major collision-algorithm win.
+
+PR-management note: #3138 is the narrow release-6.20 compiler-warning unblocker
+for the macOS CI failure seen by the performance stack. It has a clean Codex
+review and is waiting on hosted checks; once that or the equivalent existing
+backport lands, merge the refreshed `release-6.20` through #3133 and
+descendants.
+
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
 queries for the existing `dart/collision/dart/` backend when the query has many
