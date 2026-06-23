@@ -1478,6 +1478,22 @@ bool allFiniteEntriesHaveCachedPlaneCollisionPath(
 }
 
 //==============================================================================
+Eigen::Vector3d computeBroadphaseRoundoffMargin(
+    const Eigen::Isometry3d& transform,
+    const Eigen::Matrix3d& absLinear,
+    const Eigen::Vector3d& localCenter,
+    const Eigen::Vector3d& localHalfExtents)
+{
+  const Eigen::Vector3d accumulatedMagnitude
+      = transform.translation().cwiseAbs()
+        + absLinear * (localCenter.cwiseAbs() + localHalfExtents.cwiseAbs());
+
+  constexpr double kRoundoffTerms = 16.0;
+  return kRoundoffTerms * std::numeric_limits<double>::epsilon()
+         * accumulatedMagnitude;
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
@@ -1504,14 +1520,22 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
   const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
   const Eigen::Vector3d worldCenter = entry.transform * localCenter;
-  const Eigen::Vector3d worldHalfExtents
-      = entry.transform.linear().cwiseAbs() * localHalfExtents;
-  entry.min = (worldCenter - worldHalfExtents).unaryExpr([](double value) {
-    return std::nextafter(value, -std::numeric_limits<double>::infinity());
-  });
-  entry.max = (worldCenter + worldHalfExtents).unaryExpr([](double value) {
-    return std::nextafter(value, std::numeric_limits<double>::infinity());
-  });
+  const Eigen::Matrix3d absLinear = entry.transform.linear().cwiseAbs();
+  const Eigen::Vector3d worldHalfExtents = absLinear * localHalfExtents;
+  // The center/extent form matches transformed corners mathematically, but the
+  // separately rounded dot products can otherwise move a bound inward.
+  const Eigen::Vector3d roundoffMargin = computeBroadphaseRoundoffMargin(
+      entry.transform, absLinear, localCenter, localHalfExtents);
+  entry.min = (worldCenter - worldHalfExtents - roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, -std::numeric_limits<double>::infinity());
+                  });
+  entry.max = (worldCenter + worldHalfExtents + roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, std::numeric_limits<double>::infinity());
+                  });
 
   entry.finite = entry.min.allFinite() && entry.max.allFinite();
   return entry;
