@@ -1356,6 +1356,8 @@ void postProcess(
   auto& contactPointIndex = scratch.contactPointIndex;
   const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
   const auto& pairContacts = pairResult.getContacts();
+  if (totalResult.getNumContacts() >= option.maxNumContacts)
+    return;
 
   auto appendContact = [&](const Contact& pairContact) {
     if (totalResult.getNumContacts() >= option.maxNumContacts)
@@ -1374,11 +1376,11 @@ void postProcess(
         totalResult.getNumContacts() < option.maxNumContacts, true);
   };
 
+  const auto remainingContacts
+      = option.maxNumContacts - totalResult.getNumContacts();
+  const auto selectionLimit = std::min(maxContactsPerPair, remainingContacts);
   if (option.maxNumContactsPerPair > 0u
-      && pairContacts.size() > maxContactsPerPair) {
-    const auto remainingContacts
-        = option.maxNumContacts - totalResult.getNumContacts();
-    const auto selectionLimit = std::min(maxContactsPerPair, remainingContacts);
+      && pairContacts.size() > selectionLimit) {
     selectContactIndices(
         pairResult,
         selectionLimit,

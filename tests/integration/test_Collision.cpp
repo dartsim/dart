@@ -980,6 +980,20 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
           }
           return false;
         };
+  auto containsPointForFrame = [](const CollisionResult& result,
+                                  const ShapeFrame* frame,
+                                  const Eigen::Vector3d& point) {
+    for (const auto& contact : result.getContacts()) {
+      if (contact.collisionObject1->getShapeFrame() != frame
+          && contact.collisionObject2->getShapeFrame() != frame) {
+        continue;
+      }
+
+      if (contact.point.isApprox(point, 1e-12))
+        return true;
+    }
+    return false;
+  };
 
   std::size_t deepestIndex = 0u;
   for (std::size_t i = 1u; i < uncappedResult.getNumContacts(); ++i) {
@@ -1060,7 +1074,47 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
   EXPECT_FALSE(containsPoint(
       priorityBackfilledResult, uncappedResult.getContact(0).point));
 
+  auto separateSphereFrame = SimpleFrame::createShared(Frame::World());
+  separateSphereFrame->setShape(std::make_shared<SphereShape>(0.5));
+  separateSphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.45));
+
+  auto separateMobileGroup
+      = cd->createCollisionGroup(separateSphereFrame.get(), boxFrame.get());
+
+  option.maxNumContacts = 3u;
+  option.maxNumContactsPerPair = 4u;
+  CollisionResult globallyLimitedPairResult;
+  ASSERT_TRUE(planeGroup->collide(
+      separateMobileGroup.get(), option, &globallyLimitedPairResult));
+  ASSERT_EQ(globallyLimitedPairResult.getNumContacts(), 3u);
+
+  sphereContacts = 0u;
+  boxContacts = 0u;
+  for (const auto& contact : globallyLimitedPairResult.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == separateSphereFrame.get()
+        || contact.collisionObject2->getShapeFrame()
+               == separateSphereFrame.get()) {
+      ++sphereContacts;
+    } else if (
+        contact.collisionObject1->getShapeFrame() == boxFrame.get()
+        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
+      ++boxContacts;
+    }
+  }
+
+  EXPECT_EQ(sphereContacts, 1u);
+  EXPECT_EQ(boxContacts, 2u);
+  EXPECT_TRUE(containsPointForFrame(
+      globallyLimitedPairResult,
+      boxFrame.get(),
+      uncappedResult.getContact(spreadIndex).point));
+  EXPECT_FALSE(containsPointForFrame(
+      globallyLimitedPairResult,
+      boxFrame.get(),
+      uncappedResult.getContact(0).point));
+
   option.maxNumContacts = 10u;
+  option.maxNumContactsPerPair = 2u;
   CollisionResult backfilledResult;
   ASSERT_TRUE(
       planeGroup->collide(mobileGroup.get(), option, &backfilledResult));
