@@ -188,6 +188,11 @@
     micrometer-scale agreement with the always-active path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up single-free-body contact groups by using direct LCP assembly for
+    exact built-in contact constraints, while preserving the legacy assembly
+    path for custom contact constraints and manual constraints:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
