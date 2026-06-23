@@ -116,6 +116,13 @@ public:
   using ContactConstraint::ContactConstraint;
 };
 
+class ExposedContactConstraint final : public constraint::ContactConstraint
+{
+public:
+  using ContactConstraint::ContactConstraint;
+  using ContactConstraint::getInformation;
+};
+
 class CustomContactSurfaceHandler final
   : public constraint::DefaultContactSurfaceHandler
 {
@@ -744,6 +751,52 @@ TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MovingFixedContactSupportContributesRelVelocity)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* fixedJoint
+      = static_cast<dynamics::FreeJoint*>(fixedBody->getParentJoint());
+  fixedJoint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, 0.25));
+
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+
+  auto contact = createContact(&dynamicObject, &fixedObject);
+  ExposedContactConstraint constraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+
+  double x[3] = {0.0, 0.0, 0.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(0.25, b[0], 1e-12);
 }
 
 //==============================================================================

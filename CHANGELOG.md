@@ -106,6 +106,11 @@
     when different finite shapes cannot contribute duplicate contact points:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Reduce default contact-constraint rebuild cost by reusing per-step default
+    surface-property checks, skipping zero-velocity fixed-support relative
+    velocity work, and avoiding threaded contact allocation on cold starts:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up DART-native collision transform setup for identity-relative
     `ShapeNode` collision objects by reusing the owning `BodyNode` world
     transform while refreshing the fast path when shape-node geometry changes:

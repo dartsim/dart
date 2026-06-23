@@ -59,6 +59,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
+#include <array>
 #include <condition_variable>
 #include <limits>
 #include <mutex>
@@ -1117,21 +1118,90 @@ void ConstraintSolver::updateConstraints()
               contact, mTimeStep, surfaceParams);
     };
 
-    if (useBuiltInDefaultSurfaceParamsCache) {
-      for (const auto& candidate : contactCandidates) {
-        auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
-        const auto numContactsOnPair = contactPairCount.count;
-        if (!contactPairCount.surfaceParamsInitialized) {
+    struct DefaultSurfaceCacheEntry
+    {
+      const dynamics::ShapeNode* shapeNode{nullptr};
+      bool hasDefaultProperties{false};
+    };
+    std::array<DefaultSurfaceCacheEntry, 16u> defaultSurfaceCache{};
+    std::size_t nextDefaultSurfaceCacheSlot = 0u;
+
+    const auto getContactShapeNode
+        = [](const collision::CollisionObject* collisionObject)
+        -> const dynamics::ShapeNode* {
+      if (collisionObject == nullptr)
+        return nullptr;
+
+      return collisionObject->getShapeNode();
+    };
+    const auto hasDefaultContactSurfaceProperties
+        = [&](const dynamics::ShapeNode* shapeNode) {
+            if (shapeNode == nullptr)
+              return false;
+
+            for (const auto& entry : defaultSurfaceCache) {
+              if (entry.shapeNode == shapeNode)
+                return entry.hasDefaultProperties;
+            }
+
+            const auto* dynamicAspect = shapeNode->getDynamicsAspect();
+            const bool hasDefaultProperties
+                = dynamicAspect != nullptr
+                  && dynamicAspect->getRestitutionCoeff()
+                         == DART_DEFAULT_RESTITUTION_COEFF
+                  && dynamicAspect->getPrimaryFrictionCoeff()
+                         == DART_DEFAULT_FRICTION_COEFF
+                  && dynamicAspect->getSecondaryFrictionCoeff()
+                         == DART_DEFAULT_FRICTION_COEFF
+                  && dynamicAspect->getPrimarySlipCompliance() == -1.0
+                  && dynamicAspect->getSecondarySlipCompliance() == -1.0
+                  && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
+                  && dynamicAspect->getFirstFrictionDirection().squaredNorm()
+                         < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+
+            defaultSurfaceCache[nextDefaultSurfaceCacheSlot]
+                = {shapeNode, hasDefaultProperties};
+            nextDefaultSurfaceCacheSlot = (nextDefaultSurfaceCacheSlot + 1u)
+                                          % defaultSurfaceCache.size();
+            return hasDefaultProperties;
+          };
+
+    const auto initializeDefaultSurfaceParams =
+        [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
+          if (contactPairCount.surfaceParamsInitialized)
+            return;
+
+          const auto* shapeNode1
+              = getContactShapeNode(contact.collisionObject1);
+          const auto* shapeNode2
+              = getContactShapeNode(contact.collisionObject2);
+          const bool canUseDefaultSurfaceParams
+              = builtInDefaultContactHandler->mParent == nullptr
+                && hasDefaultContactSurfaceProperties(shapeNode1)
+                && hasDefaultContactSurfaceProperties(shapeNode2);
+
           contactPairCount.surfaceParams
-              = builtInDefaultContactHandler
-                    ->DefaultContactSurfaceHandler::createParams(
-                        *candidate.contact, numContactsOnPair);
-          const auto contactCount = static_cast<double>(numContactsOnPair);
+              = canUseDefaultSurfaceParams
+                    ? ContactSurfaceParams()
+                    : builtInDefaultContactHandler
+                          ->DefaultContactSurfaceHandler::createParams(
+                              contact, contactPairCount.count);
+          const auto contactCount = static_cast<double>(contactPairCount.count);
           contactPairCount.surfaceParams.mPrimarySlipCompliance *= contactCount;
           contactPairCount.surfaceParams.mSecondarySlipCompliance
               *= contactCount;
           contactPairCount.surfaceParamsInitialized = true;
-        }
+        };
+
+    if (useBuiltInDefaultSurfaceParamsCache) {
+      DART_PROFILE_SCOPED_N("build contact constraints - surface params");
+      for (auto& contactPairCount : contactPairCounts) {
+        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
+          continue;
+
+        initializeDefaultSurfaceParams(
+            contactPairCount,
+            *contactCandidates[contactPairCount.firstCandidateIndex].contact);
       }
     }
 
@@ -1179,15 +1249,22 @@ void ConstraintSolver::updateConstraints()
     const auto canBuildDefaultContactsByPairInParallel = [&]() {
       if (!useBuiltInDefaultSurfaceParamsCache
           || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
-          || contactCandidates.size() < 512u
-          || contactPairCounts.size() < 64u) {
+          || contactCandidates.size() < 512u || contactPairCounts.size() < 64u
+          || mReusableContactConstraints.size() < contactCandidates.size()) {
         return false;
+      }
+
+      for (std::size_t i = 0u; i < contactCandidates.size(); ++i) {
+        if (mReusableContactConstraints[i] == nullptr)
+          return false;
       }
 
       static thread_local std::unordered_set<const dynamics::BodyNode*>
           sharedBodyCheck;
       sharedBodyCheck.clear();
       sharedBodyCheck.reserve(contactPairCounts.size());
+
+      DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
 
       const auto recordBodyIfNeeded = [&](collision::CollisionObject* object) {
         if (object == nullptr)
@@ -1218,7 +1295,10 @@ void ConstraintSolver::updateConstraints()
     if (useParallelDefaultContactBuild) {
       mContactConstraints.resize(contactCandidates.size());
       auto buildDefaultContactConstraintsForPair = [&](std::size_t pairIndex) {
-        const auto& contactPairCount = contactPairCounts[pairIndex];
+        auto& contactPairCount = contactPairCounts[pairIndex];
+        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
+          return;
+
         for (auto i = contactPairCount.firstCandidateIndex;
              i != invalidContactPairIndex;
              i = contactCandidates[i].nextCandidateIndex) {
@@ -1244,19 +1324,25 @@ void ConstraintSolver::updateConstraints()
         }
       };
 
-      mConstraintThreadPool->parallelFor(
-          contactPairCounts.size(),
-          mNumSimulationThreads,
-          buildDefaultContactConstraintsForPair);
+      {
+        DART_PROFILE_SCOPED_N("build contact constraints - parallel reset");
+        mConstraintThreadPool->parallelFor(
+            contactPairCounts.size(),
+            mNumSimulationThreads,
+            buildDefaultContactConstraintsForPair);
+      }
 
+      DART_PROFILE_SCOPED_N("build contact constraints - activate");
       for (const auto& contactConstraint : mContactConstraints)
         activateContactConstraint(contactConstraint);
     } else {
+      DART_PROFILE_SCOPED_N("build contact constraints - serial fallback");
       for (const auto& candidate : contactCandidates) {
         ContactConstraintPtr contactConstraint;
         if (useBuiltInDefaultSurfaceParamsCache) {
           auto& contactPairCount
               = contactPairCounts[candidate.contactPairIndex];
+          initializeDefaultSurfaceParams(contactPairCount, *candidate.contact);
 
           contactConstraint = createDefaultContactConstraint(
               *candidate.contact, contactPairCount.surfaceParams);

@@ -4,8 +4,8 @@
 
 Bottom line: #3129 is merged. The active stack is now in the DART-native
 collision and DART 6 constraint hot path. The current local candidate is
-`perf/dart6-native-disjoint-plane-merge`, stacked on #3149
-`perf/dart6-parallel-default-contact-constraints`.
+`perf/dart6-contact-build-fast-path`, stacked on #3150
+`perf/dart6-native-disjoint-plane-merge`.
 
 #3147 targets active contact-construction cost by reusing exact built-in default
 `ContactConstraint` objects across steps, computing local contact points without
@@ -14,13 +14,11 @@ scratch-table index for consecutive contacts from the same pair. #3148 targets
 DART-native collision transform setup for identity-relative `ShapeNode`
 collision objects by reusing the owning `BodyNode` world transform.
 
-The current local candidate attacks the measured DART-native finite-plane merge
-hot path. When a one-plane query can prove the finite shapes' padded contact
-bounds are mutually disjoint, contacts from different finite/plane pairs cannot
-be duplicate points. That lets the merge path keep the existing per-pair
-duplicate check while bypassing the global duplicate-contact grid for those
-pair results. Overlapping or multi-plane queries keep the existing global
-duplicate path.
+The current local candidate attacks the remaining default contact-build cost. It
+keeps moving fixed supports observable, but skips relative-velocity work for
+zero-velocity fixed supports, caches repeated default surface-property checks
+within each solver update, and makes the threaded default-contact rebuild path
+avoid cold-start contact allocation.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -33,8 +31,11 @@ dynamics, `--world-threads 16`, `--max-contacts 12000`,
 | Rejected pair-result cache, 300 active steps, text profile | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
 | #3149 constraint-build candidate, 300 active steps, text profile | `0.0998668` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.84 ms`, `build contact constraints` `542.53 ms` |
 | #3149 constraint-build candidate, 300 active steps, no profile | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| Current disjoint finite-plane merge candidate, 300 active steps, text profile | `0.105801` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `654.80 ms`, finite-plane merge `110.98 ms`, contact-bound separation check `24.10 ms` |
-| Current disjoint finite-plane merge candidate, 300 active steps, no profile | `0.110214` latest rerun, `0.11603` prior run | finite, same hash, contacts `5005`, pairs `3003` |
+| #3150 disjoint finite-plane merge candidate, 300 active steps, text profile | `0.105801` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `654.80 ms`, finite-plane merge `110.98 ms`, contact-bound separation check `24.10 ms` |
+| #3150 disjoint finite-plane merge candidate, 300 active steps, no profile | `0.110214` latest rerun, `0.11603` prior run | finite, same hash, contacts `5005`, pairs `3003` |
+| Current contact-build candidate, 180 active steps, text profile | `0.116713` | finite, hash `0x973739b5665d0904`, contacts `5005`, pairs `3003`; `build contact constraints` `273.83 ms`, default surface params `96.39 ms`, serial fallback `174.16 ms` |
+| #3150 parent, 180 active steps, text profile | `0.110141` | finite, same 180-step hash, contacts `5005`, pairs `3003`; `build contact constraints` `317.81 ms` |
+| Current contact-build candidate, 300 active steps, no profile | `0.11189` latest rerun, `0.114723` prior run | finite, same 300-step hash, contacts `5005`, pairs `3003`; end-to-end RTF remains within the current noise band |
 
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane

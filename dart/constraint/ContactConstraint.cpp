@@ -74,6 +74,11 @@ bool canSkipContactRelativeVelocity(
   if (isReactive || bodyNode == nullptr || skeleton == nullptr)
     return false;
 
+  if (!skeleton->isMobile()) {
+    return bodyNode->getSpatialVelocity().squaredNorm()
+           < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+  }
+
   return bodyNode->getNumDependentGenCoords() == 0u;
 }
 
