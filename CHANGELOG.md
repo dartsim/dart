@@ -68,6 +68,11 @@
     deferring collision-result lookup-set construction until queried:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
+    and other capsules, with primitive-pair regression coverage and capsule
+    benchmark scenes for comparing native and external collision backends:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
     improving the original 3003-body issue scene while preserving close
