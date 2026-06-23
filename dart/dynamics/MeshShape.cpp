@@ -838,6 +838,17 @@ ShapePtr MeshShape::clone() const
     clonedTriMesh = std::make_shared<math::TriMesh<double>>(*triMesh);
 
   auto new_shape = std::make_shared<MeshShape>(mScale, clonedTriMesh, mMeshUri);
+  const aiScene* legacyScene = mMesh ? mMesh.get() : mCachedAiScene;
+  if (legacyScene) {
+    aiScene* copiedScene = nullptr;
+    aiCopyScene(legacyScene, &copiedScene);
+    if (copiedScene) {
+      new_shape->setLegacyMesh(copiedScene, MeshOwnership::Copied);
+      if (clonedTriMesh)
+        new_shape->mTriMesh = clonedTriMesh;
+    }
+  }
+
   new_shape->mMeshPath = mMeshPath;
   new_shape->mResourceRetriever = mResourceRetriever;
   new_shape->mDisplayList = mDisplayList;

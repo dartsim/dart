@@ -8,6 +8,7 @@
 
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
@@ -181,7 +182,7 @@ TEST(MeshShapeTest, TriMeshConstructorUpdatesBoundsAndAssimpBridge)
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "sdf/atlas/r_scap.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -197,9 +198,25 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   auto cloned
       = std::dynamic_pointer_cast<dynamics::MeshShape>(original->clone());
   ASSERT_NE(cloned, nullptr);
-  EXPECT_NE(original->getMesh(), cloned->getMesh());
+  const aiScene* clonedScene = cloned->getMesh();
+  ASSERT_NE(clonedScene, nullptr);
+  EXPECT_NE(original->getMesh(), clonedScene);
   EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
       originalExtents, 1e-12));
+
+  ASSERT_GT(scene->mNumMaterials, 0u);
+  ASSERT_GT(clonedScene->mNumMaterials, 0u);
+  aiString originalTexture;
+  aiString clonedTexture;
+  ASSERT_EQ(
+      scene->mMaterials[0]->GetTexture(
+          aiTextureType_DIFFUSE, 0, &originalTexture),
+      AI_SUCCESS);
+  ASSERT_EQ(
+      clonedScene->mMaterials[0]->GetTexture(
+          aiTextureType_DIFFUSE, 0, &clonedTexture),
+      AI_SUCCESS);
+  EXPECT_STREQ(originalTexture.C_Str(), clonedTexture.C_Str());
 
   cloned->setScale(Eigen::Vector3d::Constant(2.0));
   EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
