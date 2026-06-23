@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Keep this before <fcl/fcl.h>; older FCL headers require compatibility shims.
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 #include <Eigen/Core>

@@ -59,7 +59,7 @@ queue.
 
 | PR | Category | What | Lane status | Scope |
 | --- | --- | --- | --- | --- |
-| [#2509](https://github.com/dartsim/dart/pull/2509) | compat-critical bug | ARM64/NEON SEGFAULT (`Icosphere` static table) + self-copy bugs (`TranslationalJoint2D`/`UniversalJoint`) + missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` | `main` only; **missing from `release-6.20`** | Backport (PascalCase); most urgent (crash class) |
+| [#2509](https://github.com/dartsim/dart/pull/2509) | compat-critical bug | ARM64/NEON SEGFAULT (`Icosphere` static table) + self-copy bugs (`TranslationalJoint2D`/`UniversalJoint`) + missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` | Landed by [#3130](https://github.com/dartsim/dart/pull/3130) | Done |
 | [#2339](https://github.com/dartsim/dart/pull/2339) | compat-critical bug | FCL primitive contact-normal normalization; default `mPrimitiveShapeType` MESH→PRIMITIVE | Backported by [#3131](https://github.com/dartsim/dart/pull/3131) | Done when #3131 lands |
 | [#3115](https://github.com/dartsim/dart/pull/3115) / [#3117](https://github.com/dartsim/dart/pull/3117) | compat-critical bug | Skip non-finite contacts and validate shape dimensions | On `main` (#3115) **and** `release-6.19` (#3117 twin); **missing from `release-6.20`** | Forward-port the #3117 LTS twin; constraint surface (gz gate) |
 | [#2233](https://github.com/dartsim/dart/pull/2233) | compat-critical bug | URDF multidof joint limits + vector-form `GenericJoint` setters | `main` only; **missing from `release-6.20`** | Backport; parser surface (gz gate) |
@@ -283,12 +283,13 @@ Each backport PR carries its own gate, sized to the touched surface:
 
 ## Remaining work
 
-1. **Compat-critical backport queue** — port the seven compat-critical items
-   (#2509, #2339, #3115/#3117, #2233, #2271, #2285, #2247) in the order and with
-   the per-surface gates given in [`RESUME.md`](RESUME.md) section 1. #2339 is
-   carried by [#3131](https://github.com/dartsim/dart/pull/3131); #2509 remains
-   most urgent (crash class); #3115/#3117 is a forward-port of the DART-6-shaped
-   #3117 twin. Run the gz gate on every collision/constraint/parser surface.
+1. **Compat-critical backport queue** — #2509 is carried by
+   [#3130](https://github.com/dartsim/dart/pull/3130), and #2339 is carried by
+   [#3131](https://github.com/dartsim/dart/pull/3131). Port the remaining five
+   compat-critical items (#3115/#3117, #2233, #2271, #2285, #2247) in the order
+   and with the per-surface gates given in [`RESUME.md`](RESUME.md) section 1.
+   #3115/#3117 is a forward-port of the DART-6-shaped #3117 twin. Run the gz
+   gate on every collision/constraint/parser surface.
 2. **CI/tooling bumps** — selective action-version bumps to `release-6.20`
    workflows only where the workflow is shared with `main`; skip `main`-only
    actions.
