@@ -2555,6 +2555,42 @@ TEST_F(Collision, BulletRefiltersBodyNodeCollisionFilterAfterUntrackedQuery)
   EXPECT_FALSE(group->collide(bodyNodeFilterOption, &result));
   EXPECT_EQ(0u, result.getNumContacts());
 }
+
+//==============================================================================
+TEST_F(Collision, BulletBinaryCollideFiltersProximityContacts)
+{
+  auto detector = BulletCollisionDetector::create();
+
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+  auto shape1 = std::make_shared<CylinderShape>(0.5, 1.0);
+  auto shape2 = std::make_shared<CylinderShape>(0.5, 1.0);
+  frame1->setShape(shape1);
+  frame2->setShape(shape2);
+  frame2->setTranslation(Eigen::Vector3d(1.01, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  CollisionOption option;
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+  EXPECT_FALSE(group->collide(option));
+  EXPECT_FALSE(group->collide(option, nullptr));
+  EXPECT_FALSE(group1->collide(group2.get(), option));
+  EXPECT_FALSE(group1->collide(group2.get(), option, nullptr));
+
+  option.allowNegativePenetrationDepthContacts = true;
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+  EXPECT_TRUE(group->collide(option));
+  EXPECT_TRUE(group->collide(option, nullptr));
+  EXPECT_TRUE(group1->collide(group2.get(), option));
+  EXPECT_TRUE(group1->collide(group2.get(), option, nullptr));
+}
 #endif
 
 //==============================================================================

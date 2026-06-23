@@ -105,6 +105,11 @@
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
 
+  * Filter Bullet collision contacts with negative penetration depth by default,
+    while adding `CollisionOption::allowNegativePenetrationDepthContacts` for
+    applications that intentionally consume Bullet proximity hits:
+    [#3136](https://github.com/dartsim/dart/pull/3136)
+
 * Dynamics
 
   * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
