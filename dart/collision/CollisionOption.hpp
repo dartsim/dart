@@ -60,6 +60,10 @@ struct CollisionOption
   /// contact generation globally.
   std::size_t maxNumContactsPerPair;
 
+  /// If false, contacts with negative penetration depth (e.g., proximity hits
+  /// reported by some collision backends such as Bullet) are ignored.
+  bool allowNegativePenetrationDepthContacts;
+
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
 
@@ -67,7 +71,8 @@ struct CollisionOption
   CollisionOption(
       bool enableContact = true,
       std::size_t maxNumContacts = 1000u,
-      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr,
+      bool allowNegativePenetrationDepthContacts = false);
 
   /// Returns the active per-pair contact cap after applying legacy defaults and
   /// the global contact cap.

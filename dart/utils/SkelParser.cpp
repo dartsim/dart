@@ -36,6 +36,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -672,6 +673,18 @@ createFclMeshCollisionDetector()
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclPrimitiveCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
     const common::Uri& _baseUri,
@@ -728,12 +741,12 @@ simulation::WorldPtr readWorld(
 
       if (!collision_detector) {
         dtwarn << "Unknown collision detector[" << cdType << "]. "
-               << "Default collision detector[fcl_mesh] will be loaded.\n";
+               << "Default collision detector[fcl] will be loaded.\n";
       }
     }
 
     if (!collision_detector)
-      collision_detector = createFclMeshCollisionDetector();
+      collision_detector = createFclPrimitiveCollisionDetector();
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
@@ -1310,10 +1323,14 @@ dynamics::ShapePtr readShape(
 
     const common::Uri meshUri
         = common::Uri::createFromRelativeUri(baseUri, filename);
+    DART_SUPPRESS_DEPRECATED_BEGIN
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, retriever);
+    DART_SUPPRESS_DEPRECATED_END
     if (model) {
+      DART_SUPPRESS_DEPRECATED_BEGIN
       newShape = std::make_shared<dynamics::MeshShape>(
           scale, model, meshUri, retriever);
+      DART_SUPPRESS_DEPRECATED_END
     } else {
       dterr << "Fail to load model[" << filename << "]." << std::endl;
     }

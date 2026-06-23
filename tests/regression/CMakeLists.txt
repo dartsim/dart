@@ -4,6 +4,10 @@ dart_add_test("regression" test_Issue2470 test_Issue2470.cpp)
 
 dart_add_test("regression" test_Issue1243 test_Issue1243.cpp)
 
+dart_add_test("regression" test_FclPrimitiveContactMatrix)
+
+dart_add_test("regression" test_FclPrimitiveContactMatrixFcl)
+
 if(TARGET dart-utils)
   dart_add_test("regression" test_Issue1583)
   target_link_libraries(test_Issue1583 dart-utils)
