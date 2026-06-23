@@ -2,60 +2,55 @@
 
 ## Current Snapshot
 
-Bottom line: #3125 is merged, and the current slice is
-`perf/dart6-native-capsule-collision`, based on `origin/release-6.20`. This
-slice ports the DART 7 native capsule primitive contacts into the DART 6 native
-collision backend for capsule/sphere, capsule/box, capsule/cylinder,
-capsule/plane, and capsule/capsule pairs. The long-term target remains DART 7
-native-collision feature, test, and benchmark parity inside DART 6.20's
-dependency-free `dart/collision/dart/` backend, with FCL, Bullet, and ODE kept
-as comparison and regression dependencies once native coverage is complete.
+Bottom line: #3126 is merged and cleaned up locally. The current follow-up is
+`perf/dart6-native-shape-cache`, based on `origin/release-6.20`. This is a
+small DART-native hot-path slice: cache each DART collision object's shape
+pointer, type string, plane flag, and local bounding box, refresh that cache
+only when the `ShapeFrame` version changes, and use the cached data in
+broadphase and narrowphase dispatch. The goal is conservative data locality and
+shared-pointer churn reduction without changing contacts or solver behavior.
 
-Correctness guardrails for this slice:
+The original issue scene remains the primary active benchmark:
+`/tmp/3k_shapes.sdf`, with `3003` mobile sphere/box/cylinder bodies plus the
+static ground plane from the issue report. Command shape:
+`pixi run ex contact_benchmark -- /tmp/3k_shapes.sdf --steps 300 --warmup 0
+--checkpoint 0 --quiet --collision <engine> --sdf-plane-shapes --world-threads
+16 --max-contacts 12000 --disable-deactivation`.
 
-- `test_Collision` now exercises DART-native capsule/capsule and capsule pairs
-  against sphere, box, cylinder, plane, and a rotated capsule/sphere case.
-- `contact_benchmark --generate-capsules` consumes final state hashes and now
-  defaults to the DART-native detector. It rejects the DART 6 FCL backend for
-  generated capsule scenes because that backend currently falls back to dummy
-  spheres for `CapsuleShape`, which is not an apples-to-apples comparison.
-- The original issue scene remains unchanged: `/tmp/3k_shapes.sdf` still has
-  `3003` mobile sphere/box/cylinder bodies plus the static ground plane from
-  the issue report.
-
-Current capsule-only active comparison, all with DART 6 dynamics, constraints,
-and solver; only collision detection changes. Command shape:
-`pixi run ex contact_benchmark -- --generate-capsules 120 --steps 3000
---warmup 0 --checkpoint 0 --quiet --world-threads 16 --max-contacts 1000
---disable-deactivation --collision <engine>`.
-
-| Engine | RTF | Final state |
-| --- | ---: | --- |
-| DART native | `1.06574` | finite, hash `0xb1abe373933000a3`, contacts `120`, pairs `120` |
-| ODE | `0.839581` | finite, hash `0xdad6992e61e05f66`, contacts `120`, pairs `120` |
-| Bullet | `0.745414` | finite, hash `0x494452692dc448e`, contacts `120`, pairs `120` |
-| FCL primitive | not comparable | DART 6 FCL maps capsules to fallback spheres; the legacy run hit contact cap `1000` with max penetration `65.45`, so the benchmark now rejects this combination |
-
-The default sleeping capsule run is intentionally not the active collision
-comparison, but it verifies that the new capsule contacts integrate with the
-resting fast path: DART native RTF `121.389`, finite state hash
-`0x80e1d697f42d28d7`, final resting `120 / 120`, final contacts `0`.
-
-Original issue-scene no-regression evidence, same final-state consumption:
+Current active original-scene evidence, all with DART 6 dynamics, constraints,
+and solver; only collision detection changes:
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3125 DART native active baseline | `0.0536378` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Current DART native active | `0.0497787` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3125 DART native default sleeping baseline | `1.88616` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Current DART native default sleeping | `1.88637` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| #3126 DART native active baseline | `0.0545488` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Current DART native active | `0.0573693` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| #3126 Bullet active comparison | `0.0636858` | finite, hash `0x1b1e6f3c78c0e01e`, contacts `5005`, pairs `3003` |
 
-The active original-scene RTF moved within run-to-run noise while preserving the
-exact DART-native final hash and contact counts. The new performance win is on
-the newly supported capsule primitive path: previous DART native did not
-support these contacts, while the current path is real-time on the active
-120-capsule floor-contact workload and beats the available Bullet and ODE
-comparison backends on the same DART 6 physics pipeline.
+No-rebuild repeats of the current DART-native path were RTF `0.0583932`,
+`0.0582933`, and `0.0575822`, all with the same DART-native final hash and
+contact counts. The measured improvement is real but modest: about `5-7%` on
+the active exact issue scene, still behind the Bullet collision backend for
+this workload. The profiler moved the inclusive `collide` scope from the
+recorded #3126 baseline `1.982 s` to `1.839 s` over 300 steps, while
+`updateConstraints` moved from `2.930 s` to `2.745 s`. The remaining active
+hotspots are collision itself, contact-constraint construction, and constrained
+group solving.
+
+Correctness guardrails for this slice:
+
+- The benchmark consumes the final state and preserves the exact DART-native
+  final hash, contact count, and contact-pair count on the original issue scene.
+- `test_Collision` adds a DART-native shape-geometry mutation case where a box
+  is resized after the collision group is created; the cached local bounds must
+  refresh from the `ShapeFrame` version for the second collision query to see
+  the new overlap.
+- `test_Collision` still passes after the cache and DART-specific narrowphase
+  overload changes.
+
+The current slice is worth a small PR if kept narrowly scoped, but it is not the
+major win. The north-star path remains importing/porting the DART 7 native
+collision feature set into DART 6.20's dependency-free
+`dart/collision/dart/` backend with equal or better coverage and benchmarks.
 
 The previous managed PR, #3071 `perf/dart6-parallel-islands`, landed as the
 parallel-stepping follow-up after #3111 and #3112 added the core
@@ -108,13 +103,14 @@ Native-collision follow-up: continue porting DART 7 native algorithms into
 DART 6.20's `dart/collision/dart/` path in dependency-free slices. The merged
 native slices added finite-shape broadphase filtering, plane/sphere/box/cylinder
 contacts, per-thread scratch reuse, and faster active contact aggregation in
-the existing DART backend. The active follow-up adds DART-native capsule
-primitive contacts and confirms the original issue scene did not regress. The
-next native slices should keep mining DART 7 for missing shape support,
-distance/CCD/raycast coverage, and manifold behavior while preserving
+the existing DART backend. The most recent merged native follow-up added
+DART-native capsule primitive contacts and confirmed the original issue scene
+did not regress. The active follow-up is a smaller cached-shape metadata slice.
+The next larger native slices should keep mining DART 7 for missing shape
+support, distance/CCD/raycast coverage, and manifold behavior while preserving
 gz-physics-facing API compatibility.
 
-- Current active branch: `perf/dart6-native-capsule-collision`, based on
+- Current active branch: `perf/dart6-native-shape-cache`, based on
   `origin/release-6.20`.
 - Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
   3003 mobile sphere/box/cylinder bodies plus the static ground plane from the

@@ -468,6 +468,36 @@ TEST_F(Collision, SimpleFrames)
 }
 
 //==============================================================================
+TEST_F(Collision, DARTCollisionDetectorRefreshesChangedShapeGeometry)
+{
+  auto cd = DARTCollisionDetector::create();
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  auto shape2 = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.2, 0.0, 0.0));
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  shape2->setSize(Eigen::Vector3d(1.6, 1.0, 1.0));
+
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
 void testSphereSphere(
     const std::shared_ptr<CollisionDetector>& cd, double tol = 1e-12)
 {

@@ -35,7 +35,14 @@
 
 #include <dart/collision/CollisionObject.hpp>
 
+#include <dart/dynamics/SmartPointer.hpp>
+
 #include <Eigen/Dense>
+
+#include <limits>
+#include <string>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {
@@ -53,8 +60,33 @@ protected:
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
 
+public:
+  const dynamics::Shape* getCachedShape() const;
+
+  const std::string& getCachedShapeType() const;
+
+  const Eigen::Vector3d& getCachedLocalBoundsMin() const;
+
+  const Eigen::Vector3d& getCachedLocalBoundsMax() const;
+
+  bool hasFiniteCachedLocalBounds() const;
+
+  bool isCachedPlaneShape() const;
+
+protected:
   // Documentation inherited
   void updateEngineData() override;
+
+private:
+  void refreshShapeCache();
+
+  dynamics::ConstShapePtr mCachedShape;
+  const std::string* mCachedShapeType{nullptr};
+  std::size_t mCachedShapeFrameVersion{std::numeric_limits<std::size_t>::max()};
+  Eigen::Vector3d mCachedLocalBoundsMin{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
+  bool mHasFiniteCachedLocalBounds{false};
+  bool mIsCachedPlaneShape{false};
 };
 
 } // namespace collision
