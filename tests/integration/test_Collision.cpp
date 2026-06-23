@@ -1825,6 +1825,11 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
   expectContact(cylinderFrame, capsuleFrame, Eigen::Vector3d::UnitX(), 0.05);
   expectContact(capsuleFrame, capsule2Frame, -Eigen::Vector3d::UnitX(), 0.05);
 
+  capsuleFrame->setTranslation(Eigen::Vector3d::Zero());
+  capsule2Frame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
+  expectContact(capsuleFrame, capsule2Frame, -Eigen::Vector3d::UnitZ(), 0.5);
+  expectContact(capsule2Frame, capsuleFrame, Eigen::Vector3d::UnitZ(), 0.5);
+
   capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.7));
   expectContact(capsuleFrame, planeFrame, Eigen::Vector3d::UnitZ(), 0.05);
   expectContact(planeFrame, capsuleFrame, -Eigen::Vector3d::UnitZ(), 0.05);

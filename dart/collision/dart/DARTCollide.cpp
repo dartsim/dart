@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <limits>
 #include <memory>
 
@@ -2163,6 +2164,40 @@ SegmentClosestPointResult closestPointsBetweenSegments(
   return result;
 }
 
+Eigen::Vector3d chooseCapsuleCapsuleFallbackNormal(
+    const CollisionObject* o1,
+    const CollisionObject* o2,
+    const Eigen::Isometry3d& transform1,
+    const Eigen::Isometry3d& transform2)
+{
+  constexpr double epsilon = 1e-10;
+
+  const Eigen::Vector3d centerDelta
+      = transform1.translation() - transform2.translation();
+  if (centerDelta.squaredNorm() > epsilon * epsilon)
+    return centerDelta.normalized();
+
+  const Eigen::Vector3d axis1 = transform1.linear().col(2).normalized();
+  const Eigen::Vector3d axis2 = transform2.linear().col(2).normalized();
+  const Eigen::Vector3d axisCross = axis1.cross(axis2);
+  if (axisCross.squaredNorm() > epsilon * epsilon)
+    return axisCross.normalized();
+
+  const Eigen::Vector3d reference = std::abs(axis1.x()) < 0.9
+                                        ? Eigen::Vector3d::UnitX()
+                                        : Eigen::Vector3d::UnitY();
+  Eigen::Vector3d normal = axis1.cross(reference);
+  if (normal.squaredNorm() <= epsilon * epsilon)
+    normal = Eigen::Vector3d::UnitZ();
+  else
+    normal.normalize();
+
+  if (std::less<const CollisionObject*>()(o2, o1))
+    normal = -normal;
+
+  return normal;
+}
+
 Eigen::Vector3d closestPointOnBox(
     const Eigen::Vector3d& point, const Eigen::Vector3d& halfExtents)
 {
@@ -2358,7 +2393,7 @@ int collideCapsulesImpl(
   const double penetration = sumRadii - dist;
   Eigen::Vector3d normal;
   if (dist < 1e-10)
-    normal = Eigen::Vector3d::UnitZ();
+    normal = chooseCapsuleCapsuleFallbackNormal(o1, o2, transform1, transform2);
   else
     normal = (closest.point1 - closest.point2) / dist;
   const Eigen::Vector3d contactPoint
