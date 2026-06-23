@@ -499,7 +499,8 @@ void World::step(bool _resetCommand)
     DART_PROFILE_SCOPED_N("World::step - All-resting fast path");
     mTime += mTimeStep;
     mFrame++;
-    updateLastStepRestingWorldState();
+    if (!mLastStepRestingWorldStateValid)
+      updateLastStepRestingWorldState();
     return;
   }
 

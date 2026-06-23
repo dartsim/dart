@@ -4,8 +4,25 @@
 
 Bottom line: #3129 is merged. The active stack is now in the DART-native
 collision and DART 6 constraint hot path. The current local candidate is
-`perf/dart6-contact-build-fast-path`, stacked on #3150
-`perf/dart6-native-disjoint-plane-merge`.
+`perf/dart6-resting-state-snapshot-cache`, stacked on #3151
+`perf/dart6-contact-build-fast-path`.
+
+The latest candidate targets the default settled-scene path. Once the original
+3k issue scene has fully gone to sleep, the all-resting fast path no longer
+rebuilds the last-step per-skeleton resting snapshot every frame when that
+snapshot is already valid. The all-resting kinematic snapshot remains the
+correctness guard for pose, velocity, collision-option, collision-filter, and
+structural edits.
+
+Default sleeping issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, 3000 steps, text profile:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3151 parent | `10.4306` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`; all-resting fast path `228.74 ms` |
+| Current snapshot-cache candidate | `46.5797` | finite, same hash, resting `3003 / 3003`, contacts `0`; all-resting fast path `107.03 us` |
 
 #3147 targets active contact-construction cost by reusing exact built-in default
 `ContactConstraint` objects across steps, computing local contact points without
