@@ -2136,6 +2136,24 @@ enum class FclContactGeometryOrder
   Unknown
 };
 
+FclContactGeometryOrder inferSharedGeometryContactOrder(
+    const fcl::Contact& fclContact,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2)
+{
+  const auto separation = fcl::getTranslation(o2->getTransform())
+                          - fcl::getTranslation(o1->getTransform());
+  if (fcl::length2(separation) <= std::numeric_limits<double>::epsilon()
+      || fcl::length2(fclContact.normal)
+             <= Contact::getNormalEpsilonSquared()) {
+    return FclContactGeometryOrder::Unknown;
+  }
+
+  return separation.dot(fclContact.normal) < 0.0
+             ? FclContactGeometryOrder::MatchesSwapped
+             : FclContactGeometryOrder::MatchesInput;
+}
+
 FclContactGeometryOrder getContactGeometryOrder(
     const fcl::Contact& fclContact,
     fcl::CollisionObject* o1,
@@ -2150,10 +2168,16 @@ FclContactGeometryOrder getContactGeometryOrder(
   if (!geom1 || !geom2)
     return FclContactGeometryOrder::Unknown;
 
-  if (fclContact.o1 == geom1 && fclContact.o2 == geom2)
+  const bool matchesInput = fclContact.o1 == geom1 && fclContact.o2 == geom2;
+  const bool matchesSwapped = fclContact.o1 == geom2 && fclContact.o2 == geom1;
+
+  if (geom1 == geom2 && matchesInput)
+    return inferSharedGeometryContactOrder(fclContact, o1, o2);
+
+  if (matchesInput)
     return FclContactGeometryOrder::MatchesInput;
 
-  if (geom1 != geom2 && fclContact.o1 == geom2 && fclContact.o2 == geom1)
+  if (matchesSwapped)
     return FclContactGeometryOrder::MatchesSwapped;
 
   return FclContactGeometryOrder::Unknown;
