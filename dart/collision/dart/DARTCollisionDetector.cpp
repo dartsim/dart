@@ -301,7 +301,8 @@ struct BroadphaseScratch
   std::vector<std::size_t> parallelPairIndices;
   std::vector<CollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
-  std::vector<std::size_t> contactSelectionCandidates;
+  // Remaining contacts ordered by the same representative-contact priority.
+  std::vector<std::size_t> contactSelectionReserve;
   std::vector<std::size_t> selectedContactIndices;
   CollisionResult pairResult;
   ContactPointIndex contactPointIndex;
@@ -1239,11 +1240,13 @@ bool isClose(
 void selectContactIndices(
     const CollisionResult& pairResult,
     std::size_t maxContacts,
-    std::vector<std::size_t>& candidates,
+    std::vector<std::size_t>& reserve,
     std::vector<std::size_t>& selected)
 {
   selected.clear();
-  candidates.clear();
+  reserve.clear();
+
+  auto& candidates = reserve;
 
   if (maxContacts == 0u)
     return;
@@ -1329,7 +1332,9 @@ void selectContactIndices(
     selected.push_back(selectBestRemainingCandidate(selected));
   }
 
-  candidates.assign(
+  // Keep the remaining unique contacts in the same depth/spread priority order
+  // for duplicate backfill in postProcess().
+  reserve.assign(
       selected.begin() + static_cast<std::ptrdiff_t>(cappedSelectionSize),
       selected.end());
   selected.resize(cappedSelectionSize);
@@ -1377,7 +1382,7 @@ void postProcess(
     selectContactIndices(
         pairResult,
         selectionLimit,
-        scratch.contactSelectionCandidates,
+        scratch.contactSelectionReserve,
         scratch.selectedContactIndices);
 
     std::size_t numPairContacts = 0u;
@@ -1395,7 +1400,7 @@ void postProcess(
         return;
     }
 
-    for (const auto contactIndex : scratch.contactSelectionCandidates) {
+    for (const auto contactIndex : scratch.contactSelectionReserve) {
       if (!tryAppendContact(contactIndex))
         return;
     }
