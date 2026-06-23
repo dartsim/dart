@@ -50,6 +50,7 @@
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
 #include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -138,6 +139,7 @@ struct Options
   std::optional<double> sleepAngularThreshold;
   std::optional<double> sleepTimeUntilSleep;
   std::optional<std::size_t> generatedObjects;
+  bool generateCapsules = false;
   double generatedSpacing = kDefaultGeneratedSpacing;
   std::optional<std::string> dumpFinalScenePath;
   std::optional<std::size_t> maxContacts;
@@ -274,6 +276,8 @@ void printUsage(const std::string& programName)
       << "  --sleep-time T            Override quiet dwell time before sleep.\n"
       << "  --generate-objects N      Generate an in-memory 3-lane "
          "sphere/box/cylinder scene instead of loading SDF.\n"
+      << "  --generate-capsules N     Generate an in-memory capsule-only "
+         "scene instead of loading SDF.\n"
       << "  --generated-spacing X     Center spacing for generated objects; "
          "default 1.1 m.\n"
       << "  --dump-final-scene PATH   Write final collision geometry JSONL "
@@ -365,6 +369,22 @@ BoxedLcpSolverKind parseBoxedLcpSolver(const std::string& value)
   throw std::invalid_argument("Invalid --lcp-solver value: " + value);
 }
 
+void normalizeGeneratedCapsuleCollisionOptions(Options& options)
+{
+  if (!options.generateCapsules)
+    return;
+
+  if (options.collisionEngine == CollisionEngine::Default)
+    options.collisionEngine = CollisionEngine::Dart;
+
+  if (options.collisionEngine == CollisionEngine::Fcl
+      || options.primitiveShapes) {
+    throw std::invalid_argument(
+        "--generate-capsules cannot use the DART 6 FCL backend because FCL "
+        "capsule geometry is not wired through this backend");
+  }
+}
+
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
@@ -423,6 +443,10 @@ Options parseOptions(int argc, char* argv[])
       options.sleepTimeUntilSleep = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--generate-objects" || arg == "--num-objects") {
       options.generatedObjects = parseSize(needValue(arg), arg);
+      options.generateCapsules = false;
+    } else if (arg == "--generate-capsules") {
+      options.generatedObjects = parseSize(needValue(arg), arg);
+      options.generateCapsules = true;
     } else if (arg == "--generated-spacing") {
       options.generatedSpacing = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--dump-final-scene") {
@@ -464,18 +488,20 @@ Options parseOptions(int argc, char* argv[])
   }
 
   if (options.generatedObjects.has_value() && *options.generatedObjects == 0) {
-    throw std::invalid_argument("--generate-objects must be positive");
+    throw std::invalid_argument("Generated object count must be positive");
   }
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
-        "--generate-objects cannot be combined with an SDF path");
+        "Generated scenes cannot be combined with an SDF path");
   }
 
   if (options.sdfPlaneShapes && options.generatedObjects.has_value()) {
     throw std::invalid_argument(
         "--sdf-plane-shapes requires an SDF input scene");
   }
+
+  normalizeGeneratedCapsuleCollisionOptions(options);
 
   if (options.guiCaptureExerciseWidget && !options.guiCapturePath.has_value()) {
     throw std::invalid_argument(
@@ -546,8 +572,16 @@ void setShapeInertia(
   body->setInertia(inertia);
 }
 
-GeneratedShapeSpec makeGeneratedShape(std::size_t index)
+GeneratedShapeSpec makeGeneratedShape(std::size_t index, bool capsulesOnly)
 {
+  if (capsulesOnly) {
+    return {
+        std::make_shared<dart::dynamics::CapsuleShape>(0.5, 1.0),
+        1.0,
+        Eigen::Vector4d(0.65, 0.15, 1.0, 1.0),
+        "capsule"};
+  }
+
   switch (index % 3u) {
     case 0u:
       return {
@@ -574,17 +608,20 @@ GeneratedShapeSpec makeGeneratedShape(std::size_t index)
 dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
 {
   const std::size_t numObjects = *options.generatedObjects;
-  constexpr std::size_t kLanes = 3u;
+  const std::size_t lanes = options.generateCapsules ? 1u : 3u;
 
-  auto world = dart::simulation::World::create("generated_3lane_shapes");
+  auto world = dart::simulation::World::create(
+      options.generateCapsules ? "generated_capsules"
+                               : "generated_3lane_shapes");
   world->setTimeStep(0.001);
   if (auto detector = makeCollisionDetector(options))
     world->getConstraintSolver()->setCollisionDetector(detector);
 
-  const std::size_t rows = (numObjects + kLanes - 1u) / kLanes;
+  const std::size_t rows = (numObjects + lanes - 1u) / lanes;
   const double floorLength = std::max(
       10.0, (static_cast<double>(rows) + 2.0) * options.generatedSpacing);
-  const double floorWidth = std::max(10.0, 4.0 * options.generatedSpacing);
+  const double floorWidth = std::max(
+      10.0, static_cast<double>(lanes + 1u) * options.generatedSpacing);
   const double floorCenterX = rows > 0 ? 0.5 * static_cast<double>(rows - 1u)
                                              * options.generatedSpacing
                                        : 0.0;
@@ -609,9 +646,9 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
   world->addSkeleton(ground);
 
   for (std::size_t i = 0; i < numObjects; ++i) {
-    const std::size_t row = i / kLanes;
-    const std::size_t lane = i % kLanes;
-    const auto spec = makeGeneratedShape(lane);
+    const std::size_t row = i / lanes;
+    const std::size_t lane = i % lanes;
+    const auto spec = makeGeneratedShape(lane, options.generateCapsules);
 
     auto skeleton = dart::dynamics::Skeleton::create(
         std::string(spec.namePrefix) + "_" + std::to_string(i));
@@ -628,7 +665,8 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
     transform.translation() = Eigen::Vector3d(
         static_cast<double>(row) * options.generatedSpacing,
-        (static_cast<double>(lane) - 1.0) * options.generatedSpacing,
+        (static_cast<double>(lane) - 0.5 * static_cast<double>(lanes - 1u))
+            * options.generatedSpacing,
         spec.centerHeight);
     dart::dynamics::FreeJoint::setTransformOf(body, transform);
 
@@ -873,6 +911,9 @@ void writeShapeParameters(std::ostream& out, const dart::dynamics::Shape* shape)
     writeVector(out, box->getSize());
   } else if (const auto* sphere = dynamic_cast<const SphereShape*>(shape)) {
     out << ",\"primitive\":\"sphere\",\"radius\":" << sphere->getRadius();
+  } else if (const auto* capsule = dynamic_cast<const CapsuleShape*>(shape)) {
+    out << ",\"primitive\":\"capsule\",\"radius\":" << capsule->getRadius()
+        << ",\"height\":" << capsule->getHeight();
   } else if (const auto* cylinder = dynamic_cast<const CylinderShape*>(shape)) {
     out << ",\"primitive\":\"cylinder\",\"radius\":" << cylinder->getRadius()
         << ",\"height\":" << cylinder->getHeight();
@@ -1264,6 +1305,10 @@ void printWorldSummary(
   if (options.generatedObjects.has_value()) {
     std::cout << "  Generated mobile objects: " << *options.generatedObjects
               << "\n";
+    std::cout << "  Generated scene: "
+              << (options.generateCapsules ? "capsule-only"
+                                           : "sphere/box/cylinder")
+              << "\n";
     std::cout << "  Generated object spacing: " << options.generatedSpacing
               << " m\n";
   }
@@ -1593,7 +1638,9 @@ private:
     out << "pipeline DART 6, collision detector "
         << collisionEngineName(mOptions.collisionEngine);
     if (mOptions.generatedObjects.has_value())
-      out << ", generated objects " << *mOptions.generatedObjects;
+      out << ", generated "
+          << (mOptions.generateCapsules ? "capsules " : "objects ")
+          << *mOptions.generatedObjects;
     if (mOptions.dropHeight > 0.0)
       out << ", drop height " << mOptions.dropHeight << " m";
     out << "\n";
@@ -1788,7 +1835,7 @@ private:
     return options;
   }
 
-  bool replaceGeneratedScene(const Options& options, std::string* error)
+  bool replaceGeneratedScene(Options options, std::string* error)
   {
     if (!mViewer || !mNode || !mEventHandler) {
       if (error)
@@ -1797,6 +1844,7 @@ private:
     }
 
     try {
+      normalizeGeneratedCapsuleCollisionOptions(options);
       auto newWorld = createGeneratedWorld(options);
       applyOptions(newWorld, options);
       if (options.dropHeight > 0.0)
@@ -2236,8 +2284,10 @@ int main(int argc, char* argv[])
 
   dart::simulation::WorldPtr world;
   if (options.generatedObjects.has_value()) {
-    std::cout << "Generating in-memory 3-lane shape world with "
-              << *options.generatedObjects << " mobile objects\n";
+    std::cout << "Generating in-memory "
+              << (options.generateCapsules ? "capsule-only" : "3-lane shape")
+              << " world with " << *options.generatedObjects
+              << " mobile objects\n";
     world = createGeneratedWorld(options);
   } else {
     std::filesystem::path p(*options.sdfPath);
