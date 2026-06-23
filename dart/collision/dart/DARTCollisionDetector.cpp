@@ -74,6 +74,8 @@ public:
 
   void setWorkerCount(std::size_t workerCount)
   {
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
+
     if (workerCount == mWorkers.size())
       return;
 
@@ -96,6 +98,8 @@ public:
   {
     if (count == 0u)
       return;
+
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
 
     const std::size_t totalParticipants = std::min<std::size_t>(
         std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
@@ -216,6 +220,7 @@ private:
   }
 
   std::vector<std::thread> mWorkers;
+  std::mutex mSubmitMutex;
   std::mutex mMutex;
   std::condition_variable mTaskCv;
   std::condition_variable mDoneCv;
@@ -1270,6 +1275,46 @@ bool isPlaneShape(const CollisionObject* object)
 }
 
 //==============================================================================
+bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
+{
+  if (finiteEntry.object == nullptr)
+    return false;
+
+  const auto* dartObject
+      = static_cast<const DARTCollisionObject*>(finiteEntry.object);
+  const auto* shape = dartObject->getCachedShape();
+  if (shape == nullptr)
+    return false;
+
+  const auto& shapeType = dartObject->getCachedShapeType();
+  if (shapeType == dynamics::SphereShape::getStaticType()
+      || shapeType == dynamics::BoxShape::getStaticType()
+      || shapeType == dynamics::CylinderShape::getStaticType()
+      || shapeType == dynamics::CapsuleShape::getStaticType()) {
+    return true;
+  }
+
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(shape);
+    return ellipsoid->isSphere();
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool allFiniteEntriesHaveCachedPlaneCollisionPath(
+    const std::vector<BroadphaseEntry>& finiteEntries)
+{
+  for (const auto& finiteEntry : finiteEntries) {
+    if (!hasCachedPlaneCollisionPath(finiteEntry))
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
@@ -1367,10 +1412,12 @@ bool processFinitePlanePairs(
   constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
   const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
   const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
-  const bool canConsiderParallel = result != nullptr && threadPool != nullptr
-                                   && numCollisionThreads > 1u
-                                   && !contactCapCanShortCircuit
-                                   && pairCount >= kMinParallelFinitePlanePairs;
+  const bool allPairsHaveCachedPlaneCollisionPath
+      = allFiniteEntriesHaveCachedPlaneCollisionPath(finiteEntries);
+  const bool canConsiderParallel
+      = result != nullptr && threadPool != nullptr && numCollisionThreads > 1u
+        && !contactCapCanShortCircuit && allPairsHaveCachedPlaneCollisionPath
+        && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
 
   auto getPairEntries = [&](std::size_t pairIndex) {
