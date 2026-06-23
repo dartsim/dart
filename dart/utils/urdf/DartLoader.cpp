@@ -645,16 +645,11 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
           dynamics::GenericJoint<math::R3Space>::Properties(basicProperties)};
       if (jointAxis.norm() > 1e-9) {
         const Eigen::Vector3d axis = jointAxis.normalized();
-        if (axis.isApprox(Eigen::Vector3d::UnitZ())
-            || axis.isApprox(-Eigen::Vector3d::UnitZ())) {
+        if (axis.isApprox(Eigen::Vector3d::UnitZ())) {
           properties.setXYPlane();
-        } else if (
-            axis.isApprox(Eigen::Vector3d::UnitX())
-            || axis.isApprox(-Eigen::Vector3d::UnitX())) {
+        } else if (axis.isApprox(Eigen::Vector3d::UnitX())) {
           properties.setYZPlane();
-        } else if (
-            axis.isApprox(Eigen::Vector3d::UnitY())
-            || axis.isApprox(-Eigen::Vector3d::UnitY())) {
+        } else if (axis.isApprox(Eigen::Vector3d::UnitY())) {
           properties.setZXPlane();
         } else {
           const Eigen::Vector3d transAxis1 = axis.unitOrthogonal();

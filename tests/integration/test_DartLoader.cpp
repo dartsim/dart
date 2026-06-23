@@ -291,6 +291,44 @@ TEST(DartLoader, parsePlanarJointLimitsAndAxis)
 }
 
 //==============================================================================
+TEST(DartLoader, parsePlanarJointNegativeCardinalAxes)
+{
+  const auto checkAxis
+      = [](const std::string& axisString, const Eigen::Vector3d& axis) {
+          const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <axis xyz=")" + axisString + R"("/>
+      </joint>
+    </robot>
+  )";
+
+          DartLoader loader;
+          auto robot = loader.parseSkeletonString(urdfStr, "");
+          ASSERT_TRUE(robot);
+
+          auto* joint = dynamic_cast<dynamics::PlanarJoint*>(
+              robot->getJoint("planar_joint"));
+          ASSERT_TRUE(joint);
+
+          EXPECT_TRUE(joint->getRotationalAxis().isApprox(axis));
+          EXPECT_TRUE(joint->getTranslationalAxis1()
+                          .cross(joint->getTranslationalAxis2())
+                          .isApprox(axis));
+          EXPECT_NEAR(joint->getTranslationalAxis1().dot(axis), 0.0, 1e-12);
+          EXPECT_NEAR(joint->getTranslationalAxis2().dot(axis), 0.0, 1e-12);
+        };
+
+  checkAxis("-1 0 0", -Eigen::Vector3d::UnitX());
+  checkAxis("0 -1 0", -Eigen::Vector3d::UnitY());
+  checkAxis("0 0 -1", -Eigen::Vector3d::UnitZ());
+}
+
+//==============================================================================
 TEST(DartLoader, parsePlanarJointArbitraryAxis)
 {
   // clang-format off
