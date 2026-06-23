@@ -131,8 +131,12 @@ nanobind) — see the recipe in section 2.
   - **Public API change** (return type of `getMesh()`): acceptable in the
     unreleased DART 6.x line, but have the reviewer confirm ABI/source-compat
     expectations.
-  - Gate: build + `dynamics` (MeshShape) focused unit tests. No collision/
-    constraint/parser surface, so the gz gate is not required.
+  - Gate: build + `dynamics` (MeshShape) focused unit tests **+ gz gate**
+    (`pixi run -e gazebo test-gz`). Not a collision/constraint/parser surface,
+    but `getMesh()`/`MeshHandle` is an **installed public header** that
+    gz-physics builds against (the PR ships `scripts/patch_gz_physics.py`), so
+    `docs/ai/verification.md` requires the Gazebo gate for installed-header
+    changes that can affect gz-physics.
 - [ ] **[#2247](https://github.com/dartsim/dart/pull/2247) — mimic/coupler
   constraint correctness (ERP + force-mixing/limit-clamp)** *(gz mimic repro;
   most surgical — must split bug fix from feature)*

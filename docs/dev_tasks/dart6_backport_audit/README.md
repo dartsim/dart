@@ -64,7 +64,7 @@ queue.
 | [#3115](https://github.com/dartsim/dart/pull/3115) / [#3117](https://github.com/dartsim/dart/pull/3117) | compat-critical bug | Skip non-finite contacts and validate shape dimensions | On `main` (#3115) **and** `release-6.19` (#3117 twin); **missing from `release-6.20`** | Forward-port the #3117 LTS twin; constraint surface (gz gate) |
 | [#2233](https://github.com/dartsim/dart/pull/2233) | compat-critical bug | URDF multidof joint limits + vector-form `GenericJoint` setters | `main` only; **missing from `release-6.20`** | Backport; parser surface (gz gate) |
 | [#2271](https://github.com/dartsim/dart/pull/2271) | compat-critical bug | Bullet phantom / negative-penetration-depth contact filter (new `BulletContact.hpp`) | `main` only; **missing from `release-6.20`** | Backport; collision surface (gz gate) |
-| [#2285](https://github.com/dartsim/dart/pull/2285) | compat-critical bug | aiScene ownership via `shared_ptr` custom deleters (`makeMeshHandle`) | `main` only; **missing from `release-6.20`** | Backport; public-API change (`getMesh()` return type) |
+| [#2285](https://github.com/dartsim/dart/pull/2285) | compat-critical bug | aiScene ownership via `shared_ptr` custom deleters (`makeMeshHandle`) | `main` only; **missing from `release-6.20`** | Backport; public installed-header API change (`getMesh()` return type) — gz gate |
 | [#2247](https://github.com/dartsim/dart/pull/2247) | compat-critical bug | mimic-constraint correctness (ERP + force-mixing/limit-clamp) — bug fix only, split from the #2212 feature | `main` only; **missing from `release-6.20`** | Backport the bug fix only; constraint surface (gz gate) |
 
 ### CI/tooling
@@ -236,7 +236,10 @@ Each backport PR carries its own gate, sized to the touched surface:
 
 - Build + the focused unit test(s) for the touched module.
 - The gz-physics gate for any collision/constraint/parser/default-solver
-  surface (so #2339, #3115/#3117, #2233, #2271, #2247 and #2338 all need it):
+  surface — **or any installed/public-header change that can affect gz-physics**
+  (`docs/ai/verification.md`) — so #2339, #3115/#3117, #2233, #2271, #2247,
+  #2338, and **#2285** (installed `MeshShape::getMesh` API change; the PR ships
+  `scripts/patch_gz_physics.py`) all need it:
 
   ```bash
   N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
