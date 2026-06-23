@@ -283,6 +283,7 @@ bool DARTCollisionDetector::collide(
     return false;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
+  casted->updateEngineData();
   const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
@@ -406,6 +407,9 @@ bool DARTCollisionDetector::collide(
 
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
+
+  casted1->updateEngineData();
+  casted2->updateEngineData();
 
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
@@ -947,7 +951,10 @@ bool checkPair(
   pairResult.clear();
 
   // Perform narrow-phase detection
-  collide(o1, o2, pairResult);
+  collide(
+      static_cast<DARTCollisionObject*>(o1),
+      static_cast<DARTCollisionObject*>(o2),
+      pairResult);
 
   // Early return for binary check
   if (!result)
@@ -1031,8 +1038,7 @@ bool isPlaneShape(const CollisionObject* object)
   if (!object)
     return false;
 
-  const auto& shape = object->getShape();
-  return shape && shape->getType() == dynamics::PlaneShape::getStaticType();
+  return static_cast<const DARTCollisionObject*>(object)->isCachedPlaneShape();
 }
 
 //==============================================================================
@@ -1045,18 +1051,16 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!object || entry.plane)
     return entry;
 
-  const auto& shape = object->getShape();
-  if (!shape)
+  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  if (!dartObject->getCachedShape())
     return entry;
 
-  const auto& localBox = shape->getBoundingBox();
+  const auto& localMin = dartObject->getCachedLocalBoundsMin();
+  const auto& localMax = dartObject->getCachedLocalBoundsMax();
+  if (!dartObject->hasFiniteCachedLocalBounds())
+    return entry;
+
   const auto& transform = object->getTransform();
-  const auto& localMin = localBox.getMin();
-  const auto& localMax = localBox.getMax();
-
-  if (!localMin.allFinite() || !localMax.allFinite())
-    return entry;
-
   entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
   entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
 
