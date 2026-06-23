@@ -236,6 +236,7 @@ namespace {
 struct BroadphaseEntry
 {
   CollisionObject* object{nullptr};
+  Eigen::Isometry3d transform{Eigen::Isometry3d::Identity()};
   Eigen::Vector3d min{Eigen::Vector3d::Zero()};
   Eigen::Vector3d max{Eigen::Vector3d::Zero()};
   bool finite{false};
@@ -1275,7 +1276,12 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   entry.object = object;
   entry.plane = isPlaneShape(object);
 
-  if (!object || entry.plane)
+  if (!object)
+    return entry;
+
+  entry.transform = object->getTransform();
+
+  if (entry.plane)
     return entry;
 
   const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
@@ -1287,7 +1293,6 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!dartObject->hasFiniteCachedLocalBounds())
     return entry;
 
-  const auto& transform = object->getTransform();
   entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
   entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
 
@@ -1298,7 +1303,7 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
             x ? localMax.x() : localMin.x(),
             y ? localMax.y() : localMin.y(),
             z ? localMax.z() : localMin.z());
-        const Eigen::Vector3d worldCorner = transform * localCorner;
+        const Eigen::Vector3d worldCorner = entry.transform * localCorner;
         entry.min = entry.min.cwiseMin(worldCorner);
         entry.max = entry.max.cwiseMax(worldCorner);
       }
@@ -1384,6 +1389,8 @@ bool processFinitePlanePairs(
     const auto pairCollision = collidePlaneShape(
         static_cast<DARTCollisionObject*>(planeEntry->object),
         static_cast<DARTCollisionObject*>(finiteEntry->object),
+        planeEntry->transform,
+        finiteEntry->transform,
         planeFirst,
         scratch.pairResult);
     if (result != nullptr)
@@ -1428,6 +1435,8 @@ bool processFinitePlanePairs(
       collidePlaneShape(
           static_cast<DARTCollisionObject*>(planeEntry->object),
           static_cast<DARTCollisionObject*>(finiteEntry->object),
+          planeEntry->transform,
+          finiteEntry->transform,
           planeFirst,
           pairResult);
       scratch.parallelPairCollisions[workIndex]

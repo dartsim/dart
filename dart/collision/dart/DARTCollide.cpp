@@ -3802,6 +3802,8 @@ int collide(
 int collidePlaneShape(
     DARTCollisionObject* planeObject,
     DARTCollisionObject* otherObject,
+    const Eigen::Isometry3d& planeTransform,
+    const Eigen::Isometry3d& otherTransform,
     bool planeFirst,
     CollisionResult& result)
 {
@@ -3821,8 +3823,6 @@ int collidePlaneShape(
       = static_cast<const dynamics::PlaneShape*>(cachedPlaneShape);
 
   const auto& otherType = otherObject->getCachedShapeType();
-  const auto& planeTransform = planeObject->getTransform();
-  const auto& otherTransform = otherObject->getTransform();
   const auto& planeNormal = planeShape->getNormal();
   const auto planeOffset = planeShape->getOffset();
 
@@ -3962,6 +3962,24 @@ int collidePlaneShape(
 
   return planeFirst ? collide(planeObject, otherObject, result)
                     : collide(otherObject, planeObject, result);
+}
+
+//==============================================================================
+int collidePlaneShape(
+    DARTCollisionObject* planeObject,
+    DARTCollisionObject* otherObject,
+    bool planeFirst,
+    CollisionResult& result)
+{
+  const auto& planeTransform = planeObject->getTransform();
+  const auto& otherTransform = otherObject->getTransform();
+  return collidePlaneShape(
+      planeObject,
+      otherObject,
+      planeTransform,
+      otherTransform,
+      planeFirst,
+      result);
 }
 
 //==============================================================================
