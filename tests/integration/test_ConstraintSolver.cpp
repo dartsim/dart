@@ -476,6 +476,39 @@ std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
 }
 
 //==============================================================================
+std::shared_ptr<World> createManySingleFreeBodyContactWorld(
+    std::size_t numBoxes, std::size_t numThreads)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  world->setNumSimulationThreads(numThreads);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->getCollisionOption().maxNumContacts = numBoxes * 4u;
+  solver->getCollisionOption().maxNumContactsPerPair = 4u;
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  constexpr std::size_t kColumns = 16u;
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    const auto row = i / kColumns;
+    const auto column = i % kColumns;
+    const Eigen::Vector3d position(
+        static_cast<double>(column) * 2.0,
+        static_cast<double>(row) * 2.0,
+        0.49);
+    world->addSkeleton(createSolverTestBox(
+        "box_" + std::to_string(i), Eigen::Vector3d::Ones(), position, true));
+  }
+
+  return world;
+}
+
+//==============================================================================
 TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
 {
   auto directWorld = createSingleFreeBodyContactWorld(false);
@@ -515,6 +548,52 @@ TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
       legacyBody->getWorldTransform().matrix(), 1e-12));
   EXPECT_TRUE(directBody->getSpatialVelocity().isApprox(
       legacyBody->getSpatialVelocity(), 1e-12));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
+{
+  constexpr std::size_t kNumBoxes = 160u;
+  auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  auto threadedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
+
+  for (std::size_t i = 0u; i < 20u; ++i) {
+    serialWorld->step();
+    threadedWorld->step();
+  }
+
+  const auto& serialContacts
+      = serialWorld->getConstraintSolver()->getLastCollisionResult();
+  const auto& threadedContacts
+      = threadedWorld->getConstraintSolver()->getLastCollisionResult();
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
+
+  for (std::size_t i = 0u; i < kNumBoxes; ++i) {
+    const auto name = "box_" + std::to_string(i);
+    const auto serialBox = serialWorld->getSkeleton(name);
+    const auto threadedBox = threadedWorld->getSkeleton(name);
+    ASSERT_NE(nullptr, serialBox);
+    ASSERT_NE(nullptr, threadedBox);
+
+    EXPECT_TRUE(
+        serialBox->getPositions().isApprox(threadedBox->getPositions(), 1e-12))
+        << name;
+    EXPECT_TRUE(serialBox->getVelocities().isApprox(
+        threadedBox->getVelocities(), 1e-12))
+        << name;
+
+    const auto* serialBody = serialBox->getBodyNode(0);
+    const auto* threadedBody = threadedBox->getBodyNode(0);
+    ASSERT_NE(nullptr, serialBody);
+    ASSERT_NE(nullptr, threadedBody);
+    EXPECT_TRUE(serialBody->getWorldTransform().matrix().isApprox(
+        threadedBody->getWorldTransform().matrix(), 1e-12))
+        << name;
+    EXPECT_TRUE(serialBody->getSpatialVelocity().isApprox(
+        threadedBody->getSpatialVelocity(), 1e-12))
+        << name;
+  }
 }
 
 //==============================================================================
