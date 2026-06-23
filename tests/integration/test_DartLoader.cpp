@@ -515,6 +515,166 @@ TEST(DartLoader, parseFloatingJointLimits)
 }
 
 //==============================================================================
+TEST(DartLoader, parseFloatingJointLowerLimitOnly)
+{
+  // Only a lower bound (lower > 0) is provided. The upper bound stays unbounded
+  // (+inf) and the rest/initial position collapses to the one-sided lower
+  // bound.
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="floating_example">
+      <link name="base"/>
+      <link name="child"/>
+      <joint name="floating_joint" type="floating">
+        <parent link="base"/>
+        <child link="child"/>
+        <limit lower="0.3" velocity="1.1" effort="2.2"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::FreeJoint*>(robot->getJoint("floating_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd lower
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 0.3);
+
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(lower));
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(i), dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getRestPositions().isApprox(lower));
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(lower));
+}
+
+//==============================================================================
+TEST(DartLoader, parseFloatingJointUpperLimitOnly)
+{
+  // Only an upper bound (upper < 0) is provided. The lower bound stays
+  // unbounded (-inf) and the rest/initial position collapses to the one-sided
+  // upper bound.
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="floating_example">
+      <link name="base"/>
+      <link name="child"/>
+      <joint name="floating_joint" type="floating">
+        <parent link="base"/>
+        <child link="child"/>
+        <limit upper="-0.3" velocity="1.1" effort="2.2"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::FreeJoint*>(robot->getJoint("floating_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd upper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), -0.3);
+
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(upper));
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(i), -dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getRestPositions().isApprox(upper));
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(upper));
+}
+
+//==============================================================================
+TEST(DartLoader, parsePlanarJointLowerLimitOnly)
+{
+  // Planar-joint counterpart of parseFloatingJointLowerLimitOnly: only a lower
+  // bound (lower > 0) is provided.
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <limit lower="0.3" velocity="2.5" effort="3.5"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd lower
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), 0.3);
+
+  EXPECT_TRUE(joint->getPositionLowerLimits().isApprox(lower));
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionUpperLimit(i), dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getRestPositions().isApprox(lower));
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(lower));
+}
+
+//==============================================================================
+TEST(DartLoader, parsePlanarJointUpperLimitOnly)
+{
+  // Planar-joint counterpart of parseFloatingJointUpperLimitOnly: only an upper
+  // bound (upper < 0) is provided.
+  // clang-format off
+  const std::string urdfStr = R"(
+    <robot name="planar_example">
+      <link name="base"/>
+      <link name="tip"/>
+      <joint name="planar_joint" type="planar">
+        <parent link="base"/>
+        <child link="tip"/>
+        <limit upper="-0.3" velocity="2.5" effort="3.5"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+    </robot>
+  )";
+  // clang-format on
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+  ASSERT_TRUE(joint);
+
+  const Eigen::VectorXd upper
+      = Eigen::VectorXd::Constant(joint->getNumDofs(), -0.3);
+
+  EXPECT_TRUE(joint->getPositionUpperLimits().isApprox(upper));
+  for (auto i = 0u; i < joint->getNumDofs(); ++i) {
+    EXPECT_DOUBLE_EQ(
+        joint->getPositionLowerLimit(i), -dart::math::constantsd::inf());
+  }
+  EXPECT_TRUE(joint->getRestPositions().isApprox(upper));
+  EXPECT_TRUE(joint->getInitialPositions().isApprox(upper));
+}
+
+//==============================================================================
 TEST(DartLoader, parseFloatingJointEffortVelocityOnlyKeepsPositionUnbounded)
 {
   // clang-format off
