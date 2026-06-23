@@ -2,23 +2,16 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged, and the active DART-native performance stack is
-#3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, #3139
-`perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, #3141
-`perf/dart6-native-scratch-result-cache`, #3142
-`perf/dart6-single-reactive-solve-fast-path`, and #3143
-`perf/dart6-native-shape-kind-dispatch`; #3144
-`perf/dart6-native-contact-merge-grid` is open on top. The next local candidate
-is `perf/dart6-resting-velocity-version`, stacked on #3144.
+Bottom line: #3129 is merged. #3146
+`perf/dart6-resting-velocity-version` is open on top of the active
+DART-native stack through #3144, and the current local candidate is
+`perf/dart6-reuse-default-contact-constraints` stacked on #3146.
 
-The current local candidate targets the settled-scene hot path rather than the
-active collision path. It tracks externally visible joint-velocity writes with a
-global generation counter so the cached all-resting fast path can skip the
-per-step scan over every mobile skeleton DOF. Internal integration and
-constraint-applied velocity updates keep using the normal dirty-velocity path
-without incrementing that external-edit counter.
+#3146 targets the settled-scene hot path by tracking explicit joint-velocity
+edits with a global generation counter. The current local candidate targets the
+remaining active contact-construction cost by reusing exact built-in default
+`ContactConstraint` objects across steps. Custom contact-surface handlers stay
+on the existing construction path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -27,16 +20,18 @@ dynamics, `--world-threads 16`, `--max-contacts 12000`,
 
 | Run | RTF | Final state |
 | --- | ---: | --- |
-| #3144 parent, default deactivation, 3000 steps | `1.95331` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Current candidate, default deactivation, 3000 steps | `10.4855` | finite, same hash, resting `3003 / 3003`, contacts `0` |
-| Current candidate, default deactivation, text profile | `10.7853` | finite, same hash; readiness check `1.772 ms` over `2998` calls |
-| Current candidate, deactivation disabled, 300 active steps | `0.0873215` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3146 parent, default deactivation, 3000 steps | `10.4855` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, 3000 steps | `10.5257` | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| #3146 parent, deactivation disabled, 300 active steps, text profile | `0.0923224` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `build contact constraints` `717.46 ms` |
+| Current candidate, deactivation disabled, 300 active steps, text profile | `0.0919062` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `633.40 ms` |
+| Current candidate, deactivation disabled, 300 active steps, no profile | `0.0919161` | finite, same hash, contacts `5005`, pairs `3003` |
 
-The settled scene clears the target comfortably with identical consumed final
-state. The no-sleep active spot-check preserves the active final hash and
-contact counts, so the velocity-generation guard does not change active
-physics; active collision and constraint work remains the stress path for the
-next native-collision improvements.
+The settled scene remains dominated by the #3146 all-resting fast path. The
+current candidate preserves both consumed final-state hashes and trims the
+measured active contact-construction scope by about 12% in the text profiler
+(`717.46 ms` to `633.40 ms`). Whole-run active RTF remains noisy and dominated
+by collision, constraint solving, and integration; those stay the stress paths
+for the next native-collision improvements.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,

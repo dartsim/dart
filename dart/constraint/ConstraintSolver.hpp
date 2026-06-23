@@ -321,6 +321,9 @@ protected:
   /// Contact constraints those are automatically created
   std::vector<ContactConstraintPtr> mContactConstraints;
 
+  /// Previous-step default contact constraints available for reuse.
+  std::vector<ContactConstraintPtr> mReusableContactConstraints;
+
   /// Soft contact constraints those are automatically created
   std::vector<SoftContactConstraintPtr> mSoftContactConstraints;
 

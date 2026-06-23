@@ -125,7 +125,7 @@ ContactConstraint::ContactConstraint(
     mTimeStep(timeStep),
     mBodyNodeA(getContactBodyNode(contact.collisionObject1)),
     mBodyNodeB(getContactBodyNode(contact.collisionObject2)),
-    mContact(contact),
+    mContact(&contact),
     mFirstFrictionalDirection(DART_DEFAULT_FRICTION_DIR),
     mPrimaryFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
     mSecondaryFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
@@ -138,6 +138,48 @@ ContactConstraint::ContactConstraint(
     mAppliedImpulseIndex(dynamics::INVALID_INDEX),
     mIsBounceOn(false),
     mActive(false)
+{
+  initialize(contactSurfaceParams);
+}
+
+//==============================================================================
+void ContactConstraint::reset(
+    collision::Contact& contact,
+    double timeStep,
+    const ContactSurfaceParams& contactSurfaceParams)
+{
+  mDim = 0u;
+  mTimeStep = timeStep;
+  mBodyNodeA = getContactBodyNode(contact.collisionObject1);
+  mBodyNodeB = getContactBodyNode(contact.collisionObject2);
+  mSkeletonA = nullptr;
+  mSkeletonB = nullptr;
+  mIsReactiveA = false;
+  mIsReactiveB = false;
+  mSkipRelVelocityA = false;
+  mSkipRelVelocityB = false;
+  mSingleReactiveBodyNode = nullptr;
+  mSingleReactiveSkeleton = nullptr;
+  mContact = &contact;
+  mFirstFrictionalDirection = DART_DEFAULT_FRICTION_DIR;
+  mPrimaryFrictionCoeff = DART_DEFAULT_FRICTION_COEFF;
+  mSecondaryFrictionCoeff = DART_DEFAULT_FRICTION_COEFF;
+  mPrimarySlipCompliance = DART_DEFAULT_SLIP_COMPLIANCE;
+  mSecondarySlipCompliance = DART_DEFAULT_SLIP_COMPLIANCE;
+  mRestitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF;
+  mContactSurfaceMotionVelocity = DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY;
+  mIsSelfCollision = false;
+  mIsFrictionOn = true;
+  mAppliedImpulseIndex = dynamics::INVALID_INDEX;
+  mIsBounceOn = false;
+  mActive = false;
+
+  initialize(contactSurfaceParams);
+}
+
+//==============================================================================
+void ContactConstraint::initialize(
+    const ContactSurfaceParams& contactSurfaceParams)
 {
   if (!hasValidBodyNodes()) {
     dtwarn << "[ContactConstraint] Ignoring contact with a null collision "
@@ -226,7 +268,7 @@ ContactConstraint::ContactConstraint(
     Eigen::Vector3d bodyPointA;
     Eigen::Vector3d bodyPointB;
 
-    collision::Contact& ct = mContact;
+    collision::Contact& ct = *mContact;
 
     // TODO(JS): Assumed that the number of tangent basis is 2.
     mTangentBasis = getTangentBasisMatrixODE(ct.normal);
@@ -301,7 +343,7 @@ ContactConstraint::ContactConstraint(
       mSpatialNormalB.setZero();
 #endif
 
-    collision::Contact& ct = mContact;
+    collision::Contact& ct = *mContact;
 
     if (!mSkipRelVelocityA) {
       const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
@@ -493,7 +535,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     // Bouncing
     //------------------------------------------------------------------------
     // A. Penetration correction
-    double bouncingVelocity = mContact.penetrationDepth - mErrorAllowance;
+    double bouncingVelocity = mContact->penetrationDepth - mErrorAllowance;
     if (bouncingVelocity < 0.0) {
       bouncingVelocity = 0.0;
     } else {
@@ -545,7 +587,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     // Bouncing
     //------------------------------------------------------------------------
     // A. Penetration correction
-    double bouncingVelocity = mContact.penetrationDepth - DART_ERROR_ALLOWANCE;
+    double bouncingVelocity = mContact->penetrationDepth - DART_ERROR_ALLOWANCE;
     if (bouncingVelocity < 0.0) {
       bouncingVelocity = 0.0;
     } else {
@@ -808,7 +850,7 @@ void ContactConstraint::applyImpulse(double* lambda)
     DART_ASSERT(!math::isNan(lambda[2]));
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
-    mContact.force = mContact.normal * lambda[0] / mTimeStep;
+    mContact->force = mContact->normal * lambda[0] / mTimeStep;
 
     // Normal impulsive force
     if (mIsReactiveA)
@@ -819,7 +861,7 @@ void ContactConstraint::applyImpulse(double* lambda)
     // Add contact impulse (force) toward the tangential w.r.t. world frame.
     // Reuse the tangent basis computed at construction (see mTangentBasis).
     const TangentBasisMatrix& D = mTangentBasis;
-    mContact.force += D.col(0) * lambda[1] / mTimeStep;
+    mContact->force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
     if (mIsReactiveA)
@@ -828,7 +870,7 @@ void ContactConstraint::applyImpulse(double* lambda)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
-    mContact.force += D.col(1) * lambda[2] / mTimeStep;
+    mContact->force += D.col(1) * lambda[2] / mTimeStep;
 
     // Tangential direction-2 impulsive force
     if (mIsReactiveA)
@@ -848,7 +890,7 @@ void ContactConstraint::applyImpulse(double* lambda)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
-    mContact.force = mContact.normal * lambda[0] / mTimeStep;
+    mContact->force = mContact->normal * lambda[0] / mTimeStep;
   }
 }
 
@@ -1134,7 +1176,7 @@ void ContactConstraint::setSecondarySlipCompliance(double slip)
 //==============================================================================
 const collision::Contact& ContactConstraint::getContact() const
 {
-  return mContact;
+  return *mContact;
 }
 
 //==============================================================================

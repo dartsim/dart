@@ -885,12 +885,6 @@ void ConstraintSolver::updateConstraints()
   if (restingContactFilter != nullptr)
     restingContactFilter->setSolverRestingContactFilterActive(false, false);
 
-  // Destroy previous contact constraints
-  mContactConstraints.clear();
-
-  // Destroy previous soft contact constraints
-  mSoftContactConstraints.clear();
-
   const bool useBuiltInDefaultContactActiveState
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
   const auto* builtInDefaultContactHandler
@@ -901,6 +895,17 @@ void ConstraintSolver::updateConstraints()
   const bool useBuiltInDefaultSurfaceParamsCache
       = builtInDefaultContactHandler != nullptr
         && builtInDefaultContactHandler->mParent == nullptr;
+
+  if (useBuiltInDefaultContactActiveState) {
+    mReusableContactConstraints.clear();
+    mReusableContactConstraints.swap(mContactConstraints);
+  } else {
+    mContactConstraints.clear();
+    mReusableContactConstraints.clear();
+  }
+
+  // Destroy previous soft contact constraints
+  mSoftContactConstraints.clear();
 
   // Create a mapping of contact pairs to the number of contacts between them.
   // The scratch table uses open addressing over retained vectors so the
@@ -1054,6 +1059,24 @@ void ConstraintSolver::updateConstraints()
   // Add the new contact constraints to dynamic constraint list
   {
     DART_PROFILE_SCOPED_N("build contact constraints");
+    std::size_t reusableContactConstraintIndex = 0u;
+    const auto createDefaultContactConstraint =
+        [&](collision::Contact& contact,
+            const ContactSurfaceParams& surfaceParams) -> ContactConstraintPtr {
+      if (reusableContactConstraintIndex < mReusableContactConstraints.size()) {
+        auto contactConstraint = std::move(
+            mReusableContactConstraints[reusableContactConstraintIndex++]);
+        if (contactConstraint != nullptr) {
+          contactConstraint->reset(contact, mTimeStep, surfaceParams);
+          return contactConstraint;
+        }
+      }
+
+      return builtInDefaultContactHandler
+          ->DefaultContactSurfaceHandler::createConstraint(
+              contact, mTimeStep, surfaceParams);
+    };
+
     for (const auto& candidate : contactCandidates) {
       ContactConstraintPtr contactConstraint;
       if (useBuiltInDefaultSurfaceParamsCache) {
@@ -1071,12 +1094,8 @@ void ConstraintSolver::updateConstraints()
           contactPairCount.surfaceParamsInitialized = true;
         }
 
-        contactConstraint
-            = builtInDefaultContactHandler
-                  ->DefaultContactSurfaceHandler::createConstraint(
-                      *candidate.contact,
-                      mTimeStep,
-                      contactPairCount.surfaceParams);
+        contactConstraint = createDefaultContactConstraint(
+            *candidate.contact, contactPairCount.surfaceParams);
       } else {
         auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
         const auto numContactsOnPair = contactPairCount.count;
@@ -1128,6 +1147,8 @@ void ConstraintSolver::updateConstraints()
         mActiveConstraints.push_back(contactConstraint);
       }
     }
+
+    mReusableContactConstraints.clear();
   }
 
   // Add the new soft contact constraints to dynamic constraint list
