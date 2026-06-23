@@ -2,15 +2,37 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged and cleaned up locally. The current follow-up is
-#3133 `perf/dart6-native-collision-parallel`, based on #3129 plus the unrelated
-#3128 docs/audit PR already merged from `origin/release-6.20`. The latest review
-fix keeps low `maxNumContacts` queries on the serial early-exit path and
-pre-filters solver/default collision-filter pairs on the main thread before the
-finite-plane worker pool runs. The stacked follow-up is #3135
-`perf/dart6-native-contact-selection`; it makes explicit per-pair contact caps
-select the deepest contact plus spatially distributed support points instead of
-preserving backend iteration-order truncation.
+Bottom line: #3129, #3133, and #3135 are merged. The current follow-up is #3139
+`perf/dart6-native-aabb-bounds`, refreshed on current `origin/release-6.20`.
+
+#3133 parallelizes finite-shape-vs-plane collision queries for the existing
+DART-native backend while keeping low `maxNumContacts` queries on the legacy
+serial early-exit path. #3135 makes explicit per-pair contact caps select the
+deepest contact plus spatially distributed support points instead of preserving
+backend iteration-order truncation. #3139 reduces broadphase setup work by
+computing transformed cached local bounds from center and half-extents instead
+of visiting all eight local bounding-box corners.
+
+Latest #3139 evidence on the original issue scene, using DART-native collision
+with DART 6 dynamics/constraints/solver:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3135 parent, active, no profile repeat range | `0.0598792` - `0.0606051` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| #3139 current, active, no profile repeat range | `0.0609436` - `0.0611608` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| #3139 current, default sleeping, 3000 steps | `1.88586` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
+
+The profiled active total RTF is noisy, but the `collide` scope moved from the
+#3135 parent `1.715 s` to `1.628 s` over 300 active steps. This is a small
+setup improvement, not the major collision-algorithm win.
+
+Recent rejected local experiments are kept as named stashes, not PRs: caching
+world-plane transforms preserved final hashes but regressed/noised the active
+RTF, a single-plane pair-index fast path preserved final hashes but did not
+improve RTF, and parallel contact-constraint construction still segfaulted on
+large scenes after the first scratch-buffer fix. Those results point the next
+larger work back toward native collision algorithms and safe constraint-build
+structure, rather than small indexing or cache-only edits.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
@@ -41,7 +63,7 @@ and solver; only collision detection changes:
 | --- | ---: | --- |
 | #3129 DART native active baseline | `0.05735` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 | Current DART native active, 16 threads | `0.0624274` profile run | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Current DART native default sleeping, 16 threads | `1.96845` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
+| Current DART native default sleeping, 16 threads | `1.88586` latest rerun, `1.96845` prior run | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
 
 A no-profile rerun after the transform-copy review fix measured RTF
 `0.059358`, with the same final hash, contact count, and contact-pair count. A
@@ -155,16 +177,13 @@ pinned to CPUs 0-15:
 Native-collision follow-up: continue porting DART 7 native algorithms into
 DART 6.20's `dart/collision/dart/` path in dependency-free slices. The merged
 native slices added finite-shape broadphase filtering, plane/sphere/box/cylinder
-contacts, per-thread scratch reuse, and faster active contact aggregation in
-the existing DART backend. The most recent merged native follow-up added
-DART-native capsule primitive contacts and confirmed the original issue scene
-did not regress. The active follow-up is a smaller cached-shape metadata slice.
+contacts, per-thread scratch reuse, faster active contact aggregation,
+DART-native capsule primitive contacts, and cached native-shape metadata. The
+active stacked follow-ups are finite-plane query threading, representative
+contact selection for explicit caps, and faster cached AABB transform setup.
 The next larger native slices should keep mining DART 7 for missing shape
 support, distance/CCD/raycast coverage, and manifold behavior while preserving
 gz-physics-facing API compatibility.
-
-- Current active branch: `perf/dart6-native-shape-cache`, based on
-  `origin/release-6.20`.
 - Exact issue scene used for the current evidence: `/tmp/3k_shapes.sdf`,
   3003 mobile sphere/box/cylinder bodies plus the static ground plane from the
   original issue report. The ground link warning about missing `<inertial>` is

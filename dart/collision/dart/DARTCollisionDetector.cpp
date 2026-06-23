@@ -1478,6 +1478,22 @@ bool allFiniteEntriesHaveCachedPlaneCollisionPath(
 }
 
 //==============================================================================
+Eigen::Vector3d computeBroadphaseRoundoffMargin(
+    const Eigen::Isometry3d& transform,
+    const Eigen::Matrix3d& absLinear,
+    const Eigen::Vector3d& localCenter,
+    const Eigen::Vector3d& localHalfExtents)
+{
+  const Eigen::Vector3d accumulatedMagnitude
+      = transform.translation().cwiseAbs()
+        + absLinear * (localCenter.cwiseAbs() + localHalfExtents.cwiseAbs());
+
+  constexpr double kRoundoffTerms = 16.0;
+  return kRoundoffTerms * std::numeric_limits<double>::epsilon()
+         * accumulatedMagnitude;
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
@@ -1501,22 +1517,25 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!dartObject->hasFiniteCachedLocalBounds())
     return entry;
 
-  entry.min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
-  entry.max = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
-
-  for (int x = 0; x < 2; ++x) {
-    for (int y = 0; y < 2; ++y) {
-      for (int z = 0; z < 2; ++z) {
-        const Eigen::Vector3d localCorner(
-            x ? localMax.x() : localMin.x(),
-            y ? localMax.y() : localMin.y(),
-            z ? localMax.z() : localMin.z());
-        const Eigen::Vector3d worldCorner = entry.transform * localCorner;
-        entry.min = entry.min.cwiseMin(worldCorner);
-        entry.max = entry.max.cwiseMax(worldCorner);
-      }
-    }
-  }
+  const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
+  const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
+  const Eigen::Vector3d worldCenter = entry.transform * localCenter;
+  const Eigen::Matrix3d absLinear = entry.transform.linear().cwiseAbs();
+  const Eigen::Vector3d worldHalfExtents = absLinear * localHalfExtents;
+  // The center/extent form matches transformed corners mathematically, but the
+  // separately rounded dot products can otherwise move a bound inward.
+  const Eigen::Vector3d roundoffMargin = computeBroadphaseRoundoffMargin(
+      entry.transform, absLinear, localCenter, localHalfExtents);
+  entry.min = (worldCenter - worldHalfExtents - roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, -std::numeric_limits<double>::infinity());
+                  });
+  entry.max = (worldCenter + worldHalfExtents + roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, std::numeric_limits<double>::infinity());
+                  });
 
   entry.finite = entry.min.allFinite() && entry.max.allFinite();
   return entry;
