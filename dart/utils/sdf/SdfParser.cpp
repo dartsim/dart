@@ -46,6 +46,7 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -65,11 +66,13 @@
 #include <Eigen/StdVector>
 #include <tinyxml2.h>
 
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace utils {
@@ -96,13 +99,27 @@ struct SDFJoint
   std::string parentName;
   std::string childName;
   std::string type;
+  struct MimicInfo
+  {
+    std::string referenceJointName;
+    std::size_t referenceDof = 0;
+    double multiplier = 1.0;
+    double offset = 0.0;
+  };
+  std::vector<MimicInfo> mimicInfos;
 };
+
+std::vector<SDFJoint::MimicInfo> readMimicElements(
+    const tinyxml2::XMLElement* axisElement);
 
 // Maps the name of a BodyNode to its properties
 using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;
+
+void applyMimicConstraints(
+    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints);
 
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* worldElement,
@@ -543,6 +560,8 @@ dynamics::SkeletonPtr readSkeleton(
   // Set positions to their initial values
   newSkeleton->resetPositions();
 
+  applyMimicConstraints(newSkeleton, sdfJoints);
+
   return newSkeleton;
 }
 
@@ -612,6 +631,56 @@ NextResult getNextJointAndNodePair(
   }
 
   return VALID;
+}
+
+//==============================================================================
+void applyMimicConstraints(
+    const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints)
+{
+  for (const auto& entry : sdfJoints) {
+    const auto& jointInfo = entry.second;
+    if (jointInfo.mimicInfos.empty())
+      continue;
+
+    auto* joint = skeleton->getJoint(jointInfo.properties->mName);
+    if (!joint)
+      continue;
+
+    std::vector<dynamics::MimicDofProperties> props
+        = joint->getMimicDofProperties();
+    props.resize(joint->getNumDofs());
+
+    bool applied = false;
+    for (const auto& mimic : jointInfo.mimicInfos) {
+      auto* ref = skeleton->getJoint(mimic.referenceJointName);
+      if (!ref) {
+        DART_WARN(
+            "[SdfParser] Ignoring mimic joint [{}] referencing missing joint "
+            "[{}]",
+            jointInfo.properties->mName,
+            mimic.referenceJointName);
+        continue;
+      }
+
+      const std::size_t followerIndex
+          = std::min(mimic.referenceDof, joint->getNumDofs() - 1);
+      const std::size_t referenceIndex
+          = std::min(mimic.referenceDof, ref->getNumDofs() - 1);
+
+      auto& prop = props[followerIndex];
+      prop.mReferenceJoint = ref;
+      prop.mReferenceDofIndex = referenceIndex;
+      prop.mMultiplier = mimic.multiplier;
+      prop.mOffset = mimic.offset;
+      applied = true;
+    }
+
+    if (!applied)
+      continue;
+
+    joint->setMimicJointDofs(props);
+    joint->setActuatorType(dynamics::Joint::MIMIC);
+  }
 }
 
 dynamics::SkeletonPtr makeSkeleton(
@@ -1211,6 +1280,34 @@ JointMap readAllJoints(
   return sdfJoints;
 }
 
+std::vector<SDFJoint::MimicInfo> readMimicElements(
+    const tinyxml2::XMLElement* axisElement)
+{
+  std::vector<SDFJoint::MimicInfo> mimics;
+  if (!axisElement || !hasElement(axisElement, "mimic"))
+    return mimics;
+
+  const tinyxml2::XMLElement* mimicElement = getElement(axisElement, "mimic");
+  if (!mimicElement)
+    return mimics;
+
+  SDFJoint::MimicInfo info;
+  info.referenceJointName = getAttributeString(mimicElement, "joint");
+  if (hasAttribute(mimicElement, "axis")) {
+    const auto axisAttr = getAttributeString(mimicElement, "axis");
+    info.referenceDof = axisAttr == "axis2" ? 1u : 0u;
+  }
+  info.multiplier = hasElement(mimicElement, "multiplier")
+                        ? getValueDouble(mimicElement, "multiplier")
+                        : 1.0;
+  info.offset = hasElement(mimicElement, "offset")
+                    ? getValueDouble(mimicElement, "offset")
+                    : 0.0;
+  mimics.push_back(info);
+
+  return mimics;
+}
+
 SDFJoint readJoint(
     tinyxml2::XMLElement* _jointElement,
     const BodyMap& _sdfBodyNodes,
@@ -1274,6 +1371,24 @@ SDFJoint readJoint(
   newJoint.parentName
       = (parent_it == _sdfBodyNodes.end()) ? "" : parent_it->first;
   newJoint.childName = (child_it == _sdfBodyNodes.end()) ? "" : child_it->first;
+
+  //--------------------------------------------------------------------------
+  // Mimic metadata (captured before joint creation)
+  if (hasElement(_jointElement, "axis")) {
+    const tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
+    const auto mimics = readMimicElements(axisElement);
+    newJoint.mimicInfos.insert(
+        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+  }
+  if (hasElement(_jointElement, "axis2")) {
+    const tinyxml2::XMLElement* axis2Element
+        = getElement(_jointElement, "axis2");
+    auto mimics = readMimicElements(axis2Element);
+    for (auto& m : mimics)
+      m.referenceDof = 1u; // axis2 maps to the second DoF
+    newJoint.mimicInfos.insert(
+        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+  }
 
   //--------------------------------------------------------------------------
   // transformation
