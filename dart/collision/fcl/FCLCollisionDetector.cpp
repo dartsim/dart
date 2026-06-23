@@ -2141,8 +2141,13 @@ FclContactGeometryOrder inferSharedGeometryContactOrder(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2)
 {
-  const auto separation = fcl::getTranslation(o2->getTransform())
-                          - fcl::getTranslation(o1->getTransform());
+  // Materialize the translations and their difference into concrete vectors.
+  // fcl::getTranslation() returns an fcl::Vector3 by value, so binding the
+  // subtraction to `auto` would keep a lazy Eigen expression referencing the
+  // destroyed temporaries (stack-use-after-scope) and read garbage later.
+  const fcl::Vector3 t1 = fcl::getTranslation(o1->getTransform());
+  const fcl::Vector3 t2 = fcl::getTranslation(o2->getTransform());
+  const fcl::Vector3 separation = t2 - t1;
   if (fcl::length2(separation) <= std::numeric_limits<double>::epsilon()
       || fcl::length2(fclContact.normal)
              <= Contact::getNormalEpsilonSquared()) {
