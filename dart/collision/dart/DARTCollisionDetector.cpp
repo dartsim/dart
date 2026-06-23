@@ -1356,9 +1356,12 @@ void postProcess(
 
   if (option.maxNumContactsPerPair > 0u
       && pairContacts.size() > maxContactsPerPair) {
+    const auto remainingContacts
+        = option.maxNumContacts - totalResult.getNumContacts();
+    const auto selectionLimit = std::min(maxContactsPerPair, remainingContacts);
     selectContactIndices(
         pairResult,
-        maxContactsPerPair,
+        selectionLimit,
         scratch.contactSelectionCandidates,
         scratch.selectedContactIndices);
 

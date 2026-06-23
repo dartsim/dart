@@ -1018,6 +1018,14 @@ TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
       cappedResult, uncappedResult.getContact(spreadIndex).point));
   EXPECT_FALSE(containsPoint(cappedResult, uncappedResult.getContact(0).point));
 
+  option.maxNumContacts = 1u;
+  CollisionResult globallyCappedResult;
+  ASSERT_TRUE(
+      planeGroup->collide(boxGroup.get(), option, &globallyCappedResult));
+  ASSERT_EQ(globallyCappedResult.getNumContacts(), 1u);
+  EXPECT_TRUE(containsPoint(globallyCappedResult, deepestContact.point));
+
+  option.maxNumContacts = 10u;
   auto sphereFrame = SimpleFrame::createShared(Frame::World());
   sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
   sphereFrame->setTranslation(Eigen::Vector3d(

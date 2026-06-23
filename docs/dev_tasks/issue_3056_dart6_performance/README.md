@@ -63,14 +63,17 @@ Contact-selection follow-up evidence:
 | Run | RTF | Final state |
 | --- | ---: | --- |
 | #3133 branch, explicit cap disabled | `0.0576553` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| Contact selection, `--max-contacts-per-pair 4` | `0.0576808` | finite, same hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
+| Contact selection, `--max-contacts-per-pair 4` | `0.0585103` | finite, same hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
 
 The explicit four-contact cap does not change the original issue scene because
 the DART-native primitive plane pairs already produce at most three contacts
 per pair. The value of this slice is correctness infrastructure for future
 default-on cap/manifold work: focused coverage proves the cap keeps the deepest
 support point and a spatially spread support point instead of taking the first
-backend contacts.
+backend contacts. The latest review fix also caps the selection target by the
+remaining global contact slots, so a query with only one global slot left keeps
+the deepest representative contact instead of letting backend order truncate
+the selected set.
 
 The measured win is real but modest. The profiler moved the inclusive
 `collide` scope from the #3129 baseline `1.840 s` to `1.585 s` over 300 active
