@@ -61,6 +61,9 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Update the math user-defined literal declarations to the C++23 spelling
+    accepted by newer AppleClang warning-as-error builds.
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
@@ -110,6 +113,15 @@
     requested, which aborted asserts-enabled builds (and logged repeated
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
+
+* Dynamics
+
+  * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
+    `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
+    joint instead of self-copying, add the missing aligned allocation hook for
+    `TranslationalJoint2DUniqueProperties`, and avoid an ARM64/NEON crash in
+    `Icosphere::computeIcosahedron()` by keeping the triangle table local:
+    [#3130](https://github.com/dartsim/dart/pull/3130)
 
 * Simulation
 
