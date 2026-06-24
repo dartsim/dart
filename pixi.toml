@@ -12,6 +12,7 @@ black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
 cmake = ">=4.0.2,<5"
 doxygen = ">=1.13.2,<2"
+gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
@@ -76,7 +77,9 @@ lint-py = { cmd = """
     && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
-lint = { depends-on = ["lint-cpp", "lint-py"] }
+lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
+
+lint = { depends-on = ["lint-cpp", "lint-cmake", "lint-py"] }
 
 check-lint-cpp = { cmd = """
     cmake \
@@ -89,7 +92,9 @@ check-lint-py = { cmd = """
     && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
+check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
+
+check-lint = { depends-on = ["check-lint-cpp", "check-lint-cmake", "check-lint-py"] }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }

@@ -24,17 +24,17 @@ if(NOT _dart_use_internal_ode)
   find_package(ODE QUIET CONFIG NAMES ODE ode)
 
   if(NOT ODE_FOUND AND NOT ode_FOUND)
-
     find_package(ODE 0.16.2 QUIET MODULE)
 
     if(ODE_FOUND AND NOT TARGET ODE::ODE)
       add_library(ODE::ODE INTERFACE IMPORTED)
-      set_target_properties(ODE::ODE PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${ODE_INCLUDE_DIRS}"
-        INTERFACE_LINK_LIBRARIES "${ODE_LIBRARIES}"
+      set_target_properties(
+        ODE::ODE
+        PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${ODE_INCLUDE_DIRS}"
+          INTERFACE_LINK_LIBRARIES "${ODE_LIBRARIES}"
       )
     endif()
-
   endif()
 endif()
 
@@ -42,8 +42,7 @@ if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
   set(_dart_ode_has_libccd_box_cyl 0)
   set(_dart_ode_defs "")
   if(TARGET ODE::ODE)
-    get_target_property(_dart_ode_defs ODE::ODE
-      INTERFACE_COMPILE_DEFINITIONS)
+    get_target_property(_dart_ode_defs ODE::ODE INTERFACE_COMPILE_DEFINITIONS)
   endif()
   if(DEFINED ODE_DEFINITIONS)
     list(APPEND _dart_ode_defs ${ODE_DEFINITIONS})
@@ -61,8 +60,11 @@ if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
 
     set(_dart_ode_includes "")
     if(TARGET ODE::ODE)
-      get_target_property(_dart_ode_includes ODE::ODE
-        INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(
+        _dart_ode_includes
+        ODE::ODE
+        INTERFACE_INCLUDE_DIRECTORIES
+      )
     endif()
     if(NOT _dart_ode_includes AND ODE_INCLUDE_DIRS)
       set(_dart_ode_includes "${ODE_INCLUDE_DIRS}")
@@ -72,13 +74,16 @@ if(ODE_FOUND OR ode_FOUND OR TARGET ODE::ODE)
       set(CMAKE_REQUIRED_INCLUDES "${_dart_ode_includes}")
     endif()
 
-    check_c_source_compiles("
+    check_c_source_compiles(
+      "
 #include <ode/odeconfig.h>
 #ifndef dLIBCCD_BOX_CYL
 #error dLIBCCD_BOX_CYL not defined
 #endif
 int main(void) { return 0; }
-" _dart_ode_has_libccd_box_cyl_macro)
+"
+      _dart_ode_has_libccd_box_cyl_macro
+    )
 
     unset(CMAKE_REQUIRED_INCLUDES)
     unset(_dart_ode_includes)
@@ -90,8 +95,13 @@ int main(void) { return 0; }
     unset(_dart_ode_has_libccd_box_cyl_macro)
   endif()
 
-  set(DART_ODE_HAS_LIBCCD_BOX_CYL ${_dart_ode_has_libccd_box_cyl}
-    CACHE INTERNAL "Whether ODE supports libccd box-cylinder contacts" FORCE)
+  set(
+    DART_ODE_HAS_LIBCCD_BOX_CYL
+    ${_dart_ode_has_libccd_box_cyl}
+    CACHE INTERNAL
+    "Whether ODE supports libccd box-cylinder contacts"
+    FORCE
+  )
   unset(_dart_ode_has_libccd_box_cyl)
   unset(_dart_ode_defs)
 endif()
