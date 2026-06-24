@@ -41,10 +41,13 @@ namespace collision {
 CollisionOption::CollisionOption(
     bool enableContact,
     std::size_t maxNumContacts,
-    const std::shared_ptr<CollisionFilter>& collisionFilter)
+    const std::shared_ptr<CollisionFilter>& collisionFilter,
+    bool allowNegativePenetrationDepthContacts)
   : enableContact(enableContact),
     maxNumContacts(maxNumContacts),
     maxNumContactsPerPair(0u),
+    allowNegativePenetrationDepthContacts(
+        allowNegativePenetrationDepthContacts),
     collisionFilter(collisionFilter)
 {
   // Do nothing

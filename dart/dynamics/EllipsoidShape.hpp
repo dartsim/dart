@@ -106,7 +106,7 @@ protected:
 
 private:
   /// \brief Diameters of this ellipsoid
-  Eigen::Vector3d mDiameters;
+  Eigen::Vector3d mDiameters{Eigen::Vector3d::Ones()};
 };
 
 } // namespace dynamics

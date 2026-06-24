@@ -1,19 +1,26 @@
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/ArrowShape.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 
 using namespace dart;
+
+DART_SUPPRESS_DEPRECATED_BEGIN
 
 namespace {
 
@@ -135,11 +142,47 @@ double readColladaUnitScale(const std::string& path)
   }
 }
 
+double maxVertexZ(const math::TriMesh<double>& mesh)
+{
+  double maxZ = -std::numeric_limits<double>::infinity();
+  for (const auto& vertex : mesh.getVertices())
+    maxZ = std::max(maxZ, vertex.z());
+
+  return maxZ;
+}
+
 } // namespace
+
+TEST(MeshShapeTest, TriMeshConstructorUpdatesBoundsAndAssimpBridge)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->reserveVertices(3);
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(2.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 3.0, 4.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->computeVertexNormals();
+
+  dynamics::MeshShape shape(Eigen::Vector3d(2.0, 3.0, 4.0), triMesh);
+  EXPECT_EQ(shape.getTriMesh(), triMesh);
+  EXPECT_TRUE(shape.getBoundingBox().computeFullExtents().isApprox(
+      Eigen::Vector3d(4.0, 9.0, 16.0), 1e-12));
+
+  const aiScene* scene = shape.getMesh();
+  ASSERT_NE(scene, nullptr);
+  ASSERT_GT(scene->mNumMeshes, 0u);
+  EXPECT_EQ(shape.getMesh(), scene);
+
+  auto clone = std::dynamic_pointer_cast<dynamics::MeshShape>(shape.clone());
+  ASSERT_NE(clone, nullptr);
+  EXPECT_NE(clone->getTriMesh(), triMesh);
+  EXPECT_TRUE(clone->getBoundingBox().computeFullExtents().isApprox(
+      shape.getBoundingBox().computeFullExtents(), 1e-12));
+}
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
 {
-  const std::string filePath = DART_DATA_LOCAL_PATH "skel/kima/l-foot.dae";
+  const std::string filePath = DART_DATA_LOCAL_PATH "sdf/atlas/r_scap.dae";
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -155,9 +198,25 @@ TEST(MeshShapeTest, CloneCreatesIndependentScene)
   auto cloned
       = std::dynamic_pointer_cast<dynamics::MeshShape>(original->clone());
   ASSERT_NE(cloned, nullptr);
-  EXPECT_NE(original->getMesh(), cloned->getMesh());
+  const aiScene* clonedScene = cloned->getMesh();
+  ASSERT_NE(clonedScene, nullptr);
+  EXPECT_NE(original->getMesh(), clonedScene);
   EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
       originalExtents, 1e-12));
+
+  ASSERT_GT(scene->mNumMaterials, 0u);
+  ASSERT_GT(clonedScene->mNumMaterials, 0u);
+  aiString originalTexture;
+  aiString clonedTexture;
+  ASSERT_EQ(
+      scene->mMaterials[0]->GetTexture(
+          aiTextureType_DIFFUSE, 0, &originalTexture),
+      AI_SUCCESS);
+  ASSERT_EQ(
+      clonedScene->mMaterials[0]->GetTexture(
+          aiTextureType_DIFFUSE, 0, &clonedTexture),
+      AI_SUCCESS);
+  EXPECT_STREQ(originalTexture.C_Str(), clonedTexture.C_Str());
 
   cloned->setScale(Eigen::Vector3d::Constant(2.0));
   EXPECT_TRUE(cloned->getBoundingBox().computeFullExtents().isApprox(
@@ -196,6 +255,26 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
   EXPECT_EQ(mesh->getMesh(), scene);
   EXPECT_EQ(mesh->getMeshUri(), otherUri);
   EXPECT_EQ(mesh->getMeshPath(), retriever->getFilePath(common::Uri(otherUri)));
+}
+
+TEST(MeshShapeTest, ArrowShapeRefreshesTriMeshAfterPositionUpdates)
+{
+  dynamics::ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+
+  const auto originalMesh = arrow.getTriMesh();
+  ASSERT_NE(originalMesh, nullptr);
+  const double originalMaxZ = maxVertexZ(*originalMesh);
+
+  arrow.setPositions(Eigen::Vector3d::Zero(), 2.0 * Eigen::Vector3d::UnitZ());
+
+  const auto updatedMesh = arrow.getTriMesh();
+  ASSERT_NE(updatedMesh, nullptr);
+  EXPECT_NE(updatedMesh, originalMesh);
+  EXPECT_GT(maxVertexZ(*updatedMesh), originalMaxZ * 1.5);
+
+  auto clone = std::dynamic_pointer_cast<dynamics::ArrowShape>(arrow.clone());
+  ASSERT_NE(clone, nullptr);
+  EXPECT_GT(clone->getBoundingBox().computeFullExtents().z(), 1.5);
 }
 
 TEST(MeshShapeTest, ColladaUnitMetadataApplied)
@@ -263,3 +342,25 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
       << "aliasExtents=" << aliasExtents.transpose()
       << ", canonicalExtents=" << canonicalExtents.transpose();
 }
+
+TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
+{
+  const std::string filePath = DART_DATA_LOCAL_PATH "obj/Quad.obj";
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  ASSERT_NE(scene, nullptr);
+
+  auto shape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+
+  const auto polygonMesh = shape->getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasFaces());
+  ASSERT_EQ(polygonMesh->getFaces().size(), 1u);
+  EXPECT_EQ(polygonMesh->getFaces()[0].size(), 4u);
+}
+
+DART_SUPPRESS_DEPRECATED_END

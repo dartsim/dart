@@ -2,10 +2,10 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged. The active stack is now in the DART-native
-collision and DART 6 constraint hot path. The current local candidate is
-`perf/dart6-resting-state-snapshot-cache`, stacked on #3151
-`perf/dart6-contact-build-fast-path`.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
+#3144, and #3146 are merged. #3147, #3148, #3149, #3150, and #3151 are the
+parent stack. #3152 `perf/dart6-resting-state-snapshot-cache` is the active
+stacked slice.
 
 The latest candidate targets the default settled-scene path. Once the original
 3k issue scene has fully gone to sleep, the all-resting fast path no longer
@@ -15,49 +15,83 @@ correctness guard for pose, velocity, collision-option, collision-filter, and
 structural edits.
 
 Default sleeping issue-scene evidence,
-`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
-dynamics, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, 3000 steps, text profile:
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
+and solver, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, 3000 steps:
 
-| Run | RTF | Final state |
-| --- | ---: | --- |
-| #3151 parent | `10.4306` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`; all-resting fast path `228.74 ms` |
-| Current snapshot-cache candidate | `46.5797` | finite, same hash, resting `3003 / 3003`, contacts `0`; all-resting fast path `107.03 us` |
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3151 parent, text profile | DART native | `10.4306` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`; all-resting fast path `228.74 ms` |
+| #3152 current head, text profile | DART native | `56.2441` | finite, same hash, resting `3003 / 3003`, contacts `0`; all-resting fast path `106.99 us`, readiness check `1.952 ms` |
+| #3152 current head, no-profile | DART native | `59.2748` latest rerun, `55.5385` prior run | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | FCL primitive | `57.3796` | finite, hash `0x266da31836a314a6`, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | Bullet | `5.49559` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | ODE | `0.02744` | finite, hash `0x4e5f6556657720`, resting `3003 / 3003`, contacts `0` |
 
-#3147 targets active contact-construction cost by reusing exact built-in default
-`ContactConstraint` objects across steps, computing local contact points without
-constructing full inverse transforms, and reusing the previous contact-pair
-scratch-table index for consecutive contacts from the same pair. #3148 targets
-DART-native collision transform setup for identity-relative `ShapeNode`
-collision objects by reusing the owning `BodyNode` world transform.
+The latest DART-native no-profile rerun is about `1.03x` FCL primitive,
+`10.8x` Bullet, and `2160x` ODE on this fully rested workload. The earlier
+DART repeat was `55.5385`, so DART/FCL on this short all-resting path is close
+and timing-noise sensitive; active no-deactivation measurements remain the
+primary collision-backend comparison.
 
-The current local candidate attacks the remaining default contact-build cost. It
-keeps moving fixed supports observable, but skips relative-velocity work for
-zero-velocity fixed supports, caches repeated default surface-property checks
-within each solver update, and makes the threaded default-contact rebuild path
-avoid cold-start contact allocation.
+#3147 targets active contact-construction cost by reusing exact built-in
+default `ContactConstraint` objects across steps while preserving exact ODE
+final-state hashes. #3148 targets DART-native collision transform setup for
+identity-relative `ShapeNode` collision objects by reusing the owning
+`BodyNode` world transform. #3149 rebuilds large independent built-in default
+contact sets by collision pair in parallel, while custom contact handlers,
+small contact sets, and pairs that share a non-skipped body stay on the
+existing serial path.
+
+#3150 attacks the measured DART-native finite-plane merge hot path. When a
+one-plane query can prove the finite shapes' padded contact bounds are mutually
+disjoint, contacts from different finite/plane pairs cannot be duplicate
+points. That lets the merge path keep the existing per-pair duplicate check
+while bypassing the global duplicate-contact grid for those pair results.
+Accepted fast-path contacts are still published to the global duplicate index
+when later fallback pair phases may need that state. The all-finite/one-plane
+issue scene skips that extra bookkeeping because the same disjoint-bound proof
+also rules out later duplicate-producing finite/finite, plane/plane, and
+unsupported-shape phases. Overlapping or multi-plane queries keep the existing
+global duplicate path.
+
+#3151 attacks the remaining default contact-build cost. It keeps moving fixed
+supports observable, but skips relative-velocity work for zero-velocity fixed
+supports, caches repeated default surface-property checks within each solver
+update, and makes the threaded default-contact rebuild path avoid cold-start
+contact allocation.
 
 Latest exact issue-scene evidence
-`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
-dynamics, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, deactivation disabled:
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
+and solver, `--steps 300`, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled:
 
-| Run | RTF | Final state |
-| --- | ---: | --- |
-| #3148 parent, 300 active steps, text profile | `0.0917877` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `951.72 ms`, `build contact constraints` `644.65 ms` |
-| Rejected pair-result cache, 300 active steps, text profile | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
-| #3149 constraint-build candidate, 300 active steps, text profile | `0.0998668` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.84 ms`, `build contact constraints` `542.53 ms` |
-| #3149 constraint-build candidate, 300 active steps, no profile | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| #3150 disjoint finite-plane merge candidate, 300 active steps, text profile | `0.105801` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `654.80 ms`, finite-plane merge `110.98 ms`, contact-bound separation check `24.10 ms` |
-| #3150 disjoint finite-plane merge candidate, 300 active steps, no profile | `0.110214` latest rerun, `0.11603` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| Current contact-build candidate, 180 active steps, text profile | `0.116713` | finite, hash `0x973739b5665d0904`, contacts `5005`, pairs `3003`; `build contact constraints` `273.83 ms`, default surface params `96.39 ms`, serial fallback `174.16 ms` |
-| #3150 parent, 180 active steps, text profile | `0.110141` | finite, same 180-step hash, contacts `5005`, pairs `3003`; `build contact constraints` `317.81 ms` |
-| Current contact-build candidate, 300 active steps, no profile | `0.11189` latest rerun, `0.114723` prior run | finite, same 300-step hash, contacts `5005`, pairs `3003`; end-to-end RTF remains within the current noise band |
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3149 parent, active no-profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3150 parent, active no-profile | DART native | `0.104694` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3150 parent, active text profile | DART native | `0.104939` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `660.38 ms`, finite-plane merge `113.36 ms`, contact-bound separation check `24.44 ms` |
+| #3151 current head, active no-profile | DART native | `0.110902` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3151 current head, active text profile | DART native | `0.107484` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `537.94 ms`, default surface params `176.20 ms`, serial fallback `355.90 ms` |
+| #3151 current head, active no-profile | FCL primitive | `0.0978488` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3151 current head, active no-profile | Bullet | `0.0865244` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3151 current head, active no-profile | ODE | `0.00466348` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.13x` FCL primitive, `1.28x` Bullet, and
+`23.8x` ODE on the active issue scene. It is still far below RTF `1` with
+deactivation disabled, so the follow-up target is the remaining DART 6
+constraint pipeline cost rather than declaring issue #3056 complete. The latest
+text profile shows `World::step - Solve constraints` at `2.065 s` of `2.790 s`
+over 300 steps. Within that, `updateConstraints` is `1.347 s`, `collide` is
+`666.62 ms`, `build contact constraints` is `537.94 ms`, and
+`solveConstrainedGroups` is `513.23 ms`.
 
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane
 contacts over repeated steps, including final positions, velocities,
-transforms, spatial velocities, and contact counts.
+transforms, spatial velocities, and contact counts. ODE remains the downstream
+comparison baseline and should be included in each refreshed performance table,
+even when the current slice only changes the DART-native backend.
 
 Focused collision evidence: `test_Collision` compares serial and threaded
 DART-native finite-plane contacts in legacy order, and
@@ -102,13 +136,19 @@ once the active contact set and built constrained groups prove they are exact
 built-in fixed-support contact groups. #3143 caches a compact primitive shape
 kind for DART-native plane dispatch. #3144 reduces serial contact-merge
 duplicate-grid probes while preserving duplicate behavior.
+#3146 targets cached all-resting step readiness by replacing the repeated
+mobile-DOF velocity scan with an external velocity-edit generation guard.
+#3147 targets active contact-construction overhead by reusing exact built-in
+default contact constraints and avoiding redundant pair-index work.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
-RTF, and parallel contact-constraint construction was repaired past the
-thread-local scratch misuse but did not produce convincing active RTF/profile
-gains. Those results point the next larger work back toward native collision
-algorithms and safe constraint-build structure, rather than cache-only edits.
+RTF; rewriting local-point computation avoided inverse transforms but changed
+the ODE final-state hash and was dropped; and parallel contact-constraint
+construction was repaired past the thread-local scratch misuse but did not
+produce convincing active RTF/profile gains. Those results point the next
+larger work back toward native collision algorithms and safe constraint-build
+structure, rather than cache-only edits.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision

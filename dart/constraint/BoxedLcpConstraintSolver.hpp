@@ -101,6 +101,9 @@ protected:
   // Documentation inherited.
   void solveConstrainedGroup(ConstrainedGroup& group) override;
 
+  // Documentation inherited. Only invoked when split impulse is enabled.
+  void solvePositionConstrainedGroup(ConstrainedGroup& group) override;
+
   /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
   // TODO(JS): Hold as unique_ptr because there is no reason to share. Make this
