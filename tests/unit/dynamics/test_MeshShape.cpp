@@ -343,4 +343,24 @@ TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
       << ", canonicalExtents=" << canonicalExtents.transpose();
 }
 
+TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
+{
+  const std::string filePath = DART_DATA_LOCAL_PATH "obj/Quad.obj";
+  const std::string fileUri = common::Uri::createFromPath(filePath).toString();
+  ASSERT_FALSE(fileUri.empty());
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* scene = dynamics::MeshShape::loadMesh(fileUri, retriever);
+  ASSERT_NE(scene, nullptr);
+
+  auto shape = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+
+  const auto polygonMesh = shape->getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasFaces());
+  ASSERT_EQ(polygonMesh->getFaces().size(), 1u);
+  EXPECT_EQ(polygonMesh->getFaces()[0].size(), 4u);
+}
+
 DART_SUPPRESS_DEPRECATED_END
