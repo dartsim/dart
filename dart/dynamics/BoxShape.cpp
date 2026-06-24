@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/BoxShape.hpp"
 
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 
 #include <cmath>
@@ -40,11 +41,9 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX), mSize(_size)
+BoxShape::BoxShape(const Eigen::Vector3d& _size) : Shape(BOX)
 {
-  DART_ASSERT(_size[0] > 0.0);
-  DART_ASSERT(_size[1] > 0.0);
-  DART_ASSERT(_size[2] > 0.0);
+  setSize(_size);
 }
 
 //==============================================================================
@@ -88,9 +87,16 @@ Eigen::Matrix3d BoxShape::computeInertia(
 //==============================================================================
 void BoxShape::setSize(const Eigen::Vector3d& _size)
 {
-  DART_ASSERT(_size[0] > 0.0);
-  DART_ASSERT(_size[1] > 0.0);
-  DART_ASSERT(_size[2] > 0.0);
+  if (!_size.allFinite() || (_size.array() <= 0.0).any()) {
+    DART_WARN(
+        "BoxShape::setSize: Invalid size '[{}, {}, {}]'. "
+        "Each size must be a positive finite value. Ignoring request.",
+        _size[0],
+        _size[1],
+        _size[2]);
+    return;
+  }
+
   mSize = _size;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;

@@ -45,6 +45,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
@@ -70,6 +71,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart {
@@ -343,10 +345,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
-  // incorrect contact point computation.
-  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
@@ -361,10 +360,7 @@ ConstraintSolver::ConstraintSolver()
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
 
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
-  // incorrect contact point computation.
-  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
@@ -675,11 +671,18 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
+  const bool splitImpulse = mSplitImpulseEnabled;
+
   {
     DART_PROFILE_SCOPED_N("ConstraintSolver::clear per-step state");
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
       skeleton->clearConstraintImpulses();
+      if (splitImpulse) {
+        skeleton->clearPositionConstraintImpulses();
+        skeleton->clearPositionVelocityChanges();
+        skeleton->setPositionImpulseApplied(false);
+      }
       DART_SUPPRESS_DEPRECATED_BEGIN
       skeleton->clearCollidingBodies();
       DART_SUPPRESS_DEPRECATED_END
@@ -704,6 +707,10 @@ void ConstraintSolver::solve()
 
   // Solve constrained groups
   solveConstrainedGroups();
+
+  if (splitImpulse) {
+    solvePositionConstrainedGroups();
+  }
 }
 
 //==============================================================================
@@ -720,6 +727,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
 }
 
@@ -731,8 +739,8 @@ bool ConstraintSolver::canJointCreateAutomaticConstraint(
     return false;
 
   return joint->hasCoulombFriction() || joint->areLimitsEnforced()
-         || joint->getActuatorType() == dynamics::Joint::SERVO
-         || (joint->getActuatorType() == dynamics::Joint::MIMIC
+         || joint->hasActuatorType(dynamics::Joint::SERVO)
+         || (joint->hasActuatorType(dynamics::Joint::MIMIC)
              && joint->getMimicJoint());
 }
 
@@ -1036,6 +1044,23 @@ void ConstraintSolver::updateConstraints()
     for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
       auto& contact = mCollisionResult.getContact(i);
 
+      // Skip contacts with non-finite geometry. A collision shape with an
+      // invalid (infinite or NaN) dimension, a malformed mesh, or a third-party
+      // collision backend can report a contact whose point, normal, or
+      // penetration depth is not finite. Such a contact would otherwise inject
+      // NaN/Inf into the contact constraint Jacobians, corrupting the LCP solve
+      // in release builds and tripping an assertion in ContactConstraint in
+      // debug builds. See gz-physics issue #1010.
+      if (!contact.point.allFinite() || !contact.normal.allFinite()
+          || !std::isfinite(contact.penetrationDepth)) {
+        dtwarn
+            << "[ConstraintSolver] Ignoring contact with non-finite geometry "
+            << "(point, normal, or penetration depth). This usually indicates "
+            << "a malformed collision mesh or a collision backend that "
+               "produced an invalid contact.\n";
+        continue;
+      }
+
       if (collision::Contact::isZeroNormal(contact.normal)) {
         // Skip this contact. This is because we assume that a contact with
         // zero-length normal is invalid.
@@ -1123,8 +1148,7 @@ void ConstraintSolver::updateConstraints()
       const dynamics::ShapeNode* shapeNode{nullptr};
       bool hasDefaultProperties{false};
     };
-    std::array<DefaultSurfaceCacheEntry, 16u> defaultSurfaceCache{};
-    std::size_t nextDefaultSurfaceCacheSlot = 0u;
+    std::array<DefaultSurfaceCacheEntry, 256u> defaultSurfaceCache{};
 
     const auto getContactShapeNode
         = [](const collision::CollisionObject* collisionObject)
@@ -1134,37 +1158,36 @@ void ConstraintSolver::updateConstraints()
 
       return collisionObject->getShapeNode();
     };
-    const auto queryDefaultContactSurfaceProperties
-        = [&](const dynamics::ShapeNode* shapeNode) {
-            if (shapeNode == nullptr)
-              return false;
+    const auto queryDefaultContactSurfaceProperties =
+        [&](const dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr)
+            return false;
 
-            for (const auto& entry : defaultSurfaceCache) {
-              if (entry.shapeNode == shapeNode)
-                return entry.hasDefaultProperties;
-            }
+          const auto shapeNodeKey
+              = reinterpret_cast<std::uintptr_t>(shapeNode) >> 4u;
+          auto& entry
+              = defaultSurfaceCache[shapeNodeKey % defaultSurfaceCache.size()];
+          if (entry.shapeNode == shapeNode)
+            return entry.hasDefaultProperties;
 
-            const auto* dynamicAspect = shapeNode->getDynamicsAspect();
-            const bool hasDefaultProperties
-                = dynamicAspect != nullptr
-                  && dynamicAspect->getRestitutionCoeff()
-                         == DART_DEFAULT_RESTITUTION_COEFF
-                  && dynamicAspect->getPrimaryFrictionCoeff()
-                         == DART_DEFAULT_FRICTION_COEFF
-                  && dynamicAspect->getSecondaryFrictionCoeff()
-                         == DART_DEFAULT_FRICTION_COEFF
-                  && dynamicAspect->getPrimarySlipCompliance() == -1.0
-                  && dynamicAspect->getSecondarySlipCompliance() == -1.0
-                  && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
-                  && dynamicAspect->getFirstFrictionDirection().squaredNorm()
-                         < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+          const auto* dynamicAspect = shapeNode->getDynamicsAspect();
+          const bool hasDefaultProperties
+              = dynamicAspect != nullptr
+                && dynamicAspect->getRestitutionCoeff()
+                       == DART_DEFAULT_RESTITUTION_COEFF
+                && dynamicAspect->getPrimaryFrictionCoeff()
+                       == DART_DEFAULT_FRICTION_COEFF
+                && dynamicAspect->getSecondaryFrictionCoeff()
+                       == DART_DEFAULT_FRICTION_COEFF
+                && dynamicAspect->getPrimarySlipCompliance() == -1.0
+                && dynamicAspect->getSecondarySlipCompliance() == -1.0
+                && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
+                && dynamicAspect->getFirstFrictionDirection().squaredNorm()
+                       < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
 
-            defaultSurfaceCache[nextDefaultSurfaceCacheSlot]
-                = {shapeNode, hasDefaultProperties};
-            nextDefaultSurfaceCacheSlot = (nextDefaultSurfaceCacheSlot + 1u)
-                                          % defaultSurfaceCache.size();
-            return hasDefaultProperties;
-          };
+          entry = {shapeNode, hasDefaultProperties};
+          return hasDefaultProperties;
+        };
     const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
     const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
     bool lastContactShapeNode1HasDefaultProperties = false;
@@ -1408,6 +1431,7 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous joint constraints
   mJointConstraints.clear();
   mMimicMotorConstraints.clear();
+  mCouplerConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   {
@@ -1420,14 +1444,40 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        auto mimicProps = joint->getMimicDofProperties();
+        const auto dofCount = joint->getNumDofs();
+        bool hasValidMimicDof = false;
+        for (std::size_t dofIndex = 0;
+             dofIndex < dofCount && dofIndex < mimicProps.size();
+             ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+            } else {
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
+            }
+          }
+        }
+
+        if (hasValidMimicDof) {
+          if (joint->isUsingCouplerConstraint()) {
+            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+                joint, joint->getMimicDofProperties()));
+          } else {
+            mMimicMotorConstraints.push_back(
+                std::make_shared<MimicMotorConstraint>(
+                    joint, joint->getMimicDofProperties()));
+          }
+        }
       }
     }
   }
@@ -1450,6 +1500,15 @@ void ConstraintSolver::updateConstraints()
       if (mimicMotorConstraint->isActive()) {
         mActiveConstraintsAllSingleReactiveContacts = false;
         mActiveConstraints.push_back(mimicMotorConstraint);
+      }
+    }
+
+    for (auto& couplerConstraint : mCouplerConstraints) {
+      couplerConstraint->update();
+
+      if (couplerConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(couplerConstraint);
       }
     }
 
@@ -1741,6 +1800,53 @@ void ConstraintSolver::buildConstrainedGroups()
     DART_PROFILE_SCOPED_N("reset constraint unions");
     for (auto& skeleton : mSkeletons)
       skeleton->resetUnion();
+  }
+}
+
+//==============================================================================
+void ConstraintSolver::setSplitImpulseEnabled(bool enabled)
+{
+  mSplitImpulseEnabled = enabled;
+}
+
+//==============================================================================
+bool ConstraintSolver::isSplitImpulseEnabled() const
+{
+  return mSplitImpulseEnabled;
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroup(
+    ConstrainedGroup& /*group*/)
+{
+  // Base implementation does nothing. Concrete solvers that support split
+  // impulse override this.
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  // Preserve velocity-impulse flags across the position pass.
+  std::vector<bool> impulseAppliedStates;
+  impulseAppliedStates.reserve(mSkeletons.size());
+  for (const auto& skeleton : mSkeletons) {
+    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+  }
+
+  for (auto& constraintGroup : mConstrainedGroups) {
+    solvePositionConstrainedGroup(constraintGroup);
+  }
+
+  for (auto& skeleton : mSkeletons) {
+    if (skeleton->isPositionImpulseApplied()) {
+      skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
   }
 }
 

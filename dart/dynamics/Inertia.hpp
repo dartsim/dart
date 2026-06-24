@@ -128,6 +128,15 @@ public:
   /// Get the spatial inertia tensor
   const Eigen::Matrix6d& getSpatialTensor() const;
 
+  /// Return a copy of this inertia expressed in the frame reached by applying
+  /// @f$transform@f$ to the current frame. The transform should be the
+  /// relative transform from the current frame to the target frame.
+  Inertia transformed(const Eigen::Isometry3d& transform) const;
+
+  /// Transform this inertia in place using the provided current-to-target
+  /// transform.
+  Inertia& transform(const Eigen::Isometry3d& transform);
+
   /// Returns true iff _moment is a physically valid moment of inertia
   static bool verifyMoment(
       const Eigen::Matrix3d& _moment,

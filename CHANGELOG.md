@@ -121,6 +121,12 @@
     benchmark scenes for comparing native and external collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Fix FCL primitive contact normal orientation and switch default FCL primitive
+    handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
+    solver, and SKEL parser fallback paths. Users needing legacy mesh
+    approximation can still select `MESH` or `fcl_mesh`:
+    [#3131](https://github.com/dartsim/dart/pull/3131)
+
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
     improving the original 3003-body issue scene while preserving close
@@ -144,7 +150,37 @@
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
 
+  * Filter Bullet collision contacts with negative penetration depth by default,
+    while adding `CollisionOption::allowNegativePenetrationDepthContacts` for
+    applications that intentionally consume Bullet proximity hits:
+    [#3136](https://github.com/dartsim/dart/pull/3136)
+
 * Dynamics
+
+  * Add an opt-in per-DoF actuator type API to `Joint`
+    (`setActuatorType(index, type)`, `setActuatorTypes(vector)`,
+    `getActuatorType(index)`, `getActuatorTypes()`, `hasActuatorType()`) so
+    individual DoFs of a multi-DoF joint can be set to `MIMIC` while the rest
+    keep the joint-wide type. The existing joint-wide
+    `setActuatorType(ActuatorType)` / `getActuatorType()` API and its default
+    behavior are unchanged:
+    [#2222](https://github.com/dartsim/dart/pull/2222)
+
+  * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
+    and destroy joint properties without heap corruption.
+
+  * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
+    joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
+    elements and wires the parsed follower DoFs to the existing per-DoF mimic
+    runtime (`MimicDofProperties`, `Joint::MIMIC` actuator), so SDF models can
+    declare mimic joints directly. SDF files without `<mimic>` parse
+    identically: [#2254](https://github.com/dartsim/dart/pull/2254)
+
+  * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
+    the legacy Assimp `aiScene` APIs available as deprecated DART 6
+    compatibility shims, and route mesh collision backends through the new
+    representation:
+    [#3145](https://github.com/dartsim/dart/pull/3145)
 
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
@@ -154,6 +190,29 @@
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
 * Simulation
+
+  * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
+    `World::setCollisionDetector(CollisionDetectorType)` /
+    `World::setCollisionDetector(CollisionDetectorPtr)` /
+    `World::getCollisionDetector()`, and corresponding dartpy bindings so users
+    can switch collision detectors (FCL, Bullet, ODE, DART) without reaching
+    into the constraint solver internals. The additions are opt-in: the default
+    `World` construction path keeps the existing default detector (FCL with
+    `PRIMITIVE` shapes) unchanged, and the pre-existing
+    `ConstraintSolver::setCollisionDetector(...)` API is untouched:
+    [#2168](https://github.com/dartsim/dart/pull/2168)
+
+  * Harden contact handling against invalid geometry, fixing a crash reported
+    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
+    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
+    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
+    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
+    is non-finite before contact-constraint creation. Together these stop an
+    invalid shape dimension (or a non-finite contact from a mesh or collision
+    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
+    or corrupting the LCP solve with NaN/Inf:
+    [#3132](https://github.com/dartsim/dart/pull/3132),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
@@ -170,6 +229,17 @@
     while keeping custom contact handlers and shared reactive bodies on the
     existing serial path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Make mimic motor constraints robust for Gazebo mimic repros by using
+    ERP-scaled position correction, clamped force-mixing and ERP parameters,
+    and finite fallback force and velocity limits for joints with unbounded
+    limits:
+    [#3137](https://github.com/dartsim/dart/pull/3137)
+
+  * Apply URDF planar and floating joint limits, velocity limits, force limits,
+    rest positions, damping, and Coulomb friction uniformly across their
+    degrees of freedom, and derive planar joint axes from the URDF `<axis>` tag:
+    [#3134](https://github.com/dartsim/dart/pull/3134)
 
   * Expose the opt-in simulation thread controls to dartpy via
     `World.setNumSimulationThreads()` and
@@ -190,11 +260,10 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Reuse built-in default contact constraint objects across simulation steps
-    and avoid constructing full inverse transforms for local contact points so
-    contact-heavy scenes reduce contact-constraint setup work after the first
-    frame. Consecutive contacts from the same collision pair also skip repeated
-    scratch-table probes while preserving custom contact-surface handler
-    behavior:
+    so contact-heavy scenes reduce contact-constraint setup work after the
+    first frame. Consecutive contacts from the same collision pair also skip
+    repeated scratch-table probes while preserving custom contact-surface
+    handler behavior and final-state hashes on the measured issue scene:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up single-free-body contact groups by using direct LCP assembly for

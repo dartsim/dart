@@ -5,6 +5,17 @@ import numpy as np
 import pytest
 
 
+def test_collision_option_allows_negative_penetration_depth_opt_in():
+    option = dart.collision.CollisionOption()
+    assert not option.allowNegativePenetrationDepthContacts
+
+    option.allowNegativePenetrationDepthContacts = True
+    assert option.allowNegativePenetrationDepthContacts
+
+    option = dart.collision.CollisionOption(True, 10, None, True)
+    assert option.allowNegativePenetrationDepthContacts
+
+
 def collision_groups_tester(cd):
     size = [1, 1, 1]
     pos1 = [0, 0, 0]

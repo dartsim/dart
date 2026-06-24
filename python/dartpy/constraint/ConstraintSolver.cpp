@@ -150,6 +150,17 @@ void ConstraintSolver(py::module& m)
             return self->getNumSimulationThreads();
           })
       .def(
+          "setSplitImpulseEnabled",
+          +[](dart::constraint::ConstraintSolver* self, bool enabled) {
+            self->setSplitImpulseEnabled(enabled);
+          },
+          ::py::arg("enabled"))
+      .def(
+          "isSplitImpulseEnabled",
+          +[](const dart::constraint::ConstraintSolver* self) -> bool {
+            return self->isSplitImpulseEnabled();
+          })
+      .def(
           "setCollisionDetector",
           +[](dart::constraint::ConstraintSolver* self,
               const std::shared_ptr<dart::collision::CollisionDetector>&
