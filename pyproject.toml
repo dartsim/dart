@@ -41,32 +41,32 @@ test-requires = "pytest"
 test-command = "pytest {project}/python/tests"
 # https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
 skip = [
-    # Common
-    "pp*",
+  # Common
+  "pp*",
 
-    # Linux
-    "*musllinux*",
-    "cp36-*linux*",
-    "cp37-*linux*",
-    "cp38-*linux*",
-    "cp39-*linux*",
+  # Linux
+  "*musllinux*",
+  "cp36-*linux*",
+  "cp37-*linux*",
+  "cp38-*linux*",
+  "cp39-*linux*",
 
-    # macOS
-    "cp36-macosx*",
-    "cp37-macosx*",
-    "cp38-macosx*",
-    "cp39-macosx*",
-    "cp310-macosx*",
-    "cp311-macosx*",
+  # macOS
+  "cp36-macosx*",
+  "cp37-macosx*",
+  "cp38-macosx*",
+  "cp39-macosx*",
+  "cp310-macosx*",
+  "cp311-macosx*",
 
-    # Windows
-    "cp*-win32",
-    "cp36-win*",
-    "cp37-win*",
-    "cp38-win*",
-    "cp39-win*",
-    "cp310-win*",
-    "cp311-win*",
+  # Windows
+  "cp*-win32",
+  "cp36-win*",
+  "cp37-win*",
+  "cp38-win*",
+  "cp39-win*",
+  "cp310-win*",
+  "cp311-win*",
 ]
 
 [tool.cibuildwheel.linux]
@@ -75,10 +75,10 @@ archs = ["x86_64"]
 [tool.cibuildwheel.macos]
 archs = ["auto64"] # TODO: Add universal2 and arm64
 before-all = [
-    "brew update > /dev/null",
-    "brew bundle || brew bundle",
-    "brew install open-scene-graph", # TODO: --HEAD is needed to build the latest version, but it's currently broken
-    "sw_vers",
+  "brew update > /dev/null",
+  "brew bundle || brew bundle",
+  "brew install open-scene-graph", # TODO: --HEAD is needed to build the latest version, but it's currently broken
+  "sw_vers",
 ]
 
 [tool.cibuildwheel.windows]

@@ -19,9 +19,7 @@ dart_build_tests(
 )
 
 dart_add_test("integration" test_CollisionGroups)
-foreach(collision_engine
-  dart-collision-bullet
-  dart-collision-ode)
+foreach(collision_engine dart-collision-bullet dart-collision-ode)
   if(TARGET ${collision_engine})
     target_link_libraries(test_CollisionGroups ${collision_engine})
   endif()
@@ -40,13 +38,12 @@ dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
 
 if(TARGET dart-utils)
-
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
 
   dart_add_test("integration" test_DartResourceRetriever)
   target_link_libraries(test_DartResourceRetriever dart-utils)
-  
+
   dart_add_test("integration" test_FileInfoWorld)
   target_link_libraries(test_FileInfoWorld dart-utils)
 
@@ -55,7 +52,7 @@ if(TARGET dart-utils)
 
   dart_add_test("integration" test_MjcfParser)
   target_link_libraries(test_MjcfParser dart-utils)
-  
+
   dart_add_test("integration" test_SdfParser)
   target_link_libraries(test_SdfParser dart-utils)
   if(TARGET dart-collision-bullet)
@@ -82,12 +79,18 @@ if(TARGET dart-utils-urdf)
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
-  target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_definitions(
+    SharedLibraryWamIkFast
+    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
+  )
   target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
 
   dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
   target_link_libraries(GeneratedWamIkFast PUBLIC dart)
-  target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_definitions(
+    GeneratedWamIkFast
+    PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY
+  )
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
   if(BUILD_SHARED_LIBS)
@@ -122,13 +125,14 @@ endif()
 
 if(TARGET dart-collision-bullet AND TARGET dart-collision-ode)
   dart_add_test("integration" test_CapsuleGroundContact)
-  target_link_libraries(test_CapsuleGroundContact
+  target_link_libraries(
+    test_CapsuleGroundContact
     dart-collision-bullet
-    dart-collision-ode)
+    dart-collision-ode
+  )
 endif()
 
 if(TARGET dart-utils)
-
   dart_add_test("integration" test_Collision)
   target_link_libraries(test_Collision dart-utils)
   if(TARGET dart-collision-bullet)
@@ -166,5 +170,4 @@ if(TARGET dart-utils)
     dart_add_test("integration" test_ForwardKinematics)
     target_link_libraries(test_ForwardKinematics dart-utils-urdf)
   endif()
-
 endif()

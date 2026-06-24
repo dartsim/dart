@@ -6,10 +6,15 @@
 #
 # This file is provided under the "BSD-style" License
 
-if(NOT CMAKE_CROSSCOMPILING
-    AND (NOT Vulkan_LIBRARY
-         OR Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)"
-         OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)"))
+if(
+  NOT CMAKE_CROSSCOMPILING
+  AND
+    (
+      NOT Vulkan_LIBRARY
+      OR Vulkan_LIBRARY MATCHES "^/usr/lib(/|$)"
+      OR Vulkan_LIBRARY MATCHES "^/usr/lib64(/|$)"
+    )
+)
   # Prefer the Vulkan loader that ships with the active prefix (e.g., pixi/conda)
   # to avoid RPATH conflicts when the system loader is also present. Skip this
   # override entirely when cross-compiling so toolchains can provide their own loader.
@@ -25,9 +30,18 @@ if(NOT CMAKE_CROSSCOMPILING
       continue()
     endif()
     foreach(_dart_vulkan_candidate libvulkan.so libvulkan.so.1)
-      set(_dart_vulkan_path "${_dart_vulkan_prefix}/lib/${_dart_vulkan_candidate}")
+      set(
+        _dart_vulkan_path
+        "${_dart_vulkan_prefix}/lib/${_dart_vulkan_candidate}"
+      )
       if(EXISTS "${_dart_vulkan_path}")
-        set(Vulkan_LIBRARY "${_dart_vulkan_path}" CACHE FILEPATH "Path to the Vulkan loader library" FORCE)
+        set(
+          Vulkan_LIBRARY
+          "${_dart_vulkan_path}"
+          CACHE FILEPATH
+          "Path to the Vulkan loader library"
+          FORCE
+        )
         set(_dart_vulkan_local_found TRUE)
         break()
       endif()
@@ -55,8 +69,10 @@ endif()
 
 if(imgui_FOUND AND NOT TARGET imgui::imgui)
   add_library(imgui::imgui INTERFACE IMPORTED)
-  set_target_properties(imgui::imgui PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
+  set_target_properties(
+    imgui::imgui
+    PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
   )
 endif()
