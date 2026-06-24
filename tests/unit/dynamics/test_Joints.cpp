@@ -165,3 +165,75 @@ TEST(Joints, UniversalJointCopyPointerUsesSource)
   joint->copy(otherJoint);
   EXPECT_TRUE(joint->getAxis1().isApprox(Eigen::Vector3d::UnitY()));
 }
+
+TEST(Joints, PerDofActuatorOverridesStayOrderedAndCompact)
+{
+  auto skel = Skeleton::create("per_dof_actuator_order");
+  auto [joint, body] = skel->createJointAndBodyNodePair<BallJoint>();
+  (void)body;
+
+  joint->setActuatorType(Joint::SERVO);
+  joint->setActuatorType(2, Joint::MIMIC);
+  joint->setActuatorType(1, Joint::MIMIC);
+
+  const std::vector<Joint::ActuatorType> expectedWithOverrides{
+      Joint::SERVO, Joint::MIMIC, Joint::MIMIC};
+  EXPECT_EQ(joint->getActuatorTypes(), expectedWithOverrides);
+  EXPECT_EQ(joint->getActuatorType(0), Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorType(1), Joint::MIMIC);
+  EXPECT_EQ(joint->getActuatorType(2), Joint::MIMIC);
+
+  const auto& properties = joint->getJointProperties();
+  ASSERT_EQ(properties.mActuatorTypes.size(), 2u);
+  EXPECT_EQ(properties.mActuatorTypes[0].first, 1u);
+  EXPECT_EQ(properties.mActuatorTypes[0].second, Joint::MIMIC);
+  EXPECT_EQ(properties.mActuatorTypes[1].first, 2u);
+  EXPECT_EQ(properties.mActuatorTypes[1].second, Joint::MIMIC);
+
+  joint->setActuatorType(2, Joint::MIMIC);
+  EXPECT_EQ(joint->getJointProperties().mActuatorTypes.size(), 2u);
+
+  joint->setActuatorType(1, Joint::SERVO);
+  const std::vector<Joint::ActuatorType> expectedAfterErase{
+      Joint::SERVO, Joint::SERVO, Joint::MIMIC};
+  EXPECT_EQ(joint->getActuatorTypes(), expectedAfterErase);
+  ASSERT_EQ(joint->getJointProperties().mActuatorTypes.size(), 1u);
+  EXPECT_EQ(joint->getJointProperties().mActuatorTypes[0].first, 2u);
+
+  joint->setActuatorType(2, Joint::SERVO);
+  EXPECT_TRUE(joint->getJointProperties().mActuatorTypes.empty());
+}
+
+TEST(Joints, BulkActuatorTypesRoundTripThroughJointProperties)
+{
+  auto skel = Skeleton::create("bulk_actuator_types");
+  auto [joint, body] = skel->createJointAndBodyNodePair<BallJoint>();
+  (void)body;
+
+  const std::vector<Joint::ActuatorType> actuatorTypes{
+      Joint::SERVO, Joint::MIMIC, Joint::SERVO};
+  joint->setActuatorTypes(actuatorTypes);
+
+  EXPECT_EQ(joint->getActuatorType(), Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorTypes(), actuatorTypes);
+  ASSERT_EQ(joint->getJointProperties().mActuatorTypes.size(), 1u);
+  EXPECT_EQ(joint->getJointProperties().mActuatorTypes[0].first, 1u);
+  EXPECT_EQ(joint->getJointProperties().mActuatorTypes[0].second, Joint::MIMIC);
+
+  auto [copiedJoint, copiedBody]
+      = skel->createJointAndBodyNodePair<BallJoint>();
+  (void)copiedBody;
+  Joint* copiedBase = copiedJoint;
+  copiedBase->setProperties(joint->getJointProperties());
+  EXPECT_EQ(copiedJoint->getActuatorTypes(), actuatorTypes);
+
+  copiedJoint->setActuatorTypes(actuatorTypes);
+  EXPECT_EQ(copiedJoint->getActuatorTypes(), actuatorTypes);
+
+  copiedJoint->setActuatorTypes(
+      {Joint::VELOCITY, Joint::MIMIC, Joint::VELOCITY});
+  EXPECT_EQ(copiedJoint->getActuatorTypes(), actuatorTypes);
+
+  copiedJoint->setActuatorTypes({Joint::SERVO, Joint::PASSIVE, Joint::SERVO});
+  EXPECT_EQ(copiedJoint->getActuatorTypes(), actuatorTypes);
+}
