@@ -153,6 +153,25 @@ void ContactConstraint::reset(
     double timeStep,
     const ContactSurfaceParams& contactSurfaceParams)
 {
+  resetState(contact, timeStep);
+  initialize(contactSurfaceParams);
+}
+
+//==============================================================================
+void ContactConstraint::reset(
+    collision::Contact& contact,
+    double timeStep,
+    const ContactSurfaceParams& contactSurfaceParams,
+    bool skipRelVelocityA,
+    bool skipRelVelocityB)
+{
+  resetState(contact, timeStep);
+  initialize(contactSurfaceParams, true, skipRelVelocityA, skipRelVelocityB);
+}
+
+//==============================================================================
+void ContactConstraint::resetState(collision::Contact& contact, double timeStep)
+{
   mDim = 0u;
   mTimeStep = timeStep;
   mBodyNodeA = getContactBodyNode(contact.collisionObject1);
@@ -178,13 +197,14 @@ void ContactConstraint::reset(
   mAppliedImpulseIndex = dynamics::INVALID_INDEX;
   mIsBounceOn = false;
   mActive = false;
-
-  initialize(contactSurfaceParams);
 }
 
 //==============================================================================
 void ContactConstraint::initialize(
-    const ContactSurfaceParams& contactSurfaceParams)
+    const ContactSurfaceParams& contactSurfaceParams,
+    bool usePrecomputedSkipRelVelocity,
+    bool skipRelVelocityA,
+    bool skipRelVelocityB)
 {
   if (!hasValidBodyNodes()) {
     dtwarn << "[ContactConstraint] Ignoring contact with a null collision "
@@ -199,10 +219,19 @@ void ContactConstraint::initialize(
   mSkeletonB = mBodyNodeB->getSkeletonRawPtr();
   mIsReactiveA = isContactBodyNodeReactive(mBodyNodeA, mSkeletonA);
   mIsReactiveB = isContactBodyNodeReactive(mBodyNodeB, mSkeletonB);
-  mSkipRelVelocityA
-      = canSkipContactRelativeVelocity(mBodyNodeA, mSkeletonA, mIsReactiveA);
-  mSkipRelVelocityB
-      = canSkipContactRelativeVelocity(mBodyNodeB, mSkeletonB, mIsReactiveB);
+  if (usePrecomputedSkipRelVelocity) {
+    mSkipRelVelocityA = skipRelVelocityA
+                        || canSkipContactRelativeVelocity(
+                            mBodyNodeA, mSkeletonA, mIsReactiveA);
+    mSkipRelVelocityB = skipRelVelocityB
+                        || canSkipContactRelativeVelocity(
+                            mBodyNodeB, mSkeletonB, mIsReactiveB);
+  } else {
+    mSkipRelVelocityA
+        = canSkipContactRelativeVelocity(mBodyNodeA, mSkeletonA, mIsReactiveA);
+    mSkipRelVelocityB
+        = canSkipContactRelativeVelocity(mBodyNodeB, mSkeletonB, mIsReactiveB);
+  }
 
   DART_ASSERT(
       mContact

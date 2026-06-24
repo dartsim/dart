@@ -1289,7 +1289,10 @@ void ConstraintSolver::updateConstraints()
           }
         };
 
+    static thread_local std::unordered_set<const dynamics::BodyNode*>
+        parallelSkipRelVelocityBodies;
     const auto canBuildDefaultContactsByPairInParallel = [&]() {
+      parallelSkipRelVelocityBodies.clear();
       if (!useBuiltInDefaultSurfaceParamsCache
           || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
           || contactCandidates.size() < 512u || contactPairCounts.size() < 64u
@@ -1306,6 +1309,7 @@ void ConstraintSolver::updateConstraints()
           sharedBodyCheck;
       sharedBodyCheck.clear();
       sharedBodyCheck.reserve(contactPairCounts.size());
+      parallelSkipRelVelocityBodies.reserve(contactPairCounts.size());
 
       DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
 
@@ -1317,8 +1321,24 @@ void ConstraintSolver::updateConstraints()
         if (bodyNode == nullptr)
           return true;
 
+        if (parallelSkipRelVelocityBodies.find(bodyNode)
+            != parallelSkipRelVelocityBodies.end()) {
+          return true;
+        }
+
         if (bodyNode->getNumDependentGenCoords() == 0u)
           return true;
+
+        const auto* skeleton = bodyNode->getSkeletonRawPtr();
+        const bool fixedZeroVelocitySupport
+            = skeleton != nullptr && !skeleton->isMobile()
+              && !bodyNode->isReactive()
+              && bodyNode->getSpatialVelocity().squaredNorm()
+                     < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+        if (fixedZeroVelocitySupport) {
+          parallelSkipRelVelocityBodies.insert(bodyNode);
+          return true;
+        }
 
         return sharedBodyCheck.insert(bodyNode).second;
       };
@@ -1337,23 +1357,45 @@ void ConstraintSolver::updateConstraints()
         = canBuildDefaultContactsByPairInParallel();
     if (useParallelDefaultContactBuild) {
       mContactConstraints.resize(contactCandidates.size());
+      auto* contactPairCountsForParallel = &contactPairCounts;
+      auto* contactCandidatesForParallel = &contactCandidates;
+      auto* parallelSkipRelVelocityBodiesForStep
+          = &parallelSkipRelVelocityBodies;
+      const auto skipRelVelocityForParallelReset
+          = [&](collision::CollisionObject* object) {
+              if (object == nullptr)
+                return false;
+
+              const auto* bodyNode = object->getBodyNode();
+              return bodyNode != nullptr
+                     && parallelSkipRelVelocityBodiesForStep->find(bodyNode)
+                            != parallelSkipRelVelocityBodiesForStep->end();
+            };
       auto buildDefaultContactConstraintsForPair = [&](std::size_t pairIndex) {
-        auto& contactPairCount = contactPairCounts[pairIndex];
+        auto& contactPairCount = (*contactPairCountsForParallel)[pairIndex];
         if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
           return;
 
         for (auto i = contactPairCount.firstCandidateIndex;
              i != invalidContactPairIndex;
-             i = contactCandidates[i].nextCandidateIndex) {
-          const auto& candidate = contactCandidates[i];
+             i = (*contactCandidatesForParallel)[i].nextCandidateIndex) {
+          const auto& candidate = (*contactCandidatesForParallel)[i];
 
           ContactConstraintPtr contactConstraint;
           if (i < mReusableContactConstraints.size())
             contactConstraint = std::move(mReusableContactConstraints[i]);
 
           if (contactConstraint != nullptr) {
+            const bool skipRelVelocityA = skipRelVelocityForParallelReset(
+                candidate.contact->collisionObject1);
+            const bool skipRelVelocityB = skipRelVelocityForParallelReset(
+                candidate.contact->collisionObject2);
             contactConstraint->reset(
-                *candidate.contact, mTimeStep, contactPairCount.surfaceParams);
+                *candidate.contact,
+                mTimeStep,
+                contactPairCount.surfaceParams,
+                skipRelVelocityA,
+                skipRelVelocityB);
           } else {
             contactConstraint
                 = builtInDefaultContactHandler
@@ -1370,7 +1412,7 @@ void ConstraintSolver::updateConstraints()
       {
         DART_PROFILE_SCOPED_N("build contact constraints - parallel reset");
         mConstraintThreadPool->parallelFor(
-            contactPairCounts.size(),
+            contactPairCountsForParallel->size(),
             mNumSimulationThreads,
             buildDefaultContactConstraintsForPair);
       }

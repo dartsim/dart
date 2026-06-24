@@ -184,9 +184,25 @@ private:
       double timeStep,
       const ContactSurfaceParams& contactSurfaceParams);
 
+  /// Reinitialize this constraint using skip-relative-velocity decisions that
+  /// were computed serially before parallel contact construction.
+  void reset(
+      collision::Contact& contact,
+      double timeStep,
+      const ContactSurfaceParams& contactSurfaceParams,
+      bool skipRelVelocityA,
+      bool skipRelVelocityB);
+
+  /// Reset members that are independent of contact-surface initialization.
+  void resetState(collision::Contact& contact, double timeStep);
+
   /// Initialize cached per-contact data from the current contact pointer and
   /// surface parameters.
-  void initialize(const ContactSurfaceParams& contactSurfaceParams);
+  void initialize(
+      const ContactSurfaceParams& contactSurfaceParams,
+      bool usePrecomputedSkipRelVelocity = false,
+      bool skipRelVelocityA = false,
+      bool skipRelVelocityB = false);
 
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] relVel Change in relative velocity at contact point of the
