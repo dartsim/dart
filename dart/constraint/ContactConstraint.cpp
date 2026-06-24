@@ -200,7 +200,9 @@ void ContactConstraint::initialize(
       = canSkipContactRelativeVelocity(mBodyNodeB, mSkeletonB, mIsReactiveB);
 
   DART_ASSERT(
-      contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
+      mContact
+      && mContact->normal.squaredNorm()
+             >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
 
   //----------------------------------------------
   // Bounce
@@ -281,8 +283,8 @@ void ContactConstraint::initialize(
     if (!mSkipRelVelocityA) {
       const Eigen::Isometry3d& tfA = mBodyNodeA->getWorldTransform();
       const Eigen::Matrix3d rotationA = tfA.linear().transpose();
-      bodyPointA.noalias() = rotationA * ct.point;
-      bodyPointA.noalias() -= rotationA * tfA.translation();
+      const Eigen::Isometry3d tfAInv = tfA.inverse();
+      bodyPointA.noalias() = tfAInv * ct.point;
 
       // Jacobian for normal contact
       bodyDirectionA.noalias() = rotationA * ct.normal;
@@ -306,8 +308,8 @@ void ContactConstraint::initialize(
     if (!mSkipRelVelocityB) {
       const Eigen::Isometry3d& tfB = mBodyNodeB->getWorldTransform();
       const Eigen::Matrix3d rotationB = tfB.linear().transpose();
-      bodyPointB.noalias() = rotationB * ct.point;
-      bodyPointB.noalias() -= rotationB * tfB.translation();
+      const Eigen::Isometry3d tfBInv = tfB.inverse();
+      bodyPointB.noalias() = tfBInv * ct.point;
 
       // Jacobian for normal contact
       bodyDirectionB.noalias() = rotationB * -ct.normal;
@@ -353,8 +355,7 @@ void ContactConstraint::initialize(
       const Eigen::Vector3d bodyDirectionA = rotationA * ct.normal;
 
       // Contact points in the local coordinates
-      Eigen::Vector3d bodyPointA = rotationA * ct.point;
-      bodyPointA.noalias() -= rotationA * tfA.translation();
+      const Eigen::Vector3d bodyPointA = tfA.inverse() * ct.point;
       mSpatialNormalA.col(0).head<3>().noalias()
           = bodyPointA.cross(bodyDirectionA);
       mSpatialNormalA.col(0).tail<3>().noalias() = bodyDirectionA;
@@ -368,8 +369,7 @@ void ContactConstraint::initialize(
       const Eigen::Vector3d bodyDirectionB = rotationB * -ct.normal;
 
       // Contact points in the local coordinates
-      Eigen::Vector3d bodyPointB = rotationB * ct.point;
-      bodyPointB.noalias() -= rotationB * tfB.translation();
+      const Eigen::Vector3d bodyPointB = tfB.inverse() * ct.point;
       mSpatialNormalB.col(0).head<3>().noalias()
           = bodyPointB.cross(bodyDirectionB);
       mSpatialNormalB.col(0).tail<3>().noalias() = bodyDirectionB;
@@ -506,8 +506,28 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   if (!hasValidBodyNodes())
     return;
 
+  const bool isPositionPhase = info->phase == ConstraintPhase::Position;
+  const bool useSplitImpulse = info->useSplitImpulse;
+  const auto computeErrorReductionVelocity = [&](double errorAllowance) {
+    double errorReductionVelocity = mContact->penetrationDepth - errorAllowance;
+    if (errorReductionVelocity < 0.0) {
+      return 0.0;
+    }
+
+    errorReductionVelocity *= mErrorReductionParameter * info->invTimeStep;
+    if (errorReductionVelocity > mMaxErrorReductionVelocity) {
+      errorReductionVelocity = mMaxErrorReductionVelocity;
+    }
+    return errorReductionVelocity;
+  };
+
   // Fill w, where the LCP form is Ax = b + w (x >= 0, w >= 0, x^T w = 0)
-  getRelVelocity(info->b);
+  if (isPositionPhase) {
+    Eigen::Map<Eigen::VectorXd> velMap(info->b, static_cast<int>(mDim));
+    velMap.setZero();
+  } else {
+    getRelVelocity(info->b);
+  }
 
   //----------------------------------------------------------------------------
   // Friction case
@@ -524,48 +544,74 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     DART_ASSERT(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
-    info->lo[1] = -mPrimaryFrictionCoeff;
-    info->hi[1] = mPrimaryFrictionCoeff;
-    info->findex[1] = 0;
+    if (isPositionPhase) {
+      info->lo[1] = 0.0;
+      info->hi[1] = 0.0;
+      info->findex[1] = -1;
+    } else {
+      info->lo[1] = -mPrimaryFrictionCoeff;
+      info->hi[1] = mPrimaryFrictionCoeff;
+      info->findex[1] = 0;
+    }
 
     // Upper and lower bounds of tangential direction-2 impulsive force
-    info->lo[2] = -mSecondaryFrictionCoeff;
-    info->hi[2] = mSecondaryFrictionCoeff;
-    info->findex[2] = 0;
+    if (isPositionPhase) {
+      info->lo[2] = 0.0;
+      info->hi[2] = 0.0;
+      info->findex[2] = -1;
+    } else {
+      info->lo[2] = -mSecondaryFrictionCoeff;
+      info->hi[2] = mSecondaryFrictionCoeff;
+      info->findex[2] = 0;
+    }
 
     //------------------------------------------------------------------------
     // Bouncing
     //------------------------------------------------------------------------
-    // A. Penetration correction
-    double bouncingVelocity = mContact->penetrationDepth - mErrorAllowance;
-    if (bouncingVelocity < 0.0) {
-      bouncingVelocity = 0.0;
+    double bouncingVelocity = 0.0;
+    if (isPositionPhase) {
+      // A. Penetration correction
+      bouncingVelocity = computeErrorReductionVelocity(mErrorAllowance);
     } else {
-      bouncingVelocity *= mErrorReductionParameter * info->invTimeStep;
-      if (bouncingVelocity > mMaxErrorReductionVelocity)
-        bouncingVelocity = mMaxErrorReductionVelocity;
-    }
+      // B. Restitution
+      if (mIsBounceOn) {
+        double& negativeRelativeVel = info->b[0];
+        double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-    // B. Restitution
-    if (mIsBounceOn) {
-      double& negativeRelativeVel = info->b[0];
-      double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
+        if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+          if (restitutionVel > bouncingVelocity) {
+            bouncingVelocity = restitutionVel;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
-        if (restitutionVel > bouncingVelocity) {
-          bouncingVelocity = restitutionVel;
-
-          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
-            bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
+              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+            }
           }
+        }
+      }
+
+      if (!useSplitImpulse) {
+        // Split impulse disabled (the default): merge the Baumgarte
+        // penetration correction back into the velocity bias, reproducing the
+        // legacy behavior. The result equals the pre-split-impulse code for all
+        // reachable inputs because the penetration correction is clamped to
+        // mMaxErrorReductionVelocity (default 1e-3) while restitution only
+        // engages above DART_BOUNCING_VELOCITY_THRESHOLD and is clamped to
+        // DART_MAX_BOUNCING_VELOCITY (1e+2), so the max-merge order is
+        // immaterial.
+        const double errorReductionVelocity
+            = computeErrorReductionVelocity(mErrorAllowance);
+        if (errorReductionVelocity > bouncingVelocity) {
+          bouncingVelocity = errorReductionVelocity;
         }
       }
     }
 
     info->b[0] += bouncingVelocity;
-    info->b[0] += mContactSurfaceMotionVelocity.x();
-    info->b[1] += mContactSurfaceMotionVelocity.y();
-    info->b[2] += mContactSurfaceMotionVelocity.z();
+    if (!isPositionPhase) {
+      info->b[0] += mContactSurfaceMotionVelocity.x();
+      info->b[1] += mContactSurfaceMotionVelocity.y();
+      info->b[2] += mContactSurfaceMotionVelocity.z();
+    }
 
     // TODO(JS): Initial guess
     // x
@@ -588,33 +634,40 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     //------------------------------------------------------------------------
     // Bouncing
     //------------------------------------------------------------------------
-    // A. Penetration correction
-    double bouncingVelocity = mContact->penetrationDepth - DART_ERROR_ALLOWANCE;
-    if (bouncingVelocity < 0.0) {
-      bouncingVelocity = 0.0;
+    double bouncingVelocity = 0.0;
+    if (isPositionPhase) {
+      // A. Penetration correction
+      bouncingVelocity = computeErrorReductionVelocity(DART_ERROR_ALLOWANCE);
     } else {
-      bouncingVelocity *= mErrorReductionParameter * info->invTimeStep;
-      if (bouncingVelocity > mMaxErrorReductionVelocity)
-        bouncingVelocity = mMaxErrorReductionVelocity;
-    }
+      // B. Restitution
+      if (mIsBounceOn) {
+        double& negativeRelativeVel = info->b[0];
+        double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-    // B. Restitution
-    if (mIsBounceOn) {
-      double& negativeRelativeVel = info->b[0];
-      double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
+        if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+          if (restitutionVel > bouncingVelocity) {
+            bouncingVelocity = restitutionVel;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
-        if (restitutionVel > bouncingVelocity) {
-          bouncingVelocity = restitutionVel;
+            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
+              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+            }
+          }
+        }
+      }
 
-          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
-            bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+      if (!useSplitImpulse) {
+        const double errorReductionVelocity
+            = computeErrorReductionVelocity(DART_ERROR_ALLOWANCE);
+        if (errorReductionVelocity > bouncingVelocity) {
+          bouncingVelocity = errorReductionVelocity;
         }
       }
     }
 
     info->b[0] += bouncingVelocity;
-    info->b[0] += mContactSurfaceMotionVelocity.x();
+    if (!isPositionPhase) {
+      info->b[0] += mContactSurfaceMotionVelocity.x();
+    }
 
     // TODO(JS): Initial guess
     // x
@@ -893,6 +946,30 @@ void ContactConstraint::applyImpulse(double* lambda)
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact->force = mContact->normal * lambda[0] / mTimeStep;
+  }
+}
+
+//==============================================================================
+void ContactConstraint::applyPositionImpulse(double* lambda)
+{
+  if (!hasValidBodyNodes())
+    return;
+
+  if (mIsReactiveA) {
+    mBodyNodeA->addPositionConstraintImpulse(
+        mSpatialNormalA.col(0) * lambda[0]);
+  }
+
+  if (mIsReactiveB) {
+    mBodyNodeB->addPositionConstraintImpulse(
+        mSpatialNormalB.col(0) * lambda[0]);
+  }
+
+  if (mIsReactiveA) {
+    mBodyNodeA->getSkeleton()->setPositionImpulseApplied(true);
+  }
+  if (mIsReactiveB) {
+    mBodyNodeB->getSkeleton()->setPositionImpulseApplied(true);
   }
 }
 

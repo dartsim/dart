@@ -48,7 +48,11 @@ class Joint;
 
 namespace constraint {
 
-/// Servo motor constraint
+/// MimicMotorConstraint behaves like a servo motor: it drives only the
+/// dependent joint toward the reference joint's trajectory by applying
+/// impulses locally. The reference joint does not receive an equal and
+/// opposite impulse. Use CouplerConstraint instead when you need a bilateral
+/// constraint that reacts on both joints.
 class MimicMotorConstraint : public ConstraintBase
 {
 public:
@@ -79,6 +83,12 @@ public:
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
+
+  /// Set global error reduction parameter applied to mimic motors.
+  static void setErrorReductionParameter(double erp);
+
+  /// Get global error reduction parameter applied to mimic motors.
+  static double getErrorReductionParameter();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -153,9 +163,12 @@ private:
   double mLowerBound[6];
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
-  /// default is 1e-5
+  /// default is 1e-6
   /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
+
+  /// Global error reduction parameter that scales mimic motor position error.
+  static double mErrorReductionParameter;
 };
 
 } // namespace constraint

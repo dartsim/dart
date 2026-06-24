@@ -73,6 +73,7 @@ public:
     RECTANGULAR_PYRAMID,
     PLANE,
     MULTISPHERE,
+    CONVEX_MESH,
     MESH,
     SOFT_MESH,
     LINE_SEGMENT,

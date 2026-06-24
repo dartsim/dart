@@ -1318,3 +1318,41 @@ TEST(ConstraintSolver, ConstactSurfaceHandlerIgnoreParent)
   EXPECT_TRUE(customHandler2->mCalled);
   EXPECT_EQ(2, params.mPrimaryFrictionCoeff);
 }
+
+//==============================================================================
+// Split impulse must be opt-in: disabled by default so the existing Baumgarte
+// (velocity-phase) penetration correction is preserved unchanged.
+TEST(ConstraintSolver, SplitImpulseDisabledByDefault)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  EXPECT_FALSE(solver.isSplitImpulseEnabled());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SplitImpulseEnabledRoundTrips)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  solver.setSplitImpulseEnabled(true);
+  EXPECT_TRUE(solver.isSplitImpulseEnabled());
+  solver.setSplitImpulseEnabled(false);
+  EXPECT_FALSE(solver.isSplitImpulseEnabled());
+}
+
+//==============================================================================
+// setFromOtherConstraintSolver must copy the split impulse flag so cloned
+// worlds preserve the configured contact-solve behavior.
+TEST(ConstraintSolver, SplitImpulseFlagIsCopiedFromOtherSolver)
+{
+  constraint::BoxedLcpConstraintSolver source;
+  source.setSplitImpulseEnabled(true);
+
+  constraint::BoxedLcpConstraintSolver target;
+  ASSERT_FALSE(target.isSplitImpulseEnabled());
+  target.setFromOtherConstraintSolver(source);
+  EXPECT_TRUE(target.isSplitImpulseEnabled());
+
+  constraint::BoxedLcpConstraintSolver sourceOff;
+  sourceOff.setSplitImpulseEnabled(false);
+  target.setFromOtherConstraintSolver(sourceOff);
+  EXPECT_FALSE(target.isSplitImpulseEnabled());
+}

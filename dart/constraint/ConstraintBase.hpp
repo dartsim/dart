@@ -45,6 +45,13 @@ class Skeleton;
 
 namespace constraint {
 
+/// Constraint solve phase used by split impulse position correction.
+enum class ConstraintPhase
+{
+  Velocity,
+  Position,
+};
+
 /// ConstraintInfo
 struct ConstraintInfo
 {
@@ -68,6 +75,14 @@ struct ConstraintInfo
 
   /// Inverse of time step
   double invTimeStep;
+
+  /// Constraint solve phase. Defaults to Velocity so the existing
+  /// (non-split-impulse) solve path is unaffected.
+  ConstraintPhase phase{ConstraintPhase::Velocity};
+
+  /// Whether to skip penetration correction in the velocity phase. Defaults to
+  /// false so the existing Baumgarte penetration correction is preserved.
+  bool useSplitImpulse{false};
 };
 
 /// Constraint is a base class of concrete constraints classes
