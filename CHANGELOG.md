@@ -169,6 +169,17 @@
 
 * Simulation
 
+  * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
+    `World::setCollisionDetector(CollisionDetectorType)` /
+    `World::setCollisionDetector(CollisionDetectorPtr)` /
+    `World::getCollisionDetector()`, and corresponding dartpy bindings so users
+    can switch collision detectors (FCL, Bullet, ODE, DART) without reaching
+    into the constraint solver internals. The additions are opt-in: the default
+    `World` construction path keeps the existing default detector (FCL with
+    `PRIMITIVE` shapes) unchanged, and the pre-existing
+    `ConstraintSolver::setCollisionDetector(...)` API is untouched:
+    [#2168](https://github.com/dartsim/dart/pull/2168)
+
   * Harden contact handling against invalid geometry, fixing a crash reported
     through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
     `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
