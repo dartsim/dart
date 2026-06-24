@@ -2,15 +2,10 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged, and the active DART-native performance stack is
-#3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, #3139
-`perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, #3141
-`perf/dart6-native-scratch-result-cache`, #3142
-`perf/dart6-single-reactive-solve-fast-path`, and #3143
-`perf/dart6-native-shape-kind-dispatch`. The next local candidate is
-`perf/dart6-native-contact-merge-grid`, stacked on #3143.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, and #3143 are
+merged. The current follow-up is #3144
+`perf/dart6-native-contact-merge-grid`, refreshed on current
+`origin/release-6.20`.
 
 The current local candidate keeps the exact distance-based duplicate-contact
 check, but changes the DART-native contact merge grid from fixed 27-cell

@@ -33,6 +33,7 @@
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Filesystem.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -229,7 +230,9 @@ bool checkSpecularSanity(const aiColor4D& c)
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   const aiNode* root = scene->mRootNode;
 
   if (firstTime) // extract material properties
@@ -522,7 +525,9 @@ void MeshShapeGeode::extractData(bool)
 {
   clearChildUtilizationFlags();
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
+  DART_SUPPRESS_DEPRECATED_END
   for (std::size_t i = 0; i < mAiNode->mNumMeshes; ++i) {
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 
