@@ -38,7 +38,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <map>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace dynamics {
@@ -130,6 +133,10 @@ struct JointProperties
 
   /// Actuator type
   ActuatorType mActuatorType;
+
+  /// Actuator types for specific DoFs that override the joint-wide actuator
+  /// type.
+  std::map<std::size_t, ActuatorType> mActuatorTypes;
 
   /// Vector of MimicDofProperties for each dependent DoF in the joint.
   std::vector<MimicDofProperties> mMimicDofProps;

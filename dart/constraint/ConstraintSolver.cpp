@@ -725,8 +725,8 @@ bool ConstraintSolver::canJointCreateAutomaticConstraint(
     return false;
 
   return joint->hasCoulombFriction() || joint->areLimitsEnforced()
-         || joint->getActuatorType() == dynamics::Joint::SERVO
-         || (joint->getActuatorType() == dynamics::Joint::MIMIC
+         || joint->hasActuatorType(dynamics::Joint::SERVO)
+         || (joint->hasActuatorType(dynamics::Joint::MIMIC)
              && joint->getMimicJoint());
 }
 
@@ -1173,14 +1173,35 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        auto mimicProps = joint->getMimicDofProperties();
+        const auto dofCount = joint->getNumDofs();
+        bool hasValidMimicDof = false;
+        for (std::size_t dofIndex = 0;
+             dofIndex < dofCount && dofIndex < mimicProps.size();
+             ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+            } else {
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
+            }
+          }
+        }
+
+        if (hasValidMimicDof) {
+          mMimicMotorConstraints.push_back(
+              std::make_shared<MimicMotorConstraint>(
+                  joint, joint->getMimicDofProperties()));
+        }
       }
     }
   }

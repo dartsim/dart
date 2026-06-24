@@ -35,6 +35,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -247,6 +248,43 @@ void Joint(py::module& m)
               -> dart::dynamics::Joint::ActuatorType {
             return self->getActuatorType();
           })
+      .def(
+          "setActuatorTypeForDof",
+          +[](dart::dynamics::Joint* self,
+              std::size_t index,
+              dart::dynamics::Joint::ActuatorType actuatorType) -> void {
+            self->setActuatorType(index, actuatorType);
+          },
+          ::py::arg("index"),
+          ::py::arg("actuatorType"))
+      .def(
+          "setActuatorTypes",
+          +[](dart::dynamics::Joint* self,
+              const std::vector<dart::dynamics::Joint::ActuatorType>&
+                  actuatorTypes) -> void {
+            self->setActuatorTypes(actuatorTypes);
+          },
+          ::py::arg("actuatorTypes"))
+      .def(
+          "getActuatorTypeForDof",
+          +[](const dart::dynamics::Joint* self,
+              std::size_t index) -> dart::dynamics::Joint::ActuatorType {
+            return self->getActuatorType(index);
+          },
+          ::py::arg("index"))
+      .def(
+          "getActuatorTypes",
+          +[](const dart::dynamics::Joint* self)
+              -> std::vector<dart::dynamics::Joint::ActuatorType> {
+            return self->getActuatorTypes();
+          })
+      .def(
+          "hasActuatorType",
+          +[](const dart::dynamics::Joint* self,
+              dart::dynamics::Joint::ActuatorType actuatorType) -> bool {
+            return self->hasActuatorType(actuatorType);
+          },
+          ::py::arg("actuatorType"))
       .def(
           "isKinematic",
           +[](const dart::dynamics::Joint* self) -> bool {
