@@ -151,6 +151,9 @@
     behavior are unchanged:
     [#2222](https://github.com/dartsim/dart/pull/2222)
 
+  * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
+    and destroy joint properties without heap corruption.
+
   * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
     joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
     elements and wires the parsed follower DoFs to the existing per-DoF mimic
