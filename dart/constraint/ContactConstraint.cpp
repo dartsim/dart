@@ -511,7 +511,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   const bool isPositionPhase = info->phase == ConstraintPhase::Position;
   const bool useSplitImpulse = info->useSplitImpulse;
   const auto computeErrorReductionVelocity = [&](double errorAllowance) {
-    double errorReductionVelocity = mContact.penetrationDepth - errorAllowance;
+    double errorReductionVelocity = mContact->penetrationDepth - errorAllowance;
     if (errorReductionVelocity < 0.0) {
       return 0.0;
     }
