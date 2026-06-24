@@ -1458,17 +1458,17 @@ bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
   if (shape == nullptr)
     return false;
 
-  const auto& shapeType = dartObject->getCachedShapeType();
-  if (shapeType == dynamics::SphereShape::getStaticType()
-      || shapeType == dynamics::BoxShape::getStaticType()
-      || shapeType == dynamics::CylinderShape::getStaticType()
-      || shapeType == dynamics::CapsuleShape::getStaticType()) {
-    return true;
-  }
-
-  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(shape);
-    return ellipsoid->isSphere();
+  using CachedShapeKind = DARTCollisionObject::CachedShapeKind;
+  switch (dartObject->getCachedShapeKind()) {
+    case CachedShapeKind::Sphere:
+    case CachedShapeKind::SphereEllipsoid:
+    case CachedShapeKind::Box:
+    case CachedShapeKind::Cylinder:
+    case CachedShapeKind::Capsule:
+      return true;
+    case CachedShapeKind::Unknown:
+    case CachedShapeKind::Plane:
+      break;
   }
 
   return false;

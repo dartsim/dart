@@ -91,6 +91,11 @@
     single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up primitive DART-native plane collision dispatch by caching a compact
+    shape kind beside each collision object's cached shape metadata, while
+    preserving the existing fallback path for unsupported shapes:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:
