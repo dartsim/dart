@@ -36,10 +36,22 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-RaycastOption::RaycastOption(bool enableAllHits, bool sortByClosest)
-  : mEnableAllHits(enableAllHits), mSortByClosest(sortByClosest)
+RaycastOption::RaycastOption(
+    bool enableAllHits, bool sortByClosest, RaycastFilter filter)
+  : mEnableAllHits(enableAllHits),
+    mSortByClosest(sortByClosest),
+    mFilter(std::move(filter))
 {
   // Do nothing
+}
+
+//==============================================================================
+bool RaycastOption::passesFilter(const CollisionObject* object) const
+{
+  if (!mFilter)
+    return true;
+
+  return mFilter(object);
 }
 
 } // namespace collision

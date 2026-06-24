@@ -131,6 +131,24 @@ void CollisionResult::clear()
 }
 
 //==============================================================================
+void CollisionResult::setCollidingObjectCacheEnabled(bool enabled)
+{
+  if (mCollidingObjectCacheEnabled == enabled)
+    return;
+
+  mCollidingObjectCacheEnabled = enabled;
+  if (enabled)
+    return;
+
+  mCollidingBodyNodeCandidates.clear();
+  mCollidingShapeFrameCandidates.clear();
+  mCollidingShapeFrames.clear();
+  mCollidingBodyNodes.clear();
+  mCollidingObjectCachesDirty = false;
+  mCollidingObjectCachesMaterialized = false;
+}
+
+//==============================================================================
 void CollisionResult::updateCollidingObjectCaches() const
 {
   if (!mCollidingObjectCachesDirty) {
@@ -154,6 +172,9 @@ void CollisionResult::updateCollidingObjectCaches() const
 //==============================================================================
 void CollisionResult::addObjectToCaches(CollisionObject* object)
 {
+  if (!mCollidingObjectCacheEnabled)
+    return;
+
   if (!object) {
     dterr << "[CollisionResult::addObjectToCaches] Attempting to add a "
           << "collision with a nullptr object to a CollisionResult instance. "

@@ -37,6 +37,7 @@
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
 #include <dart/dynamics/SmartPointer.hpp>
@@ -53,6 +54,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -157,6 +159,12 @@ public:
   /// existing Nodes in this BodyNode will be removed.
   void matchNodes(const BodyNode* otherBodyNode);
 
+  /// Return all the Nodes currently attached to this BodyNode.
+  std::vector<Node*> getNodes();
+
+  /// Return all the Nodes currently attached to this BodyNode (const).
+  std::vector<const Node*> getNodes() const;
+
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
@@ -213,6 +221,12 @@ public:
 
   /// Get the inertia data for this BodyNode
   const Inertia& getInertia() const;
+
+  /// Sum transformed inertias of all ShapeNodes using the provided mass
+  /// provider. The callable should return an optional mass for each ShapeNode.
+  template <typename MassProvider>
+  std::optional<Inertia> computeInertiaFromShapeNodes(
+      MassProvider&& massProvider) const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;

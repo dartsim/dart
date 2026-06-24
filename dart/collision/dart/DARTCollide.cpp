@@ -3822,39 +3822,40 @@ int collidePlaneShape(
   const auto* planeShape
       = static_cast<const dynamics::PlaneShape*>(cachedPlaneShape);
 
-  const auto& otherType = otherObject->getCachedShapeType();
   const auto& planeNormal = planeShape->getNormal();
   const auto planeOffset = planeShape->getOffset();
+  using CachedShapeKind = DARTCollisionObject::CachedShapeKind;
 
-  if (otherType == dynamics::SphereShape::getStaticType()) {
-    const auto* sphere = static_cast<const dynamics::SphereShape*>(otherShape);
-    if (planeFirst) {
-      return collidePlaneSphere(
-          planeObject,
+  switch (otherObject->getCachedShapeKind()) {
+    case CachedShapeKind::Sphere: {
+      const auto* sphere
+          = static_cast<const dynamics::SphereShape*>(otherShape);
+      if (planeFirst) {
+        return collidePlaneSphere(
+            planeObject,
+            otherObject,
+            planeNormal,
+            planeOffset,
+            planeTransform,
+            sphere->getRadius(),
+            otherTransform,
+            result);
+      }
+
+      return collideSpherePlane(
           otherObject,
+          planeObject,
+          sphere->getRadius(),
+          otherTransform,
           planeNormal,
           planeOffset,
           planeTransform,
-          sphere->getRadius(),
-          otherTransform,
           result);
     }
 
-    return collideSpherePlane(
-        otherObject,
-        planeObject,
-        sphere->getRadius(),
-        otherTransform,
-        planeNormal,
-        planeOffset,
-        planeTransform,
-        result);
-  }
-
-  if (otherType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto* ellipsoid
-        = static_cast<const dynamics::EllipsoidShape*>(otherShape);
-    if (ellipsoid->isSphere()) {
+    case CachedShapeKind::SphereEllipsoid: {
+      const auto* ellipsoid
+          = static_cast<const dynamics::EllipsoidShape*>(otherShape);
       if (planeFirst) {
         return collidePlaneSphere(
             planeObject,
@@ -3877,87 +3878,91 @@ int collidePlaneShape(
           planeTransform,
           result);
     }
-  }
 
-  if (otherType == dynamics::BoxShape::getStaticType()) {
-    const auto* box = static_cast<const dynamics::BoxShape*>(otherShape);
-    if (planeFirst) {
-      return collidePlaneBox(
-          planeObject,
+    case CachedShapeKind::Box: {
+      const auto* box = static_cast<const dynamics::BoxShape*>(otherShape);
+      if (planeFirst) {
+        return collidePlaneBox(
+            planeObject,
+            otherObject,
+            planeNormal,
+            planeOffset,
+            planeTransform,
+            box->getSize(),
+            otherTransform,
+            result);
+      }
+
+      return collideBoxPlane(
           otherObject,
+          planeObject,
+          box->getSize(),
+          otherTransform,
           planeNormal,
           planeOffset,
           planeTransform,
-          box->getSize(),
-          otherTransform,
           result);
     }
 
-    return collideBoxPlane(
-        otherObject,
-        planeObject,
-        box->getSize(),
-        otherTransform,
-        planeNormal,
-        planeOffset,
-        planeTransform,
-        result);
-  }
+    case CachedShapeKind::Cylinder: {
+      const auto* cylinder
+          = static_cast<const dynamics::CylinderShape*>(otherShape);
+      if (planeFirst) {
+        return collidePlaneCylinder(
+            planeObject,
+            otherObject,
+            planeNormal,
+            planeOffset,
+            planeTransform,
+            cylinder->getRadius(),
+            0.5 * cylinder->getHeight(),
+            otherTransform,
+            result);
+      }
 
-  if (otherType == dynamics::CylinderShape::getStaticType()) {
-    const auto* cylinder
-        = static_cast<const dynamics::CylinderShape*>(otherShape);
-    if (planeFirst) {
-      return collidePlaneCylinder(
-          planeObject,
+      return collideCylinderPlane(
           otherObject,
-          planeNormal,
-          planeOffset,
-          planeTransform,
+          planeObject,
           cylinder->getRadius(),
           0.5 * cylinder->getHeight(),
           otherTransform,
-          result);
-    }
-
-    return collideCylinderPlane(
-        otherObject,
-        planeObject,
-        cylinder->getRadius(),
-        0.5 * cylinder->getHeight(),
-        otherTransform,
-        planeNormal,
-        planeOffset,
-        planeTransform,
-        result);
-  }
-
-  if (otherType == dynamics::CapsuleShape::getStaticType()) {
-    const auto* capsule
-        = static_cast<const dynamics::CapsuleShape*>(otherShape);
-    if (planeFirst) {
-      return collidePlaneCapsule(
-          planeObject,
-          otherObject,
           planeNormal,
           planeOffset,
           planeTransform,
-          capsule->getRadius(),
-          0.5 * capsule->getHeight(),
-          otherTransform,
           result);
     }
 
-    return collideCapsulePlane(
-        otherObject,
-        planeObject,
-        capsule->getRadius(),
-        0.5 * capsule->getHeight(),
-        otherTransform,
-        planeNormal,
-        planeOffset,
-        planeTransform,
-        result);
+    case CachedShapeKind::Capsule: {
+      const auto* capsule
+          = static_cast<const dynamics::CapsuleShape*>(otherShape);
+      if (planeFirst) {
+        return collidePlaneCapsule(
+            planeObject,
+            otherObject,
+            planeNormal,
+            planeOffset,
+            planeTransform,
+            capsule->getRadius(),
+            0.5 * capsule->getHeight(),
+            otherTransform,
+            result);
+      }
+
+      return collideCapsulePlane(
+          otherObject,
+          planeObject,
+          capsule->getRadius(),
+          0.5 * capsule->getHeight(),
+          otherTransform,
+          planeNormal,
+          planeOffset,
+          planeTransform,
+          result);
+    }
+
+    case CachedShapeKind::Unknown:
+    case CachedShapeKind::Plane:
+      break;
   }
 
   return planeFirst ? collide(planeObject, otherObject, result)

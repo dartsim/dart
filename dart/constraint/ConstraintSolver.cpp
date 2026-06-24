@@ -725,8 +725,8 @@ bool ConstraintSolver::canJointCreateAutomaticConstraint(
     return false;
 
   return joint->hasCoulombFriction() || joint->areLimitsEnforced()
-         || joint->getActuatorType() == dynamics::Joint::SERVO
-         || (joint->getActuatorType() == dynamics::Joint::MIMIC
+         || joint->hasActuatorType(dynamics::Joint::SERVO)
+         || (joint->hasActuatorType(dynamics::Joint::MIMIC)
              && joint->getMimicJoint());
 }
 
@@ -832,6 +832,8 @@ void ConstraintSolver::updateConstraints()
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;
+  mActiveConstraintsHaveCustomContactConstraint = false;
+  mActiveSingleReactiveContactsNeedSharedDependencyScan = false;
 
   //----------------------------------------------------------------------------
   // Update manual constraints
@@ -1114,8 +1116,27 @@ void ConstraintSolver::updateConstraints()
                                 ? contactConstraint->mActive
                                 : contactConstraint->isActive();
       if (isActive) {
-        if (contactConstraint->getSingleReactiveSkeleton() == nullptr)
+        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+          mActiveConstraintsHaveCustomContactConstraint = true;
+
+        if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
           mActiveConstraintsAllSingleReactiveContacts = false;
+        } else {
+          const bool nonReactiveSideIsSkipped
+              = (contactConstraint->mIsReactiveA
+                 && contactConstraint->mSkipRelVelocityB)
+                || (contactConstraint->mIsReactiveB
+                    && contactConstraint->mSkipRelVelocityA);
+          const bool nonReactiveSideIsFixed
+              = (contactConstraint->mIsReactiveA
+                 && contactConstraint->mSkeletonB != nullptr
+                 && !contactConstraint->mSkeletonB->isMobile())
+                || (contactConstraint->mIsReactiveB
+                    && contactConstraint->mSkeletonA != nullptr
+                    && !contactConstraint->mSkeletonA->isMobile());
+          if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
+            mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
+        }
         mActiveConstraints.push_back(contactConstraint);
       }
     }
@@ -1152,14 +1173,35 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        auto mimicProps = joint->getMimicDofProperties();
+        const auto dofCount = joint->getNumDofs();
+        bool hasValidMimicDof = false;
+        for (std::size_t dofIndex = 0;
+             dofIndex < dofCount && dofIndex < mimicProps.size();
+             ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+            } else {
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
+            }
+          }
+        }
+
+        if (hasValidMimicDof) {
+          mMimicMotorConstraints.push_back(
+              std::make_shared<MimicMotorConstraint>(
+                  joint, joint->getMimicDofProperties()));
+        }
       }
     }
   }
@@ -1637,11 +1679,27 @@ void ConstraintSolver::solveConstrainedGroups()
   };
 
   auto canSolveGroupsInParallel = [&]() {
+    const bool allGroupsAreSingleReactiveContacts = std::all_of(
+        mConstrainedGroups.begin(),
+        mConstrainedGroups.end(),
+        [](const ConstrainedGroup& group) {
+          return group.mAllSingleReactiveContacts;
+        });
+    const bool canSkipCustomContactScan
+        = mActiveConstraintsAllSingleReactiveContacts
+          && allGroupsAreSingleReactiveContacts
+          && !mActiveConstraintsHaveCustomContactConstraint;
+    const bool canSkipSharedDependencyScan
+        = mActiveConstraintsAllSingleReactiveContacts
+          && allGroupsAreSingleReactiveContacts
+          && !mActiveSingleReactiveContactsNeedSharedDependencyScan;
+
     return mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
            && mConstrainedGroups.size() >= 128u && mManualConstraints.empty()
            && canUseParallelBuiltInBoxedSolvers(*this)
-           && !hasCustomContactConstraint()
-           && !hasSharedNonReactiveDependency();
+           && (canSkipCustomContactScan || !hasCustomContactConstraint())
+           && (canSkipSharedDependencyScan
+               || !hasSharedNonReactiveDependency());
   };
 
   if (!mDeactivationActive) {

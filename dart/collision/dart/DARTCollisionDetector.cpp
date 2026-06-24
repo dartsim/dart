@@ -250,6 +250,7 @@ struct BroadphaseEntry
 };
 
 constexpr double kContactDuplicateTolerance = 3.0e-12;
+constexpr double kContactPointCellSize = 4.0 * kContactDuplicateTolerance;
 constexpr double kContactPointKeyLowerBound = -9223372036854775808.0;
 constexpr double kContactPointKeyUpperBound = 9223372036854775808.0;
 constexpr std::size_t kInvalidContactPointIndex
@@ -293,6 +294,15 @@ private:
   std::size_t bucketMask{0u};
 };
 
+class ScratchCollisionResult final : public CollisionResult
+{
+public:
+  ScratchCollisionResult()
+  {
+    setCollidingObjectCacheEnabled(false);
+  }
+};
+
 struct BroadphaseScratch
 {
   std::vector<BroadphaseEntry> finiteEntries1;
@@ -304,12 +314,12 @@ struct BroadphaseScratch
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
   std::vector<std::size_t> parallelPairIndices;
-  std::vector<CollisionResult> parallelPairResults;
+  std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
   std::vector<std::size_t> contactSelectionReserve;
   std::vector<std::size_t> selectedContactIndices;
-  CollisionResult pairResult;
+  ScratchCollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
   void clear();
@@ -940,7 +950,7 @@ bool makeContactPointKey(const Eigen::Vector3d& point, ContactPointKey& key)
     if (!std::isfinite(point[i]))
       return false;
 
-    const auto cell = std::floor(point[i] / kContactDuplicateTolerance);
+    const auto cell = std::floor(point[i] / kContactPointCellSize);
     if (cell < kContactPointKeyLowerBound
         || cell >= kContactPointKeyUpperBound) {
       return false;
@@ -955,6 +965,27 @@ bool makeContactPointKey(const Eigen::Vector3d& point, ContactPointKey& key)
   }
 
   return true;
+}
+
+//==============================================================================
+void getContactPointNeighborOffsetRange(
+    double value, std::int64_t cell, int& first, int& last)
+{
+  first = 0;
+  last = 0;
+
+  const auto lower = static_cast<double>(cell) * kContactPointCellSize;
+  const auto upper = lower + kContactPointCellSize;
+  const auto roundoff
+      = 8.0 * std::numeric_limits<double>::epsilon()
+        * std::max({1.0, std::abs(value), std::abs(lower), std::abs(upper)});
+  const auto boundaryTolerance = kContactDuplicateTolerance + roundoff;
+
+  if (value - lower <= boundaryTolerance)
+    first = -1;
+
+  if (upper - value <= boundaryTolerance)
+    last = 1;
 }
 
 //==============================================================================
@@ -1003,16 +1034,26 @@ bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
   if (buckets.empty() || !makeContactPointKey(point, key))
     return containsCloseLinear(point);
 
-  for (auto dx = -1; dx <= 1; ++dx) {
+  int firstDx = 0;
+  int lastDx = 0;
+  int firstDy = 0;
+  int lastDy = 0;
+  int firstDz = 0;
+  int lastDz = 0;
+  getContactPointNeighborOffsetRange(point.x(), key.x, firstDx, lastDx);
+  getContactPointNeighborOffsetRange(point.y(), key.y, firstDy, lastDy);
+  getContactPointNeighborOffsetRange(point.z(), key.z, firstDz, lastDz);
+
+  for (auto dx = firstDx; dx <= lastDx; ++dx) {
     ContactPointKey neighbor;
     if (!offsetCell(key.x, dx, neighbor.x))
       continue;
 
-    for (auto dy = -1; dy <= 1; ++dy) {
+    for (auto dy = firstDy; dy <= lastDy; ++dy) {
       if (!offsetCell(key.y, dy, neighbor.y))
         continue;
 
-      for (auto dz = -1; dz <= 1; ++dz) {
+      for (auto dz = firstDz; dz <= lastDz; ++dz) {
         if (!offsetCell(key.z, dz, neighbor.z))
           continue;
 
@@ -1449,17 +1490,17 @@ bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
   if (shape == nullptr)
     return false;
 
-  const auto& shapeType = dartObject->getCachedShapeType();
-  if (shapeType == dynamics::SphereShape::getStaticType()
-      || shapeType == dynamics::BoxShape::getStaticType()
-      || shapeType == dynamics::CylinderShape::getStaticType()
-      || shapeType == dynamics::CapsuleShape::getStaticType()) {
-    return true;
-  }
-
-  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(shape);
-    return ellipsoid->isSphere();
+  using CachedShapeKind = DARTCollisionObject::CachedShapeKind;
+  switch (dartObject->getCachedShapeKind()) {
+    case CachedShapeKind::Sphere:
+    case CachedShapeKind::SphereEllipsoid:
+    case CachedShapeKind::Box:
+    case CachedShapeKind::Cylinder:
+    case CachedShapeKind::Capsule:
+      return true;
+    case CachedShapeKind::Unknown:
+    case CachedShapeKind::Plane:
+      break;
   }
 
   return false;
@@ -1601,10 +1642,14 @@ bool processFinitePlanePairs(
         && !contactCapCanShortCircuit && allPairsHaveCachedPlaneCollisionPath
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
+  const bool hasSinglePlane = planeEntries.size() == 1u;
 
   auto getPairEntries = [&](std::size_t pairIndex) {
-    const auto planeIndex = pairIndex / finiteEntries.size();
-    const auto finiteIndex = pairIndex - planeIndex * finiteEntries.size();
+    const auto planeIndex
+        = hasSinglePlane ? 0u : pairIndex / finiteEntries.size();
+    const auto finiteIndex
+        = hasSinglePlane ? pairIndex
+                         : pairIndex - planeIndex * finiteEntries.size();
     return std::make_pair(
         &planeEntries[planeIndex], &finiteEntries[finiteIndex]);
   };

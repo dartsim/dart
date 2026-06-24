@@ -30,40 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
+#ifndef DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_
+#define DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_
 
 namespace dart {
-namespace python {
+namespace dynamics {
+namespace detail {
 
-void RaycastOption(py::module& m)
+enum class CoordinateChart : int
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
-      .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
-      .def(
-          ::py::init<
-              bool,
-              bool,
-              dart::collision::RaycastOption::RaycastFilter>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"),
-          ::py::arg("filter") = nullptr)
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
-      .def_readwrite(
-          "mFilter", &dart::collision::RaycastOption::mFilter);
-}
+  EXP_MAP = 0,
+  EULER_XYZ = 1,
+  EULER_ZYX = 2
+};
 
-} // namespace python
+} // namespace detail
+} // namespace dynamics
 } // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_
