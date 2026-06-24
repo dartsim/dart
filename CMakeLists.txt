@@ -148,6 +148,11 @@ dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF
 )
+dart_option(
+  DART_USE_SYSTEM_FMT
+  "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)"
+  ON
+)
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
