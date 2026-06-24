@@ -587,6 +587,150 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 }
 
 //==============================================================================
+void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
+    ConstrainedGroup& group)
+{
+  DART_PROFILE_SCOPED;
+
+  // Collect only contact constraints for the position-correction pass.
+  std::vector<ContactConstraint*> contacts;
+  contacts.reserve(group.getNumConstraints());
+  for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
+    const ConstraintBasePtr& constraint = group.getConstraint(i);
+    if (auto* contact = dynamic_cast<ContactConstraint*>(constraint.get())) {
+      contacts.push_back(contact);
+    }
+  }
+
+  const std::size_t numConstraints = contacts.size();
+  if (numConstraints == 0u)
+    return;
+
+  // Compute offsets and total dimension.
+  std::vector<std::size_t> offsets(numConstraints);
+  std::size_t n = 0u;
+  for (std::size_t i = 0; i < numConstraints; ++i) {
+    offsets[i] = n;
+    n += contacts[i]->getDimension();
+  }
+
+  if (0u == n)
+    return;
+
+  const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
+  A.setZero(n, nSkip);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd b(n);
+  Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd lo(n);
+  Eigen::VectorXd hi(n);
+  Eigen::VectorXi fIndex = Eigen::VectorXi::Constant(n, -1);
+
+  const auto constructLcpTerms = [&]() {
+    A.setZero(n, nSkip);
+    x.setZero();
+    w.setZero();
+    fIndex.setConstant(n, -1);
+
+    ConstraintInfo constInfo;
+    constInfo.invTimeStep = 1.0 / mTimeStep;
+    constInfo.phase = ConstraintPhase::Position;
+    // useSplitImpulse only affects the velocity phase; leave it at its default
+    // (false) here.
+
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      ContactConstraint* constraint = contacts[i];
+      const std::size_t offset = offsets[i];
+      const std::size_t dim = constraint->getDimension();
+
+      constInfo.x = x.data() + offset;
+      constInfo.lo = lo.data() + offset;
+      constInfo.hi = hi.data() + offset;
+      constInfo.b = b.data() + offset;
+      constInfo.findex = fIndex.data() + offset;
+      constInfo.w = w.data() + offset;
+
+      constraint->getInformation(&constInfo);
+
+      constraint->excite();
+      for (std::size_t j = 0; j < dim; ++j) {
+        const std::size_t row = offset + j;
+        if (fIndex[static_cast<Eigen::Index>(row)] >= 0)
+          fIndex[static_cast<Eigen::Index>(row)] += static_cast<int>(offset);
+
+        constraint->applyUnitImpulse(j);
+
+        std::size_t index = nSkip * row + offset;
+        constraint->getVelocityChange(A.data() + index, true);
+        for (std::size_t k = i + 1; k < numConstraints; ++k) {
+          index = nSkip * row + offsets[k];
+          contacts[k]->getVelocityChange(A.data() + index, false);
+        }
+      }
+      constraint->unexcite();
+    }
+
+    // Fill lower triangle blocks of A matrix.
+    for (std::size_t row = 1; row < n; ++row) {
+      for (std::size_t col = 0; col < row; ++col) {
+        A.data()[nSkip * row + col] = A.data()[nSkip * col + row];
+      }
+    }
+  };
+
+  constructLcpTerms();
+
+  const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
+  DART_ASSERT(mBoxedLcpSolver);
+  bool success = mBoxedLcpSolver->solve(
+      n,
+      A.data(),
+      x.data(),
+      b.data(),
+      0,
+      lo.data(),
+      hi.data(),
+      fIndex.data(),
+      earlyTermination);
+
+  const auto hasNaN = [](const double* values, std::size_t size) {
+    for (std::size_t i = 0; i < size; ++i) {
+      if (std::isnan(values[i]))
+        return true;
+    }
+    return false;
+  };
+
+  if (success && hasNaN(x.data(), n))
+    success = false;
+
+  if (!success && mSecondaryBoxedLcpSolver) {
+    constructLcpTerms();
+    success = mSecondaryBoxedLcpSolver->solve(
+        n,
+        A.data(),
+        x.data(),
+        b.data(),
+        0,
+        lo.data(),
+        hi.data(),
+        fIndex.data(),
+        false);
+  }
+
+  // If the solve failed or produced NaNs, skip the position correction for this
+  // group (leave positions unchanged) rather than apply garbage impulses.
+  if (!success || hasNaN(x.data(), n))
+    return;
+
+  for (std::size_t i = 0; i < numConstraints; ++i) {
+    contacts[i]->applyPositionImpulse(x.data() + offsets[i]);
+  }
+}
+
+//==============================================================================
 bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
   std::size_t nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
