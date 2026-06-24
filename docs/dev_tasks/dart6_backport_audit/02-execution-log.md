@@ -78,6 +78,9 @@ they share `pixi.toml` / `pixi.lock` / `CMakeLists.txt`:
 | #2185 | Taplo TOML lint (`lint-toml` auto-fix task; no required gate) |
 | #2541 | Eigen 64-byte over-alignment CI guard (non-blocking job mirroring `build-asserts`) |
 
+The fifth non-feature item, **#2251** (typos + spell lint), landed separately as a
+conflict-safe port (**#3177**) — see §6. The sixth, **#2655**, was skipped (§6).
+
 Plus two follow-ups:
 
 - **#3173** — clang-format-14 fixes in 3 backported files (`WeldJoint.cpp`,
@@ -112,12 +115,19 @@ deprecation enforced. DART-7-only infra (`CouplerConstraint` on main,
 `MeshLoader`, `ClassicRigidSolver`, `tests/unit/gui` tree) is legitimately
 dropped or re-homed.
 
-## 6. Deferred and skipped
+## 6. Ported (conflict-safe) and skipped
 
-- **#2251 (typos + spell lint) — DEFERRED.** Wiring `check-lint-spell` into the
-  required `check-lint` gate would red-X the parallel lane's open PRs (their files
-  carry pre-existing typos, e.g. `force` in `Joint.hpp`), and its fixes edit
-  do-not-collide files (§8). Port **after** the perf lane + #3169 merge.
+- **#2251 (typos + spell lint) — PORTED conflict-safe (#3177).** Adds `codespell`
+  + an enforced `check-lint-spell` gate (wired into the required `check-lint`) and
+  fixes ~270 typos across 128 files (comments/docs/strings/local vars; no
+  behavioral change). Wiring the gate would normally red-X the parallel lane's
+  open PRs and its fixes would edit do-not-collide files — so the 9 do-not-collide
+  files that carry pre-existing typos (`froce` in `Joint.hpp`, `enity` in
+  `World.cpp`, `witht` in `ContactConstraint.hpp`, etc.) are **temporarily
+  skipped** in `.codespellrc` under a labeled block. The gate therefore passes
+  without editing their files and does **not** trip the other lane's PRs. Vendored
+  `tests/unit/math/legacy_convhull_3d` is permanently skipped. **Cleanup hook in
+  §9.**
 - **#2655 (centralize CI path filters) — SKIPPED.** No-op on release-6.20: the
   `dorny/paths-filter` blocks and `ci_altlinux.yml` it refactors do not exist
   here, and the one relevant change is already present.
@@ -157,5 +167,8 @@ PRs.
   coverage) — still runner-gridlocked (both lanes compete for runners). Its hardest
   configs are already locally green (§7), so it is expected to pass; a monitor
   watches the HEAD and will flag any required-check failure.
-- **#2251** — port once the perf lane + #3169 land (§6).
+- **`.codespellrc` temporary-skip cleanup** — once the perf lane + #3169 land,
+  remove the 9 do-not-collide files from the `.codespellrc` skip block (the
+  labeled `# TEMPORARY` entries from #2251/#3177) and fix their typos, so the
+  spell-lint gate covers them too (§6).
 - **codecov** CI patch report — pending; add tests if it flags uncovered lines.
