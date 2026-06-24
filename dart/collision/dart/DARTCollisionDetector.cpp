@@ -368,7 +368,8 @@ void postProcess(
     const CollisionOption& option,
     CollisionResult& totalResult,
     const CollisionResult& pairResult,
-    bool skipCrossPairDuplicateCheck = false);
+    bool skipCrossPairDuplicateCheck = false,
+    bool publishCrossPairDuplicateState = true);
 
 bool isPlaneShape(const CollisionObject* object);
 
@@ -400,7 +401,8 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst = true);
+    bool planeFirst = true,
+    bool publishFastPathContactsToDuplicateIndex = true);
 
 bool processPlanePlanePairs(
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -554,6 +556,11 @@ bool DARTCollisionDetector::collide(
       scratch.otherEntries1);
 
   auto collisionFound = false;
+  // This flag is only observed after the finite-plane path has proven mutually
+  // disjoint contact bounds. With no unsupported entries and at most one plane,
+  // no later same-group phase can consume the cross-pair duplicate index.
+  const bool finitePlaneFastPathHasNoLaterDuplicateConsumers
+      = scratch.otherEntries1.empty() && scratch.planeEntries1.size() <= 1u;
   if (processFinitePlanePairs(
           scratch.finiteEntries1,
           scratch.planeEntries1,
@@ -562,7 +569,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          !finitePlaneFastPathHasNoLaterDuplicateConsumers)) {
     return true;
   }
 
@@ -698,7 +707,8 @@ bool DARTCollisionDetector::collide(
           scratch,
           mCollisionThreadPool.get(),
           mNumCollisionThreads,
-          false)) {
+          false,
+          true)) {
     return true;
   }
 
@@ -710,7 +720,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          true)) {
     return true;
   }
 
@@ -1441,7 +1453,8 @@ void postProcess(
     const CollisionOption& option,
     CollisionResult& totalResult,
     const CollisionResult& pairResult,
-    bool skipCrossPairDuplicateCheck)
+    bool skipCrossPairDuplicateCheck,
+    bool publishCrossPairDuplicateState)
 {
   if (!pairResult.isCollision())
     return;
@@ -1468,7 +1481,8 @@ void postProcess(
           return std::make_pair(true, false);
       }
       localContactPoints.push_back(pairContact.point);
-      contactPointIndex.insertUnchecked(pairContact.point);
+      if (publishCrossPairDuplicateState)
+        contactPointIndex.insertUnchecked(pairContact.point);
     } else if (!contactPointIndex.insertIfAbsent(pairContact.point)) {
       return std::make_pair(true, false);
     }
@@ -1751,7 +1765,8 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst)
+    bool planeFirst,
+    bool publishFastPathContactsToDuplicateIndex)
 {
   DART_PROFILE_SCOPED_N("DART native finite-plane pairs");
 
@@ -1872,7 +1887,8 @@ bool processFinitePlanePairs(
             option,
             *result,
             scratch.parallelPairResults[workIndex],
-            canSkipCrossPairDuplicateCheck);
+            canSkipCrossPairDuplicateCheck,
+            publishFastPathContactsToDuplicateIndex);
 
         if (shouldStopAfterPair(true, option, result))
           return true;

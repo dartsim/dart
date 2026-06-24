@@ -21,24 +21,34 @@ disjoint, contacts from different finite/plane pairs cannot be duplicate
 points. That lets the merge path keep the existing per-pair duplicate check
 while bypassing the global duplicate-contact grid for those pair results.
 Accepted fast-path contacts are still published to the global duplicate index
-so later fallback pair phases see the same accepted contact set as the serial
-path. Overlapping or multi-plane queries keep the existing global duplicate
-path.
+when later fallback pair phases may need that state. The all-finite/one-plane
+issue scene skips that extra bookkeeping because the same disjoint-bound proof
+also rules out later duplicate-producing finite/finite, plane/plane, and
+unsupported-shape phases. Overlapping or multi-plane queries keep the existing
+global duplicate path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
-and solver, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, deactivation disabled:
+and solver, `--steps 300`, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled:
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3148 parent, 300 active steps, text profile | DART native | `0.0917877` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `951.72 ms`, `build contact constraints` `644.65 ms` |
-| Rejected pair-result cache, 300 active steps, text profile | DART native | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
-| #3149 candidate, 300 active steps, text profile | DART native | `0.0998668` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.84 ms`, `build contact constraints` `542.53 ms` |
-| #3149 candidate, 300 active steps, no profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| #3150 candidate, 300 active steps, text profile | DART native | `0.105801` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `654.80 ms`, finite-plane merge `110.98 ms`, contact-bound separation check `24.10 ms` |
-| #3150 candidate, 300 active steps, no profile | DART native | `0.110214` latest rerun, `0.11603` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| #3147 parent, 300 active steps, no profile | ODE | `0.00463526` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3149 parent, active no-profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3150 current head, active no-profile | DART native | `0.104694` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3150 current head, active text profile | DART native | `0.104939` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `660.38 ms`, finite-plane merge `113.36 ms`, contact-bound separation check `24.44 ms` |
+| #3150 current head, active no-profile | FCL primitive | `0.0959666` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3150 current head, active no-profile | Bullet | `0.0858405` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3150 current head, active no-profile | ODE | `0.00465031` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.09x` FCL primitive, `1.22x` Bullet, and
+`22.5x` ODE on the active issue scene. It is still far below RTF `1` with
+deactivation disabled, so the follow-up target is the remaining DART 6
+constraint pipeline cost rather than declaring issue #3056 complete. The latest
+text profile shows `World::step - Solve constraints` at `2.132 s` of `2.857 s`
+over 300 steps. Within that, `updateConstraints` is `1.386 s`, `collide` is
+`660.38 ms`, `build contact constraints` is `583.28 ms`, and
+`solveConstrainedGroups` is `543.59 ms`.
 
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane
