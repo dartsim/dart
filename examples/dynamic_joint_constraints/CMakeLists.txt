@@ -17,7 +17,8 @@ if(NOT osg_text_library)
 endif()
 if(NOT TARGET osgText::osgText)
   add_library(osgText::osgText UNKNOWN IMPORTED)
-  set_target_properties(osgText::osgText
+  set_target_properties(
+    osgText::osgText
     PROPERTIES
       IMPORTED_LOCATION "${osg_text_library}"
       INTERFACE_INCLUDE_DIRECTORIES "${OSGTEXT_INCLUDE_DIR}"
