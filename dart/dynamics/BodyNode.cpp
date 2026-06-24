@@ -1535,6 +1535,7 @@ BodyNode::BodyNode(
     mDelV(Eigen::Vector6d::Zero()),
     mBiasImpulse(Eigen::Vector6d::Zero()),
     mConstraintImpulse(Eigen::Vector6d::Zero()),
+    mPositionConstraintImpulse(Eigen::Vector6d::Zero()),
     mImpF(Eigen::Vector6d::Zero()),
     onColShapeAdded(mColShapeAddedSignal),
     onColShapeRemoved(mColShapeRemovedSignal),
@@ -2045,6 +2046,29 @@ void BodyNode::updateBiasImpulse()
 }
 
 //==============================================================================
+void BodyNode::updateBiasImpulseFromPositionImpulse()
+{
+  // Update impulsive bias force
+  mBiasImpulse = -mPositionConstraintImpulse;
+
+  // And add child bias impulse
+  for (auto& childBodyNode : mChildBodyNodes) {
+    Joint* childJoint = childBodyNode->getParentJoint();
+
+    childJoint->addChildBiasImpulseTo(
+        mBiasImpulse,
+        childBodyNode->getArticulatedInertia(),
+        childBodyNode->mBiasImpulse);
+  }
+
+  // Verification
+  DART_ASSERT(!math::isNan(mBiasImpulse));
+
+  // Update parent joint's total force
+  mParentJoint->updateTotalImpulse(mBiasImpulse);
+}
+
+//==============================================================================
 void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
@@ -2215,6 +2239,12 @@ void BodyNode::clearConstraintImpulse()
 }
 
 //==============================================================================
+void BodyNode::clearPositionConstraintImpulse()
+{
+  mPositionConstraintImpulse.setZero();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyForce() const
 {
   return mF;
@@ -2235,9 +2265,22 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
 }
 
 //==============================================================================
+void BodyNode::addPositionConstraintImpulse(const Eigen::Vector6d& _constImp)
+{
+  DART_ASSERT(!math::isNan(_constImp));
+  mPositionConstraintImpulse += _constImp;
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 {
   return mConstraintImpulse;
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getPositionConstraintImpulse() const
+{
+  return mPositionConstraintImpulse;
 }
 
 //==============================================================================

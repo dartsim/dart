@@ -544,6 +544,10 @@ public:
   // Documentation inherited
   void integratePositions(double _dt);
 
+  /// Integrate positions using Euler method with additional velocity changes
+  /// from split impulse position correction.
+  void integratePositions(double _dt, const Eigen::VectorXd& velocityChanges);
+
   // Documentation inherited
   void integrateVelocities(double _dt);
 
@@ -698,6 +702,9 @@ public:
   /// on the BodyNodes and generalized constraints on the Joints.
   void clearConstraintImpulses();
 
+  /// Clear position constraint impulses used for split impulse handling.
+  void clearPositionConstraintImpulses();
+
   /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
 
@@ -727,6 +734,9 @@ public:
   /// impulse
   void updateVelocityChange();
 
+  /// Compute velocity changes used for split impulse position updates.
+  void computePositionVelocityChanges();
+
   // TODO(JS): Better naming
   /// Set whether this skeleton is constrained. ConstraintSolver will
   ///  mark this.
@@ -734,6 +744,18 @@ public:
 
   /// Get whether this skeleton is constrained
   bool isImpulseApplied() const;
+
+  /// Set whether split impulse position corrections are applied.
+  void setPositionImpulseApplied(bool _val);
+
+  /// Get whether split impulse position corrections are applied.
+  bool isPositionImpulseApplied() const;
+
+  /// Get position velocity changes computed from split impulses.
+  const Eigen::VectorXd& getPositionVelocityChanges() const;
+
+  /// Clear position velocity changes.
+  void clearPositionVelocityChanges();
 
   /// Compute impulse-based forward dynamics
   void computeImpulseForwardDynamics();
@@ -1421,6 +1443,12 @@ protected:
   // TODO(JS): Better naming
   /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
+
+  /// Flag for status of split impulse position correction.
+  bool mIsPositionImpulseApplied;
+
+  /// Velocity changes from position correction impulses.
+  Eigen::VectorXd mPositionVelocityChanges;
 
   mutable std::mutex mMutex;
 

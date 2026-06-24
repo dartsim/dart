@@ -669,11 +669,18 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
+  const bool splitImpulse = mSplitImpulseEnabled;
+
   {
     DART_PROFILE_SCOPED_N("ConstraintSolver::clear per-step state");
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
       skeleton->clearConstraintImpulses();
+      if (splitImpulse) {
+        skeleton->clearPositionConstraintImpulses();
+        skeleton->clearPositionVelocityChanges();
+        skeleton->setPositionImpulseApplied(false);
+      }
       DART_SUPPRESS_DEPRECATED_BEGIN
       skeleton->clearCollidingBodies();
       DART_SUPPRESS_DEPRECATED_END
@@ -698,6 +705,10 @@ void ConstraintSolver::solve()
 
   // Solve constrained groups
   solveConstrainedGroups();
+
+  if (splitImpulse) {
+    solvePositionConstrainedGroups();
+  }
 }
 
 //==============================================================================
@@ -714,6 +725,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
 }
 
@@ -1494,6 +1506,53 @@ void ConstraintSolver::buildConstrainedGroups()
     DART_PROFILE_SCOPED_N("reset constraint unions");
     for (auto& skeleton : mSkeletons)
       skeleton->resetUnion();
+  }
+}
+
+//==============================================================================
+void ConstraintSolver::setSplitImpulseEnabled(bool enabled)
+{
+  mSplitImpulseEnabled = enabled;
+}
+
+//==============================================================================
+bool ConstraintSolver::isSplitImpulseEnabled() const
+{
+  return mSplitImpulseEnabled;
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroup(
+    ConstrainedGroup& /*group*/)
+{
+  // Base implementation does nothing. Concrete solvers that support split
+  // impulse override this.
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  // Preserve velocity-impulse flags across the position pass.
+  std::vector<bool> impulseAppliedStates;
+  impulseAppliedStates.reserve(mSkeletons.size());
+  for (const auto& skeleton : mSkeletons) {
+    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+  }
+
+  for (auto& constraintGroup : mConstrainedGroups) {
+    solvePositionConstrainedGroup(constraintGroup);
+  }
+
+  for (auto& skeleton : mSkeletons) {
+    if (skeleton->isPositionImpulseApplied()) {
+      skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
   }
 }
 
