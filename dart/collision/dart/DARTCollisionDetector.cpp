@@ -1719,6 +1719,28 @@ Eigen::Vector3d computeBroadphaseRoundoffMargin(
 }
 
 //==============================================================================
+Eigen::Vector3d computeTranslatedBroadphaseRoundoffMargin(
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector3d& localCenter,
+    const Eigen::Vector3d& localHalfExtents)
+{
+  const Eigen::Vector3d accumulatedMagnitude = translation.cwiseAbs()
+                                               + localCenter.cwiseAbs()
+                                               + localHalfExtents.cwiseAbs();
+
+  constexpr double kRoundoffTerms = 16.0;
+  return kRoundoffTerms * std::numeric_limits<double>::epsilon()
+         * accumulatedMagnitude;
+}
+
+//==============================================================================
+bool hasExactIdentityLinearTransform(const Eigen::Isometry3d& transform)
+{
+  static const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  return transform.linear().cwiseEqual(identity).all();
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
@@ -1744,13 +1766,24 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 
   const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
   const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
-  const Eigen::Vector3d worldCenter = entry.transform * localCenter;
-  const Eigen::Matrix3d absLinear = entry.transform.linear().cwiseAbs();
-  const Eigen::Vector3d worldHalfExtents = absLinear * localHalfExtents;
+
+  Eigen::Vector3d worldCenter;
+  Eigen::Vector3d worldHalfExtents;
+  Eigen::Vector3d roundoffMargin;
+  if (hasExactIdentityLinearTransform(entry.transform)) {
+    worldCenter = entry.transform.translation() + localCenter;
+    worldHalfExtents = localHalfExtents;
+    roundoffMargin = computeTranslatedBroadphaseRoundoffMargin(
+        entry.transform.translation(), localCenter, localHalfExtents);
+  } else {
+    worldCenter = entry.transform * localCenter;
+    const Eigen::Matrix3d absLinear = entry.transform.linear().cwiseAbs();
+    worldHalfExtents = absLinear * localHalfExtents;
+    roundoffMargin = computeBroadphaseRoundoffMargin(
+        entry.transform, absLinear, localCenter, localHalfExtents);
+  }
   // The center/extent form matches transformed corners mathematically, but the
   // separately rounded dot products can otherwise move a bound inward.
-  const Eigen::Vector3d roundoffMargin = computeBroadphaseRoundoffMargin(
-      entry.transform, absLinear, localCenter, localHalfExtents);
   entry.min = (worldCenter - worldHalfExtents - roundoffMargin)
                   .unaryExpr([](double value) {
                     return std::nextafter(
