@@ -31,12 +31,14 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -64,6 +66,15 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 
 #define JOINT_TOL 0.01
+
+//==============================================================================
+class CouplerConstraintTestHelper : public dart::constraint::CouplerConstraint
+{
+public:
+  using CouplerConstraint::applyImpulse;
+  using CouplerConstraint::CouplerConstraint;
+  using CouplerConstraint::update;
+};
 
 //==============================================================================
 class JOINTS : public testing::Test
@@ -1227,6 +1238,242 @@ TEST_F(JOINTS, MIMIC_JOINT_UNBOUNDED_LIMITS_STAY_FINITE)
 }
 
 //==============================================================================
+void testMimicCouplerJoint()
+{
+  using namespace dart::math::suffixes;
+
+  double timestep = 1e-3;
+  double tolPos = 1e-3;
+  double sufficient_force = 1e+5;
+
+  simulation::WorldPtr world = simulation::World::create();
+  ASSERT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(timestep);
+
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 2);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+
+  pendulum->disableSelfCollisionCheck();
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    auto bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllShapeNodesWith<CollisionAspect>();
+  }
+
+  std::vector<JointPtr> joints(2);
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i) {
+    dynamics::Joint* joint = pendulum->getJoint(i);
+    ASSERT_NE(joint, nullptr);
+
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setLimitEnforcement(true);
+    joint->setCoulombFriction(0, 0.0);
+
+    joints[i] = joint;
+  }
+
+  joints[0]->setActuatorType(Joint::PASSIVE);
+  joints[0]->setForceUpperLimit(0, sufficient_force);
+  joints[0]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[1]->setActuatorType(Joint::MIMIC);
+  joints[1]->setMimicJoint(joints[0], 1., 0.);
+  joints[1]->setUseCouplerConstraint(true);
+  joints[1]->setForceUpperLimit(0, sufficient_force);
+  joints[1]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[0]->setPosition(0, 0.0_deg);
+  joints[1]->setPosition(0, 30.0_deg);
+
+  world->addSkeleton(pendulum);
+
+  double initialReferencePosition = joints[0]->getPosition(0);
+  double initialError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  for (int i = 0; i < 400; ++i)
+    world->step();
+
+  double finalError = joints[1]->getPosition(0) - joints[0]->getPosition(0);
+
+  EXPECT_LT(std::abs(finalError), std::abs(initialError));
+  EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
+  EXPECT_GT(
+      std::abs(joints[0]->getPosition(0) - initialReferencePosition), 1e-4);
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_JOINT_COUPLER)
+{
+  testMimicCouplerJoint();
+}
+
+//==============================================================================
+TEST_F(JOINTS, COUPLER_CONSTRAINT_APPLY_IMPULSE)
+{
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 0);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  ASSERT_NE(pendulum, nullptr);
+  pendulum->setTimeStep(1e-3);
+
+  Joint* referenceJoint = pendulum->getJoint(0);
+  Joint* followerJoint = pendulum->getJoint(1);
+  ASSERT_NE(referenceJoint, nullptr);
+  ASSERT_NE(followerJoint, nullptr);
+
+  followerJoint->setActuatorType(Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, 1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(true);
+  followerJoint->setVelocityLowerLimit(0, -100.0);
+  followerJoint->setVelocityUpperLimit(0, 100.0);
+  followerJoint->setForceLowerLimit(0, -100.0);
+  followerJoint->setForceUpperLimit(0, 100.0);
+
+  referenceJoint->setPosition(0, 0.1);
+  followerJoint->setPosition(0, 0.0);
+
+  CouplerConstraintTestHelper constraint(
+      followerJoint, followerJoint->getMimicDofProperties());
+  constraint.update();
+  ASSERT_GT(constraint.getDimension(), 0u);
+
+  double lambda[1] = {2.3};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(followerJoint->getConstraintImpulse(0), lambda[0], 1e-12);
+  EXPECT_NEAR(
+      referenceJoint->getConstraintImpulse(0),
+      -lambda[0] * followerJoint->getMimicMultiplier(0),
+      1e-12);
+}
+
+//==============================================================================
+TEST_F(JOINTS, PARTIAL_MIMIC_JOINT)
+{
+  using namespace dart::math::suffixes;
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-3);
+
+  auto skeleton = Skeleton::create("partial_mimic");
+  auto leaderPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto leaderJoint = leaderPair.first;
+  auto followerPair
+      = skeleton->createJointAndBodyNodePair<UniversalJoint>(leaderPair.second);
+  auto followerJoint = followerPair.first;
+
+  leaderPair.second->setMass(1.0);
+  followerPair.second->setMass(1.0);
+
+  const double forceLimit = 1e5;
+  std::array<Joint*, 2> joints = {leaderJoint, followerJoint};
+  for (Joint* joint : joints) {
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.0);
+      joint->setSpringStiffness(i, 0.0);
+      joint->setCoulombFriction(i, 0.0);
+      joint->setForceLowerLimit(i, -forceLimit);
+      joint->setForceUpperLimit(i, forceLimit);
+      joint->setVelocityLowerLimit(i, -forceLimit);
+      joint->setVelocityUpperLimit(i, forceLimit);
+    }
+  }
+
+  leaderJoint->setActuatorType(Joint::SERVO);
+  followerJoint->setActuatorType(Joint::SERVO);
+
+  MimicDofProperties mimicProps;
+  mimicProps.mReferenceJoint = leaderJoint;
+  mimicProps.mReferenceDofIndex = 0;
+  mimicProps.mMultiplier = 1.0;
+  mimicProps.mOffset = 0.0;
+  followerJoint->setMimicJointDof(1, mimicProps);
+  followerJoint->setActuatorType(1, Joint::MIMIC);
+
+  // The joint-wide getter/default path must remain SERVO (gz-physics
+  // compatibility), while only DoF 1 is overridden to MIMIC.
+  EXPECT_EQ(followerJoint->getActuatorType(), Joint::SERVO);
+  EXPECT_EQ(followerJoint->getActuatorType(0), Joint::SERVO);
+  EXPECT_EQ(followerJoint->getActuatorType(1), Joint::MIMIC);
+  EXPECT_TRUE(followerJoint->hasActuatorType(Joint::MIMIC));
+  EXPECT_TRUE(followerJoint->hasActuatorType(Joint::SERVO));
+
+  world->addSkeleton(skeleton);
+
+#if DART_BUILD_MODE_DEBUG
+  const std::size_t numSteps = 400;
+#else
+  const std::size_t numSteps = 2000;
+#endif
+  const double followerCommand = 0.25;
+  const double tolVel = 1e-3;
+  const double tolPos = 5e-3;
+
+  for (std::size_t i = 0; i < numSteps; ++i) {
+    const double leaderCommand = std::sin(world->getTime());
+
+    leaderJoint->setCommand(0, leaderCommand);
+    followerJoint->setCommand(0, followerCommand);
+
+    world->step();
+
+    EXPECT_NEAR(leaderJoint->getVelocity(0), leaderCommand, tolVel);
+    EXPECT_NEAR(followerJoint->getVelocity(0), followerCommand, tolVel);
+
+    if (i > numSteps / 5) {
+      EXPECT_NEAR(
+          followerJoint->getPosition(1), leaderJoint->getPosition(0), tolPos);
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, PARTIAL_MIMIC_JOINT_WIDE_PATH_UNCHANGED)
+{
+  // Verify that the joint-wide actuator API is byte-for-byte unaffected by the
+  // per-DoF additions: setting the joint-wide type maps uniformly to every DoF
+  // and clears any per-DoF overrides, preserving the pre-existing semantics
+  // that gz-physics/Gazebo rely on.
+  auto skeleton = Skeleton::create("joint_wide");
+  auto pair = skeleton->createJointAndBodyNodePair<UniversalJoint>();
+  auto* joint = pair.first;
+
+  // Default joint-wide type applies to all DoFs.
+  EXPECT_EQ(joint->getActuatorType(0), joint->getActuatorType());
+  EXPECT_EQ(joint->getActuatorType(1), joint->getActuatorType());
+
+  joint->setActuatorType(Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorType(), Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorType(0), Joint::SERVO);
+  EXPECT_EQ(joint->getActuatorType(1), Joint::SERVO);
+  EXPECT_FALSE(joint->hasActuatorType(Joint::MIMIC));
+
+  // Add a per-DoF override, then re-apply the joint-wide setter; the override
+  // must be cleared so behavior matches the legacy joint-wide-only API.
+  MimicDofProperties mimicProps;
+  mimicProps.mReferenceJoint = joint;
+  mimicProps.mReferenceDofIndex = 0;
+  joint->setMimicJointDof(1, mimicProps);
+  joint->setActuatorType(1, Joint::MIMIC);
+  EXPECT_EQ(joint->getActuatorType(1), Joint::MIMIC);
+
+  joint->setActuatorType(Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(), Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(0), Joint::FORCE);
+  EXPECT_EQ(joint->getActuatorType(1), Joint::FORCE);
+  EXPECT_FALSE(joint->hasActuatorType(Joint::MIMIC));
+}
+
+//==============================================================================
 TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 {
   const double timeStep = 1e-3;
@@ -1487,6 +1734,84 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
       }
     }
   }
+}
+
+//==============================================================================
+TEST_F(JOINTS, BallJointCoordinateChart)
+{
+  SkeletonPtr skel = Skeleton::create("ball_chart");
+
+  BallJoint::Properties ballProps;
+  ballProps.mCoordinateChart = BallJoint::CoordinateChart::EULER_XYZ;
+
+  auto [ballJoint, ballBody]
+      = skel->createJointAndBodyNodePair<BallJoint>(nullptr, ballProps);
+  (void)ballBody;
+
+  EXPECT_EQ(
+      ballJoint->getCoordinateChart(), BallJoint::CoordinateChart::EULER_XYZ);
+
+  const Eigen::Vector3d xyzAngles(0.2, -0.1, 0.3);
+  const Eigen::Matrix3d xyzRotation = math::eulerXYZToMatrix(xyzAngles);
+  const Eigen::Vector3d xyzPositions = BallJoint::convertToPositions(
+      xyzRotation, BallJoint::CoordinateChart::EULER_XYZ);
+  ballJoint->setPositions(xyzPositions);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(xyzRotation, 1e-10));
+
+  const Eigen::Matrix3d xyzRelative
+      = ballJoint->getRelativeTransform().linear();
+  ballJoint->setCoordinateChart(BallJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_EQ(
+      ballJoint->getCoordinateChart(), BallJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(xyzRelative, 1e-10));
+
+  const Eigen::Vector3d zyxAngles(0.3, -0.2, 0.15);
+  const Eigen::Matrix3d zyxRotation = math::eulerZYXToMatrix(zyxAngles);
+  const Eigen::Vector3d zyxPositions = BallJoint::convertToPositions(
+      zyxRotation, BallJoint::CoordinateChart::EULER_ZYX);
+  ballJoint->setPositions(zyxPositions);
+  EXPECT_TRUE(
+      ballJoint->getRelativeTransform().linear().isApprox(zyxRotation, 1e-10));
+}
+
+//==============================================================================
+TEST_F(JOINTS, FreeJointCoordinateChart)
+{
+  SkeletonPtr skel = Skeleton::create("free_chart");
+
+  FreeJoint::Properties freeProps;
+  freeProps.mCoordinateChart = FreeJoint::CoordinateChart::EULER_ZYX;
+
+  auto [freeJoint, freeBody]
+      = skel->createJointAndBodyNodePair<FreeJoint>(nullptr, freeProps);
+  (void)freeBody;
+
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_ZYX);
+
+  const Eigen::Vector3d zyxAngles(0.1, -0.25, 0.05);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = math::eulerZYXToMatrix(zyxAngles);
+  tf.translation() = Eigen::Vector3d(0.4, -0.2, 0.3);
+
+  const Eigen::Vector6d positions = FreeJoint::convertToPositions(
+      tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  freeJoint->setPositions(positions);
+  EXPECT_TRUE(
+      freeJoint->getRelativeTransform().linear().isApprox(tf.linear(), 1e-10));
+  EXPECT_TRUE(freeJoint->getRelativeTransform().translation().isApprox(
+      tf.translation(), 1e-12));
+
+  const Eigen::Isometry3d relativeTransform = freeJoint->getRelativeTransform();
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_EQ(
+      freeJoint->getCoordinateChart(), FreeJoint::CoordinateChart::EULER_XYZ);
+  EXPECT_TRUE(freeJoint->getRelativeTransform().linear().isApprox(
+      relativeTransform.linear(), 1e-10));
+  EXPECT_TRUE(freeJoint->getRelativeTransform().translation().isApprox(
+      relativeTransform.translation(), 1e-12));
 }
 
 //==============================================================================

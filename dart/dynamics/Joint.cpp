@@ -91,6 +91,7 @@ JointProperties::JointProperties(
     prop.mReferenceDofIndex = i;
     prop.mMultiplier = _mimicMultiplier;
     prop.mOffset = _mimicOffset;
+    prop.mConstraintType = MimicConstraintType::Motor;
   }
 }
 
@@ -134,6 +135,8 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setLimitEnforcement(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
+  for (const auto& [index, actuatorType] : properties.mActuatorTypes)
+    setActuatorType(index, actuatorType);
   setMimicJointDofs(properties.mMimicDofProps);
 }
 
@@ -203,10 +206,136 @@ const std::string& Joint::getName() const
 //==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
-  if (mAspectProperties.mActuatorType == _actuatorType)
+  if (mAspectProperties.mActuatorType == _actuatorType
+      && mAspectProperties.mActuatorTypes.empty())
     return;
 
   mAspectProperties.mActuatorType = _actuatorType;
+  mAspectProperties.mActuatorTypes.clear();
+  notifyAutomaticConstraintPropertiesUpdated();
+  resetCommands();
+}
+
+//==============================================================================
+void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
+{
+  if (index >= getNumDofs()) {
+    DART_ERROR(
+        "Attempted to set actuator type for invalid index {} on Joint [{}] "
+        "with {} DoFs.",
+        index,
+        getName(),
+        getNumDofs());
+    return;
+  }
+
+  const bool defaultDynamic
+      = isDynamicActuatorType(mAspectProperties.mActuatorType);
+  const bool requestedDynamic = isDynamicActuatorType(actuatorType);
+  if (requestedDynamic != defaultDynamic) {
+    DART_ERROR(
+        "Cannot assign actuator type {} to DoF {} of Joint [{}] because it "
+        "does not match the dynamic/kinematic classification of the "
+        "joint-wide actuator type {}.",
+        static_cast<int>(actuatorType),
+        index,
+        getName(),
+        static_cast<int>(mAspectProperties.mActuatorType));
+    return;
+  }
+
+  if (actuatorType != mAspectProperties.mActuatorType
+      && actuatorType != Joint::MIMIC) {
+    DART_ERROR(
+        "Only per-DoF overrides to Joint::MIMIC are supported. Requested "
+        "actuator type {} for DoF {} on Joint [{}].",
+        static_cast<int>(actuatorType),
+        index,
+        getName());
+    return;
+  }
+
+  auto& overrides = mAspectProperties.mActuatorTypes;
+
+  if (actuatorType == mAspectProperties.mActuatorType) {
+    const auto it = overrides.find(index);
+    if (it == overrides.end())
+      return;
+
+    overrides.erase(it);
+    notifyAutomaticConstraintPropertiesUpdated();
+    resetCommands();
+    return;
+  }
+
+  const auto it = overrides.find(index);
+  if (it != overrides.end() && it->second == actuatorType)
+    return;
+
+  overrides[index] = actuatorType;
+  notifyAutomaticConstraintPropertiesUpdated();
+  resetCommands();
+}
+
+//==============================================================================
+void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
+{
+  if (actuatorTypes.size() != getNumDofs()) {
+    DART_ERROR(
+        "Actuator type vector size ({}) does not match the number of DoFs ({}) "
+        "for Joint [{}].",
+        actuatorTypes.size(),
+        getNumDofs(),
+        getName());
+    return;
+  }
+
+  if (actuatorTypes.empty()) {
+    if (!mAspectProperties.mActuatorTypes.empty()) {
+      mAspectProperties.mActuatorTypes.clear();
+      notifyAutomaticConstraintPropertiesUpdated();
+      resetCommands();
+    }
+    return;
+  }
+
+  ActuatorType newDefault = actuatorTypes.front();
+  std::map<std::size_t, ActuatorType> newOverrides;
+  const bool newDefaultDynamic = isDynamicActuatorType(newDefault);
+
+  for (std::size_t i = 1; i < actuatorTypes.size(); ++i) {
+    const auto type = actuatorTypes[i];
+    if (isDynamicActuatorType(type) != newDefaultDynamic) {
+      DART_ERROR(
+          "Actuator type {} for DoF {} of Joint [{}] does not match the "
+          "dynamic/kinematic classification of the joint-wide actuator type "
+          "{}.",
+          static_cast<int>(type),
+          i,
+          getName(),
+          static_cast<int>(newDefault));
+      return;
+    }
+    if (type != newDefault) {
+      if (type != Joint::MIMIC) {
+        DART_ERROR(
+            "Only per-DoF overrides to Joint::MIMIC are supported. Requested "
+            "actuator type {} for DoF {} on Joint [{}].",
+            static_cast<int>(type),
+            i,
+            getName());
+        return;
+      }
+      newOverrides.emplace(i, type);
+    }
+  }
+
+  if (mAspectProperties.mActuatorType == newDefault
+      && mAspectProperties.mActuatorTypes == newOverrides)
+    return;
+
+  mAspectProperties.mActuatorType = newDefault;
+  mAspectProperties.mActuatorTypes = std::move(newOverrides);
   notifyAutomaticConstraintPropertiesUpdated();
   resetCommands();
 }
@@ -218,9 +347,96 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
+Joint::ActuatorType Joint::getActuatorType(std::size_t index) const
+{
+  if (index >= getNumDofs()) {
+    DART_ERROR(
+        "Requested actuator type for invalid index {} on Joint [{}] with {} "
+        "DoFs.",
+        index,
+        getName(),
+        getNumDofs());
+    return mAspectProperties.mActuatorType;
+  }
+
+  const auto it = mAspectProperties.mActuatorTypes.find(index);
+  if (it != mAspectProperties.mActuatorTypes.end())
+    return it->second;
+
+  return mAspectProperties.mActuatorType;
+}
+
+//==============================================================================
+std::vector<Joint::ActuatorType> Joint::getActuatorTypes() const
+{
+  const auto numDofs = getNumDofs();
+  std::vector<ActuatorType> actuatorTypes(
+      numDofs, mAspectProperties.mActuatorType);
+
+  for (const auto& [index, type] : mAspectProperties.mActuatorTypes) {
+    if (index < numDofs)
+      actuatorTypes[index] = type;
+  }
+
+  return actuatorTypes;
+}
+
+//==============================================================================
+bool Joint::hasActuatorType(ActuatorType actuatorType) const
+{
+  const auto numDofs = getNumDofs();
+  for (std::size_t i = 0; i < numDofs; ++i) {
+    if (getActuatorType(i) == actuatorType)
+      return true;
+  }
+  return false;
+}
+
+//==============================================================================
+bool Joint::isKinematicActuatorType(ActuatorType actuatorType)
+{
+  switch (actuatorType) {
+    case ACCELERATION:
+    case VELOCITY:
+    case LOCKED:
+      return true;
+    case FORCE:
+    case PASSIVE:
+    case SERVO:
+    case MIMIC:
+      return false;
+    default:
+      DART_ERROR(
+          "Unsupported actuator type: {}.", static_cast<int>(actuatorType));
+      return false;
+  }
+}
+
+//==============================================================================
+bool Joint::isDynamicActuatorType(ActuatorType actuatorType)
+{
+  switch (actuatorType) {
+    case FORCE:
+    case PASSIVE:
+    case SERVO:
+    case MIMIC:
+      return true;
+    case ACCELERATION:
+    case VELOCITY:
+    case LOCKED:
+      return false;
+    default:
+      DART_ERROR(
+          "Unsupported actuator type: {}.", static_cast<int>(actuatorType));
+      return false;
+  }
+}
+
+//==============================================================================
 void Joint::setMimicJoint(
     const Joint* referenceJoint, double mimicMultiplier, double mimicOffset)
 {
+  const auto constraintType = getMimicConstraintType();
   std::size_t numDofs = getNumDofs();
   mAspectProperties.mMimicDofProps.resize(numDofs);
 
@@ -230,6 +446,7 @@ void Joint::setMimicJoint(
     prop.mReferenceDofIndex = i;
     prop.mMultiplier = mimicMultiplier;
     prop.mOffset = mimicOffset;
+    prop.mConstraintType = constraintType;
     setMimicJointDof(i, prop);
   }
 }
@@ -285,23 +502,46 @@ const std::vector<MimicDofProperties>& Joint::getMimicDofProperties() const
 }
 
 //==============================================================================
+void Joint::setMimicConstraintType(MimicConstraintType type)
+{
+  for (auto& prop : mAspectProperties.mMimicDofProps)
+    prop.mConstraintType = type;
+}
+
+//==============================================================================
+MimicConstraintType Joint::getMimicConstraintType() const
+{
+  if (mAspectProperties.mMimicDofProps.empty())
+    return MimicConstraintType::Motor;
+  return mAspectProperties.mMimicDofProps.front().mConstraintType;
+}
+
+//==============================================================================
+void Joint::setUseCouplerConstraint(bool enable)
+{
+  setMimicConstraintType(
+      enable ? MimicConstraintType::Coupler : MimicConstraintType::Motor);
+}
+
+//==============================================================================
+bool Joint::isUsingCouplerConstraint() const
+{
+  return getMimicConstraintType() == MimicConstraintType::Coupler;
+}
+
+//==============================================================================
 bool Joint::isKinematic() const
 {
-  switch (mAspectProperties.mActuatorType) {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
-    case MIMIC:
+  const auto numDofs = getNumDofs();
+  if (numDofs == 0)
+    return isKinematicActuatorType(mAspectProperties.mActuatorType);
+
+  for (std::size_t i = 0; i < numDofs; ++i) {
+    if (!isKinematicActuatorType(getActuatorType(i)))
       return false;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
-      return true;
-    default: {
-      dterr << "Unsupported actuator type." << std::endl;
-      return false;
-    }
   }
+
+  return true;
 }
 
 //==============================================================================

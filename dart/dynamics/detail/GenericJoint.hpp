@@ -391,7 +391,7 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     return;
   }
 
-  switch (Joint::mAspectProperties.mActuatorType) {
+  switch (this->getActuatorType(index)) {
     case Joint::FORCE:
       this->mAspectState.mCommands[index] = math::clip(
           command,
@@ -470,60 +470,10 @@ void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
     return;
   }
 
-  switch (Joint::mAspectProperties.mActuatorType) {
-    case Joint::FORCE:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mForceLowerLimits,
-          Base::mAspectProperties.mForceUpperLimits);
-      break;
-    case Joint::PASSIVE:
-      if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a PASSIVE joint ["
-               << this->getName() << "].\n";
-      }
-      this->mAspectState.mCommands.setZero();
-      break;
-    case Joint::SERVO:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mVelocityLowerLimits,
-          Base::mAspectProperties.mVelocityUpperLimits);
-      break;
-    case Joint::MIMIC:
-      if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a MIMIC joint ["
-               << this->getName() << "].\n";
-      }
-      this->mAspectState.mCommands.setZero();
-      break;
-    case Joint::ACCELERATION:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mAccelerationLowerLimits,
-          Base::mAspectProperties.mAccelerationUpperLimits);
-      break;
-    case Joint::VELOCITY:
-      this->mAspectState.mCommands = math::clip(
-          commands,
-          Base::mAspectProperties.mVelocityLowerLimits,
-          Base::mAspectProperties.mVelocityUpperLimits);
-      // TODO: This possibly makes the acceleration to exceed the limits.
-      break;
-    case Joint::LOCKED:
-      if (!commands.isZero()) {
-        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
-               << commands.transpose() << ") command for a LOCKED joint ["
-               << this->getName() << "].\n";
-      }
-      this->mAspectState.mCommands.setZero();
-      break;
-    default:
-      DART_ASSERT(false);
-      break;
-  }
+  // Dispatch per DoF so that joints with mixed (per-DoF) actuator types apply
+  // the correct clamping/zeroing rules for each DoF.
+  for (std::size_t i = 0; i < getNumDofs(); ++i)
+    setCommand(i, commands[static_cast<Eigen::Index>(i)]);
 
   this->notifyExternalDisturbanceUpdated();
 }
@@ -856,7 +806,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+  if (this->getActuatorType(index) == Joint::VELOCITY)
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
 }
 
@@ -884,8 +834,10 @@ void GenericJoint<ConfigSpaceT>::setVelocities(
 
   setVelocitiesStatic(velocities);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
-    this->mAspectState.mCommands = this->getVelocitiesStatic();
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::VELOCITY)
+      this->mAspectState.mCommands[i] = this->getVelocitiesStatic()[i];
+  }
 }
 
 //==============================================================================
@@ -1073,7 +1025,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
   this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdated();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
+  if (this->getActuatorType(index) == Joint::ACCELERATION) {
     const double command = this->getAccelerationsStatic()[index];
     if (this->mAspectState.mCommands[index] != command) {
       this->mAspectState.mCommands[index] = command;
@@ -1106,13 +1058,18 @@ void GenericJoint<ConfigSpaceT>::setAccelerations(
 
   setAccelerationsStatic(accelerations);
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION) {
-    const auto& commands = this->getAccelerationsStatic();
-    if (this->mAspectState.mCommands != commands) {
-      this->mAspectState.mCommands = commands;
-      this->notifyExternalDisturbanceUpdated();
+  bool commandChanged = false;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::ACCELERATION) {
+      const double command = this->getAccelerationsStatic()[i];
+      if (this->mAspectState.mCommands[i] != command) {
+        this->mAspectState.mCommands[i] = command;
+        commandChanged = true;
+      }
     }
   }
+  if (commandChanged)
+    this->notifyExternalDisturbanceUpdated();
 }
 
 //==============================================================================
@@ -1229,7 +1186,7 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
   this->mAspectState.mForces[index] = force;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
+  if (this->getActuatorType(index) == Joint::FORCE)
     this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
 
   this->notifyExternalDisturbanceUpdated();
@@ -1258,8 +1215,10 @@ void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
   this->mAspectState.mForces = forces;
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    this->mAspectState.mCommands = this->mAspectState.mForces;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::FORCE)
+      this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+  }
 
   this->notifyExternalDisturbanceUpdated();
 }
@@ -1365,8 +1324,10 @@ void GenericJoint<ConfigSpaceT>::resetForces()
 {
   this->mAspectState.mForces.setZero();
 
-  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    this->mAspectState.mCommands = this->mAspectState.mForces;
+  for (std::size_t i = 0; i < getNumDofs(); ++i) {
+    if (this->getActuatorType(i) == Joint::FORCE)
+      this->mAspectState.mCommands[i] = this->mAspectState.mForces[i];
+  }
 
   this->notifyExternalDisturbanceUpdated();
 }

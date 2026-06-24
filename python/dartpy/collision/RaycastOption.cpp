@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -48,10 +49,17 @@ void RaycastOption(py::module& m)
           ::py::init<bool, bool>(),
           ::py::arg("enableAllHits"),
           ::py::arg("sortByClosest"))
+      .def(
+          ::py::
+              init<bool, bool, dart::collision::RaycastOption::RaycastFilter>(),
+          ::py::arg("enableAllHits"),
+          ::py::arg("sortByClosest"),
+          ::py::arg("filter") = nullptr)
       .def_readwrite(
           "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
       .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest);
+          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
+      .def_readwrite("mFilter", &dart::collision::RaycastOption::mFilter);
 }
 
 } // namespace python

@@ -92,6 +92,33 @@ OdeMesh::OdeMesh(
 }
 
 //==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent, const dart::math::TriMeshd& mesh)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
+{
+  fillArrays(mesh);
+
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+
+  const double* normalData = nullptr;
+  if (!mNormals.empty() && mNormals.size() == mVertices.size())
+    normalData = mNormals.data();
+
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3 * sizeof(int),
+      normalData);
+
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
+}
+
+//==============================================================================
 OdeMesh::~OdeMesh()
 {
   dGeomDestroy(mGeomId);
@@ -196,6 +223,43 @@ void OdeMesh::fillArrays(
     mIndices[indexIndex++] = static_cast<int>(triangle[0]);
     mIndices[indexIndex++] = static_cast<int>(triangle[1]);
     mIndices[indexIndex++] = static_cast<int>(triangle[2]);
+  }
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(const dart::math::TriMeshd& mesh)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  const auto& vertices = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+  const auto& normals = mesh.getVertexNormals();
+
+  mVertices.resize(vertices.size() * 3);
+
+  auto vertexIndex = 0u;
+  for (const auto& vertex : vertices) {
+    mVertices[vertexIndex++] = vertex.x();
+    mVertices[vertexIndex++] = vertex.y();
+    mVertices[vertexIndex++] = vertex.z();
+  }
+
+  if (normals.size() == vertices.size()) {
+    mNormals.reserve(normals.size() * 3);
+    for (const auto& normal : normals) {
+      mNormals.push_back(normal.x());
+      mNormals.push_back(normal.y());
+      mNormals.push_back(normal.z());
+    }
+  }
+
+  mIndices.reserve(triangles.size() * 3);
+  for (const auto& tri : triangles) {
+    mIndices.push_back(static_cast<int>(tri[0]));
+    mIndices.push_back(static_cast<int>(tri[1]));
+    mIndices.push_back(static_cast<int>(tri[2]));
   }
 }
 

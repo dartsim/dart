@@ -47,6 +47,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -422,16 +423,50 @@ bool BulletCollisionDetector::raycast(
   const auto btFrom = convertVector3(from);
   const auto btTo = convertVector3(to);
 
-  if (option.mEnableAllHits) {
+  const bool needsAllHits
+      = option.mEnableAllHits || static_cast<bool>(option.mFilter);
+
+  if (needsAllHits) {
+    auto lessFraction = [](const RayHit& a, const RayHit& b) {
+      return a.mFraction < b.mFraction;
+    };
+
     auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result == nullptr)
-      return callback.hasHit();
+    if (result == nullptr) {
+      if (!callback.hasHit())
+        return false;
+
+      if (!option.mFilter)
+        return true;
+
+      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+        const auto* collObj = static_cast<BulletCollisionObject*>(
+            callback.m_collisionObjects[i]->getUserPointer());
+        if (option.passesFilter(collObj))
+          return true;
+      }
+
+      return false;
+    }
 
     if (callback.hasHit()) {
       reportRayHits(callback, option, *result);
+
+      if (!option.mEnableAllHits && !result->mRayHits.empty()) {
+        if (option.mSortByClosest) {
+          result->mRayHits.resize(1);
+        } else {
+          const auto closest = std::min_element(
+              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const RayHit closestHit = *closest;
+          result->mRayHits.clear();
+          result->mRayHits.emplace_back(closestHit);
+        }
+      }
+
       return result->hasHit();
     } else {
       return false;
@@ -643,6 +678,29 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
+  } else if (const auto convexMesh = shape->as<dynamics::ConvexMeshShape>()) {
+    const auto mesh = convexMesh->getMesh();
+    if (mesh && mesh->hasVertices()) {
+      auto hullShape = std::make_unique<btConvexHullShape>();
+      const auto& vertices = mesh->getVertices();
+      hullShape->setMargin(0.0f);
+      for (const auto& vertex : vertices) {
+        hullShape->addPoint(
+            btVector3(
+                static_cast<btScalar>(vertex.x()),
+                static_cast<btScalar>(vertex.y()),
+                static_cast<btScalar>(vertex.z())),
+            false);
+      }
+      hullShape->recalcLocalAabb();
+
+      return std::make_unique<BulletCollisionShape>(std::move(hullShape));
+    }
+
+    dtwarn << "[BulletCollisionDetector] ConvexMeshShape has no vertices; "
+           << "creating a sphere with 0.1 radius instead.\n";
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const auto scale = shapeMesh->getScale();
     const auto mesh = shapeMesh->getTriMesh();
@@ -801,7 +859,7 @@ RayHit convertRayHit(
 //==============================================================================
 void reportRayHits(
     const btCollisionWorld::ClosestRayResultCallback callback,
-    const RaycastOption& /*option*/,
+    const RaycastOption& option,
     RaycastResult& result)
 {
   // This function shouldn't be called if callback has not ray hit.
@@ -815,7 +873,9 @@ void reportRayHits(
 
   result.mRayHits.clear();
   result.mRayHits.reserve(1);
-  result.mRayHits.emplace_back(rayHit);
+
+  if (option.passesFilter(rayHit.mCollisionObject))
+    result.mRayHits.emplace_back(rayHit);
 }
 
 //==============================================================================
@@ -843,7 +903,8 @@ void reportRayHits(
         callback.m_hitPointWorld[i],
         callback.m_hitNormalWorld[i],
         callback.m_hitFractions[i]);
-    result.mRayHits.emplace_back(rayHit);
+    if (option.passesFilter(rayHit.mCollisionObject))
+      result.mRayHits.emplace_back(rayHit);
   }
 
   if (option.mSortByClosest)

@@ -45,6 +45,7 @@
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
@@ -669,11 +670,18 @@ void ConstraintSolver::solve()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
 
+  const bool splitImpulse = mSplitImpulseEnabled;
+
   {
     DART_PROFILE_SCOPED_N("ConstraintSolver::clear per-step state");
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
       skeleton->clearConstraintImpulses();
+      if (splitImpulse) {
+        skeleton->clearPositionConstraintImpulses();
+        skeleton->clearPositionVelocityChanges();
+        skeleton->setPositionImpulseApplied(false);
+      }
       DART_SUPPRESS_DEPRECATED_BEGIN
       skeleton->clearCollidingBodies();
       DART_SUPPRESS_DEPRECATED_END
@@ -698,6 +706,10 @@ void ConstraintSolver::solve()
 
   // Solve constrained groups
   solveConstrainedGroups();
+
+  if (splitImpulse) {
+    solvePositionConstrainedGroups();
+  }
 }
 
 //==============================================================================
@@ -714,6 +726,7 @@ void ConstraintSolver::setFromOtherConstraintSolver(
   mManualConstraints = other.mManualConstraints;
 
   mContactSurfaceHandler = other.mContactSurfaceHandler;
+  mSplitImpulseEnabled = other.mSplitImpulseEnabled;
   setNumSimulationThreads(other.getNumSimulationThreads());
 }
 
@@ -725,8 +738,8 @@ bool ConstraintSolver::canJointCreateAutomaticConstraint(
     return false;
 
   return joint->hasCoulombFriction() || joint->areLimitsEnforced()
-         || joint->getActuatorType() == dynamics::Joint::SERVO
-         || (joint->getActuatorType() == dynamics::Joint::MIMIC
+         || joint->hasActuatorType(dynamics::Joint::SERVO)
+         || (joint->hasActuatorType(dynamics::Joint::MIMIC)
              && joint->getMimicJoint());
 }
 
@@ -1203,6 +1216,7 @@ void ConstraintSolver::updateConstraints()
   // Destroy previous joint constraints
   mJointConstraints.clear();
   mMimicMotorConstraints.clear();
+  mCouplerConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   {
@@ -1215,14 +1229,40 @@ void ConstraintSolver::updateConstraints()
       }
 
       if (joint->areLimitsEnforced()
-          || joint->getActuatorType() == dynamics::Joint::SERVO) {
+          || joint->hasActuatorType(dynamics::Joint::SERVO)) {
         mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC
-          && joint->getMimicJoint()) {
-        mMimicMotorConstraints.push_back(std::make_shared<MimicMotorConstraint>(
-            joint, joint->getMimicDofProperties()));
+      if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+        auto mimicProps = joint->getMimicDofProperties();
+        const auto dofCount = joint->getNumDofs();
+        bool hasValidMimicDof = false;
+        for (std::size_t dofIndex = 0;
+             dofIndex < dofCount && dofIndex < mimicProps.size();
+             ++dofIndex) {
+          if (joint->getActuatorType(dofIndex) == dynamics::Joint::MIMIC) {
+            if (mimicProps[dofIndex].mReferenceJoint != nullptr) {
+              hasValidMimicDof = true;
+            } else {
+              DART_WARN(
+                  "Joint '{}' DoF {} is set to MIMIC without a reference; "
+                  "mimic constraint will be skipped.",
+                  joint->getName(),
+                  dofIndex);
+            }
+          }
+        }
+
+        if (hasValidMimicDof) {
+          if (joint->isUsingCouplerConstraint()) {
+            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
+                joint, joint->getMimicDofProperties()));
+          } else {
+            mMimicMotorConstraints.push_back(
+                std::make_shared<MimicMotorConstraint>(
+                    joint, joint->getMimicDofProperties()));
+          }
+        }
       }
     }
   }
@@ -1245,6 +1285,15 @@ void ConstraintSolver::updateConstraints()
       if (mimicMotorConstraint->isActive()) {
         mActiveConstraintsAllSingleReactiveContacts = false;
         mActiveConstraints.push_back(mimicMotorConstraint);
+      }
+    }
+
+    for (auto& couplerConstraint : mCouplerConstraints) {
+      couplerConstraint->update();
+
+      if (couplerConstraint->isActive()) {
+        mActiveConstraintsAllSingleReactiveContacts = false;
+        mActiveConstraints.push_back(couplerConstraint);
       }
     }
 
@@ -1536,6 +1585,53 @@ void ConstraintSolver::buildConstrainedGroups()
     DART_PROFILE_SCOPED_N("reset constraint unions");
     for (auto& skeleton : mSkeletons)
       skeleton->resetUnion();
+  }
+}
+
+//==============================================================================
+void ConstraintSolver::setSplitImpulseEnabled(bool enabled)
+{
+  mSplitImpulseEnabled = enabled;
+}
+
+//==============================================================================
+bool ConstraintSolver::isSplitImpulseEnabled() const
+{
+  return mSplitImpulseEnabled;
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroup(
+    ConstrainedGroup& /*group*/)
+{
+  // Base implementation does nothing. Concrete solvers that support split
+  // impulse override this.
+}
+
+//==============================================================================
+void ConstraintSolver::solvePositionConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  // Preserve velocity-impulse flags across the position pass.
+  std::vector<bool> impulseAppliedStates;
+  impulseAppliedStates.reserve(mSkeletons.size());
+  for (const auto& skeleton : mSkeletons) {
+    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+  }
+
+  for (auto& constraintGroup : mConstrainedGroups) {
+    solvePositionConstrainedGroup(constraintGroup);
+  }
+
+  for (auto& skeleton : mSkeletons) {
+    if (skeleton->isPositionImpulseApplied()) {
+      skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
   }
 }
 
