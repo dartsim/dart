@@ -1759,13 +1759,12 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!dartObject->getCachedShape())
     return entry;
 
-  const auto& localMin = dartObject->getCachedLocalBoundsMin();
-  const auto& localMax = dartObject->getCachedLocalBoundsMax();
   if (!dartObject->hasFiniteCachedLocalBounds())
     return entry;
 
-  const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
-  const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
+  const Eigen::Vector3d& localCenter = dartObject->getCachedLocalBoundsCenter();
+  const Eigen::Vector3d& localHalfExtents
+      = dartObject->getCachedLocalBoundsHalfExtents();
 
   Eigen::Vector3d worldCenter;
   Eigen::Vector3d worldHalfExtents;

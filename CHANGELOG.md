@@ -81,9 +81,9 @@
     bounding-box corners:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Reduce DART-native broadphase setup work for exactly translated primitive
-    collision objects by using the cached local bounds directly when the
-    collision transform has an identity linear part:
+  * Reduce DART-native broadphase setup work by caching local bounds
+    center/half-extents and using those cached bounds directly when primitive
+    collision objects have an identity linear transform:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up active DART-native contact-heavy scenes by replacing global

@@ -82,6 +82,12 @@ public:
 
   const Eigen::Vector3d& getCachedLocalBoundsMax() const;
 
+  /// Returns the center of the cached local bounding box.
+  const Eigen::Vector3d& getCachedLocalBoundsCenter() const;
+
+  /// Returns the half-extents of the cached local bounding box.
+  const Eigen::Vector3d& getCachedLocalBoundsHalfExtents() const;
+
   bool hasFiniteCachedLocalBounds() const;
 
   bool isCachedPlaneShape() const;
@@ -102,6 +108,8 @@ private:
   CachedShapeKind mCachedShapeKind{CachedShapeKind::Unknown};
   Eigen::Vector3d mCachedLocalBoundsMin{Eigen::Vector3d::Zero()};
   Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mCachedLocalBoundsCenter{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mCachedLocalBoundsHalfExtents{Eigen::Vector3d::Zero()};
   bool mHasFiniteCachedLocalBounds{false};
   bool mIsCachedPlaneShape{false};
   bool mUseBodyNodeWorldTransform{false};

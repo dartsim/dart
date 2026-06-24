@@ -23,11 +23,13 @@ scratch vectors. Finally, native finite-plane contact merging now uses a
 single-contact fast path when the broadphase has already proven that cross-pair
 duplicate checks are unnecessary.
 
-The local next candidate adds a narrower native broadphase setup fast path:
-when a DART-native collision object's transform has an exactly identity linear
-part, the backend computes world bounds from translation plus cached local
-center/half-extents instead of doing the general matrix/absolute-linear bound
-calculation. Rotated or otherwise general transforms keep the existing path.
+The local next candidate adds a narrower native broadphase setup fast path.
+DART-native collision objects now cache local bounds center/half-extents when
+their shape cache refreshes. When a collision object's transform has an exactly
+identity linear part, the backend computes world bounds from translation plus
+those cached local values instead of doing the general matrix/absolute-linear
+bound calculation. Rotated or otherwise general transforms keep the existing
+path, but still reuse the cached local center/half-extents.
 
 Each performance PR in this stack must keep ODE in the comparison table along
 with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
@@ -45,18 +47,20 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3170 parent, same-host no profile | DART native | `0.110045` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | Exact-group-only candidate, same-host no profile | DART native | `0.115783` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3171 parent, no profile | DART native | `0.123018` latest, `0.116997` prior | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, no profile | DART native | `0.125711` latest, `0.121310` prior | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, text profile | DART native | `0.113156` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `470.79 ms`, `parallel reset` `99.00 ms`, `serial fallback` `1.774 ms`, `solveConstrainedGroups` `556.90 ms`, `collide` `456.34 ms`, native broadphase entries `111.74 ms`, finite-plane merge contacts `91.34 ms` |
+| Current local, no profile | DART native | `0.127449` latest, `0.116587` prior | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local, text profile | DART native | `0.127487` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `407.85 ms`, `parallel reset` `83.85 ms`, `serial fallback` `1.907 ms`, `solveConstrainedGroups` `491.44 ms`, `collide` `408.49 ms`, native broadphase entries `96.96 ms`, finite-plane merge contacts `85.23 ms` |
 | Current local, no profile | FCL primitive | `0.0948178` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | Current local, no profile | Bullet | `0.0928425` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | Current local, no profile | ODE | `0.004688` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Using the lower current local DART-native repeat, the local candidate is about
-`1.04x` the lower #3171 parent no-profile repeat, `1.28x` FCL primitive,
-`1.31x` Bullet, and `25.9x` ODE on the active issue-scene rerun. The active
-no-deactivation scene is still far below RTF `1`, so the next target remains
-the largest remaining active-step costs: constrained-group solve, contact
-construction, collision, and integration overhead.
+Using the latest current local DART-native repeat, the local candidate is about
+`1.04x` the latest #3171 parent no-profile repeat, `1.34x` FCL primitive,
+`1.37x` Bullet, and `27.2x` ODE on the active issue-scene rerun. Using the
+lower repeat keeps the #3171 comparison inside short-run timing noise, while
+the scoped profile shows the native broadphase-entry setup at `96.96 ms`. The
+active no-deactivation scene is still far below RTF `1`, so the next target
+remains the largest remaining active-step costs: constrained-group solve,
+contact construction, collision, and integration overhead.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances

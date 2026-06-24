@@ -88,6 +88,19 @@ const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsMax() const
 }
 
 //==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsCenter() const
+{
+  return mCachedLocalBoundsCenter;
+}
+
+//==============================================================================
+const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsHalfExtents()
+    const
+{
+  return mCachedLocalBoundsHalfExtents;
+}
+
+//==============================================================================
 bool DARTCollisionObject::hasFiniteCachedLocalBounds() const
 {
   return mHasFiniteCachedLocalBounds;
@@ -120,6 +133,8 @@ void DARTCollisionObject::refreshShapeCache()
   mCachedShapeKind = CachedShapeKind::Unknown;
   mCachedLocalBoundsMin.setZero();
   mCachedLocalBoundsMax.setZero();
+  mCachedLocalBoundsCenter.setZero();
+  mCachedLocalBoundsHalfExtents.setZero();
   mHasFiniteCachedLocalBounds = false;
   mIsCachedPlaneShape = false;
   mUseBodyNodeWorldTransform = false;
@@ -157,6 +172,10 @@ void DARTCollisionObject::refreshShapeCache()
   const auto& localBox = mCachedShape->getBoundingBox();
   mCachedLocalBoundsMin = localBox.getMin();
   mCachedLocalBoundsMax = localBox.getMax();
+  mCachedLocalBoundsCenter
+      = 0.5 * (mCachedLocalBoundsMin + mCachedLocalBoundsMax);
+  mCachedLocalBoundsHalfExtents
+      = 0.5 * (mCachedLocalBoundsMax - mCachedLocalBoundsMin);
   mHasFiniteCachedLocalBounds
       = mCachedLocalBoundsMin.allFinite() && mCachedLocalBoundsMax.allFinite();
 }
