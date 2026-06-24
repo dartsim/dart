@@ -1507,6 +1507,17 @@ void postProcess(
   if (totalResult.getNumContacts() >= option.maxNumContacts)
     return;
 
+  if (skipCrossPairDuplicateCheck && pairContacts.size() == 1u) {
+    if (publishCrossPairDuplicateState)
+      contactPointIndex.insertUnchecked(pairContacts.front().point);
+
+    auto contact = pairContacts.front();
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
+    totalResult.addContact(contact);
+    return;
+  }
+
   auto appendContact = [&](const Contact& pairContact) {
     if (totalResult.getNumContacts() >= option.maxNumContacts)
       return std::make_pair(false, false);
