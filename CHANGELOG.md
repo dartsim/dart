@@ -203,6 +203,11 @@
     micrometer-scale agreement with the always-active path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up cached all-resting steps by tracking explicit joint-velocity edits
+    with a generation counter instead of rescanning every resting mobile DOF on
+    each cached step:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up single-free-body contact groups by using direct LCP assembly for
     exact built-in contact constraints, while preserving the legacy assembly
     path for custom contact constraints and manual constraints:

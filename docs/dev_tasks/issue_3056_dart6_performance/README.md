@@ -2,24 +2,35 @@
 
 ## Current Snapshot
 
-Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, and #3143 are
-merged. The current follow-up is #3144
-`perf/dart6-native-contact-merge-grid`, refreshed on current
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143, and
+#3144 are merged. The current follow-up is #3146
+`perf/dart6-resting-velocity-version`, refreshed on current
 `origin/release-6.20`.
 
-The current local candidate keeps the exact distance-based duplicate-contact
-check, but changes the DART-native contact merge grid from fixed 27-cell
-neighbor probing to larger cells with boundary-only neighbor probes. Public
-collision tests cover near-duplicate plane contacts across a grid-cell boundary
-and distinct nearby contacts in neighboring cells.
+The current local candidate targets the settled-scene hot path rather than the
+active collision path. It tracks externally visible joint-velocity writes with a
+global generation counter so the cached all-resting fast path can skip the
+per-step scan over every mobile skeleton DOF. Internal integration and
+constraint-applied velocity updates keep using the normal dirty-velocity path
+without incrementing that external-edit counter.
 
-The current stack clears the settled-scene target when deactivation is enabled:
-the same issue-size scene ran 3000 steps at RTF `1.90463` with DART-native
-collision, DART 6 dynamics, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, and default deactivation. The final state was
-finite with hash `0x131b6af79a44ff90`, `3003 / 3003` mobile skeletons resting,
-and zero final contacts. The active no-sleep case below remains the stress path
-for collision and constraint hot-path work.
+Latest exact issue-scene evidence
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3144 parent, default deactivation, 3000 steps | `1.95331` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, 3000 steps | `10.4855` | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, text profile | `10.7853` | finite, same hash; readiness check `1.772 ms` over `2998` calls |
+| Current candidate, deactivation disabled, 300 active steps | `0.0873215` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+
+The settled scene clears the target comfortably with identical consumed final
+state. The no-sleep active spot-check preserves the active final hash and
+contact counts, so the velocity-generation guard does not change active
+physics; active collision and constraint work remains the stress path for the
+next native-collision improvements.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
@@ -29,15 +40,15 @@ Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 | --- | ---: | --- |
 | #3142 stack, no profile | `0.0696281` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | #3143 stack, no profile | `0.0751396` | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local candidate, no profile | `0.0817217` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3144 contact-merge candidate, no profile | `0.0817217` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3142 stack, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3143 stack, text profile | `0.0754405` | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local candidate, text profile | `0.0824554` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3144 contact-merge candidate, text profile | `0.0824554` | finite, same hash, contacts `5005`, pairs `3003` |
 
 The profile movement is concentrated where expected:
 the DART-native `collide` scope drops from about `1.680 s` on #3142 to
-`1.629 s` on #3143 and `1.101 s` on the current candidate over 300 active
-steps. The next largest measured costs are now `build contact constraints` at
+`1.629 s` on #3143 and `1.101 s` on the #3144 contact-merge candidate over 300
+active steps. The next largest measured costs are now `build contact constraints` at
 about `762 ms`, `solveConstrainedGroups` at about `562 ms`, and
 velocity/position integration at about `741 ms` combined, so the next larger
 wins should continue in contact construction, constrained-group solving,
@@ -56,8 +67,10 @@ DART-native collision hot-path costs: unused scratch-result lookup caches and
 single-plane pair-index division. #3142 skips redundant parallel-safety scans
 once the active contact set and built constrained groups prove they are exact
 built-in fixed-support contact groups. #3143 caches a compact primitive shape
-kind for DART-native plane dispatch. The current candidate reduces serial
-contact-merge duplicate-grid probes while preserving duplicate behavior.
+kind for DART-native plane dispatch. #3144 reduces serial contact-merge
+duplicate-grid probes while preserving duplicate behavior.
+#3146 targets cached all-resting step readiness by replacing the repeated
+mobile-DOF velocity scan with an external velocity-edit generation guard.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active

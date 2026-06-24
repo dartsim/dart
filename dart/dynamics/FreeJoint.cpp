@@ -652,8 +652,10 @@ void FreeJoint::integratePositions(
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
-  setVelocitiesStatic(math::integrateVelocity<math::RealVectorSpace<6>>(
-      getVelocitiesStatic(), getAccelerationsStatic(), _dt));
+  setVelocitiesStaticInternal(
+      math::integrateVelocity<math::RealVectorSpace<6>>(
+          getVelocitiesStatic(), getAccelerationsStatic(), _dt),
+      false);
 }
 
 //==============================================================================

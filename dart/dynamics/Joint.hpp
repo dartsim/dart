@@ -852,6 +852,10 @@ protected:
   /// Notify that user-writable force/command state has changed.
   void notifyExternalDisturbanceUpdated();
 
+  /// Notify that velocity state has changed, optionally recording it for
+  /// all-resting cache invalidation.
+  void notifyVelocityUpdated(bool trackVelocityVersion);
+
   /// Notify that this joint's automatic-constraint eligibility changed.
   void notifyAutomaticConstraintPropertiesUpdated();
 

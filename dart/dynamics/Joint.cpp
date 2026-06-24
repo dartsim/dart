@@ -764,6 +764,17 @@ void Joint::notifyVelocityUpdate()
 //==============================================================================
 void Joint::notifyVelocityUpdated()
 {
+  notifyVelocityUpdated(true);
+}
+
+//==============================================================================
+void Joint::notifyVelocityUpdated(bool trackVelocityVersion)
+{
+  if (trackVelocityVersion) {
+    if (const auto skel = getSkeleton())
+      skel->incrementVelocityVersion();
+  }
+
   if (mChildBodyNode) {
     mChildBodyNode->dirtyVelocity();
     mChildBodyNode->dirtyJacobianDeriv();

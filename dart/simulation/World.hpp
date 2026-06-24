@@ -510,6 +510,7 @@ protected:
   std::size_t mAllRestingSnapshotKinematicVersion = 0;
   std::size_t mAllRestingSnapshotExternalDisturbanceVersion = 0;
   std::size_t mAllRestingSnapshotDeactivationStateVersion = 0;
+  std::size_t mAllRestingSnapshotVelocityVersion = 0;
   const collision::CollisionDetector* mAllRestingSnapshotCollisionDetector
       = nullptr;
   const collision::CollisionGroup* mAllRestingSnapshotCollisionGroup = nullptr;
