@@ -36,6 +36,7 @@
 #include <dart/dynamics/MeshMaterial.hpp>
 #include <dart/dynamics/Shape.hpp>
 
+#include <dart/math/PolygonMesh.hpp>
 #include <dart/math/TriMesh.hpp>
 
 #include <dart/common/ResourceRetriever.hpp>
@@ -133,6 +134,15 @@ public:
 
   /// Returns the TriMesh representation of this mesh.
   std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the polygon mesh representation of this mesh, if available.
+  ///
+  /// This is intended for rendering/export pipelines that want to preserve
+  /// non-triangular faces. The returned mesh is generated lazily: when the mesh
+  /// can be re-imported from its source URI, the original polygon topology
+  /// (quads/n-gons) is preserved; otherwise a triangulated representation is
+  /// returned.
+  std::shared_ptr<math::PolygonMesh<double>> getPolygonMesh() const;
 
   /// Returns the aiScene representation of this mesh.
   [[deprecated(
@@ -328,6 +338,21 @@ protected:
   static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
       const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
 
+  /// Converts an aiScene into a PolygonMesh, preserving original face topology
+  /// (quads/n-gons are not pre-triangulated).
+  static std::shared_ptr<math::PolygonMesh<double>> convertAssimpPolygonMesh(
+      const aiScene* scene);
+
+  /// Converts a TriMesh into a PolygonMesh (each triangle becomes one face).
+  static std::shared_ptr<math::PolygonMesh<double>> convertTriMeshToPolygonMesh(
+      const math::TriMesh<double>& mesh);
+
+  /// Imports an aiScene from a URI without triangulation, preserving polygon
+  /// faces. The caller owns the returned scene and must free it with
+  /// aiReleaseImport(). Used only by getPolygonMesh().
+  static const aiScene* loadPolygonScene(
+      const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+
   /// Converts TriMesh back to aiScene for backward compatibility.
   const aiScene* convertToAssimpMesh() const;
 
@@ -335,6 +360,9 @@ protected:
 
   /// TriMesh representation.
   std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Polygon mesh representation (optional, cached on demand).
+  mutable std::shared_ptr<math::PolygonMesh<double>> mPolygonMesh;
 
   /// Submesh ranges extracted from Assimp.
   std::vector<SubMeshRange> mSubMeshRanges;
