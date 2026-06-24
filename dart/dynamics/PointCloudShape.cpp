@@ -193,7 +193,7 @@ Eigen::Vector4d PointCloudShape::getOverallColor() const
   }
 
   if (mColors.size() > 1) {
-    dtwarn << "[PointCloudShape] Attempting to get the overal color when the "
+    dtwarn << "[PointCloudShape] Attempting to get the overall color when the "
            << "color array contains more than one color. This is potentially "
            << "an error. Returning the first color in the color array.\n";
   }

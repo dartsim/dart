@@ -58,7 +58,7 @@ public:
   const std::optional<Eigen::Isometry3d>& getRelativeTransform() const;
 
 private:
-  // Private memebers used by MujocoModel class
+  // Private members used by MujocoModel class
   friend class Equality;
   Errors read(tinyxml2::XMLElement* element, const Defaults& defaults);
 

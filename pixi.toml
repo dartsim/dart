@@ -11,6 +11,7 @@ benchmark = ">=1.9.3,<2"
 black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
 cmake = ">=4.0.2,<5"
+codespell = ">=2.4.1,<3"
 doxygen = ">=1.13.2,<2"
 gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
@@ -110,7 +111,15 @@ subprocess.run(['taplo', 'fmt', *map(str, toml_files)], check=True)
 PY
 """] }
 
-lint = { depends-on = ["lint-cpp", "lint-cmake", "lint-py", "lint-toml"] }
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = [
+  "lint-spell",
+  "lint-cpp",
+  "lint-cmake",
+  "lint-py",
+  "lint-toml",
+] }
 
 check-lint-cpp = { cmd = """
     cmake \
@@ -125,10 +134,13 @@ check-lint-py = { cmd = """
 
 check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
 check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-cmake",
   "check-lint-py",
+  "check-lint-spell",
 ] }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
@@ -664,13 +676,17 @@ lint-py = { cmd = """
     black . --exclude '\\..*' && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
-lint = { depends-on = ["lint-py"] }
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = ["lint-spell", "lint-py"] }
 
 check-lint-py = { cmd = """
     black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
-check-lint = { depends-on = ["check-lint-py"] }
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
+check-lint = { depends-on = ["check-lint-spell", "check-lint-py"] }
 
 build = { cmd = """
     cmake \

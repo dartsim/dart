@@ -463,7 +463,7 @@ Next we'll want the time derivative of the Jacobian, as well as its pseudoinvers
 // Compute the Jacobian time derivative
 Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
 
-// Comptue the pseudo-inverse of the Jacobian time derivative
+// Compute the pseudo-inverse of the Jacobian time derivative
 math::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
                         + 0.0025 * math::Matrix6d::Identity()).inverse();
 ```
@@ -503,7 +503,7 @@ const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 The gains for the operational space controller need to be in matrix form, but
-we're storing the gains as scalars, so we'll need to conver them:
+we're storing the gains as scalars, so we'll need to convert them:
 
 ```cpp
 math::Matrix6d Kp = mKpOS * math::Matrix6d::Identity();

@@ -852,7 +852,7 @@ void Viewer::setVerticalFieldOfView(const double fov)
       fovy, aspectRatio, zNear, zFar);
 
   if (!result) {
-    dtwarn << "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical "
+    dtwarn << "[Viewer::setMasterCameraFieldOfView] Attempting to set vertical "
            << "field of view while the camera isn't perspective view. "
            << "Ignoring this request.\n";
     return;

@@ -97,7 +97,7 @@ class MyWorldNode(dart.gui.osg.RealTimeWorldNode):
 
         self.torques = p + d + np.matmul(-self.Kd, ddq) * self.timestep
 
-        # Ankle strategy for sagital plane
+        # Ankle strategy for sagittal plane
         com = self.skel.getCOM()
         cop = self.left_heel.getTransform().multiply([0.05, 0, 0])
 
