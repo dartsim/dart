@@ -6,4 +6,44 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(fmt)
+# Downstream `find_package(DART)` consumers re-include this finder through
+# the installed DART config but never define DART_USE_SYSTEM_FMT (it is a DART
+# build-time option, not exported into the installed config). Treat an undefined
+# value as ON so installed/packaged and offline consumers keep resolving the
+# system fmt via find_package(fmt) instead of fetching it over the network.
+if(NOT DEFINED DART_USE_SYSTEM_FMT)
+  set(DART_USE_SYSTEM_FMT ON)
+endif()
+
+if(DART_USE_SYSTEM_FMT)
+  find_package(fmt)
+else()
+  # System fmt is unavailable or its packaged CMake config is broken (e.g. the
+  # Alt Linux Docker repro, whose rolling libfmt-devel has shipped faulty
+  # fmt-targets exports). Build fmt from source instead. Pin the same version
+  # DART builds against elsewhere (pixi: fmt >=11.1.4,<12).
+  if(NOT TARGET fmt::fmt)
+    include(FetchContent)
+
+    FetchContent_Declare(
+      fmt
+      GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+      GIT_TAG 11.1.4
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+    )
+
+    # Keep FMT_INSTALL ON so fmt's targets belong to an export set: DART links
+    # fmt::fmt-header-only PUBLIC and validates install(EXPORT) at generate time,
+    # which fails if the fetched fmt targets are in no export set. Skip the rest.
+    set(FMT_INSTALL ON CACHE BOOL "" FORCE)
+    set(FMT_TEST OFF CACHE BOOL "" FORCE)
+    set(FMT_DOC OFF CACHE BOOL "" FORCE)
+    set(FMT_FUZZ OFF CACHE BOOL "" FORCE)
+
+    FetchContent_MakeAvailable(fmt)
+  endif()
+
+  set(fmt_VERSION 11.1.4 CACHE STRING "fmt version" FORCE)
+  set(fmt_FOUND TRUE CACHE BOOL "fmt found via FetchContent" FORCE)
+endif()
