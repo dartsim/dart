@@ -568,7 +568,14 @@ void World::step(bool _resetCommand)
               skel->setImpulseApplied(false);
             }
 
-            skel->integratePositions(mTimeStep);
+            if (skel->isPositionImpulseApplied()) {
+              skel->integratePositions(
+                  mTimeStep, skel->getPositionVelocityChanges());
+              skel->setPositionImpulseApplied(false);
+              skel->clearPositionVelocityChanges();
+            } else {
+              skel->integratePositions(mTimeStep);
+            }
 
             if (_resetCommand && skel->checkExternalDisturbanceAndReset(true)) {
               skel->clearInternalForces();
@@ -735,8 +742,16 @@ void World::step(bool _resetCommand)
             skel->setImpulseApplied(false);
           }
 
-          if (!preservingFinalSleepSolve)
-            skel->integratePositions(mTimeStep);
+          if (!preservingFinalSleepSolve) {
+            if (skel->isPositionImpulseApplied()) {
+              skel->integratePositions(
+                  mTimeStep, skel->getPositionVelocityChanges());
+              skel->setPositionImpulseApplied(false);
+              skel->clearPositionVelocityChanges();
+            } else {
+              skel->integratePositions(mTimeStep);
+            }
+          }
 
           if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
             skel->setVelocities(
