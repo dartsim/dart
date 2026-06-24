@@ -10,30 +10,37 @@ Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143, and
 #3146 targets the settled-scene hot path by tracking explicit joint-velocity
 edits with a global generation counter. #3147 targets the remaining active
 contact-construction cost by reusing exact built-in default
-`ContactConstraint` objects across steps and by computing local contact points
-without constructing full inverse transforms. It also reuses the previous
-contact-pair scratch-table index for consecutive contacts from the same pair.
-Custom contact-surface handlers stay on the existing construction path.
+`ContactConstraint` objects across steps. It also reuses the previous
+contact-pair scratch-table index for consecutive contacts from the same pair
+while leaving the old local-point arithmetic in place to preserve exact ODE
+final-state hashes. Custom contact-surface handlers stay on the existing
+construction path.
 
 Latest exact issue-scene evidence
-`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
-dynamics, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`:
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
+and solver, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`. ODE is included here because it is the downstream
+backend baseline; only collision detection is delegated.
 
-| Run | RTF | Final state |
-| --- | ---: | --- |
-| #3146 parent, default deactivation, 3000 steps | `10.4855` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
-| Current candidate, default deactivation, 3000 steps | `10.6412` latest rerun, `10.6538` prior run | finite, same hash, resting `3003 / 3003`, contacts `0` |
-| #3146 parent, deactivation disabled, 300 active steps, text profile | `0.0923224` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `build contact constraints` `717.46 ms` |
-| Current candidate, deactivation disabled, 300 active steps, text profile | `0.0936375` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `606.17 ms`, `collect contact candidates` `127.61 ms` |
-| Current candidate, deactivation disabled, 300 active steps, no profile | `0.0965788` latest rerun, `0.0913109` / `0.089246` prior runs | finite, same hash, contacts `5005`, pairs `3003` |
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3146 parent, default deactivation, 3000 steps | DART native | `10.4855` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, 3000 steps | DART native | `10.6412` latest rerun, `10.6538` prior run | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| Before #3147, deactivation disabled, 300 active steps, no profile | DART native | `0.0846169` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| Current candidate, deactivation disabled, 300 active steps, no profile | DART native | `0.0928496` | finite, same hash, contacts `5005`, pairs `3003` |
+| Before #3147, deactivation disabled, 300 active steps, text profile | DART native | `0.0923224` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `717.46 ms` |
+| Current candidate, deactivation disabled, 300 active steps, text profile | DART native | `0.0904352` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `652.06 ms`, `collect contact candidates` `121.95 ms` |
+| Before #3147, deactivation disabled, 300 active steps, no profile | ODE | `0.00462379` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| Current candidate, deactivation disabled, 300 active steps, no profile | ODE | `0.00463526` | finite, same hash, contacts `9009`, pairs `3003` |
 
 The settled scene remains dominated by the #3146 all-resting fast path. The
-current candidate preserves both consumed final-state hashes and trims the
-measured active contact-construction scope by about 15% in the text profiler
-(`717.46 ms` to `606.17 ms`). Whole-run active RTF remains noisy and dominated
-by collision, constraint solving, and integration; those stay the stress paths
-for the next native-collision improvements.
+current candidate preserves consumed final-state hashes for both the
+DART-native and ODE active comparisons. It trims the measured active
+contact-construction scope by about 9% in the text profiler (`717.46 ms` to
+`652.06 ms`) and improves the latest paired DART-native no-profile active RTF
+from `0.0846169` to `0.0928496`. Whole-run active RTF remains noisy and
+dominated by collision, constraint solving, and integration; those stay the
+stress paths for the next native-collision improvements.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
@@ -75,15 +82,16 @@ duplicate-grid probes while preserving duplicate behavior.
 #3146 targets cached all-resting step readiness by replacing the repeated
 mobile-DOF velocity scan with an external velocity-edit generation guard.
 #3147 targets active contact-construction overhead by reusing exact built-in
-default contact constraints and avoiding redundant local-point and pair-index
-work.
+default contact constraints and avoiding redundant pair-index work.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
-RTF, and parallel contact-constraint construction was repaired past the
-thread-local scratch misuse but did not produce convincing active RTF/profile
-gains. Those results point the next larger work back toward native collision
-algorithms and safe constraint-build structure, rather than cache-only edits.
+RTF; rewriting local-point computation avoided inverse transforms but changed
+the ODE final-state hash and was dropped; and parallel contact-constraint
+construction was repaired past the thread-local scratch misuse but did not
+produce convincing active RTF/profile gains. Those results point the next
+larger work back toward native collision algorithms and safe constraint-build
+structure, rather than cache-only edits.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision
