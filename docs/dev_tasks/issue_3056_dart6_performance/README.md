@@ -17,6 +17,12 @@ contact constraints still keep the conservative per-group classification path,
 so the direct path is only used for the same exact built-in contact constraints
 as before.
 
+Each performance PR in this stack must keep ODE in the comparison table along
+with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
+DART-native improvements are not considered complete on this workload unless
+the evidence shows native collision ahead of all three backends on the same
+DART 6 dynamics and solver pipeline.
+
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
 dynamics, deactivation disabled, `--world-threads 16`,
@@ -37,6 +43,11 @@ Current local DART-native is about `1.07x` the #3170 parent no-profile result,
 issue-scene rerun. The active no-deactivation scene is still far below RTF `1`,
 so the next target remains the largest remaining active-step costs: contact
 construction, constrained-group solve, and integration overhead.
+
+On the original default-sleeping target command, the same current local head
+reaches RTF `56.3238` for 3000 steps with DART-native collision, advances
+`3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
+`3003 / 3003` mobile skeletons resting with zero final contacts.
 
 A fixed-support contact-build parallelization relaxation was tested locally and
 discarded after a 300-step profile hit a worker-thread SIGSEGV in parallel
