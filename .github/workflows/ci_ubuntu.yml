@@ -159,3 +159,27 @@ jobs:
               -DDART_VERBOSE=$DART_VERBOSE
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
           '
+
+  eigen-overalignment:
+    name: Eigen 64-byte alignment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: "2"
+
+      - name: Build and test with Eigen over-alignment
+        run: |
+          DART_VERBOSE=ON \
+          pixi run test-eigen-overalignment
+
