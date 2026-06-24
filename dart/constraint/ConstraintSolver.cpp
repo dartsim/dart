@@ -1535,6 +1535,7 @@ void ConstraintSolver::buildConstrainedGroups()
     group.removeAllConstraints();
     group.mRootSkeleton.reset();
     group.mAllSingleReactiveContacts = false;
+    group.mAllExactContactConstraints = false;
     group.mSingleReactiveContactsShareBody = true;
     group.mSingleReactiveBodyNode = nullptr;
     group.mSingleReactiveSkeleton = nullptr;
@@ -1653,6 +1654,9 @@ void ConstraintSolver::buildConstrainedGroups()
       for (auto& activeConstraint : mActiveConstraints) {
         const auto* contact
             = static_cast<const ContactConstraint*>(activeConstraint.get());
+        const bool exactContactConstraint
+            = !mActiveConstraintsHaveCustomContactConstraint
+              || isExactDynamicType<ContactConstraint>(contact);
         auto* skel = contact->getSingleReactiveSkeleton();
         auto* bodyNode = contact->getSingleReactiveBodyNode();
         DART_ASSERT(skel != nullptr);
@@ -1668,6 +1672,7 @@ void ConstraintSolver::buildConstrainedGroups()
           auto& group = mConstrainedGroups[groupIndex];
           group.mRootSkeleton = skel->getPtr();
           group.mAllSingleReactiveContacts = true;
+          group.mAllExactContactConstraints = exactContactConstraint;
           group.mSingleReactiveContactsShareBody = true;
           group.mSingleReactiveBodyNode = bodyNode;
           group.mSingleReactiveSkeleton = skel;
@@ -1680,6 +1685,8 @@ void ConstraintSolver::buildConstrainedGroups()
             group.mSingleReactiveContactsShareBody = false;
             group.mSingleReactiveBodyNode = nullptr;
           }
+          group.mAllExactContactConstraints
+              = group.mAllExactContactConstraints && exactContactConstraint;
         }
 
         DART_ASSERT(activeConstraint->isActive());

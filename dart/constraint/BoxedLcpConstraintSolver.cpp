@@ -49,35 +49,12 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
-#include <typeinfo>
 
 #include <cassert>
 #include <cmath>
 
 namespace dart {
 namespace constraint {
-
-namespace {
-
-bool isExactContactConstraint(const ConstraintBase* constraint)
-{
-  const auto* contact = dynamic_cast<const ContactConstraint*>(constraint);
-  if (contact == nullptr)
-    return false;
-
-#if defined(__clang__)
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
-#endif
-  const bool exact = typeid(*contact) == typeid(ContactConstraint);
-#if defined(__clang__)
-  #pragma clang diagnostic pop
-#endif
-
-  return exact;
-}
-
-} // namespace
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
@@ -297,16 +274,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   dynamics::Skeleton* directSkeleton = group.mSingleReactiveSkeleton;
   bool useDirectSingleFreeBody = group.mAllSingleReactiveContacts
                                  && group.mSingleReactiveContactsShareBody
+                                 && group.mAllExactContactConstraints
                                  && directBody != nullptr
                                  && directSkeleton != nullptr
                                  && numConstraints <= kInlineConstraintCount;
   if (useDirectSingleFreeBody) {
     for (std::size_t i = 0; i < numConstraints; ++i) {
-      if (!isExactContactConstraint(constraintPtrs[i])) {
-        useDirectSingleFreeBody = false;
-        break;
-      }
-
       inlineContactPtrs[i] = static_cast<ContactConstraint*>(constraintPtrs[i]);
     }
   }

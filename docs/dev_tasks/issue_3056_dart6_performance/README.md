@@ -5,14 +5,17 @@
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, and #3146 are merged. #3147, #3148, #3149, #3150, #3151, and #3152
 are the parent stack. #3153 and #3154 are the current published stack tip
-sequence. #3170 is the active candidate
-`perf/dart6-parallel-native-broadphase`, stacked on #3154.
+sequence. #3170 is published as
+`perf/dart6-parallel-native-broadphase`, stacked on #3154. The local next
+candidate is `perf/dart6-exact-contact-group-cache`, stacked on #3170.
 
-The local candidate parallelizes DART-native broadphase entry construction for
-large collision groups. It fills a scratch entry vector in collision-object
-order, then performs the same serial finite/plane/other partition, preserving
-deterministic pair order and final contact state while reducing the measured
-native broadphase setup cost.
+The local candidate caches whether each constrained group contains only exact
+built-in contact constraints while the groups are built. The boxed-LCP solver
+then uses that group fact to enter the existing direct single-free-body contact
+path without repeating RTTI checks for every small contact island. Custom
+contact constraints still keep the conservative per-group classification path,
+so the direct path is only used for the same exact built-in contact constraints
+as before.
 
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -21,22 +24,29 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3154 parent, text profile | DART native | `0.110145` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `624.61 ms`, broadphase entries `249.70 ms` |
-| #3170 current head, text profile | DART native | `0.120566` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `445.85 ms`, broadphase entries `108.69 ms`, finite-plane pairs `260.55 ms` |
-| #3170 current head, no profile | DART native | `0.118579` | finite, same hash, contacts `5005`, pairs `3003` |
-| #3170 current head, no profile | FCL primitive | `0.0963517` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
-| #3170 current head, no profile | Bullet | `0.0883704` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
-| #3170 current head, no profile | ODE | `0.00458315` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3170 parent, text profile | DART native | `0.120311` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `solveConstrainedGroups` `500.93 ms`, `Construct LCP` `156.18 ms`, `collide` `451.15 ms` |
+| Local current, text profile | DART native | `0.123512` | finite, same hash, contacts `5005`, pairs `3003`; `solveConstrainedGroups` `478.79 ms`, `Construct LCP` `151.58 ms`, `collide` `444.61 ms` |
+| #3170 parent, no profile | DART native | `0.118579` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local current, no profile | DART native | `0.127186` latest repeat, `0.127264` prior repeat | finite, same hash, contacts `5005`, pairs `3003` |
+| Local current, no profile | FCL primitive | `0.0945517` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| Local current, no profile | Bullet | `0.0913403` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| Local current, no profile | ODE | `0.00465931` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Current-head DART-native is about `1.23x` FCL primitive, `1.34x` Bullet, and
-`25.9x` ODE on the latest active issue-scene rerun. The active no-deactivation
-scene is still far below RTF `1`, so the next target remains the largest
-remaining active-step costs: contact construction, constrained-group solve,
-and integration overhead.
+Current local DART-native is about `1.07x` the #3170 parent no-profile result,
+`1.35x` FCL primitive, `1.39x` Bullet, and `27.3x` ODE on the latest active
+issue-scene rerun. The active no-deactivation scene is still far below RTF `1`,
+so the next target remains the largest remaining active-step costs: contact
+construction, constrained-group solve, and integration overhead.
 
 A fixed-support contact-build parallelization relaxation was tested locally and
 discarded after a 300-step profile hit a worker-thread SIGSEGV in parallel
 contact reset. It is intentionally not part of #3170.
+
+#3170 parallelizes DART-native broadphase entry construction for large
+collision groups. It fills a scratch entry vector in collision-object order,
+then performs the same serial finite/plane/other partition, preserving
+deterministic pair order and final contact state while reducing the measured
+native broadphase setup cost.
 
 #3154 trims default contact construction by replacing the
 per-step linear-scan default-surface-property cache with a small direct-mapped
