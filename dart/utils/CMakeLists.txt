@@ -42,12 +42,7 @@ dart_get_filename_components(header_names "utils headers" ${hdrs})
 if(urdfdom_FOUND)
   list(APPEND header_names "urdf/urdf.hpp")
 endif()
-set(
-  header_names
-  ${header_names}
-  mjcf/mjcf.hpp
-  sdf/sdf.hpp
-)
+set(header_names ${header_names} mjcf/mjcf.hpp sdf/sdf.hpp)
 dart_generate_include_header_file(
   "${CMAKE_CURRENT_BINARY_DIR}/utils.hpp"
   "dart/utils/"

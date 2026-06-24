@@ -6,7 +6,10 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(OpenSceneGraph 3.0.0 QUIET
+find_package(
+  OpenSceneGraph
+  3.0.0
+  QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
 )
 
@@ -16,7 +19,10 @@ find_package(OpenSceneGraph 3.0.0 QUIET
 #   - https://github.com/dartsim/dart/issues/1439
 if(APPLE)
   if(OPENSCENEGRAPH_VERSION VERSION_LESS 3.7.0)
-    message(WARNING "OSG (${OPENSCENEGRAPH_VERSION} < 3.7.0) doesn't work on macOS 10.15 or greater. See: https://github.com/openscenegraph/OpenSceneGraph/issues/926")
+    message(
+      WARNING
+      "OSG (${OPENSCENEGRAPH_VERSION} < 3.7.0) doesn't work on macOS 10.15 or greater. See: https://github.com/openscenegraph/OpenSceneGraph/issues/926"
+    )
   endif()
 endif()
 
@@ -26,7 +32,10 @@ endif()
 # requiring OSG_FOUND to be true as well fixes this.
 if(OPENSCENEGRAPH_FOUND AND OSG_FOUND)
   if(DART_VERBOSE)
-    message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
+    message(
+      STATUS
+      "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found"
+    )
   endif()
 else()
   # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
@@ -42,8 +51,11 @@ else()
       set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
     endif()
   endif()
-  message(STATUS "${warning_msg} -- we will skip dart-gui-osg\n"
-          "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+  message(
+    STATUS
+    "${warning_msg} -- we will skip dart-gui-osg\n"
+    "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR"
+  )
   return()
 endif()
 

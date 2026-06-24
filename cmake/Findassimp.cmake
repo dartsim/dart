@@ -20,9 +20,12 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_ASSIMP assimp QUIET)
 
 # Include directories
-find_path(ASSIMP_INCLUDE_DIRS assimp/scene.h
-    HINTS ${PC_ASSIMP_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(
+  ASSIMP_INCLUDE_DIRS
+  assimp/scene.h
+  HINTS ${PC_ASSIMP_INCLUDEDIR}
+  PATHS "${CMAKE_INSTALL_PREFIX}/include"
+)
 
 # Libraries
 if(MSVC)
@@ -32,14 +35,10 @@ if(MSVC)
   elseif(TARGET Assimp::Assimp)
     set(ASSIMP_LIBRARIES "Assimp::Assimp")
   else()
-    find_library(ASSIMP_LIBRARIES
-        NAMES assimp
-        HINTS ${PC_ASSIMP_LIBDIR})
+    find_library(ASSIMP_LIBRARIES NAMES assimp HINTS ${PC_ASSIMP_LIBDIR})
   endif()
 else()
-  find_library(ASSIMP_LIBRARIES
-      NAMES assimp
-      HINTS ${PC_ASSIMP_LIBDIR})
+  find_library(ASSIMP_LIBRARIES NAMES assimp HINTS ${PC_ASSIMP_LIBDIR})
 endif()
 
 # Version
@@ -54,10 +53,12 @@ endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(assimp
-    FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
-    VERSION_VAR   ASSIMP_VERSION)
+find_package_handle_standard_args(
+  assimp
+  FAIL_MESSAGE DEFAULT_MSG
+  REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
+  VERSION_VAR ASSIMP_VERSION
+)
 
 # Extract version components for compile-time detection
 if(ASSIMP_VERSION)

@@ -5,10 +5,9 @@ dart_add_test("unit" test_FCLCollisionObject test_FCLCollisionObject.cpp)
 dart_add_test(
   "unit"
   test_ConvexMeshShapeCollision
-  test_ConvexMeshShapeCollision.cpp)
-foreach(collision_engine
-  dart-collision-bullet
-  dart-collision-ode)
+  test_ConvexMeshShapeCollision.cpp
+)
+foreach(collision_engine dart-collision-bullet dart-collision-ode)
   if(TARGET ${collision_engine})
     target_link_libraries(test_ConvexMeshShapeCollision ${collision_engine})
   endif()
