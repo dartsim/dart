@@ -50,10 +50,8 @@ void RaycastOption(py::module& m)
           ::py::arg("enableAllHits"),
           ::py::arg("sortByClosest"))
       .def(
-          ::py::init<
-              bool,
-              bool,
-              dart::collision::RaycastOption::RaycastFilter>(),
+          ::py::
+              init<bool, bool, dart::collision::RaycastOption::RaycastFilter>(),
           ::py::arg("enableAllHits"),
           ::py::arg("sortByClosest"),
           ::py::arg("filter") = nullptr)
@@ -61,8 +59,7 @@ void RaycastOption(py::module& m)
           "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
       .def_readwrite(
           "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
-      .def_readwrite(
-          "mFilter", &dart::collision::RaycastOption::mFilter);
+      .def_readwrite("mFilter", &dart::collision::RaycastOption::mFilter);
 }
 
 } // namespace python
