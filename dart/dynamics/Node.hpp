@@ -82,6 +82,7 @@ class Node : public virtual common::Subject,
 public:
   friend class BodyNode;
   friend class Skeleton;
+  friend class WeldJoint;
   template <class>
   friend class AccessoryNode;
   template <class, class>

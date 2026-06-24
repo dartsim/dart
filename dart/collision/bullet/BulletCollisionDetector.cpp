@@ -39,6 +39,7 @@
 #include "dart/collision/bullet/BulletInclude.hpp"
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/detail/BulletContact.hpp"
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
@@ -46,6 +47,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/HeightmapShape.hpp"
@@ -56,6 +58,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/TriMesh.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -90,8 +93,13 @@ void reportRayHits(
 std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ);
 
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
+[[maybe_unused]] std::unique_ptr<btCollisionShape>
+createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
+
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
+    const Eigen::Vector3d& scale,
+    const std::shared_ptr<math::TriMesh<double>>& mesh);
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
     const aiMesh* mesh);
@@ -101,6 +109,8 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
     const HeightmapShapeT* heightMap);
 
 bool isConvex(const aiMesh* mesh, float threshold = 0.001);
+
+bool isConvex(const math::TriMesh<double>& mesh, float threshold = 0.001);
 
 } // anonymous namespace
 
@@ -167,7 +177,7 @@ static bool checkGroupValidity(
 }
 
 //==============================================================================
-static bool isCollision(btCollisionWorld* world)
+static bool isCollision(btCollisionWorld* world, const CollisionOption& option)
 {
   DART_ASSERT(world);
 
@@ -179,8 +189,12 @@ static bool isCollision(btCollisionWorld* world)
   for (auto i = 0; i < numManifolds; ++i) {
     const auto* contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
-    if (contactManifold->getNumContacts() > 0)
-      return true;
+    const auto numContacts = contactManifold->getNumContacts();
+    for (auto j = 0; j < numContacts; ++j) {
+      if (bullet::detail::shouldReportContact(
+              contactManifold->getContactPoint(j), option))
+        return true;
+    }
   }
 
   return false;
@@ -291,7 +305,7 @@ bool BulletCollisionDetector::collide(
 
     return result->isCollision();
   } else {
-    return isCollision(collisionWorld);
+    return isCollision(collisionWorld, option);
   }
 }
 
@@ -342,7 +356,7 @@ bool BulletCollisionDetector::collide(
     reportContacts(bulletCollisionWorld, option, *result);
     hasCollision = result->isCollision();
   } else {
-    hasCollision = isCollision(bulletCollisionWorld);
+    hasCollision = isCollision(bulletCollisionWorld, option);
   }
 
   // The overlap filter callback is owned by this call and must not outlive it,
@@ -409,16 +423,50 @@ bool BulletCollisionDetector::raycast(
   const auto btFrom = convertVector3(from);
   const auto btTo = convertVector3(to);
 
-  if (option.mEnableAllHits) {
+  const bool needsAllHits
+      = option.mEnableAllHits || static_cast<bool>(option.mFilter);
+
+  if (needsAllHits) {
+    auto lessFraction = [](const RayHit& a, const RayHit& b) {
+      return a.mFraction < b.mFraction;
+    };
+
     auto callback = btCollisionWorld::AllHitsRayResultCallback(btFrom, btTo);
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result == nullptr)
-      return callback.hasHit();
+    if (result == nullptr) {
+      if (!callback.hasHit())
+        return false;
+
+      if (!option.mFilter)
+        return true;
+
+      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+        const auto* collObj = static_cast<BulletCollisionObject*>(
+            callback.m_collisionObjects[i]->getUserPointer());
+        if (option.passesFilter(collObj))
+          return true;
+      }
+
+      return false;
+    }
 
     if (callback.hasHit()) {
       reportRayHits(callback, option, *result);
+
+      if (!option.mEnableAllHits && !result->mRayHits.empty()) {
+        if (option.mSortByClosest) {
+          result->mRayHits.resize(1);
+        } else {
+          const auto closest = std::min_element(
+              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const RayHit closestHit = *closest;
+          result->mRayHits.clear();
+          result->mRayHits.emplace_back(closestHit);
+        }
+      }
+
       return result->hasHit();
     } else {
       return false;
@@ -630,12 +678,35 @@ BulletCollisionDetector::createBulletCollisionShape(
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
+  } else if (const auto convexMesh = shape->as<dynamics::ConvexMeshShape>()) {
+    const auto mesh = convexMesh->getMesh();
+    if (mesh && mesh->hasVertices()) {
+      auto hullShape = std::make_unique<btConvexHullShape>();
+      const auto& vertices = mesh->getVertices();
+      hullShape->setMargin(0.0f);
+      for (const auto& vertex : vertices) {
+        hullShape->addPoint(
+            btVector3(
+                static_cast<btScalar>(vertex.x()),
+                static_cast<btScalar>(vertex.y()),
+                static_cast<btScalar>(vertex.z())),
+            false);
+      }
+      hullShape->recalcLocalAabb();
+
+      return std::make_unique<BulletCollisionShape>(std::move(hullShape));
+    }
+
+    dtwarn << "[BulletCollisionDetector] ConvexMeshShape has no vertices; "
+           << "creating a sphere with 0.1 radius instead.\n";
+    return std::make_unique<BulletCollisionShape>(
+        std::make_unique<btSphereShape>(0.1));
   } else if (const auto shapeMesh = shape->as<MeshShape>()) {
     const auto scale = shapeMesh->getScale();
-    const auto mesh = shapeMesh->getMesh();
+    const auto mesh = shapeMesh->getTriMesh();
 
     auto bulletCollisionShape
-        = createBulletCollisionShapeFromAssimpScene(scale, mesh);
+        = createBulletCollisionShapeFromTriMesh(scale, mesh);
 
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
@@ -749,11 +820,8 @@ void reportContacts(
 
       const auto& cp = contactManifold->getContactPoint(j);
 
-      if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared()) {
-        // Skip this contact. This is because we assume that a contact with
-        // zero-length normal is invalid.
+      if (!bullet::detail::shouldReportContact(cp, option))
         continue;
-      }
 
       result.addContact(convertContact(cp, collObj0, collObj1));
       ++pairContacts;
@@ -791,7 +859,7 @@ RayHit convertRayHit(
 //==============================================================================
 void reportRayHits(
     const btCollisionWorld::ClosestRayResultCallback callback,
-    const RaycastOption& /*option*/,
+    const RaycastOption& option,
     RaycastResult& result)
 {
   // This function shouldn't be called if callback has not ray hit.
@@ -805,7 +873,9 @@ void reportRayHits(
 
   result.mRayHits.clear();
   result.mRayHits.reserve(1);
-  result.mRayHits.emplace_back(rayHit);
+
+  if (option.passesFilter(rayHit.mCollisionObject))
+    result.mRayHits.emplace_back(rayHit);
 }
 
 //==============================================================================
@@ -833,7 +903,8 @@ void reportRayHits(
         callback.m_hitPointWorld[i],
         callback.m_hitNormalWorld[i],
         callback.m_hitFractions[i]);
-    result.mRayHits.emplace_back(rayHit);
+    if (option.passesFilter(rayHit.mCollisionObject))
+      result.mRayHits.emplace_back(rayHit);
   }
 
   if (option.mSortByClosest)
@@ -957,7 +1028,8 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
 }
 
 //==============================================================================
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
+[[maybe_unused]] std::unique_ptr<btCollisionShape>
+createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene)
 {
   auto triMesh = new btTriangleMesh();
@@ -977,6 +1049,41 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
   }
   const bool makeConvexMesh
       = scene->mNumMeshes == 1 && isConvex(scene->mMeshes[0]);
+  if (makeConvexMesh) {
+    auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
+    convexMeshShape->setMargin(0.0f);
+    convexMeshShape->setUserPointer(triMesh);
+    return convexMeshShape;
+  } else {
+    auto gimpactMeshShape = std::make_unique<btGImpactMeshShape>(triMesh);
+    gimpactMeshShape->updateBound();
+    gimpactMeshShape->setUserPointer(triMesh);
+    return gimpactMeshShape;
+  }
+}
+
+//==============================================================================
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromTriMesh(
+    const Eigen::Vector3d& scale,
+    const std::shared_ptr<math::TriMesh<double>>& mesh)
+{
+  if (!mesh)
+    return nullptr;
+
+  auto triMesh = new btTriangleMesh();
+
+  const auto& vertices = mesh->getVertices();
+  for (const auto& triangle : mesh->getTriangles()) {
+    btVector3 btVertices[3];
+    for (auto i = 0u; i < 3; ++i) {
+      const auto& vertex = vertices[triangle[i]];
+      btVertices[i] = btVector3(
+          vertex.x() * scale[0], vertex.y() * scale[1], vertex.z() * scale[2]);
+    }
+    triMesh->addTriangle(btVertices[0], btVertices[1], btVertices[2]);
+  }
+
+  const bool makeConvexMesh = isConvex(*mesh);
   if (makeConvexMesh) {
     auto convexMeshShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
     convexMeshShape->setMargin(0.0f);
@@ -1117,6 +1224,51 @@ bool isConvex(const aiMesh* mesh, float threshold)
       }
     }
   }
+  return true;
+}
+
+//==============================================================================
+bool isConvex(const math::TriMesh<double>& mesh, float threshold)
+{
+  const auto& points = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+
+  if (points.empty() || triangles.empty())
+    return false;
+
+  btVector3 vertices[3];
+  for (const auto& triangle : triangles) {
+    for (auto j = 0u; j < 3; ++j) {
+      const auto& vertex = points[triangle[j]];
+      vertices[j] = btVector3(vertex.x(), vertex.y(), vertex.z());
+    }
+
+    const btVector3& A = vertices[0];
+    const btVector3 B = vertices[1] - A;
+    const btVector3 C = vertices[2] - A;
+    const btVector3 normalRaw = B.cross(C);
+    const btScalar normalLengthSquared = normalRaw.length2();
+    if (normalLengthSquared <= btScalar(0.0))
+      continue;
+
+    const btVector3 normal = normalRaw / btSqrt(normalLengthSquared);
+    const float checkPoint = btVector3(
+                                 points[0].x() - A.x(),
+                                 points[0].y() - A.y(),
+                                 points[0].z() - A.z())
+                                 .dot(normal);
+
+    for (const auto& point : points) {
+      const float distance
+          = btVector3(point.x() - A.x(), point.y() - A.y(), point.z() - A.z())
+                .dot(normal);
+      if ((std::abs(checkPoint) > threshold) && (std::abs(distance) > threshold)
+          && (checkPoint * distance < 0.0f)) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 

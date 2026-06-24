@@ -37,6 +37,8 @@
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
+#include <dart/common/Deprecated.hpp>
+
 #include <dart/dart.hpp>
 
 #include <iostream>
@@ -204,7 +206,9 @@ protected:
         continue;
       auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
 
+      DART_SUPPRESS_DEPRECATED_BEGIN
       auto assimpScene = mesh->getMesh();
+      DART_SUPPRESS_DEPRECATED_END
       DART_ASSERT(assimpScene);
 
       if (assimpScene->mNumMeshes < 1)
