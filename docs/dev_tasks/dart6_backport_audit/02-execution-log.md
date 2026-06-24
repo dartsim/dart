@@ -116,7 +116,7 @@ dropped or re-homed.
 
 - **#2251 (typos + spell lint) — DEFERRED.** Wiring `check-lint-spell` into the
   required `check-lint` gate would red-X the parallel lane's open PRs (their files
-  carry pre-existing typos, e.g. `froce` in `Joint.hpp`), and its fixes edit
+  carry pre-existing typos, e.g. `force` in `Joint.hpp`), and its fixes edit
   do-not-collide files (§8). Port **after** the perf lane + #3169 merge.
 - **#2655 (centralize CI path filters) — SKIPPED.** No-op on release-6.20: the
   `dorny/paths-filter` blocks and `ci_altlinux.yml` it refactors do not exist

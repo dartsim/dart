@@ -101,13 +101,13 @@ public:
   /// \brief Get desired joint position whose name is _jointName
   double getDesiredJointPosition(const std::string& _jointName) const;
 
-  /// \brief Set desired global angle swing leg on sagital plane
+  /// \brief Set desired global angle swing leg on sagittal plane
   void setDesiredSwingLegGlobalAngleOnSagital(double _val);
 
   /// \brief Set desired global angle swing leg on coronal plane
   void setDesiredSwingLegGlobalAngleOnCoronal(double _val);
 
-  /// \brief Set desired global angle pelvis on sagital plane
+  /// \brief Set desired global angle pelvis on sagittal plane
   void setDesiredPelvisGlobalAngleOnSagital(double _val);
 
   /// \brief Set desired global angle of pelvis on coronal plane
@@ -137,16 +137,16 @@ public:
   // /// \brief Get derivative gain for PD controller
   // double getDerivativeGain(const std::string& _jointName) const;
 
-  /// \brief Set balance feedback gain parameter for sagital com distance
+  /// \brief Set balance feedback gain parameter for sagittal com distance
   void setFeedbackSagitalCOMDistance(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com velocity
+  /// \brief Set balance feedback gain parameter for sagittal com velocity
   void setFeedbackSagitalCOMVelocity(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com distance
+  /// \brief Set balance feedback gain parameter for sagittal com distance
   void setFeedbackCoronalCOMDistance(std::size_t _index, double _val);
 
-  /// \brief Set balance feedback gain parameter for sagital com velocity
+  /// \brief Set balance feedback gain parameter for sagittal com velocity
   void setFeedbackCoronalCOMVelocity(std::size_t _index, double _val);
 
   /// \brief Set stance foot to left foot
@@ -184,10 +184,10 @@ protected:
   ///           plane against to the z-axis
   Eigen::Isometry3d getCOMFrame() const;
 
-  /// \brief Get sagital com distance
+  /// \brief Get sagittal com distance
   double getSagitalCOMDistance();
 
-  /// \brief Get sagital com velocity
+  /// \brief Get sagittal com velocity
   double getSagitalCOMVelocity();
 
   /// \brief Get coronal com distance
@@ -206,17 +206,17 @@ protected:
   Eigen::Vector3d getRightAnklePosition() const;
 
   // TODO(JS): Not implemented yet
-  /// \brief Get global pelvis upvector angle on sagital plane
+  /// \brief Get global pelvis upvector angle on sagittal plane
   double getSagitalPelvisAngle() const;
 
   // TODO(JS): Not implemented yet
   /// \brief Get global pelvis upvector angle on coronal plane
   double getCoronalPelvisAngle() const;
 
-  /// \brief Get global left leg angle on sagital plane
+  /// \brief Get global left leg angle on sagittal plane
   double getSagitalLeftLegAngle() const;
 
-  /// \brief Get global right leg angle on sagital plane
+  /// \brief Get global right leg angle on sagittal plane
   double getSagitalRightLegAngle() const;
 
   /// \brief Get global left leg angle on coronal plane
@@ -252,13 +252,13 @@ protected:
   /// \brief Desired joint positions
   Eigen::VectorXd mDesiredJointPositions;
 
-  /// \brief Desired global angle of swing leg on sagital plane
+  /// \brief Desired global angle of swing leg on sagittal plane
   double mDesiredGlobalSwingLegAngleOnSagital;
 
   /// \brief Desired global angle of swing leg on coronal plane
   double mDesiredGlobalSwingLegAngleOnCoronal;
 
-  /// \brief Desired global angle of pelvis on sagital plane
+  /// \brief Desired global angle of pelvis on sagittal plane
   double mDesiredGlobalPelvisAngleOnSagital;
 
   /// \brief Desired global angle of pelvis on coronal plane
@@ -323,10 +323,10 @@ private:
   /// \brief Index for coronal right hip
   std::size_t mCoronalRightHip;
 
-  /// \brief Index for sagital left hip
+  /// \brief Index for sagittal left hip
   std::size_t mSagitalLeftHip;
 
-  /// \brief Index for sagital right hip
+  /// \brief Index for sagittal right hip
   std::size_t mSagitalRightHip;
 
   /// \brief Desired joint positions with balance feedback

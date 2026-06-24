@@ -53,7 +53,7 @@ bool CompositeResourceRetriever::addSchemaRetriever(
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if (!_resourceRetriever) {
-    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
+    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Received"
              " nullptr ResourceRetriever; skipping this entry.\n";
     return false;
   }

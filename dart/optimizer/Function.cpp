@@ -81,7 +81,7 @@ void Function::evalHessian(
     const Eigen::VectorXd& /*_x*/,
     Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
 {
-  dterr << "Hessian is not provided by funciton named [" << mName
+  dterr << "Hessian is not provided by function named [" << mName
         << "]. Use Hessian-free algorithm.\n";
 }
 

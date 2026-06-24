@@ -446,7 +446,7 @@ function(dart_benchmarks)
     )
 
     if(UNIX)
-      # gbenchmark requies pthread when compiled on a Unix machine
+      # gbenchmark requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 

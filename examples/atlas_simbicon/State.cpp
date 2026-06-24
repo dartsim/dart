@@ -154,21 +154,21 @@ void State::computeControlForce(double _timestep)
                                   + getCoronalCOMDistance() * mCoronalCd
                                   + getCoronalCOMVelocity() * mCoronalCv;
 
-  //  cout << "Sagital D: " << getSagitalCOMDistance() << endl;
-  //  cout << "Sagital V: " << getSagitalCOMVelocity() << endl;
+  //  cout << "Sagittal D: " << getSagitalCOMDistance() << endl;
+  //  cout << "Sagittal V: " << getSagitalCOMVelocity() << endl;
   //  cout << endl;
   //  cout << "Coronal D: " << getCoronalCOMDistance() << endl;
   //  cout << "Coronal V: " << getCoronalCOMVelocity() << endl;
   //  cout << endl;
 
-  //  cout << "Sagital left thigh : " << DART_DEGREE * getSagitalLeftLegAngle()
-  //  << endl; cout << "Sagital right thigh: " << DART_DEGREE *
+  //  cout << "Sagittal left thigh : " << DART_DEGREE * getSagitalLeftLegAngle()
+  //  << endl; cout << "Sagittal right thigh: " << DART_DEGREE *
   //  getSagitalRightLegAngle() << endl; cout << endl; cout << "Coronal left
   //  thigh : " << DART_DEGREE * getCoronalLeftLegAngle() << endl; cout <<
   //  "Coronal right thigh: " << DART_DEGREE * getCoronalRightLegAngle() <<
   //  endl; cout << endl;
 
-  //  cout << "Sagital pelvis: " << DART_DEGREE * getSagitalPelvisAngle() <<
+  //  cout << "Sagittal pelvis: " << DART_DEGREE * getSagitalPelvisAngle() <<
   //  endl; cout << "Coronal pelvis: " << DART_DEGREE * getCoronalPelvisAngle()
   //  << endl; cout << endl;
 
@@ -441,10 +441,10 @@ void State::_updateTorqueForStanceLeg()
 {
   // Stance leg is left leg
   if (mStanceFoot == mLeftFoot) {
-    //    std::cout << "Sagital Pelvis Angle: " << DART_DEGREE *
+    //    std::cout << "Sagittal Pelvis Angle: " << DART_DEGREE *
     //    getSagitalPelvisAngle() << std::endl;
 
-    // Torso control on sagital plane
+    // Torso control on sagittal plane
     double pelvisSagitalAngle = getSagitalPelvisAngle();
     double tauTorsoSagital
         = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
@@ -474,7 +474,7 @@ void State::_updateTorqueForStanceLeg()
   else if (mStanceFoot == mRightFoot) {
     //    cout << "Stance foot: Right foot" << endl;
 
-    // Torso control on sagital plane
+    // Torso control on sagittal plane
     double pelvisSagitalAngle = getSagitalPelvisAngle();
     double tauTorsoSagital
         = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)

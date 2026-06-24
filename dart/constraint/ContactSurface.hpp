@@ -149,7 +149,7 @@ protected:
 
 /// Default contact surface handler. It chooses friction direction of the body
 /// with lower friction coefficient. It also adjusts slip compliance by
-/// mutliplying it with the number of contact points.
+/// multiplying it with the number of contact points.
 class DefaultContactSurfaceHandler : public ContactSurfaceHandler
 {
 public:
