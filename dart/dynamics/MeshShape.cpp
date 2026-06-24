@@ -149,6 +149,7 @@ MeshShape::MeshShape(
     MeshOwnership ownership)
   : Shape(MESH),
     mTriMesh(nullptr),
+    mPolygonMesh(nullptr),
     mCachedAiScene(nullptr),
     mDisplayList(0),
     mScale(scale),
@@ -179,6 +180,7 @@ MeshShape::MeshShape(
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
     mTriMesh(std::move(mesh)),
+    mPolygonMesh(nullptr),
     mCachedAiScene(nullptr),
     mMeshUri(uri),
     mResourceRetriever(std::move(resourceRetriever)),
@@ -202,6 +204,7 @@ MeshShape::MeshShape(
     common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
     mTriMesh(nullptr),
+    mPolygonMesh(nullptr),
     mCachedAiScene(nullptr),
     mDisplayList(0),
     mScale(scale),
@@ -230,6 +233,7 @@ MeshShape::~MeshShape()
 void MeshShape::releaseMesh()
 {
   mMesh.reset();
+  mPolygonMesh.reset();
 }
 
 //==============================================================================
@@ -406,6 +410,44 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::getTriMesh() const
 }
 
 //==============================================================================
+std::shared_ptr<math::PolygonMesh<double>> MeshShape::getPolygonMesh() const
+{
+  if (mPolygonMesh)
+    return mPolygonMesh;
+
+  // Preferred path: re-import from the source URI without triangulation so the
+  // original polygon topology (quads/n-gons) is preserved. This is independent
+  // of the (triangulated) aiScene/TriMesh used by the collision/render paths,
+  // so it does not affect existing triangle-mesh behavior.
+  if (!mMeshUri.toString().empty()) {
+    const common::ResourceRetrieverPtr retriever
+        = mResourceRetriever
+              ? mResourceRetriever
+              : std::make_shared<common::LocalResourceRetriever>();
+    if (const aiScene* polygonScene = loadPolygonScene(mMeshUri, retriever)) {
+      mPolygonMesh = convertAssimpPolygonMesh(polygonScene);
+      aiReleaseImport(polygonScene);
+      if (mPolygonMesh)
+        return mPolygonMesh;
+    }
+  }
+
+  // Fallback: derive a PolygonMesh from whatever representation is available.
+  const aiScene* scene = nullptr;
+  if (mMesh)
+    scene = mMesh.get();
+  else if (mCachedAiScene)
+    scene = mCachedAiScene;
+
+  if (scene)
+    mPolygonMesh = convertAssimpPolygonMesh(scene);
+  else if (const auto triMesh = getTriMesh())
+    mPolygonMesh = convertTriMeshToPolygonMesh(*triMesh);
+
+  return mPolygonMesh;
+}
+
+//==============================================================================
 std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
     const aiScene* scene)
 {
@@ -488,6 +530,84 @@ std::shared_ptr<math::TriMesh<double>> MeshShape::convertAssimpMesh(
   }
 
   return triMesh;
+}
+
+//==============================================================================
+std::shared_ptr<math::PolygonMesh<double>> MeshShape::convertAssimpPolygonMesh(
+    const aiScene* scene)
+{
+  if (!scene)
+    return nullptr;
+
+  auto polygonMesh = std::make_shared<math::PolygonMesh<double>>();
+
+  std::size_t totalVertices = 0;
+  std::size_t totalFaces = 0;
+  for (auto i = 0u; i < scene->mNumMeshes; ++i) {
+    const aiMesh* assimpMesh = scene->mMeshes[i];
+    if (!assimpMesh)
+      continue;
+
+    totalVertices += assimpMesh->mNumVertices;
+    totalFaces += assimpMesh->mNumFaces;
+  }
+
+  polygonMesh->reserveVertices(totalVertices);
+  polygonMesh->reserveFaces(totalFaces);
+  polygonMesh->reserveVertexNormals(totalVertices);
+
+  for (auto meshIndex = 0u; meshIndex < scene->mNumMeshes; ++meshIndex) {
+    const aiMesh* assimpMesh = scene->mMeshes[meshIndex];
+    if (!assimpMesh)
+      continue;
+
+    const std::size_t vertexOffset = polygonMesh->getVertices().size();
+
+    for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+      const aiVector3D& vertex = assimpMesh->mVertices[i];
+      polygonMesh->addVertex(vertex.x, vertex.y, vertex.z);
+    }
+
+    for (auto i = 0u; i < assimpMesh->mNumFaces; ++i) {
+      const aiFace& face = assimpMesh->mFaces[i];
+      if (face.mNumIndices < 3)
+        continue;
+
+      math::PolygonMesh<double>::Face polygonFace;
+      polygonFace.reserve(face.mNumIndices);
+      for (auto index = 0u; index < face.mNumIndices; ++index)
+        polygonFace.push_back(face.mIndices[index] + vertexOffset);
+      polygonMesh->addFace(std::move(polygonFace));
+    }
+
+    if (assimpMesh->mNormals) {
+      for (auto i = 0u; i < assimpMesh->mNumVertices; ++i) {
+        const aiVector3D& normal = assimpMesh->mNormals[i];
+        polygonMesh->addVertexNormal(normal.x, normal.y, normal.z);
+      }
+    }
+  }
+
+  return polygonMesh;
+}
+
+//==============================================================================
+std::shared_ptr<math::PolygonMesh<double>>
+MeshShape::convertTriMeshToPolygonMesh(const math::TriMesh<double>& mesh)
+{
+  auto polygonMesh = std::make_shared<math::PolygonMesh<double>>();
+
+  polygonMesh->reserveVertices(mesh.getVertices().size());
+  polygonMesh->reserveFaces(mesh.getTriangles().size());
+
+  polygonMesh->getVertices() = mesh.getVertices();
+  if (mesh.hasVertexNormals())
+    polygonMesh->getVertexNormals() = mesh.getVertexNormals();
+
+  for (const auto& triangle : mesh.getTriangles())
+    polygonMesh->addFace({triangle[0], triangle[1], triangle[2]});
+
+  return polygonMesh;
 }
 
 //==============================================================================
@@ -858,6 +978,13 @@ ShapePtr MeshShape::clone() const
   new_shape->mMaterials = mMaterials;
   new_shape->mSubMeshRanges = mSubMeshRanges;
 
+  // Carry over an already-cached polygon mesh, if any. setLegacyMesh() above
+  // resets it, so this assignment must come last.
+  if (mPolygonMesh) {
+    new_shape->mPolygonMesh
+        = std::make_shared<math::PolygonMesh<double>>(*mPolygonMesh);
+  }
+
   return new_shape;
 }
 
@@ -1021,6 +1148,57 @@ const aiScene* MeshShape::loadMesh(const std::string& filePath)
   DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = loadMesh("file://" + filePath, retriever);
   DART_SUPPRESS_DEPRECATED_END
+  return scene;
+}
+
+//==============================================================================
+const aiScene* MeshShape::loadPolygonScene(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  // This mirrors loadMesh() but intentionally omits aiProcess_Triangulate so
+  // that the original polygon topology (quads/n-gons) is preserved. It is used
+  // only by getPolygonMesh(); the triangulated loadMesh() path used by the
+  // collision/render representations is left unchanged.
+  const std::string uriString = uri.toString();
+  const bool isCollada = isColladaResource(uriString, retriever);
+
+  aiPropertyStore* propertyStore = aiCreatePropertyStore();
+  aiSetImportPropertyInteger(
+      propertyStore,
+      AI_CONFIG_PP_SBP_REMOVE,
+      aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
+#ifdef AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION
+  if (isCollada) {
+    aiSetImportPropertyInteger(
+        propertyStore, AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, 1);
+  }
+#endif
+
+  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
+  aiFileIO fileIO = createFileIO(&systemIO);
+
+  const aiScene* scene = aiImportFileExWithProperties(
+      uriString.c_str(),
+      aiProcess_GenNormals | aiProcess_JoinIdenticalVertices
+          | aiProcess_SortByPType | aiProcess_OptimizeMeshes,
+      &fileIO,
+      propertyStore);
+
+  if (!scene) {
+    aiReleasePropertyStore(propertyStore);
+    return nullptr;
+  }
+
+#if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
+  if (isCollada && scene->mRootNode)
+    scene->mRootNode->mTransformation = aiMatrix4x4();
+#endif
+
+  scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
+
+  aiReleasePropertyStore(propertyStore);
+
   return scene;
 }
 
