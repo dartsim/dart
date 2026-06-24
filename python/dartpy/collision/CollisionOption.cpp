@@ -56,6 +56,16 @@ void CollisionOption(py::module& m)
           ::py::arg("enableContact"),
           ::py::arg("maxNumContacts"),
           ::py::arg("collisionFilter"))
+      .def(
+          ::py::init<
+              bool,
+              std::size_t,
+              const std::shared_ptr<dart::collision::CollisionFilter>&,
+              bool>(),
+          ::py::arg("enableContact"),
+          ::py::arg("maxNumContacts"),
+          ::py::arg("collisionFilter"),
+          ::py::arg("allowNegativePenetrationDepthContacts"))
       .def_readwrite(
           "enableContact", &dart::collision::CollisionOption::enableContact)
       .def_readwrite(
@@ -63,6 +73,10 @@ void CollisionOption(py::module& m)
       .def_readwrite(
           "maxNumContactsPerPair",
           &dart::collision::CollisionOption::maxNumContactsPerPair)
+      .def_readwrite(
+          "allowNegativePenetrationDepthContacts",
+          &dart::collision::CollisionOption::
+              allowNegativePenetrationDepthContacts)
       .def(
           "getEffectiveMaxNumContactsPerPair",
           &dart::collision::CollisionOption::getEffectiveMaxNumContactsPerPair)

@@ -2,16 +2,10 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged, and the active DART-native performance stack is
-#3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, #3139
-`perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, #3141
-`perf/dart6-native-scratch-result-cache`, #3142
-`perf/dart6-single-reactive-solve-fast-path`, and #3143
-`perf/dart6-native-shape-kind-dispatch`; #3144
-`perf/dart6-native-contact-merge-grid` is open on top. The next local candidate
-is `perf/dart6-resting-velocity-version`, stacked on #3144.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143, and
+#3144 are merged. The current follow-up is #3146
+`perf/dart6-resting-velocity-version`, refreshed on current
+`origin/release-6.20`.
 
 The current local candidate targets the settled-scene hot path rather than the
 active collision path. It tracks externally visible joint-velocity writes with a
@@ -75,6 +69,8 @@ once the active contact set and built constrained groups prove they are exact
 built-in fixed-support contact groups. #3143 caches a compact primitive shape
 kind for DART-native plane dispatch. #3144 reduces serial contact-merge
 duplicate-grid probes while preserving duplicate behavior.
+#3146 targets cached all-resting step readiness by replacing the repeated
+mobile-DOF velocity scan with an external velocity-edit generation guard.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
