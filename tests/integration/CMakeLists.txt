@@ -61,6 +61,9 @@ if(TARGET dart-utils)
     target_link_libraries(test_SdfParser dart-collision-bullet)
   endif()
 
+  dart_add_test("integration" test_MimicConstraint)
+  target_link_libraries(test_MimicConstraint dart-utils)
+
   dart_add_test("integration" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
 

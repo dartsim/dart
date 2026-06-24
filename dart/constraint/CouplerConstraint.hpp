@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2025, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
-#define DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
+#ifndef DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_
+#define DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_
 
 #include <dart/constraint/ConstraintBase.hpp>
 
@@ -40,33 +40,28 @@
 #include <vector>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
-
 namespace constraint {
 
-/// MimicMotorConstraint behaves like a servo motor: it drives only the
-/// dependent joint toward the reference joint's trajectory by applying
-/// impulses locally. The reference joint does not receive an equal and
-/// opposite impulse. Use CouplerConstraint instead when you need a bilateral
-/// constraint that reacts on both joints.
-class MimicMotorConstraint : public ConstraintBase
+/// CouplerConstraint enforces the mimic relationship between two joints by
+/// applying equal-and-opposite impulses based on MimicDofProperties. Unlike
+/// MimicMotorConstraint, which behaves like a servo that only drives the
+/// dependent joint, CouplerConstraint is bilateral: both the reference and
+/// dependent joints participate in the constraint solve, so any impulse on one
+/// joint is reflected on the other joint.
+class CouplerConstraint : public ConstraintBase
 {
 public:
-  /// Constructor that creates a MimicMotorConstraint using the given
+  /// Constructor that creates a CouplerConstraint using the given
   /// MimicDofProperties for each dependent joint's DoF.
   /// \param[in] joint The dependent joint.
   /// \param[in] mimicDofProperties A vector of MimicDofProperties for each DoF
   /// of the dependent joint.
-  explicit MimicMotorConstraint(
+  explicit CouplerConstraint(
       dynamics::Joint* joint,
       const std::vector<dynamics::MimicDofProperties>& mimicDofProperties);
 
   /// Destructor
-  ~MimicMotorConstraint() override;
+  ~CouplerConstraint() override;
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -74,34 +69,17 @@ public:
   /// Returns constraint type for this class.
   static const std::string& getStaticType();
 
-  //----------------------------------------------------------------------------
-  // Property settings
-  //----------------------------------------------------------------------------
-
   /// Set global constraint force mixing parameter
   static void setConstraintForceMixing(double cfm);
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
-  /// Set global error reduction parameter applied to mimic motors.
-  static void setErrorReductionParameter(double erp);
-
-  /// Get global error reduction parameter applied to mimic motors.
-  static double getErrorReductionParameter();
-
-  //----------------------------------------------------------------------------
   // Friendship
-  //----------------------------------------------------------------------------
-
   friend class ConstraintSolver;
   friend class ConstrainedGroup;
 
 protected:
-  //----------------------------------------------------------------------------
-  // Constraint virtual functions
-  //----------------------------------------------------------------------------
-
   // Documentation inherited
   void update() override;
 
@@ -129,6 +107,9 @@ protected:
   // Documentation inherited
   bool isActive() const override;
 
+  // Documentation inherited
+  void uniteSkeletons() override;
+
 private:
   /// Dependent joint whose motion is influenced by the reference joint.
   dynamics::Joint* mJoint;
@@ -144,8 +125,6 @@ private:
 
   /// Array storing the lifetime of each constraint (in iterations).
   std::size_t mLifeTime[6];
-  // TODO(JS): Lifetime should be considered only when we use iterative lcp
-  // solver
 
   /// Array indicating whether each constraint is active or not.
   bool mActive[6];
@@ -163,15 +142,12 @@ private:
   double mLowerBound[6];
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
-  /// default is 1e-6
+  /// default is 1e-5
   /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
-
-  /// Global error reduction parameter that scales mimic motor position error.
-  static double mErrorReductionParameter;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
+#endif // DART_CONSTRAINT_COUPLERCONSTRAINT_HPP_

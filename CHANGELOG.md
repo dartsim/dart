@@ -154,6 +154,13 @@
   * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
     and destroy joint properties without heap corruption.
 
+  * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
+    joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
+    elements and wires the parsed follower DoFs to the existing per-DoF mimic
+    runtime (`MimicDofProperties`, `Joint::MIMIC` actuator), so SDF models can
+    declare mimic joints directly. SDF files without `<mimic>` parse
+    identically: [#2254](https://github.com/dartsim/dart/pull/2254)
+
   * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
     the legacy Assimp `aiScene` APIs available as deprecated DART 6
     compatibility shims, and route mesh collision backends through the new
