@@ -38,7 +38,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <map>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -136,7 +136,7 @@ struct JointProperties
 
   /// Actuator types for specific DoFs that override the joint-wide actuator
   /// type.
-  std::map<std::size_t, ActuatorType> mActuatorTypes;
+  std::vector<std::pair<std::size_t, ActuatorType>> mActuatorTypes;
 
   /// Vector of MimicDofProperties for each dependent DoF in the joint.
   std::vector<MimicDofProperties> mMimicDofProps;

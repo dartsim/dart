@@ -45,7 +45,6 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>

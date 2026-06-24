@@ -39,6 +39,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <string>
 
@@ -48,6 +49,35 @@ namespace dynamics {
 namespace {
 
 std::atomic<std::size_t> gAutomaticConstraintRevision{0u};
+
+using ActuatorOverride = std::pair<std::size_t, Joint::ActuatorType>;
+using ActuatorOverrides = std::vector<ActuatorOverride>;
+
+auto findActuatorOverride(ActuatorOverrides& overrides, std::size_t index)
+{
+  return std::find_if(
+      overrides.begin(),
+      overrides.end(),
+      [index](const ActuatorOverride& entry) { return entry.first == index; });
+}
+
+auto findActuatorOverride(const ActuatorOverrides& overrides, std::size_t index)
+{
+  return std::find_if(
+      overrides.begin(),
+      overrides.end(),
+      [index](const ActuatorOverride& entry) { return entry.first == index; });
+}
+
+void sortActuatorOverrides(ActuatorOverrides& overrides)
+{
+  std::sort(
+      overrides.begin(),
+      overrides.end(),
+      [](const ActuatorOverride& lhs, const ActuatorOverride& rhs) {
+        return lhs.first < rhs.first;
+      });
+}
 
 } // namespace
 
@@ -257,7 +287,7 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
   auto& overrides = mAspectProperties.mActuatorTypes;
 
   if (actuatorType == mAspectProperties.mActuatorType) {
-    const auto it = overrides.find(index);
+    const auto it = findActuatorOverride(overrides, index);
     if (it == overrides.end())
       return;
 
@@ -267,11 +297,16 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
     return;
   }
 
-  const auto it = overrides.find(index);
+  const auto it = findActuatorOverride(overrides, index);
   if (it != overrides.end() && it->second == actuatorType)
     return;
 
-  overrides[index] = actuatorType;
+  if (it != overrides.end()) {
+    it->second = actuatorType;
+  } else {
+    overrides.emplace_back(index, actuatorType);
+    sortActuatorOverrides(overrides);
+  }
   notifyAutomaticConstraintPropertiesUpdated();
   resetCommands();
 }
@@ -299,7 +334,7 @@ void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
   }
 
   ActuatorType newDefault = actuatorTypes.front();
-  std::map<std::size_t, ActuatorType> newOverrides;
+  ActuatorOverrides newOverrides;
   const bool newDefaultDynamic = isDynamicActuatorType(newDefault);
 
   for (std::size_t i = 1; i < actuatorTypes.size(); ++i) {
@@ -325,9 +360,10 @@ void Joint::setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes)
             getName());
         return;
       }
-      newOverrides.emplace(i, type);
+      newOverrides.emplace_back(i, type);
     }
   }
+  sortActuatorOverrides(newOverrides);
 
   if (mAspectProperties.mActuatorType == newDefault
       && mAspectProperties.mActuatorTypes == newOverrides)
@@ -358,7 +394,7 @@ Joint::ActuatorType Joint::getActuatorType(std::size_t index) const
     return mAspectProperties.mActuatorType;
   }
 
-  const auto it = mAspectProperties.mActuatorTypes.find(index);
+  const auto it = findActuatorOverride(mAspectProperties.mActuatorTypes, index);
   if (it != mAspectProperties.mActuatorTypes.end())
     return it->second;
 

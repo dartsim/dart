@@ -151,6 +151,9 @@
     behavior are unchanged:
     [#2222](https://github.com/dartsim/dart/pull/2222)
 
+  * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
+    and destroy joint properties without heap corruption.
+
   * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
     the legacy Assimp `aiScene` APIs available as deprecated DART 6
     compatibility shims, and route mesh collision backends through the new

@@ -348,9 +348,8 @@ void Joint(py::module& m)
           ::py::arg("enforced"))
       .def(
           "areLimitsEnforced",
-          +[](const dart::dynamics::Joint* self) -> bool {
-            return self->areLimitsEnforced();
-          })
+          +[](const dart::dynamics::Joint* self)
+              -> bool { return self->areLimitsEnforced(); })
       .def(
           "getIndexInSkeleton",
           +[](const dart::dynamics::Joint* self, std::size_t index)
