@@ -544,6 +544,11 @@ public:
 protected:
   GenericJoint(const Properties& properties);
 
+  /// Fixed-size velocity setter for internal simulation updates that should not
+  /// invalidate externally edited all-resting velocity state.
+  void setVelocitiesStaticInternal(
+      const Vector& velocities, bool trackVelocityVersion);
+
   // Documentation inherited
   void registerDofs() override;
 

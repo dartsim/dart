@@ -30,40 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
+#include "dart/dynamics/BallJoint.hpp"
 
 namespace dart {
-namespace python {
+namespace dynamics {
+namespace detail {
 
-void RaycastOption(py::module& m)
+//==============================================================================
+BallJointUniqueProperties::BallJointUniqueProperties(CoordinateChart _chart)
+  : mCoordinateChart(_chart)
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
-      .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
-      .def(
-          ::py::init<
-              bool,
-              bool,
-              dart::collision::RaycastOption::RaycastFilter>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"),
-          ::py::arg("filter") = nullptr)
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
-      .def_readwrite(
-          "mFilter", &dart::collision::RaycastOption::mFilter);
+  // Do nothing
 }
 
-} // namespace python
+//==============================================================================
+BallJointProperties::BallJointProperties(
+    const GenericJoint<math::SO3Space>::Properties& genericProperties,
+    const BallJointUniqueProperties& ballJointProperties)
+  : GenericJoint<math::SO3Space>::Properties(genericProperties),
+    BallJointUniqueProperties(ballJointProperties)
+{
+  // Do nothing
+}
+
+} // namespace detail
+} // namespace dynamics
 } // namespace dart

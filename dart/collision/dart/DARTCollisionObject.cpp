@@ -32,9 +32,14 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {
@@ -60,6 +65,13 @@ const std::string& DARTCollisionObject::getCachedShapeType() const
 {
   static const std::string empty;
   return mCachedShapeType ? *mCachedShapeType : empty;
+}
+
+//==============================================================================
+DARTCollisionObject::CachedShapeKind DARTCollisionObject::getCachedShapeKind()
+    const
+{
+  return mCachedShapeKind;
 }
 
 //==============================================================================
@@ -96,15 +108,36 @@ void DARTCollisionObject::refreshShapeCache()
   mCachedShapeFrameVersion = shapeFrameVersion;
   mCachedShape = mShapeFrame ? mShapeFrame->getShape() : nullptr;
   mCachedShapeType = mCachedShape ? &mCachedShape->getType() : nullptr;
+  mCachedShapeKind = CachedShapeKind::Unknown;
   mCachedLocalBoundsMin.setZero();
   mCachedLocalBoundsMax.setZero();
   mHasFiniteCachedLocalBounds = false;
-  mIsCachedPlaneShape
-      = mCachedShapeType
-        && *mCachedShapeType == dynamics::PlaneShape::getStaticType();
+  mIsCachedPlaneShape = false;
 
-  if (!mCachedShape || mIsCachedPlaneShape)
+  if (!mCachedShape)
     return;
+
+  const auto& shapeType = *mCachedShapeType;
+  if (shapeType == dynamics::PlaneShape::getStaticType()) {
+    mCachedShapeKind = CachedShapeKind::Plane;
+    mIsCachedPlaneShape = true;
+    return;
+  }
+
+  if (shapeType == dynamics::SphereShape::getStaticType()) {
+    mCachedShapeKind = CachedShapeKind::Sphere;
+  } else if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto* ellipsoid
+        = static_cast<const dynamics::EllipsoidShape*>(mCachedShape.get());
+    if (ellipsoid->isSphere())
+      mCachedShapeKind = CachedShapeKind::SphereEllipsoid;
+  } else if (shapeType == dynamics::BoxShape::getStaticType()) {
+    mCachedShapeKind = CachedShapeKind::Box;
+  } else if (shapeType == dynamics::CylinderShape::getStaticType()) {
+    mCachedShapeKind = CachedShapeKind::Cylinder;
+  } else if (shapeType == dynamics::CapsuleShape::getStaticType()) {
+    mCachedShapeKind = CachedShapeKind::Capsule;
+  }
 
   const auto& localBox = mCachedShape->getBoundingBox();
   mCachedLocalBoundsMin = localBox.getMin();

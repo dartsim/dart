@@ -91,6 +91,16 @@
     single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up primitive DART-native plane collision dispatch by caching a compact
+    shape kind beside each collision object's cached shape metadata, while
+    preserving the existing fallback path for unsupported shapes:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Reduce DART-native contact merge overhead by probing neighboring
+    duplicate-contact grid cells only when a contact point lies near a grid
+    boundary, while preserving the exact distance-based duplicate check:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
     and other capsules, with primitive-pair regression coverage and capsule
     benchmark scenes for comparing native and external collision backends:
@@ -132,6 +142,22 @@
 
 * Dynamics
 
+  * Add an opt-in per-DoF actuator type API to `Joint`
+    (`setActuatorType(index, type)`, `setActuatorTypes(vector)`,
+    `getActuatorType(index)`, `getActuatorTypes()`, `hasActuatorType()`) so
+    individual DoFs of a multi-DoF joint can be set to `MIMIC` while the rest
+    keep the joint-wide type. The existing joint-wide
+    `setActuatorType(ActuatorType)` / `getActuatorType()` API and its default
+    behavior are unchanged:
+    [#2222](https://github.com/dartsim/dart/pull/2222)
+
+  * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
+    joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
+    elements and wires the parsed follower DoFs to the existing per-DoF mimic
+    runtime (`MimicDofProperties`, `Joint::MIMIC` actuator), so SDF models can
+    declare mimic joints directly. SDF files without `<mimic>` parse
+    identically: [#2254](https://github.com/dartsim/dart/pull/2254)
+
   * Add TriMesh-backed `MeshShape` storage and material metadata while keeping
     the legacy Assimp `aiScene` APIs available as deprecated DART 6
     compatibility shims, and route mesh collision backends through the new
@@ -146,6 +172,17 @@
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
 * Simulation
+
+  * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
+    `World::setCollisionDetector(CollisionDetectorType)` /
+    `World::setCollisionDetector(CollisionDetectorPtr)` /
+    `World::getCollisionDetector()`, and corresponding dartpy bindings so users
+    can switch collision detectors (FCL, Bullet, ODE, DART) without reaching
+    into the constraint solver internals. The additions are opt-in: the default
+    `World` construction path keeps the existing default detector (FCL with
+    `PRIMITIVE` shapes) unchanged, and the pre-existing
+    `ConstraintSolver::setCollisionDetector(...)` API is untouched:
+    [#2168](https://github.com/dartsim/dart/pull/2168)
 
   * Harden contact handling against invalid geometry, fixing a crash reported
     through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
@@ -193,9 +230,19 @@
     micrometer-scale agreement with the always-active path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up cached all-resting steps by tracking explicit joint-velocity edits
+    with a generation counter instead of rescanning every resting mobile DOF on
+    each cached step:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up single-free-body contact groups by using direct LCP assembly for
     exact built-in contact constraints, while preserving the legacy assembly
     path for custom contact constraints and manual constraints:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Speed up large single-reactive contact scenes by skipping redundant
+    parallel-safety scans once the active contact set and built constrained
+    groups prove they are exact built-in fixed-support contact groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
 * Python

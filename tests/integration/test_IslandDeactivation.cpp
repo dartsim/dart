@@ -817,6 +817,28 @@ TEST(IslandDeactivation, WakeOnVelocityEdit)
 }
 
 //==============================================================================
+// Scalar DOF velocity edits follow a separate setter path from vector edits,
+// and must also invalidate the all-resting fast path.
+TEST(IslandDeactivation, WakeOnDofVelocityEdit)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  sleeper->getDof(3)->setVelocity(0.005);
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "scalar velocity edit was hidden by the all-resting fast path";
+}
+
+//==============================================================================
 // When an awake body hits one member of a frozen mobile contact island, the
 // resting-resting contacts inside that island must participate in the same
 // solver pass so the wake is island-atomic.

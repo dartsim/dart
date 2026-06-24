@@ -30,40 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#ifndef DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
+#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/detail/JointCoordinateChart.hpp>
 
 namespace dart {
-namespace python {
+namespace dynamics {
 
-void RaycastOption(py::module& m)
+class BallJoint;
+
+namespace detail {
+
+//==============================================================================
+struct BallJointUniqueProperties
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
-      .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
-      .def(
-          ::py::init<
-              bool,
-              bool,
-              dart::collision::RaycastOption::RaycastFilter>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"),
-          ::py::arg("filter") = nullptr)
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
-      .def_readwrite(
-          "mFilter", &dart::collision::RaycastOption::mFilter);
-}
+  /// Coordinate chart for generalized positions.
+  CoordinateChart mCoordinateChart;
 
-} // namespace python
+  /// Constructor
+  BallJointUniqueProperties(CoordinateChart _chart = CoordinateChart::EXP_MAP);
+
+  virtual ~BallJointUniqueProperties() = default;
+};
+
+//==============================================================================
+struct BallJointProperties : GenericJoint<math::SO3Space>::Properties,
+                             BallJointUniqueProperties
+{
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(BallJointProperties)
+
+  /// Composed constructor
+  BallJointProperties(
+      const GenericJoint<math::SO3Space>::Properties& genericJointProperties
+      = GenericJoint<math::SO3Space>::Properties(),
+      const BallJointUniqueProperties& ballJointProperties
+      = BallJointUniqueProperties());
+
+  virtual ~BallJointProperties() = default;
+};
+
+//==============================================================================
+using BallJointBase = common::EmbedPropertiesOnTopOf<
+    BallJoint,
+    BallJointUniqueProperties,
+    GenericJoint<math::SO3Space>>;
+
+} // namespace detail
+} // namespace dynamics
 } // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_

@@ -2,9 +2,57 @@
 
 ## Current Snapshot
 
-Bottom line: #3129, #3133, #3135, #3139, and #3140 are merged. The current
-follow-up is #3141 `perf/dart6-native-scratch-result-cache`, refreshed on
-current `origin/release-6.20`.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143, and
+#3144 are merged. The current follow-up is #3146
+`perf/dart6-resting-velocity-version`, refreshed on current
+`origin/release-6.20`.
+
+The current local candidate targets the settled-scene hot path rather than the
+active collision path. It tracks externally visible joint-velocity writes with a
+global generation counter so the cached all-resting fast path can skip the
+per-step scan over every mobile skeleton DOF. Internal integration and
+constraint-applied velocity updates keep using the normal dirty-velocity path
+without incrementing that external-edit counter.
+
+Latest exact issue-scene evidence
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3144 parent, default deactivation, 3000 steps | `1.95331` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, 3000 steps | `10.4855` | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| Current candidate, default deactivation, text profile | `10.7853` | finite, same hash; readiness check `1.772 ms` over `2998` calls |
+| Current candidate, deactivation disabled, 300 active steps | `0.0873215` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+
+The settled scene clears the target comfortably with identical consumed final
+state. The no-sleep active spot-check preserves the active final hash and
+contact counts, so the velocity-generation guard does not change active
+physics; active collision and constraint work remains the stress path for the
+next native-collision improvements.
+
+Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
+300 active steps, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, and deactivation disabled:
+
+| Run | RTF | Final state |
+| --- | ---: | --- |
+| #3142 stack, no profile | `0.0696281` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3143 stack, no profile | `0.0751396` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3144 contact-merge candidate, no profile | `0.0817217` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3142 stack, text profile | `0.0734006` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3143 stack, text profile | `0.0754405` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3144 contact-merge candidate, text profile | `0.0824554` | finite, same hash, contacts `5005`, pairs `3003` |
+
+The profile movement is concentrated where expected:
+the DART-native `collide` scope drops from about `1.680 s` on #3142 to
+`1.629 s` on #3143 and `1.101 s` on the #3144 contact-merge candidate over 300
+active steps. The next largest measured costs are now `build contact constraints` at
+about `762 ms`, `solveConstrainedGroups` at about `562 ms`, and
+velocity/position integration at about `741 ms` combined, so the next larger
+wins should continue in contact construction, constrained-group solving,
+integration, or deeper native collision algorithm changes.
 
 #3133 parallelizes finite-shape-vs-plane collision queries for the existing
 DART-native backend while keeping low `maxNumContacts` queries on the legacy
@@ -12,49 +60,24 @@ serial early-exit path. #3135 makes explicit per-pair contact caps select the
 deepest contact plus spatially distributed support points instead of preserving
 backend iteration-order truncation. #3139 reduces broadphase setup work by
 computing transformed cached local bounds from center and half-extents instead
-of visiting all eight local bounding-box corners.
-
-Latest #3139 evidence on the original issue scene, using DART-native collision
-with DART 6 dynamics/constraints/solver:
-
-| Run | RTF | Final state |
-| --- | ---: | --- |
-| #3135 parent, active, no profile repeat range | `0.0598792` - `0.0606051` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3139 current, active, no profile repeat range | `0.0609436` - `0.0611608` | finite, hash `0x6b50e84cd691f6e2`, contacts `5005`, pairs `3003` |
-| #3139 current, default sleeping, 3000 steps | `1.88586` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`, frame delta `3000 / 3000` |
-
-Current local candidate after #3140: trim two small DART-native collision
-hot-path costs. Internal pair scratch `CollisionResult` instances no longer
-maintain BodyNode/ShapeFrame lookup caches that are never queried, and the
-finite-shape-vs-plane loop avoids the grid-index division path for the common
-single-plane case. On the same active issue scene, the latest no-profile run
-measured RTF `0.0641852`; the latest profile run measured RTF `0.0638646`.
-Both runs preserved the #3140 final hash `0x6a043ac1e7558218`, final contacts
-`5005`, and contact pairs `3003`. The current profile puts `collide` at about
-`1.672 s` over 300 active steps, with `build contact constraints` at about
-`716 ms` and `solveConstrainedGroups` at about `1.212 s`, so the next larger
-win is still native collision/contact construction rather than bookkeeping.
-
-#3140 enables the existing direct LCP assembly path for single-free-body groups,
-but only when every constraint is an exact built-in `ContactConstraint`. Custom
-contact constraints and manual constraints stay on the legacy assembly path.
-On the same active issue scene, the no-profile repeat range moved to RTF
-`0.0624277` - `0.0656493`. The default-sleeping sanity run stayed above real
-time at RTF `1.88692`, with unchanged final hash `0x131b6af79a44ff90` and all
-`3003 / 3003` mobile bodies resting. The active state hash changes because the
-LCP assembly arithmetic order changes, so #3140 also dumps final geometry and
-compares against the legacy assembly path: all `3004` shapes match, max
-position delta is `1.86e-19 m`, max quaternion L2 delta is `2.80e-19`, and
-sleep/island state differences are `0`. The active text-profiler run moves
-`solveConstrainedGroups` from about `1.610 s` to `1.192 s` over 300 active
-steps, with `Construct LCP` dropping from about `504 ms` to `159 ms`.
+of visiting all eight local bounding-box corners. #3140 enables the existing
+direct LCP assembly path for single-free-body groups, but only when every
+constraint is an exact built-in `ContactConstraint`. #3141 trims two small
+DART-native collision hot-path costs: unused scratch-result lookup caches and
+single-plane pair-index division. #3142 skips redundant parallel-safety scans
+once the active contact set and built constrained groups prove they are exact
+built-in fixed-support contact groups. #3143 caches a compact primitive shape
+kind for DART-native plane dispatch. #3144 reduces serial contact-merge
+duplicate-grid probes while preserving duplicate behavior.
+#3146 targets cached all-resting step readiness by replacing the repeated
+mobile-DOF velocity scan with an external velocity-edit generation guard.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
-RTF, and parallel contact-constraint construction still segfaulted on large
-scenes after the first scratch-buffer fix. Those results point the next larger
-work back toward native collision algorithms and safe constraint-build
-structure, rather than cache-only edits.
+RTF, and parallel contact-constraint construction was repaired past the
+thread-local scratch misuse but did not produce convincing active RTF/profile
+gains. Those results point the next larger work back toward native collision
+algorithms and safe constraint-build structure, rather than cache-only edits.
 
 This slice is a bounded DART-native collision hot-path improvement, not the
 larger native-detector port. It parallelizes finite-shape-vs-plane collision

@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_SHAPENODE_HPP_
 #define DART_DYNAMICS_SHAPENODE_HPP_
 
+#include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/detail/ShapeNode.hpp>
 
 #include <dart/common/Signal.hpp>
@@ -104,6 +105,12 @@ public:
 
   /// Same as getRelativeTranslation()
   Eigen::Vector3d getOffset() const;
+
+  /// Compute the inertia of this Shape expressed in the parent body frame.
+  dynamics::Inertia computeTransformedInertia(double mass) const;
+
+  /// Same as computeTransformedInertia but accepts density.
+  dynamics::Inertia computeTransformedInertiaFromDensity(double density) const;
 
   // Documentation inherited
   ShapeNode* asShapeNode() override;

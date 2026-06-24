@@ -45,6 +45,7 @@
 #include <dart/common/Subject.hpp>
 #include <dart/common/VersionCounter.hpp>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -137,10 +138,43 @@ public:
 
   /// Set actuator type. Switching types clears any cached commands so stale
   /// inputs do not leak across actuator modes.
+  ///
+  /// This is the joint-wide actuator type. Calling it also clears any per-DoF
+  /// overrides previously set via setActuatorType(index, ...), restoring the
+  /// uniform joint-wide behavior.
   void setActuatorType(ActuatorType _actuatorType);
+
+  /// Set the actuator type for a specific DoF.
+  ///
+  /// Per-DoF overrides are additive on top of the joint-wide actuator type and
+  /// are currently restricted to overriding individual DoFs to Joint::MIMIC
+  /// (so a multi-DoF joint can have some DoFs follow a reference joint while
+  /// the others keep the joint-wide type). The requested type must share the
+  /// dynamic/kinematic classification of the joint-wide type.
+  void setActuatorType(std::size_t index, ActuatorType actuatorType);
+
+  /// Set actuator types for each DoF. The first entry is used as the joint-wide
+  /// actuator type, and each subsequent entry overrides the joint-wide type
+  /// when it differs.
+  void setActuatorTypes(const std::vector<ActuatorType>& actuatorTypes);
 
   /// Get actuator type
   ActuatorType getActuatorType() const;
+
+  /// Gets the actuator type of the specified DoF.
+  ActuatorType getActuatorType(std::size_t index) const;
+
+  /// Returns the actuator type of each DoF.
+  std::vector<ActuatorType> getActuatorTypes() const;
+
+  /// Returns true if any DoF uses the specified actuator type.
+  bool hasActuatorType(ActuatorType actuatorType) const;
+
+  /// Returns true if the provided actuator type is considered kinematic.
+  static bool isKinematicActuatorType(ActuatorType actuatorType);
+
+  /// Returns true if the provided actuator type is considered dynamic.
+  static bool isDynamicActuatorType(ActuatorType actuatorType);
 
   /// Set the mimic joint with a single reference joint and the same multiplier
   /// and offset for all dependent joint's DoFs.
@@ -863,6 +897,10 @@ protected:
 
   /// Notify that user-writable force/command state has changed.
   void notifyExternalDisturbanceUpdated();
+
+  /// Notify that velocity state has changed, optionally recording it for
+  /// all-resting cache invalidation.
+  void notifyVelocityUpdated(bool trackVelocityVersion);
 
   /// Notify that this joint's automatic-constraint eligibility changed.
   void notifyAutomaticConstraintPropertiesUpdated();
