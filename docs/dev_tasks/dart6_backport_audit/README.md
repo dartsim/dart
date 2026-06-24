@@ -15,8 +15,11 @@ code. Each accepted item becomes its own backport PR (dual-PR convention; see
 Full per-item evidence tables (PR / commit / what / why DART-6-relevant /
 main-present-release-absent evidence / scope / verdict / recommendation) live in
 [`01-backport-inventory.md`](01-backport-inventory.md). This README owns scope,
-framing, and decisions; the inventory owns the detailed evidence; and
-[`RESUME.md`](RESUME.md) owns the exact, prioritized next steps.
+framing, and decisions; the inventory owns the detailed evidence;
+[`RESUME.md`](RESUME.md) owns the exact, prioritized next steps; and
+[`02-execution-log.md`](02-execution-log.md) owns the record of what was actually
+ported, how it was verified, and the conflict resolutions — the cascade is
+**complete** (see that log).
 
 What this task is **not**:
 
