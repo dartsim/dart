@@ -10,15 +10,20 @@ if(DART_USE_SYSTEM_PYBIND11)
   if(Python3_EXECUTABLE)
     execute_process(
       COMMAND
-        ${Python3_EXECUTABLE}
-        "-c"
+        ${Python3_EXECUTABLE} "-c"
         "import sysconfig, pathlib; path = pathlib.Path(sysconfig.get_path('platlib')) / 'pybind11' / 'share' / 'cmake' / 'pybind11'; print(path if path.exists() else '')"
       OUTPUT_VARIABLE PYBIND11_CONFIG_DIR
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   endif()
   if(PYBIND11_CONFIG_DIR AND EXISTS "${PYBIND11_CONFIG_DIR}")
-    set(pybind11_DIR "${PYBIND11_CONFIG_DIR}" CACHE PATH "Path to pybind11 CMake package discovered via Python" FORCE)
+    set(
+      pybind11_DIR
+      "${PYBIND11_CONFIG_DIR}"
+      CACHE PATH
+      "Path to pybind11 CMake package discovered via Python"
+      FORCE
+    )
   endif()
   find_package(pybind11 CONFIG REQUIRED)
 else()

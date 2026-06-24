@@ -92,8 +92,11 @@ if(DART_VERBOSE)
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(STATUS "Adding ${components_length} components including "
-    "the default component 'dart'")
+  message(
+    STATUS
+    "Adding ${components_length} components including "
+    "the default component 'dart'"
+  )
 endif()
 
 # Set header and source files
@@ -104,24 +107,22 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(dart BEFORE
+target_include_directories(
+  dart
+  BEFORE
   PUBLIC
     $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dart
-  PUBLIC
-    ${CMAKE_DL_LIBS}
-    Eigen3::Eigen
-    fcl
-    assimp
-)
+target_link_libraries(dart PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen fcl assimp)
 
 # assimp version detection for conditional compilation
 if(ASSIMP_VERSION_MAJOR)
-  target_compile_definitions(dart
-    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR})
+  target_compile_definitions(
+    dart
+    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR}
+  )
 endif()
 
 if(TARGET fmt::fmt-header-only)
@@ -142,7 +143,10 @@ if(spdlog_FOUND)
     target_link_libraries(dart PUBLIC spdlog::spdlog)
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=1)
   else()
-    message(WARNING "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only")
+    message(
+      WARNING
+      "spdlog found, but no target is found. Expected spdlog::spdlog or target_link_library_public spdlog::spdlog_header_only"
+    )
     target_compile_definitions(dart PUBLIC -DDART_HAVE_spdlog=0)
   endif()
 else()
@@ -221,10 +225,7 @@ if(spdlog_FOUND)
 endif()
 
 if(MSVC)
-  set_target_properties(
-    dart PROPERTIES
-    STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
-  )
+  set_target_properties(dart PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
 if(DART_CODECOV)
