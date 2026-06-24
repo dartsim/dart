@@ -331,6 +331,7 @@ public:
 
 struct BroadphaseScratch
 {
+  std::vector<BroadphaseEntry> broadphaseEntries;
   std::vector<BroadphaseEntry> finiteEntries1;
   std::vector<BroadphaseEntry> planeEntries1;
   std::vector<BroadphaseEntry> otherEntries1;
@@ -402,7 +403,10 @@ void buildBroadphaseEntries(
     const std::vector<CollisionObject*>& objects,
     std::vector<BroadphaseEntry>& finiteEntries,
     std::vector<BroadphaseEntry>& planeEntries,
-    std::vector<BroadphaseEntry>& otherEntries);
+    std::vector<BroadphaseEntry>& otherEntries,
+    std::vector<BroadphaseEntry>& broadphaseEntries,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads);
 
 bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2);
 
@@ -576,7 +580,10 @@ bool DARTCollisionDetector::collide(
       objects,
       scratch.finiteEntries1,
       scratch.planeEntries1,
-      scratch.otherEntries1);
+      scratch.otherEntries1,
+      scratch.broadphaseEntries,
+      mCollisionThreadPool.get(),
+      mNumCollisionThreads);
 
   auto collisionFound = false;
   // This flag is only observed after the finite-plane path has proven mutually
@@ -713,12 +720,18 @@ bool DARTCollisionDetector::collide(
       objects1,
       scratch.finiteEntries1,
       scratch.planeEntries1,
-      scratch.otherEntries1);
+      scratch.otherEntries1,
+      scratch.broadphaseEntries,
+      mCollisionThreadPool.get(),
+      mNumCollisionThreads);
   buildBroadphaseEntries(
       objects2,
       scratch.finiteEntries2,
       scratch.planeEntries2,
-      scratch.otherEntries2);
+      scratch.otherEntries2,
+      scratch.broadphaseEntries,
+      mCollisionThreadPool.get(),
+      mNumCollisionThreads);
 
   auto collisionFound = false;
   if (processFinitePlanePairs(
@@ -1277,6 +1290,7 @@ std::size_t ContactPointIndex::findOrCreateBucketIndex(
 //==============================================================================
 void BroadphaseScratch::clear()
 {
+  broadphaseEntries.clear();
   finiteEntries1.clear();
   planeEntries1.clear();
   otherEntries1.clear();
@@ -1746,7 +1760,10 @@ void buildBroadphaseEntries(
     const std::vector<CollisionObject*>& objects,
     std::vector<BroadphaseEntry>& finiteEntries,
     std::vector<BroadphaseEntry>& planeEntries,
-    std::vector<BroadphaseEntry>& otherEntries)
+    std::vector<BroadphaseEntry>& otherEntries,
+    std::vector<BroadphaseEntry>& broadphaseEntries,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads)
 {
   DART_PROFILE_SCOPED_N("DART native build broadphase entries");
 
@@ -1754,8 +1771,30 @@ void buildBroadphaseEntries(
   planeEntries.reserve(objects.size());
   otherEntries.reserve(objects.size());
 
+  constexpr std::size_t kMinParallelBroadphaseEntries = 128u;
+  const bool useParallelBroadphase
+      = threadPool != nullptr && numCollisionThreads > 1u
+        && objects.size() >= kMinParallelBroadphaseEntries;
+  if (useParallelBroadphase) {
+    broadphaseEntries.resize(objects.size());
+    auto buildEntryAt = [&](std::size_t index) {
+      broadphaseEntries[index] = makeBroadphaseEntry(objects[index]);
+    };
+    threadPool->parallelFor(objects.size(), numCollisionThreads, buildEntryAt);
+
+    for (const auto& entry : broadphaseEntries) {
+      if (entry.finite)
+        finiteEntries.push_back(entry);
+      else if (entry.plane)
+        planeEntries.push_back(entry);
+      else
+        otherEntries.push_back(entry);
+    }
+    return;
+  }
+
   for (auto* object : objects) {
-    auto entry = makeBroadphaseEntry(object);
+    const auto entry = makeBroadphaseEntry(object);
     if (entry.finite)
       finiteEntries.push_back(entry);
     else if (entry.plane)

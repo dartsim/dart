@@ -4,11 +4,37 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, and #3146 are merged. #3147, #3148, #3149, #3150, #3151, and #3152
-are the parent stack. #3153 `perf/dart6-native-body-filter-fast-path` is the
-current published stack tip. The next active candidate is
-`perf/dart6-contact-surface-positional-cache`, stacked on #3153.
+are the parent stack. #3153 and #3154 are the current published stack tip
+sequence. The next active candidate is
+`perf/dart6-parallel-native-broadphase`, stacked on #3154.
 
-The local candidate trims default contact construction by replacing the
+The local candidate parallelizes DART-native broadphase entry construction for
+large collision groups. It fills a scratch entry vector in collision-object
+order, then performs the same serial finite/plane/other partition, preserving
+deterministic pair order and final contact state while reducing the measured
+native broadphase setup cost.
+
+Active issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, deactivation disabled, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, 300 steps:
+
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3154 parent, text profile | DART native | `0.110145` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `624.61 ms`, broadphase entries `249.70 ms` |
+| #3155 current head, text profile | DART native | `0.119013` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `430.07 ms`, broadphase entries `96.52 ms`, finite-plane pairs `251.74 ms` |
+| #3155 current head, no profile | DART native | `0.121471` latest repeat, `0.121913` prior repeat | finite, same hash, contacts `5005`, pairs `3003` |
+| #3155 current head, no profile | FCL primitive | `0.0961789` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3155 current head, no profile | Bullet | `0.0782589` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3155 current head, no profile | ODE | `0.00467795` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.26x` FCL primitive, `1.55x` Bullet, and
+`26.0x` ODE on the latest active issue-scene rerun. The active no-deactivation
+scene is still far below RTF `1`, so the next target remains the largest
+remaining active-step costs: contact construction, constrained-group solve,
+and integration overhead.
+
+#3154 trims default contact construction by replacing the
 per-step linear-scan default-surface-property cache with a small direct-mapped
 `ShapeNode` cache, plus remembering the most recent first-side and second-side
 lookups inside each solver update. Cache misses recompute the same surface
@@ -30,7 +56,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3154 current head, no profile | ODE | `0.00460932` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
 Current-head DART-native is about `1.17x` FCL primitive, `1.24x` Bullet, and
-`23.7x` ODE on the latest active issue-scene rerun. The local slice is a small
+`23.7x` ODE on the #3154 active issue-scene rerun. The local slice is a small
 contact-construction win, not a step-change; the larger remaining active-scene
 costs are still collision, constrained-group solve, and integration.
 
