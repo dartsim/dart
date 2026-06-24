@@ -67,6 +67,31 @@ OdeMesh::OdeMesh(
 }
 
 //==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent,
+    const math::TriMesh<double>* mesh,
+    const Eigen::Vector3d& scale)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
+{
+  fillArrays(mesh, scale);
+
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3 * sizeof(int),
+      mNormals.data());
+
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
+}
+
+//==============================================================================
 OdeMesh::~OdeMesh()
 {
   dGeomDestroy(mGeomId);
@@ -130,6 +155,47 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
     }
 
     offset += mesh->mNumVertices;
+  }
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(
+    const math::TriMesh<double>* mesh, const Eigen::Vector3d& scale)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  if (!mesh)
+    return;
+
+  const auto& vertices = mesh->getVertices();
+  const auto& normals = mesh->getVertexNormals();
+  const auto& triangles = mesh->getTriangles();
+  const bool hasNormals = normals.size() == vertices.size();
+
+  mVertices.resize(vertices.size() * 3);
+  mNormals.resize(vertices.size() * 3);
+  mIndices.resize(triangles.size() * 3);
+
+  std::size_t vertexIndex = 0;
+  for (std::size_t i = 0; i < vertices.size(); ++i) {
+    const Eigen::Vector3d scaled = vertices[i].cwiseProduct(scale);
+    mVertices[vertexIndex] = scaled.x();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].x() : 0.0;
+
+    mVertices[vertexIndex] = scaled.y();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].y() : 0.0;
+
+    mVertices[vertexIndex] = scaled.z();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].z() : 0.0;
+  }
+
+  std::size_t indexIndex = 0;
+  for (const auto& triangle : triangles) {
+    mIndices[indexIndex++] = static_cast<int>(triangle[0]);
+    mIndices[indexIndex++] = static_cast<int>(triangle[1]);
+    mIndices[indexIndex++] = static_cast<int>(triangle[2]);
   }
 }
 

@@ -2,20 +2,14 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged, and the active DART-native performance stack is
-#3133 `perf/dart6-native-collision-parallel`, #3135
-`perf/dart6-native-contact-selection`, #3139
-`perf/dart6-native-aabb-bounds`, #3140
-`perf/dart6-single-body-lcp-fast-path`, and #3141
-`perf/dart6-native-scratch-result-cache`, with #3142
-`perf/dart6-single-reactive-solve-fast-path` stacked on top. The next local
-candidate is `perf/dart6-native-shape-kind-dispatch`, stacked on #3142.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, and #3142 are merged.
+The current follow-up is #3143 `perf/dart6-native-shape-kind-dispatch`,
+refreshed on current `origin/release-6.20`.
 
 The current local candidate adds a cached primitive shape-kind enum to the
 DART-native collision object cache. The primitive plane dispatch path switches
 on that cheap kind for sphere/box/cylinder/capsule/plane cases while preserving
 the existing fallback for unsupported shapes.
-
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
 `--max-contacts-per-pair 4`, and deactivation disabled:
