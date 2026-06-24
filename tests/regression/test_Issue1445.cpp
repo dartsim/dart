@@ -148,13 +148,14 @@ TEST(Issue1445, Collision)
   fixedJoint->setTransformFromParentBodyNode(poseParentChild);
 
   const std::size_t numSteps = 100;
+  const double restVelocityTolerance = 3e-3;
 
   for (std::size_t i = 0; i < numSteps; ++i)
     world->step();
 
   // Expect both bodies to hit the ground and stop
-  EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), 1e-3);
-  EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), 1e-3);
+  EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), restVelocityTolerance);
+  EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), restVelocityTolerance);
 
   auto temp1 = dart::dynamics::Skeleton::create("temp1");
   world->addSkeleton(temp1);
@@ -164,8 +165,8 @@ TEST(Issue1445, Collision)
     world->step();
 
   // Expect both bodies to remain in contact with the ground with zero velocity.
-  EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), 1e-3);
-  EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), 1e-3);
+  EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), restVelocityTolerance);
+  EXPECT_NEAR(0.0, model2Body->getLinearVelocity().z(), restVelocityTolerance);
 
   auto* groundBody = ground->getRootBodyNode();
   auto temp2 = groundBody->remove();

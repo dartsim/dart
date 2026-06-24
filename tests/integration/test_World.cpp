@@ -45,21 +45,71 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <string>
 #include <thread>
 #include <utility>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
+
+namespace {
+
+class ScopedCollisionFactoryDisabler
+{
+public:
+  using Factory = collision::CollisionDetector::Factory;
+  using Creator = Factory::Creator;
+
+  ScopedCollisionFactoryDisabler(std::string key, Creator restorer)
+    : mFactory(collision::CollisionDetector::getFactory()),
+      mKey(std::move(key)),
+      mRestorer(std::move(restorer))
+  {
+    if (!mFactory || !mFactory->canCreate(mKey))
+      return;
+
+    mDisabled = true;
+    mFactory->unregisterCreator(mKey);
+  }
+
+  ScopedCollisionFactoryDisabler(const ScopedCollisionFactoryDisabler&)
+      = delete;
+  ScopedCollisionFactoryDisabler& operator=(
+      const ScopedCollisionFactoryDisabler&)
+      = delete;
+
+  ~ScopedCollisionFactoryDisabler()
+  {
+    if (mFactory && mDisabled && mRestorer)
+      mFactory->registerCreator(mKey, mRestorer);
+  }
+
+  bool wasDisabled() const
+  {
+    return mDisabled;
+  }
+
+private:
+  Factory* mFactory;
+  std::string mKey;
+  Creator mRestorer;
+  bool mDisabled{false};
+};
+
+} // namespace
 
 namespace {
 
@@ -384,11 +434,9 @@ TEST(World, ValidatingClones)
 
     // Set non default collision detector
 #if HAVE_BULLET
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::BulletCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
-    worlds.back()->getConstraintSolver()->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
+    worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
 #endif
   }
 
@@ -399,9 +447,8 @@ TEST(World, ValidatingClones)
     for (std::size_t j = 1; j < 5; ++j) {
       clones.push_back(clones[j - 1]->clone());
 
-      auto originalCD = original->getConstraintSolver()->getCollisionDetector();
-      auto cloneCD
-          = clones.back()->getConstraintSolver()->getCollisionDetector();
+      auto originalCD = original->getCollisionDetector();
+      auto cloneCD = clones.back()->getCollisionDetector();
 
       std::string originalCDType = originalCD->getType();
       std::string cloneCDType = cloneCD->getType();
@@ -409,6 +456,130 @@ TEST(World, ValidatingClones)
       EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
+}
+
+//==============================================================================
+TEST(World, SetCollisionDetectorByType)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+}
+
+//==============================================================================
+TEST(World, ConfiguresCollisionDetectorViaConfig)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("dart"))
+    GTEST_SKIP() << "dart collision detector is not available in this build";
+
+  WorldConfig config;
+  config.name = "configured-world";
+  config.collisionDetector = CollisionDetectorType::Dart;
+  auto world = World::create(config);
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(world->getCollisionDetector()->getType(), "dart");
+}
+
+//==============================================================================
+TEST(World, DefaultWorldUsesFclPrimitive)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  // The default World construction path must remain unchanged: it keeps the
+  // constraint solver's default FCL detector configured with PRIMITIVE shapes.
+  auto world = World::create();
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::PRIMITIVE);
+}
+
+//==============================================================================
+TEST(World, TypedSetterToFclKeepsPrimitive)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  world->setCollisionDetector(CollisionDetectorType::Fcl);
+
+  // The typed setter must produce a detector with the same default shape type
+  // as the rest of DART 6 (PRIMITIVE), not change the established default.
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::PRIMITIVE);
+}
+
+//==============================================================================
+TEST(World, TypedSetterKeepsCurrentWhenDetectorUnavailable)
+{
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  auto current = world->getCollisionDetector();
+  ASSERT_TRUE(current);
+  EXPECT_EQ(current->getType(), original->getType());
+}
+
+//==============================================================================
+TEST(World, ConfigKeepsDefaultWhenPreferredDetectorUnavailable)
+{
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+
+  WorldConfig config;
+  config.name = "fallback-pref";
+  config.collisionDetector = CollisionDetectorType::Dart;
+
+  // When the preferred detector is unavailable, the World keeps the constraint
+  // solver's existing default detector (FCL), unchanged.
+  auto world = World::create(config);
+  ASSERT_TRUE(world->getCollisionDetector());
+  EXPECT_EQ(
+      world->getCollisionDetector()->getType(),
+      collision::FCLCollisionDetector::getStaticType());
 }
 
 //==============================================================================
@@ -469,6 +640,64 @@ TEST(World, SetNewConstraintSolver)
   world->setConstraintSolver(std::move(solver2));
   EXPECT_TRUE(world->getConstraintSolver()->getSkeletons().size() == 1);
   EXPECT_TRUE(world->getConstraintSolver()->getNumConstraints() == 1);
+}
+
+//==============================================================================
+simulation::WorldPtr createWorldWithRevoluteConstraint()
+{
+  simulation::WorldPtr world
+      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+  DART_ASSERT(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1.0 / 2000);
+
+  const auto dof = world->getSkeleton(0)->getNumDofs();
+  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
+  initPose[20] = 3.14159 * 0.4;
+  initPose[23] = 3.14159 * 0.4;
+  initPose[26] = 3.14159 * 0.4;
+  initPose[29] = 3.14159 * 0.4;
+  world->getSkeleton(0)->setPositions(initPose);
+
+  BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
+  BodyNode* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
+  EXPECT_TRUE(bd1 != nullptr);
+  EXPECT_TRUE(bd2 != nullptr);
+
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d jointPos = bd1->getTransform() * offset;
+
+  auto hinge = std::make_shared<constraint::RevoluteJointConstraint>(
+      bd1, bd2, jointPos, Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitY());
+  world->getConstraintSolver()->addConstraint(hinge);
+
+  return world;
+}
+
+//==============================================================================
+TEST(World, RevoluteJointConstraintBasics)
+{
+  auto world = createWorldWithRevoluteConstraint();
+  ASSERT_TRUE(world);
+  ASSERT_EQ(world->getConstraintSolver()->getNumConstraints(), 1);
+
+  auto* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
+  auto* bd2 = world->getSkeleton(0)->getBodyNode("link 10");
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+
+  for (int i = 0; i < 200; ++i)
+    world->step();
+
+  const Eigen::Vector3d pos1 = bd1->getTransform() * offset;
+  const Eigen::Vector3d pos2 = bd2->getTransform() * offset;
+  EXPECT_LT((pos1 - pos2).norm(), 5e-2);
+
+  const Eigen::Vector3d axis1
+      = bd1->getTransform().linear() * Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d axis2
+      = bd2->getTransform().linear() * Eigen::Vector3d::UnitY();
+  EXPECT_GT(axis1.normalized().dot(axis2.normalized()), 0.2);
 }
 
 //==============================================================================
