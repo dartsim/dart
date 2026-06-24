@@ -237,6 +237,8 @@ test = { cmd = """
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
 
+test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
+
 test-py = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
