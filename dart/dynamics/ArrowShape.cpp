@@ -282,6 +282,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   scene->mMeshes = new aiMesh*[3];
   scene->mRootNode = node;
 
+  scene->mNumMaterials = 1;
   scene->mMaterials = new aiMaterial*[1];
   scene->mMaterials[0] = new aiMaterial;
 
@@ -291,7 +292,7 @@ void ArrowShape::instantiate(std::size_t resolution)
         = (i == 0 || i == 2) ? 2 * resolution + 1 : 2 * resolution;
 
     aiMesh* mesh = new aiMesh;
-    mesh->mMaterialIndex = (unsigned int)(-1);
+    mesh->mMaterialIndex = 0;
 
     mesh->mNumVertices = numVertices;
     mesh->mVertices = new aiVector3D[numVertices];

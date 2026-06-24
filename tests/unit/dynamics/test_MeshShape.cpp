@@ -260,6 +260,10 @@ TEST(MeshShapeTest, ReusingMeshPointerRefreshesMetadata)
 TEST(MeshShapeTest, ArrowShapeRefreshesTriMeshAfterPositionUpdates)
 {
   dynamics::ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+  ASSERT_NE(arrow.getMesh(), nullptr);
+  ASSERT_EQ(arrow.getMesh()->mNumMaterials, 1u);
+  ASSERT_GT(arrow.getMesh()->mNumMeshes, 0u);
+  EXPECT_EQ(arrow.getMesh()->mMeshes[0]->mMaterialIndex, 0u);
 
   const auto originalMesh = arrow.getTriMesh();
   ASSERT_NE(originalMesh, nullptr);
