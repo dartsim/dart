@@ -33,6 +33,7 @@
 #include "dart/constraint/MimicMotorConstraint.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -41,12 +42,22 @@
 
 #include <iostream>
 
-#define DART_CFM 1e-9
+#include <cmath>
+
+namespace {
+
+constexpr inline double kConstraintForceMixing = 1e-6;
+constexpr inline double kDefaultForceLimit = 800.0;
+constexpr inline double kDefaultVelocityLimit = 50.0;
+constexpr inline double kDefaultErp = 0.4;
+
+} // namespace
 
 namespace dart {
 namespace constraint {
 
-double MimicMotorConstraint::mConstraintForceMixing = DART_CFM;
+double MimicMotorConstraint::mConstraintForceMixing = kConstraintForceMixing;
+double MimicMotorConstraint::mErrorReductionParameter = kDefaultErp;
 
 //==============================================================================
 MimicMotorConstraint::MimicMotorConstraint(
@@ -99,22 +110,47 @@ const std::string& MimicMotorConstraint::getStaticType()
 //==============================================================================
 void MimicMotorConstraint::setConstraintForceMixing(double cfm)
 {
-  // Clamp constraint force mixing parameter if it is out of the range
-  if (cfm < 1e-9) {
-    dtwarn << "[MimicMotorConstraint::setConstraintForceMixing] "
-           << "Constraint force mixing parameter[" << cfm
-           << "] is lower than 1e-9. "
-           << "It is set to 1e-9.\n";
-    mConstraintForceMixing = 1e-9;
+  double clamped = cfm;
+  if (clamped < 1e-9) {
+    DART_WARN(
+        "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
+        "to 1e-9.",
+        cfm);
+    clamped = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  mConstraintForceMixing = clamped;
 }
 
 //==============================================================================
 double MimicMotorConstraint::getConstraintForceMixing()
 {
   return mConstraintForceMixing;
+}
+
+//==============================================================================
+void MimicMotorConstraint::setErrorReductionParameter(double erp)
+{
+  double clamped = erp;
+  if (clamped < 0.0) {
+    DART_WARN(
+        "Error reduction parameter [{}] is lower than 0.0. It is set to 0.0.",
+        erp);
+    clamped = 0.0;
+  } else if (clamped > 1.0) {
+    DART_WARN(
+        "Error reduction parameter [{}] is greater than 1.0. It is set to 1.0.",
+        erp);
+    clamped = 1.0;
+  }
+
+  mErrorReductionParameter = clamped;
+}
+
+//==============================================================================
+double MimicMotorConstraint::getErrorReductionParameter()
+{
+  return mErrorReductionParameter;
 }
 
 //==============================================================================
@@ -128,21 +164,34 @@ void MimicMotorConstraint::update()
     const auto& mimicProp = mMimicProps[i];
 
     double timeStep = mJoint->getSkeleton()->getTimeStep();
+    double velLower = mJoint->getVelocityLowerLimit(i);
+    double velUpper = mJoint->getVelocityUpperLimit(i);
+    if (!std::isfinite(velLower))
+      velLower = -kDefaultVelocityLimit;
+    if (!std::isfinite(velUpper))
+      velUpper = kDefaultVelocityLimit;
+
     double qError
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
           + mimicProp.mOffset - mJoint->getPosition(i);
-    double desiredVelocity = math::clip(
-        qError / timeStep,
-        mJoint->getVelocityLowerLimit(i),
-        mJoint->getVelocityUpperLimit(i));
+    const double erp = mErrorReductionParameter;
+    double desiredVelocity
+        = math::clip((erp * qError) / timeStep, velLower, velUpper);
 
     mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
     if (mNegativeVelocityError[i] != 0.0) {
       // Note that we are computing impulse not force
-      mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
-      mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
+      double upper = mJoint->getForceUpperLimit(i);
+      double lower = mJoint->getForceLowerLimit(i);
+      if (!std::isfinite(upper))
+        upper = kDefaultForceLimit;
+      if (!std::isfinite(lower))
+        lower = -kDefaultForceLimit;
+
+      mUpperBound[i] = upper * timeStep;
+      mLowerBound[i] = lower * timeStep;
 
       if (mActive[i]) {
         ++(mLifeTime[i]);

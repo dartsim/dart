@@ -200,7 +200,9 @@ void ContactConstraint::initialize(
       = canSkipContactRelativeVelocity(mBodyNodeB, mSkeletonB, mIsReactiveB);
 
   DART_ASSERT(
-      contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
+      mContact
+      && mContact->normal.squaredNorm()
+             >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
 
   //----------------------------------------------
   // Bounce

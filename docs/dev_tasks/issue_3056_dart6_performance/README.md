@@ -2,14 +2,14 @@
 
 ## Current Snapshot
 
-Bottom line: #3129 is merged. #3146
-`perf/dart6-resting-velocity-version` is open on top of the active
-DART-native stack through #3144, and the current local candidate is
-`perf/dart6-reuse-default-contact-constraints` stacked on #3146.
+Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143, and
+#3144 and #3146 are merged. The current follow-up is #3147
+`perf/dart6-reuse-default-contact-constraints`, refreshed on current
+`origin/release-6.20`.
 
 #3146 targets the settled-scene hot path by tracking explicit joint-velocity
-edits with a global generation counter. The current local candidate targets the
-remaining active contact-construction cost by reusing exact built-in default
+edits with a global generation counter. #3147 targets the remaining active
+contact-construction cost by reusing exact built-in default
 `ContactConstraint` objects across steps and by computing local contact points
 without constructing full inverse transforms. It also reuses the previous
 contact-pair scratch-table index for consecutive contacts from the same pair.
@@ -72,6 +72,11 @@ once the active contact set and built constrained groups prove they are exact
 built-in fixed-support contact groups. #3143 caches a compact primitive shape
 kind for DART-native plane dispatch. #3144 reduces serial contact-merge
 duplicate-grid probes while preserving duplicate behavior.
+#3146 targets cached all-resting step readiness by replacing the repeated
+mobile-DOF velocity scan with an external velocity-edit generation guard.
+#3147 targets active contact-construction overhead by reusing exact built-in
+default contact constraints and avoiding redundant local-point and pair-index
+work.
 
 Recent rejected local experiments are kept as named stashes, not PRs: caching
 world-plane transforms preserved final hashes but regressed/noised the active
