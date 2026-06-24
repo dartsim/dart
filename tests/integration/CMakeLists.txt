@@ -28,6 +28,7 @@ foreach(collision_engine
 endforeach()
 dart_add_test("integration" test_ConstraintSolver)
 dart_add_test("integration" test_ContactConstraint)
+dart_add_test("integration" test_SplitImpulse)
 dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)
 dart_add_test("integration" test_GenericJoints)
@@ -60,6 +61,9 @@ if(TARGET dart-utils)
   if(TARGET dart-collision-bullet)
     target_link_libraries(test_SdfParser dart-collision-bullet)
   endif()
+
+  dart_add_test("integration" test_MimicConstraint)
+  target_link_libraries(test_MimicConstraint dart-utils)
 
   dart_add_test("integration" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)

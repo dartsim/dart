@@ -50,6 +50,7 @@
 #include <Eigen/Geometry>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace urdf {
@@ -73,6 +74,13 @@ class World;
 }
 
 namespace utils {
+
+struct JointXmlElementMetadata
+{
+  std::set<std::string> jointsWithAxisElement;
+  std::set<std::string> jointsWithLimitLowerAttribute;
+  std::set<std::string> jointsWithLimitUpperAttribute;
+};
 
 /**
  * @class DartLoader
@@ -213,7 +221,8 @@ private:
       const urdf::ModelInterface* model,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& resourceRetriever,
-      const Options& options);
+      const Options& options,
+      const JointXmlElementMetadata* jointXmlElementMetadata = nullptr);
 
   static bool createSkeletonRecursive(
       const urdf::ModelInterface* model,
@@ -222,7 +231,8 @@ private:
       dynamics::BodyNode* parent,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever,
-      const Options& options);
+      const Options& options,
+      const JointXmlElementMetadata* jointXmlElementMetadata);
 
   static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
@@ -240,7 +250,8 @@ private:
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
-      const Options& options);
+      const Options& options,
+      const JointXmlElementMetadata* jointXmlElementMetadata);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,

@@ -67,6 +67,58 @@ OdeMesh::OdeMesh(
 }
 
 //==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent,
+    const math::TriMesh<double>* mesh,
+    const Eigen::Vector3d& scale)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
+{
+  fillArrays(mesh, scale);
+
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3 * sizeof(int),
+      mNormals.data());
+
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
+}
+
+//==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent, const dart::math::TriMeshd& mesh)
+  : OdeGeom(parent), mOdeTriMeshDataId(nullptr)
+{
+  fillArrays(mesh);
+
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+
+  const double* normalData = nullptr;
+  if (!mNormals.empty() && mNormals.size() == mVertices.size())
+    normalData = mNormals.data();
+
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3 * sizeof(double),
+      static_cast<int>(mVertices.size() / 3),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3 * sizeof(int),
+      normalData);
+
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
+}
+
+//==============================================================================
 OdeMesh::~OdeMesh()
 {
   dGeomDestroy(mGeomId);
@@ -130,6 +182,84 @@ void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
     }
 
     offset += mesh->mNumVertices;
+  }
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(
+    const math::TriMesh<double>* mesh, const Eigen::Vector3d& scale)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  if (!mesh)
+    return;
+
+  const auto& vertices = mesh->getVertices();
+  const auto& normals = mesh->getVertexNormals();
+  const auto& triangles = mesh->getTriangles();
+  const bool hasNormals = normals.size() == vertices.size();
+
+  mVertices.resize(vertices.size() * 3);
+  mNormals.resize(vertices.size() * 3);
+  mIndices.resize(triangles.size() * 3);
+
+  std::size_t vertexIndex = 0;
+  for (std::size_t i = 0; i < vertices.size(); ++i) {
+    const Eigen::Vector3d scaled = vertices[i].cwiseProduct(scale);
+    mVertices[vertexIndex] = scaled.x();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].x() : 0.0;
+
+    mVertices[vertexIndex] = scaled.y();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].y() : 0.0;
+
+    mVertices[vertexIndex] = scaled.z();
+    mNormals[vertexIndex++] = hasNormals ? normals[i].z() : 0.0;
+  }
+
+  std::size_t indexIndex = 0;
+  for (const auto& triangle : triangles) {
+    mIndices[indexIndex++] = static_cast<int>(triangle[0]);
+    mIndices[indexIndex++] = static_cast<int>(triangle[1]);
+    mIndices[indexIndex++] = static_cast<int>(triangle[2]);
+  }
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(const dart::math::TriMeshd& mesh)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  const auto& vertices = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
+  const auto& normals = mesh.getVertexNormals();
+
+  mVertices.resize(vertices.size() * 3);
+
+  auto vertexIndex = 0u;
+  for (const auto& vertex : vertices) {
+    mVertices[vertexIndex++] = vertex.x();
+    mVertices[vertexIndex++] = vertex.y();
+    mVertices[vertexIndex++] = vertex.z();
+  }
+
+  if (normals.size() == vertices.size()) {
+    mNormals.reserve(normals.size() * 3);
+    for (const auto& normal : normals) {
+      mNormals.push_back(normal.x());
+      mNormals.push_back(normal.y());
+      mNormals.push_back(normal.z());
+    }
+  }
+
+  mIndices.reserve(triangles.size() * 3);
+  for (const auto& tri : triangles) {
+    mIndices.push_back(static_cast<int>(tri[0]));
+    mIndices.push_back(static_cast<int>(tri[1]));
+    mIndices.push_back(static_cast<int>(tri[2]));
   }
 }
 

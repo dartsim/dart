@@ -35,6 +35,7 @@
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -55,6 +56,11 @@ void Joint(py::module& m)
 
   m.attr("DefaultActuatorType") = dart::dynamics::detail::DefaultActuatorType;
 
+  ::py::enum_<dart::dynamics::MimicConstraintType>(m, "MimicConstraintType")
+      .value("Motor", dart::dynamics::MimicConstraintType::Motor)
+      .value("Coupler", dart::dynamics::MimicConstraintType::Coupler)
+      .export_values();
+
   ::py::class_<dart::dynamics::MimicDofProperties>(m, "MimicDofProperties")
       .def(::py::init<>())
       .def_readwrite(
@@ -65,7 +71,10 @@ void Joint(py::module& m)
           &dart::dynamics::MimicDofProperties::mReferenceDofIndex)
       .def_readwrite(
           "mMultiplier", &dart::dynamics::MimicDofProperties::mMultiplier)
-      .def_readwrite("mOffset", &dart::dynamics::MimicDofProperties::mOffset);
+      .def_readwrite("mOffset", &dart::dynamics::MimicDofProperties::mOffset)
+      .def_readwrite(
+          "mConstraintType",
+          &dart::dynamics::MimicDofProperties::mConstraintType);
 
   ::py::class_<dart::dynamics::detail::JointProperties>(m, "JointProperties")
       .def(
@@ -248,6 +257,54 @@ void Joint(py::module& m)
             return self->getActuatorType();
           })
       .def(
+          "setUseCouplerConstraint",
+          +[](dart::dynamics::Joint* self, bool enable) -> void {
+            self->setUseCouplerConstraint(enable);
+          },
+          ::py::arg("enable"))
+      .def(
+          "isUsingCouplerConstraint",
+          +[](const dart::dynamics::Joint* self) -> bool {
+            return self->isUsingCouplerConstraint();
+          })
+      .def(
+          "setActuatorTypeForDof",
+          +[](dart::dynamics::Joint* self,
+              std::size_t index,
+              dart::dynamics::Joint::ActuatorType actuatorType) -> void {
+            self->setActuatorType(index, actuatorType);
+          },
+          ::py::arg("index"),
+          ::py::arg("actuatorType"))
+      .def(
+          "setActuatorTypes",
+          +[](dart::dynamics::Joint* self,
+              const std::vector<dart::dynamics::Joint::ActuatorType>&
+                  actuatorTypes) -> void {
+            self->setActuatorTypes(actuatorTypes);
+          },
+          ::py::arg("actuatorTypes"))
+      .def(
+          "getActuatorTypeForDof",
+          +[](const dart::dynamics::Joint* self,
+              std::size_t index) -> dart::dynamics::Joint::ActuatorType {
+            return self->getActuatorType(index);
+          },
+          ::py::arg("index"))
+      .def(
+          "getActuatorTypes",
+          +[](const dart::dynamics::Joint* self)
+              -> std::vector<dart::dynamics::Joint::ActuatorType> {
+            return self->getActuatorTypes();
+          })
+      .def(
+          "hasActuatorType",
+          +[](const dart::dynamics::Joint* self,
+              dart::dynamics::Joint::ActuatorType actuatorType) -> bool {
+            return self->hasActuatorType(actuatorType);
+          },
+          ::py::arg("actuatorType"))
+      .def(
           "isKinematic",
           +[](const dart::dynamics::Joint* self) -> bool {
             return self->isKinematic();
@@ -310,9 +367,8 @@ void Joint(py::module& m)
           ::py::arg("enforced"))
       .def(
           "areLimitsEnforced",
-          +[](const dart::dynamics::Joint* self) -> bool {
-            return self->areLimitsEnforced();
-          })
+          +[](const dart::dynamics::Joint* self)
+              -> bool { return self->areLimitsEnforced(); })
       .def(
           "getIndexInSkeleton",
           +[](const dart::dynamics::Joint* self, std::size_t index)

@@ -37,6 +37,7 @@
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Inertia.hpp>
 #include <dart/dynamics/Marker.hpp>
 #include <dart/dynamics/Node.hpp>
 #include <dart/dynamics/SmartPointer.hpp>
@@ -53,6 +54,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -157,6 +159,12 @@ public:
   /// existing Nodes in this BodyNode will be removed.
   void matchNodes(const BodyNode* otherBodyNode);
 
+  /// Return all the Nodes currently attached to this BodyNode.
+  std::vector<Node*> getNodes();
+
+  /// Return all the Nodes currently attached to this BodyNode (const).
+  std::vector<const Node*> getNodes() const;
+
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
@@ -213,6 +221,12 @@ public:
 
   /// Get the inertia data for this BodyNode
   const Inertia& getInertia() const;
+
+  /// Sum transformed inertias of all ShapeNodes using the provided mass
+  /// provider. The callable should return an optional mass for each ShapeNode.
+  template <typename MassProvider>
+  std::optional<Inertia> computeInertiaFromShapeNodes(
+      MassProvider&& massProvider) const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;
@@ -832,6 +846,10 @@ public:
   /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
   void addConstraintImpulse(const Eigen::Vector6d& _constImp);
 
+  /// Add position constraint impulse for split impulse handling.
+  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
+  void addPositionConstraintImpulse(const Eigen::Vector6d& _constImp);
+
   /// Add constraint impulse
   void addConstraintImpulse(
       const Eigen::Vector3d& _constImp,
@@ -843,8 +861,14 @@ public:
   /// dynamics algorithm
   virtual void clearConstraintImpulse();
 
+  /// Clear position constraint impulses used for split impulse handling.
+  virtual void clearPositionConstraintImpulse();
+
   /// Return constraint impulse
   const Eigen::Vector6d& getConstraintImpulse() const;
+
+  /// Return position constraint impulse
+  const Eigen::Vector6d& getPositionConstraintImpulse() const;
 
   //----------------------------------------------------------------------------
   // Energies
@@ -1006,6 +1030,9 @@ protected:
   /// Update bias impulse associated with the articulated body inertia for
   /// impulse-based forward dynamics.
   virtual void updateBiasImpulse();
+
+  /// Update bias impulse using position constraint impulses for split impulse.
+  virtual void updateBiasImpulseFromPositionImpulse();
 
   /// Update spatial body acceleration with the partial spatial body
   /// acceleration for inverse dynamics.
@@ -1287,6 +1314,9 @@ protected:
 
   /// Constraint impulse: contact impulse, dynamic joint impulse
   Eigen::Vector6d mConstraintImpulse;
+
+  /// Position correction impulse used for split impulse handling
+  Eigen::Vector6d mPositionConstraintImpulse;
 
   // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.
