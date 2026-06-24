@@ -20,7 +20,10 @@ one-plane query can prove the finite shapes' padded contact bounds are mutually
 disjoint, contacts from different finite/plane pairs cannot be duplicate
 points. That lets the merge path keep the existing per-pair duplicate check
 while bypassing the global duplicate-contact grid for those pair results.
-Overlapping or multi-plane queries keep the existing global duplicate path.
+Accepted fast-path contacts are still published to the global duplicate index
+so later fallback pair phases see the same accepted contact set as the serial
+path. Overlapping or multi-plane queries keep the existing global duplicate
+path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,

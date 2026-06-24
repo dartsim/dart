@@ -279,6 +279,7 @@ public:
   void clear();
   void prepare(std::size_t maxContacts);
   bool insertIfAbsent(const Eigen::Vector3d& point);
+  void insertUnchecked(const Eigen::Vector3d& point);
 
 private:
   bool containsClose(
@@ -1116,6 +1117,30 @@ bool ContactPointIndex::insertIfAbsent(const Eigen::Vector3d& point)
 }
 
 //==============================================================================
+void ContactPointIndex::insertUnchecked(const Eigen::Vector3d& point)
+{
+  ensureBucketCapacity(points.size() + 1u);
+
+  ContactPointKey key;
+  if (!makeContactPointKey(point, key)) {
+    points.push_back(point);
+    nextPoint.push_back(kInvalidContactPointIndex);
+    return;
+  }
+
+  const auto pointIndex = points.size();
+  points.push_back(point);
+  nextPoint.push_back(kInvalidContactPointIndex);
+
+  const auto bucketIndex = findOrCreateBucketIndex(key);
+  if (bucketIndex == kInvalidContactPointIndex)
+    return;
+
+  nextPoint[pointIndex] = buckets[bucketIndex].head;
+  buckets[bucketIndex].head = pointIndex;
+}
+
+//==============================================================================
 bool ContactPointIndex::containsCloseLinear(const Eigen::Vector3d& point) const
 {
   for (const auto& existingPoint : points) {
@@ -1443,6 +1468,7 @@ void postProcess(
           return std::make_pair(true, false);
       }
       localContactPoints.push_back(pairContact.point);
+      contactPointIndex.insertUnchecked(pairContact.point);
     } else if (!contactPointIndex.insertIfAbsent(pairContact.point)) {
       return std::make_pair(true, false);
     }
