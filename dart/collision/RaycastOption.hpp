@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_RAYCASTOPTION_HPP_
 #define DART_COLLISION_RAYCASTOPTION_HPP_
 
+#include <functional>
 #include <memory>
 
 #include <cstddef>
@@ -40,16 +41,27 @@
 namespace dart {
 namespace collision {
 
+class CollisionObject;
+
 struct RaycastOption
 {
+  using RaycastFilter = std::function<bool(const CollisionObject*)>;
+
   /// Constructor
-  RaycastOption(bool enableAllHits = false, bool sortByClosest = false);
+  RaycastOption(
+      bool enableAllHits = false,
+      bool sortByClosest = false,
+      RaycastFilter filter = nullptr);
+
+  /// Returns true when the filter is not set or allows the object.
+  bool passesFilter(const CollisionObject* object) const;
 
   bool mEnableAllHits;
 
   bool mSortByClosest;
 
-  // TODO(JS): Add filter
+  /// Optional filter to reject hits from specific collision objects.
+  RaycastFilter mFilter;
 };
 
 } // namespace collision
