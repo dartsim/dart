@@ -55,7 +55,10 @@ ArrowShape::Properties::Properties(
 }
 
 //==============================================================================
-ArrowShape::ArrowShape() : MeshShape(Eigen::Vector3d::Ones(), nullptr) {}
+ArrowShape::ArrowShape()
+  : MeshShape(Eigen::Vector3d::Ones(), std::shared_ptr<math::TriMesh<double>>())
+{
+}
 
 //==============================================================================
 ArrowShape::ArrowShape(
@@ -64,7 +67,8 @@ ArrowShape::ArrowShape(
     const Properties& _properties,
     const Eigen::Vector4d& _color,
     std::size_t _resolution)
-  : MeshShape(Eigen::Vector3d::Ones(), nullptr),
+  : MeshShape(
+      Eigen::Vector3d::Ones(), std::shared_ptr<math::TriMesh<double>>()),
     mTail(_tail),
     mHead(_head),
     mProperties(_properties)
@@ -238,10 +242,7 @@ void ArrowShape::configureArrow(
     for (std::size_t j = 0; j < 4; ++j)
       node->mTransformation[i][j] = tf(i, j);
 
-  mIsBoundingBoxDirty = true;
-  mIsVolumeDirty = true;
-
-  incrementVersion();
+  notifyLegacyMeshChanged();
 }
 
 //==============================================================================
@@ -254,7 +255,7 @@ ShapePtr ArrowShape::clone() const
   new_shape->mHead = mHead;
   new_shape->mProperties = mProperties;
 
-  new_shape->mMesh = new_scene;
+  new_shape->setLegacyMesh(new_scene, MeshOwnership::Copied);
   new_shape->mMeshUri = mMeshUri;
   new_shape->mMeshPath = mMeshPath;
   new_shape->mResourceRetriever = mResourceRetriever;
@@ -392,7 +393,7 @@ void ArrowShape::instantiate(std::size_t resolution)
     face->mIndices[2] = 2 * resolution;
   }
 
-  mMesh = scene;
+  setLegacyMesh(scene, MeshOwnership::Manual);
 
   // setColor(mColor);
   // TODO(JS)

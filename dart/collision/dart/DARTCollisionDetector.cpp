@@ -302,6 +302,7 @@ public:
   void clear();
   void prepare(std::size_t maxContacts);
   bool insertIfAbsent(const Eigen::Vector3d& point);
+  void insertUnchecked(const Eigen::Vector3d& point);
 
 private:
   bool containsClose(
@@ -390,7 +391,8 @@ void postProcess(
     const CollisionOption& option,
     CollisionResult& totalResult,
     const CollisionResult& pairResult,
-    bool skipCrossPairDuplicateCheck = false);
+    bool skipCrossPairDuplicateCheck = false,
+    bool publishCrossPairDuplicateState = true);
 
 bool isPlaneShape(const CollisionObject* object);
 
@@ -422,7 +424,8 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst = true);
+    bool planeFirst = true,
+    bool publishFastPathContactsToDuplicateIndex = true);
 
 bool processPlanePlanePairs(
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -576,6 +579,11 @@ bool DARTCollisionDetector::collide(
       scratch.otherEntries1);
 
   auto collisionFound = false;
+  // This flag is only observed after the finite-plane path has proven mutually
+  // disjoint contact bounds. With no unsupported entries and at most one plane,
+  // no later same-group phase can consume the cross-pair duplicate index.
+  const bool finitePlaneFastPathHasNoLaterDuplicateConsumers
+      = scratch.otherEntries1.empty() && scratch.planeEntries1.size() <= 1u;
   if (processFinitePlanePairs(
           scratch.finiteEntries1,
           scratch.planeEntries1,
@@ -584,7 +592,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          !finitePlaneFastPathHasNoLaterDuplicateConsumers)) {
     return true;
   }
 
@@ -720,7 +730,8 @@ bool DARTCollisionDetector::collide(
           scratch,
           mCollisionThreadPool.get(),
           mNumCollisionThreads,
-          false)) {
+          false,
+          true)) {
     return true;
   }
 
@@ -732,7 +743,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          true)) {
     return true;
   }
 
@@ -1139,6 +1152,30 @@ bool ContactPointIndex::insertIfAbsent(const Eigen::Vector3d& point)
 }
 
 //==============================================================================
+void ContactPointIndex::insertUnchecked(const Eigen::Vector3d& point)
+{
+  ensureBucketCapacity(points.size() + 1u);
+
+  ContactPointKey key;
+  if (!makeContactPointKey(point, key)) {
+    points.push_back(point);
+    nextPoint.push_back(kInvalidContactPointIndex);
+    return;
+  }
+
+  const auto pointIndex = points.size();
+  points.push_back(point);
+  nextPoint.push_back(kInvalidContactPointIndex);
+
+  const auto bucketIndex = findOrCreateBucketIndex(key);
+  if (bucketIndex == kInvalidContactPointIndex)
+    return;
+
+  nextPoint[pointIndex] = buckets[bucketIndex].head;
+  buckets[bucketIndex].head = pointIndex;
+}
+
+//==============================================================================
 bool ContactPointIndex::containsCloseLinear(const Eigen::Vector3d& point) const
 {
   for (const auto& existingPoint : points) {
@@ -1439,7 +1476,8 @@ void postProcess(
     const CollisionOption& option,
     CollisionResult& totalResult,
     const CollisionResult& pairResult,
-    bool skipCrossPairDuplicateCheck)
+    bool skipCrossPairDuplicateCheck,
+    bool publishCrossPairDuplicateState)
 {
   if (!pairResult.isCollision())
     return;
@@ -1466,6 +1504,8 @@ void postProcess(
           return std::make_pair(true, false);
       }
       localContactPoints.push_back(pairContact.point);
+      if (publishCrossPairDuplicateState)
+        contactPointIndex.insertUnchecked(pairContact.point);
     } else if (!contactPointIndex.insertIfAbsent(pairContact.point)) {
       return std::make_pair(true, false);
     }
@@ -1638,6 +1678,22 @@ bool allFiniteEntriesHaveCachedPlaneCollisionPath(
 }
 
 //==============================================================================
+Eigen::Vector3d computeBroadphaseRoundoffMargin(
+    const Eigen::Isometry3d& transform,
+    const Eigen::Matrix3d& absLinear,
+    const Eigen::Vector3d& localCenter,
+    const Eigen::Vector3d& localHalfExtents)
+{
+  const Eigen::Vector3d accumulatedMagnitude
+      = transform.translation().cwiseAbs()
+        + absLinear * (localCenter.cwiseAbs() + localHalfExtents.cwiseAbs());
+
+  constexpr double kRoundoffTerms = 16.0;
+  return kRoundoffTerms * std::numeric_limits<double>::epsilon()
+         * accumulatedMagnitude;
+}
+
+//==============================================================================
 BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
 {
   BroadphaseEntry entry;
@@ -1664,14 +1720,22 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   const Eigen::Vector3d localCenter = 0.5 * (localMin + localMax);
   const Eigen::Vector3d localHalfExtents = 0.5 * (localMax - localMin);
   const Eigen::Vector3d worldCenter = entry.transform * localCenter;
-  const Eigen::Vector3d worldHalfExtents
-      = entry.transform.linear().cwiseAbs() * localHalfExtents;
-  entry.min = (worldCenter - worldHalfExtents).unaryExpr([](double value) {
-    return std::nextafter(value, -std::numeric_limits<double>::infinity());
-  });
-  entry.max = (worldCenter + worldHalfExtents).unaryExpr([](double value) {
-    return std::nextafter(value, std::numeric_limits<double>::infinity());
-  });
+  const Eigen::Matrix3d absLinear = entry.transform.linear().cwiseAbs();
+  const Eigen::Vector3d worldHalfExtents = absLinear * localHalfExtents;
+  // The center/extent form matches transformed corners mathematically, but the
+  // separately rounded dot products can otherwise move a bound inward.
+  const Eigen::Vector3d roundoffMargin = computeBroadphaseRoundoffMargin(
+      entry.transform, absLinear, localCenter, localHalfExtents);
+  entry.min = (worldCenter - worldHalfExtents - roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, -std::numeric_limits<double>::infinity());
+                  });
+  entry.max = (worldCenter + worldHalfExtents + roundoffMargin)
+                  .unaryExpr([](double value) {
+                    return std::nextafter(
+                        value, std::numeric_limits<double>::infinity());
+                  });
 
   entry.finite = entry.min.allFinite() && entry.max.allFinite();
   return entry;
@@ -1787,7 +1851,8 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst)
+    bool planeFirst,
+    bool publishFastPathContactsToDuplicateIndex)
 {
   DART_PROFILE_SCOPED_N("DART native finite-plane pairs");
 
@@ -1912,7 +1977,8 @@ bool processFinitePlanePairs(
             option,
             *result,
             scratch.parallelPairResults[workIndex],
-            canSkipCrossPairDuplicateCheck);
+            canSkipCrossPairDuplicateCheck,
+            publishFastPathContactsToDuplicateIndex);
 
         if (shouldStopAfterPair(true, option, result))
           return true;

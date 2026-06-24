@@ -106,6 +106,21 @@ void Inertia(py::module& m)
           },
           ::py::return_value_policy::reference_internal)
       .def(
+          "transformed",
+          +[](const dart::dynamics::Inertia* self,
+              const Eigen::Isometry3d& transform) {
+            return self->transformed(transform);
+          },
+          ::py::arg("transform"))
+      .def(
+          "transform",
+          +[](dart::dynamics::Inertia* self,
+              const Eigen::Isometry3d& transform) -> dart::dynamics::Inertia& {
+            return self->transform(transform);
+          },
+          ::py::arg("transform"),
+          ::py::return_value_policy::reference_internal)
+      .def(
           "verify",
           +[](const dart::dynamics::Inertia* self,
               bool printWarnings,

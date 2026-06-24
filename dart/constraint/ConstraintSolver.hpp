@@ -234,6 +234,14 @@ public:
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
+  /// Enable or disable split impulse position correction. Defaults to disabled,
+  /// in which case the existing Baumgarte (ERP/ERV) penetration correction in
+  /// the velocity solve is preserved unchanged.
+  void setSplitImpulseEnabled(bool enabled);
+
+  /// Get whether split impulse position correction is enabled.
+  bool isSplitImpulseEnabled() const;
+
   /// Sets this constraint solver using other constraint solver. All the
   /// properties and registered skeletons and constraints will be copied over.
   virtual void setFromOtherConstraintSolver(const ConstraintSolver& other);
@@ -259,6 +267,15 @@ public:
 protected:
   // TODO(JS): Docstring
   virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
+
+  /// Solve the position-correction (split impulse) pass for a single group.
+  /// The base implementation is a no-op; concrete solvers that support split
+  /// impulse override this. Only invoked when split impulse is enabled.
+  virtual void solvePositionConstrainedGroup(ConstrainedGroup& group);
+
+  /// Solve constrained groups for split impulse position correction. Only
+  /// invoked from solve() when split impulse is enabled.
+  void solvePositionConstrainedGroups();
 
   /// Checks if the skeleton is contained in this solver
   ///
@@ -315,6 +332,10 @@ protected:
   /// Time step
   double mTimeStep;
 
+  /// Enable split impulse position correction. Defaults to false so the
+  /// existing velocity-only Baumgarte solve path is the default behavior.
+  bool mSplitImpulseEnabled{false};
+
   /// Skeleton list
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
@@ -332,6 +353,9 @@ protected:
 
   /// Mimic motor constraints those are automatically created
   std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
+
+  /// Coupler constraints that are automatically created
+  std::vector<CouplerConstraintPtr> mCouplerConstraints;
 
   /// Joint Coulomb friction constraints those are automatically created
   std::vector<JointCoulombFrictionConstraintPtr>
