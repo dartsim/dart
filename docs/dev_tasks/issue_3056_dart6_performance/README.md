@@ -11,10 +11,13 @@ experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
 and must stay unpublished until the metadata-cache PR lands separately. The
 next local-only branch, `perf/dart6-axis-plane-contact-bounds`, is stacked
 above skip-flags and must remain unpublished until the earlier slices land in
-order. Remaining local follow-up slices must also stay unpublished until each
-is ready to publish directly against `release-6.20`; do not open them against
-another PR branch. Opening stacked PRs against parent PR branches lets GitHub
-close or supersede child PRs when the parent branch is merged or deleted.
+order. The latest local-only branch,
+`perf/dart6-default-surface-version-cache`, is stacked above the axis-plane
+slice and must also remain unpublished until the earlier slices land in order.
+Remaining local follow-up slices must also stay unpublished until each is ready
+to publish directly against `release-6.20`; do not open them against another PR
+branch. Opening stacked PRs against parent PR branches lets GitHub close or
+supersede child PRs when the parent branch is merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -52,6 +55,15 @@ axis to the plane point. The proof also stores only projected min/max bounds in
 scratch instead of copying full broadphase entries through the sort. Non-axis
 planes keep the original corner-projection path.
 
+The newest local solver follow-up keeps the per-step `ContactPairCount` surface
+decision cache, then extends the lower-level default-surface-property cache into
+a larger thread-local, versioned direct-mapped cache. Each entry keys on the
+`ShapeNode` pointer and `ShapeNode::getVersion()`, so friction, slip,
+restitution, or friction-direction updates invalidate cached default-material
+decisions while steady-state default scenes avoid repeated dynamics-aspect
+queries. The branch also splits the shared-body profiling scope into body-scan
+and surface-scan subscopes.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -86,6 +98,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
 | Local axis-plane contact-bounds experiment, no profile | DART native | `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
+| Local default-surface version-cache experiment, no profile | DART native | `0.230490` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local default-surface version-cache experiment, text profile | DART native | `0.227376` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `183.10 ms`, `shared-body check` `85.97 ms`, `shared-body surface scan` `54.71 ms`, `shared-body body scan` `26.36 ms`, `parallel reset` `65.45 ms`, `collide` `278.13 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -117,6 +131,14 @@ cutting the projected contact-bound separation proof from the prior local
 `46.31 ms` sample to `16.32 ms`. In the same profiled run, `collide` dropped
 to `268.50 ms`, and the no-profile repeat reached RTF `0.223206`. Treat this
 as a later collision follow-up after the contact-construction slices.
+
+The default-surface version-cache experiment keeps the same final hash, contact
+count, and pair count while reducing the measured surface portion of the
+parallel eligibility scan. In the latest text-profile sample,
+`build contact constraints` dropped from the axis-plane `225.11 ms` sample to
+`183.10 ms`, `shared-body check` dropped from the repeated local `101.66 ms`
+sample to `85.97 ms`, and the newly split surface scan was `54.71 ms`. The
+fresh no-profile rerun reached RTF `0.230490`.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -150,6 +172,14 @@ The local axis-plane contact-bounds experiment has passed:
 `cmake --build build/default/cpp/Release --parallel 5 --target test_Collision test_DARTCollisionDetector contact_benchmark`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector)$'`,
 and the exact issue-scene no-profile/profile benchmark runs above.
+
+The local default-surface version-cache experiment has passed:
+`cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
+and the exact issue-scene no-profile/profile benchmark runs above. The focused
+solver regression heats the default-surface cache, mutates the contact dynamics,
+and verifies the versioned cache tracks the same state as a cold-cache reference
+after the mutation.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
