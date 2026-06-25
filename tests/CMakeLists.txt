@@ -58,7 +58,6 @@ endif()
 #   dart_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
-
   dart_property_add(DART_${test_type}_TESTS ${target_name})
 
   if(${ARGC} GREATER 2)
@@ -72,7 +71,6 @@ function(dart_add_test test_type target_name) # ARGN for source files
   target_link_libraries(${target_name} dart GTest::gtest GTest::gtest_main)
 
   dart_format_add(${sources})
-
 endfunction()
 
 #===============================================================================
@@ -123,14 +121,17 @@ else()
   list(LENGTH regression_tests regression_tests_len)
   list(LENGTH unit_tests unit_tests_len)
   math(
-    EXPR tests_len
+    EXPR
+    tests_len
     "${integration_tests_len} + ${regression_tests_len} + ${unit_tests_len}"
   )
-  message(STATUS "Adding ${tests_len} tests ("
-      "integration: ${integration_tests_len}, "
-      "regression: ${regression_tests_len}, "
-      "unit: ${unit_tests_len}"
-      ")"
+  message(
+    STATUS
+    "Adding ${tests_len} tests ("
+    "integration: ${integration_tests_len}, "
+    "regression: ${regression_tests_len}, "
+    "unit: ${unit_tests_len}"
+    ")"
   )
 endif()
 
@@ -142,12 +143,14 @@ add_custom_target(
 
 # Add custom target to build all the tests and run the tests
 if(MSVC)
-  add_custom_target(tests_and_run
+  add_custom_target(
+    tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
     DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
   )
 else()
-  add_custom_target(tests_and_run
+  add_custom_target(
+    tests_and_run
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
   )

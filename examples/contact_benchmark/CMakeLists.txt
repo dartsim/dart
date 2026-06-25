@@ -5,12 +5,14 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 project(${example_name})
 
 set(required_components collision-bullet collision-ode utils gui-osg)
-set(required_libraries
+set(
+  required_libraries
   dart
   dart-collision-bullet
   dart-collision-ode
   dart-utils
-  dart-gui-osg)
+  dart-gui-osg
+)
 
 if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
@@ -24,7 +26,8 @@ function(add_osg_text_target)
   endif()
   if(osg_text_library AND NOT TARGET osgText::osgText)
     add_library(osgText::osgText UNKNOWN IMPORTED)
-    set_target_properties(osgText::osgText
+    set_target_properties(
+      osgText::osgText
       PROPERTIES
         IMPORTED_LOCATION "${osg_text_library}"
         INTERFACE_INCLUDE_DIRECTORIES "${OSGTEXT_INCLUDE_DIR}"

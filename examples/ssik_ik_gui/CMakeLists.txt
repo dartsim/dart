@@ -11,7 +11,10 @@ if(DART_IN_SOURCE_BUILD)
   # so the development target is available here when present. Skip the example
   # gracefully if Python embedding is unavailable.
   if(NOT TARGET Python3::Python)
-    message(STATUS "Skipping ${example_name}: Python3 development target not found")
+    message(
+      STATUS
+      "Skipping ${example_name}: Python3 development target not found"
+    )
     return()
   endif()
   dart_build_example_in_source(
@@ -27,10 +30,16 @@ find_package(DART 6.17 REQUIRED COMPONENTS gui-osg CONFIG)
 # development files are unavailable, mirroring the in-source guard above.
 find_package(Python3 COMPONENTS Interpreter Development)
 if(NOT Python3_FOUND)
-  message(STATUS "Skipping ${example_name}: Python3 development files not found")
+  message(
+    STATUS
+    "Skipping ${example_name}: Python3 development files not found"
+  )
   return()
 endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
-target_link_libraries(${example_name} PUBLIC ${required_libraries} Python3::Python)
+target_link_libraries(
+  ${example_name}
+  PUBLIC ${required_libraries} Python3::Python
+)

@@ -92,7 +92,7 @@ public:
   /// Returns a string representing the constraint type
   virtual const std::string& getType() const;
 
-  /// Return dimesion of this constranit
+  /// Return dimension of this constranit
   std::size_t getDimension() const;
 
   /// Update constraint using updated Skeleton's states
@@ -142,7 +142,7 @@ public:
   virtual ~ConstraintBase();
 
 protected:
-  /// Default contructor
+  /// Default constructor
   ConstraintBase();
 
 protected:
