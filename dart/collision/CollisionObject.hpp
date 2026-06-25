@@ -78,7 +78,7 @@ public:
   const Eigen::Isometry3d& getTransform() const;
 
 protected:
-  /// Contructor
+  /// Constructor
   CollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);

@@ -3,24 +3,28 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, and #3146 are merged. #3147 and #3148 are the parent stack, and #3149
-`perf/dart6-parallel-default-contact-constraints` is the active stacked slice.
+#3144, #3146, #3147, and #3148 are merged. #3149
+`perf/dart6-parallel-default-contact-constraints` is the active follow-up,
+refreshed on current `origin/release-6.20`.
 
 #3147 targets active contact-construction cost by reusing exact built-in
 default `ContactConstraint` objects across steps while preserving exact ODE
-final-state hashes. #3148 targets DART-native collision transform setup for
-identity-relative `ShapeNode` collision objects by reusing the owning
-`BodyNode` world transform. #3149 attacks the next measured constraint hot
-path: large built-in default contact sets are rebuilt by collision pair in
-parallel, while custom contact handlers, small contact sets, and pairs that
-share a non-skipped body stay on the existing serial path. A pair-result cache
-experiment was rejected because it preserved the final hash but regressed the
-same issue workload.
+final-state hashes and custom contact-surface handler behavior. #3148 targets
+DART-native collision transform setup for identity-relative `ShapeNode`
+collision objects by reusing the owning `BodyNode` world transform, while
+keeping the public generic `CollisionObject` overload on the safe
+`getTransform()` fallback path for non-DART collision objects. #3149 attacks
+the next measured constraint hot path: large built-in default contact sets are
+rebuilt by collision pair in parallel, while custom contact handlers, small
+contact sets, and pairs that share a non-skipped body stay on the existing
+serial path. A pair-result cache experiment was rejected because it preserved
+the final hash but regressed the same issue workload.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, deactivation disabled:
+`--max-contacts-per-pair 4`, deactivation disabled. ODE is included here
+because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
@@ -33,9 +37,7 @@ and solver, `--world-threads 16`, `--max-contacts 12000`,
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane
 contacts over repeated steps, including final positions, velocities,
-transforms, spatial velocities, and contact counts. ODE remains the downstream
-comparison baseline and should be included in each refreshed performance table,
-even when the current slice only changes the DART-native backend.
+transforms, spatial velocities, and contact counts.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,

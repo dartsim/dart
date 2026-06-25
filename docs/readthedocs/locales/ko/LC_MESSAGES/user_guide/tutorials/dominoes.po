@@ -540,7 +540,7 @@ msgstr ""
 #: ../../user_guide/tutorials/dominoes.md:505 130b68a3e501482a8a91793b91d439e6
 msgid ""
 "The gains for the operational space controller need to be in matrix form,"
-" but we're storing the gains as scalars, so we'll need to conver them:"
+" but we're storing the gains as scalars, so we'll need to convert them:"
 msgstr ""
 
 #: ../../user_guide/tutorials/dominoes.md:515 c29cb268b0e54e6fa044ecc42e45e59c
