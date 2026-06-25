@@ -116,6 +116,34 @@ private:
   bool mIgnorePair;
 };
 
+class ShapeFramePairCollisionFilter : public CollisionFilter
+{
+public:
+  void addIgnoredPair(const ShapeFrame* frame1, const ShapeFrame* frame2)
+  {
+    mIgnoredPairs.emplace_back(frame1, frame2);
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    const auto* frame1 = object1->getShapeFrame();
+    const auto* frame2 = object2->getShapeFrame();
+    for (const auto& pair : mIgnoredPairs) {
+      if ((frame1 == pair.first && frame2 == pair.second)
+          || (frame1 == pair.second && frame2 == pair.first)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+private:
+  std::vector<std::pair<const ShapeFrame*, const ShapeFrame*>> mIgnoredPairs;
+};
+
 struct alignas(TestCollisionObject) TestCollisionObjectStorage
 {
   unsigned char data[sizeof(TestCollisionObject)];
@@ -1111,6 +1139,63 @@ TEST_F(Collision, DartParallelFinitePlaneTwoGroupPhasesProbeGlobalIndex)
   std::sort(contactYs.begin(), contactYs.end());
   for (std::size_t i = 0u; i < contactYs.size(); ++i)
     EXPECT_NEAR(contactYs[i], kProjectedSpacing * i, 1e-12);
+}
+
+//==============================================================================
+TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
+{
+  constexpr std::size_t kNumUnfilteredSpheres = 140u;
+  constexpr double kRadius = 0.2;
+  constexpr double kProjectedSpacing = 1.0;
+
+  auto cd = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitX(), 0.0));
+
+  auto unfilteredDuplicateFrame = SimpleFrame::createShared(Frame::World());
+  unfilteredDuplicateFrame->setShape(std::make_shared<SphereShape>(kRadius));
+  unfilteredDuplicateFrame->setTranslation(Eigen::Vector3d(-0.1, 0.0, 0.0));
+
+  auto filteredDuplicateFrame = SimpleFrame::createShared(Frame::World());
+  filteredDuplicateFrame->setShape(std::make_shared<SphereShape>(kRadius));
+  filteredDuplicateFrame->setTranslation(Eigen::Vector3d(0.1, 0.0, 0.0));
+
+  std::vector<std::shared_ptr<SimpleFrame>> fillerFrames;
+  fillerFrames.reserve(kNumUnfilteredSpheres - 1u);
+  for (std::size_t i = 1u; i < kNumUnfilteredSpheres; ++i) {
+    auto sphereFrame = SimpleFrame::createShared(Frame::World());
+    sphereFrame->setShape(std::make_shared<SphereShape>(kRadius));
+    sphereFrame->setTranslation(
+        Eigen::Vector3d(-0.1, kProjectedSpacing * i, 0.0));
+    fillerFrames.push_back(sphereFrame);
+  }
+
+  auto group = cd->createCollisionGroup();
+  group->addShapeFrame(planeFrame.get());
+  group->addShapeFrame(unfilteredDuplicateFrame.get());
+  group->addShapeFrame(filteredDuplicateFrame.get());
+  for (const auto& fillerFrame : fillerFrames)
+    group->addShapeFrame(fillerFrame.get());
+
+  auto filter = std::make_shared<ShapeFramePairCollisionFilter>();
+  filter->addIgnoredPair(planeFrame.get(), filteredDuplicateFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = kNumUnfilteredSpheres + 4u;
+  option.collisionFilter = filter;
+
+  cd->setNumCollisionThreads(1u);
+  CollisionResult serialResult;
+  ASSERT_TRUE(group->collide(option, &serialResult));
+  ASSERT_EQ(serialResult.getNumContacts(), kNumUnfilteredSpheres);
+
+  cd->setNumCollisionThreads(4u);
+  CollisionResult parallelResult;
+  ASSERT_TRUE(group->collide(option, &parallelResult));
+  ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
 }
 
 //==============================================================================

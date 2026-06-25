@@ -563,11 +563,12 @@ bool DARTCollisionDetector::collide(
 
   auto collisionFound = false;
   // This flag is only observed after the finite-plane path has proven mutually
-  // disjoint plane-projected contact bounds. With no unsupported entries and
-  // at most one plane, no later same-group phase can consume the cross-pair
-  // duplicate index.
+  // disjoint plane-projected contact bounds. With no filter, no unsupported
+  // entries, and at most one plane, no later same-group phase can consume the
+  // cross-pair duplicate index.
   const bool finitePlaneFastPathHasNoLaterDuplicateConsumers
-      = scratch.otherEntries1.empty() && scratch.planeEntries1.size() <= 1u;
+      = !option.collisionFilter && scratch.otherEntries1.empty()
+        && scratch.planeEntries1.size() <= 1u;
   if (processFinitePlanePairs(
           scratch.finiteEntries1,
           scratch.planeEntries1,
