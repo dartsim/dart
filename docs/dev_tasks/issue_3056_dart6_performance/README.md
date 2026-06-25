@@ -8,11 +8,13 @@ Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 The active PR-ready local slice is `perf/dart6-contact-pair-metadata-cache`,
 rebuilt directly on the merged `release-6.20` head. The further local-only
 experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
-and must stay unpublished until the metadata-cache PR lands separately.
-Remaining local follow-up slices must also stay unpublished until each is ready
-to publish directly against `release-6.20`; do not open them against another PR
-branch. Opening stacked PRs against parent PR branches lets GitHub close or
-supersede child PRs when the parent branch is merged or deleted.
+and must stay unpublished until the metadata-cache PR lands separately. The
+next local-only branch, `perf/dart6-axis-plane-contact-bounds`, is stacked
+above skip-flags and must remain unpublished until the earlier slices land in
+order. Remaining local follow-up slices must also stay unpublished until each
+is ready to publish directly against `release-6.20`; do not open them against
+another PR branch. Opening stacked PRs against parent PR branches lets GitHub
+close or supersede child PRs when the parent branch is merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -40,6 +42,15 @@ check. The parallel reset maps those pair-order flags back to each contact's
 original object order, avoiding repeated body lookups and hash-set probes in the
 worker loop while keeping the same `ContactConstraint::initialize()` fallback
 checks for every side that was not proven skippable.
+
+The next local collision follow-up accelerates the DART-native disjoint contact
+proof for exact world-axis planes. The finite-plane duplicate-contact proof
+normally projects each finite AABB through all eight corners onto the plane. If
+the normalized plane normal is exactly aligned with a world axis, the projection
+keeps the two orthogonal AABB ranges unchanged and collapses only the plane
+axis to the plane point. The proof also stores only projected min/max bounds in
+scratch instead of copying full broadphase entries through the sort. Non-axis
+planes keep the original corner-projection path.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -73,6 +84,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
 | Local skip-flags/body-set experiment, no profile | DART native | `0.196971` current rerun; `0.196594` post-rebase rerun; `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
+| Local axis-plane contact-bounds experiment, no profile | DART native | `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -98,6 +111,12 @@ contact-construction and collision timings), while the retained-bucket profile
 recorded `0.205666` and reduced the local contact-construction slices versus
 the metadata-cache profile. Treat this as the next local follow-up after the
 metadata-cache slice, not as part of that publishable PR.
+
+The axis-plane contact-bounds experiment keeps the same final hash while
+cutting the projected contact-bound separation proof from the prior local
+`46.31 ms` sample to `16.32 ms`. In the same profiled run, `collide` dropped
+to `268.50 ms`, and the no-profile repeat reached RTF `0.223206`. Treat this
+as a later collision follow-up after the contact-construction slices.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -126,6 +145,11 @@ the same final hash, contacts, and pair count. After the retained-bucket
 skip-check refinement,
 `N=$(python3 scripts/parallel_jobs.py); DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N CMAKE_BUILD_PARALLEL_LEVEL=$N pixi run test-all`
 passed with C++ tests `115/115` and Python tests `60/60`.
+
+The local axis-plane contact-bounds experiment has passed:
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Collision test_DARTCollisionDetector contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector)$'`,
+and the exact issue-scene no-profile/profile benchmark runs above.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
