@@ -14,8 +14,9 @@ stack, in order, is `perf/dart6-contact-pair-metadata-cache`,
 `perf/dart6-axis-plane-contact-bounds`,
 `perf/dart6-default-surface-version-cache`,
 `perf/dart6-lazy-dart-shape-cache`,
-`perf/dart6-free-joint-root-integration`, and
-`perf/dart6-parallel-surface-scan`. The first slice,
+`perf/dart6-free-joint-root-integration`,
+`perf/dart6-parallel-surface-scan`, and
+`perf/dart6-broadphase-cache-refresh-order`. The first slice,
 `perf/dart6-contact-pair-metadata-cache`, is rebuilt directly on the merged
 `release-6.20` head and is PR-ready.
 
@@ -87,6 +88,14 @@ reduce a scratch flag back on the main thread. Small contact sets and any
 fallback surface-parameter path keep the original serial
 `ensureDefaultSurfaceParamsChecked()` behavior.
 
+The newest local DART-native broadphase hardening follow-up refreshes cached
+shape metadata before broadphase entry classification and before the serial
+transform-cache prepass used by the parallel broadphase builder. Worker threads
+then build entries from that prepared cache. This preserves the lazy transform
+cache safety boundary when a `ShapeNode` changes from an identity-relative
+collision shape to a non-identity relative transform after the collision group
+already exists.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -129,6 +138,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local FreeJoint root-integration experiment, text profile | DART native | `0.236918` | finite, same hash, contacts `5005`, pairs `3003`; `World::step - Integrate positions` `201.67 ms`, `World::step - Integrate velocity` `180.50 ms`, `collide` `254.99 ms` |
 | Local parallel surface-scan experiment, no profile | DART native | `0.251073` | finite, same hash, contacts `5005`, pairs `3003` |
 | Local parallel surface-scan experiment, text profile | DART native | `0.252496` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `146.61 ms`, `shared-body check` `68.71 ms`, `shared-body surface scan` `36.97 ms`, `shared-body body scan` `26.58 ms`, `parallel reset` `44.96 ms`, `collide` `249.49 ms` |
+| Local broadphase cache-refresh-order hardening, no profile | DART native | `0.252928`, `0.248405` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local broadphase cache-refresh-order hardening, text profile | DART native | `0.242797` | finite, same hash, contacts `5005`, pairs `3003`; `DART native build broadphase entries` `119.05 ms`, `DART native finite-plane pairs` `116.19 ms`, `build contact constraints` `157.92 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -190,6 +201,19 @@ construction. The latest scoped profile records `shared-body surface scan` at
 and the FreeJoint parent sample's roughly `57 ms` range, while
 `build contact constraints` drops from the FreeJoint parent profile's
 `180.12`-`179.86 ms` range to `146.61 ms`.
+
+The broadphase cache-refresh-order hardening keeps the same final hash, contact
+count, and pair count while closing a stale-cache edge in the parallel
+DART-native broadphase path. It is correctness hardening rather than a proven
+speedup: the no-profile samples remain in the same local range
+(`0.248405`-`0.252928`), while the text-profile sample is noisier and records
+RTF `0.242797`.
+
+A rejected eager-transform experiment updated `BodyNode` transforms immediately
+after position integration to move work out of the next collision prepass. It
+preserved the final hash but regressed the no-profile active issue scene to RTF
+`0.244883`, so the edit was reverted and should not be retried without a
+different guard.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -253,6 +277,15 @@ The local parallel surface-scan experiment has passed:
 `cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
 and the exact issue-scene no-profile/profile benchmark runs above.
+
+The local broadphase cache-refresh-order hardening has passed:
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Collision test_DARTCollisionDetector contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector)$'`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_DARTCollisionDetector contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_DARTCollisionDetector$'`,
+and the exact issue-scene no-profile/profile benchmark runs above. The focused
+unit regression forces the parallel finite-plane path, then changes all cached
+identity-relative `ShapeNode` transforms before the next threaded collide.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker

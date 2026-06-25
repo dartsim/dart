@@ -33,13 +33,17 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace dart;
@@ -235,4 +239,60 @@ TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
         parallelContact.penetrationDepth,
         1e-12);
   }
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelBroadphaseRefreshesShapeNodeTransforms)
+{
+  constexpr std::size_t kNumSpheres = 140u;
+
+  auto detector = collision::DARTCollisionDetector::create();
+
+  auto planeFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  planeFrame->setShape(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(planeFrame.get());
+
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  std::vector<dynamics::ShapeNode*> sphereNodes;
+  skeletons.reserve(kNumSpheres);
+  sphereNodes.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto skeleton = dynamics::Skeleton::create(
+        "parallel_shape_node_" + std::to_string(i));
+    auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+    auto* joint = pair.first;
+    auto* bodyNode = pair.second;
+
+    Eigen::Isometry3d bodyPose = Eigen::Isometry3d::Identity();
+    bodyPose.translation() = Eigen::Vector3d(1.5 * i, 0.0, 0.49);
+    joint->setRelativeTransform(bodyPose);
+
+    auto* sphereNode = bodyNode->createShapeNodeWith<dynamics::CollisionAspect>(
+        std::make_shared<dynamics::SphereShape>(0.5));
+    group->addShapeFrame(sphereNode);
+    sphereNodes.push_back(sphereNode);
+    skeletons.push_back(skeleton);
+  }
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = kNumSpheres;
+
+  detector->setNumCollisionThreads(4u);
+  collision::CollisionResult initialResult;
+  ASSERT_TRUE(group->collide(option, &initialResult));
+  ASSERT_EQ(kNumSpheres, initialResult.getNumContacts());
+
+  Eigen::Isometry3d shapeOffset = Eigen::Isometry3d::Identity();
+  shapeOffset.translation() = Eigen::Vector3d(0.0, 0.0, 2.0);
+  for (auto* sphereNode : sphereNodes)
+    sphereNode->setRelativeTransform(shapeOffset);
+
+  collision::CollisionResult movedResult;
+  EXPECT_FALSE(group->collide(option, &movedResult));
+  EXPECT_EQ(0u, movedResult.getNumContacts());
 }

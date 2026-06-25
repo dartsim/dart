@@ -406,9 +406,8 @@ void postProcess(
     bool skipCrossPairDuplicateCheck = false,
     bool publishCrossPairDuplicateState = true);
 
-bool isPlaneShape(const CollisionObject* object);
-
-BroadphaseEntry makeBroadphaseEntry(CollisionObject* object);
+BroadphaseEntry makeBroadphaseEntry(
+    CollisionObject* object, bool refreshShapeCache = true);
 
 void buildBroadphaseEntries(
     const std::vector<CollisionObject*>& objects,
@@ -1616,15 +1615,6 @@ void postProcess(
 }
 
 //==============================================================================
-bool isPlaneShape(const CollisionObject* object)
-{
-  if (!object)
-    return false;
-
-  return static_cast<const DARTCollisionObject*>(object)->isCachedPlaneShape();
-}
-
-//==============================================================================
 bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
 {
   if (finiteEntry.object == nullptr)
@@ -1703,17 +1693,19 @@ bool hasExactIdentityLinearTransform(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
+BroadphaseEntry makeBroadphaseEntry(
+    CollisionObject* object, bool refreshShapeCache)
 {
   BroadphaseEntry entry;
   entry.object = object;
-  entry.plane = isPlaneShape(object);
 
   if (!object)
     return entry;
 
   auto* dartObject = static_cast<DARTCollisionObject*>(object);
-  dartObject->refreshShapeCacheForCollision();
+  if (refreshShapeCache)
+    dartObject->refreshShapeCacheForCollision();
+  entry.plane = dartObject->isCachedPlaneShape();
   entry.transform = dartObject->getWorldTransformForCollision();
 
   if (entry.plane)
@@ -1784,16 +1776,17 @@ void buildBroadphaseEntries(
   if (useParallelBroadphase) {
     // Keep lazy Frame transform-cache writes on the calling thread before
     // workers read those transforms while building independent entries.
-    for (const auto* object : objects) {
+    for (auto* object : objects) {
       if (object != nullptr) {
-        static_cast<const DARTCollisionObject*>(object)
-            ->getWorldTransformForCollision();
+        auto* dartObject = static_cast<DARTCollisionObject*>(object);
+        dartObject->refreshShapeCacheForCollision();
+        dartObject->getWorldTransformForCollision();
       }
     }
 
     broadphaseEntries.resize(objects.size());
     auto buildEntryAt = [&](std::size_t index) {
-      broadphaseEntries[index] = makeBroadphaseEntry(objects[index]);
+      broadphaseEntries[index] = makeBroadphaseEntry(objects[index], false);
     };
     threadPool->parallelFor(objects.size(), numCollisionThreads, buildEntryAt);
 
