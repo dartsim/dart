@@ -586,7 +586,7 @@ TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
 //==============================================================================
 TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
 {
-  constexpr std::size_t kNumBoxes = 160u;
+  constexpr std::size_t kNumBoxes = 192u;
   auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
   auto threadedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
 
@@ -632,7 +632,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
 //==============================================================================
 TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
 {
-  constexpr std::size_t kNumBoxes = 160u;
+  constexpr std::size_t kNumBoxes = 192u;
   auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u, true);
   auto threadedWorld
       = createManySingleFreeBodyContactWorld(kNumBoxes, 4u, true);
