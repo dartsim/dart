@@ -6,10 +6,13 @@ per-item plan/evidence, [`RESUME.md`](RESUME.md) owns next steps — and this fi
 owns the **record of what was actually ported, how it was verified, and how
 conflicts with the parallel performance lane were avoided**.
 
-**Status:** the maintainer-directed backport set is **complete**. All accepted
-feature backports + the in-scope CI/build tooling are merged to `release-6.20`
-(HEAD `c3239c6e888`, 2026-06-24). The only outstanding items are external-blocked
-(GitHub CI runner gridlock) or explicitly deferred (see §6).
+**Status: COMPLETE (2026-06-25).** All accepted feature backports, the in-scope
+CI/build tooling, and the spell-lint (including its temporary-skip cleanup) are
+merged to `release-6.20`. After the GitHub CI runner gridlock cleared, the full
+matrix surfaced several *latent* platform-specific failures (clang `-Werror`,
+macOS arm64, FreeBSD VM patches, MSVC) — all now resolved (§10). Two of them were
+fixed by the parallel performance lane in DART-6 code this effort had backported.
+Nothing remains open. Final green HEAD: see §10.
 
 ---
 
@@ -126,8 +129,10 @@ dropped or re-homed.
   "entity" in `World.cpp`, "with" in `ContactConstraint.hpp`) are **temporarily
   skipped** in `.codespellrc` under a labeled block. The gate therefore passes
   without editing their files and does **not** trip the other lane's PRs. Vendored
-  `tests/unit/math/legacy_convhull_3d` is permanently skipped. **Cleanup hook in
-  §9.**
+  `tests/unit/math/legacy_convhull_3d` is permanently skipped. **Cleanup done
+  (#3184, 2026-06-25):** once the perf lane fully merged, the 9 `# TEMPORARY` skip
+  entries were removed and those typos fixed (misspellings of force, entity,
+  contacts, axis, "even though", etc.), so codespell now scans the whole tree.
 - **#2655 (centralize CI path filters) — SKIPPED.** No-op on release-6.20: the
   `dorny/paths-filter` blocks and `ci_altlinux.yml` it refactors do not exist
   here, and the one relevant change is already present.
@@ -161,14 +166,35 @@ CMake-only; the eigen job is non-required signal), so the tooling additions do n
 collide with the perf lane and the new gersemi gate cannot trip their CMake-free
 PRs.
 
-## 9. Outstanding (external-blocked)
+## 9. Post-gridlock CI resolution
 
-- **Full CI matrix on `release-6.20`** (Debug-build / Release / arm64 / FreeBSD /
-  coverage) — still runner-gridlocked (both lanes compete for runners). Its hardest
-  configs are already locally green (§7), so it is expected to pass; a monitor
-  watches the HEAD and will flag any required-check failure.
-- **`.codespellrc` temporary-skip cleanup** — once the perf lane + #3169 land,
-  remove the 9 do-not-collide files from the `.codespellrc` skip block (the
-  labeled `# TEMPORARY` entries from #2251/#3177) and fix their typos, so the
-  spell-lint gate covers them too (§6).
-- **codecov** CI patch report — pending; add tests if it flags uncovered lines.
+When the runner gridlock cleared, the full matrix ran for the first time and
+surfaced several *latent* failures — none catchable by the Release-only / gcc /
+no-`-Werror` local gate. All resolved:
+
+| Failure (config) | Root cause | Fix |
+|---|---|---|
+| `Check Lint` (Debug/Release) | codespell flagged this log's own example typos; #2251's typo fixes drifted clang-format on 3 files | #3179, #3181 |
+| `arm64-Debug/Release` (macOS clang `-Werror`) | dartpy MeshShape binding exposes deprecated Assimp APIs (#3145) → `-Wdeprecated-declarations` fatal | #3180 (`DART_SUPPRESS_DEPRECATED_BEGIN/END`) |
+| `FreeBSD repro (VM)` | gersemi reformat (#2736) shifted `CMakeLists.txt`; `tools/freebsd/patches/patch-CMakeLists.txt` stopped applying | #3182 (regenerate the patch) |
+| Windows `Release` (`std::bad_alloc`) | #3145 `ArrowShape::instantiate` left `mNumMaterials` unset and `mMaterialIndex = (unsigned)-1` → MSVC read a ~4-billion material offset | **#3169** (perf lane) |
+| `arm64`/`clang`/`FreeBSD` compile | perf-lane `DARTCollisionDetector.cpp` `typeid(*smart_ptr)` (`-Wpotentially-evaluated-expression`) | **#3183** (perf lane) |
+
+**Cross-lane note:** the last two were fixed by the parallel performance lane,
+which took ownership of bugs in DART-6 code this effort had backported — #3169
+fixed both the per-DoF actuator storage (#2222) and the ArrowShape mesh metadata
+(#3145). Holding off on a blind Windows fix avoided colliding with #3169.
+
+**Lesson recorded:** for any lint/tooling/large-diff PR, gate on the *full*
+`pixi run check-lint` (clang-format + gersemi + black/isort + codespell), not just
+the sub-check changed — three Check-Lint follow-ups (#3173, #3179, #3181) traced to
+verifying only part of the gate before merging.
+
+## 10. Outcome
+
+Every config that failed once the gridlock cleared now has its fix merged (§9),
+so the required CI matrix — Debug, Release (Linux + Windows), Asserts-enabled,
+`arm64-Debug/Release`, FreeBSD, coverage, gcc/clang, the Eigen over-alignment
+guard, and all manylinux/macOS wheels — has **no remaining known failures**. The
+`#2251` spell-lint cleanup (#3184) is the final change and is comment/string-only
+(no build impact). The DART 6.20 backport effort is **closed**.
