@@ -4,8 +4,14 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, and #3172 are merged. The active local slice is
-`perf/dart6-parallel-surface-params` on `release-6.20`.
+#3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
+The active unpublished local slice is
+`perf/dart6-contact-pair-metadata-cache`, rebuilt directly on the merged
+`release-6.20` head. Remaining local follow-up slices must stay unpublished
+until each is ready to publish directly against `release-6.20`; do not open
+them against another PR branch. Opening stacked PRs against parent PR branches
+lets GitHub close or supersede child PRs when the parent branch is merged or
+deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -15,7 +21,18 @@ those cached local values instead of doing the general matrix/absolute-linear
 bound calculation. Rotated or otherwise general transforms keep the existing
 path.
 
-The current local candidate folds default contact-surface parameter
+The active unpublished candidate keeps the #3183 parallel default-contact
+build, then reduces the remaining per-step pair metadata overhead. Contact
+candidate collection stores the pair's already-validated `BodyNode` and
+`ShapeNode` pointers in `ContactPairCount`; the build phase reuses those
+pointers instead of re-reading them from the first contact. The same pair record
+also caches the default-surface decision once for the step, and the parallel
+eligibility scan replaces the per-pair `unordered_set` insertion path with a
+retained vector, sort, and adjacent-duplicate check. Contact order is unchanged
+because workers still write constraints by candidate index and the main thread
+activates them in order.
+
+The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
 their direct surface parameters in the same worker that resets that pair's
@@ -41,27 +58,43 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
 | #3172 merged baseline, no profile | DART native | `0.179381` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
-| Current local, no profile | DART native | `0.203681` latest post-review-fix run, `0.204995`, `0.199263` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, text profile | DART native | `0.193107` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `245.77 ms`, surface params `336.75 us`, `parallel reset` `101.58 ms`, shared-body check `58.61 ms`, `solveConstrainedGroups` `269.95 ms`, `collide` `361.27 ms`, integrate positions `251.63 ms`, integrate velocity `205.81 ms` |
-| Current local, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
-| Current local, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
-| Current local, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3183 head `0b158d44126`, no profile | DART native | `0.127794` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
+| Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
+| Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
+| #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Using the current DART-native repeats, the local candidate is about
-`1.11x`-`1.14x` the fresh #3172 merged baseline, `1.37x`-`1.41x` FCL
-primitive, `1.38x`-`1.42x` Bullet, and `19.8x`-`20.3x` ODE on the active
-issue-scene rerun. The scoped profile shows the serial surface-parameter pass
-removed from the parallel steady-state path: the `surface params` scope drops
-from the prior `105.74 ms` class to a one-time `336.75 us` fallback call, and
-`build contact constraints` drops to `245.77 ms`. The active no-deactivation
-scene is still far below RTF `1`, so the next target remains the largest
-remaining active-step costs: collision, integration, constrained-group solve,
-and remaining contact construction overhead.
+Using the latest native reruns after the #3184 base update, the unpublished
+metadata-cache candidate is about `1.4x` the #3183 parent on this noisy
+workstation while preserving the final hash, contact count, and contact-pair
+count. The scoped
+profile shows the improvement concentrated in contact construction:
+`build contact constraints` drops from `605.13 ms` to `266.09 ms`, the
+`shared-body check` drops from `388.96 ms` to `150.77 ms`, and `parallel reset`
+drops from `108.10 ms` to `74.14 ms`. The earlier #3183 scoped profile showed
+the serial surface-parameter pass removed from the parallel steady-state path;
+this follow-up then reduces the remaining parallel-eligibility scan and
+repeated per-pair lookup work. The active no-deactivation scene is still far
+below RTF `1`, so the next target remains the largest remaining active-step
+costs: collision, integration, constrained-group solve, and remaining contact
+construction overhead.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
 `3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
 `3003 / 3003` mobile skeletons resting with zero final contacts.
+
+The unpublished metadata-cache head has passed `pixi run lint`, `pixi run
+test-all` on the current #3185-based branch, the focused `test_ConstraintSolver`
+build and CTest, and exact issue-scene no-profile and profile reruns after
+rebasing directly onto the #3184 base (`0.186148` no profile, `0.185689` text
+profile). The current branch is rebased onto #3185, which only changed unrelated
+`dart6_backport_audit` dev-task documentation. The current `pixi run test-all`
+pass completed C++ tests `115/115` and Python tests `60/60`; before the #3184
+rebase, the same metadata-cache slice also passed
+`DART_PARALLEL_JOBS=24 CTEST_PARALLEL_LEVEL=24 CMAKE_BUILD_PARALLEL_LEVEL=24 pixi run test-all`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker

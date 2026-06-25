@@ -948,6 +948,12 @@ void ConstraintSolver::updateConstraints()
   struct ContactPairCount
   {
     ContactPair pair;
+    const dynamics::BodyNode* bodyNode1;
+    const dynamics::BodyNode* bodyNode2;
+    const dynamics::ShapeNode* shapeNode1;
+    const dynamics::ShapeNode* shapeNode2;
+    bool defaultSurfaceParamsChecked;
+    bool canUseDefaultSurfaceParams;
     std::size_t count;
     std::size_t firstCandidateIndex;
     std::size_t lastCandidateIndex;
@@ -996,7 +1002,11 @@ void ConstraintSolver::updateConstraints()
     ContactPair lastContactPair{nullptr, nullptr};
 
     const auto findOrCreateContactPairIndex
-        = [&](const ContactPair& pair) -> std::size_t {
+        = [&](const ContactPair& pair,
+              const dynamics::BodyNode* bodyNode1,
+              const dynamics::BodyNode* bodyNode2,
+              const dynamics::ShapeNode* shapeNode1,
+              const dynamics::ShapeNode* shapeNode2) -> std::size_t {
       initializeContactPairBuckets();
 
       const std::size_t bucketMask = contactPairBuckets.size() - 1u;
@@ -1007,6 +1017,12 @@ void ConstraintSolver::updateConstraints()
           const std::size_t newPairIndex = contactPairCounts.size();
           contactPairCounts.push_back(
               {pair,
+               bodyNode1,
+               bodyNode2,
+               shapeNode1,
+               shapeNode2,
+               false,
+               false,
                0u,
                invalidContactPairIndex,
                invalidContactPairIndex,
@@ -1027,7 +1043,11 @@ void ConstraintSolver::updateConstraints()
     };
     const auto findContactPairIndex
         = [&](collision::CollisionObject* object1,
-              collision::CollisionObject* object2) -> std::size_t {
+              collision::CollisionObject* object2,
+              dynamics::BodyNode* bodyNode1,
+              dynamics::BodyNode* bodyNode2,
+              const dynamics::ShapeNode* shapeNode1,
+              const dynamics::ShapeNode* shapeNode2) -> std::size_t {
       const auto pair = makeContactPair(object1, object2);
       if (lastContactPairIndex != invalidContactPairIndex
           && lastContactPair.first == pair.first
@@ -1035,7 +1055,13 @@ void ConstraintSolver::updateConstraints()
         return lastContactPairIndex;
       }
 
-      const auto contactPairIndex = findOrCreateContactPairIndex(pair);
+      const bool objectsWereSwapped = pair.first != object1;
+      const auto* pairBodyNode1 = objectsWereSwapped ? bodyNode2 : bodyNode1;
+      const auto* pairBodyNode2 = objectsWereSwapped ? bodyNode1 : bodyNode2;
+      const auto* pairShapeNode1 = objectsWereSwapped ? shapeNode2 : shapeNode1;
+      const auto* pairShapeNode2 = objectsWereSwapped ? shapeNode1 : shapeNode2;
+      const auto contactPairIndex = findOrCreateContactPairIndex(
+          pair, pairBodyNode1, pairBodyNode2, pairShapeNode1, pairShapeNode2);
       lastContactPair = pair;
       lastContactPairIndex = contactPairIndex;
       return contactPairIndex;
@@ -1103,7 +1129,12 @@ void ConstraintSolver::updateConstraints()
             std::make_shared<SoftContactConstraint>(contact, mTimeStep));
       } else {
         const std::size_t contactPairIndex = findContactPairIndex(
-            contact.collisionObject1, contact.collisionObject2);
+            contact.collisionObject1,
+            contact.collisionObject2,
+            bodyNode1,
+            bodyNode2,
+            shapeNode1,
+            shapeNode2);
         auto& contactPairCount = contactPairCounts[contactPairIndex];
         ++contactPairCount.count;
 
@@ -1155,14 +1186,6 @@ void ConstraintSolver::updateConstraints()
     };
     std::array<DefaultSurfaceCacheEntry, 256u> defaultSurfaceCache{};
 
-    const auto getContactShapeNode
-        = [](const collision::CollisionObject* collisionObject)
-        -> const dynamics::ShapeNode* {
-      if (collisionObject == nullptr)
-        return nullptr;
-
-      return collisionObject->getShapeNode();
-    };
     const auto queryDefaultContactSurfaceProperties =
         [&](const dynamics::ShapeNode* shapeNode) {
           if (shapeNode == nullptr)
@@ -1213,44 +1236,22 @@ void ConstraintSolver::updateConstraints()
             lastHasDefaultProperties = hasDefaultProperties;
             return hasDefaultProperties;
           };
-    const auto hasDefaultContactSurfacePropertiesUncached
-        = [](const dynamics::ShapeNode* shapeNode) {
-            if (shapeNode == nullptr)
-              return false;
-
-            const auto* dynamicAspect = shapeNode->getDynamicsAspect();
-            return dynamicAspect != nullptr
-                   && dynamicAspect->getRestitutionCoeff()
-                          == DART_DEFAULT_RESTITUTION_COEFF
-                   && dynamicAspect->getPrimaryFrictionCoeff()
-                          == DART_DEFAULT_FRICTION_COEFF
-                   && dynamicAspect->getSecondaryFrictionCoeff()
-                          == DART_DEFAULT_FRICTION_COEFF
-                   && dynamicAspect->getPrimarySlipCompliance() == -1.0
-                   && dynamicAspect->getSecondarySlipCompliance() == -1.0
-                   && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
-                   && dynamicAspect->getFirstFrictionDirection().squaredNorm()
-                          < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+    const auto canUseDefaultSurfaceParamsForContactPair
+        = [&](const ContactPairCount& contactPairCount) {
+            return useBuiltInDefaultSurfaceParamsCache
+                   && hasDefaultContactSurfaceProperties(
+                       contactPairCount.shapeNode1, true)
+                   && hasDefaultContactSurfaceProperties(
+                       contactPairCount.shapeNode2, false);
           };
-    const auto canUseDefaultSurfaceParamsForContact
-        = [&](collision::Contact& contact) {
-            const auto* shapeNode1
-                = getContactShapeNode(contact.collisionObject1);
-            const auto* shapeNode2
-                = getContactShapeNode(contact.collisionObject2);
-            return builtInDefaultContactHandler->mParent == nullptr
-                   && hasDefaultContactSurfaceProperties(shapeNode1, true)
-                   && hasDefaultContactSurfaceProperties(shapeNode2, false);
-          };
-    const auto canUseDefaultSurfaceParamsForContactUncached
-        = [&](collision::Contact& contact) {
-            const auto* shapeNode1
-                = getContactShapeNode(contact.collisionObject1);
-            const auto* shapeNode2
-                = getContactShapeNode(contact.collisionObject2);
-            return builtInDefaultContactHandler->mParent == nullptr
-                   && hasDefaultContactSurfacePropertiesUncached(shapeNode1)
-                   && hasDefaultContactSurfacePropertiesUncached(shapeNode2);
+    const auto ensureDefaultSurfaceParamsChecked
+        = [&](ContactPairCount& contactPairCount) {
+            if (!contactPairCount.defaultSurfaceParamsChecked) {
+              contactPairCount.canUseDefaultSurfaceParams
+                  = canUseDefaultSurfaceParamsForContactPair(contactPairCount);
+              contactPairCount.defaultSurfaceParamsChecked = true;
+            }
+            return contactPairCount.canUseDefaultSurfaceParams;
           };
 
     const auto initializeDefaultSurfaceParams =
@@ -1258,11 +1259,8 @@ void ConstraintSolver::updateConstraints()
           if (contactPairCount.surfaceParamsInitialized)
             return;
 
-          const bool canUseDefaultSurfaceParams
-              = canUseDefaultSurfaceParamsForContact(contact);
-
           contactPairCount.surfaceParams
-              = canUseDefaultSurfaceParams
+              = ensureDefaultSurfaceParamsChecked(contactPairCount)
                     ? ContactSurfaceParams()
                     : builtInDefaultContactHandler
                           ->DefaultContactSurfaceHandler::createParams(
@@ -1274,12 +1272,13 @@ void ConstraintSolver::updateConstraints()
           contactPairCount.surfaceParamsInitialized = true;
         };
     const auto initializeDefaultSurfaceParamsUncached =
-        [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
+        [&](ContactPairCount& contactPairCount) {
           if (contactPairCount.surfaceParamsInitialized)
             return;
 
           const bool canUseDefaultSurfaceParams
-              = canUseDefaultSurfaceParamsForContactUncached(contact);
+              = contactPairCount.defaultSurfaceParamsChecked
+                && contactPairCount.canUseDefaultSurfaceParams;
           DART_ASSERT(canUseDefaultSurfaceParams);
           DART_UNUSED(canUseDefaultSurfaceParams);
           contactPairCount.surfaceParams = ContactSurfaceParams();
@@ -1355,20 +1354,16 @@ void ConstraintSolver::updateConstraints()
         }
       }
 
-      static thread_local std::unordered_set<const dynamics::BodyNode*>
+      static thread_local std::vector<const dynamics::BodyNode*>
           sharedBodyCheck;
       sharedBodyCheck.clear();
-      sharedBodyCheck.reserve(contactPairCounts.size());
+      sharedBodyCheck.reserve(contactPairCounts.size() * 2u);
       parallelSkipRelVelocityBodies.reserve(contactPairCounts.size());
       bool needsSurfaceParamsPrepass = false;
 
       DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
 
-      const auto recordBodyIfNeeded = [&](collision::CollisionObject* object) {
-        if (object == nullptr)
-          return true;
-
-        const auto* bodyNode = object->getBodyNode();
+      const auto recordBodyIfNeeded = [&](const dynamics::BodyNode* bodyNode) {
         if (bodyNode == nullptr)
           return true;
 
@@ -1391,22 +1386,27 @@ void ConstraintSolver::updateConstraints()
           return true;
         }
 
-        return sharedBodyCheck.insert(bodyNode).second;
+        sharedBodyCheck.push_back(bodyNode);
+        return true;
       };
 
-      for (const auto& contactPairCount : contactPairCounts) {
-        if (!recordBodyIfNeeded(contactPairCount.pair.first)
-            || !recordBodyIfNeeded(contactPairCount.pair.second)) {
+      for (auto& contactPairCount : contactPairCounts) {
+        if (!recordBodyIfNeeded(contactPairCount.bodyNode1)
+            || !recordBodyIfNeeded(contactPairCount.bodyNode2)) {
           return false;
         }
 
-        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
-          continue;
-
-        const auto& firstCandidate
-            = contactCandidates[contactPairCount.firstCandidateIndex];
-        if (!canUseDefaultSurfaceParamsForContact(*firstCandidate.contact))
+        if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
           needsSurfaceParamsPrepass = true;
+      }
+
+      std::sort(
+          sharedBodyCheck.begin(),
+          sharedBodyCheck.end(),
+          std::less<const dynamics::BodyNode*>());
+      if (std::adjacent_find(sharedBodyCheck.begin(), sharedBodyCheck.end())
+          != sharedBodyCheck.end()) {
+        return false;
       }
 
       parallelDefaultContactBuildNeedsSurfaceParamsPrepass
@@ -1451,11 +1451,7 @@ void ConstraintSolver::updateConstraints()
         if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
           return;
 
-        const auto& firstCandidate
-            = (*contactCandidatesForParallel)[contactPairCount
-                                                  .firstCandidateIndex];
-        initializeDefaultSurfaceParamsUncached(
-            contactPairCount, *firstCandidate.contact);
+        initializeDefaultSurfaceParamsUncached(contactPairCount);
 
         for (auto i = contactPairCount.firstCandidateIndex;
              i != invalidContactPairIndex;
