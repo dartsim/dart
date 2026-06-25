@@ -48,10 +48,10 @@ namespace constraint {
 class DynamicJointConstraint : public ConstraintBase
 {
 public:
-  /// Contructor
+  /// Constructor
   explicit DynamicJointConstraint(dynamics::BodyNode* body);
 
-  /// Contructor
+  /// Constructor
   DynamicJointConstraint(dynamics::BodyNode* body1, dynamics::BodyNode* body2);
 
   /// Destructor

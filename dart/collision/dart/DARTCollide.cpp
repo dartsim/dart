@@ -3323,6 +3323,16 @@ int collidePlaneCylinder(
 //==============================================================================
 namespace {
 
+const Eigen::Isometry3d& getCollisionObjectTransform(
+    const CollisionObject* object)
+{
+  const auto* dartObject = dynamic_cast<const DARTCollisionObject*>(object);
+  if (dartObject)
+    return dartObject->getWorldTransformForCollision();
+
+  return object->getTransform();
+}
+
 int collideShapes(
     CollisionObject* o1,
     CollisionObject* o2,
@@ -3330,6 +3340,8 @@ int collideShapes(
     const dynamics::Shape* shape2,
     const std::string& shapeType1,
     const std::string& shapeType2,
+    const Eigen::Isometry3d& T1,
+    const Eigen::Isometry3d& T2,
     CollisionResult& result)
 {
   // TODO(JS): We could make the contact point computation as optional for
@@ -3337,11 +3349,6 @@ int collideShapes(
 
   if (!shape1 || !shape2)
     return false;
-
-  const Eigen::Isometry3d& T1
-      = static_cast<DARTCollisionObject*>(o1)->getWorldTransformForCollision();
-  const Eigen::Isometry3d& T2
-      = static_cast<DARTCollisionObject*>(o2)->getWorldTransformForCollision();
 
   if (dynamics::SphereShape::getStaticType() == shapeType1) {
     const auto* sphere0 = static_cast<const dynamics::SphereShape*>(shape1);
@@ -3797,6 +3804,8 @@ int collide(
       o2->getCachedShape(),
       o1->getCachedShapeType(),
       o2->getCachedShapeType(),
+      o1->getWorldTransformForCollision(),
+      o2->getWorldTransformForCollision(),
       result);
 }
 
@@ -4002,6 +4011,8 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
       shape2.get(),
       shape1 ? shape1->getType() : std::string(),
       shape2 ? shape2->getType() : std::string(),
+      getCollisionObjectTransform(o1),
+      getCollisionObjectTransform(o2),
       result);
 }
 

@@ -114,6 +114,13 @@ class CustomContactConstraint final : public constraint::ContactConstraint
 {
 public:
   using ContactConstraint::ContactConstraint;
+
+  ~CustomContactConstraint() override
+  {
+    ++mNumDestroyed;
+  }
+
+  inline static std::atomic<std::size_t> mNumDestroyed{0u};
 };
 
 class CustomContactSurfaceHandler final
@@ -625,6 +632,42 @@ TEST(ConstraintSolver, CustomContactSurfaceHandlerKeepsConstructingConstraints)
 
   world->step();
   EXPECT_GT(customHandler->mNumCreateConstraintCalls, firstStepCalls);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RemovedCustomContactSurfaceHandlerDoesNotReuseConstraint)
+{
+  CustomContactConstraint::mNumDestroyed.store(0u);
+
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  auto defaultHandler = solver->getLastContactSurfaceHandler();
+  auto customHandler = std::make_shared<CustomContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(customHandler);
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  world->step();
+  const auto firstStepCalls = customHandler->mNumCreateConstraintCalls;
+  ASSERT_GT(firstStepCalls, 0u);
+
+  ASSERT_TRUE(solver->removeContactSurfaceHandler(customHandler));
+  EXPECT_EQ(defaultHandler, solver->getLastContactSurfaceHandler());
+
+  world->step();
+  EXPECT_EQ(firstStepCalls, customHandler->mNumCreateConstraintCalls);
+  EXPECT_EQ(firstStepCalls, CustomContactConstraint::mNumDestroyed.load());
 }
 
 //==============================================================================

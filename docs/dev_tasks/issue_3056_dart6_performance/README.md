@@ -3,34 +3,32 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, and #3146 are merged. #3147, #3148, and #3149 are the parent stack, and
-#3150 `perf/dart6-native-disjoint-plane-merge` is the active stacked slice.
+#3144, #3146, #3147, #3148, and #3149 are merged. #3150
+`perf/dart6-native-disjoint-plane-merge` is the active follow-up, refreshed on
+current `origin/release-6.20`.
 
 #3147 targets active contact-construction cost by reusing exact built-in
 default `ContactConstraint` objects across steps while preserving exact ODE
-final-state hashes. #3148 targets DART-native collision transform setup for
-identity-relative `ShapeNode` collision objects by reusing the owning
-`BodyNode` world transform. #3149 rebuilds large independent built-in default
-contact sets by collision pair in parallel, while custom contact handlers,
-small contact sets, and pairs that share a non-skipped body stay on the
-existing serial path.
+final-state hashes and custom contact-surface handler behavior. #3148 targets
+DART-native collision transform setup for identity-relative `ShapeNode`
+collision objects by reusing the owning `BodyNode` world transform, while
+keeping the public generic `CollisionObject` overload on the safe
+`getTransform()` fallback path for non-DART collision objects. #3149 rebuilds
+large independent built-in default contact sets by collision pair in parallel,
+while custom contact handlers, small contact sets, and pairs that share a
+non-skipped body stay on the existing serial path.
 
-#3150 attacks the measured DART-native finite-plane merge hot path. When a
-one-plane query can prove the finite shapes' padded contact bounds are mutually
-disjoint, contacts from different finite/plane pairs cannot be duplicate
-points. That lets the merge path keep the existing per-pair duplicate check
-while bypassing the global duplicate-contact grid for those pair results.
-Accepted fast-path contacts are still published to the global duplicate index
-when later fallback pair phases may need that state. The all-finite/one-plane
-issue scene skips that extra bookkeeping because the same disjoint-bound proof
-also rules out later duplicate-producing finite/finite, plane/plane, and
-unsupported-shape phases. Overlapping or multi-plane queries keep the existing
-global duplicate path.
+#3150 attacks the measured DART-native finite-plane merge hot path. Queries
+that can prove finite-plane contact footprints are mutually disjoint may keep
+the existing per-pair duplicate check while bypassing the global
+duplicate-contact grid for those pair results. Overlapping, multi-plane, and
+cross-phase queries keep the existing global duplicate path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--steps 300`, `--world-threads 16`,
-`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled:
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled.
+ODE is included here because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |

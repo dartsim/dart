@@ -273,7 +273,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
       // Start with an identity null space
       NS = Eigen::MatrixXd::Identity(nDofs, nDofs);
     } else if (zeroedNullSpace) {
-      // If the null space has been zeroed out, just keep propogating the zeroes
+      // If the null space has been zeroed out, just keep propagating the zeroes
       NS.setZero(nDofs, nDofs);
       continue;
     } else {

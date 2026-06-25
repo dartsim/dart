@@ -33,7 +33,7 @@ def main():
     init_pose[29] = math.pi * 0.4
     chain.setPositions(init_pose)
 
-    # Create a ball joint contraint
+    # Create a ball joint constraint
     bd1 = chain.getBodyNode("link 6")
     bd2 = chain.getBodyNode("link 10")
     bd1.setColor([0, 1, 0])

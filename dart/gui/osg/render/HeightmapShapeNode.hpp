@@ -265,7 +265,7 @@ HeightmapShapeDrawable<S>::HeightmapShapeDrawable(
   mVertices = new Vec3Array;
   mNormals = new Vec3Array;
   mColors = new Vec4Array;
-  // TODO(JS): Switch to TRIANGLE_STRIP to save storage for indicies
+  // TODO(JS): Switch to TRIANGLE_STRIP to save storage for indices
   mElements = new ::osg::DrawElementsUInt(::osg::PrimitiveSet::TRIANGLES);
   addPrimitiveSet(mElements);
   refresh(true);

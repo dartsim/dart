@@ -1128,13 +1128,18 @@ void ConstraintSolver::updateConstraints()
     const auto createDefaultContactConstraint =
         [&](collision::Contact& contact,
             const ContactSurfaceParams& surfaceParams) -> ContactConstraintPtr {
-      if (reusableContactConstraintIndex < mReusableContactConstraints.size()) {
+      while (reusableContactConstraintIndex
+             < mReusableContactConstraints.size()) {
         auto contactConstraint = std::move(
             mReusableContactConstraints[reusableContactConstraintIndex++]);
-        if (contactConstraint != nullptr) {
-          contactConstraint->reset(contact, mTimeStep, surfaceParams);
-          return contactConstraint;
-        }
+        if (contactConstraint == nullptr)
+          continue;
+
+        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+          continue;
+
+        contactConstraint->reset(contact, mTimeStep, surfaceParams);
+        return contactConstraint;
       }
 
       return builtInDefaultContactHandler
@@ -1250,8 +1255,15 @@ void ConstraintSolver::updateConstraints()
           const auto& candidate = contactCandidates[i];
 
           ContactConstraintPtr contactConstraint;
-          if (i < mReusableContactConstraints.size())
-            contactConstraint = std::move(mReusableContactConstraints[i]);
+          if (i < mReusableContactConstraints.size()) {
+            auto reusableContactConstraint
+                = std::move(mReusableContactConstraints[i]);
+            if (reusableContactConstraint != nullptr
+                && isExactDynamicType<ContactConstraint>(
+                    reusableContactConstraint.get())) {
+              contactConstraint = std::move(reusableContactConstraint);
+            }
+          }
 
           if (contactConstraint != nullptr) {
             contactConstraint->reset(
@@ -1304,7 +1316,6 @@ void ConstraintSolver::updateConstraints()
         activateContactConstraint(contactConstraint);
       }
     }
-
     mReusableContactConstraints.clear();
   }
 

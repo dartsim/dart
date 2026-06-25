@@ -412,7 +412,7 @@ function(dart_build_tests)
     target_link_libraries(${target_name} PRIVATE GTest::gtest GTest::gtest_main)
     target_link_libraries(${target_name} PRIVATE ${_ARG_LINK_LIBRARIES})
     if(UNIX)
-      # gtest requies pthread when compiled on a Unix machine
+      # gtest requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 
