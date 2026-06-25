@@ -320,6 +320,7 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  std::vector<BroadphaseEntry> contactBoundFiniteEntries;
   std::vector<BroadphaseEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<ScratchCollisionResult> parallelPairResults;
@@ -1268,6 +1269,7 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  contactBoundFiniteEntries.clear();
   contactBoundEntries.clear();
   parallelPairIndices.clear();
   pairResult.clear();
@@ -1866,11 +1868,6 @@ bool processFinitePlanePairs(
   const bool hasSinglePlane = planeEntries.size() == 1u;
   const bool hasPriorCrossPairDuplicateState
       = result != nullptr && !scratch.contactPointIndex.empty();
-  const bool canSkipCrossPairDuplicateCheck
-      = canConsiderParallel && hasSinglePlane
-        && !hasPriorCrossPairDuplicateState
-        && haveMutuallyDisjointProjectedContactBounds(
-            finiteEntries, planeEntries.front(), scratch.contactBoundEntries);
 
   auto getPairEntries = [&](std::size_t pairIndex) {
     const auto planeIndex
@@ -1924,6 +1921,20 @@ bool processFinitePlanePairs(
   const bool canParallelize
       = canConsiderParallel
         && parallelPairCount >= kMinParallelFinitePlanePairs;
+  bool canSkipCrossPairDuplicateCheck = false;
+  if (canParallelize && hasSinglePlane && !hasPriorCrossPairDuplicateState) {
+    const auto* proofEntries = &finiteEntries;
+    if (filter) {
+      scratch.contactBoundFiniteEntries.clear();
+      scratch.contactBoundFiniteEntries.reserve(parallelPairCount);
+      for (const auto pairIndex : scratch.parallelPairIndices)
+        scratch.contactBoundFiniteEntries.push_back(finiteEntries[pairIndex]);
+      proofEntries = &scratch.contactBoundFiniteEntries;
+    }
+
+    canSkipCrossPairDuplicateCheck = haveMutuallyDisjointProjectedContactBounds(
+        *proofEntries, planeEntries.front(), scratch.contactBoundEntries);
+  }
 
   if (canParallelize) {
     scratch.prepareParallelPairResults(parallelPairCount);
