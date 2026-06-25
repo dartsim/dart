@@ -86,6 +86,9 @@ public:
 
   bool isCachedPlaneShape() const;
 
+  /// Return the world transform path used by the DART-native collision backend.
+  const Eigen::Isometry3d& getWorldTransformForCollision() const;
+
 protected:
   // Documentation inherited
   void updateEngineData() override;
@@ -101,6 +104,7 @@ private:
   Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
   bool mHasFiniteCachedLocalBounds{false};
   bool mIsCachedPlaneShape{false};
+  bool mUseBodyNodeWorldTransform{false};
 };
 
 } // namespace collision
