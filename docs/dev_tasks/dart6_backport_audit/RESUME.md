@@ -1,12 +1,13 @@
 # RESUME: DART 6 Backport Audit (release-6.20)
 
-> **Status (2026-06-24): the backport cascade is COMPLETE.** All accepted feature
-> backports + in-scope CI/build tooling are merged to `release-6.20` (HEAD
-> `c3239c6e888`). See [`02-execution-log.md`](02-execution-log.md) for the full
-> record (merged PRs, verification, conflict resolutions, cross-lane safety).
-> Only outstanding: the runner-gridlocked CI matrix (locally pre-validated) and
-> the deferred `#2251` spell-lint (waiting on the perf lane / #3169 to merge). The
-> checklists below are kept for history; treat the execution log as current.
+> **Status (2026-06-25): DONE — the backport effort is fully CLOSED.** Every
+> accepted feature backport, the in-scope CI/build tooling, and the spell-lint
+> (including its temporary-skip cleanup, #3184) are merged to `release-6.20`, and
+> the full required CI matrix is green. The post-gridlock platform-specific
+> failures were all resolved (two by the parallel performance lane). There are no
+> outstanding items. See [`02-execution-log.md`](02-execution-log.md) for the full
+> record — merged PRs, verification, conflict resolutions, cross-lane safety, and
+> the §9 post-gridlock CI resolution. The checklists below are historical.
 
 Exact next steps for a later session. This file is the actionable companion to
 `README.md` (scope, evidence, decisions) and

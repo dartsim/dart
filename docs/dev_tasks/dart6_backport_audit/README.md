@@ -18,8 +18,8 @@ main-present-release-absent evidence / scope / verdict / recommendation) live in
 framing, and decisions; the inventory owns the detailed evidence;
 [`RESUME.md`](RESUME.md) owns the exact, prioritized next steps; and
 [`02-execution-log.md`](02-execution-log.md) owns the record of what was actually
-ported, how it was verified, and the conflict resolutions — the cascade is
-**complete** (see that log).
+ported, how it was verified, and the conflict resolutions — this effort is
+**DONE and closed** (all backports merged, full CI matrix green; see that log).
 
 What this task is **not**:
 
