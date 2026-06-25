@@ -1484,9 +1484,45 @@ void ConstraintSolver::updateConstraints()
       {
         DART_PROFILE_SCOPED_N(
             "build contact constraints - shared-body surface scan");
-        for (auto& contactPairCount : contactPairCounts) {
-          if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
-            needsSurfaceParamsPrepass = true;
+        if (contactPairCounts.size() >= 512u) {
+          static thread_local std::vector<char> surfaceParamsPrepassScratch;
+          surfaceParamsPrepassScratch.resize(contactPairCounts.size());
+
+          auto* contactPairCountsForSurfaceScan = &contactPairCounts;
+          auto* surfaceParamsPrepassScratchForScan
+              = &surfaceParamsPrepassScratch;
+          auto scanDefaultSurfaceParams = [&](std::size_t pairIndex) {
+            auto& contactPairCount
+                = (*contactPairCountsForSurfaceScan)[pairIndex];
+            const bool canUseDefaultSurfaceParams
+                = useBuiltInDefaultSurfaceParamsCache
+                  && queryDefaultContactSurfaceProperties(
+                      contactPairCount.shapeNode1)
+                  && queryDefaultContactSurfaceProperties(
+                      contactPairCount.shapeNode2);
+            contactPairCount.canUseDefaultSurfaceParams
+                = canUseDefaultSurfaceParams;
+            contactPairCount.defaultSurfaceParamsChecked = true;
+            (*surfaceParamsPrepassScratchForScan)[pairIndex]
+                = canUseDefaultSurfaceParams ? 0 : 1;
+          };
+
+          mConstraintThreadPool->parallelFor(
+              contactPairCountsForSurfaceScan->size(),
+              mNumSimulationThreads,
+              scanDefaultSurfaceParams);
+
+          for (const char needsPrepass : surfaceParamsPrepassScratch) {
+            if (needsPrepass) {
+              needsSurfaceParamsPrepass = true;
+              break;
+            }
+          }
+        } else {
+          for (auto& contactPairCount : contactPairCounts) {
+            if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
+              needsSurfaceParamsPrepass = true;
+          }
         }
       }
 

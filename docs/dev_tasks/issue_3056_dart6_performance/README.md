@@ -5,25 +5,19 @@
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
 #3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
-The active PR-ready local slice is `perf/dart6-contact-pair-metadata-cache`,
-rebuilt directly on the merged `release-6.20` head. The further local-only
-experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
-and must stay unpublished until the metadata-cache PR lands separately. The
-next local-only branch, `perf/dart6-axis-plane-contact-bounds`, is stacked
-above skip-flags and must remain unpublished until the earlier slices land in
-order. The latest local-only branch,
-`perf/dart6-default-surface-version-cache`, is stacked above the axis-plane
-slice and must also remain unpublished until the earlier slices land in order.
-The next local collision setup branch, `perf/dart6-lazy-dart-shape-cache`, is
-stacked above that version-cache slice and must remain unpublished for the same
-reason.
-The current local integration branch,
-`perf/dart6-free-joint-root-integration`, is stacked above the lazy shape-cache
-slice and must also remain unpublished until the earlier slices land in order.
-Remaining local follow-up slices must also stay unpublished until each is ready
-to publish directly against `release-6.20`; do not open them against another PR
-branch. Opening stacked PRs against parent PR branches lets GitHub close or
-supersede child PRs when the parent branch is merged or deleted.
+Each follow-up slice must remain local-only until it can be published directly
+against `release-6.20`; do not open it against another PR branch. Opening
+stacked PRs against parent PR branches lets GitHub close or supersede child PRs
+when the parent branch is merged or deleted. The current unpublished local
+stack, in order, is `perf/dart6-contact-pair-metadata-cache`,
+`perf/dart6-contact-pair-skip-flags`,
+`perf/dart6-axis-plane-contact-bounds`,
+`perf/dart6-default-surface-version-cache`,
+`perf/dart6-lazy-dart-shape-cache`,
+`perf/dart6-free-joint-root-integration`, and
+`perf/dart6-parallel-surface-scan`. The first slice,
+`perf/dart6-contact-pair-metadata-cache`, is rebuilt directly on the merged
+`release-6.20` head and is PR-ready.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -85,6 +79,14 @@ refresh, and relative-Jacobian refresh skip the general child-frame inverse and
 full transform products in those cases. Non-identity child joint frames and
 rotated parent joint frames keep the general path.
 
+The newest local solver follow-up parallelizes the default-surface-property
+scan that remains before contact-constraint rebuild. The shared-body/body
+duplicate scan stays serial, but large contact-pair sets now compute the
+default-material predicate in the existing constraint thread pool and then
+reduce a scratch flag back on the main thread. Small contact sets and any
+fallback surface-parameter path keep the original serial
+`ensureDefaultSurfaceParamsChecked()` behavior.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -125,6 +127,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local lazy DART shape-cache experiment, text profile | DART native | `0.240786` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `240.55 ms`, `finite-plane pairs` `114.05 ms`, `build broadphase entries` `93.57 ms`, no separate `CollisionGroup update objects` scope |
 | Local FreeJoint root-integration experiment, no profile | DART native | `0.236713`, `0.236395` post-lint rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local FreeJoint root-integration experiment, text profile | DART native | `0.236918` | finite, same hash, contacts `5005`, pairs `3003`; `World::step - Integrate positions` `201.67 ms`, `World::step - Integrate velocity` `180.50 ms`, `collide` `254.99 ms` |
+| Local parallel surface-scan experiment, no profile | DART native | `0.251073` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local parallel surface-scan experiment, text profile | DART native | `0.252496` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `146.61 ms`, `shared-body check` `68.71 ms`, `shared-body surface scan` `36.97 ms`, `shared-body body scan` `26.58 ms`, `parallel reset` `44.96 ms`, `collide` `249.49 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -178,6 +182,14 @@ latest scoped profile records `World::step - Integrate positions` at
 `201.67 ms`; the previous same-session lazy shape-cache profile recorded
 `209.85 ms` for the same scope. No-profile RTF remains in the same noisy local
 range (`0.236395`-`0.236713`).
+
+The parallel surface-scan experiment keeps the same final hash, contact count,
+and pair count while reducing the remaining surface-scan portion of contact
+construction. The latest scoped profile records `shared-body surface scan` at
+`36.97 ms`, down from the default-surface version-cache sample's `54.71 ms`
+and the FreeJoint parent sample's roughly `57 ms` range, while
+`build contact constraints` drops from the FreeJoint parent profile's
+`180.12`-`179.86 ms` range to `146.61 ms`.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -235,6 +247,12 @@ and the exact issue-scene no-profile/profile benchmark runs above. The focused
 regression compares `Skeleton::integratePositions()` against the public
 stateless integration overload for identity-frame, translated-parent, and
 fully offset FreeJoint frame configurations.
+
+The local parallel surface-scan experiment has passed:
+`pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
+and the exact issue-scene no-profile/profile benchmark runs above.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
