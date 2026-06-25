@@ -3,16 +3,49 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, #3148, #3149, #3150, and #3151 are merged. #3152
-`perf/dart6-resting-state-snapshot-cache` is the active slice on
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, and #3152 are merged.
+#3153 `perf/dart6-native-body-filter-fast-path` is the active slice on
 `release-6.20`.
 
-The latest candidate targets the default settled-scene path. Once the original
-3k issue scene has fully gone to sleep, the all-resting fast path no longer
-rebuilds the last-step per-skeleton resting snapshot every frame when that
-snapshot is already valid. The all-resting kinematic snapshot remains the
-correctness guard for pose, velocity, collision-option, collision-filter, and
-structural edits.
+The latest candidate targets active DART-native finite-shape-vs-plane collision
+for the default solver filter. For exact `BodyNodeCollisionFilter` queries where
+all finite objects belong to mobile skeletons, all plane objects belong to
+static skeletons, there are no explicit body-node pair blacklists, and the
+solver's resting-contact filter is inactive, the DART-native backend can skip
+the serial body-node filter prepass. Those conditions are exactly the default
+active issue-scene shape. Filter subclasses, explicit blacklists, same-body or
+same-skeleton pairs, non-collidable bodies, non-BodyNode objects, and
+solver-resting filtering all stay on the legacy filtered path.
+
+Active issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
+and solver, deactivation disabled, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, 300 steps:
+
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3152 parent, text profile | DART native | `0.104728` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `655.08 ms`, finite-plane pairs `326.39 ms`, finite-plane prefilter `98.97 ms` |
+| #3153 current head, text profile | DART native | `0.109055` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `625.30 ms`, finite-plane pairs `296.06 ms`, no finite-plane prefilter scope |
+| #3153 current head, no profile | DART native | `0.108879` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3153 current head, no profile | FCL primitive | `0.0899919` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3153 current head, no profile | Bullet | `0.0913725` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3153 current head, no profile | ODE | `0.00466557` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.21x` FCL primitive, `1.19x` Bullet, and
+`23.3x` ODE on this active issue-scene rerun.
+
+Focused correctness evidence: `test_Collision` now compares serial and
+four-thread DART-native finite-plane contacts for BodyNode-backed mobile boxes
+against a static plane using the exact default `BodyNodeCollisionFilter`. The
+same test also verifies that an explicit body-node blacklist and a custom
+`BodyNodeCollisionFilter` subclass still match the serial filtered path and
+remove the targeted contacts.
+
+#3152 targets the default settled-scene path. Once the original 3k issue scene
+has fully gone to sleep, the all-resting fast path no longer rebuilds the
+last-step per-skeleton resting snapshot every frame when that snapshot is
+already valid. The all-resting kinematic snapshot remains the correctness guard
+for pose, velocity, collision-option, collision-filter, and structural edits.
 
 Default sleeping issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,

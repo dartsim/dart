@@ -142,6 +142,18 @@ std::size_t BodyNodeCollisionFilter::getRevision() const
 }
 
 //==============================================================================
+bool BodyNodeCollisionFilter::isSolverRestingContactFilterActive() const
+{
+  return gSolverRestingContactFilterActive;
+}
+
+//==============================================================================
+bool BodyNodeCollisionFilter::hasBodyNodePairBlackList() const
+{
+  return !mBodyNodeBlackList.empty();
+}
+
+//==============================================================================
 std::size_t BodyNodeCollisionFilter::getBodyNodePairBlackListRevision() const
 {
   return mRevision;

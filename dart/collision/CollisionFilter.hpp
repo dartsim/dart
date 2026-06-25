@@ -55,6 +55,10 @@ namespace collision {
 
 class CollisionObject;
 
+namespace detail {
+class BodyNodeCollisionFilterAccessor;
+} // namespace detail
+
 class CollisionFilter
 {
 public:
@@ -121,6 +125,7 @@ public:
       const CollisionObject* object2) const override;
 
 private:
+  friend class detail::BodyNodeCollisionFilterAccessor;
   friend class constraint::ConstraintSolver;
   friend class simulation::World;
 
@@ -139,6 +144,13 @@ private:
 
   /// Returns the blacklist-only revision for world-level rest snapshots.
   std::size_t getBodyNodePairBlackListRevision() const;
+
+  /// Returns true if solver-only resting-pair filtering is active on this
+  /// thread.
+  bool isSolverRestingContactFilterActive() const;
+
+  /// Returns true if any explicit BodyNode pair blacklist entries exist.
+  bool hasBodyNodePairBlackList() const;
 
   /// List of pairs to be ignored in the collision detection.
   detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
