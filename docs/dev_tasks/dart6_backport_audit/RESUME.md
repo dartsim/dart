@@ -138,7 +138,7 @@ nanobind) — see the recipe in section 2.
     DART 6 Bullet stack.
   - Gate: build + `collision` (Bullet) focused unit tests **+ gz gate** —
     collision surface.
-- [ ] **[#2285](https://github.com/dartsim/dart/pull/2285) — aiScene ownership
+- [x] **[#2285](https://github.com/dartsim/dart/pull/2285) — aiScene ownership
   via shared_ptr custom deleters (makeMeshHandle)** *(memory-correctness;
   public API change)*
   - Commit `ee5be94c6f898e762767141aa44b3cb1bf6b169a`. release-6.20 owns a raw
@@ -160,7 +160,7 @@ nanobind) — see the recipe in section 2.
     `main` by #2325** (TriMesh adoption, §4) — prefer porting #2325, whose
     `getMesh()` stays raw `const aiScene*` (deprecated) so it needs no
     `shared_ptr` return-type break.
-- [ ] **[#2247](https://github.com/dartsim/dart/pull/2247) — mimic/coupler
+- [x] **[#2247](https://github.com/dartsim/dart/pull/2247) — mimic/coupler
   constraint correctness (ERP + force-mixing/limit-clamp)** *(gz mimic repro;
   most surgical — must split bug fix from feature)*
   - Commit `94a5d5bcad5fe663c3850929f8bc274d3118792d`. PR title targets the
@@ -246,7 +246,7 @@ wants release-6.20 dev ergonomics aligned with main, batch them into a single
 `backport/ci-tooling-to-release-6.20` branch (milestone DART 6.20,
 `pixi run lint` gate only):
 
-- [ ] **[#3108](https://github.com/dartsim/dart/pull/3108)** — `DART_USE_SYSTEM_FMT`
+- [x] **[#3108](https://github.com/dartsim/dart/pull/3108)** — `DART_USE_SYSTEM_FMT`
   + FetchContent fmt fallback. **`feature_optional` (build-convenience) — do NOT
   backport by default.** **In-flight note:** the local WIP branch
   `altlinux-fmt-fetchcontent` (commit `a0abf624bd2`) is **gone from the remote**;
@@ -254,20 +254,20 @@ wants release-6.20 dev ergonomics aligned with main, batch them into a single
   against system fmt via `find_package(fmt)`; backport only if release CI starts
   hitting the broken-system-fmt failure mode. (Alt Linux is a non-required
   canary.)
-- [ ] **[#2541](https://github.com/dartsim/dart/pull/2541)** — Eigen
+- [x] **[#2541](https://github.com/dartsim/dart/pull/2541)** — Eigen
   over-alignment CI guard. Low value on a stable DART 6 ABI; watch only.
-- [ ] **[#2736](https://github.com/dartsim/dart/pull/2736)** — gersemi CMake
+- [x] **[#2736](https://github.com/dartsim/dart/pull/2736)** — gersemi CMake
   formatting (`lint-cmake`). Dev formatting only.
-- [ ] **[#2185](https://github.com/dartsim/dart/pull/2185)** — Taplo TOML
+- [x] **[#2185](https://github.com/dartsim/dart/pull/2185)** — Taplo TOML
   linting (`lint-toml`). Dev formatting only.
-- [ ] **[#2251](https://github.com/dartsim/dart/pull/2251)** — codespell spell
+- [x] **[#2251](https://github.com/dartsim/dart/pull/2251)** — codespell spell
   lint + cosmetic typo fixes. Backport a typo only if it touches a user-facing
   string a DART 6 consumer depends on (none identified).
-- [ ] **[#2655](https://github.com/dartsim/dart/pull/2655)** — centralized CI
+- [x] **[#2655](https://github.com/dartsim/dart/pull/2655)** — centralized CI
   path filters (`ci-code.yml` + `ci-scope`). Coupled to main's multi-workflow
   layout; a port would require reworking release-6.20's distinct workflow set
   with no correctness benefit.
-- [ ] **GitHub Action version currency (Dependabot pin skew)** — checkout
+- [x] **GitHub Action version currency (Dependabot pin skew)** — checkout
   v6->v7, codecov v5->v7, etc. **Not a porting obligation:** Dependabot updates
   pins per-branch on its own cadence. Monitor only.
 

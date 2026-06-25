@@ -286,27 +286,25 @@ Each backport PR carries its own gate, sized to the touched surface:
 - **Always** run `pixi run lint`.
 - Milestone **DART 6.20** on every backport PR.
 
-## Remaining work
+## Remaining work — none (effort complete)
 
-1. **Compat-critical backport queue** — #2509 is carried by
-   [#3130](https://github.com/dartsim/dart/pull/3130), and #2339 is carried by
-   [#3131](https://github.com/dartsim/dart/pull/3131). Port the remaining five
-   compat-critical items (#3115/#3117, #2233, #2271, #2285, #2247) in the order
-   and with the per-surface gates given in [`RESUME.md`](RESUME.md) section 1.
-   #3115/#3117 is a forward-port of the DART-6-shaped #3117 twin. Run the gz
-   gate on every collision/constraint/parser surface.
-2. **CI/tooling bumps** — selective action-version bumps to `release-6.20`
-   workflows only where the workflow is shared with `main`; skip `main`-only
-   actions.
-3. **#3108 fmt fallback** — do **not** backport by default; it is
-   `feature_optional`. Open it only if `release-6.20` CI starts hitting the
-   broken-system-fmt mode, and first confirm whether an
-   `altlinux-fmt-fetchcontent` branch / open PR exists to avoid duplicate work.
-4. **Maintainer decisions** — get go/no-go on the `feature_optional` list (#2338
-   convex-mesh and #2325 MeshShape TriMesh costed, plus the rest of the 14 in the
-   inventory). Default is defer.
-5. Keep this README and `RESUME.md` in sync as items land; move durable
-   outcomes to `release-management.md` / changelog when a backport merges.
+> **All planned work has landed. The only outstanding step is confirming a clean,
+> uninterrupted green run of the required CI matrix** (see
+> [`02-execution-log.md`](02-execution-log.md) §10). A future session must **not**
+> re-port any item below — they are all merged.
 
-See [`RESUME.md`](RESUME.md) for exact next steps and
-[`01-backport-inventory.md`](01-backport-inventory.md) for the full evidence.
+For history, the item → landing-PR mapping:
+
+1. **Compat-critical backport queue** — all done: #2509 (#3130), #2339 (#3131),
+   #3115/#3117 (#3132), #2233 (#3134), #2271 (#3136), #2285 (superseded by #2325 /
+   #3145), #2247 (#3137).
+2. **Maintainer-decision `feature_optional` set** — all ported: the 13 features
+   #3156–#3168, plus #2325 (#3145).
+3. **CI/build tooling** — #3108, #2736, #2185, #2541 (combined #3174); #2251
+   spell-lint (#3177 + cleanup #3184). #2655 was a no-op on 6.20 (skipped).
+4. **CI/tooling action bumps** — Dependabot pin currency; a per-branch watch item,
+   not a backport obligation.
+
+The full execution record is in [`02-execution-log.md`](02-execution-log.md); the
+[`RESUME.md`](RESUME.md) checklists and
+[`01-backport-inventory.md`](01-backport-inventory.md) evidence are historical.
