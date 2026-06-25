@@ -910,6 +910,30 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartCollideAcceptsGenericCollisionObjects)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto frameA = SimpleFrame::createShared(Frame::World());
+  auto frameB = SimpleFrame::createShared(Frame::World());
+
+  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
+
+  TestCollisionObject objectA(cd.get(), frameA.get());
+  TestCollisionObject objectB(cd.get(), frameB.get());
+
+  CollisionResult result;
+  EXPECT_GT(::dart::collision::collide(&objectA, &objectB, result), 0);
+  ASSERT_GE(result.getNumContacts(), 1u);
+  EXPECT_EQ(result.getContact(0).collisionObject1, &objectA);
+  EXPECT_EQ(result.getContact(0).collisionObject2, &objectB);
+}
+
+//==============================================================================
 TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
 {
   constexpr std::size_t kNumBoxes = 140u;
