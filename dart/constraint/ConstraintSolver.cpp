@@ -954,6 +954,8 @@ void ConstraintSolver::updateConstraints()
     const dynamics::ShapeNode* shapeNode2;
     bool defaultSurfaceParamsChecked;
     bool canUseDefaultSurfaceParams;
+    bool skipRelVelocityBody1;
+    bool skipRelVelocityBody2;
     std::size_t count;
     std::size_t firstCandidateIndex;
     std::size_t lastCandidateIndex;
@@ -1021,6 +1023,8 @@ void ConstraintSolver::updateConstraints()
                bodyNode2,
                shapeNode1,
                shapeNode2,
+               false,
+               false,
                false,
                false,
                0u,
@@ -1331,11 +1335,8 @@ void ConstraintSolver::updateConstraints()
           }
         };
 
-    static thread_local std::unordered_set<const dynamics::BodyNode*>
-        parallelSkipRelVelocityBodies;
     bool parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
     const auto canBuildDefaultContactsByPairInParallel = [&]() {
-      parallelSkipRelVelocityBodies.clear();
       parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
       if (!useBuiltInDefaultSurfaceParamsCache
           || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
@@ -1355,25 +1356,85 @@ void ConstraintSolver::updateConstraints()
       }
 
       static thread_local std::vector<const dynamics::BodyNode*>
-          sharedBodyCheck;
-      sharedBodyCheck.clear();
-      sharedBodyCheck.reserve(contactPairCounts.size() * 2u);
-      parallelSkipRelVelocityBodies.reserve(contactPairCounts.size());
+          sharedBodyBuckets;
+      static thread_local std::vector<const dynamics::BodyNode*>
+          skipRelVelocityBodyBuckets;
       bool needsSurfaceParamsPrepass = false;
 
       DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
 
-      const auto recordBodyIfNeeded = [&](const dynamics::BodyNode* bodyNode) {
+      const auto resetBodyBuckets =
+          [](std::vector<const dynamics::BodyNode*>& buckets,
+             std::size_t minimumBucketCount) {
+            std::size_t bucketCount = 2u;
+            while (bucketCount < minimumBucketCount)
+              bucketCount <<= 1u;
+            if (buckets.size() < bucketCount)
+              buckets.resize(bucketCount, nullptr);
+            std::fill(buckets.begin(), buckets.begin() + bucketCount, nullptr);
+            return bucketCount - 1u;
+          };
+      const auto findBodyInBuckets
+          = [](const std::vector<const dynamics::BodyNode*>& buckets,
+               const std::size_t bucketMask,
+               const dynamics::BodyNode* bodyNode) {
+              const auto bodyNodeKey
+                  = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
+              std::size_t bucket
+                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
+              while (true) {
+                const auto* existingBodyNode = buckets[bucket];
+                if (existingBodyNode == nullptr)
+                  return false;
+
+                if (existingBodyNode == bodyNode)
+                  return true;
+
+                bucket = (bucket + 1u) & bucketMask;
+              }
+            };
+      const auto recordBodyIfUnique
+          = [&](std::vector<const dynamics::BodyNode*>& buckets,
+                const std::size_t bucketMask,
+                const dynamics::BodyNode* bodyNode) {
+              if (findBodyInBuckets(buckets, bucketMask, bodyNode))
+                return false;
+
+              const auto bodyNodeKey
+                  = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
+              std::size_t bucket
+                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
+              while (buckets[bucket] != nullptr)
+                bucket = (bucket + 1u) & bucketMask;
+              buckets[bucket] = bodyNode;
+              return true;
+            };
+      const std::size_t sharedBodyBucketMask
+          = resetBodyBuckets(sharedBodyBuckets, contactPairCounts.size() * 4u);
+      const std::size_t skipRelVelocityBodyBucketMask = resetBodyBuckets(
+          skipRelVelocityBodyBuckets, contactPairCounts.size() * 4u);
+      const auto recordSharedBodyIfUnique
+          = [&](const dynamics::BodyNode* bodyNode) {
+              return recordBodyIfUnique(
+                  sharedBodyBuckets, sharedBodyBucketMask, bodyNode);
+            };
+
+      struct ParallelBodyCheckResult
+      {
+        bool canBuild;
+        bool skipRelVelocity;
+      };
+      const auto checkBodyForParallelDefaultContact
+          = [&](const dynamics::BodyNode* bodyNode) -> ParallelBodyCheckResult {
         if (bodyNode == nullptr)
-          return true;
+          return {true, false};
 
-        if (parallelSkipRelVelocityBodies.find(bodyNode)
-            != parallelSkipRelVelocityBodies.end()) {
-          return true;
+        if (findBodyInBuckets(
+                skipRelVelocityBodyBuckets,
+                skipRelVelocityBodyBucketMask,
+                bodyNode)) {
+          return {true, true};
         }
-
-        if (bodyNode->getNumDependentGenCoords() == 0u)
-          return true;
 
         const auto* skeleton = bodyNode->getSkeletonRawPtr();
         const bool fixedZeroVelocitySupport
@@ -1382,31 +1443,32 @@ void ConstraintSolver::updateConstraints()
               && bodyNode->getSpatialVelocity().squaredNorm()
                      < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
         if (fixedZeroVelocitySupport) {
-          parallelSkipRelVelocityBodies.insert(bodyNode);
-          return true;
+          recordBodyIfUnique(
+              skipRelVelocityBodyBuckets,
+              skipRelVelocityBodyBucketMask,
+              bodyNode);
+          return {true, true};
         }
 
-        sharedBodyCheck.push_back(bodyNode);
-        return true;
+        if (bodyNode->getNumDependentGenCoords() == 0u)
+          return {true, false};
+
+        return {recordSharedBodyIfUnique(bodyNode), false};
       };
 
       for (auto& contactPairCount : contactPairCounts) {
-        if (!recordBodyIfNeeded(contactPairCount.bodyNode1)
-            || !recordBodyIfNeeded(contactPairCount.bodyNode2)) {
+        const auto body1Check
+            = checkBodyForParallelDefaultContact(contactPairCount.bodyNode1);
+        const auto body2Check
+            = checkBodyForParallelDefaultContact(contactPairCount.bodyNode2);
+        if (!body1Check.canBuild || !body2Check.canBuild)
           return false;
-        }
+
+        contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
+        contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
 
         if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
           needsSurfaceParamsPrepass = true;
-      }
-
-      std::sort(
-          sharedBodyCheck.begin(),
-          sharedBodyCheck.end(),
-          std::less<const dynamics::BodyNode*>());
-      if (std::adjacent_find(sharedBodyCheck.begin(), sharedBodyCheck.end())
-          != sharedBodyCheck.end()) {
-        return false;
       }
 
       parallelDefaultContactBuildNeedsSurfaceParamsPrepass
@@ -1434,18 +1496,6 @@ void ConstraintSolver::updateConstraints()
       mContactConstraints.resize(contactCandidates.size());
       auto* contactPairCountsForParallel = &contactPairCounts;
       auto* contactCandidatesForParallel = &contactCandidates;
-      auto* parallelSkipRelVelocityBodiesForStep
-          = &parallelSkipRelVelocityBodies;
-      const auto skipRelVelocityForParallelReset
-          = [&](collision::CollisionObject* object) {
-              if (object == nullptr)
-                return false;
-
-              const auto* bodyNode = object->getBodyNode();
-              return bodyNode != nullptr
-                     && parallelSkipRelVelocityBodiesForStep->find(bodyNode)
-                            != parallelSkipRelVelocityBodiesForStep->end();
-            };
       auto buildDefaultContactConstraintsForPair = [&](std::size_t pairIndex) {
         auto& contactPairCount = (*contactPairCountsForParallel)[pairIndex];
         if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
@@ -1470,10 +1520,23 @@ void ConstraintSolver::updateConstraints()
           }
 
           if (contactConstraint != nullptr) {
-            const bool skipRelVelocityA = skipRelVelocityForParallelReset(
-                candidate.contact->collisionObject1);
-            const bool skipRelVelocityB = skipRelVelocityForParallelReset(
-                candidate.contact->collisionObject2);
+            const bool contactUsesPairOrder
+                = candidate.contact->collisionObject1
+                  == contactPairCount.pair.first;
+            DART_ASSERT(
+                contactUsesPairOrder
+                || candidate.contact->collisionObject1
+                       == contactPairCount.pair.second);
+            DART_ASSERT(
+                candidate.contact->collisionObject2
+                == (contactUsesPairOrder ? contactPairCount.pair.second
+                                         : contactPairCount.pair.first));
+            const bool skipRelVelocityA
+                = contactUsesPairOrder ? contactPairCount.skipRelVelocityBody1
+                                       : contactPairCount.skipRelVelocityBody2;
+            const bool skipRelVelocityB
+                = contactUsesPairOrder ? contactPairCount.skipRelVelocityBody2
+                                       : contactPairCount.skipRelVelocityBody1;
             contactConstraint->reset(
                 *candidate.contact,
                 mTimeStep,

@@ -5,13 +5,14 @@
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
 #3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
-The active unpublished local slice is
-`perf/dart6-contact-pair-metadata-cache`, rebuilt directly on the merged
-`release-6.20` head. Remaining local follow-up slices must stay unpublished
-until each is ready to publish directly against `release-6.20`; do not open
-them against another PR branch. Opening stacked PRs against parent PR branches
-lets GitHub close or supersede child PRs when the parent branch is merged or
-deleted.
+The active PR-ready local slice is `perf/dart6-contact-pair-metadata-cache`,
+rebuilt directly on the merged `release-6.20` head. The further local-only
+experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
+and must stay unpublished until the metadata-cache PR lands separately.
+Remaining local follow-up slices must also stay unpublished until each is ready
+to publish directly against `release-6.20`; do not open them against another PR
+branch. Opening stacked PRs against parent PR branches lets GitHub close or
+supersede child PRs when the parent branch is merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -31,6 +32,14 @@ eligibility scan replaces the per-pair `unordered_set` insertion path with a
 retained vector, sort, and adjacent-duplicate check. Contact order is unchanged
 because workers still write constraints by candidate index and the main thread
 activates them in order.
+
+A local follow-up experiment then precomputes the fixed-zero-velocity support
+skip flags once per contact pair during the serial parallel-eligibility scan and
+uses a thread-local open-addressed body set for the remaining duplicate-body
+check. The parallel reset maps those pair-order flags back to each contact's
+original object order, avoiding repeated body lookups and hash-set probes in the
+worker loop while keeping the same `ContactConstraint::initialize()` fallback
+checks for every side that was not proven skippable.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -62,6 +71,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
+| Local skip-flags/body-set experiment, no profile | DART native | `0.192959` current rerun; `0.196971`, `0.196594` post-rebase reruns; `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
+| Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -81,6 +92,14 @@ below RTF `1`, so the next target remains the largest remaining active-step
 costs: collision, integration, constrained-group solve, and remaining contact
 construction overhead.
 
+The skip-flags/body-set experiment keeps the no-profile result in the same
+noisy range. The current no-profile rerun recorded `0.192959`; the current
+scoped rerun was noisier (`0.171489`, with higher contact-construction and
+collision timings), while the retained-bucket profile recorded `0.205666` and
+reduced the local contact-construction slices versus the metadata-cache profile.
+Treat this as the next local follow-up after the metadata-cache slice, not as
+part of that publishable PR.
+
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
 `3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
@@ -95,6 +114,19 @@ profile). The current branch is rebased onto #3185, which only changed unrelated
 pass completed C++ tests `115/115` and Python tests `60/60`; before the #3184
 rebase, the same metadata-cache slice also passed
 `DART_PARALLEL_JOBS=24 CTEST_PARALLEL_LEVEL=24 CMAKE_BUILD_PARALLEL_LEVEL=24 pixi run test-all`.
+
+The local skip-flags/body-set experiment has passed `pixi run lint`, the
+targeted
+`cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`
+build, focused `test_ConstraintSolver` CTest, and the two exact-scene benchmark
+runs above. After rebasing the unpublished skip-flags branch onto the current
+`perf/dart6-contact-pair-metadata-cache` head, the focused build,
+`test_ConstraintSolver` CTest, and
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+passed on the current local skip-flags branch; the full gate reported C++ tests
+`115/115` and Python tests `60/60`. The current post-rebase no-profile rerun
+recorded RTF `0.192959`; the current text-profile rerun recorded RTF
+`0.171489`; both kept the same final hash, contacts, and pair count.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
