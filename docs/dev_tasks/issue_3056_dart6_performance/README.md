@@ -14,6 +14,9 @@ above skip-flags and must remain unpublished until the earlier slices land in
 order. The latest local-only branch,
 `perf/dart6-default-surface-version-cache`, is stacked above the axis-plane
 slice and must also remain unpublished until the earlier slices land in order.
+The next local collision setup branch, `perf/dart6-lazy-dart-shape-cache`, is
+stacked above that version-cache slice and must remain unpublished for the same
+reason.
 Remaining local follow-up slices must also stay unpublished until each is ready
 to publish directly against `release-6.20`; do not open them against another PR
 branch. Opening stacked PRs against parent PR branches lets GitHub close or
@@ -64,6 +67,14 @@ decisions while steady-state default scenes avoid repeated dynamics-aspect
 queries. The branch also splits the shared-body profiling scope into body-scan
 and surface-scan subscopes.
 
+The newest local collision setup follow-up moves DART-native shape-cache refresh
+into broadphase entry construction, then skips the separate DART collision-group
+object-update pass. Direct object-object collision still refreshes each object
+through the existing `updateEngineData()` path. Group collision already visits
+every DART object while constructing broadphase entries, so the lazy refresh
+keeps shape replacement and `ShapeNode` relative-transform edits visible without
+a second full object pass.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -100,6 +111,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
 | Local default-surface version-cache experiment, no profile | DART native | `0.230490` | finite, same hash, contacts `5005`, pairs `3003` |
 | Local default-surface version-cache experiment, text profile | DART native | `0.227376` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `183.10 ms`, `shared-body check` `85.97 ms`, `shared-body surface scan` `54.71 ms`, `shared-body body scan` `26.36 ms`, `parallel reset` `65.45 ms`, `collide` `278.13 ms` |
+| Local lazy DART shape-cache experiment, no profile | DART native | `0.234474`, `0.239789`, `0.230595` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local lazy DART shape-cache experiment, text profile | DART native | `0.240786` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `240.55 ms`, `finite-plane pairs` `114.05 ms`, `build broadphase entries` `93.57 ms`, no separate `CollisionGroup update objects` scope |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -139,6 +152,13 @@ parallel eligibility scan. In the latest text-profile sample,
 `183.10 ms`, `shared-body check` dropped from the repeated local `101.66 ms`
 sample to `85.97 ms`, and the newly split surface scan was `54.71 ms`. The
 fresh no-profile rerun reached RTF `0.230490`.
+
+The lazy DART shape-cache experiment keeps the same final hash, contact count,
+and pair count while removing the separate DART group object-update pass. The
+latest scoped profile has no `CollisionGroup update objects` scope; the previous
+same-session local profile measured that pass at `34.41 ms`, and the current
+profile records `collide` at `240.55 ms`. No-profile repeats were in the same
+high local range as the parent (`0.230595`-`0.239789`).
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -180,6 +200,13 @@ and the exact issue-scene no-profile/profile benchmark runs above. The focused
 solver regression heats the default-surface cache, mutates the contact dynamics,
 and verifies the versioned cache tracks the same state as a cold-cache reference
 after the mutation.
+
+The local lazy DART shape-cache experiment has passed:
+`cmake --build build/default/cpp/Release --parallel 5 --target contact_benchmark test_Collision test_DARTCollisionDetector test_ConstraintSolver`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector|test_ConstraintSolver)$'`,
+and the exact issue-scene no-profile/profile benchmark runs above. Existing
+DART collision regressions cover changed shape geometry and `ShapeNode`
+relative-transform updates after collision groups already exist.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
