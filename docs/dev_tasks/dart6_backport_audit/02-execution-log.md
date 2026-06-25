@@ -122,8 +122,8 @@ dropped or re-homed.
   fixes ~270 typos across 128 files (comments/docs/strings/local vars; no
   behavioral change). Wiring the gate would normally red-X the parallel lane's
   open PRs and its fixes would edit do-not-collide files — so the 9 do-not-collide
-  files that carry pre-existing typos (`froce` in `Joint.hpp`, `enity` in
-  `World.cpp`, `witht` in `ContactConstraint.hpp`, etc.) are **temporarily
+  files that carry pre-existing typos (e.g. misspelled "force" in `Joint.hpp`,
+  "entity" in `World.cpp`, "with" in `ContactConstraint.hpp`) are **temporarily
   skipped** in `.codespellrc` under a labeled block. The gate therefore passes
   without editing their files and does **not** trip the other lane's PRs. Vendored
   `tests/unit/math/legacy_convhull_3d` is permanently skipped. **Cleanup hook in
