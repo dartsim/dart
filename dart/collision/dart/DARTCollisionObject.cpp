@@ -121,6 +121,12 @@ const Eigen::Isometry3d& DARTCollisionObject::getWorldTransformForCollision()
 }
 
 //==============================================================================
+void DARTCollisionObject::refreshShapeCacheForCollision()
+{
+  refreshShapeCache();
+}
+
+//==============================================================================
 void DARTCollisionObject::refreshShapeCache()
 {
   const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
@@ -183,7 +189,7 @@ void DARTCollisionObject::refreshShapeCache()
 //==============================================================================
 void DARTCollisionObject::updateEngineData()
 {
-  refreshShapeCache();
+  refreshShapeCacheForCollision();
 }
 
 } // namespace collision

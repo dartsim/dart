@@ -586,7 +586,6 @@ bool DARTCollisionDetector::collide(
     return false;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
-  casted->updateEngineData();
   const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
@@ -730,9 +729,6 @@ bool DARTCollisionDetector::collide(
 
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
-
-  casted1->updateEngineData();
-  casted2->updateEngineData();
 
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
@@ -1716,7 +1712,8 @@ BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
   if (!object)
     return entry;
 
-  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  auto* dartObject = static_cast<DARTCollisionObject*>(object);
+  dartObject->refreshShapeCacheForCollision();
   entry.transform = dartObject->getWorldTransformForCollision();
 
   if (entry.plane)

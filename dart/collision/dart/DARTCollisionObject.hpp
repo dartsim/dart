@@ -95,6 +95,9 @@ public:
   /// Return the world transform path used by the DART-native collision backend.
   const Eigen::Isometry3d& getWorldTransformForCollision() const;
 
+  /// Refresh shape metadata used by the DART-native collision backend.
+  void refreshShapeCacheForCollision();
+
 protected:
   // Documentation inherited
   void updateEngineData() override;

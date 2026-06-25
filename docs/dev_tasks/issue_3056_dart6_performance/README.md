@@ -4,17 +4,17 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
-The active PR-ready local slice is `perf/dart6-contact-pair-metadata-cache`,
-rebuilt directly on the merged `release-6.20` head. The further local-only
-experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
-and must stay unpublished until the metadata-cache PR lands separately. The
-next local-only branch, `perf/dart6-axis-plane-contact-bounds`, is stacked
-above skip-flags and must remain unpublished until the earlier slices land in
-order. Remaining local follow-up slices must also stay unpublished until each
-is ready to publish directly against `release-6.20`; do not open them against
-another PR branch. Opening stacked PRs against parent PR branches lets GitHub
-close or supersede child PRs when the parent branch is merged or deleted.
+#3170, #3171, #3172, #3183, #3188, #3190, and #3191 are merged. #3192
+remains open as a draft because its safe cache revision did not beat the #3191
+parent in the fresh comparison run. The local
+`perf/dart6-lazy-dart-shape-cache` slice has been rebuilt directly on the
+merged `release-6.20` head without depending on #3192, but the latest
+post-test-all comparison only tied the #3191 parent and should stay local until
+it shows a repeatable parent win. Remaining local follow-up slices must stay
+unpublished until each is ready to publish directly against `release-6.20`; do
+not open them against another PR branch. Opening stacked PRs against parent PR
+branches lets GitHub close or supersede child PRs when the parent branch is
+merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -52,6 +52,14 @@ axis to the plane point. The proof also stores only projected min/max bounds in
 scratch instead of copying full broadphase entries through the sort. Non-axis
 planes keep the original corner-projection path.
 
+The newest local collision setup follow-up moves DART-native shape-cache refresh
+into broadphase entry construction, then skips the separate DART collision-group
+object-update pass. Direct object-object collision still refreshes each object
+through the existing `updateEngineData()` path. Group collision already visits
+every DART object while constructing broadphase entries, so the lazy refresh
+keeps shape replacement and `ShapeNode` relative-transform edits visible without
+a second full object pass.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -77,15 +85,17 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3172 merged baseline, no profile | DART native | `0.179381` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3172 merged baseline, no profile | DART native | `0.154159` post-test-all comparison rerun; `0.160807` fresh comparison rerun; `0.179381` prior rerun | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, no profile | DART native | `0.127794` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
 | Local skip-flags/body-set experiment, no profile | DART native | `0.192959` current rerun; `0.196971`, `0.196594` post-rebase reruns; `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
-| Local axis-plane contact-bounds experiment, no profile | DART native | `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local axis-plane contact-bounds experiment, no profile | DART native | `0.133157` post-test-all comparison rerun; `0.189385` fresh parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
+| Local lazy DART shape-cache experiment, no profile | DART native | `0.133315` post-test-all comparison rerun; `0.197617` current direct-base comparison rerun; `0.234474`, `0.239789`, `0.230595` prior stacked reruns | finite, same hash, contacts `5005`, pairs `3003` |
+| Local lazy DART shape-cache experiment, text profile | DART native | `0.240786` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `240.55 ms`, `finite-plane pairs` `114.05 ms`, `build broadphase entries` `93.57 ms`, no separate `CollisionGroup update objects` scope |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -119,6 +129,18 @@ cutting the projected contact-bound separation proof from the prior local
 to `268.50 ms`. The current post-rebase no-profile repeat reached RTF
 `0.203003`. Treat this as a later collision follow-up after the
 contact-construction slices.
+
+The lazy DART shape-cache experiment keeps the same final hash, contact count,
+and pair count while removing the separate DART group object-update pass. The
+latest scoped profile has no `CollisionGroup update objects` scope; the previous
+same-session local profile measured that pass at `34.41 ms`, and the current
+profile records `collide` at `240.55 ms`. After restacking directly on #3191,
+the fresh no-profile comparison reached RTF `0.197617`, versus the same-session
+#3191 parent comparison at RTF `0.189385` and #3172 baseline comparison at RTF
+`0.160807`. A later post-`test-all` comparison on the throttled workstation
+recorded the lazy branch at RTF `0.133315`, the #3191 parent at RTF `0.133157`,
+and the #3172 baseline at RTF `0.154159`; treat the lazy slice as a local
+experiment, not a PR candidate, until it shows a repeatable parent win.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -154,6 +176,15 @@ The local axis-plane contact-bounds experiment has passed:
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 (C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
 no-profile/profile benchmark runs above.
+
+The local lazy DART shape-cache experiment has passed: `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target contact_benchmark test_Collision test_DARTCollisionDetector test_ConstraintSolver`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector|test_ConstraintSolver)$'`,
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+(C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
+no-profile/profile benchmark runs above. Existing DART collision regressions
+cover changed shape geometry and `ShapeNode` relative-transform updates after
+collision groups already exist.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
