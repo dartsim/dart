@@ -137,10 +137,10 @@ protected:
   /// \brief Index for coronal right hip
   std::size_t mCoronalRightHip;
 
-  /// \brief Index for sagital left hip
+  /// \brief Index for sagittal left hip
   std::size_t mSagitalLeftHip;
 
-  /// \brief Index for sagital right hip
+  /// \brief Index for sagittal right hip
   std::size_t mSagitalRightHip;
 
   /// \brief Lower bound for emergency stop

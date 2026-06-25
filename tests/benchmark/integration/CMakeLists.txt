@@ -43,7 +43,6 @@ dart_benchmarks(
 )
 
 if(TARGET dart-collision-bullet)
-
   dart_benchmarks(
     TYPE BM_INTEGRATION
     SOURCES
@@ -58,7 +57,6 @@ if(TARGET dart-collision-bullet)
   # profiler when DART_BUILD_PROFILE is on). Not a Google Benchmark target.
   add_executable(boxes_headless boxes_headless.cpp)
   target_link_libraries(boxes_headless PRIVATE dart dart-collision-bullet)
-
 endif()
 
 # Headless contact-aware inverse-dynamics driver (checksum oracle + stepping-
@@ -68,7 +66,6 @@ add_executable(id_headless id_headless.cpp)
 target_link_libraries(id_headless PRIVATE dart)
 
 if(TARGET dart-utils)
-
   dart_benchmarks(
     TYPE BM_INTEGRATION
     SOURCES
@@ -76,5 +73,4 @@ if(TARGET dart-utils)
     LINK_LIBRARIES
       dart-utils
   )
-
 endif()

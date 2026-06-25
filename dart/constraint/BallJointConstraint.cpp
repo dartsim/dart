@@ -258,7 +258,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
-  // varaible in ODE
+  // variable in ODE
   if (_withCfm) {
     // Additive CFM floor so rank-deficient (e.g. closed-loop) directions
     // regularize; see gz-physics#719
