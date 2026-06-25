@@ -72,7 +72,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
 | Local skip-flags/body-set experiment, no profile | DART native | `0.213820` latest rerun; `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
-| Local skip-flags/body-set experiment, text profile | DART native | `0.165932` latest noisy rerun; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; latest `build contact constraints` `442.30 ms`, `shared-body check` `262.35 ms`, `parallel reset` `94.08 ms`, `solveConstrainedGroups` `272.70 ms`, `collide` `382.94 ms`; earlier faster profile had `build contact constraints` `236.06 ms`, `shared-body check` `140.07 ms`, `parallel reset` `63.83 ms` |
+| Local skip-flags/body-set experiment, text profile | DART native | `0.189984` latest rerun; `0.165932` noisy rerun; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; latest `build contact constraints` `255.22 ms`, `shared-body check` `139.37 ms`, `parallel reset` `75.81 ms`, `solveConstrainedGroups` `272.39 ms`, `collide` `370.03 ms`; faster prior profile had `build contact constraints` `236.06 ms`, `shared-body check` `140.07 ms`, `parallel reset` `63.83 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -93,13 +93,13 @@ costs: collision, integration, constrained-group solve, and remaining contact
 construction overhead.
 
 The skip-flags/body-set experiment keeps the no-profile result in the same
-noisy range. Its faster prior scoped profile reduced contact-construction work:
-`build contact constraints` dropped from `286.69 ms` to about `236 ms`,
-`shared-body check` dropped from `169.83 ms` to about `140 ms`, and
-`parallel reset` dropped from `78.53 ms` to about `64 ms`. A later local
-profile sample under heavier noise recorded RTF `0.165932` and higher scoped
-times while preserving the same final hash/contact counts. Treat this as the
-next local follow-up after the metadata-cache slice, not as part of that
+noisy range. Its latest scoped profile reduced contact-construction work:
+`build contact constraints` dropped from `286.69 ms` to `255.22 ms`,
+`shared-body check` dropped from `169.83 ms` to `139.37 ms`, and
+`parallel reset` dropped from `78.53 ms` to `75.81 ms`. An earlier faster
+profile pushed contact construction lower again, while another local sample
+under heavier noise recorded RTF `0.165932` and higher scoped times. Treat this
+as the next local follow-up after the metadata-cache slice, not as part of that
 publishable PR.
 
 On the original default-sleeping target command, the same current local head
