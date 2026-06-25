@@ -71,8 +71,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
-| Local skip-flags/body-set experiment, no profile | DART native | `0.213820` latest rerun; `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
-| Local skip-flags/body-set experiment, text profile | DART native | `0.189984` latest rerun; `0.165932` noisy rerun; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; latest `build contact constraints` `255.22 ms`, `shared-body check` `139.37 ms`, `parallel reset` `75.81 ms`, `solveConstrainedGroups` `272.39 ms`, `collide` `370.03 ms`; faster prior profile had `build contact constraints` `236.06 ms`, `shared-body check` `140.07 ms`, `parallel reset` `63.83 ms` |
+| Local skip-flags/body-set experiment, no profile | DART native | `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
+| Local skip-flags/body-set experiment, text profile | DART native | `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; latest `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms`, `solveConstrainedGroups` `257.24 ms`, `collide` `336.79 ms`; faster prior profile had `build contact constraints` `236.06 ms`, `shared-body check` `140.07 ms`, `parallel reset` `63.83 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -94,13 +94,12 @@ construction overhead.
 
 The skip-flags/body-set experiment keeps the no-profile result in the same
 noisy range. Its latest scoped profile reduced contact-construction work:
-`build contact constraints` dropped from `286.69 ms` to `255.22 ms`,
-`shared-body check` dropped from `169.83 ms` to `139.37 ms`, and
-`parallel reset` dropped from `78.53 ms` to `75.81 ms`. An earlier faster
-profile pushed contact construction lower again, while another local sample
-under heavier noise recorded RTF `0.165932` and higher scoped times. Treat this
-as the next local follow-up after the metadata-cache slice, not as part of that
-publishable PR.
+`build contact constraints` dropped from `286.69 ms` to `239.58 ms`,
+`shared-body check` dropped from `169.83 ms` to `138.92 ms`, and
+`parallel reset` dropped from `78.53 ms` to `68.59 ms`. An earlier profile was
+similarly low, while another local sample under heavier noise recorded RTF
+`0.165932` and higher scoped times. Treat this as the next local follow-up
+after the metadata-cache slice, not as part of that publishable PR.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -123,7 +122,7 @@ build, focused `test_ConstraintSolver` CTest, and the two exact-scene benchmark
 runs above. After rebasing the unpublished stack onto #3183 head
 `0b158d44126`, the focused build and `test_ConstraintSolver` CTest were rerun
 successfully on the current local skip-flags branch, and the latest text-profile
-run recorded RTF `0.189984` with final hash `0x6a043ac1e7558218`.
+run recorded RTF `0.205666` with final hash `0x6a043ac1e7558218`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker

@@ -1335,11 +1335,8 @@ void ConstraintSolver::updateConstraints()
           }
         };
 
-    static thread_local std::unordered_set<const dynamics::BodyNode*>
-        parallelSkipRelVelocityBodies;
     bool parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
     const auto canBuildDefaultContactsByPairInParallel = [&]() {
-      parallelSkipRelVelocityBodies.clear();
       parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
       if (!useBuiltInDefaultSurfaceParamsCache
           || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
@@ -1360,39 +1357,66 @@ void ConstraintSolver::updateConstraints()
 
       static thread_local std::vector<const dynamics::BodyNode*>
           sharedBodyBuckets;
-      parallelSkipRelVelocityBodies.reserve(contactPairCounts.size());
+      static thread_local std::vector<const dynamics::BodyNode*>
+          skipRelVelocityBodyBuckets;
       bool needsSurfaceParamsPrepass = false;
 
       DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
 
-      std::size_t sharedBodyBucketCount = 2u;
-      while (sharedBodyBucketCount < contactPairCounts.size() * 4u)
-        sharedBodyBucketCount <<= 1u;
-      if (sharedBodyBuckets.size() < sharedBodyBucketCount)
-        sharedBodyBuckets.resize(sharedBodyBucketCount, nullptr);
-      std::fill(
-          sharedBodyBuckets.begin(),
-          sharedBodyBuckets.begin() + sharedBodyBucketCount,
-          nullptr);
-      const std::size_t sharedBodyBucketMask = sharedBodyBucketCount - 1u;
-      const auto recordSharedBodyIfUnique
-          = [&](const dynamics::BodyNode* bodyNode) {
+      const auto resetBodyBuckets =
+          [](std::vector<const dynamics::BodyNode*>& buckets,
+             std::size_t minimumBucketCount) {
+            std::size_t bucketCount = 2u;
+            while (bucketCount < minimumBucketCount)
+              bucketCount <<= 1u;
+            if (buckets.size() < bucketCount)
+              buckets.resize(bucketCount, nullptr);
+            std::fill(buckets.begin(), buckets.begin() + bucketCount, nullptr);
+            return bucketCount - 1u;
+          };
+      const auto findBodyInBuckets
+          = [](const std::vector<const dynamics::BodyNode*>& buckets,
+               const std::size_t bucketMask,
+               const dynamics::BodyNode* bodyNode) {
               const auto bodyNodeKey
                   = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
-              std::size_t bucket = std::hash<std::uintptr_t>()(bodyNodeKey)
-                                   & sharedBodyBucketMask;
+              std::size_t bucket
+                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
               while (true) {
-                const auto* existingBodyNode = sharedBodyBuckets[bucket];
-                if (existingBodyNode == nullptr) {
-                  sharedBodyBuckets[bucket] = bodyNode;
-                  return true;
-                }
-
-                if (existingBodyNode == bodyNode)
+                const auto* existingBodyNode = buckets[bucket];
+                if (existingBodyNode == nullptr)
                   return false;
 
-                bucket = (bucket + 1u) & sharedBodyBucketMask;
+                if (existingBodyNode == bodyNode)
+                  return true;
+
+                bucket = (bucket + 1u) & bucketMask;
               }
+            };
+      const auto recordBodyIfUnique
+          = [&](std::vector<const dynamics::BodyNode*>& buckets,
+                const std::size_t bucketMask,
+                const dynamics::BodyNode* bodyNode) {
+              if (findBodyInBuckets(buckets, bucketMask, bodyNode))
+                return false;
+
+              const auto bodyNodeKey
+                  = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
+              std::size_t bucket
+                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
+              while (buckets[bucket] != nullptr)
+                bucket = (bucket + 1u) & bucketMask;
+              buckets[bucket] = bodyNode;
+              return true;
+            };
+      const std::size_t sharedBodyBucketMask
+          = resetBodyBuckets(sharedBodyBuckets, contactPairCounts.size() * 4u);
+      const std::size_t skipRelVelocityBodyBucketMask = resetBodyBuckets(
+          skipRelVelocityBodyBuckets, contactPairCounts.size() * 4u);
+      const auto recordSharedBodyIfUnique
+          = [&](const dynamics::BodyNode* bodyNode) {
+              return recordBodyIfUnique(
+                  sharedBodyBuckets, sharedBodyBucketMask, bodyNode);
             };
 
       struct ParallelBodyCheckResult
@@ -1405,8 +1429,10 @@ void ConstraintSolver::updateConstraints()
         if (bodyNode == nullptr)
           return {true, false};
 
-        if (parallelSkipRelVelocityBodies.find(bodyNode)
-            != parallelSkipRelVelocityBodies.end()) {
+        if (findBodyInBuckets(
+                skipRelVelocityBodyBuckets,
+                skipRelVelocityBodyBucketMask,
+                bodyNode)) {
           return {true, true};
         }
 
@@ -1417,7 +1443,10 @@ void ConstraintSolver::updateConstraints()
               && bodyNode->getSpatialVelocity().squaredNorm()
                      < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
         if (fixedZeroVelocitySupport) {
-          parallelSkipRelVelocityBodies.insert(bodyNode);
+          recordBodyIfUnique(
+              skipRelVelocityBodyBuckets,
+              skipRelVelocityBodyBucketMask,
+              bodyNode);
           return {true, true};
         }
 
