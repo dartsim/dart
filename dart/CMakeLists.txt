@@ -124,12 +124,6 @@ if(ASSIMP_VERSION_MAJOR)
     PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR}
   )
 endif()
-if(ASSIMP_VERSION_MINOR)
-  target_compile_definitions(
-    dart
-    PUBLIC DART_ASSIMP_VERSION_MINOR=${ASSIMP_VERSION_MINOR}
-  )
-endif()
 
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)

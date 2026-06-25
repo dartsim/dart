@@ -63,13 +63,4 @@ find_package_handle_standard_args(
 # Extract version components for compile-time detection
 if(ASSIMP_VERSION)
   string(REGEX MATCH "^([0-9]+)" ASSIMP_VERSION_MAJOR "${ASSIMP_VERSION}")
-  string(
-    REGEX MATCH
-    "^([0-9]+)\\.([0-9]+)"
-    _ASSIMP_VERSION_MINOR_MATCH
-    "${ASSIMP_VERSION}"
-  )
-  if(_ASSIMP_VERSION_MINOR_MATCH)
-    set(ASSIMP_VERSION_MINOR "${CMAKE_MATCH_2}")
-  endif()
 endif()

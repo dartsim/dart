@@ -86,6 +86,7 @@
 
 // See #451
 #cmakedefine01 ASSIMP_AISCENE_CTOR_DTOR_DEFINED
+#cmakedefine01 ASSIMP_AISCENE_HAS_SKELETONS
 #cmakedefine01 ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 
 // Workaround for the fact that Bullet does not add the definition to

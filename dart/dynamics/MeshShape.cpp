@@ -55,14 +55,6 @@
 #include <string>
 #include <utility>
 
-#if defined(DART_ASSIMP_VERSION_MAJOR) && defined(DART_ASSIMP_VERSION_MINOR)   \
-    && (DART_ASSIMP_VERSION_MAJOR > 5                                          \
-        || (DART_ASSIMP_VERSION_MAJOR == 5 && DART_ASSIMP_VERSION_MINOR >= 4))
-  #define DART_ASSIMP_AISCENE_HAS_SKELETONS 1
-#else
-  #define DART_ASSIMP_AISCENE_HAS_SKELETONS 0
-#endif
-
 #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to
 // be missing from the standard assimp library (see #451)
@@ -83,7 +75,7 @@ aiScene::aiScene()
     mCameras(nullptr),
     mMetaData(nullptr),
     mName(),
-  #if DART_ASSIMP_AISCENE_HAS_SKELETONS
+  #if ASSIMP_AISCENE_HAS_SKELETONS
     mNumSkeletons(0),
     mSkeletons(nullptr),
   #endif
@@ -127,7 +119,7 @@ aiScene::~aiScene()
 
   delete mMetaData;
 
-  #if DART_ASSIMP_AISCENE_HAS_SKELETONS
+  #if ASSIMP_AISCENE_HAS_SKELETONS
   if (mNumSkeletons && mSkeletons)
     for (std::size_t a = 0; a < mNumSkeletons; ++a)
       delete mSkeletons[a];
