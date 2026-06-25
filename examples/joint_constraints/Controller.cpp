@@ -85,7 +85,7 @@ void Controller::computeTorques(
       = invM * (-mSkel->getCoriolisAndGravityForces() + p + d + mConstrForces);
   mTorques = p + d - mKd * qddot * mTimestep;
 
-  // ankle strategy for sagital plane
+  // ankle strategy for sagittal plane
   Eigen::Vector3d com = mSkel->getCOM();
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);

@@ -701,6 +701,39 @@ TEST(World, RevoluteJointConstraintBasics)
 }
 
 //==============================================================================
+// Exercises the single-body RevoluteJointConstraint constructor, which anchors
+// one body to a fixed point in the world about a hinge axis. The body-to-body
+// test above does not cover this overload.
+TEST(World, RevoluteJointConstraintSingleBodyAnchorsToWorld)
+{
+  simulation::WorldPtr world
+      = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1.0 / 2000);
+
+  BodyNode* body = world->getSkeleton(0)->getBodyNode("link 6");
+  ASSERT_TRUE(body != nullptr);
+
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d anchorWorld = body->getTransform() * offset;
+
+  auto hinge = std::make_shared<constraint::RevoluteJointConstraint>(
+      body, anchorWorld, Eigen::Vector3d::UnitZ());
+  world->getConstraintSolver()->addConstraint(hinge);
+  ASSERT_EQ(world->getConstraintSolver()->getNumConstraints(), 1);
+
+  for (int i = 0; i < 200; ++i)
+    world->step();
+
+  // The anchored material point on the body must stay near the fixed world
+  // anchor despite gravity (the revolute constraint pins it to the world).
+  const Eigen::Vector3d anchorNow = body->getTransform() * offset;
+  EXPECT_LT((anchorNow - anchorWorld).norm(), 5e-2);
+}
+
+//==============================================================================
 TEST(World, SimulationThreadCount)
 {
   auto world = World::create();
