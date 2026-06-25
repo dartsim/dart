@@ -1823,7 +1823,8 @@ bool isExactBodyNodeCollisionFilter(
   if (!filter)
     return false;
 
-  return typeid(*filter) == typeid(BodyNodeCollisionFilter);
+  const auto* rawFilter = filter.get();
+  return typeid(*rawFilter) == typeid(BodyNodeCollisionFilter);
 }
 
 //==============================================================================
