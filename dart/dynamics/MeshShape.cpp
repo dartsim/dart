@@ -65,13 +65,19 @@ aiScene::aiScene()
     mMeshes(nullptr),
     mNumMaterials(0),
     mMaterials(nullptr),
+    mNumAnimations(0),
     mAnimations(nullptr),
     mNumTextures(0),
     mTextures(nullptr),
     mNumLights(0),
     mLights(nullptr),
     mNumCameras(0),
-    mCameras(nullptr)
+    mCameras(nullptr),
+    mMetaData(nullptr),
+    mName(),
+    mNumSkeletons(0),
+    mSkeletons(nullptr),
+    mPrivate(nullptr)
 {
 }
 
@@ -108,6 +114,13 @@ aiScene::~aiScene()
     for (std::size_t a = 0; a < mNumCameras; ++a)
       delete mCameras[a];
   delete[] mCameras;
+
+  delete mMetaData;
+
+  if (mNumSkeletons && mSkeletons)
+    for (std::size_t a = 0; a < mNumSkeletons; ++a)
+      delete mSkeletons[a];
+  delete[] mSkeletons;
 }
 #endif // #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
