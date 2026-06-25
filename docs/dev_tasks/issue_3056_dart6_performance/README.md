@@ -268,6 +268,18 @@ Rejected local scratch experiments in the same area:
 - `perf/dart6-direct-single-contact-lcp` specialized one-contact identity-body
   direct LCP fill but regressed the profiled solve path (`solveConstrainedGroups`
   `248.39 ms`, `Construct LCP` `65.73 ms`).
+- `perf/dart6-parallel-reset-reuse-precheck` removed duplicate reusable-contact
+  checks from the threaded reset path but did not improve the target profile
+  (`build contact constraints` `154.86 ms`, `parallel reset` `50.48 ms`).
+- `perf/dart6-activation-skip-short-circuit` made the single-reactive
+  activation dependency check lazy, but the target activation scope regressed
+  to `19.12 ms`.
+- `perf/dart6-colliding-flag-skip-repeat` skipped repeated deprecated
+  colliding-flag writes but regressed `collect contact candidates` to
+  `60.55 ms`.
+- `perf/dart6-single-free-forward-dynamics` skipped the dynamic `FreeJoint`
+  `updateJointForceFD()` no-op for one-body roots, but the no-profile run
+  regressed to RTF `0.249708` and the profile stayed within noise.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
