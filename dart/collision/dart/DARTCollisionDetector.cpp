@@ -273,6 +273,12 @@ struct BroadphaseEntry
   bool plane{false};
 };
 
+struct ContactBoundEntry
+{
+  Eigen::Vector3d min{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d max{Eigen::Vector3d::Zero()};
+};
+
 constexpr double kContactDuplicateTolerance = 3.0e-12;
 constexpr double kContactPointCellSize = 4.0 * kContactDuplicateTolerance;
 constexpr double kContactPointKeyLowerBound = -9223372036854775808.0;
@@ -345,7 +351,7 @@ struct BroadphaseScratch
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
   std::vector<BroadphaseEntry> contactBoundFiniteEntries;
-  std::vector<BroadphaseEntry> contactBoundEntries;
+  std::vector<ContactBoundEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
@@ -424,14 +430,14 @@ bool canSkipBodyNodeFilterForFinitePlanePairs(
 bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2);
 
 bool contactBoundsOverlap(
-    const BroadphaseEntry& entry1,
-    const BroadphaseEntry& entry2,
+    const ContactBoundEntry& entry1,
+    const ContactBoundEntry& entry2,
     double padding);
 
 bool haveMutuallyDisjointProjectedContactBounds(
     const std::vector<BroadphaseEntry>& finiteEntries,
     const BroadphaseEntry& planeEntry,
-    std::vector<BroadphaseEntry>& projectedEntries);
+    std::vector<ContactBoundEntry>& projectedEntries);
 
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
@@ -1898,13 +1904,10 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 
 //==============================================================================
 bool contactBoundsOverlap(
-    const BroadphaseEntry& entry1,
-    const BroadphaseEntry& entry2,
+    const ContactBoundEntry& entry1,
+    const ContactBoundEntry& entry2,
     double padding)
 {
-  if (!entry1.finite || !entry2.finite)
-    return true;
-
   for (int axis = 0; axis < 3; ++axis) {
     if (entry1.max[axis] + padding < entry2.min[axis]
         || entry2.max[axis] + padding < entry1.min[axis]) {
@@ -1949,17 +1952,40 @@ bool getPlaneProjection(
 }
 
 //==============================================================================
+int getExactAxisAlignedNormalAxis(const Eigen::Vector3d& normal)
+{
+  for (int axis = 0; axis < 3; ++axis) {
+    const int axis1 = (axis + 1) % 3;
+    const int axis2 = (axis + 2) % 3;
+    if (std::abs(normal[axis]) == 1.0 && normal[axis1] == 0.0
+        && normal[axis2] == 0.0) {
+      return axis;
+    }
+  }
+  return -1;
+}
+
+//==============================================================================
 bool makeProjectedContactBounds(
     const BroadphaseEntry& entry,
     const Eigen::Vector3d& planeNormal,
     const Eigen::Vector3d& planePoint,
-    BroadphaseEntry& projectedEntry)
+    int axisAlignedNormalAxis,
+    ContactBoundEntry& projectedEntry)
 {
   if (!entry.finite)
     return false;
 
-  projectedEntry = BroadphaseEntry();
-  projectedEntry.finite = true;
+  if (axisAlignedNormalAxis >= 0) {
+    projectedEntry.min = entry.min;
+    projectedEntry.max = entry.max;
+    projectedEntry.min[axisAlignedNormalAxis]
+        = planePoint[axisAlignedNormalAxis];
+    projectedEntry.max[axisAlignedNormalAxis]
+        = planePoint[axisAlignedNormalAxis];
+    return projectedEntry.min.allFinite() && projectedEntry.max.allFinite();
+  }
+
   projectedEntry.min
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
   projectedEntry.max
@@ -1987,7 +2013,7 @@ bool makeProjectedContactBounds(
 bool haveMutuallyDisjointProjectedContactBounds(
     const std::vector<BroadphaseEntry>& finiteEntries,
     const BroadphaseEntry& planeEntry,
-    std::vector<BroadphaseEntry>& projectedEntries)
+    std::vector<ContactBoundEntry>& projectedEntries)
 {
   if (finiteEntries.size() < 2u)
     return true;
@@ -1998,13 +2024,18 @@ bool haveMutuallyDisjointProjectedContactBounds(
   Eigen::Vector3d planePoint;
   if (!getPlaneProjection(planeEntry, planeNormal, planePoint))
     return false;
+  const int axisAlignedNormalAxis = getExactAxisAlignedNormalAxis(planeNormal);
 
   projectedEntries.clear();
   projectedEntries.reserve(finiteEntries.size());
   for (const auto& entry : finiteEntries) {
-    BroadphaseEntry projectedEntry;
+    ContactBoundEntry projectedEntry;
     if (!makeProjectedContactBounds(
-            entry, planeNormal, planePoint, projectedEntry)) {
+            entry,
+            planeNormal,
+            planePoint,
+            axisAlignedNormalAxis,
+            projectedEntry)) {
       return false;
     }
     projectedEntries.push_back(projectedEntry);
@@ -2013,7 +2044,7 @@ bool haveMutuallyDisjointProjectedContactBounds(
   std::sort(
       projectedEntries.begin(),
       projectedEntries.end(),
-      [](const BroadphaseEntry& lhs, const BroadphaseEntry& rhs) {
+      [](const ContactBoundEntry& lhs, const ContactBoundEntry& rhs) {
         return lhs.min.x() < rhs.min.x();
       });
 
