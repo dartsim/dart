@@ -1334,7 +1334,7 @@ void BroadphaseScratch::clear()
 void BroadphaseScratch::prepareParallelPairResults(std::size_t pairCount)
 {
   parallelPairResults.resize(pairCount);
-  parallelPairCollisions.assign(pairCount, 0);
+  parallelPairCollisions.resize(pairCount);
 }
 
 //==============================================================================
