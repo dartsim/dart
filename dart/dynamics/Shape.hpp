@@ -213,7 +213,7 @@ protected:
   static std::atomic_int mCounter;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  /// Type of primitive shpae.
+  /// Type of primitive shape.
   ShapeType mType;
 
 private:

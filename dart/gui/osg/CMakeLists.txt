@@ -1,14 +1,17 @@
 if(NOT DART_BUILD_GUI_OSG)
-  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+  message(
+    STATUS
+    "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})"
+  )
   return()
 endif()
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-gui-osg)
 set(component_name gui-osg)
-set(component_dependencies )
-set(component_dependency_packages )
-set(link_libraries )
+set(component_dependencies)
+set(component_dependency_packages)
+set(link_libraries)
 
 # Dependency checks
 dart_check_dependent_target(${target_name} dart-utils)
@@ -36,7 +39,8 @@ add_subdirectory(render)
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 if(NOT DART_USE_SYSTEM_IMGUI)
-  target_include_directories(${target_name}
+  target_include_directories(
+    ${target_name}
     BEFORE
     PUBLIC
       $<BUILD_INTERFACE:${DART_BINARY_DIR}/_deps/imgui-src>

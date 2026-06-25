@@ -3,25 +3,21 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, and #3146 are merged. #3147, #3148, #3149, #3150, #3151, and #3152
-are the parent stack. #3153 and #3154 are the current published stack tip
-sequence. #3170 is published as
-`perf/dart6-parallel-native-broadphase`, stacked on #3154. #3171 is published
-as `perf/dart6-exact-contact-group-cache`, stacked on #3170. The local next
-candidate is `perf/dart6-native-translation-bounds`, stacked on #3171.
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
+#3170, and #3171 are merged. #3172
+`perf/dart6-native-translation-bounds` is the active slice on `release-6.20`.
 
-#3171 has three pieces. It caches whether each
-constrained group contains only exact built-in contact constraints while the
-groups are built, so the boxed-LCP solver can enter the existing direct
-single-free-body contact path without repeating RTTI checks for every small
-contact island. It also enables the default contact rebuild parallel path for
-the common "many mobile bodies on one fixed zero-velocity support" case. The
-fixed-support decision is computed serially before worker threads run, and the
-parallel workers use explicit pointers to the main thread's per-step contact
-candidate arrays rather than accidentally indexing their own thread-local
-scratch vectors. Finally, native finite-plane contact merging now uses a
-single-contact fast path when the broadphase has already proven that cross-pair
-duplicate checks are unnecessary.
+The merged #3171 slice caches whether each constrained group contains only
+exact built-in contact constraints while the groups are built, so the boxed-LCP
+solver can enter the existing direct single-free-body contact path without
+repeating RTTI checks for every small contact island. It also enables the
+default contact rebuild parallel path for the common "many mobile bodies on one
+fixed zero-velocity support" case. The fixed-support decision is computed
+serially before worker threads run, and the parallel workers use explicit
+pointers to the main thread's per-step contact candidate arrays rather than
+accidentally indexing their own thread-local scratch vectors. Finally, native
+finite-plane contact merging now uses a single-contact fast path when the
+broadphase has already proven that cross-pair duplicate checks are unnecessary.
 
 The local next candidate adds a narrower native broadphase setup fast path.
 DART-native collision objects now cache local bounds center/half-extents when
@@ -101,7 +97,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3154 current head, no profile | ODE | `0.00460932` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
 Current-head DART-native is about `1.17x` FCL primitive, `1.24x` Bullet, and
-`23.7x` ODE on the #3154 active issue-scene rerun. The local slice is a small
+`23.7x` ODE on the latest active issue-scene rerun. The local slice is a small
 contact-construction win, not a step-change; the larger remaining active-scene
 costs are still collision, constrained-group solve, and integration.
 
@@ -174,17 +170,13 @@ contact sets by collision pair in parallel, while custom contact handlers,
 small contact sets, and pairs that share a non-skipped body stay on the
 existing serial path.
 
-#3150 attacks the measured DART-native finite-plane merge hot path. When a
-one-plane query can prove the finite shapes' padded contact bounds are mutually
-disjoint, contacts from different finite/plane pairs cannot be duplicate
-points. That lets the merge path keep the existing per-pair duplicate check
-while bypassing the global duplicate-contact grid for those pair results.
-Accepted fast-path contacts are still published to the global duplicate index
-when later fallback pair phases may need that state. The all-finite/one-plane
-issue scene skips that extra bookkeeping because the same disjoint-bound proof
-also rules out later duplicate-producing finite/finite, plane/plane, and
-unsupported-shape phases. Overlapping or multi-plane queries keep the existing
-global duplicate path.
+#3150 attacks the measured DART-native finite-plane merge hot path. Queries
+that can prove finite-plane contact footprints are mutually disjoint may keep
+the existing per-pair duplicate check while bypassing the global
+duplicate-contact grid for those pair results. Accepted fast-path contacts are
+still published to the global duplicate index when later fallback pair phases or
+collision filters may need that state. Overlapping, multi-plane, and cross-phase
+queries keep the existing global duplicate path.
 
 #3151 attacks the remaining default contact-build cost. It keeps moving fixed
 supports observable, but skips relative-velocity work for zero-velocity fixed
@@ -195,7 +187,8 @@ contact allocation.
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--steps 300`, `--world-threads 16`,
-`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled:
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled.
+ODE is included here because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |

@@ -97,7 +97,7 @@ public:
   ///
   /// \note SharedLibrary should be always created from this create function.
   /// \param[in] path The path to the shared library. The path can be a relative
-  /// path or an absolute path. If the path doens't exist this function returns
+  /// path or an absolute path. If the path doesn't exist this function returns
   /// nullptr. If the path exist, the path will be stored as the canonical path
   /// where a canonical path is an absolute path that has no elements which are
   /// symbolic links, and no dot or dot dot elements such as
@@ -114,7 +114,7 @@ public:
   ///
   /// \note SharedLibrary should be always created from this create function.
   /// \param[in] path The path to the shared library. The path can be a relative
-  /// path or an absolute path. If the path doens't exist this function returns
+  /// path or an absolute path. If the path doesn't exist this function returns
   /// nullptr. If the path exist, the path will be stored as the canonical path
   /// where a canonical path is an absolute path that has no elements which are
   /// symbolic links, and no dot or dot dot elements such as
@@ -129,7 +129,7 @@ public:
   /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
   /// using std::make_shared.
   ///
-  /// \note Please use create() to contruct SharedLibrary instead of this
+  /// \note Please use create() to construct SharedLibrary instead of this
   /// constructor.
   /// \param[in] path The canonical path to the shared library.
   /// \return Pointer to the created SharedLibrary upon success in loading.
@@ -146,7 +146,7 @@ public:
   /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
   /// using std::make_shared.
   ///
-  /// \note Please use create() to contruct SharedLibrary instead of this
+  /// \note Please use create() to construct SharedLibrary instead of this
   /// constructor.
   /// \param[in] path The canonical path to the shared library.
   /// \return Pointer to the created SharedLibrary upon success in loading.
