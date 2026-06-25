@@ -1736,6 +1736,15 @@ void buildBroadphaseEntries(
       = threadPool != nullptr && numCollisionThreads > 1u
         && objects.size() >= kMinParallelBroadphaseEntries;
   if (useParallelBroadphase) {
+    // Keep lazy Frame transform-cache writes on the calling thread before
+    // workers read those transforms while building independent entries.
+    for (const auto* object : objects) {
+      if (object != nullptr) {
+        static_cast<const DARTCollisionObject*>(object)
+            ->getWorldTransformForCollision();
+      }
+    }
+
     broadphaseEntries.resize(objects.size());
     auto buildEntryAt = [&](std::size_t index) {
       broadphaseEntries[index] = makeBroadphaseEntry(objects[index]);
