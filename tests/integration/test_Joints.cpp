@@ -331,7 +331,7 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
 // TODO(JS): Disabled the test compares analytical Jacobian and numerical
 // Jacobian since the meaning of BallJoint Jacobian is changed per
 // we now use angular velocity and angular accertions as BallJoint's generalized
-// velocities and accelerations, repectively.
+// velocities and accelerations, respectively.
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
@@ -398,7 +398,7 @@ TEST_F(JOINTS, PlanarJointIsometry2dHelpers)
 // TODO(JS): Disabled the test compares analytical Jacobian and numerical
 // Jacobian since the meaning of FreeJoint Jacobian is changed per
 // we now use spatial velocity and spatial accertions as FreeJoint's generalized
-// velocities and accelerations, repectively.
+// velocities and accelerations, respectively.
 
 //==============================================================================
 template <
@@ -959,7 +959,7 @@ void testServoMotor()
   //  - Condition: Nonzero desired velocity, infinite servo motor force limits,
   //               and infinite Coulomb friction
   //  - Expectation: The the pendulum shouldn't move at all due to the friction.
-  //    TODO(JS): Should a servo motor dominent Coulomb friction in this case?
+  //    TODO(JS): Should a servo motor dominant Coulomb friction in this case?
 
   std::vector<SkeletonPtr> pendulums(numPendulums);
   std::vector<JointPtr> joints(numPendulums);
@@ -1046,14 +1046,16 @@ void testServoMotor()
     //     posLowerLimit - expected_vel * timeStep);
     // TODO(JS): Position limits and servo motor with infinite force limits
     // doesn't work together because they compete against each other to achieve
-    // different joint velocities with their infinit force limits. In this case,
-    // the position limit constraint should dominent the servo motor constraint.
+    // different joint velocities with their infinite force limits. In this
+    // case, the position limit constraint should dominant the servo motor
+    // constraint.
     EXPECT_NEAR(jointVels[5], 0.0, tol * 1e+2);
     // EXPECT_NEAR(jointVels[6], 0.0, tol * 1e+2);
     // TODO(JS): Servo motor with infinite force limits and infinite Coulomb
     // friction doesn't work because they compete against each other to achieve
-    // different joint velocities with their infinit force limits. In this case,
-    // the friction constraints should dominent the servo motor constraints.
+    // different joint velocities with their infinite force limits. In this
+    // case, the friction constraints should dominant the servo motor
+    // constraints.
   }
 }
 

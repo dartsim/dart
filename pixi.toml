@@ -11,7 +11,9 @@ benchmark = ">=1.9.3,<2"
 black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
 cmake = ">=4.0.2,<5"
+codespell = ">=2.4.1,<3"
 doxygen = ">=1.13.2,<2"
+gersemi = ">=0.24.0,<0.25"
 gtest = ">=1.17.0,<2"
 isort = ">=6.0.1,<7"
 jinja2 = ">=3.1.2"
@@ -27,6 +29,7 @@ sphinx-copybutton = "*"
 sphinx-intl = "*"
 sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
+taplo = ">=0.9.0,<1"
 tracy-profiler-gui = ">=0.11.1,<0.12"
 assimp = ">=5.4.3,<7"
 bullet-cpp = ">=3.25,<4"
@@ -76,7 +79,47 @@ lint-py = { cmd = """
     && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
-lint = { depends-on = ["lint-cpp", "lint-py"] }
+lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
+
+lint-toml = { cmd = ["bash", "-lc", """
+set -euo pipefail
+python - <<'PY'
+import pathlib
+import shutil
+import subprocess
+import time
+
+skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+root = pathlib.Path('.')
+toml_files = []
+for path in root.rglob('*.toml'):
+    if any(part in skip_dirs for part in path.parts):
+        continue
+    toml_files.append(path)
+
+if not toml_files:
+    raise SystemExit(0)
+
+timestamp = time.strftime('%Y%m%d%H%M%S')
+backup_dir = root / '.pixi' / 'lint-toml-backups' / timestamp
+for path in toml_files:
+    dest = backup_dir / path
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, dest)
+
+subprocess.run(['taplo', 'fmt', *map(str, toml_files)], check=True)
+PY
+"""] }
+
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = [
+  "lint-spell",
+  "lint-cpp",
+  "lint-cmake",
+  "lint-py",
+  "lint-toml",
+] }
 
 check-lint-cpp = { cmd = """
     cmake \
@@ -89,7 +132,16 @@ check-lint-py = { cmd = """
     && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
-check-lint = { depends-on = ["check-lint-cpp", "check-lint-py"] }
+check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
+
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
+check-lint = { depends-on = [
+  "check-lint-cpp",
+  "check-lint-cmake",
+  "check-lint-py",
+  "check-lint-spell",
+] }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
@@ -139,31 +191,69 @@ config-py = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
-py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = ["build-py-dev"], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
+py-ex = { cmd = "python python/examples/{{ example }}/main.py", depends-on = [
+  "build-py-dev",
+], args = [
+  { arg = "example", default = "hello_world" },
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
-py-ex-hello-world = { depends-on = [{ task = "py-ex", args = ["hello_world"] }] }
+py-ex-hello-world = { depends-on = [
+  { task = "py-ex", args = [
+    "hello_world",
+  ] },
+] }
 
-py-ex-hello-world-gui = { depends-on = [{ task = "py-ex", args = ["hello_world_gui"] }] }
+py-ex-hello-world-gui = { depends-on = [
+  { task = "py-ex", args = [
+    "hello_world_gui",
+  ] },
+] }
 
-py-ex-rigid-cubes = { depends-on = [{ task = "py-ex", args = ["rigid_cubes"] }] }
+py-ex-rigid-cubes = { depends-on = [
+  { task = "py-ex", args = [
+    "rigid_cubes",
+  ] },
+] }
 
-py-ex-rigid-chain = { depends-on = [{ task = "py-ex", args = ["rigid_chain"] }] }
+py-ex-rigid-chain = { depends-on = [
+  { task = "py-ex", args = [
+    "rigid_chain",
+  ] },
+] }
 
 py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
 
-py-ex-biped-stand = { depends-on = [{ task = "py-ex", args = ["biped_stand"] }] }
+py-ex-biped-stand = { depends-on = [
+  { task = "py-ex", args = [
+    "biped_stand",
+  ] },
+] }
 
-py-ex-contacts-pointcloud = { depends-on = [{ task = "py-ex", args = ["contacts_pointcloud"] }] }
+py-ex-contacts-pointcloud = { depends-on = [
+  { task = "py-ex", args = [
+    "contacts_pointcloud",
+  ] },
+] }
 
-py-ex-drag-and-drop = { depends-on = [{ task = "py-ex", args = ["drag_and_drop"] }] }
+py-ex-drag-and-drop = { depends-on = [
+  { task = "py-ex", args = [
+    "drag_and_drop",
+  ] },
+] }
 
-py-ex-operational-space-control = { depends-on = [{ task = "py-ex", args = ["operational_space_control"] }] }
+py-ex-operational-space-control = { depends-on = [
+  { task = "py-ex", args = [
+    "operational_space_control",
+  ] },
+] }
 
 test = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
 """, depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+
+test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
 
 test-py = { cmd = """
     cmake \
@@ -205,7 +295,9 @@ test-asan = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --output-on-failure
-""", depends-on = ["build-asan"], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=0" } }
+""", depends-on = [
+  "build-asan",
+], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=0" } }
 
 config-coverage = { cmd = """
     cmake \
@@ -234,7 +326,9 @@ build-coverage = { cmd = """
         --parallel 4 \
         --timeout 3000 \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-""", depends-on = ["config-coverage"], env = { BUILD_TYPE = "Debug" } }
+""", depends-on = [
+  "config-coverage",
+], env = { BUILD_TYPE = "Debug" } }
 
 # Captures coverage from the .gcda data produced by a prior `build-coverage`
 # run (the CI coverage job runs `build-coverage` then `coverage-report` as
@@ -266,8 +360,10 @@ ex = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/{{ example }}
 """, depends-on = [
-    "config",
-], args = [{ arg = "example", default = "hello_world" }], env = { BUILD_TYPE = "Release" } }
+  "config",
+], args = [
+  { arg = "example", default = "hello_world" },
+], env = { BUILD_TYPE = "Release" } }
 
 ex-atlas-puppet = { cmd = """
     cmake \
@@ -321,11 +417,11 @@ bm-boxes-headless = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/integration/boxes_headless {{ dim }} {{ steps }} {{ checkpoint }}
 """, depends-on = [
-    "config",
+  "config",
 ], args = [
-    { arg = "dim", default = "8" },
-    { arg = "steps", default = "2000" },
-    { arg = "checkpoint", default = "500" },
+  { arg = "dim", default = "8" },
+  { arg = "steps", default = "2000" },
+  { arg = "checkpoint", default = "500" },
 ], env = { BUILD_TYPE = "Release" } }
 
 bm-empty = { cmd = """
@@ -343,7 +439,7 @@ bm-kinematics = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_kinematics
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 tu-biped = { cmd = """
@@ -361,7 +457,7 @@ tu-biped-fi = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_biped_finished
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 tu-collisions = { cmd = """
@@ -379,7 +475,7 @@ tu-collisions-fi = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_collisions_finished
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 tu-dominoes = { cmd = """
@@ -397,7 +493,7 @@ tu-dominoes-fi = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_dominoes_finished
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 tu-multi-pendulum = { cmd = """
@@ -407,7 +503,7 @@ tu-multi-pendulum = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 tu-multi-pendulum-fi = { cmd = """
@@ -417,7 +513,7 @@ tu-multi-pendulum-fi = { cmd = """
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum_finished
 """, depends-on = [
-    "config",
+  "config",
 ], env = { BUILD_TYPE = "Release" } }
 
 install = { cmd = """
@@ -488,7 +584,9 @@ download-osg = { cmd = """
     git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
     cd .deps/OpenSceneGraph && \
     git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [".deps/OpenSceneGraph/README.md"] }
+""", outputs = [
+  ".deps/OpenSceneGraph/README.md",
+] }
 
 config-osg = { cmd = """
     cmake \
@@ -503,9 +601,13 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = ["config-osg"] }
+build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
+  "config-osg",
+] }
 
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = ["build-osg"] }
+install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
+  "build-osg",
+] }
 
 ################################################################################
 # osx-arm64
@@ -520,7 +622,9 @@ download-osg = { cmd = """
     git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
     cd .deps/OpenSceneGraph && \
     git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [".deps/OpenSceneGraph/README.md"] }
+""", outputs = [
+  ".deps/OpenSceneGraph/README.md",
+] }
 
 config-osg = { cmd = """
     cmake \
@@ -535,9 +639,13 @@ config-osg = { cmd = """
         -DBUILD_OSG_EXAMPLES=OFF
 """, depends-on = ["download-osg"] }
 
-build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = ["config-osg"] }
+build-osg = { cmd = "cmake --build .deps/OpenSceneGraph/build -j", depends-on = [
+  "config-osg",
+] }
 
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = ["build-osg"] }
+install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
+  "build-osg",
+] }
 
 ################################################################################
 # win-64
@@ -568,13 +676,17 @@ lint-py = { cmd = """
     black . --exclude '\\..*' && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
-lint = { depends-on = ["lint-py"] }
+lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
+
+lint = { depends-on = ["lint-spell", "lint-py"] }
 
 check-lint-py = { cmd = """
     black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
-check-lint = { depends-on = ["check-lint-py"] }
+check-lint-spell = { cmd = "codespell --config .codespellrc" }
+
+check-lint = { depends-on = ["check-lint-spell", "check-lint-py"] }
 
 build = { cmd = """
     cmake \
@@ -788,7 +900,9 @@ patch-gz-physics = { cmd = """
         git -C .deps/gz-physics apply "$patch_file"
     fi
     '
-""", depends-on = ["download-gz"] }
+""", depends-on = [
+  "download-gz",
+] }
 
 config-gz = { cmd = """
     cmake \
@@ -801,10 +915,13 @@ config-gz = { cmd = """
         -DCMAKE_CXX_FLAGS=-I$PWD/.deps/gz-physics/test/gtest_vendor/include \
         -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
         -DBUILD_TESTING=ON
-""", depends-on = ["patch-gz-physics", "install"] }
+""", depends-on = [
+  "patch-gz-physics",
+  "install",
+] }
 
 build-gz = { cmd = "bash scripts/run_gz_physics_task.sh build", depends-on = [
-    "config-gz",
+  "config-gz",
 ] }
 
 config-gz-install = { cmd = """
@@ -819,11 +936,11 @@ config-gz-install = { cmd = """
 """, depends-on = ["patch-gz-physics", "install"] }
 
 install-gz-physics = { cmd = "GZ_PHYSICS_BUILD_DIR=.deps/gz-physics/build-install bash scripts/run_gz_physics_task.sh install", depends-on = [
-    "config-gz-install",
+  "config-gz-install",
 ] }
 
 test-gz-physics = { cmd = "bash scripts/run_gz_physics_task.sh test", depends-on = [
-    "build-gz",
+  "build-gz",
 ] }
 
 config-gz-sim = { cmd = """
@@ -838,14 +955,17 @@ config-gz-sim = { cmd = """
         -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_force_vendor_gtest.cmake \
         -DSKIP_PYBIND11=ON \
         -DBUILD_TESTING=ON
-""", depends-on = ["download-gz-sim", "install-gz-physics"] }
+""", depends-on = [
+  "download-gz-sim",
+  "install-gz-physics",
+] }
 
 build-gz-sim = { cmd = "bash scripts/run_gz_sim_task.sh build", depends-on = [
-    "config-gz-sim",
+  "config-gz-sim",
 ] }
 
 test-gz-sim = { cmd = "bash scripts/run_gz_sim_task.sh test", depends-on = [
-    "build-gz-sim",
+  "build-gz-sim",
 ] }
 
 test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
