@@ -278,6 +278,10 @@ class ContactPointIndex
 public:
   void clear();
   void prepare(std::size_t maxContacts);
+  bool empty() const
+  {
+    return points.empty();
+  }
   bool insertIfAbsent(const Eigen::Vector3d& point);
   void insertUnchecked(const Eigen::Vector3d& point);
 
@@ -316,7 +320,7 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
-  std::vector<const BroadphaseEntry*> contactBoundEntries;
+  std::vector<BroadphaseEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
@@ -388,9 +392,10 @@ bool contactBoundsOverlap(
     const BroadphaseEntry& entry2,
     double padding);
 
-bool haveMutuallyDisjointContactBounds(
+bool haveMutuallyDisjointProjectedContactBounds(
     const std::vector<BroadphaseEntry>& finiteEntries,
-    std::vector<const BroadphaseEntry*>& sortedEntries);
+    const BroadphaseEntry& planeEntry,
+    std::vector<BroadphaseEntry>& projectedEntries);
 
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
@@ -557,8 +562,9 @@ bool DARTCollisionDetector::collide(
 
   auto collisionFound = false;
   // This flag is only observed after the finite-plane path has proven mutually
-  // disjoint contact bounds. With no unsupported entries and at most one plane,
-  // no later same-group phase can consume the cross-pair duplicate index.
+  // disjoint plane-projected contact bounds. With no unsupported entries and
+  // at most one plane, no later same-group phase can consume the cross-pair
+  // duplicate index.
   const bool finitePlaneFastPathHasNoLaterDuplicateConsumers
       = scratch.otherEntries1.empty() && scratch.planeEntries1.size() <= 1u;
   if (processFinitePlanePairs(
@@ -1715,35 +1721,112 @@ bool contactBoundsOverlap(
 }
 
 //==============================================================================
-bool haveMutuallyDisjointContactBounds(
+bool getPlaneProjection(
+    const BroadphaseEntry& planeEntry,
+    Eigen::Vector3d& planeNormal,
+    Eigen::Vector3d& planePoint)
+{
+  if (!planeEntry.plane || planeEntry.object == nullptr)
+    return false;
+
+  const auto* dartObject
+      = static_cast<const DARTCollisionObject*>(planeEntry.object);
+  const auto* shape = dartObject->getCachedShape();
+  if (shape == nullptr
+      || dartObject->getCachedShapeType()
+             != dynamics::PlaneShape::getStaticType()) {
+    return false;
+  }
+
+  const auto* planeShape = static_cast<const dynamics::PlaneShape*>(shape);
+  const Eigen::Vector3d rawNormal
+      = planeEntry.transform.linear() * planeShape->getNormal();
+  const auto normalNorm = rawNormal.norm();
+  if (!std::isfinite(normalNorm)
+      || normalNorm <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  planeNormal = rawNormal / normalNorm;
+  planePoint = planeEntry.transform.translation()
+               + rawNormal * planeShape->getOffset();
+  return planeNormal.allFinite() && planePoint.allFinite();
+}
+
+//==============================================================================
+bool makeProjectedContactBounds(
+    const BroadphaseEntry& entry,
+    const Eigen::Vector3d& planeNormal,
+    const Eigen::Vector3d& planePoint,
+    BroadphaseEntry& projectedEntry)
+{
+  if (!entry.finite)
+    return false;
+
+  projectedEntry = BroadphaseEntry();
+  projectedEntry.finite = true;
+  projectedEntry.min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  projectedEntry.max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (int cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
+    const Eigen::Vector3d corner(
+        (cornerIndex & 1) ? entry.max.x() : entry.min.x(),
+        (cornerIndex & 2) ? entry.max.y() : entry.min.y(),
+        (cornerIndex & 4) ? entry.max.z() : entry.min.z());
+    const auto signedDistance = planeNormal.dot(corner - planePoint);
+    const Eigen::Vector3d projectedPoint
+        = corner - planeNormal * signedDistance;
+    if (!projectedPoint.allFinite())
+      return false;
+
+    projectedEntry.min = projectedEntry.min.cwiseMin(projectedPoint);
+    projectedEntry.max = projectedEntry.max.cwiseMax(projectedPoint);
+  }
+
+  return projectedEntry.min.allFinite() && projectedEntry.max.allFinite();
+}
+
+//==============================================================================
+bool haveMutuallyDisjointProjectedContactBounds(
     const std::vector<BroadphaseEntry>& finiteEntries,
-    std::vector<const BroadphaseEntry*>& sortedEntries)
+    const BroadphaseEntry& planeEntry,
+    std::vector<BroadphaseEntry>& projectedEntries)
 {
   if (finiteEntries.size() < 2u)
     return true;
 
-  DART_PROFILE_SCOPED_N("DART native contact-bound separation check");
+  DART_PROFILE_SCOPED_N("DART native projected contact-bound separation check");
 
-  sortedEntries.clear();
-  sortedEntries.reserve(finiteEntries.size());
+  Eigen::Vector3d planeNormal;
+  Eigen::Vector3d planePoint;
+  if (!getPlaneProjection(planeEntry, planeNormal, planePoint))
+    return false;
+
+  projectedEntries.clear();
+  projectedEntries.reserve(finiteEntries.size());
   for (const auto& entry : finiteEntries) {
-    if (!entry.finite)
+    BroadphaseEntry projectedEntry;
+    if (!makeProjectedContactBounds(
+            entry, planeNormal, planePoint, projectedEntry)) {
       return false;
-    sortedEntries.push_back(&entry);
+    }
+    projectedEntries.push_back(projectedEntry);
   }
 
   std::sort(
-      sortedEntries.begin(),
-      sortedEntries.end(),
-      [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
-        return lhs->min.x() < rhs->min.x();
+      projectedEntries.begin(),
+      projectedEntries.end(),
+      [](const BroadphaseEntry& lhs, const BroadphaseEntry& rhs) {
+        return lhs.min.x() < rhs.min.x();
       });
 
-  for (std::size_t i = 0u; i + 1u < sortedEntries.size(); ++i) {
-    const auto& entry1 = *sortedEntries[i];
+  for (std::size_t i = 0u; i + 1u < projectedEntries.size(); ++i) {
+    const auto& entry1 = projectedEntries[i];
     const auto maxX = entry1.max.x() + kContactDuplicateTolerance;
-    for (std::size_t j = i + 1u; j < sortedEntries.size(); ++j) {
-      const auto& entry2 = *sortedEntries[j];
+    for (std::size_t j = i + 1u; j < projectedEntries.size(); ++j) {
+      const auto& entry2 = projectedEntries[j];
       if (entry2.min.x() > maxX)
         break;
 
@@ -1781,10 +1864,13 @@ bool processFinitePlanePairs(
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
   const bool hasSinglePlane = planeEntries.size() == 1u;
+  const bool hasPriorCrossPairDuplicateState
+      = result != nullptr && !scratch.contactPointIndex.empty();
   const bool canSkipCrossPairDuplicateCheck
       = canConsiderParallel && hasSinglePlane
-        && haveMutuallyDisjointContactBounds(
-            finiteEntries, scratch.contactBoundEntries);
+        && !hasPriorCrossPairDuplicateState
+        && haveMutuallyDisjointProjectedContactBounds(
+            finiteEntries, planeEntries.front(), scratch.contactBoundEntries);
 
   auto getPairEntries = [&](std::size_t pairIndex) {
     const auto planeIndex
