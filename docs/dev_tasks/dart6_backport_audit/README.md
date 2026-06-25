@@ -19,7 +19,9 @@ framing, and decisions; the inventory owns the detailed evidence;
 [`RESUME.md`](RESUME.md) owns the exact, prioritized next steps; and
 [`02-execution-log.md`](02-execution-log.md) owns the record of what was actually
 ported, how it was verified, and the conflict resolutions — this effort is
-**DONE and closed** (all backports merged, full CI matrix green; see that log).
+all backports merged and every post-gridlock failure fixed; the required CI matrix
+has no remaining known failures (a final, uninterrupted green run is the closing
+confirmation — see that log).
 
 What this task is **not**:
 

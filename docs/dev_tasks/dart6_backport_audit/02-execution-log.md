@@ -6,13 +6,15 @@ per-item plan/evidence, [`RESUME.md`](RESUME.md) owns next steps — and this fi
 owns the **record of what was actually ported, how it was verified, and how
 conflicts with the parallel performance lane were avoided**.
 
-**Status: COMPLETE (2026-06-25).** All accepted feature backports, the in-scope
-CI/build tooling, and the spell-lint (including its temporary-skip cleanup) are
-merged to `release-6.20`. After the GitHub CI runner gridlock cleared, the full
-matrix surfaced several *latent* platform-specific failures (clang `-Werror`,
-macOS arm64, FreeBSD VM patches, MSVC) — all now resolved (§10). Two of them were
-fixed by the parallel performance lane in DART-6 code this effort had backported.
-Nothing remains open. Final green HEAD: see §10.
+**Status (2026-06-25): all work merged; a clean green-matrix run is the only
+remaining gate.** All accepted feature backports, the in-scope CI/build tooling,
+and the spell-lint (including its temporary-skip cleanup) are merged to
+`release-6.20`. After the GitHub CI runner gridlock cleared, the full matrix
+surfaced several *latent* platform-specific failures (clang `-Werror`, macOS arm64,
+FreeBSD VM patches, MSVC) — all now resolved (§9). Two of them were fixed by the
+parallel performance lane in DART-6 code this effort had backported. No code items
+remain; a clean, uninterrupted green run of the required matrix is the closing
+confirmation (§10).
 
 ---
 
@@ -197,4 +199,10 @@ so the required CI matrix — Debug, Release (Linux + Windows), Asserts-enabled,
 `arm64-Debug/Release`, FreeBSD, coverage, gcc/clang, the Eigen over-alignment
 guard, and all manylinux/macOS wheels — has **no remaining known failures**. The
 `#2251` spell-lint cleanup (#3184) is the final change and is comment/string-only
-(no build impact). The DART 6.20 backport effort is **closed**.
+(no build impact).
+
+**Closing gate:** the matrix is not yet *confirmed* green — the runs on the most
+recent docs-only heads were **cancelled** by superseding pushes (not failures), so
+no single completed all-green run exists yet. The closing session must let the full
+required matrix complete on the final head and confirm green before declaring the
+effort done. All engineering work is complete; this is the only remaining step.
