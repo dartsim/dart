@@ -378,7 +378,7 @@ void setVelocityActuators(SkeletonPtr biped)
 // Solve for a balanced pose using IK (Lesson 7 Answer)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
-  // Modify the intial pose to one-foot stance before IK
+  // Modify the initial pose to one-foot stance before IK
   biped->setPosition(biped->getDof("j_shin_right")->getIndexInSkeleton(), -1.4);
   biped->setPosition(
       biped->getDof("j_bicep_left_x")->getIndexInSkeleton(), 0.8);
