@@ -948,6 +948,8 @@ void ConstraintSolver::updateConstraints()
   {
     ContactPair pair;
     std::size_t count;
+    std::size_t firstCandidateIndex;
+    std::size_t lastCandidateIndex;
     ContactSurfaceParams surfaceParams;
     bool surfaceParamsInitialized;
   };
@@ -955,6 +957,7 @@ void ConstraintSolver::updateConstraints()
   {
     collision::Contact* contact;
     std::size_t contactPairIndex;
+    std::size_t nextCandidateIndex;
   };
 
   constexpr std::size_t invalidContactPairIndex
@@ -1002,7 +1005,12 @@ void ConstraintSolver::updateConstraints()
         if (pairIndex == invalidContactPairIndex) {
           const std::size_t newPairIndex = contactPairCounts.size();
           contactPairCounts.push_back(
-              {pair, 0u, ContactSurfaceParams(), false});
+              {pair,
+               0u,
+               invalidContactPairIndex,
+               invalidContactPairIndex,
+               ContactSurfaceParams(),
+               false});
           contactPairBuckets[bucket] = newPairIndex;
           return newPairIndex;
         }
@@ -1095,9 +1103,20 @@ void ConstraintSolver::updateConstraints()
       } else {
         const std::size_t contactPairIndex = findContactPairIndex(
             contact.collisionObject1, contact.collisionObject2);
-        ++contactPairCounts[contactPairIndex].count;
+        auto& contactPairCount = contactPairCounts[contactPairIndex];
+        ++contactPairCount.count;
 
-        contactCandidates.push_back({&contact, contactPairIndex});
+        const std::size_t candidateIndex = contactCandidates.size();
+        contactCandidates.push_back(
+            {&contact, contactPairIndex, invalidContactPairIndex});
+        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex) {
+          contactPairCount.firstCandidateIndex = candidateIndex;
+        } else {
+          contactCandidates[contactPairCount.lastCandidateIndex]
+              .nextCandidateIndex
+              = candidateIndex;
+        }
+        contactPairCount.lastCandidateIndex = candidateIndex;
       }
     }
   }
@@ -1128,9 +1147,8 @@ void ConstraintSolver::updateConstraints()
               contact, mTimeStep, surfaceParams);
     };
 
-    for (const auto& candidate : contactCandidates) {
-      ContactConstraintPtr contactConstraint;
-      if (useBuiltInDefaultSurfaceParamsCache) {
+    if (useBuiltInDefaultSurfaceParamsCache) {
+      for (const auto& candidate : contactCandidates) {
         auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
         const auto numContactsOnPair = contactPairCount.count;
         if (!contactPairCount.surfaceParamsInitialized) {
@@ -1144,61 +1162,160 @@ void ConstraintSolver::updateConstraints()
               *= contactCount;
           contactPairCount.surfaceParamsInitialized = true;
         }
-
-        contactConstraint = createDefaultContactConstraint(
-            *candidate.contact, contactPairCount.surfaceParams);
-      } else {
-        auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
-        const auto numContactsOnPair = contactPairCount.count;
-        contactConstraint
-            = builtInDefaultContactHandler != nullptr
-                  ? builtInDefaultContactHandler
-                        ->DefaultContactSurfaceHandler ::createConstraint(
-                            *candidate.contact, numContactsOnPair, mTimeStep)
-                  : mContactSurfaceHandler->createConstraint(
-                      *candidate.contact, numContactsOnPair, mTimeStep);
-      }
-      if (contactConstraint == nullptr)
-        continue;
-
-      mContactConstraints.push_back(contactConstraint);
-
-      if (useBuiltInDefaultContactActiveState) {
-        contactConstraint->mActive = contactConstraint->mIsReactiveA
-                                     || contactConstraint->mIsReactiveB;
-      } else {
-        contactConstraint->update();
-      }
-
-      const bool isActive = useBuiltInDefaultContactActiveState
-                                ? contactConstraint->mActive
-                                : contactConstraint->isActive();
-      if (isActive) {
-        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
-          mActiveConstraintsHaveCustomContactConstraint = true;
-
-        if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
-          mActiveConstraintsAllSingleReactiveContacts = false;
-        } else {
-          const bool nonReactiveSideIsSkipped
-              = (contactConstraint->mIsReactiveA
-                 && contactConstraint->mSkipRelVelocityB)
-                || (contactConstraint->mIsReactiveB
-                    && contactConstraint->mSkipRelVelocityA);
-          const bool nonReactiveSideIsFixed
-              = (contactConstraint->mIsReactiveA
-                 && contactConstraint->mSkeletonB != nullptr
-                 && !contactConstraint->mSkeletonB->isMobile())
-                || (contactConstraint->mIsReactiveB
-                    && contactConstraint->mSkeletonA != nullptr
-                    && !contactConstraint->mSkeletonA->isMobile());
-          if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
-            mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
-        }
-        mActiveConstraints.push_back(contactConstraint);
       }
     }
 
+    const auto activateContactConstraint =
+        [&](const ContactConstraintPtr& contactConstraint) {
+          if (contactConstraint == nullptr)
+            return;
+
+          if (useBuiltInDefaultContactActiveState) {
+            contactConstraint->mActive = contactConstraint->mIsReactiveA
+                                         || contactConstraint->mIsReactiveB;
+          } else {
+            contactConstraint->update();
+          }
+
+          const bool isActive = useBuiltInDefaultContactActiveState
+                                    ? contactConstraint->mActive
+                                    : contactConstraint->isActive();
+          if (isActive) {
+            if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+              mActiveConstraintsHaveCustomContactConstraint = true;
+
+            if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
+              mActiveConstraintsAllSingleReactiveContacts = false;
+            } else {
+              const bool nonReactiveSideIsSkipped
+                  = (contactConstraint->mIsReactiveA
+                     && contactConstraint->mSkipRelVelocityB)
+                    || (contactConstraint->mIsReactiveB
+                        && contactConstraint->mSkipRelVelocityA);
+              const bool nonReactiveSideIsFixed
+                  = (contactConstraint->mIsReactiveA
+                     && contactConstraint->mSkeletonB != nullptr
+                     && !contactConstraint->mSkeletonB->isMobile())
+                    || (contactConstraint->mIsReactiveB
+                        && contactConstraint->mSkeletonA != nullptr
+                        && !contactConstraint->mSkeletonA->isMobile());
+              if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
+                mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
+            }
+            mActiveConstraints.push_back(contactConstraint);
+          }
+        };
+
+    const auto canBuildDefaultContactsByPairInParallel = [&]() {
+      if (!useBuiltInDefaultSurfaceParamsCache
+          || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
+          || contactCandidates.size() < 512u
+          || contactPairCounts.size() < 64u) {
+        return false;
+      }
+
+      static thread_local std::unordered_set<const dynamics::BodyNode*>
+          sharedBodyCheck;
+      sharedBodyCheck.clear();
+      sharedBodyCheck.reserve(contactPairCounts.size());
+
+      const auto recordBodyIfNeeded = [&](collision::CollisionObject* object) {
+        if (object == nullptr)
+          return true;
+
+        const auto* bodyNode = object->getBodyNode();
+        if (bodyNode == nullptr)
+          return true;
+
+        if (bodyNode->getNumDependentGenCoords() == 0u)
+          return true;
+
+        return sharedBodyCheck.insert(bodyNode).second;
+      };
+
+      for (const auto& contactPairCount : contactPairCounts) {
+        if (!recordBodyIfNeeded(contactPairCount.pair.first)
+            || !recordBodyIfNeeded(contactPairCount.pair.second)) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    const bool useParallelDefaultContactBuild
+        = canBuildDefaultContactsByPairInParallel();
+    if (useParallelDefaultContactBuild) {
+      mContactConstraints.resize(contactCandidates.size());
+      auto buildDefaultContactConstraintsForPair = [&](std::size_t pairIndex) {
+        const auto& contactPairCount = contactPairCounts[pairIndex];
+        for (auto i = contactPairCount.firstCandidateIndex;
+             i != invalidContactPairIndex;
+             i = contactCandidates[i].nextCandidateIndex) {
+          const auto& candidate = contactCandidates[i];
+
+          ContactConstraintPtr contactConstraint;
+          if (i < mReusableContactConstraints.size()) {
+            auto reusableContactConstraint
+                = std::move(mReusableContactConstraints[i]);
+            if (reusableContactConstraint != nullptr
+                && isExactDynamicType<ContactConstraint>(
+                    reusableContactConstraint.get())) {
+              contactConstraint = std::move(reusableContactConstraint);
+            }
+          }
+
+          if (contactConstraint != nullptr) {
+            contactConstraint->reset(
+                *candidate.contact, mTimeStep, contactPairCount.surfaceParams);
+          } else {
+            contactConstraint
+                = builtInDefaultContactHandler
+                      ->DefaultContactSurfaceHandler::createConstraint(
+                          *candidate.contact,
+                          mTimeStep,
+                          contactPairCount.surfaceParams);
+          }
+
+          mContactConstraints[i] = std::move(contactConstraint);
+        }
+      };
+
+      mConstraintThreadPool->parallelFor(
+          contactPairCounts.size(),
+          mNumSimulationThreads,
+          buildDefaultContactConstraintsForPair);
+
+      for (const auto& contactConstraint : mContactConstraints)
+        activateContactConstraint(contactConstraint);
+    } else {
+      for (const auto& candidate : contactCandidates) {
+        ContactConstraintPtr contactConstraint;
+        if (useBuiltInDefaultSurfaceParamsCache) {
+          auto& contactPairCount
+              = contactPairCounts[candidate.contactPairIndex];
+
+          contactConstraint = createDefaultContactConstraint(
+              *candidate.contact, contactPairCount.surfaceParams);
+        } else {
+          auto& contactPairCount
+              = contactPairCounts[candidate.contactPairIndex];
+          const auto numContactsOnPair = contactPairCount.count;
+          contactConstraint
+              = builtInDefaultContactHandler != nullptr
+                    ? builtInDefaultContactHandler
+                          ->DefaultContactSurfaceHandler ::createConstraint(
+                              *candidate.contact, numContactsOnPair, mTimeStep)
+                    : mContactSurfaceHandler->createConstraint(
+                        *candidate.contact, numContactsOnPair, mTimeStep);
+        }
+        if (contactConstraint == nullptr)
+          continue;
+
+        mContactConstraints.push_back(contactConstraint);
+        activateContactConstraint(contactConstraint);
+      }
+    }
     mReusableContactConstraints.clear();
   }
 

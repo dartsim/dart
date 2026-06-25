@@ -218,6 +218,12 @@
     groups that share non-reactive bodies or skeletons across islands:
     [#3111](https://github.com/dartsim/dart/pull/3111)
 
+  * Speed up the built-in default contact-constraint rebuild path for large
+    independent contact sets by constructing safe contact pairs in parallel
+    while keeping custom contact handlers and shared reactive bodies on the
+    existing serial path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Make mimic motor constraints robust for Gazebo mimic repros by using
     ERP-scaled position correction, clamped force-mixing and ERP parameters,
     and finite fallback force and velocity limits for joints with unbounded

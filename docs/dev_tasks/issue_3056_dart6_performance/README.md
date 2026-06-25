@@ -3,44 +3,41 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, and #3147 are merged. #3148
-`perf/dart6-contact-solve-hot-path` is the active follow-up, refreshed on
-current `origin/release-6.20`.
+#3144, #3146, #3147, and #3148 are merged. #3149
+`perf/dart6-parallel-default-contact-constraints` is the active follow-up,
+refreshed on current `origin/release-6.20`.
 
-#3147 targets the remaining active contact-construction cost by reusing exact
-built-in default `ContactConstraint` objects across steps. It also reuses the
-previous contact-pair scratch-table index for consecutive contacts from the
-same pair while leaving the old local-point arithmetic in place to preserve
-exact ODE final-state hashes. Custom contact-surface handlers stay on the
-existing construction path. #3148 targets the next DART-native collision hot
-path: identity-relative `ShapeNode` collision objects reuse the owning
-`BodyNode` world transform instead of recomputing the same world transform
-through the `ShapeFrame` path. The fast path is refreshed from the
-`ShapeFrame` version and falls back automatically when the shape-node relative
-transform is not exactly identity.
+#3147 targets active contact-construction cost by reusing exact built-in
+default `ContactConstraint` objects across steps while preserving exact ODE
+final-state hashes and custom contact-surface handler behavior. #3148 targets
+DART-native collision transform setup for identity-relative `ShapeNode`
+collision objects by reusing the owning `BodyNode` world transform, while
+keeping the public generic `CollisionObject` overload on the safe
+`getTransform()` fallback path for non-DART collision objects. #3149 attacks
+the next measured constraint hot path: large built-in default contact sets are
+rebuilt by collision pair in parallel, while custom contact handlers, small
+contact sets, and pairs that share a non-skipped body stay on the existing
+serial path. A pair-result cache experiment was rejected because it preserved
+the final hash but regressed the same issue workload.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--world-threads 16`, `--max-contacts 12000`,
 `--max-contacts-per-pair 4`, deactivation disabled. ODE is included here
-because it is the downstream backend baseline; only collision detection is
-delegated.
+because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3147 parent, 300 active steps, text profile | DART native | `0.0919981` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `1.045 s`, `build contact constraints` `624.05 ms` |
-| #3148 candidate, 300 active steps, text profile | DART native | `0.0985385` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `920.02 ms`, `build contact constraints` `615.18 ms` |
-| #3148 candidate, 300 active steps, no profile | DART native | `0.0970198` latest rerun, `0.0964616` / `0.0913842` prior runs | finite, same hash, contacts `5005`, pairs `3003` |
+| #3148 parent, 300 active steps, text profile | DART native | `0.0917877` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `951.72 ms`, `build contact constraints` `644.65 ms` |
+| Rejected pair-result cache, 300 active steps, text profile | DART native | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
+| #3149 candidate, 300 active steps, text profile | DART native | `0.0992175` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `925.20 ms`, `build contact constraints` `542.58 ms` |
+| #3149 candidate, 300 active steps, no profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
 | #3147 parent, 300 active steps, no profile | ODE | `0.00463526` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-A temporary local profile split, not committed, isolated the broadphase-entry
-transform setup cost from `114.10 ms` to `83.36 ms` over 100 active steps, with
-the same consumed final-state hash `0xf13037a0e2b6daa7`. Whole-run active RTF
-remains noisy and dominated by collision, constraint solving, and integration;
-this candidate is a narrow transform-setup improvement, not the larger native
-detector endpoint. ODE remains the downstream comparison baseline and should be
-included in each refreshed performance table, even when the current slice only
-changes the DART-native backend.
+Focused correctness evidence: `test_ConstraintSolver` now compares a serial
+world against a four-thread world with 160 independent default box-plane
+contacts over repeated steps, including final positions, velocities,
+transforms, spatial velocities, and contact counts.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
