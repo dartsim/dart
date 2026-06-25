@@ -3,11 +3,35 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, and #3153 are
-merged. #3154 `perf/dart6-contact-surface-positional-cache` is the active
-slice on `release-6.20`.
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, and #3154
+are merged. #3170 `perf/dart6-parallel-native-broadphase` is the active slice
+on `release-6.20`.
 
-The latest candidate trims default contact construction by replacing the
+The latest candidate targets DART-native broadphase entry setup for large
+collision groups. Each `BroadphaseEntry` can be computed independently, so the
+DART backend fills a scratch vector by original collision-object index with the
+existing collision thread pool, then performs the same serial finite/plane/other
+partition. The final partition still preserves input order, pair traversal,
+contact order, and final hashes.
+
+Active issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, deactivation disabled, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, 300 steps:
+
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3154 parent, text profile | DART native | `0.110145` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `624.61 ms`, broadphase entries `249.70 ms` |
+| #3170 current head, text profile | DART native | `0.120566` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `445.85 ms`, broadphase entries `108.69 ms`, finite-plane pairs `260.55 ms` |
+| #3170 current head, no profile | DART native | `0.118579` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3170 current head, no profile | FCL primitive | `0.0963517` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3170 current head, no profile | Bullet | `0.0883704` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3170 current head, no profile | ODE | `0.00458315` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.23x` FCL primitive, `1.34x` Bullet, and
+`25.9x` ODE on this active issue-scene rerun.
+
+#3154 trims default contact construction by replacing the
 per-step linear-scan default-surface-property cache with a small direct-mapped
 `ShapeNode` cache, plus remembering the most recent first-side and second-side
 lookups inside each solver update. Cache misses recompute the same surface
