@@ -280,6 +280,12 @@ Rejected local scratch experiments in the same area:
 - `perf/dart6-single-free-forward-dynamics` skipped the dynamic `FreeJoint`
   `updateJointForceFD()` no-op for one-body roots, but the no-profile run
   regressed to RTF `0.249708` and the profile stayed within noise.
+- An automatic joint-constraint cache revision experiment replaced the
+  per-step solver skeleton hash with a solver membership revision plus
+  `Skeleton`'s global structural revision, but it required a new `Skeleton`
+  friendship and did not improve the target scene. No-profile RTF was
+  `0.250410` and `0.260183`, while the text-profile run recorded RTF
+  `0.246615` with `scan joint constraints` already down to only `830.94 us`.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
