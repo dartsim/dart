@@ -151,6 +151,9 @@
     behavior are unchanged:
     [#2222](https://github.com/dartsim/dart/pull/2222)
 
+  * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
+    and destroy joint properties without heap corruption.
+
   * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
     joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
     elements and wires the parsed follower DoFs to the existing per-DoF mimic
@@ -163,6 +166,10 @@
     compatibility shims, and route mesh collision backends through the new
     representation:
     [#3145](https://github.com/dartsim/dart/pull/3145)
+
+  * Fix `ArrowShape`'s generated Assimp mesh metadata so cloned arrows and
+    refreshed TriMesh views use valid material indices on all supported
+    platforms.
 
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
