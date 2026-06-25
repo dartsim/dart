@@ -151,7 +151,7 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
     curr = curr->mNext;
   }
 
-  // If failed to find an avaliable memory block, allocate a new memory block
+  // If failed to find an available memory block, allocate a new memory block
   if (curr == nullptr) {
     // Allocate a sufficient size
     if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
@@ -223,7 +223,7 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
 //==============================================================================
 bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 {
-  // Allocate memory chunck for header and the actual requested size
+  // Allocate memory chunk for header and the actual requested size
   void* memory
       = mBaseAllocator.allocate(sizeToAllocate + sizeof(MemoryBlockHeader));
 

@@ -103,15 +103,15 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
 
   // coordinate
   if (hasAttribute(element, "coordinate")) {
-    const std::string coordiante = getAttributeString(element, "coordinate");
-    if (coordiante == "local") {
+    const std::string coordinate = getAttributeString(element, "coordinate");
+    if (coordinate == "local") {
       mCoordinate = Coordinate::LOCAL;
-    } else if (coordiante == "global") {
+    } else if (coordinate == "global") {
       mCoordinate = Coordinate::GLOBAL;
     } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
-          "Invalid attribute for 'coordinate': " + coordiante);
+          "Invalid attribute for 'coordinate': " + coordinate);
       return errors;
     }
   }

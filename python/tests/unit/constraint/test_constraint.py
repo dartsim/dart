@@ -17,7 +17,7 @@ def test_ball_joint_constraint():
         for j in range(joint.getNumDofs()):
             joint.setDampingCoefficient(j, 0.01)
 
-    # Create a ball joint contraint
+    # Create a ball joint constraint
     bd1 = chain.getBodyNode("link 6")
     bd2 = chain.getBodyNode("link 10")
     offset1 = [0, 0.025, 0]

@@ -1109,13 +1109,18 @@ void ConstraintSolver::updateConstraints()
     const auto createDefaultContactConstraint =
         [&](collision::Contact& contact,
             const ContactSurfaceParams& surfaceParams) -> ContactConstraintPtr {
-      if (reusableContactConstraintIndex < mReusableContactConstraints.size()) {
+      while (reusableContactConstraintIndex
+             < mReusableContactConstraints.size()) {
         auto contactConstraint = std::move(
             mReusableContactConstraints[reusableContactConstraintIndex++]);
-        if (contactConstraint != nullptr) {
-          contactConstraint->reset(contact, mTimeStep, surfaceParams);
-          return contactConstraint;
-        }
+        if (contactConstraint == nullptr)
+          continue;
+
+        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+          continue;
+
+        contactConstraint->reset(contact, mTimeStep, surfaceParams);
+        return contactConstraint;
       }
 
       return builtInDefaultContactHandler

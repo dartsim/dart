@@ -257,7 +257,7 @@ public:
   /// closer to 0 are given higher priority.
   void setHierarchyLevel(std::size_t _level);
 
-  /// Get the hierarchy level of this modle.
+  /// Get the hierarchy level of this model.
   std::size_t getHierarchyLevel() const;
 
   /// When solving the IK for this module's Node, use the longest available
@@ -479,7 +479,7 @@ protected:
   /// Connection to the node update
   common::Connection mNodeConnection;
 
-  /// True if this IK module should be active in its IK hierarcy
+  /// True if this IK module should be active in its IK hierarchy
   bool mActive;
 
   /// Hierarchy level for this IK module
@@ -1016,7 +1016,7 @@ protected:
 /// error vector in order to compute the gradient. This method tends to be
 /// very smooth but imprecise, requiring more iterations before converging
 /// and being less precise in general. This method is suitable for animations
-/// where smoothness is prefered over precision.
+/// where smoothness is preferred over precision.
 class InverseKinematics::JacobianTranspose : public GradientMethod
 {
 public:

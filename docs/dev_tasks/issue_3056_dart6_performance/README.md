@@ -3,14 +3,16 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, and #3146 are merged. #3147 is the current parent branch, and #3148
-`perf/dart6-contact-solve-hot-path` is the active stacked slice.
+#3144, #3146, and #3147 are merged. #3148
+`perf/dart6-contact-solve-hot-path` is the active follow-up, refreshed on
+current `origin/release-6.20`.
 
 #3147 targets the remaining active contact-construction cost by reusing exact
 built-in default `ContactConstraint` objects across steps. It also reuses the
 previous contact-pair scratch-table index for consecutive contacts from the
 same pair while leaving the old local-point arithmetic in place to preserve
-exact ODE final-state hashes. #3148 targets the next DART-native collision hot
+exact ODE final-state hashes. Custom contact-surface handlers stay on the
+existing construction path. #3148 targets the next DART-native collision hot
 path: identity-relative `ShapeNode` collision objects reuse the owning
 `BodyNode` world transform instead of recomputing the same world transform
 through the `ShapeFrame` path. The fast path is refreshed from the
@@ -20,7 +22,9 @@ transform is not exactly identity.
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, deactivation disabled:
+`--max-contacts-per-pair 4`, deactivation disabled. ODE is included here
+because it is the downstream backend baseline; only collision detection is
+delegated.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
