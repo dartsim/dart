@@ -1259,6 +1259,7 @@ void ConstraintSolver::updateConstraints()
               *= contactCount;
           contactPairCount.surfaceParamsInitialized = true;
         };
+    std::mutex parallelSurfaceParamsFallbackMutex;
     const auto initializeDefaultSurfaceParamsUncached =
         [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
           if (contactPairCount.surfaceParamsInitialized)
@@ -1273,12 +1274,17 @@ void ConstraintSolver::updateConstraints()
                 && hasDefaultContactSurfacePropertiesUncached(shapeNode1)
                 && hasDefaultContactSurfacePropertiesUncached(shapeNode2);
 
-          contactPairCount.surfaceParams
-              = canUseDefaultSurfaceParams
-                    ? ContactSurfaceParams()
-                    : builtInDefaultContactHandler
-                          ->DefaultContactSurfaceHandler::createParams(
-                              contact, contactPairCount.count);
+          if (canUseDefaultSurfaceParams) {
+            contactPairCount.surfaceParams = ContactSurfaceParams();
+          } else {
+            std::lock_guard<std::mutex> lock(
+                parallelSurfaceParamsFallbackMutex);
+            contactPairCount.surfaceParams
+                = builtInDefaultContactHandler
+                      ->DefaultContactSurfaceHandler::createParams(
+                          contact, contactPairCount.count);
+          }
+
           const auto contactCount = static_cast<double>(contactPairCount.count);
           contactPairCount.surfaceParams.mPrimarySlipCompliance *= contactCount;
           contactPairCount.surfaceParams.mSecondarySlipCompliance

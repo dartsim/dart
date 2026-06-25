@@ -530,6 +530,7 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
       dynamics->setSecondaryFrictionCoeff(0.5);
       dynamics->setPrimarySlipCompliance(0.005);
       dynamics->setSecondarySlipCompliance(0.01);
+      dynamics->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
 
       auto* joint = static_cast<dynamics::FreeJoint*>(body->getParentJoint());
       joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.0, 0.0));

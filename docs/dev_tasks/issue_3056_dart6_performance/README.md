@@ -19,9 +19,12 @@ The current local candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths; the parallel path computes
 each contact pair's surface parameters in the same worker that resets that
-pair's reusable built-in `ContactConstraint` objects. Active-constraint order
-is unchanged because workers still write constraints by candidate index and the
-main thread activates them in order.
+pair's reusable built-in `ContactConstraint` objects. Default-material pairs
+remain lock-free, while the non-default `DefaultContactSurfaceHandler` fallback
+is serialized so custom friction directions and direction frames cannot race on
+lazily cached frame transforms. Active-constraint order is unchanged because
+workers still write constraints by candidate index and the main thread
+activates them in order.
 
 Each performance PR in this stack must keep ODE in the comparison table along
 with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
@@ -37,8 +40,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
 | #3172 merged baseline, no profile | DART native | `0.179381` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
-| Current local, no profile | DART native | `0.204995`, `0.199263` repeats | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, text profile | DART native | `0.185581` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `254.64 ms`, surface params `314.25 us`, `parallel reset` `106.43 ms`, shared-body check `57.71 ms`, `solveConstrainedGroups` `274.49 ms`, `collide` `381.98 ms`, integrate positions `258.24 ms`, integrate velocity `218.14 ms` |
+| Current local, no profile | DART native | `0.203681` latest post-review-fix run, `0.204995`, `0.199263` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local, text profile | DART native | `0.193107` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `245.77 ms`, surface params `336.75 us`, `parallel reset` `101.58 ms`, shared-body check `58.61 ms`, `solveConstrainedGroups` `269.95 ms`, `collide` `361.27 ms`, integrate positions `251.63 ms`, integrate velocity `205.81 ms` |
 | Current local, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | Current local, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | Current local, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -48,8 +51,8 @@ Using the current DART-native repeats, the local candidate is about
 primitive, `1.38x`-`1.42x` Bullet, and `19.8x`-`20.3x` ODE on the active
 issue-scene rerun. The scoped profile shows the serial surface-parameter pass
 removed from the parallel steady-state path: the `surface params` scope drops
-from the prior `105.74 ms` class to a one-time `314.25 us` fallback call, and
-`build contact constraints` drops to `254.64 ms`. The active no-deactivation
+from the prior `105.74 ms` class to a one-time `336.75 us` fallback call, and
+`build contact constraints` drops to `245.77 ms`. The active no-deactivation
 scene is still far below RTF `1`, so the next target remains the largest
 remaining active-step costs: collision, integration, constrained-group solve,
 and remaining contact construction overhead.
