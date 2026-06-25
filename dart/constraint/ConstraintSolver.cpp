@@ -2049,8 +2049,15 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   {
     DART_PROFILE_SCOPED_N("reset constraint unions");
-    for (auto& skeleton : mSkeletons)
-      skeleton->resetUnion();
+    if (allConstraintsHaveSingleReactiveSkeleton) {
+      for (const auto& group : mConstrainedGroups) {
+        if (group.mSingleReactiveSkeleton != nullptr)
+          group.mSingleReactiveSkeleton->mUnionIndex = invalidUnionIndex;
+      }
+    } else {
+      for (auto& skeleton : mSkeletons)
+        skeleton->resetUnion();
+    }
   }
 }
 

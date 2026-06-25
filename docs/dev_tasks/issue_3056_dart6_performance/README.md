@@ -16,8 +16,9 @@ stack, in order, is `perf/dart6-contact-pair-metadata-cache`,
 `perf/dart6-lazy-dart-shape-cache`,
 `perf/dart6-free-joint-root-integration`,
 `perf/dart6-parallel-surface-scan`,
-`perf/dart6-broadphase-cache-refresh-order`, and
-`perf/dart6-parallel-pair-flag-resize`. The first slice,
+`perf/dart6-broadphase-cache-refresh-order`,
+`perf/dart6-parallel-pair-flag-resize`, and
+`perf/dart6-single-reactive-union-reset`. The first slice,
 `perf/dart6-contact-pair-metadata-cache`, is rebuilt directly on the merged
 `release-6.20` head and is PR-ready.
 
@@ -102,6 +103,13 @@ finite-plane collision flag vector before dispatch. Every parallel work item
 overwrites its own flag before the serial merge reads it, so retaining capacity
 with `resize()` preserves behavior while avoiding a redundant per-step fill.
 
+The newest local solver bookkeeping follow-up narrows the constrained-group
+union reset for the all-single-reactive-contact path. That path only stamps
+`mUnionIndex` while building one reactive-skeleton group per contact island; it
+does not union skeleton roots. The follow-up resets only those stamped group
+root indices, while all generic constraint paths that call `uniteSkeletons()`
+keep the full `Skeleton::resetUnion()` pass.
+
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
 serial cached prepass remains for fallback paths. Default-material pairs compute
@@ -148,6 +156,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local broadphase cache-refresh-order hardening, text profile | DART native | `0.242797` | finite, same hash, contacts `5005`, pairs `3003`; `DART native build broadphase entries` `119.05 ms`, `DART native finite-plane pairs` `116.19 ms`, `build contact constraints` `157.92 ms` |
 | Local parallel-pair flag resize cleanup, no profile | DART native | `0.247575` | finite, same hash, contacts `5005`, pairs `3003` |
 | Local parallel-pair flag resize cleanup, text profile | DART native | `0.247692` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `260.19 ms`, `DART native build broadphase entries` `110.30 ms`, `DART native finite-plane pairs` `114.67 ms`, `DART native finite-plane collide workers` `34.75 ms`, `DART native finite-plane merge contacts` `45.76 ms` |
+| Local single-reactive union-reset cleanup, no profile | DART native | `0.245203` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local single-reactive union-reset cleanup, text profile | DART native | `0.256963` | finite, same hash, contacts `5005`, pairs `3003`; `buildConstrainedGroups` `67.89 ms`, `build constrained group map` `38.89 ms`, `reset constraint unions` `3.260 ms`, `build contact constraints` `138.26 ms`, `collide` `254.00 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -222,6 +232,12 @@ and pair count while removing a redundant zero-fill before parallel finite-plane
 collision workers. Treat it as a small scratch-buffer cleanup, not a standalone
 speedup: the profiled sample remains in the same noisy local range, with
 `DART native finite-plane pairs` at `114.67 ms`.
+
+The single-reactive union-reset cleanup keeps the same final hash, contact
+count, and pair count while reducing the constrained-group union reset in the
+all-single-reactive-contact path. The latest profile records
+`reset constraint unions` at `3.260 ms`, down from the prior scratch-buffer
+sample's `14.15 ms`, and `buildConstrainedGroups` at `67.89 ms`.
 
 A rejected eager-transform experiment updated `BodyNode` transforms immediately
 after position integration to move work out of the next collision prepass. It
@@ -312,6 +328,14 @@ The local broadphase cache-refresh-order hardening has passed:
 and the exact issue-scene no-profile/profile benchmark runs above. The focused
 unit regression forces the parallel finite-plane path, then changes all cached
 identity-relative `ShapeNode` transforms before the next threaded collide.
+
+The local parallel-pair flag resize and single-reactive union-reset cleanups
+have passed:
+`cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
+and the exact issue-scene no-profile/profile benchmark runs above. The
+parallel-pair flag resize also passed the focused collision build and
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Collision|test_DARTCollisionDetector)$'`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
