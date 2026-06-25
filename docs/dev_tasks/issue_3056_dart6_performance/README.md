@@ -4,28 +4,24 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, and #3171 are merged. #3172
-`perf/dart6-native-translation-bounds` is the active slice on `release-6.20`.
+#3170, #3171, and #3172 are merged. The active local slice is
+`perf/dart6-parallel-surface-params` on `release-6.20`.
 
-The merged #3171 slice caches whether each constrained group contains only
-exact built-in contact constraints while the groups are built, so the boxed-LCP
-solver can enter the existing direct single-free-body contact path without
-repeating RTTI checks for every small contact island. It also enables the
-default contact rebuild parallel path for the common "many mobile bodies on one
-fixed zero-velocity support" case. The fixed-support decision is computed
-serially before worker threads run, and the parallel workers use explicit
-pointers to the main thread's per-step contact candidate arrays rather than
-accidentally indexing their own thread-local scratch vectors. Finally, native
-finite-plane contact merging now uses a single-contact fast path when the
-broadphase has already proven that cross-pair duplicate checks are unnecessary.
-
-The local next candidate adds a narrower native broadphase setup fast path.
-DART-native collision objects now cache local bounds center/half-extents when
-their shape cache refreshes. When a collision object's transform has an exactly
+The merged #3172 slice adds a narrow native broadphase setup fast path.
+DART-native collision objects cache local bounds center/half-extents when their
+shape cache refreshes. When a collision object's transform has an exactly
 identity linear part, the backend computes world bounds from translation plus
 those cached local values instead of doing the general matrix/absolute-linear
 bound calculation. Rotated or otherwise general transforms keep the existing
-path, but still reuse the cached local center/half-extents.
+path.
+
+The current local candidate folds default contact-surface parameter
+initialization into the existing per-pair parallel default-contact rebuild. The
+serial cached prepass remains for fallback paths; the parallel path computes
+each contact pair's surface parameters in the same worker that resets that
+pair's reusable built-in `ContactConstraint` objects. Active-constraint order
+is unchanged because workers still write constraints by candidate index and the
+main thread activates them in order.
 
 Each performance PR in this stack must keep ODE in the comparison table along
 with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
@@ -40,23 +36,23 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3170 parent, same-host no profile | DART native | `0.110045` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
-| Exact-group-only candidate, same-host no profile | DART native | `0.115783` | finite, same hash, contacts `5005`, pairs `3003` |
-| #3171 parent, no profile | DART native | `0.123018` latest, `0.116997` prior | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, no profile | DART native | `0.127449` latest, `0.116587` prior | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, text profile | DART native | `0.127487` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `407.85 ms`, `parallel reset` `83.85 ms`, `serial fallback` `1.907 ms`, `solveConstrainedGroups` `491.44 ms`, `collide` `408.49 ms`, native broadphase entries `96.96 ms`, finite-plane merge contacts `85.23 ms` |
-| Current local, no profile | FCL primitive | `0.0948178` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
-| Current local, no profile | Bullet | `0.0928425` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
-| Current local, no profile | ODE | `0.004688` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3172 merged baseline, no profile | DART native | `0.179381` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| Current local, no profile | DART native | `0.204995`, `0.199263` repeats | finite, same hash, contacts `5005`, pairs `3003` |
+| Current local, text profile | DART native | `0.185581` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `254.64 ms`, surface params `314.25 us`, `parallel reset` `106.43 ms`, shared-body check `57.71 ms`, `solveConstrainedGroups` `274.49 ms`, `collide` `381.98 ms`, integrate positions `258.24 ms`, integrate velocity `218.14 ms` |
+| Current local, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| Current local, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| Current local, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Using the latest current local DART-native repeat, the local candidate is about
-`1.04x` the latest #3171 parent no-profile repeat, `1.34x` FCL primitive,
-`1.37x` Bullet, and `27.2x` ODE on the active issue-scene rerun. Using the
-lower repeat keeps the #3171 comparison inside short-run timing noise, while
-the scoped profile shows the native broadphase-entry setup at `96.96 ms`. The
-active no-deactivation scene is still far below RTF `1`, so the next target
-remains the largest remaining active-step costs: constrained-group solve,
-contact construction, collision, and integration overhead.
+Using the current DART-native repeats, the local candidate is about
+`1.11x`-`1.14x` the fresh #3172 merged baseline, `1.37x`-`1.41x` FCL
+primitive, `1.38x`-`1.42x` Bullet, and `19.8x`-`20.3x` ODE on the active
+issue-scene rerun. The scoped profile shows the serial surface-parameter pass
+removed from the parallel steady-state path: the `surface params` scope drops
+from the prior `105.74 ms` class to a one-time `314.25 us` fallback call, and
+`build contact constraints` drops to `254.64 ms`. The active no-deactivation
+scene is still far below RTF `1`, so the next target remains the largest
+remaining active-step costs: collision, integration, constrained-group solve,
+and remaining contact construction overhead.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -705,3 +701,11 @@ bug until proven otherwise.
   8, and 16 simulation threads. The default-sleeping 3000-step run advanced
   `3000 / 3000` frames, reached RTF `1.96845`, and ended finite with hash
   `0x131b6af79a44ff90`.
+- For the `perf/dart6-parallel-surface-params` slice, rebuilt
+  `contact_benchmark`, `test_ConstraintSolver`, and `test_Collision`; passed
+  focused CTest for `test_ConstraintSolver|test_Collision`; ran
+  `pixi run lint`; passed
+  `DART_PARALLEL_JOBS=24 CTEST_PARALLEL_LEVEL=24 CMAKE_BUILD_PARALLEL_LEVEL=24 pixi run test-all`
+  with C++ tests 115/115 and Python tests 60/60; and reran the active issue SDF
+  across DART-native, FCL primitive, Bullet, and ODE with final hashes preserved
+  for each backend.
