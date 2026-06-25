@@ -242,6 +242,13 @@
     each cached step:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Reuse built-in default contact constraint objects across simulation steps
+    so contact-heavy scenes reduce contact-constraint setup work after the
+    first frame. Consecutive contacts from the same collision pair also skip
+    repeated scratch-table probes while preserving custom contact-surface
+    handler behavior and final-state hashes on the measured issue scene:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up single-free-body contact groups by using direct LCP assembly for
     exact built-in contact constraints, while preserving the legacy assembly
     path for custom contact constraints and manual constraints:

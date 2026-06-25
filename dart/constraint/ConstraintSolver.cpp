@@ -893,12 +893,6 @@ void ConstraintSolver::updateConstraints()
   if (restingContactFilter != nullptr)
     restingContactFilter->setSolverRestingContactFilterActive(false, false);
 
-  // Destroy previous contact constraints
-  mContactConstraints.clear();
-
-  // Destroy previous soft contact constraints
-  mSoftContactConstraints.clear();
-
   const bool useBuiltInDefaultContactActiveState
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler);
   const auto* builtInDefaultContactHandler
@@ -910,6 +904,17 @@ void ConstraintSolver::updateConstraints()
       = builtInDefaultContactHandler != nullptr
         && builtInDefaultContactHandler->mParent == nullptr;
 
+  if (useBuiltInDefaultContactActiveState) {
+    mReusableContactConstraints.clear();
+    mReusableContactConstraints.swap(mContactConstraints);
+  } else {
+    mContactConstraints.clear();
+    mReusableContactConstraints.clear();
+  }
+
+  // Destroy previous soft contact constraints
+  mSoftContactConstraints.clear();
+
   // Create a mapping of contact pairs to the number of contacts between them.
   // The scratch table uses open addressing over retained vectors so the
   // per-step contact-pair count remains order-independent without allocating
@@ -918,6 +923,15 @@ void ConstraintSolver::updateConstraints()
   {
     collision::CollisionObject* first;
     collision::CollisionObject* second;
+  };
+  const auto makeContactPair = [](collision::CollisionObject* object1,
+                                  collision::CollisionObject* object2) {
+    ContactPair pair{object1, object2};
+    if (reinterpret_cast<std::uintptr_t>(pair.first)
+        > reinterpret_cast<std::uintptr_t>(pair.second)) {
+      std::swap(pair.first, pair.second);
+    }
+    return pair;
   };
   struct ContactPairHash
   {
@@ -974,15 +988,12 @@ void ConstraintSolver::updateConstraints()
       contactPairBucketsInitialized = true;
     };
 
+    std::size_t lastContactPairIndex = invalidContactPairIndex;
+    ContactPair lastContactPair{nullptr, nullptr};
+
     const auto findOrCreateContactPairIndex
-        = [&](collision::CollisionObject* object1,
-              collision::CollisionObject* object2) -> std::size_t {
+        = [&](const ContactPair& pair) -> std::size_t {
       initializeContactPairBuckets();
-      ContactPair pair{object1, object2};
-      if (reinterpret_cast<std::uintptr_t>(pair.first)
-          > reinterpret_cast<std::uintptr_t>(pair.second)) {
-        std::swap(pair.first, pair.second);
-      }
 
       const std::size_t bucketMask = contactPairBuckets.size() - 1u;
       std::size_t bucket = contactPairHash(pair) & bucketMask;
@@ -1004,6 +1015,21 @@ void ConstraintSolver::updateConstraints()
 
         bucket = (bucket + 1u) & bucketMask;
       }
+    };
+    const auto findContactPairIndex
+        = [&](collision::CollisionObject* object1,
+              collision::CollisionObject* object2) -> std::size_t {
+      const auto pair = makeContactPair(object1, object2);
+      if (lastContactPairIndex != invalidContactPairIndex
+          && lastContactPair.first == pair.first
+          && lastContactPair.second == pair.second) {
+        return lastContactPairIndex;
+      }
+
+      const auto contactPairIndex = findOrCreateContactPairIndex(pair);
+      lastContactPair = pair;
+      lastContactPairIndex = contactPairIndex;
+      return contactPairIndex;
     };
 
     for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
@@ -1067,7 +1093,7 @@ void ConstraintSolver::updateConstraints()
         mSoftContactConstraints.push_back(
             std::make_shared<SoftContactConstraint>(contact, mTimeStep));
       } else {
-        const std::size_t contactPairIndex = findOrCreateContactPairIndex(
+        const std::size_t contactPairIndex = findContactPairIndex(
             contact.collisionObject1, contact.collisionObject2);
         ++contactPairCounts[contactPairIndex].count;
 
@@ -1079,6 +1105,29 @@ void ConstraintSolver::updateConstraints()
   // Add the new contact constraints to dynamic constraint list
   {
     DART_PROFILE_SCOPED_N("build contact constraints");
+    std::size_t reusableContactConstraintIndex = 0u;
+    const auto createDefaultContactConstraint =
+        [&](collision::Contact& contact,
+            const ContactSurfaceParams& surfaceParams) -> ContactConstraintPtr {
+      while (reusableContactConstraintIndex
+             < mReusableContactConstraints.size()) {
+        auto contactConstraint = std::move(
+            mReusableContactConstraints[reusableContactConstraintIndex++]);
+        if (contactConstraint == nullptr)
+          continue;
+
+        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+          continue;
+
+        contactConstraint->reset(contact, mTimeStep, surfaceParams);
+        return contactConstraint;
+      }
+
+      return builtInDefaultContactHandler
+          ->DefaultContactSurfaceHandler::createConstraint(
+              contact, mTimeStep, surfaceParams);
+    };
+
     for (const auto& candidate : contactCandidates) {
       ContactConstraintPtr contactConstraint;
       if (useBuiltInDefaultSurfaceParamsCache) {
@@ -1096,12 +1145,8 @@ void ConstraintSolver::updateConstraints()
           contactPairCount.surfaceParamsInitialized = true;
         }
 
-        contactConstraint
-            = builtInDefaultContactHandler
-                  ->DefaultContactSurfaceHandler::createConstraint(
-                      *candidate.contact,
-                      mTimeStep,
-                      contactPairCount.surfaceParams);
+        contactConstraint = createDefaultContactConstraint(
+            *candidate.contact, contactPairCount.surfaceParams);
       } else {
         auto& contactPairCount = contactPairCounts[candidate.contactPairIndex];
         const auto numContactsOnPair = contactPairCount.count;
@@ -1153,6 +1198,8 @@ void ConstraintSolver::updateConstraints()
         mActiveConstraints.push_back(contactConstraint);
       }
     }
+
+    mReusableContactConstraints.clear();
   }
 
   // Add the new soft contact constraints to dynamic constraint list

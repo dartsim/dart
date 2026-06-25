@@ -178,6 +178,16 @@ protected:
 private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
 
+  /// Reinitialize this constraint for a new per-step collision contact.
+  void reset(
+      collision::Contact& contact,
+      double timeStep,
+      const ContactSurfaceParams& contactSurfaceParams);
+
+  /// Initialize cached per-contact data from the current contact pointer and
+  /// surface parameters.
+  void initialize(const ContactSurfaceParams& contactSurfaceParams);
+
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] relVel Change in relative velocity at contact point of the
   /// two colliding bodies.
@@ -261,7 +271,7 @@ private:
   dynamics::Skeleton* mSingleReactiveSkeleton = nullptr;
 
   /// Contact between mBodyNode1 and mBodyNode2
-  collision::Contact& mContact;
+  collision::Contact* mContact;
 
   /// First frictional direction
   Eigen::Vector3d mFirstFrictionalDirection;
