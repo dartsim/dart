@@ -37,6 +37,7 @@
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -277,10 +278,16 @@ class ContactPointIndex
 public:
   void clear();
   void prepare(std::size_t maxContacts);
-  bool containsClose(const Eigen::Vector3d& point) const;
-  void add(const Eigen::Vector3d& point);
+  bool empty() const
+  {
+    return points.empty();
+  }
+  bool insertIfAbsent(const Eigen::Vector3d& point);
+  void insertUnchecked(const Eigen::Vector3d& point);
 
 private:
+  bool containsClose(
+      const Eigen::Vector3d& point, const ContactPointKey& key) const;
   bool containsCloseLinear(const Eigen::Vector3d& point) const;
   void ensureBucketCapacity(std::size_t requiredPoints);
   void rehash(std::size_t bucketCount);
@@ -313,12 +320,15 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  std::vector<BroadphaseEntry> contactBoundFiniteEntries;
+  std::vector<BroadphaseEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
   std::vector<std::size_t> contactSelectionReserve;
   std::vector<std::size_t> selectedContactIndices;
+  std::vector<Eigen::Vector3d> localContactPoints;
   ScratchCollisionResult pairResult;
   ContactPointIndex contactPointIndex;
 
@@ -362,7 +372,9 @@ void postProcess(
     CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& totalResult,
-    const CollisionResult& pairResult);
+    const CollisionResult& pairResult,
+    bool skipCrossPairDuplicateCheck = false,
+    bool publishCrossPairDuplicateState = true);
 
 bool isPlaneShape(const CollisionObject* object);
 
@@ -376,6 +388,16 @@ void buildBroadphaseEntries(
 
 bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2);
 
+bool contactBoundsOverlap(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    double padding);
+
+bool haveMutuallyDisjointProjectedContactBounds(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    const BroadphaseEntry& planeEntry,
+    std::vector<BroadphaseEntry>& projectedEntries);
+
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -385,7 +407,8 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst = true);
+    bool planeFirst = true,
+    bool publishFastPathContactsToDuplicateIndex = true);
 
 bool processPlanePlanePairs(
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -539,6 +562,13 @@ bool DARTCollisionDetector::collide(
       scratch.otherEntries1);
 
   auto collisionFound = false;
+  // This flag is only observed after the finite-plane path has proven mutually
+  // disjoint plane-projected contact bounds. With no filter, no unsupported
+  // entries, and at most one plane, no later same-group phase can consume the
+  // cross-pair duplicate index.
+  const bool finitePlaneFastPathHasNoLaterDuplicateConsumers
+      = !option.collisionFilter && scratch.otherEntries1.empty()
+        && scratch.planeEntries1.size() <= 1u;
   if (processFinitePlanePairs(
           scratch.finiteEntries1,
           scratch.planeEntries1,
@@ -547,7 +577,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          !finitePlaneFastPathHasNoLaterDuplicateConsumers)) {
     return true;
   }
 
@@ -683,7 +715,8 @@ bool DARTCollisionDetector::collide(
           scratch,
           mCollisionThreadPool.get(),
           mNumCollisionThreads,
-          false)) {
+          false,
+          true)) {
     return true;
   }
 
@@ -695,7 +728,9 @@ bool DARTCollisionDetector::collide(
           collisionFound,
           scratch,
           mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          mNumCollisionThreads,
+          true,
+          true)) {
     return true;
   }
 
@@ -1028,12 +1063,9 @@ void ContactPointIndex::prepare(std::size_t maxContacts)
 }
 
 //==============================================================================
-bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
+bool ContactPointIndex::containsClose(
+    const Eigen::Vector3d& point, const ContactPointKey& key) const
 {
-  ContactPointKey key;
-  if (buckets.empty() || !makeContactPointKey(point, key))
-    return containsCloseLinear(point);
-
   int firstDx = 0;
   int lastDx = 0;
   int firstDy = 0;
@@ -1075,17 +1107,50 @@ bool ContactPointIndex::containsClose(const Eigen::Vector3d& point) const
 }
 
 //==============================================================================
-void ContactPointIndex::add(const Eigen::Vector3d& point)
+bool ContactPointIndex::insertIfAbsent(const Eigen::Vector3d& point)
 {
+  ContactPointKey key;
+  if (!makeContactPointKey(point, key)) {
+    if (containsCloseLinear(point))
+      return false;
+
+    points.push_back(point);
+    nextPoint.push_back(kInvalidContactPointIndex);
+    return true;
+  }
+
   ensureBucketCapacity(points.size() + 1u);
+  if (containsClose(point, key))
+    return false;
 
   const auto pointIndex = points.size();
   points.push_back(point);
   nextPoint.push_back(kInvalidContactPointIndex);
 
+  const auto bucketIndex = findOrCreateBucketIndex(key);
+  if (bucketIndex == kInvalidContactPointIndex)
+    return true;
+
+  nextPoint[pointIndex] = buckets[bucketIndex].head;
+  buckets[bucketIndex].head = pointIndex;
+  return true;
+}
+
+//==============================================================================
+void ContactPointIndex::insertUnchecked(const Eigen::Vector3d& point)
+{
+  ensureBucketCapacity(points.size() + 1u);
+
   ContactPointKey key;
-  if (!makeContactPointKey(point, key))
+  if (!makeContactPointKey(point, key)) {
+    points.push_back(point);
+    nextPoint.push_back(kInvalidContactPointIndex);
     return;
+  }
+
+  const auto pointIndex = points.size();
+  points.push_back(point);
+  nextPoint.push_back(kInvalidContactPointIndex);
 
   const auto bucketIndex = findOrCreateBucketIndex(key);
   if (bucketIndex == kInvalidContactPointIndex)
@@ -1205,9 +1270,12 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  contactBoundFiniteEntries.clear();
+  contactBoundEntries.clear();
   parallelPairIndices.clear();
   pairResult.clear();
   contactPointIndex.clear();
+  localContactPoints.clear();
 }
 
 //==============================================================================
@@ -1393,13 +1461,19 @@ void postProcess(
     CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& totalResult,
-    const CollisionResult& pairResult)
+    const CollisionResult& pairResult,
+    bool skipCrossPairDuplicateCheck,
+    bool publishCrossPairDuplicateState)
 {
   if (!pairResult.isCollision())
     return;
 
   auto& scratch = getBroadphaseScratch();
   auto& contactPointIndex = scratch.contactPointIndex;
+  auto& localContactPoints = scratch.localContactPoints;
+  if (skipCrossPairDuplicateCheck)
+    localContactPoints.clear();
+
   const auto maxContactsPerPair = option.getEffectiveMaxNumContactsPerPair();
   const auto& pairContacts = pairResult.getContacts();
   if (totalResult.getNumContacts() >= option.maxNumContacts)
@@ -1410,14 +1484,22 @@ void postProcess(
       return std::make_pair(false, false);
 
     // Don't add repeated points.
-    if (contactPointIndex.containsClose(pairContact.point))
+    if (skipCrossPairDuplicateCheck) {
+      for (const auto& point : localContactPoints) {
+        if (isClose(point, pairContact.point, kContactDuplicateTolerance))
+          return std::make_pair(true, false);
+      }
+      localContactPoints.push_back(pairContact.point);
+      if (publishCrossPairDuplicateState)
+        contactPointIndex.insertUnchecked(pairContact.point);
+    } else if (!contactPointIndex.insertIfAbsent(pairContact.point)) {
       return std::make_pair(true, false);
+    }
 
     auto contact = pairContact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
-    contactPointIndex.add(contact.point);
     return std::make_pair(
         totalResult.getNumContacts() < option.maxNumContacts, true);
   };
@@ -1589,6 +1671,8 @@ void buildBroadphaseEntries(
     std::vector<BroadphaseEntry>& planeEntries,
     std::vector<BroadphaseEntry>& otherEntries)
 {
+  DART_PROFILE_SCOPED_N("DART native build broadphase entries");
+
   finiteEntries.reserve(objects.size());
   planeEntries.reserve(objects.size());
   otherEntries.reserve(objects.size());
@@ -1621,6 +1705,143 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 }
 
 //==============================================================================
+bool contactBoundsOverlap(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    double padding)
+{
+  if (!entry1.finite || !entry2.finite)
+    return true;
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (entry1.max[axis] + padding < entry2.min[axis]
+        || entry2.max[axis] + padding < entry1.min[axis]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool getPlaneProjection(
+    const BroadphaseEntry& planeEntry,
+    Eigen::Vector3d& planeNormal,
+    Eigen::Vector3d& planePoint)
+{
+  if (!planeEntry.plane || planeEntry.object == nullptr)
+    return false;
+
+  const auto* dartObject
+      = static_cast<const DARTCollisionObject*>(planeEntry.object);
+  const auto* shape = dartObject->getCachedShape();
+  if (shape == nullptr
+      || dartObject->getCachedShapeType()
+             != dynamics::PlaneShape::getStaticType()) {
+    return false;
+  }
+
+  const auto* planeShape = static_cast<const dynamics::PlaneShape*>(shape);
+  const Eigen::Vector3d rawNormal
+      = planeEntry.transform.linear() * planeShape->getNormal();
+  const auto normalNorm = rawNormal.norm();
+  if (!std::isfinite(normalNorm)
+      || normalNorm <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  planeNormal = rawNormal / normalNorm;
+  planePoint = planeEntry.transform.translation()
+               + rawNormal * planeShape->getOffset();
+  return planeNormal.allFinite() && planePoint.allFinite();
+}
+
+//==============================================================================
+bool makeProjectedContactBounds(
+    const BroadphaseEntry& entry,
+    const Eigen::Vector3d& planeNormal,
+    const Eigen::Vector3d& planePoint,
+    BroadphaseEntry& projectedEntry)
+{
+  if (!entry.finite)
+    return false;
+
+  projectedEntry = BroadphaseEntry();
+  projectedEntry.finite = true;
+  projectedEntry.min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  projectedEntry.max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (int cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
+    const Eigen::Vector3d corner(
+        (cornerIndex & 1) ? entry.max.x() : entry.min.x(),
+        (cornerIndex & 2) ? entry.max.y() : entry.min.y(),
+        (cornerIndex & 4) ? entry.max.z() : entry.min.z());
+    const auto signedDistance = planeNormal.dot(corner - planePoint);
+    const Eigen::Vector3d projectedPoint
+        = corner - planeNormal * signedDistance;
+    if (!projectedPoint.allFinite())
+      return false;
+
+    projectedEntry.min = projectedEntry.min.cwiseMin(projectedPoint);
+    projectedEntry.max = projectedEntry.max.cwiseMax(projectedPoint);
+  }
+
+  return projectedEntry.min.allFinite() && projectedEntry.max.allFinite();
+}
+
+//==============================================================================
+bool haveMutuallyDisjointProjectedContactBounds(
+    const std::vector<BroadphaseEntry>& finiteEntries,
+    const BroadphaseEntry& planeEntry,
+    std::vector<BroadphaseEntry>& projectedEntries)
+{
+  if (finiteEntries.size() < 2u)
+    return true;
+
+  DART_PROFILE_SCOPED_N("DART native projected contact-bound separation check");
+
+  Eigen::Vector3d planeNormal;
+  Eigen::Vector3d planePoint;
+  if (!getPlaneProjection(planeEntry, planeNormal, planePoint))
+    return false;
+
+  projectedEntries.clear();
+  projectedEntries.reserve(finiteEntries.size());
+  for (const auto& entry : finiteEntries) {
+    BroadphaseEntry projectedEntry;
+    if (!makeProjectedContactBounds(
+            entry, planeNormal, planePoint, projectedEntry)) {
+      return false;
+    }
+    projectedEntries.push_back(projectedEntry);
+  }
+
+  std::sort(
+      projectedEntries.begin(),
+      projectedEntries.end(),
+      [](const BroadphaseEntry& lhs, const BroadphaseEntry& rhs) {
+        return lhs.min.x() < rhs.min.x();
+      });
+
+  for (std::size_t i = 0u; i + 1u < projectedEntries.size(); ++i) {
+    const auto& entry1 = projectedEntries[i];
+    const auto maxX = entry1.max.x() + kContactDuplicateTolerance;
+    for (std::size_t j = i + 1u; j < projectedEntries.size(); ++j) {
+      const auto& entry2 = projectedEntries[j];
+      if (entry2.min.x() > maxX)
+        break;
+
+      if (contactBoundsOverlap(entry1, entry2, kContactDuplicateTolerance))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 bool processFinitePlanePairs(
     const std::vector<BroadphaseEntry>& finiteEntries,
     const std::vector<BroadphaseEntry>& planeEntries,
@@ -1630,8 +1851,11 @@ bool processFinitePlanePairs(
     BroadphaseScratch& scratch,
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads,
-    bool planeFirst)
+    bool planeFirst,
+    bool publishFastPathContactsToDuplicateIndex)
 {
+  DART_PROFILE_SCOPED_N("DART native finite-plane pairs");
+
   constexpr std::size_t kMinParallelFinitePlanePairs = 128u;
   const std::size_t pairCount = finiteEntries.size() * planeEntries.size();
   const bool contactCapCanShortCircuit = option.maxNumContacts < pairCount;
@@ -1643,6 +1867,8 @@ bool processFinitePlanePairs(
         && pairCount >= kMinParallelFinitePlanePairs;
   const auto& filter = option.collisionFilter;
   const bool hasSinglePlane = planeEntries.size() == 1u;
+  const bool hasPriorCrossPairDuplicateState
+      = result != nullptr && !scratch.contactPointIndex.empty();
 
   auto getPairEntries = [&](std::size_t pairIndex) {
     const auto planeIndex
@@ -1676,6 +1902,8 @@ bool processFinitePlanePairs(
 
   std::size_t parallelPairCount = pairCount;
   if (canConsiderParallel && filter) {
+    DART_PROFILE_SCOPED_N("DART native finite-plane prefilter");
+
     scratch.parallelPairIndices.clear();
     scratch.parallelPairIndices.reserve(pairCount);
     for (std::size_t pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
@@ -1694,6 +1922,20 @@ bool processFinitePlanePairs(
   const bool canParallelize
       = canConsiderParallel
         && parallelPairCount >= kMinParallelFinitePlanePairs;
+  bool canSkipCrossPairDuplicateCheck = false;
+  if (canParallelize && hasSinglePlane && !hasPriorCrossPairDuplicateState) {
+    const auto* proofEntries = &finiteEntries;
+    if (filter) {
+      scratch.contactBoundFiniteEntries.clear();
+      scratch.contactBoundFiniteEntries.reserve(parallelPairCount);
+      for (const auto pairIndex : scratch.parallelPairIndices)
+        scratch.contactBoundFiniteEntries.push_back(finiteEntries[pairIndex]);
+      proofEntries = &scratch.contactBoundFiniteEntries;
+    }
+
+    canSkipCrossPairDuplicateCheck = haveMutuallyDisjointProjectedContactBounds(
+        *proofEntries, planeEntries.front(), scratch.contactBoundEntries);
+  }
 
   if (canParallelize) {
     scratch.prepareParallelPairResults(parallelPairCount);
@@ -1717,30 +1959,38 @@ bool processFinitePlanePairs(
           = pairResult.isCollision() ? 1 : 0;
     };
 
-    threadPool->parallelFor(
-        parallelPairCount, numCollisionThreads, collidePairAt);
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-plane collide workers");
+      threadPool->parallelFor(
+          parallelPairCount, numCollisionThreads, collidePairAt);
+    }
 
-    for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
-         ++workIndex) {
-      if (scratch.parallelPairCollisions[workIndex] == 0)
-        continue;
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-plane merge contacts");
+      for (std::size_t workIndex = 0u; workIndex < parallelPairCount;
+           ++workIndex) {
+        if (scratch.parallelPairCollisions[workIndex] == 0)
+          continue;
 
-      const auto pairIndex
-          = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
-      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
-      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
-      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+        const auto pairIndex
+            = filter ? scratch.parallelPairIndices[workIndex] : workIndex;
+        const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+        auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+        auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
 
-      collisionFound = true;
-      postProcess(
-          collObj1,
-          collObj2,
-          option,
-          *result,
-          scratch.parallelPairResults[workIndex]);
+        collisionFound = true;
+        postProcess(
+            collObj1,
+            collObj2,
+            option,
+            *result,
+            scratch.parallelPairResults[workIndex],
+            canSkipCrossPairDuplicateCheck,
+            publishFastPathContactsToDuplicateIndex);
 
-      if (shouldStopAfterPair(true, option, result))
-        return true;
+        if (shouldStopAfterPair(true, option, result))
+          return true;
+      }
     }
 
     return false;
@@ -1754,19 +2004,22 @@ bool processFinitePlanePairs(
     return false;
   }
 
-  for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
-       ++planeIndex) {
-    for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
-         ++finiteIndex) {
-      const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
-      const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
-      auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
-      auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
-        continue;
+  {
+    DART_PROFILE_SCOPED_N("DART native finite-plane serial pairs");
+    for (std::size_t planeIndex = 0u; planeIndex < planeEntries.size();
+         ++planeIndex) {
+      for (std::size_t finiteIndex = 0u; finiteIndex < finiteEntries.size();
+           ++finiteIndex) {
+        const auto pairIndex = planeIndex * finiteEntries.size() + finiteIndex;
+        const auto [planeEntry, finiteEntry] = getPairEntries(pairIndex);
+        auto* collObj1 = planeFirst ? planeEntry->object : finiteEntry->object;
+        auto* collObj2 = planeFirst ? finiteEntry->object : planeEntry->object;
+        if (filter && filter->ignoresCollision(collObj1, collObj2))
+          continue;
 
-      if (processSerialPairAt(pairIndex))
-        return true;
+        if (processSerialPairAt(pairIndex))
+          return true;
+      }
     }
   }
 

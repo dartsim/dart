@@ -3,9 +3,9 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, and #3148 are merged. #3149
-`perf/dart6-parallel-default-contact-constraints` is the active follow-up,
-refreshed on current `origin/release-6.20`.
+#3144, #3146, #3147, #3148, and #3149 are merged. #3150
+`perf/dart6-native-disjoint-plane-merge` is the active follow-up, refreshed on
+current `origin/release-6.20`.
 
 #3147 targets active contact-construction cost by reusing exact built-in
 default `ContactConstraint` objects across steps while preserving exact ODE
@@ -13,31 +13,53 @@ final-state hashes and custom contact-surface handler behavior. #3148 targets
 DART-native collision transform setup for identity-relative `ShapeNode`
 collision objects by reusing the owning `BodyNode` world transform, while
 keeping the public generic `CollisionObject` overload on the safe
-`getTransform()` fallback path for non-DART collision objects. #3149 attacks
-the next measured constraint hot path: large built-in default contact sets are
-rebuilt by collision pair in parallel, while custom contact handlers, small
-contact sets, and pairs that share a non-skipped body stay on the existing
-serial path. A pair-result cache experiment was rejected because it preserved
-the final hash but regressed the same issue workload.
+`getTransform()` fallback path for non-DART collision objects. #3149 rebuilds
+large independent built-in default contact sets by collision pair in parallel,
+while custom contact handlers, small contact sets, and pairs that share a
+non-skipped body stay on the existing serial path.
+
+#3150 attacks the measured DART-native finite-plane merge hot path. Queries
+that can prove finite-plane contact footprints are mutually disjoint may keep
+the existing per-pair duplicate check while bypassing the global
+duplicate-contact grid for those pair results. Overlapping, multi-plane, and
+cross-phase queries keep the existing global duplicate path.
 
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
-and solver, `--world-threads 16`, `--max-contacts 12000`,
-`--max-contacts-per-pair 4`, deactivation disabled. ODE is included here
-because it is the downstream backend baseline.
+and solver, `--steps 300`, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled.
+ODE is included here because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3148 parent, 300 active steps, text profile | DART native | `0.0917877` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `951.72 ms`, `build contact constraints` `644.65 ms` |
-| Rejected pair-result cache, 300 active steps, text profile | DART native | `0.0831654` | finite, same hash, contacts `5005`, pairs `3003`; `collide` regressed to `1.228 s` |
-| #3149 candidate, 300 active steps, text profile | DART native | `0.0992175` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `925.20 ms`, `build contact constraints` `542.58 ms` |
-| #3149 candidate, 300 active steps, no profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, same hash, contacts `5005`, pairs `3003` |
-| #3147 parent, 300 active steps, no profile | ODE | `0.00463526` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3149 parent, active no-profile | DART native | `0.0984786` latest rerun, `0.0982859` prior run | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3150 current head, active no-profile | DART native | `0.104694` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3150 current head, active text profile | DART native | `0.104939` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `660.38 ms`, finite-plane merge `113.36 ms`, contact-bound separation check `24.44 ms` |
+| #3150 current head, active no-profile | FCL primitive | `0.0959666` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3150 current head, active no-profile | Bullet | `0.0858405` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3150 current head, active no-profile | ODE | `0.00465031` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.09x` FCL primitive, `1.22x` Bullet, and
+`22.5x` ODE on the active issue scene. It is still far below RTF `1` with
+deactivation disabled, so the follow-up target is the remaining DART 6
+constraint pipeline cost rather than declaring issue #3056 complete. The latest
+text profile shows `World::step - Solve constraints` at `2.132 s` of `2.857 s`
+over 300 steps. Within that, `updateConstraints` is `1.386 s`, `collide` is
+`660.38 ms`, `build contact constraints` is `583.28 ms`, and
+`solveConstrainedGroups` is `543.59 ms`.
 
 Focused correctness evidence: `test_ConstraintSolver` now compares a serial
 world against a four-thread world with 160 independent default box-plane
 contacts over repeated steps, including final positions, velocities,
-transforms, spatial velocities, and contact counts.
+transforms, spatial velocities, and contact counts. ODE remains the downstream
+comparison baseline and should be included in each refreshed performance table,
+even when the current slice only changes the DART-native backend.
+
+Focused collision evidence: `test_Collision` compares serial and threaded
+DART-native finite-plane contacts in legacy order, and
+`test_DARTCollisionDetector` keeps duplicate-contact coverage for overlapping
+finite shapes near duplicate-grid boundaries. The current candidate also passed
+`test_CollisionGroups`.
 
 Latest active issue-scene evidence with DART-native collision, DART 6 dynamics,
 300 active steps, `--world-threads 16`, `--max-contacts 12000`,
