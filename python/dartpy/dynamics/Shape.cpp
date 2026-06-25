@@ -300,8 +300,8 @@ void Shape(py::module& m)
   // MeshShape's Assimp (aiScene/aiMesh) constructors and setters are kept as
   // deprecated DART 6 compatibility shims (TriMesh APIs are the replacement).
   // Binding them deliberately uses those deprecated APIs, so suppress
-  // -Wdeprecated-declarations here — otherwise -Werror builds (e.g. macOS arm64)
-  // fail compiling this binding.
+  // -Wdeprecated-declarations here — otherwise -Werror builds (e.g. macOS
+  // arm64) fail compiling this binding.
   DART_SUPPRESS_DEPRECATED_BEGIN
   ::py::class_<
       dart::dynamics::MeshShape,
