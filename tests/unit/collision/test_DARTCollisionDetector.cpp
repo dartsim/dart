@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/PlaneShape.hpp>
@@ -39,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <vector>
 
 using namespace dart;
 
@@ -132,4 +134,64 @@ TEST(DARTCollisionDetector, KeepsDistinctPlaneContactsInNearbyGridCells)
   ASSERT_EQ(2u, result.getNumContacts());
   EXPECT_NEAR(result.getContact(0).point.x(), x1, kDuplicateContactTolerance);
   EXPECT_NEAR(result.getContact(1).point.x(), x2, kDuplicateContactTolerance);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
+{
+  constexpr std::size_t kNumSpheres = 140u;
+
+  auto detector = collision::DARTCollisionDetector::create();
+
+  auto planeFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  planeFrame->setShape(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  std::vector<dynamics::SimpleFramePtr> sphereFrames;
+  sphereFrames.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto sphereFrame
+        = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    sphereFrame->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+    sphereFrame->setTranslation(Eigen::Vector3d(1.5 * i, 0.0, 0.49));
+    sphereFrames.push_back(sphereFrame);
+  }
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(planeFrame.get());
+  for (const auto& sphereFrame : sphereFrames)
+    group->addShapeFrame(sphereFrame.get());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = kNumSpheres;
+
+  detector->setNumCollisionThreads(1u);
+  collision::CollisionResult serialResult;
+  ASSERT_TRUE(group->collide(option, &serialResult));
+  ASSERT_EQ(kNumSpheres, serialResult.getNumContacts());
+
+  detector->setNumCollisionThreads(4u);
+  collision::CollisionResult parallelResult;
+  ASSERT_TRUE(group->collide(option, &parallelResult));
+  ASSERT_EQ(serialResult.getNumContacts(), parallelResult.getNumContacts());
+
+  for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+    SCOPED_TRACE(i);
+    const auto& serialContact = serialResult.getContact(i);
+    const auto& parallelContact = parallelResult.getContact(i);
+    EXPECT_EQ(
+        serialContact.collisionObject1->getShapeFrame(),
+        parallelContact.collisionObject1->getShapeFrame());
+    EXPECT_EQ(
+        serialContact.collisionObject2->getShapeFrame(),
+        parallelContact.collisionObject2->getShapeFrame());
+    EXPECT_TRUE(serialContact.point.isApprox(parallelContact.point, 1e-12));
+    EXPECT_TRUE(serialContact.normal.isApprox(parallelContact.normal, 1e-12));
+    EXPECT_NEAR(
+        serialContact.penetrationDepth,
+        parallelContact.penetrationDepth,
+        1e-12);
+  }
 }

@@ -281,6 +281,11 @@
     groups prove they are exact built-in fixed-support contact groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Reduce DART-native finite-plane contact merge overhead by directly appending
+    single-contact pair results once the disjoint contact-bound proof has
+    already disabled cross-pair duplicate checks:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,

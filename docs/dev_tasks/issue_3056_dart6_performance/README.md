@@ -3,16 +3,27 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, and #3154
-are merged. #3170 `perf/dart6-parallel-native-broadphase` is the active slice
-on `release-6.20`.
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154, and
+#3170 are merged. #3171 `perf/dart6-exact-contact-group-cache` is the active
+slice on `release-6.20`.
 
-The latest candidate targets DART-native broadphase entry setup for large
-collision groups. Each `BroadphaseEntry` can be computed independently, so the
-DART backend fills a scratch vector by original collision-object index with the
-existing collision thread pool, then performs the same serial finite/plane/other
-partition. The final partition still preserves input order, pair traversal,
-contact order, and final hashes.
+The active slice caches whether each constrained group contains only exact
+built-in contact constraints while the groups are built, so the boxed-LCP solver
+can enter the existing direct single-free-body contact path without repeating
+RTTI checks for every small contact island. It also enables the default contact
+rebuild parallel path for the common "many mobile bodies on one fixed
+zero-velocity support" case. The fixed-support decision is computed serially
+before worker threads run, and the parallel workers use explicit pointers to the
+main thread's per-step contact candidate arrays rather than accidentally
+indexing their own thread-local scratch vectors. Finally, native finite-plane
+contact merging now uses a single-contact fast path when the broadphase has
+already proven that cross-pair duplicate checks are unnecessary.
+
+Each performance PR in this stack must keep ODE in the comparison table along
+with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
+DART-native improvements are not considered complete on this workload unless
+the evidence shows native collision ahead of all three backends on the same
+DART 6 dynamics and solver pipeline.
 
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
@@ -21,15 +32,37 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3154 parent, text profile | DART native | `0.110145` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `collide` `624.61 ms`, broadphase entries `249.70 ms` |
-| #3170 current head, text profile | DART native | `0.120566` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `445.85 ms`, broadphase entries `108.69 ms`, finite-plane pairs `260.55 ms` |
-| #3170 current head, no profile | DART native | `0.118579` | finite, same hash, contacts `5005`, pairs `3003` |
-| #3170 current head, no profile | FCL primitive | `0.0963517` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
-| #3170 current head, no profile | Bullet | `0.0883704` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
-| #3170 current head, no profile | ODE | `0.00458315` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3170 parent, same-host no profile | DART native | `0.110045` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| Exact-group-only candidate, same-host no profile | DART native | `0.115783` | finite, same hash, contacts `5005`, pairs `3003` |
+| #3171 current head, no profile | DART native | `0.123018` latest, `0.116997` prior | finite, same hash, contacts `5005`, pairs `3003` |
+| #3171 current head, text profile | DART native | `0.127205` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `412.71 ms`, `parallel reset` `85.58 ms`, `serial fallback` `1.795 ms`, `solveConstrainedGroups` `477.76 ms`, `collide` `425.95 ms`, finite-plane merge contacts `84.51 ms` |
+| #3171 current head, no profile | FCL primitive | `0.102059` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3171 current head, no profile | Bullet | `0.0881347` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3171 current head, no profile | ODE | `0.00465471` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Current-head DART-native is about `1.23x` FCL primitive, `1.34x` Bullet, and
-`25.9x` ODE on this active issue-scene rerun.
+Using the lower #3171 DART-native repeat, the active slice is about `1.06x` the
+same-host #3170 parent no-profile result, `1.15x` FCL primitive, `1.33x`
+Bullet, and `25.1x` ODE on the active issue-scene rerun. The active
+no-deactivation scene is still far below RTF `1`, so the next target remains the
+largest remaining active-step costs: collision, constrained-group solve, and
+integration overhead.
+
+On the original default-sleeping target command, the same #3171 head reaches RTF
+`61.1724` for 3000 steps with DART-native collision, advances `3000 / 3000`
+frames, ends finite with hash `0x131b6af79a44ff90`, and has all `3003 / 3003`
+mobile skeletons resting with zero final contacts.
+
+An earlier fixed-support contact-build relaxation crashed because the parallel
+worker indexed `thread_local` contact-pair scratch storage from the worker
+thread. The current candidate fixes that by capturing explicit main-thread
+scratch pointers for the parallel rebuild and keeps the fixed-support
+relative-velocity skip decision serial.
+
+#3170 parallelizes DART-native broadphase entry construction for large
+collision groups. It fills a scratch entry vector in collision-object order,
+then performs the same serial finite/plane/other partition, preserving
+deterministic pair order and final contact state while reducing the measured
+native broadphase setup cost.
 
 #3154 trims default contact construction by replacing the
 per-step linear-scan default-surface-property cache with a small direct-mapped

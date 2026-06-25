@@ -118,6 +118,10 @@ private:
   /// with exactly one reactive skeleton.
   bool mAllSingleReactiveContacts = false;
 
+  /// True when every contact in this single-reactive group has the exact
+  /// built-in ContactConstraint type.
+  bool mAllExactContactConstraints = false;
+
   /// True while all single-reactive contacts in this group share the same
   /// reactive body.
   bool mSingleReactiveContactsShareBody = true;
