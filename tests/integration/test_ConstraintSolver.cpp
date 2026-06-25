@@ -62,6 +62,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <typeinfo>
 #include <vector>
 
 using namespace dart;
@@ -277,8 +278,11 @@ public:
 
     const auto* contact
         = dynamic_cast<const constraint::ContactConstraint*>(constraint.get());
-    if (contact == nullptr)
+    if (contact == nullptr) {
       mActiveConstraintsAllSingleReactiveContacts = false;
+    } else if (typeid(*contact) != typeid(constraint::ContactConstraint)) {
+      mActiveConstraintsHaveCustomContactConstraint = true;
+    }
   }
 
   void buildGroupsForTest()
@@ -794,6 +798,53 @@ TEST(ConstraintSolver, SharedFixedContactSupportCanSolveGroupsInParallel)
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SharedFixedCustomContactSupportForcesSerialAfterBuild)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setNumSimulationThreads(4);
+
+  std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+  std::vector<collision::Contact> contacts;
+  dynamicObjects.reserve(130u);
+  contacts.reserve(130u);
+
+  for (std::size_t i = 0; i < 130u; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    dynamicObjects.push_back(
+        std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    contacts.push_back(
+        createContact(dynamicObjects.back().get(), &fixedObject));
+    solver.addActiveConstraintForTest(
+        createContactConstraint<CustomContactConstraint>(contacts.back()));
+  }
+
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  solver.buildGroupsForTest();
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_EQ(1, solver.getMaxConcurrentSolves());
 }
 
 //==============================================================================
