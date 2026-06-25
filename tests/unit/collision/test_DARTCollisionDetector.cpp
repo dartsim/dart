@@ -137,6 +137,47 @@ TEST(DARTCollisionDetector, KeepsDistinctPlaneContactsInNearbyGridCells)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, DetectsTranslatedIdentityBounds)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+
+  auto sphereFrame1
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  auto sphereFrame2
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  auto sphereFrame3
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+
+  sphereFrame1->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+  sphereFrame2->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+  sphereFrame3->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+
+  sphereFrame1->setTranslation(Eigen::Vector3d(10.0, 20.0, 30.0));
+  sphereFrame2->setTranslation(Eigen::Vector3d(10.9, 20.0, 30.0));
+  sphereFrame3->setTranslation(Eigen::Vector3d(30.0, 20.0, 30.0));
+
+  auto group = detector->createCollisionGroup(
+      sphereFrame1.get(), sphereFrame2.get(), sphereFrame3.get());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  const auto* shapeFrame1 = contact.collisionObject1->getShapeFrame();
+  const auto* shapeFrame2 = contact.collisionObject2->getShapeFrame();
+  EXPECT_TRUE(
+      (shapeFrame1 == sphereFrame1.get() && shapeFrame2 == sphereFrame2.get())
+      || (shapeFrame1 == sphereFrame2.get()
+          && shapeFrame2 == sphereFrame1.get()));
+  EXPECT_GT(contact.penetrationDepth, 0.0);
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
 {
   constexpr std::size_t kNumSpheres = 140u;
