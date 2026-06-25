@@ -102,8 +102,9 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up DART-native finite-shape-vs-plane contact merging by using
-    contact-bound separation to bypass global duplicate-contact grid checks
-    when different finite shapes cannot contribute duplicate contact points:
+    plane-projected contact-footprint separation to bypass global
+    duplicate-contact grid checks when different finite shapes cannot
+    contribute duplicate contact points:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Reduce default contact-constraint rebuild cost by reusing per-step default
@@ -181,6 +182,10 @@
     compatibility shims, and route mesh collision backends through the new
     representation:
     [#3145](https://github.com/dartsim/dart/pull/3145)
+
+  * Fix `ArrowShape`'s generated Assimp mesh metadata so cloned arrows and
+    refreshed TriMesh views use valid material indices on all supported
+    platforms.
 
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided

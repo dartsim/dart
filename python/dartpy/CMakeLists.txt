@@ -6,8 +6,10 @@
 #
 # This file is provided under the "BSD-style" License
 
-execute_process(COMMAND ${Python3_EXECUTABLE} -c
-  "from distutils.sysconfig import get_python_lib;\
+execute_process(
+  COMMAND
+    ${Python3_EXECUTABLE} -c
+    "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -34,29 +36,24 @@ pybind11_add_module(${pybind_module}
   ${dartpy_sources}
 )
 
-target_include_directories(${pybind_module}
-  SYSTEM PUBLIC
-    ${PYTHON_INCLUDE_DIRS}
-    ${pybind11_INCLUDE_DIRS}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+target_include_directories(
+  ${pybind_module}
+  SYSTEM
+  PUBLIC ${PYTHON_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(dartpy_libraries
-  dart
-  dart-utils
-  dart-utils-urdf
-  dart-gui-osg
-)
+set(dartpy_libraries dart dart-utils dart-utils-urdf dart-gui-osg)
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
-    message(FATAL_ERROR "Cannot find the library ${dartpy_library}. Please check the configuration of DART.")
+    message(
+      FATAL_ERROR
+      "Cannot find the library ${dartpy_library}. Please check the configuration of DART."
+    )
   endif()
 endforeach()
 
-target_link_libraries(${pybind_module}
-  PUBLIC ${dartpy_libraries}
-)
+target_link_libraries(${pybind_module} PUBLIC ${dartpy_libraries})
 if(TARGET dart-collision-bullet)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
 endif()
@@ -64,7 +61,8 @@ if(TARGET dart-collision-ode)
   target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
 endif()
 
-target_compile_definitions(${pybind_module}
+target_compile_definitions(
+  ${pybind_module}
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
 
@@ -78,7 +76,8 @@ set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
 # `sudo` if the destination is a system directory.
 set(install_comment "Installing ${pybind_module}...")
 if(BUILD_SHARED_LIBS)
-  string(CONCAT install_comment
+  string(
+    CONCAT install_comment
     "${install_comment}\n"
     "NOTE: ${pybind_module} is built against the DART's shared libraries. "
     "Install the shared libraries to be able to import ${pybind_module}."
@@ -87,15 +86,15 @@ endif()
 
 # TODO: Fix installing dartpy to site-packages directory
 # Install the pybind module to site-packages directory
- install(TARGETS ${pybind_module}
-   LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}"
- )
+install(TARGETS ${pybind_module} LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
 
-list(REMOVE_ITEM dartpy_headers
+list(
+  REMOVE_ITEM dartpy_headers
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h
   ${CMAKE_CURRENT_LIST_DIR}/eigen_pybind.h
 )
-list(REMOVE_ITEM dartpy_sources
+list(
+  REMOVE_ITEM dartpy_sources
   ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.cpp
 )
 dart_format_add(${dartpy_headers} ${dartpy_sources})

@@ -63,7 +63,7 @@ OdeCollisionGroup::OdeCollisionGroup(
 //==============================================================================
 OdeCollisionGroup::~OdeCollisionGroup()
 {
-  // This is important to call this function before detroy ODE space.
+  // This is important to call this function before destroy ODE space.
   removeAllShapeFrames();
 
   dSpaceDestroy(mSpaceId);

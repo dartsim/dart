@@ -79,7 +79,7 @@ public:
   /// keyword' and 'package name' components of the URI string.
   ///
   /// You can call this method multiple times with the same \a _packageName to
-  /// provide multiple candidates for resolution. This is necessarry if your
+  /// provide multiple candidates for resolution. This is necessary if your
   /// resources are split between the Catkin devel and source spaces. Multiple
   /// candidates will be tested in the same order in which they were added.
   ///

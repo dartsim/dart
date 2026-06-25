@@ -58,13 +58,18 @@ endfunction()
 # cmake-format: on
 function(dart_option variable help_text default_value)
   set_property(
-    GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}" APPEND
+    GLOBAL
+    PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE "${variable}"
+    APPEND
   )
   set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_help_text "${help_text}" APPEND
+    GLOBAL
+    PROPERTY DART_DETAIL_property_option_help_text "${help_text}"
+    APPEND
   )
   set_property(
-    GLOBAL PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
+    GLOBAL
+    PROPERTY DART_DETAIL_property_option_default_value "${default_value}"
     APPEND
   )
 
@@ -77,7 +82,6 @@ function(dart_option variable help_text default_value)
   else()
     set(${variable} OFF PARENT_SCOPE)
   endif()
-
 endfunction()
 
 # cmake-format: off
@@ -88,13 +92,18 @@ function(dart_print_options)
   message(STATUS "[ Options ]")
 
   get_property(
-    option_variables GLOBAL PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE
+    option_variables
+    GLOBAL
+    PROPERTY DART_DETAIL_PROPERTY_OPTION_VARIABLE
   )
   get_property(
-    option_help_texts GLOBAL PROPERTY DART_DETAIL_property_option_help_text
+    option_help_texts
+    GLOBAL
+    PROPERTY DART_DETAIL_property_option_help_text
   )
   get_property(
-    option_default_values GLOBAL
+    option_default_values
+    GLOBAL
     PROPERTY DART_DETAIL_property_option_default_value
   )
 
@@ -127,14 +136,10 @@ endfunction()
 
 function(dart_library)
   set(prefix _ARG)
-  set(options
-    GLOB_HEADERS
-    GLOB_SOURCES
-  )
-  set(oneValueArgs
-    NAME
-  )
-  set(multiValueArgs
+  set(options GLOB_HEADERS GLOB_SOURCES)
+  set(oneValueArgs NAME)
+  set(
+    multiValueArgs
     HEADERS
     SOURCES
     PUBLIC_LINK_LIBRARIES
@@ -143,12 +148,22 @@ function(dart_library)
     PRIVATE_COMPILE_DEFINITIONS
   )
   cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+    "${prefix}"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
   )
 
   # Get the current directory relative to the root of the project
   # assuming that dart/* is the root of the source tree
-  string(REPLACE "${CMAKE_SOURCE_DIR}/" "" relative_path ${CMAKE_CURRENT_SOURCE_DIR}) 
+  string(
+    REPLACE
+    "${CMAKE_SOURCE_DIR}/"
+    ""
+    relative_path
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
   if(${_ARG_GLOB_HEADERS})
     file(GLOB_RECURSE headers "*.hpp")
@@ -160,36 +175,31 @@ function(dart_library)
     list(APPEND _ARG_SOURCES ${sources})
   endif()
 
-  add_library(${_ARG_NAME}
-    ${_ARG_HEADERS}
-    ${_ARG_SOURCES}
-  )
+  add_library(${_ARG_NAME} ${_ARG_HEADERS} ${_ARG_SOURCES})
 
-  target_include_directories(${_ARG_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  target_include_directories(
+    ${_ARG_NAME}
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
   target_compile_features(${_ARG_NAME} PUBLIC cxx_std_17)
 
-  target_link_libraries(${_ARG_NAME}
-    PUBLIC
-      ${_ARG_PUBLIC_LINK_LIBRARIES}
-    PRIVATE
-      ${_ARG_PRIVATE_LINK_LIBRARIES}
+  target_link_libraries(
+    ${_ARG_NAME}
+    PUBLIC ${_ARG_PUBLIC_LINK_LIBRARIES}
+    PRIVATE ${_ARG_PRIVATE_LINK_LIBRARIES}
   )
 
-  target_compile_definitions(${_ARG_NAME}
-    PUBLIC
-      ${_ARG_PUBLIC_COMPILE_DEFINITIONS}
-    PRIVATE
-      ${_ARG_PRIVATE_COMPILE_DEFINITIONS}
+  target_compile_definitions(
+    ${_ARG_NAME}
+    PUBLIC ${_ARG_PUBLIC_COMPILE_DEFINITIONS}
+    PRIVATE ${_ARG_PRIVATE_COMPILE_DEFINITIONS}
   )
 
-  set_target_properties(${_ARG_NAME} PROPERTIES
-    OUTPUT_NAME dart-${_ARG_NAME}
-  )
+  set_target_properties(${_ARG_NAME} PROPERTIES OUTPUT_NAME dart-${_ARG_NAME})
 
   include(GNUInstallDirs)
 
@@ -200,8 +210,8 @@ function(dart_library)
 
     # Install the file to the destination, preserving the directory structure
     install(
-        FILES "${header}"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
+      FILES "${header}"
+      DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${rel_dir}"
     )
   endforeach()
 
@@ -220,26 +230,24 @@ function(dart_library)
   )
 
   dart_format_add(${_ARG_HEADERS} ${_ARG_SOURCES})
-
 endfunction()
 
 #===============================================================================
 function(dart_coverage)
   set(prefix _ARG)
-  set(options
-    REQUIRED
-  )
-  set(oneValueArgs
-    INCLUDE_DIR
-    SOURCE_DIR
-    INSTALL_DIR
-  )
-  set(multiValueArgs
-    INPUT        # optional
+  set(options REQUIRED)
+  set(oneValueArgs INCLUDE_DIR SOURCE_DIR INSTALL_DIR)
+  set(
+    multiValueArgs
+    INPUT # optional
     EXCLUDE
   )
   cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+    "${prefix}"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
   )
 
   include(GNUInstallDirs)
@@ -253,7 +261,10 @@ function(dart_coverage)
   endif()
 
   if(NOT _ARG_INSTALL_DIR)
-    set(_ARG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DOXDIR}/${PROJECT_NAME}${DART_VERSION_MAJOR}/coverage)
+    set(
+      _ARG_INSTALL_DIR
+      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DOXDIR}/${PROJECT_NAME}${DART_VERSION_MAJOR}/coverage
+    )
   endif()
 
   # Find gcovr
@@ -261,7 +272,10 @@ function(dart_coverage)
     find_program(GCOVR_EXECUTABLE gcovr QUIET)
     if(NOT GCOVR_EXECUTABLE)
       if(_ARG_REQUIRED)
-        message(FATAL_ERROR "Failed to find gcovr. Install gcovr or remove REQUIRED option.")
+        message(
+          FATAL_ERROR
+          "Failed to find gcovr. Install gcovr or remove REQUIRED option."
+        )
       else()
         return()
       endif()
@@ -277,48 +291,49 @@ function(dart_coverage)
   set(gcovr_index_path ${gcovr_html_dir}/index.html)
 
   # Extract Gcovr version
-  execute_process(COMMAND ${GCOVR_EXECUTABLE} --version OUTPUT_VARIABLE GCOVR_VERSION_RAW_OUTPUT)
+  execute_process(
+    COMMAND ${GCOVR_EXECUTABLE} --version
+    OUTPUT_VARIABLE GCOVR_VERSION_RAW_OUTPUT
+  )
   string(STRIP ${GCOVR_VERSION_RAW_OUTPUT} GCOVR_VERSION_RAW_OUTPUT)
-  string(REPLACE "gcovr " "" GCOVR_VERSION_RAW_OUTPUT ${GCOVR_VERSION_RAW_OUTPUT})
+  string(
+    REPLACE
+    "gcovr "
+    ""
+    GCOVR_VERSION_RAW_OUTPUT
+    ${GCOVR_VERSION_RAW_OUTPUT}
+  )
 
   # Set options based on the Gcovr version
   if(${GCOVR_VERSION_RAW_OUTPUT} VERSION_GREATER_EQUAL 4.2)
     set(gcovr_options --exclude-throw-branches)
   endif()
 
-  add_custom_target(coverage
+  add_custom_target(
+    coverage
     COMMAND
-      ${GCOVR_EXECUTABLE}
-        -r ${CMAKE_CURRENT_SOURCE_DIR}
-        -f ${gcovr_include_dir}
-        -f ${gcovr_source_dir}
+      ${GCOVR_EXECUTABLE} -r ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir}
+      -f ${gcovr_source_dir}
     DEPENDS tests_and_run
     COMMENT "Generating line coverage report..."
   )
 
-  add_custom_target(coverage_branch
-    COMMAND ${GCOVR_EXECUTABLE}
-        -b
-        ${gcovr_options}
-        --exclude-unreachable-branches
-        -r ${CMAKE_CURRENT_SOURCE_DIR}
-        -f ${gcovr_include_dir}
-        -f ${gcovr_source_dir}
+  add_custom_target(
+    coverage_branch
+    COMMAND
+      ${GCOVR_EXECUTABLE} -b ${gcovr_options} --exclude-unreachable-branches -r
+      ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir} -f ${gcovr_source_dir}
     DEPENDS tests_and_run
     COMMENT "Generating branch coverage report..."
   )
 
-  add_custom_target(coverage_html
+  add_custom_target(
+    coverage_html
     COMMAND ${CMAKE_COMMAND} -E make_directory ${gcovr_html_dir}
-    COMMAND ${GCOVR_EXECUTABLE}
-      --html
-      --html-details
-      ${gcovr_options}
-      --exclude-unreachable-branches
-      -o "${gcovr_index_path}"
-      -r ${CMAKE_CURRENT_SOURCE_DIR}
-      -f ${gcovr_include_dir}
-      -f ${gcovr_source_dir}
+    COMMAND
+      ${GCOVR_EXECUTABLE} --html --html-details ${gcovr_options}
+      --exclude-unreachable-branches -o "${gcovr_index_path}" -r
+      ${CMAKE_CURRENT_SOURCE_DIR} -f ${gcovr_include_dir} -f ${gcovr_source_dir}
     DEPENDS coverage coverage_branch
     COMMENT "Generating a detailed HTML coverage report in ${gcovr_index_path}"
   )
@@ -328,24 +343,30 @@ function(dart_coverage)
   else()
     set(open_command_name "xdg-open")
   endif()
-  find_program(open_command
+  find_program(
+    open_command
     NAMES ${open_command_name}
     DOC "Path to ${open_command_name}"
   )
 
   if(open_command)
-    add_custom_target(coverage_view "${open_command}" "${gcovr_index_path}"
+    add_custom_target(
+      coverage_view
+      "${open_command}" "${gcovr_index_path}"
       DEPENDS coverage_html
       COMMENT "Opening documentation in a web browser."
     )
   else()
-    message(WARNING "Failed to find ${open_command_name}, to enable "
+    message(
+      WARNING
+      "Failed to find ${open_command_name}, to enable "
       "'coverage_view', please install xdg-utils"
     )
   endif()
 
   # Remove all gcovr data and delete the html directory
-  add_custom_target(coverage_cleanup
+  add_custom_target(
+    coverage_cleanup
     COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcno
     COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/**/*.gcda
     COMMAND rm -rf ${gcovr_html_dir}
@@ -365,12 +386,9 @@ endfunction()
 function(dart_benchmarks)
   set(prefix _ARG)
   set(options)
-  set(oneValueArgs
-    TYPE
-    TARGET_PREFIX
-    TEST_LIST
-  )
-  set(multiValueArgs
+  set(oneValueArgs TYPE TARGET_PREFIX TEST_LIST)
+  set(
+    multiValueArgs
     SOURCES
     INCLUDE_DIRS
     LINK_LIBRARIES
@@ -378,12 +396,17 @@ function(dart_benchmarks)
     COMPILE_DEFINITIONS
   )
   cmake_parse_arguments(
-    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+    "${prefix}"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
   )
 
   if(NOT _ARG_TYPE)
     message(
-      FATAL_ERROR "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!"
+      FATAL_ERROR
+      "DEVELOPER ERROR: You must specify a TYPE for your benchmarks!"
     )
   endif()
 
@@ -399,7 +422,6 @@ function(dart_benchmarks)
   endif()
 
   foreach(source ${_ARG_SOURCES})
-
     # Set target name: <TYPE>[_<TARGET_PREFIX>]_<source>
     set(target_name ${_ARG_TYPE})
     if(_ARG_TARGET_PREFIX)
@@ -416,23 +438,23 @@ function(dart_benchmarks)
     endif()
 
     add_executable(${target_name} ${source})
-    target_include_directories(
-      ${target_name} PRIVATE ${_ARG_INCLUDE_DIRS}
+    target_include_directories(${target_name} PRIVATE ${_ARG_INCLUDE_DIRS})
+
+    target_link_libraries(
+      ${target_name}
+      PRIVATE benchmark::benchmark benchmark::benchmark_main
     )
 
-    target_link_libraries(${target_name} PRIVATE benchmark::benchmark benchmark::benchmark_main)
-
     if(UNIX)
-      # gbenchmark requies pthread when compiled on a Unix machine
+      # gbenchmark requires pthread when compiled on a Unix machine
       target_link_libraries(${target_name} PRIVATE pthread)
     endif()
 
-    target_link_libraries(
-      ${target_name} PRIVATE ${_ARG_LINK_LIBRARIES}
-    )
+    target_link_libraries(${target_name} PRIVATE ${_ARG_LINK_LIBRARIES})
 
     target_compile_definitions(
-      ${target_name} PRIVATE ${_ARG_COMPILE_DEFINITIONS}
+      ${target_name}
+      PRIVATE ${_ARG_COMPILE_DEFINITIONS}
     )
 
     foreach(dart_lib ${_ARG_LINK_DART_LIBRARIES})
@@ -442,9 +464,9 @@ function(dart_benchmarks)
       target_link_libraries(${target_name} PRIVATE ${dart_lib})
     endforeach()
 
-    set_target_properties(${target_name}
-      PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+    set_target_properties(
+      ${target_name}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
     )
 
     if(_ARG_TEST_LIST)
@@ -463,11 +485,8 @@ function(dart_benchmarks)
   endforeach()
 
   if(_ARG_TEST_LIST)
-    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}"
-        PARENT_SCOPE
-    )
+    set(${_ARG_TEST_LIST} "${${_ARG_TEST_LIST}}" PARENT_SCOPE)
   endif()
 
   dart_format_add(${_ARG_SOURCES})
-
 endfunction()

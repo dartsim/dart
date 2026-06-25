@@ -23,7 +23,8 @@ if(NOT Threads_FOUND)
 endif()
 
 set(required_components utils-urdf gui-osg collision-ode collision-bullet)
-set(required_libraries
+set(
+  required_libraries
   dart
   dart-utils-urdf
   dart-gui-osg

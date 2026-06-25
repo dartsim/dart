@@ -663,7 +663,7 @@ std::string toString(tinyxml2::XMLError errorCode)
     case tinyxml2::XMLError::XML_ERROR_COUNT:
       return "XML_ERROR_COUNT";
     default:
-      return "Unknow error";
+      return "Unknown error";
   }
 }
 
@@ -807,7 +807,7 @@ unsigned int getAttributeUInt(
       = element->QueryUnsignedAttribute(attributeName.c_str(), &val);
 
   if (result != tinyxml2::XML_SUCCESS) {
-    dtwarn << "[getAttribute] Error in parsing unsiged int type attribute ["
+    dtwarn << "[getAttribute] Error in parsing unsigned int type attribute ["
            << attributeName << "] of an element [" << element->Name()
            << "]. Returning zero instead.\n";
     return 0u;

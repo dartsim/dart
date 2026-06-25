@@ -3,24 +3,21 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, and #3146 are merged. #3147, #3148, #3149, #3150, #3151, and #3152
-are the parent stack. #3153 and #3154 are the current published stack tip
-sequence. #3170 is published as
-`perf/dart6-parallel-native-broadphase`, stacked on #3154. The local next
-candidate is `perf/dart6-exact-contact-group-cache`, stacked on #3170.
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154, and
+#3170 are merged. #3171 `perf/dart6-exact-contact-group-cache` is the active
+slice on `release-6.20`.
 
-The local candidate now has three pieces. It still caches whether each
-constrained group contains only exact built-in contact constraints while the
-groups are built, so the boxed-LCP solver can enter the existing direct
-single-free-body contact path without repeating RTTI checks for every small
-contact island. It also enables the default contact rebuild parallel path for
-the common "many mobile bodies on one fixed zero-velocity support" case. The
-fixed-support decision is computed serially before worker threads run, and the
-parallel workers use explicit pointers to the main thread's per-step contact
-candidate arrays rather than accidentally indexing their own thread-local
-scratch vectors. Finally, native finite-plane contact merging now uses a
-single-contact fast path when the broadphase has already proven that cross-pair
-duplicate checks are unnecessary.
+The active slice caches whether each constrained group contains only exact
+built-in contact constraints while the groups are built, so the boxed-LCP solver
+can enter the existing direct single-free-body contact path without repeating
+RTTI checks for every small contact island. It also enables the default contact
+rebuild parallel path for the common "many mobile bodies on one fixed
+zero-velocity support" case. The fixed-support decision is computed serially
+before worker threads run, and the parallel workers use explicit pointers to the
+main thread's per-step contact candidate arrays rather than accidentally
+indexing their own thread-local scratch vectors. Finally, native finite-plane
+contact merging now uses a single-contact fast path when the broadphase has
+already proven that cross-pair duplicate checks are unnecessary.
 
 Each performance PR in this stack must keep ODE in the comparison table along
 with FCL and Bullet. ODE is the relevant gz-physics/gz-sim baseline, so
@@ -37,23 +34,23 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | --- | --- | ---: | --- |
 | #3170 parent, same-host no profile | DART native | `0.110045` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | Exact-group-only candidate, same-host no profile | DART native | `0.115783` | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, no profile | DART native | `0.123018` latest, `0.116997` prior | finite, same hash, contacts `5005`, pairs `3003` |
-| Current local, text profile | DART native | `0.127205` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `412.71 ms`, `parallel reset` `85.58 ms`, `serial fallback` `1.795 ms`, `solveConstrainedGroups` `477.76 ms`, `collide` `425.95 ms`, finite-plane merge contacts `84.51 ms` |
-| Current local, no profile | FCL primitive | `0.102059` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
-| Current local, no profile | Bullet | `0.0881347` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
-| Current local, no profile | ODE | `0.00465471` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+| #3171 current head, no profile | DART native | `0.123018` latest, `0.116997` prior | finite, same hash, contacts `5005`, pairs `3003` |
+| #3171 current head, text profile | DART native | `0.127205` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `412.71 ms`, `parallel reset` `85.58 ms`, `serial fallback` `1.795 ms`, `solveConstrainedGroups` `477.76 ms`, `collide` `425.95 ms`, finite-plane merge contacts `84.51 ms` |
+| #3171 current head, no profile | FCL primitive | `0.102059` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3171 current head, no profile | Bullet | `0.0881347` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3171 current head, no profile | ODE | `0.00465471` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
-Using the lower current local DART-native repeat, the local candidate is about
-`1.06x` the same-host #3170 parent no-profile result, `1.15x` FCL primitive,
-`1.33x` Bullet, and `25.1x` ODE on the active issue-scene rerun. The active
-no-deactivation scene is still far below RTF `1`, so the next target remains
-the largest remaining active-step costs: collision, constrained-group solve,
-and integration overhead.
+Using the lower #3171 DART-native repeat, the active slice is about `1.06x` the
+same-host #3170 parent no-profile result, `1.15x` FCL primitive, `1.33x`
+Bullet, and `25.1x` ODE on the active issue-scene rerun. The active
+no-deactivation scene is still far below RTF `1`, so the next target remains the
+largest remaining active-step costs: collision, constrained-group solve, and
+integration overhead.
 
-On the original default-sleeping target command, the same current local head
-reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
-`3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
-`3003 / 3003` mobile skeletons resting with zero final contacts.
+On the original default-sleeping target command, the same #3171 head reaches RTF
+`61.1724` for 3000 steps with DART-native collision, advances `3000 / 3000`
+frames, ends finite with hash `0x131b6af79a44ff90`, and has all `3003 / 3003`
+mobile skeletons resting with zero final contacts.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
@@ -89,7 +86,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | #3154 current head, no profile | ODE | `0.00460932` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
 
 Current-head DART-native is about `1.17x` FCL primitive, `1.24x` Bullet, and
-`23.7x` ODE on the #3154 active issue-scene rerun. The local slice is a small
+`23.7x` ODE on the latest active issue-scene rerun. The local slice is a small
 contact-construction win, not a step-change; the larger remaining active-scene
 costs are still collision, constrained-group solve, and integration.
 
@@ -162,17 +159,13 @@ contact sets by collision pair in parallel, while custom contact handlers,
 small contact sets, and pairs that share a non-skipped body stay on the
 existing serial path.
 
-#3150 attacks the measured DART-native finite-plane merge hot path. When a
-one-plane query can prove the finite shapes' padded contact bounds are mutually
-disjoint, contacts from different finite/plane pairs cannot be duplicate
-points. That lets the merge path keep the existing per-pair duplicate check
-while bypassing the global duplicate-contact grid for those pair results.
-Accepted fast-path contacts are still published to the global duplicate index
-when later fallback pair phases may need that state. The all-finite/one-plane
-issue scene skips that extra bookkeeping because the same disjoint-bound proof
-also rules out later duplicate-producing finite/finite, plane/plane, and
-unsupported-shape phases. Overlapping or multi-plane queries keep the existing
-global duplicate path.
+#3150 attacks the measured DART-native finite-plane merge hot path. Queries
+that can prove finite-plane contact footprints are mutually disjoint may keep
+the existing per-pair duplicate check while bypassing the global
+duplicate-contact grid for those pair results. Accepted fast-path contacts are
+still published to the global duplicate index when later fallback pair phases or
+collision filters may need that state. Overlapping, multi-plane, and cross-phase
+queries keep the existing global duplicate path.
 
 #3151 attacks the remaining default contact-build cost. It keeps moving fixed
 supports observable, but skips relative-velocity work for zero-velocity fixed
@@ -183,7 +176,8 @@ contact allocation.
 Latest exact issue-scene evidence
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
 and solver, `--steps 300`, `--world-threads 16`,
-`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled:
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, deactivation disabled.
+ODE is included here because it is the downstream backend baseline.
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |

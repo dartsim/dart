@@ -28,7 +28,7 @@ if(ASSIMP_FOUND)
   # Check for missing symbols in ASSIMP (see #451)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_DEFINITIONS "")
-  if (MSVC)
+  if(MSVC)
     set(CMAKE_REQUIRED_FLAGS "-w")
   else()
     set(CMAKE_REQUIRED_FLAGS "-std=c++11 -w")
@@ -37,7 +37,7 @@ if(ASSIMP_FOUND)
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
 
   check_cxx_source_compiles(
-  "
+    "
   #include <assimp/scene.h>
   int main()
   {
@@ -46,20 +46,24 @@ if(ASSIMP_FOUND)
     return 1;
   }
   "
-  ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+    ASSIMP_AISCENE_CTOR_DTOR_DEFINED
+  )
 
   if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
     if(DART_VERBOSE)
-      message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-                      "missing symbols for the constructor and/or destructor of "
-                      "aiScene. DART will use its own implementations of these "
-                      "functions. We recommend using a version of ASSIMP that "
-                      "does not have this issue, once one becomes available.")
+      message(
+        WARNING
+        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
+        "missing symbols for the constructor and/or destructor of "
+        "aiScene. DART will use its own implementations of these "
+        "functions. We recommend using a version of ASSIMP that "
+        "does not have this issue, once one becomes available."
+      )
     endif()
   endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
   check_cxx_source_compiles(
-  "
+    "
   #include <assimp/material.h>
   int main()
   {
@@ -68,15 +72,19 @@ if(ASSIMP_FOUND)
     return 1;
   }
   "
-  ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+    ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
+  )
 
   if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
     if(DART_VERBOSE)
-      message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
-                      "missing symbols for the constructor and/or destructor of "
-                      "aiMaterial. DART will use its own implementations of "
-                      "these functions. We recommend using a version of ASSIMP "
-                      "that does not have this issue, once one becomes available.")
+      message(
+        WARNING
+        "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
+        "missing symbols for the constructor and/or destructor of "
+        "aiMaterial. DART will use its own implementations of "
+        "these functions. We recommend using a version of ASSIMP "
+        "that does not have this issue, once one becomes available."
+      )
     endif()
   endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
@@ -90,8 +98,10 @@ dart_find_package(octomap)
 if(OCTOMAP_FOUND OR octomap_FOUND)
   if(NOT DEFINED octomap_VERSION)
     set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-    message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
-        "please install octomap with version information"
+    message(
+      WARNING
+      "Looking for octomap - octomap_VERSION is not defined, "
+      "please install octomap with version information"
     )
   else()
     set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
@@ -101,8 +111,10 @@ if(OCTOMAP_FOUND OR octomap_FOUND)
   endif()
 else()
   set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-  message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
-      "please install octomap"
+  message(
+    WARNING
+    "Looking for octomap - NOT found, to use VoxelGridShape, "
+    "please install octomap"
   )
 endif()
 
@@ -115,7 +127,8 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
     find_package(Tracy CONFIG REQUIRED)
   else()
     include(FetchContent)
-    FetchContent_Declare(tracy
+    FetchContent_Declare(
+      tracy
       GIT_REPOSITORY https://github.com/wolfpld/tracy.git
       GIT_TAG v0.11.1
       GIT_SHALLOW TRUE
@@ -150,9 +163,11 @@ if(NOT DART_USE_SYSTEM_ODE)
   set(ODE_WITH_LIBCCD_BOX_CYL OFF CACHE BOOL "" FORCE)
   set(ODE_WITH_DEMOS OFF CACHE BOOL "" FORCE)
   set(ODE_WITH_TESTS OFF CACHE BOOL "" FORCE)
-  FetchContent_Declare(ode
+  FetchContent_Declare(
+    ode
     URL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz
-    URL_HASH SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
+    URL_HASH
+      SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
   )
   FetchContent_MakeAvailable(ode)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
@@ -180,13 +195,25 @@ if(NOT DART_USE_SYSTEM_BULLET)
   set(BUILD_PYBULLET_NUMPY OFF CACHE BOOL "" FORCE)
   set(INSTALL_LIBS ON CACHE BOOL "" FORCE)
   set(INSTALL_EXTRA_LIBS ON CACHE BOOL "" FORCE)
-  FetchContent_Declare(bullet
+  FetchContent_Declare(
+    bullet
     URL https://github.com/bulletphysics/bullet3/archive/refs/tags/3.25.tar.gz
-    URL_HASH SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
+    URL_HASH
+      SHA256=c45afb6399e3f68036ddb641c6bf6f552bf332d5ab6be62f7e6c54eda05ceb77
   )
   FetchContent_MakeAvailable(bullet)
-  set(DART_BULLET_SOURCE_DIR "${bullet_SOURCE_DIR}" CACHE INTERNAL "Bullet source dir.")
-  set(DART_BULLET_BINARY_DIR "${bullet_BINARY_DIR}" CACHE INTERNAL "Bullet binary dir.")
+  set(
+    DART_BULLET_SOURCE_DIR
+    "${bullet_SOURCE_DIR}"
+    CACHE INTERNAL
+    "Bullet source dir."
+  )
+  set(
+    DART_BULLET_BINARY_DIR
+    "${bullet_BINARY_DIR}"
+    CACHE INTERNAL
+    "Bullet binary dir."
+  )
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
