@@ -31,7 +31,7 @@ cmake_minimum_required(VERSION 3.22.1)
 include(CMakeParseArguments)
 
 # This must be called before any other component function
-# as it initializes the requried global properties.
+# as it initializes the required global properties.
 function(initialize_component_helpers package_name)
   define_property(
     GLOBAL

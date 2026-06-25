@@ -173,7 +173,7 @@ fi
 # Install ABI checker
 sudo apt-get --yes --force-yes install abi-compliance-checker
 
-# Checkk ABI
+# Check ABI
 cd $BASEDIR
 abi-compliance-checker -lib DART -old abi_dart_${OLD_VER}.xml -new abi_dart_${NEW_VER}.xml
 

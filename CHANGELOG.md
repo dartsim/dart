@@ -102,8 +102,9 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up DART-native finite-shape-vs-plane contact merging by using
-    contact-bound separation to bypass global duplicate-contact grid checks
-    when different finite shapes cannot contribute duplicate contact points:
+    plane-projected contact-footprint separation to bypass global
+    duplicate-contact grid checks when different finite shapes cannot
+    contribute duplicate contact points:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Reduce default contact-constraint rebuild cost by reusing per-step default
