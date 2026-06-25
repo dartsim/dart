@@ -5,11 +5,13 @@
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
 #3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
-Each follow-up slice must remain local-only until it can be published directly
-against `release-6.20`; do not open it against another PR branch. Opening
-stacked PRs against parent PR branches lets GitHub close or supersede child PRs
-when the parent branch is merged or deleted. The current unpublished local
-stack, in order, is `perf/dart6-contact-pair-metadata-cache`,
+#3183 (`perf/dart6-parallel-surface-params`) landed on `release-6.20` as squash
+commit `d731974e3da` after all checks passed. The remaining follow-up slices
+are intentionally local-only until each is ready to publish directly against
+`release-6.20`; do not open them against another PR branch. Opening stacked PRs
+against parent PR branches lets GitHub close or supersede child PRs when the
+parent branch is merged or deleted. The unpublished local stack, in order, is
+`perf/dart6-contact-pair-metadata-cache`,
 `perf/dart6-contact-pair-skip-flags`,
 `perf/dart6-axis-plane-contact-bounds`,
 `perf/dart6-default-surface-version-cache`,
