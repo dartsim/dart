@@ -2010,7 +2010,7 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 
   if (nullptr == frame) {
     dterr << "[World::handleFrameNameChange] Received a callback for a nullptr "
-          << "enity. This is most likely a bug. Please report this!\n";
+          << "entity. This is most likely a bug. Please report this!\n";
     DART_ASSERT(false);
     return;
   }

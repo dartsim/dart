@@ -1,16 +1,6 @@
 [codespell]
 # Exclude generated and third-party content to keep signal-to-noise low.
-skip = ./.git,./.pixi,./build,./build-*,./docs/readthedocs/_build,./docs/readthedocs/_generated,./external,./node_modules,*/_build/*,*/_generated/*,*/.venv/*,*/__pycache__/*,./tests/unit/math/legacy_convhull_3d,./CHANGELOG.md,./dart/collision/dart/DARTCollide.cpp,./dart/constraint/ConstrainedGroup.hpp,./dart/constraint/ConstraintSolver.hpp,./dart/constraint/ContactConstraint.hpp,./dart/dynamics/detail/JointAspect.hpp,./dart/dynamics/Joint.hpp,./dart/simulation/World.cpp,./tests/integration/test_Collision.cpp
-# TEMPORARY: skip files owned by the in-flight perf/dart6-* + #3169 lane (they carry pre-existing typos we must not edit to avoid conflicts). Remove these entries and fix their typos once that lane has merged.
-# ./CHANGELOG.md
-# ./dart/collision/dart/DARTCollide.cpp
-# ./dart/constraint/ConstrainedGroup.hpp
-# ./dart/constraint/ConstraintSolver.hpp
-# ./dart/constraint/ContactConstraint.hpp
-# ./dart/dynamics/detail/JointAspect.hpp
-# ./dart/dynamics/Joint.hpp
-# ./dart/simulation/World.cpp
-# ./tests/integration/test_Collision.cpp
+skip = ./.git,./.pixi,./build,./build-*,./docs/readthedocs/_build,./docs/readthedocs/_generated,./external,./node_modules,*/_build/*,*/_generated/*,*/.venv/*,*/__pycache__/*,./tests/unit/math/legacy_convhull_3d
 # Ignore domain terms that are not typos.
 ignore-words-list = DOUBLECLICK,mKe,Reacher,reacher,abd,pris,normaly
 quiet-level = 3
