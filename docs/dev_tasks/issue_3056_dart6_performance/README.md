@@ -123,7 +123,7 @@ build, focused `test_ConstraintSolver` CTest, and the two exact-scene benchmark
 runs above. After rebasing the unpublished stack onto #3183 head
 `0b158d44126`, the focused build and `test_ConstraintSolver` CTest were rerun
 successfully on the current local skip-flags branch, and the latest text-profile
-run recorded RTF `0.165932` with final hash `0x6a043ac1e7558218`.
+run recorded RTF `0.189984` with final hash `0x6a043ac1e7558218`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
