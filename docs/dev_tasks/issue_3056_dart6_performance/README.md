@@ -17,8 +17,9 @@ stack, in order, is `perf/dart6-contact-pair-metadata-cache`,
 `perf/dart6-free-joint-root-integration`,
 `perf/dart6-parallel-surface-scan`,
 `perf/dart6-broadphase-cache-refresh-order`,
-`perf/dart6-parallel-pair-flag-resize`, and
-`perf/dart6-single-reactive-union-reset`. The first slice,
+`perf/dart6-parallel-pair-flag-resize`,
+`perf/dart6-single-reactive-union-reset`, and
+`perf/dart6-single-reactive-raw-root`. The first slice,
 `perf/dart6-contact-pair-metadata-cache`, is rebuilt directly on the merged
 `release-6.20` head and is PR-ready.
 
@@ -158,6 +159,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local parallel-pair flag resize cleanup, text profile | DART native | `0.247692` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `260.19 ms`, `DART native build broadphase entries` `110.30 ms`, `DART native finite-plane pairs` `114.67 ms`, `DART native finite-plane collide workers` `34.75 ms`, `DART native finite-plane merge contacts` `45.76 ms` |
 | Local single-reactive union-reset cleanup, no profile | DART native | `0.245203` | finite, same hash, contacts `5005`, pairs `3003` |
 | Local single-reactive union-reset cleanup, text profile | DART native | `0.256963` | finite, same hash, contacts `5005`, pairs `3003`; `buildConstrainedGroups` `67.89 ms`, `build constrained group map` `38.89 ms`, `reset constraint unions` `3.260 ms`, `build contact constraints` `138.26 ms`, `collide` `254.00 ms` |
+| Local single-reactive raw-root cleanup, no profile | DART native | `0.272246` | finite, same hash, contacts `5005`, pairs `3003` |
+| Local single-reactive raw-root cleanup, text profile | DART native | `0.258153` | finite, same hash, contacts `5005`, pairs `3003`; `buildConstrainedGroups` `40.75 ms`, `build constrained group map` `19.99 ms`, `reset constraint unions` `2.658 ms`, `build contact constraints` `151.32 ms`, `collide` `264.97 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -238,6 +241,15 @@ count, and pair count while reducing the constrained-group union reset in the
 all-single-reactive-contact path. The latest profile records
 `reset constraint unions` at `3.260 ms`, down from the prior scratch-buffer
 sample's `14.15 ms`, and `buildConstrainedGroups` at `67.89 ms`.
+
+The single-reactive raw-root cleanup keeps the same final hash, contact count,
+and pair count while avoiding a per-group `shared_ptr` root handle in the same
+all-single-reactive-contact path. That path already solves from
+`mSingleReactiveSkeleton` and the temporary union index, so the generic
+`mRootSkeleton` handle is unnecessary refcount churn. The latest profile records
+`buildConstrainedGroups` at `40.75 ms` and `build constrained group map` at
+`19.99 ms`, down from the union-reset cleanup sample's `67.89 ms` and
+`38.89 ms`.
 
 A rejected eager-transform experiment updated `BodyNode` transforms immediately
 after position integration to move work out of the next collision prepass. It
@@ -329,8 +341,9 @@ and the exact issue-scene no-profile/profile benchmark runs above. The focused
 unit regression forces the parallel finite-plane path, then changes all cached
 identity-relative `ShapeNode` transforms before the next threaded collide.
 
-The local parallel-pair flag resize and single-reactive union-reset cleanups
-have passed:
+The local parallel-pair flag resize, single-reactive union-reset, and
+single-reactive raw-root cleanups have passed:
+`pixi run lint`,
 `cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
 and the exact issue-scene no-profile/profile benchmark runs above. The

@@ -1914,7 +1914,9 @@ void ConstraintSolver::buildConstrainedGroups()
             mConstrainedGroups.emplace_back();
 
           auto& group = mConstrainedGroups[groupIndex];
-          group.mRootSkeleton = skel->getPtr();
+          // The single-reactive contact path uses mSingleReactiveSkeleton and
+          // the temporary union index directly. Avoid per-step shared_ptr
+          // refcount churn for dense contact scenes.
           group.mAllSingleReactiveContacts = true;
           group.mAllExactContactConstraints = exactContactConstraint;
           group.mSingleReactiveContactsShareBody = true;
