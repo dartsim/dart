@@ -286,6 +286,10 @@ Rejected local scratch experiments in the same area:
   friendship and did not improve the target scene. No-profile RTF was
   `0.250410` and `0.260183`, while the text-profile run recorded RTF
   `0.246615` with `scan joint constraints` already down to only `830.94 us`.
+- `perf/dart6-single-reactive-group-last-cache` cached the previous
+  single-reactive skeleton while building constrained groups, but the
+  no-profile issue scene regressed to RTF `0.230829` despite preserving the
+  final hash after the focused `test_ConstraintSolver` build and CTest passed.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
