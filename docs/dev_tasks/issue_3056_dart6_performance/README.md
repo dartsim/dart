@@ -3,8 +3,36 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, #3148, #3149, and #3150 are merged. #3151
-`perf/dart6-contact-build-fast-path` is the active slice on `release-6.20`.
+#3144, #3146, #3147, #3148, #3149, #3150, and #3151 are merged. #3152
+`perf/dart6-resting-state-snapshot-cache` is the active slice on
+`release-6.20`.
+
+The latest candidate targets the default settled-scene path. Once the original
+3k issue scene has fully gone to sleep, the all-resting fast path no longer
+rebuilds the last-step per-skeleton resting snapshot every frame when that
+snapshot is already valid. The all-resting kinematic snapshot remains the
+correctness guard for pose, velocity, collision-option, collision-filter, and
+structural edits.
+
+Default sleeping issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART 6 dynamics, constraints,
+and solver, `--world-threads 16`, `--max-contacts 12000`,
+`--max-contacts-per-pair 4`, 3000 steps:
+
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3151 parent, text profile | DART native | `10.4306` | finite, hash `0x131b6af79a44ff90`, resting `3003 / 3003`, contacts `0`; all-resting fast path `228.74 ms` |
+| #3152 current head, text profile | DART native | `56.2441` | finite, same hash, resting `3003 / 3003`, contacts `0`; all-resting fast path `106.99 us`, readiness check `1.952 ms` |
+| #3152 current head, no-profile | DART native | `59.2748` latest rerun, `55.5385` prior run | finite, same hash, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | FCL primitive | `57.3796` | finite, hash `0x266da31836a314a6`, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | Bullet | `5.49559` | finite, hash `0x2375f1927218cd43`, resting `3003 / 3003`, contacts `0` |
+| #3152 current head, no-profile | ODE | `0.02744` | finite, hash `0x4e5f6556657720`, resting `3003 / 3003`, contacts `0` |
+
+The latest DART-native no-profile rerun is about `1.03x` FCL primitive,
+`10.8x` Bullet, and `2160x` ODE on this fully rested workload. The earlier
+DART repeat was `55.5385`, so DART/FCL on this short all-resting path is close
+and timing-noise sensitive; active no-deactivation measurements remain the
+primary collision-backend comparison.
 
 #3147 targets active contact-construction cost by reusing exact built-in
 default `ContactConstraint` objects across steps while preserving exact ODE
