@@ -495,7 +495,9 @@ std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
 
 //==============================================================================
 std::shared_ptr<World> createManySingleFreeBodyContactWorld(
-    std::size_t numBoxes, std::size_t numThreads)
+    std::size_t numBoxes,
+    std::size_t numThreads,
+    bool useNonDefaultSurfaceParams = false)
 {
   auto world = createWorld();
   world->setTimeStep(0.001);
@@ -519,8 +521,21 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
         static_cast<double>(column) * 2.0,
         static_cast<double>(row) * 2.0,
         0.49);
-    world->addSkeleton(createSolverTestBox(
-        "box_" + std::to_string(i), Eigen::Vector3d::Ones(), position, true));
+    auto box = createSolverTestBox(
+        "box_" + std::to_string(i), Eigen::Vector3d::Ones(), position, true);
+    if (useNonDefaultSurfaceParams) {
+      auto* body = box->getBodyNode(0);
+      auto* dynamics = body->getShapeNode(0)->getDynamicsAspect();
+      dynamics->setPrimaryFrictionCoeff(0.75);
+      dynamics->setSecondaryFrictionCoeff(0.5);
+      dynamics->setPrimarySlipCompliance(0.005);
+      dynamics->setSecondarySlipCompliance(0.01);
+      dynamics->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+
+      auto* joint = static_cast<dynamics::FreeJoint*>(body->getParentJoint());
+      joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.0, 0.0));
+    }
+    world->addSkeleton(box);
   }
 
   return world;
@@ -571,7 +586,7 @@ TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
 //==============================================================================
 TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
 {
-  constexpr std::size_t kNumBoxes = 160u;
+  constexpr std::size_t kNumBoxes = 192u;
   auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
   auto threadedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
 
@@ -610,6 +625,42 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
         << name;
     EXPECT_TRUE(serialBody->getSpatialVelocity().isApprox(
         threadedBody->getSpatialVelocity(), 1e-12))
+        << name;
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
+{
+  constexpr std::size_t kNumBoxes = 192u;
+  auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u, true);
+  auto threadedWorld
+      = createManySingleFreeBodyContactWorld(kNumBoxes, 4u, true);
+
+  for (std::size_t i = 0u; i < 20u; ++i) {
+    serialWorld->step();
+    threadedWorld->step();
+  }
+
+  const auto& serialContacts
+      = serialWorld->getConstraintSolver()->getLastCollisionResult();
+  const auto& threadedContacts
+      = threadedWorld->getConstraintSolver()->getLastCollisionResult();
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
+
+  for (std::size_t i = 0u; i < kNumBoxes; ++i) {
+    const auto name = "box_" + std::to_string(i);
+    const auto serialBox = serialWorld->getSkeleton(name);
+    const auto threadedBox = threadedWorld->getSkeleton(name);
+    ASSERT_NE(nullptr, serialBox);
+    ASSERT_NE(nullptr, threadedBox);
+
+    EXPECT_TRUE(
+        serialBox->getPositions().isApprox(threadedBox->getPositions(), 1e-12))
+        << name;
+    EXPECT_TRUE(serialBox->getVelocities().isApprox(
+        threadedBox->getVelocities(), 1e-12))
         << name;
   }
 }

@@ -64,6 +64,19 @@ if(ASSIMP_FOUND)
 
   check_cxx_source_compiles(
     "
+  #include <assimp/scene.h>
+  int main()
+  {
+    (void)sizeof(((aiScene*)nullptr)->mNumSkeletons);
+    (void)sizeof(((aiScene*)nullptr)->mSkeletons);
+    return 0;
+  }
+  "
+    ASSIMP_AISCENE_HAS_SKELETONS
+  )
+
+  check_cxx_source_compiles(
+    "
   #include <assimp/material.h>
   int main()
   {

@@ -300,7 +300,7 @@ void Shape(py::module& m)
   // MeshShape's Assimp (aiScene/aiMesh) constructors and setters are kept as
   // deprecated DART 6 compatibility shims (TriMesh APIs are the replacement).
   // Binding them deliberately uses those deprecated APIs, so suppress
-  // -Wdeprecated-declarations here — otherwise -Werror builds (e.g. macOS
+  // -Wdeprecated-declarations here; otherwise -Werror builds (e.g. macOS
   // arm64) fail compiling this binding.
   DART_SUPPRESS_DEPRECATED_BEGIN
   ::py::class_<
@@ -308,23 +308,39 @@ void Shape(py::module& m)
       dart::dynamics::Shape,
       std::shared_ptr<dart::dynamics::MeshShape>>(m, "MeshShape")
       .def(
-          ::py::init<const Eigen::Vector3d&, const aiScene*>(),
+          ::py::init(+[](const Eigen::Vector3d& scale, const aiScene* mesh) {
+            DART_SUPPRESS_DEPRECATED_BEGIN
+            auto shape
+                = std::make_shared<dart::dynamics::MeshShape>(scale, mesh);
+            DART_SUPPRESS_DEPRECATED_END
+            return shape;
+          }),
           ::py::arg("scale"),
           ::py::arg("mesh"))
       .def(
-          ::py::init<
-              const Eigen::Vector3d&,
-              const aiScene*,
-              const dart::common::Uri&>(),
+          ::py::init(+[](const Eigen::Vector3d& scale,
+                         const aiScene* mesh,
+                         const dart::common::Uri& uri) {
+            DART_SUPPRESS_DEPRECATED_BEGIN
+            auto shape
+                = std::make_shared<dart::dynamics::MeshShape>(scale, mesh, uri);
+            DART_SUPPRESS_DEPRECATED_END
+            return shape;
+          }),
           ::py::arg("scale"),
           ::py::arg("mesh"),
           ::py::arg("uri"))
       .def(
-          ::py::init<
-              const Eigen::Vector3d&,
-              const aiScene*,
-              const dart::common::Uri&,
-              dart::common::ResourceRetrieverPtr>(),
+          ::py::init(+[](const Eigen::Vector3d& scale,
+                         const aiScene* mesh,
+                         const dart::common::Uri& uri,
+                         dart::common::ResourceRetrieverPtr resourceRetriever) {
+            DART_SUPPRESS_DEPRECATED_BEGIN
+            auto shape = std::make_shared<dart::dynamics::MeshShape>(
+                scale, mesh, uri, resourceRetriever);
+            DART_SUPPRESS_DEPRECATED_END
+            return shape;
+          }),
           ::py::arg("scale"),
           ::py::arg("mesh"),
           ::py::arg("uri"),
