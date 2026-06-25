@@ -17,6 +17,9 @@ slice and must also remain unpublished until the earlier slices land in order.
 The next local collision setup branch, `perf/dart6-lazy-dart-shape-cache`, is
 stacked above that version-cache slice and must remain unpublished for the same
 reason.
+The current local integration branch,
+`perf/dart6-free-joint-root-integration`, is stacked above the lazy shape-cache
+slice and must also remain unpublished until the earlier slices land in order.
 Remaining local follow-up slices must also stay unpublished until each is ready
 to publish directly against `release-6.20`; do not open them against another PR
 branch. Opening stacked PRs against parent PR branches lets GitHub close or
@@ -67,13 +70,20 @@ decisions while steady-state default scenes avoid repeated dynamics-aspect
 queries. The branch also splits the shared-body profiling scope into body-scan
 and surface-scan subscopes.
 
-The newest local collision setup follow-up moves DART-native shape-cache refresh
+The local collision setup follow-up moves DART-native shape-cache refresh
 into broadphase entry construction, then skips the separate DART collision-group
 object-update pass. Direct object-object collision still refreshes each object
 through the existing `updateEngineData()` path. Group collision already visits
 every DART object while constructing broadphase entries, so the lazy refresh
 keeps shape replacement and `ShapeNode` relative-transform edits visible without
 a second full object pass.
+
+The newest local integration follow-up narrows `FreeJoint` hot paths for the
+root-joint shape used by the SDF issue scene: identity child joint frames and
+translation-only parent model poses. Position integration, relative-transform
+refresh, and relative-Jacobian refresh skip the general child-frame inverse and
+full transform products in those cases. Non-identity child joint frames and
+rotated parent joint frames keep the general path.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -113,6 +123,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local default-surface version-cache experiment, text profile | DART native | `0.227376` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `183.10 ms`, `shared-body check` `85.97 ms`, `shared-body surface scan` `54.71 ms`, `shared-body body scan` `26.36 ms`, `parallel reset` `65.45 ms`, `collide` `278.13 ms` |
 | Local lazy DART shape-cache experiment, no profile | DART native | `0.234474`, `0.239789`, `0.230595` | finite, same hash, contacts `5005`, pairs `3003` |
 | Local lazy DART shape-cache experiment, text profile | DART native | `0.240786` | finite, same hash, contacts `5005`, pairs `3003`; `collide` `240.55 ms`, `finite-plane pairs` `114.05 ms`, `build broadphase entries` `93.57 ms`, no separate `CollisionGroup update objects` scope |
+| Local FreeJoint root-integration experiment, no profile | DART native | `0.236713`, `0.236395` post-lint rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local FreeJoint root-integration experiment, text profile | DART native | `0.236918` | finite, same hash, contacts `5005`, pairs `3003`; `World::step - Integrate positions` `201.67 ms`, `World::step - Integrate velocity` `180.50 ms`, `collide` `254.99 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -159,6 +171,13 @@ latest scoped profile has no `CollisionGroup update objects` scope; the previous
 same-session local profile measured that pass at `34.41 ms`, and the current
 profile records `collide` at `240.55 ms`. No-profile repeats were in the same
 high local range as the parent (`0.230595`-`0.239789`).
+
+The FreeJoint root-integration experiment keeps the same final hash, contact
+count, and pair count while trimming the active-scene integration path. The
+latest scoped profile records `World::step - Integrate positions` at
+`201.67 ms`; the previous same-session lazy shape-cache profile recorded
+`209.85 ms` for the same scope. No-profile RTF remains in the same noisy local
+range (`0.236395`-`0.236713`).
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
@@ -207,6 +226,15 @@ The local lazy DART shape-cache experiment has passed:
 and the exact issue-scene no-profile/profile benchmark runs above. Existing
 DART collision regressions cover changed shape geometry and `ShapeNode`
 relative-transform updates after collision groups already exist.
+
+The local FreeJoint root-integration experiment has passed:
+`pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Joints contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_Joints$'`,
+and the exact issue-scene no-profile/profile benchmark runs above. The focused
+regression compares `Skeleton::integratePositions()` against the public
+stateless integration overload for identity-frame, translated-parent, and
+fully offset FreeJoint frame configurations.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
