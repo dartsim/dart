@@ -1961,7 +1961,7 @@ void __finishSkel(){
     gSkel->initSkel();
 }
 
-/* create a new marker and add it to the apropriate node*/
+/* create a new marker and add it to the appropriate node*/
 void __createMarker( char* name, doubleVec3 offset, int id, char* node_name ) {
 
     BodyNode *node = NULL;
@@ -2105,7 +2105,7 @@ void __setShape( doubleVec3 s, doubleVec3 t, Dof* bone, Shape *geo ) {
 	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
 	/* SHAPE SETDIM SILENTLY CALLS COMPUTEVOLUME WHICH OVERWRITES VOLUME **********/
 	/* DO NOT MOVE ****************************************************************/
-		//FIXME: Refactor grammer: Move massName into __setShape()
+		//FIXME: Refactor grammar: Move massName into __setShape()
 		double mass = geo->getVolume();
 		cur_node->setMass(mass);
 	/******************************************************************************/
@@ -2326,7 +2326,7 @@ Shape* __setGeometry(const char* shape, const char *massName, doubleVec3 color)
 
 	/* SHAPE MASS IS DEPRECIATED **************************************************/
 	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
-		//FIXME: Refactor grammer: Move massName into __setShape()
+		//FIXME: Refactor grammar: Move massName into __setShape()
 		prim->setVolume(massValue);
 	/******************************************************************************/
 
@@ -2361,7 +2361,7 @@ Shape* __setGeometry(const char *shape, const char *massName)
 
 	/* SHAPE MASS IS DEPRECIATED **************************************************/
 	/* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
-		//FIXME: Refactor grammer: Move massName into __setShape()
+		//FIXME: Refactor grammar: Move massName into __setShape()
 		prim->setVolume(massValue);
 	/******************************************************************************/
 
@@ -2402,7 +2402,7 @@ Shape* __setGeometry(const char *shape, doubleVec3 color)
 
     /* SHAPE MASS IS DEPRECIATED **************************************************/
     /* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
-        //FIXME: Refactor grammer: Move massName into __setShape()
+        //FIXME: Refactor grammar: Move massName into __setShape()
         prim->setVolume(massValue);
     /******************************************************************************/
 
@@ -2446,7 +2446,7 @@ Shape* __setGeometry(const char *shape)
 
     /* SHAPE MASS IS DEPRECIATED **************************************************/
     /* TEMPORARY HACK TO RETURN MASS TO CALLER ************************************/
-        //FIXME: Refactor grammer: Move massName into __setShape()
+        //FIXME: Refactor grammar: Move massName into __setShape()
     if(prim)
         prim->setVolume(massValue);
     /******************************************************************************/

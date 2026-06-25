@@ -71,7 +71,7 @@ bool AssimpInputResourceRetrieverAdaptor::Exists(const char* pFile) const
 //==============================================================================
 char AssimpInputResourceRetrieverAdaptor::getOsSeparator() const
 {
-  // URIs always use forward slash as a delimeter.
+  // URIs always use forward slash as a delimiter.
   return '/';
 }
 
