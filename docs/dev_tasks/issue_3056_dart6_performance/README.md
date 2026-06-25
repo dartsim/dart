@@ -17,12 +17,13 @@ path.
 
 The current local candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
-serial cached prepass remains for fallback paths; the parallel path computes
-each contact pair's surface parameters in the same worker that resets that
-pair's reusable built-in `ContactConstraint` objects. Default-material pairs
-remain lock-free, while the non-default `DefaultContactSurfaceHandler` fallback
-is serialized so custom friction directions and direction frames cannot race on
-lazily cached frame transforms. Active-constraint order is unchanged because
+serial cached prepass remains for fallback paths. Default-material pairs compute
+their direct surface parameters in the same worker that resets that pair's
+reusable built-in `ContactConstraint` objects, while any non-default
+`DefaultContactSurfaceHandler` fallback is precomputed by the serial
+surface-parameter prepass before worker resets begin. That preserves the old
+safety boundary for custom friction directions and direction frames whose world
+transforms may be lazily cached. Active constraint order is unchanged because
 workers still write constraints by candidate index and the main thread
 activates them in order.
 
