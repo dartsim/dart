@@ -21,9 +21,12 @@ branch and adapt it to the DART-6 layout:
 - `SmartPointer.hpp` + `DART_COMMON_DECLARE_SHARED_WEAK(...)` instead of
   `Fwd.hpp`; no `DART_API` / `<dart/Export.hpp>` on 6.20 constraint/shape classes.
 - `HAVE_BULLET` / `HAVE_ODE`, not `DART_HAVE_*`.
-- Tests auto-register through `dart_build_tests(... GLOB_SOURCES)` — drop a
-  `test_*.cpp` into the dir; no per-test CMake edit. Drop DART-7-only infra
-  (coupler/ECS solvers, `MeshLoader`, the `tests/unit/gui` tree).
+- Most test dirs auto-register via `dart_build_tests(... GLOB_SOURCES)` (drop a
+  `test_*.cpp` in, no CMake edit), but some — e.g. `tests/integration/` and
+  `tests/unit/collision/` — use an explicit `SOURCES` list, so add the new file
+  there too. Drop genuinely DART-7-only infra (the ECS `ClassicRigidSolver`,
+  `MeshLoader`, the `tests/unit/gui` tree); confirm against the 6.20 tree first,
+  since much is already backported (e.g. `CouplerConstraint`).
 
 Verify before merging: `pixi run test-all` (full C++ + Python) and, for any
 collision/constraint/parser/default-solver/public-header change,
