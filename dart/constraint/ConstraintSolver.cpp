@@ -1153,8 +1153,7 @@ void ConstraintSolver::updateConstraints()
       const dynamics::ShapeNode* shapeNode{nullptr};
       bool hasDefaultProperties{false};
     };
-    std::array<DefaultSurfaceCacheEntry, 16u> defaultSurfaceCache{};
-    std::size_t nextDefaultSurfaceCacheSlot = 0u;
+    std::array<DefaultSurfaceCacheEntry, 256u> defaultSurfaceCache{};
 
     const auto getContactShapeNode
         = [](const collision::CollisionObject* collisionObject)
@@ -1164,35 +1163,54 @@ void ConstraintSolver::updateConstraints()
 
       return collisionObject->getShapeNode();
     };
+    const auto queryDefaultContactSurfaceProperties =
+        [&](const dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr)
+            return false;
+
+          const auto shapeNodeKey
+              = reinterpret_cast<std::uintptr_t>(shapeNode) >> 4u;
+          auto& entry
+              = defaultSurfaceCache[shapeNodeKey % defaultSurfaceCache.size()];
+          if (entry.shapeNode == shapeNode)
+            return entry.hasDefaultProperties;
+
+          const auto* dynamicAspect = shapeNode->getDynamicsAspect();
+          const bool hasDefaultProperties
+              = dynamicAspect != nullptr
+                && dynamicAspect->getRestitutionCoeff()
+                       == DART_DEFAULT_RESTITUTION_COEFF
+                && dynamicAspect->getPrimaryFrictionCoeff()
+                       == DART_DEFAULT_FRICTION_COEFF
+                && dynamicAspect->getSecondaryFrictionCoeff()
+                       == DART_DEFAULT_FRICTION_COEFF
+                && dynamicAspect->getPrimarySlipCompliance() == -1.0
+                && dynamicAspect->getSecondarySlipCompliance() == -1.0
+                && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
+                && dynamicAspect->getFirstFrictionDirection().squaredNorm()
+                       < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+
+          entry = {shapeNode, hasDefaultProperties};
+          return hasDefaultProperties;
+        };
+    const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
+    const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
+    bool lastContactShapeNode1HasDefaultProperties = false;
+    bool lastContactShapeNode2HasDefaultProperties = false;
     const auto hasDefaultContactSurfaceProperties
-        = [&](const dynamics::ShapeNode* shapeNode) {
-            if (shapeNode == nullptr)
-              return false;
+        = [&](const dynamics::ShapeNode* shapeNode, bool firstShapeNode) {
+            auto& lastShapeNode = firstShapeNode ? lastContactShapeNode1
+                                                 : lastContactShapeNode2;
+            auto& lastHasDefaultProperties
+                = firstShapeNode ? lastContactShapeNode1HasDefaultProperties
+                                 : lastContactShapeNode2HasDefaultProperties;
+            if (shapeNode == lastShapeNode)
+              return lastHasDefaultProperties;
 
-            for (const auto& entry : defaultSurfaceCache) {
-              if (entry.shapeNode == shapeNode)
-                return entry.hasDefaultProperties;
-            }
-
-            const auto* dynamicAspect = shapeNode->getDynamicsAspect();
             const bool hasDefaultProperties
-                = dynamicAspect != nullptr
-                  && dynamicAspect->getRestitutionCoeff()
-                         == DART_DEFAULT_RESTITUTION_COEFF
-                  && dynamicAspect->getPrimaryFrictionCoeff()
-                         == DART_DEFAULT_FRICTION_COEFF
-                  && dynamicAspect->getSecondaryFrictionCoeff()
-                         == DART_DEFAULT_FRICTION_COEFF
-                  && dynamicAspect->getPrimarySlipCompliance() == -1.0
-                  && dynamicAspect->getSecondarySlipCompliance() == -1.0
-                  && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
-                  && dynamicAspect->getFirstFrictionDirection().squaredNorm()
-                         < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
-
-            defaultSurfaceCache[nextDefaultSurfaceCacheSlot]
-                = {shapeNode, hasDefaultProperties};
-            nextDefaultSurfaceCacheSlot = (nextDefaultSurfaceCacheSlot + 1u)
-                                          % defaultSurfaceCache.size();
+                = queryDefaultContactSurfaceProperties(shapeNode);
+            lastShapeNode = shapeNode;
+            lastHasDefaultProperties = hasDefaultProperties;
             return hasDefaultProperties;
           };
 
@@ -1207,8 +1225,8 @@ void ConstraintSolver::updateConstraints()
               = getContactShapeNode(contact.collisionObject2);
           const bool canUseDefaultSurfaceParams
               = builtInDefaultContactHandler->mParent == nullptr
-                && hasDefaultContactSurfaceProperties(shapeNode1)
-                && hasDefaultContactSurfaceProperties(shapeNode2);
+                && hasDefaultContactSurfaceProperties(shapeNode1, true)
+                && hasDefaultContactSurfaceProperties(shapeNode2, false);
 
           contactPairCount.surfaceParams
               = canUseDefaultSurfaceParams

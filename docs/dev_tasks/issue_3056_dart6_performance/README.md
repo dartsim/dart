@@ -3,11 +3,37 @@
 ## Current Snapshot
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
-#3144, #3146, #3147, #3148, #3149, #3150, #3151, and #3152 are merged.
-#3153 `perf/dart6-native-body-filter-fast-path` is the active slice on
-`release-6.20`.
+#3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, and #3153 are
+merged. #3154 `perf/dart6-contact-surface-positional-cache` is the active
+slice on `release-6.20`.
 
-The latest candidate targets active DART-native finite-shape-vs-plane collision
+The latest candidate trims default contact construction by replacing the
+per-step linear-scan default-surface-property cache with a small direct-mapped
+`ShapeNode` cache, plus remembering the most recent first-side and second-side
+lookups inside each solver update. Cache misses recompute the same surface
+property predicate as before, so collisions, surface parameters, contact counts,
+and final hashes are unchanged.
+
+Active issue-scene evidence,
+`.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
+dynamics, deactivation disabled, `--world-threads 16`,
+`--max-contacts 12000`, `--max-contacts-per-pair 4`, 300 steps:
+
+| Run | Collision backend | RTF | Final state |
+| --- | --- | ---: | --- |
+| #3153 parent, text profile | DART native | `0.109055` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003`; `build contact constraints` `532.65 ms` |
+| #3154 current head, text profile | DART native | `0.110145` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `508.96 ms`, surface params `143.01 ms`, serial fallback `360.00 ms` |
+| #3154 current head, no profile | DART native | `0.109151` latest repeat, `0.105346` prior repeat | finite, same hash, contacts `5005`, pairs `3003` |
+| #3154 current head, no profile | FCL primitive | `0.093295` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
+| #3154 current head, no profile | Bullet | `0.0883701` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
+| #3154 current head, no profile | ODE | `0.00460932` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
+
+Current-head DART-native is about `1.17x` FCL primitive, `1.24x` Bullet, and
+`23.7x` ODE on the latest active issue-scene rerun. The local slice is a small
+contact-construction win, not a step-change; the larger remaining active-scene
+costs are still collision, constrained-group solve, and integration.
+
+#3153 targets active DART-native finite-shape-vs-plane collision
 for the default solver filter. For exact `BodyNodeCollisionFilter` queries where
 all finite objects belong to mobile skeletons, all plane objects belong to
 static skeletons, there are no explicit body-node pair blacklists, and the
