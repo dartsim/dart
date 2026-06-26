@@ -34,6 +34,8 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - FreeBSD VM startup can timeout (~5 min); this is transient—re-run the job.
   - `dynamic_cast` can fail silently on FreeBSD across shared library boundaries; use type enums + `static_cast`.
   - macOS ARM64 sporadic SEGFAULT from `alloca`/VLA alignment; use `std::vector<T>` instead.
+  - macOS arm64 and FreeBSD build with clang `-Werror`, which flags warnings the default Linux/gcc build ignores. `-Wdeprecated-declarations`: wrap deliberate uses of deprecated-but-still-bound APIs (for example pybind shims for deprecated overloads) in `DART_SUPPRESS_DEPRECATED_BEGIN`/`DART_SUPPRESS_DEPRECATED_END` (`dart/common/diagnostics.hpp`). `-Wpotentially-evaluated-expression`: `typeid(*smart_ptr)` evaluates the smart-pointer dereference, and `typeid(*smart_ptr.get())` still warns because the `.get()` call stays inside the operand — first bind the raw pointer to a local (`auto* raw = smart_ptr.get();`) and take `typeid(*raw)`.
+  - MSVC does not zero-initialize heap allocations, so an unset struct field (e.g. an Assimp `mNumMaterials`/`mMaterialIndex` left at garbage) can surface as `std::bad_alloc` on Windows only while Linux/gcc happens to read zeroed memory. Initialize every field explicitly instead of relying on zeroed heap memory.
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
@@ -790,6 +792,12 @@ Notes:
 ### FreeBSD: RTTI Across Shared Libraries
 
 `dynamic_cast` can fail silently across shared library boundaries on FreeBSD due to duplicate RTTI symbols. Prefer type enums + `static_cast` for polymorphic dispatch in cross-library APIs.
+
+### FreeBSD: Ports Patches Depend on CMakeLists Context
+
+The FreeBSD VM job applies the patches under `docker/freebsd/ports-patches/patch-*` to the source tree before configuring (`scripts/freebsd.py` `apply_ports_patches()` runs `patch -p0 -N`, guarded by a dry-run check). These patches carry fixed line numbers and surrounding context — for example, dropping `-O3` from `CMAKE_CXX_FLAGS_RELEASE` in the root `CMakeLists.txt`.
+
+Reformatting or restructuring a patched `CMakeLists.txt` — a `gersemi` run, reordering blocks, or editing nearby lines — shifts that context so the hunks no longer match. Because the apply step is dry-run guarded, a non-matching patch is **silently skipped** rather than aborting, so the intended CMake change never lands and the failure surfaces later as wrong build flags or behavior on FreeBSD only. When you change the structure of a file targeted by `docker/freebsd/ports-patches/`, regenerate the affected patch against current source (`diff -u CMakeLists.txt.orig CMakeLists.txt`).
 
 ### macOS ARM64: Flaky SEGFAULTs in FCL and Sensor Tests
 

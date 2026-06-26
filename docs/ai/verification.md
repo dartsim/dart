@@ -74,6 +74,12 @@ the broader CPU/GPU, demo, benchmark, and performance requirements.
 
 Before any commit, run `pixi run lint` as required by `AGENTS.md`.
 
+When a change touches lint tooling, formatting config, or many files, verify with
+the full `pixi run check-lint` aggregate, not only the sub-check you edited. CI
+runs the whole aggregate in `ci_lint.yml`, so a drift in an unrelated sub-check
+(for example codespell or clang-format) still fails the "Check Lint" step even
+when the sub-check you ran is clean.
+
 ## DART 7 Simulation Allocation Evidence
 
 Changes that add, migrate, or materially alter a DART 7 `World::step()` domain,

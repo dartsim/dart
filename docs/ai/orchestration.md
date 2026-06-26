@@ -172,3 +172,11 @@ How any session — human or agent — finds work and avoids collisions:
 - Anything touching shared state beyond the local clone follows the safety
   boundary in `docs/ai/README.md`: GitHub mutations only with explicit
   maintainer/user approval.
+- Sibling-lane file collisions: when another lane has an in-flight (open PR)
+  change, treat the files in its diff as a do-not-edit set and keep your work
+  off them until it merges. If a newly added required gate would trip on that
+  lane's pre-existing issues, scope a temporary carve-out (skip those files)
+  rather than fixing another lane's code from yours; label the carve-out with an
+  explicit removal condition keyed to the sibling lane landing — following the
+  `remove_by`/`tracking`/`reason` convention in
+  `docs/onboarding/api-boundaries.md` — and remove it once that lane merges.
