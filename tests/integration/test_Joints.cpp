@@ -1817,6 +1817,77 @@ TEST_F(JOINTS, FreeJointCoordinateChart)
 }
 
 //==============================================================================
+TEST_F(JOINTS, FreeJointIntegratePositionsMatchesVectorOverload)
+{
+  auto expectMatchesVectorOverload
+      = [](const Eigen::Isometry3d& parentBodyToJoint,
+           const Eigen::Isometry3d& childBodyToJoint,
+           const char* label) {
+          SkeletonPtr skel = Skeleton::create(label);
+
+          auto [freeJoint, freeBody]
+              = skel->createJointAndBodyNodePair<FreeJoint>();
+          (void)freeBody;
+
+          freeJoint->setTransformFromParentBodyNode(parentBodyToJoint);
+          freeJoint->setTransformFromChildBodyNode(childBodyToJoint);
+
+          Eigen::Isometry3d initialTransform = Eigen::Isometry3d::Identity();
+          initialTransform.linear()
+              = (Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(-0.1, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(0.05, Eigen::Vector3d::UnitZ()))
+                    .toRotationMatrix();
+          initialTransform.translation() = Eigen::Vector3d(0.4, -0.2, 0.3);
+
+          const Eigen::Vector6d q0
+              = FreeJoint::convertToPositions(initialTransform);
+          Eigen::Vector6d v;
+          v << 0.17, -0.11, 0.07, 0.4, -0.2, 0.1;
+
+          freeJoint->setPositions(q0);
+          freeJoint->setVelocities(v);
+
+          const double dt = 0.003;
+          const Eigen::VectorXd expected
+              = static_cast<const Joint*>(freeJoint)->integratePositions(
+                  q0, v, dt);
+          skel->integratePositions(dt);
+
+          EXPECT_TRUE(freeJoint->getPositions().isApprox(expected, 1e-12))
+              << label << "\nexpected: " << expected.transpose()
+              << "\nactual: " << freeJoint->getPositions().transpose();
+        };
+
+  expectMatchesVectorOverload(
+      Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d::Identity(),
+      "identity joint frames");
+
+  Eigen::Isometry3d parentBodyToJoint = Eigen::Isometry3d::Identity();
+  parentBodyToJoint.linear()
+      = Eigen::AngleAxisd(0.13, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  parentBodyToJoint.translation() = Eigen::Vector3d(0.03, -0.05, 0.07);
+
+  Eigen::Isometry3d translatedParentBodyToJoint = Eigen::Isometry3d::Identity();
+  translatedParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.03, -0.05, 0.07);
+
+  expectMatchesVectorOverload(
+      translatedParentBodyToJoint,
+      Eigen::Isometry3d::Identity(),
+      "translated parent joint frame");
+
+  Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+  childBodyToJoint.linear()
+      = Eigen::AngleAxisd(-0.08, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  childBodyToJoint.translation() = Eigen::Vector3d(-0.02, 0.04, -0.06);
+
+  expectMatchesVectorOverload(
+      parentBodyToJoint, childBodyToJoint, "offset joint frames");
+}
+
+//==============================================================================
 TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 {
   const std::size_t numTests = 50;
