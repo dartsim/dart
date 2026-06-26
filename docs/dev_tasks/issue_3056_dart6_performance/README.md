@@ -4,13 +4,11 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, #3172, #3183, #3188, #3190, #3191, #3192, and #3193 are
-merged. #3194 remains open with broadened anti-overfitting evidence and is being
-rebuilt directly on the merged `release-6.20` head that includes #3192 and
-#3193. Remaining local follow-up slices must stay unpublished until each is
-ready to publish directly against `release-6.20`; do not open them against
-another PR branch. Opening stacked PRs against parent PR branches lets GitHub
-close or supersede child PRs when the parent branch is merged or deleted.
+#3170, #3171, #3172, #3183, #3188, #3190, #3191, #3192, #3193, and #3194 are
+merged. Remaining follow-up slices must be published directly against
+`release-6.20`; do not open them against another PR branch. Opening stacked PRs
+against parent PR branches lets GitHub close or supersede child PRs when the
+parent branch is merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -20,33 +18,15 @@ those cached local values instead of doing the general matrix/absolute-linear
 bound calculation. Rotated or otherwise general transforms keep the existing
 path.
 
-The active unpublished candidate keeps the #3183 parallel default-contact
-build, then reduces the remaining per-step pair metadata overhead. Contact
-candidate collection stores the pair's already-validated `BodyNode` and
-`ShapeNode` pointers in `ContactPairCount`; the build phase reuses those
-pointers instead of re-reading them from the first contact. The same pair record
-also caches the default-surface decision once for the step, and the parallel
-eligibility scan replaces the per-pair `unordered_set` insertion path with a
-retained vector, sort, and adjacent-duplicate check. Contact order is unchanged
-because workers still write constraints by candidate index and the main thread
-activates them in order.
-
-A local follow-up experiment then precomputes the fixed-zero-velocity support
-skip flags once per contact pair during the serial parallel-eligibility scan and
-uses a thread-local open-addressed body set for the remaining duplicate-body
-check. The parallel reset maps those pair-order flags back to each contact's
-original object order, avoiding repeated body lookups and hash-set probes in the
-worker loop while keeping the same `ContactConstraint::initialize()` fallback
-checks for every side that was not proven skippable.
-
-The next local collision follow-up accelerates the DART-native disjoint contact
-proof for exact world-axis planes. The finite-plane duplicate-contact proof
-normally projects each finite AABB through all eight corners onto the plane. If
-the normalized plane normal is exactly aligned with a world axis, the projection
-keeps the two orthogonal AABB ranges unchanged and collapses only the plane
-axis to the plane point. The proof also stores only projected min/max bounds in
-scratch instead of copying full broadphase entries through the sort. Non-axis
-planes keep the original corner-projection path.
+The active local follow-up is
+`perf/dart6-broadphase-cache-refresh`. It moves DART-native shape-cache refresh
+into broadphase entry construction and prepares those caches on the caller
+thread before the parallel broadphase workers read collision objects. That
+removes the separate collision-group object-update pass for group collision
+while keeping shape replacement and `ShapeNode` relative-transform edits
+visible. The focused regression mutates `ShapeNode` relative transforms after a
+collision group already exists and verifies the parallel broadphase observes
+the updated transforms.
 
 The merged #3193 integration follow-up narrows `FreeJoint` hot paths for the
 root-joint shape used by the SDF issue scene: identity child joint frames and
@@ -64,13 +44,12 @@ decisions while steady-state default scenes avoid repeated dynamics-aspect
 queries. The branch also split the shared-body profiling scope into body-scan
 and surface-scan subscopes.
 
-The newest local solver follow-up parallelizes the default-surface-property
-scan that remains before contact-constraint rebuild. The shared-body/body
-duplicate scan stays serial, but large contact-pair sets now compute the
-default-material predicate in the existing constraint thread pool and then
-reduce a scratch flag back on the main thread. Small contact sets and any
-fallback surface-parameter path keep the original serial
-`ensureDefaultSurfaceParamsChecked()` behavior.
+The broadphase-cache follow-up is parked locally and should not be published as
+a performance PR without cleaner evidence. The edit is correctness hardening
+for stale shape-cache state and initially showed active 3k improvement, but
+committed-head reruns were slower on active 3k, settled 3k, and generated 900
+guardrails. All rows preserved final hashes, contact counts, and pair counts;
+the failure is performance evidence, not correctness.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -97,6 +76,45 @@ PR head on more than the single issue scene. At minimum, include the active
 scene, and one generated medium/large scene when the compared commits support
 that generated geometry. Preserve and report final-state hashes, contact
 counts, and pair counts for every row.
+
+Latest broadphase-cache-refresh comparison rows:
+
+| Commit | Scenario | RTF | Hash | Contacts | Pairs |
+| --- | --- | ---: | --- | ---: | ---: |
+| #3172 baseline `382254394d7` | active 3k | `0.167623` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| #3194 parent `165d072b576` | active 3k | `0.187904` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| broadphase-cache candidate | active 3k | `0.218011` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| broadphase-cache commit `b96e379e13b` | active 3k | `0.153090` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| #3172 baseline `382254394d7` | settled 3k | `78.5958` | `0x131b6af79a44ff90` | `0` | `0` |
+| #3194 parent `165d072b576` | settled 3k | `82.8135` | `0x131b6af79a44ff90` | `0` | `0` |
+| broadphase-cache candidate | settled 3k | `81.0562` | `0x131b6af79a44ff90` | `0` | `0` |
+| broadphase-cache commit `b96e379e13b` | settled 3k | `45.8796` | `0x131b6af79a44ff90` | `0` | `0` |
+| #3172 baseline `382254394d7` | `diff_drive_skid` | `37.9470` | `0xe5880f64423ce963` | `4` | `4` |
+| #3194 parent `165d072b576` | `diff_drive_skid` | `44.9463` | `0xe5880f64423ce963` | `4` | `4` |
+| broadphase-cache candidate | `diff_drive_skid` | `35.0383` | `0xe5880f64423ce963` | `4` | `4` |
+| broadphase-cache commit `b96e379e13b` | `diff_drive_skid` | `34.3793` | `0xe5880f64423ce963` | `4` | `4` |
+| #3172 baseline `382254394d7` | generated 900 | `0.595861` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| #3194 parent `165d072b576` | generated 900 | `0.593745` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| broadphase-cache candidate | generated 900 | `0.560230` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| broadphase-cache commit `b96e379e13b` | generated 900 | `0.439346` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| #3172 baseline `382254394d7` | generated 90 serial | `2.22491` | `0x9ac4f80005c47da8` | `180` | `90` |
+| #3194 parent `165d072b576` | generated 90 serial | `1.91251` | `0x9ac4f80005c47da8` | `180` | `90` |
+| broadphase-cache candidate | generated 90 serial | `2.24766` | `0x9ac4f80005c47da8` | `180` | `90` |
+| broadphase-cache commit `b96e379e13b` | generated 90 serial | `1.81920` | `0x9ac4f80005c47da8` | `180` | `90` |
+
+Repeat guardrails for noisy rows:
+
+| Commit | Scenario | RTF | Hash | Contacts | Pairs |
+| --- | --- | ---: | --- | ---: | ---: |
+| #3194 parent `165d072b576` | active 3k repeat | `0.167515` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| broadphase-cache candidate | active 3k repeat | `0.196311` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| broadphase-cache commit `b96e379e13b` | active 3k repeat | `0.166347` | `0x6a043ac1e7558218` | `5005` | `3003` |
+| #3194 parent `165d072b576` | `diff_drive_skid` repeat | `30.4715` | `0xe5880f64423ce963` | `4` | `4` |
+| broadphase-cache candidate | `diff_drive_skid` repeat | `37.9662` | `0xe5880f64423ce963` | `4` | `4` |
+| #3194 parent `165d072b576` | generated 900 repeat | `0.430706` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| broadphase-cache candidate | generated 900 repeat | `0.589425` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
+| broadphase-cache commit `b96e379e13b` | settled 3k repeat | `54.8720` | `0x131b6af79a44ff90` | `0` | `0` |
+| broadphase-cache commit `b96e379e13b` | generated 900 repeat | `0.406580` | `0xcd1ecb32a4d1ad57` | `1800` | `900` |
 
 Retrospective SDF audit across the landed issue-3056 chain used three
 sequential DART-native guardrails:

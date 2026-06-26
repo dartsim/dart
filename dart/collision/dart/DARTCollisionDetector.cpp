@@ -406,9 +406,8 @@ void postProcess(
     bool skipCrossPairDuplicateCheck = false,
     bool publishCrossPairDuplicateState = true);
 
-bool isPlaneShape(const CollisionObject* object);
-
-BroadphaseEntry makeBroadphaseEntry(CollisionObject* object);
+BroadphaseEntry makeBroadphaseEntry(
+    CollisionObject* object, bool refreshShapeCache = true);
 
 void buildBroadphaseEntries(
     const std::vector<CollisionObject*>& objects,
@@ -585,9 +584,8 @@ bool DARTCollisionDetector::collide(
   if (!checkGroupValidity(this, group))
     return false;
 
-  auto casted = static_cast<DARTCollisionGroup*>(group);
-  casted->updateEngineData();
-  const auto& objects = casted->mCollisionObjects;
+  const auto& objects
+      = static_cast<DARTCollisionGroup*>(group)->mCollisionObjects;
 
   if (objects.empty())
     return false;
@@ -728,14 +726,10 @@ bool DARTCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  auto casted1 = static_cast<DARTCollisionGroup*>(group1);
-  auto casted2 = static_cast<DARTCollisionGroup*>(group2);
-
-  casted1->updateEngineData();
-  casted2->updateEngineData();
-
-  const auto& objects1 = casted1->mCollisionObjects;
-  const auto& objects2 = casted2->mCollisionObjects;
+  const auto& objects1
+      = static_cast<DARTCollisionGroup*>(group1)->mCollisionObjects;
+  const auto& objects2
+      = static_cast<DARTCollisionGroup*>(group2)->mCollisionObjects;
 
   if (objects1.empty() || objects2.empty())
     return false;
@@ -1620,15 +1614,6 @@ void postProcess(
 }
 
 //==============================================================================
-bool isPlaneShape(const CollisionObject* object)
-{
-  if (!object)
-    return false;
-
-  return static_cast<const DARTCollisionObject*>(object)->isCachedPlaneShape();
-}
-
-//==============================================================================
 bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
 {
   if (finiteEntry.object == nullptr)
@@ -1707,16 +1692,19 @@ bool hasExactIdentityLinearTransform(const Eigen::Isometry3d& transform)
 }
 
 //==============================================================================
-BroadphaseEntry makeBroadphaseEntry(CollisionObject* object)
+BroadphaseEntry makeBroadphaseEntry(
+    CollisionObject* object, bool refreshShapeCache)
 {
   BroadphaseEntry entry;
   entry.object = object;
-  entry.plane = isPlaneShape(object);
 
   if (!object)
     return entry;
 
-  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  auto* dartObject = static_cast<DARTCollisionObject*>(object);
+  if (refreshShapeCache)
+    dartObject->refreshShapeCacheForCollision();
+  entry.plane = dartObject->isCachedPlaneShape();
   entry.transform = dartObject->getWorldTransformForCollision();
 
   if (entry.plane)
@@ -1787,16 +1775,17 @@ void buildBroadphaseEntries(
   if (useParallelBroadphase) {
     // Keep lazy Frame transform-cache writes on the calling thread before
     // workers read those transforms while building independent entries.
-    for (const auto* object : objects) {
+    for (auto* object : objects) {
       if (object != nullptr) {
-        static_cast<const DARTCollisionObject*>(object)
-            ->getWorldTransformForCollision();
+        auto* dartObject = static_cast<DARTCollisionObject*>(object);
+        dartObject->refreshShapeCacheForCollision();
+        dartObject->getWorldTransformForCollision();
       }
     }
 
     broadphaseEntries.resize(objects.size());
     auto buildEntryAt = [&](std::size_t index) {
-      broadphaseEntries[index] = makeBroadphaseEntry(objects[index]);
+      broadphaseEntries[index] = makeBroadphaseEntry(objects[index], false);
     };
     threadPool->parallelFor(objects.size(), numCollisionThreads, buildEntryAt);
 
