@@ -59,7 +59,7 @@ Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries*
 - **Harness exists:** `examples/contact_benchmark` takes `--collision dart|fcl|bullet|ode` and emits **RTF + final-state hash + contact stats** → same scene, swap detector, compare.
 - **Macro:** parametrize `BM_INTEGRATION_boxes` (currently hardcodes Bullet, `boxes_scene.hpp:91`) across all four detectors; run `contact_benchmark` at 10/30/120 objects × {default, `--disable-deactivation`}.
 - **Micro:** port DART 7 #2688's comparative benchmarks (`bm_narrow_phase`, `bm_stacked_scenes`) for broadphase pairs/s + narrowphase contacts/s.
-- **Success** = perf: RTF(native) ≥ RTF(bullet/ode/fcl); **and** correctness: a stable native final-state hash + tolerance-based scene-dump diffs vs incumbents (per the parity bar — *not* bit-exact hash equality; see `docs/dev_tasks/issue_3056_dart6_performance` + Risks).
+- **Success** = perf: RTF(native) ≥ RTF(bullet/ode/fcl); **and** correctness: a stable native final-state hash + tolerance-based scene-dump diffs vs incumbents (per the parity bar — *not* bit-exact hash equality; see the DART 6.20 issue #3056 entries in `CHANGELOG.md`, the rerunnable `examples/contact_benchmark` harness, and Risks).
 
 ## Phased plan (each phase = its own reviewable PR; gz gate every phase)
 
