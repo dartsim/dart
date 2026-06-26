@@ -415,6 +415,36 @@ else()
   include(FetchContent)
 
   set(IMGUI_TARGET_VERSION "v1.92.8")
+
+  # DART applies its compatibility patch directly inside the FetchContent
+  # checkout, which leaves that working tree dirty. If the requested tag changed
+  # since this build tree was last configured, FetchContent's in-place
+  # re-checkout to the new tag fails on the local patch hunks (configure stops
+  # until the cached source is deleted by hand). Detect a tag change via a stamp
+  # file and drop the cached download so the new tag is fetched from a clean
+  # state.
+  set(dart_imgui_src_dir "${DART_BINARY_DIR}/_deps/imgui-src")
+  set(dart_imgui_tag_stamp "${DART_BINARY_DIR}/_deps/dart_imgui_tag.txt")
+  set(dart_imgui_cached_tag "")
+  if(EXISTS "${dart_imgui_tag_stamp}")
+    file(READ "${dart_imgui_tag_stamp}" dart_imgui_cached_tag)
+    string(STRIP "${dart_imgui_cached_tag}" dart_imgui_cached_tag)
+  endif()
+  if(
+    EXISTS "${dart_imgui_src_dir}"
+    AND NOT dart_imgui_cached_tag STREQUAL IMGUI_TARGET_VERSION
+  )
+    message(
+      STATUS
+      "Bundled ImGui tag changed to ${IMGUI_TARGET_VERSION}; refreshing cached download"
+    )
+    # The source uses a custom SOURCE_DIR (imgui-src); the FetchContent sub-build
+    # and build trees are named after the declared content (dart_imgui-*). Remove
+    # all of them so the next populate re-clones the new tag from scratch.
+    file(GLOB dart_imgui_fetch_dirs "${DART_BINARY_DIR}/_deps/dart_imgui-*")
+    file(REMOVE_RECURSE "${dart_imgui_src_dir}" ${dart_imgui_fetch_dirs})
+  endif()
+
   message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
   FetchContent_Declare(
@@ -514,6 +544,10 @@ else()
       endif()
     endif()
   endforeach()
+
+  # Record the tag now that the matching ImGui sources are populated and patched
+  # so a later tag change can refresh the cached download (see above).
+  file(WRITE "${dart_imgui_tag_stamp}" "${IMGUI_TARGET_VERSION}\n")
 
   set(
     imgui_core_sources
