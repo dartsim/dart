@@ -232,11 +232,11 @@
   * Complete the 3003-body resting-scene performance target from issue #3056:
     the maintained `contact_benchmark` path for `3k_shapes.sdf` with
     DART-native collision records RTF `81.0689` in the final
-    anti-overfitting matrix and RTF `71.0988` in the completion PR's
-    current-head rerun, both with final hash `0x131b6af79a44ff90`, zero final
-    contacts, and `3003 / 3003` mobile skeletons resting. Active
-    no-deactivation scenes remain covered by the benchmark guardrails rather
-    than this settled-scene completion claim:
+    anti-overfitting matrix, final hash `0x131b6af79a44ff90`, zero final
+    contacts, and `3003 / 3003` mobile skeletons resting. Completion reruns
+    preserve the same final state and remain far above the original RTF `1.0`
+    target. Active no-deactivation scenes remain covered by the benchmark
+    guardrails rather than this settled-scene completion claim:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Keep opt-in parallel constraint-island solving on the serial path for
