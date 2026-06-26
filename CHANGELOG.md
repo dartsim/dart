@@ -64,6 +64,15 @@
   * Update the math user-defined literal declarations to the C++23 spelling
     accepted by newer AppleClang warning-as-error builds.
 
+  * Stop a deprecation warning from leaking out of DART's header-only logging
+    templates when building against fmt 12.2.0 or newer. spdlog's variadic
+    `log()` routes the format string through a `fmt::format_string` ->
+    `string_view` conversion deprecated in fmt 12.2.0, so the warning surfaced
+    in every downstream that instantiates DART's logging. DART now pre-formats
+    messages and hands spdlog a ready-made string, sidestepping the deprecated
+    conversion:
+    [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
+
 * Collision
 
   * Speed up the DART-native collision backend by caching collision-object
