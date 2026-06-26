@@ -4,10 +4,9 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, #3172, #3183, #3188, #3190, and #3191 are merged. #3192
-remains open as a draft because its safe cache revision did not beat the #3191
-parent in the fresh comparison run. The current local integration candidate is
-`perf/dart6-free-joint-root-integration`, rebuilt directly on the merged
+#3170, #3171, #3172, #3183, #3188, #3190, #3191, and #3193 are merged.
+#3192 and #3194 remain open performance PRs. The current local branch is
+`perf/dart6-default-surface-version-cache`, rebuilt directly on the merged
 `release-6.20` head. Remaining local follow-up slices must stay unpublished
 until each is ready to publish directly against `release-6.20`; do not open
 them against another PR branch. Opening stacked PRs against parent PR branches
@@ -50,12 +49,21 @@ axis to the plane point. The proof also stores only projected min/max bounds in
 scratch instead of copying full broadphase entries through the sort. Non-axis
 planes keep the original corner-projection path.
 
-The newest local integration follow-up narrows `FreeJoint` hot paths for the
+The merged #3193 integration follow-up narrows `FreeJoint` hot paths for the
 root-joint shape used by the SDF issue scene: identity child joint frames and
 translation-only parent model poses. Position integration, relative-transform
 refresh, and relative-Jacobian refresh skip the general child-frame inverse and
 full transform products in those cases. Non-identity child joint frames and
 rotated parent joint frames keep the general path.
+
+The current local solver follow-up keeps the per-step `ContactPairCount`
+surface decision cache, then extends the lower-level default-surface-property
+cache into a larger thread-local, versioned direct-mapped cache. Each entry
+keys on the `ShapeNode` pointer and `ShapeNode::getVersion()`, so friction,
+slip, restitution, or friction-direction updates invalidate cached
+default-material decisions while steady-state default scenes avoid repeated
+dynamics-aspect queries. The branch also splits the shared-body profiling scope
+into body-scan and surface-scan subscopes.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -75,6 +83,14 @@ DART-native improvements are not considered complete on this workload unless
 the evidence shows native collision ahead of all three backends on the same
 DART 6 dynamics and solver pipeline.
 
+Anti-overfitting rule: every new performance PR in this stack must include a
+real-number comparison for the baseline commit, the immediate parent, and the
+PR head on more than the single issue scene. At minimum, include the active
+3k issue scene, the default-sleeping 3k scene, one non-default-surface SDF
+scene, and one generated medium/large scene when the compared commits support
+that generated geometry. Preserve and report final-state hashes, contact
+counts, and pair counts for every row.
+
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
 dynamics, deactivation disabled, `--world-threads 16`,
@@ -92,6 +108,8 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local axis-plane contact-bounds experiment, no profile | DART native | `0.185536` FreeJoint parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
 | Local FreeJoint root-integration experiment, no profile | DART native | `0.189437` direct PR-head comparison rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local default-surface version-cache experiment, no profile | DART native | `0.207410` current merged-base guardrail rerun; `0.181107` fresh comparison rerun; `0.173761` immediate repeat; `0.205759` earlier post-review-fix rerun; `0.209501` post-rebase rerun; `0.230490` prior rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local default-surface version-cache experiment, text profile | DART native | `0.227376` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `183.10 ms`, `shared-body check` `85.97 ms`, `shared-body surface scan` `54.71 ms`, `shared-body body scan` `26.36 ms`, `parallel reset` `65.45 ms`, `collide` `278.13 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -126,14 +144,31 @@ to `268.50 ms`. The current post-rebase no-profile repeat reached RTF
 `0.203003`. Treat this as a later collision follow-up after the
 contact-construction slices.
 
-The FreeJoint root-integration experiment has been restacked directly on the
-current #3191 release head. The fresh comparison run recorded RTF `0.189437`
-for the PR head, versus `0.185536` for the #3191 parent and `0.161033` for the
-#3172 baseline. All three rows kept the same final hash, contact count, and
-pair count.
+The merged FreeJoint root-integration experiment recorded RTF `0.189437` for
+the PR head, versus `0.185536` for the #3191 parent and `0.161033` for the
+#3172 baseline in that comparison run. All three rows kept the same final hash,
+contact count, and pair count.
+
+The default-surface version-cache experiment keeps the same final hash, contact
+count, and pair count while reducing the measured surface portion of the
+parallel eligibility scan. In the latest text-profile sample,
+`build contact constraints` dropped from the axis-plane `225.11 ms` sample to
+`183.10 ms`, `shared-body check` dropped from the repeated local `101.66 ms`
+sample to `85.97 ms`, and the newly split surface scan was `54.71 ms`. The
+fresh comparison no-profile rerun reached RTF `0.181107`, with an immediate
+repeat at RTF `0.173761`. Earlier same-code/post-review-fix and post-rebase
+no-profile reruns reached RTF `0.205759` and `0.209501`; the prior no-profile
+rerun reached RTF `0.230490`.
+
+After merging the #3193 base, the default-surface version-cache experiment
+recorded active 3k SDF guardrail RTF `0.207410`, default-sleeping 3k RTF
+`90.3225`, `diff_drive_skid` RTF `50.1021`, generated 900-object RTF
+`0.648297`, and generated 90-object RTF `2.27391` for the PR head. All rows
+kept the same final hash, contact count, and pair count as the baseline and
+parent comparisons.
 
 On the original default-sleeping target command, the same current local head
-reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
+reaches RTF `90.3225` for 3000 steps with DART-native collision, advances
 `3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
 `3003 / 3003` mobile skeletons resting with zero final contacts.
 
@@ -167,13 +202,28 @@ The local axis-plane contact-bounds experiment has passed:
 (C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
 no-profile/profile benchmark runs above.
 
-The local FreeJoint root-integration experiment has passed: `pixi run lint`,
+The local FreeJoint root-integration experiment passed: `pixi run lint`,
 `cmake --build build/default/cpp/Release --parallel 5 --target test_Joints contact_benchmark`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_Joints$'`,
 and the fresh exact issue-scene benchmark comparison rows above. The focused
 regression compares `Skeleton::integratePositions()` against the public
-stateless integration overload for identity-frame, translated-parent, and
-fully offset FreeJoint frame configurations.
+stateless integration overload for identity-frame, translated-parent, and fully
+offset FreeJoint frame configurations.
+
+The local default-surface version-cache experiment has passed: `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+(C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
+no-profile/profile benchmark runs above. The focused solver regression heats
+the default-surface cache, mutates the contact dynamics, and verifies the
+versioned cache tracks the same state as a cold-cache reference after the
+mutation. After merging #3193, the combined focused gate passed `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Joints test_ConstraintSolver contact_benchmark`,
+and
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Joints|test_ConstraintSolver)$'`;
+the merged-base guardrail matrix is recorded in
+`/tmp/dart-3192-merged-head.kAKUBi/summary.tsv`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
