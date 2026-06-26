@@ -1194,6 +1194,7 @@ void ConstraintSolver::updateConstraints()
         defaultSurfaceCache{};
     static thread_local std::size_t defaultSurfaceCacheEpoch = 0u;
     ++defaultSurfaceCacheEpoch;
+    // LCOV_EXCL_START: requires wrapping size_t solver-update epochs.
     if (defaultSurfaceCacheEpoch == 0u) {
       std::fill(
           defaultSurfaceCache.begin(),
@@ -1201,6 +1202,7 @@ void ConstraintSolver::updateConstraints()
           DefaultSurfaceCacheEntry{});
       ++defaultSurfaceCacheEpoch;
     }
+    // LCOV_EXCL_STOP
 
     const auto queryDefaultContactSurfaceProperties
         = [&](const dynamics::ShapeNode* shapeNode) {
