@@ -112,7 +112,7 @@ identified real tradeoffs that were hidden by the single issue-scene table:
 | Best landed settled row, #3154 `0748544d6a7` | `0.157291` | `85.8344` | `37.5185` | Settled issue scene peak |
 | Best landed non-default-surface row, #3147 `f72966f7ebf` | `0.128060` | `30.0080` | `47.7164` | `diff_drive_skid` peak |
 | Current landed #3191 `6137899a0f8` | `0.120256` | `55.8996` | `32.8497` | Only `0.67x` of best active, `0.65x` of best settled, and `0.69x` of best non-default-surface row |
-| Current #3194 branch `bec682c9655` | `0.221884` | `74.7945` | `38.1284` | Clean rerun after host build pressure cleared on code commit `8a42e8db747`; the branch head only records this audit. Recovers active and improves the two guardrails versus #3191, but does not fully recover historical settled/non-default-surface peaks |
+| Current #3194 branch `0b30724d53f` | `0.229680` | `78.8741` | `35.2788` | Clean rerun after merging the #3193 base. Recovers active and improves the two guardrails versus #3191, but does not fully recover the historical non-default-surface peak |
 
 Follow-up implication: #3194 addresses the active issue-scene regression from
 the merged #3183/#3188/#3190/#3191 tail and improves the SDF guardrails versus
@@ -137,7 +137,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local axis-plane contact-bounds experiment, no profile | DART native | `0.189566` parallel-surface parent comparison rerun; `0.185536` FreeJoint parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
 | Local FreeJoint root-integration experiment, no profile | DART native | `0.189437` direct PR-head comparison rerun | finite, same hash, contacts `5005`, pairs `3003` |
-| Local parallel surface-scan experiment, no profile | DART native | `0.221884` clean SDF guardrail rerun after raising the threaded prepass cutoff before merging the #3193 base; `0.217070` earlier race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local parallel surface-scan experiment, no profile | DART native | `0.229680` current merged-base guardrail rerun; `0.221884` clean SDF guardrail rerun after raising the threaded prepass cutoff before merging the #3193 base; `0.217070` earlier race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -177,14 +177,16 @@ the PR head, versus `0.185536` for the #3191 parent and `0.161033` for the
 #3172 baseline in that comparison run. All three rows kept the same final hash,
 contact count, and pair count.
 
-Before merging the #3193 base, the parallel surface-scan experiment recorded a
-clean post-cutoff active 3k SDF guardrail RTF `0.221884` for the PR head,
-versus `0.120256` for the landed #3191 head in the same retrospective SDF audit
-and `0.179023` for the landed #3172 active peak. All rows kept the same final
-hash, contact count, and pair count.
+After merging the #3193 base, the parallel surface-scan experiment recorded
+active 3k SDF guardrail RTF `0.229680`, default-sleeping 3k RTF `78.8741`, and
+`diff_drive_skid` RTF `35.2788` for the PR head. All rows kept the same final
+hash, contact count, and pair count as the baseline and parent comparisons. The
+active row is above the landed #3172 active peak (`0.179023`) and the settled
+row is above the landed #3172 settled row (`69.0482`), but the non-default SDF
+row remains below the historical #3147 `diff_drive_skid` peak (`47.7164`).
 
 On the original default-sleeping target command, the same current local head
-reaches RTF `74.7945` for 3000 steps with DART-native collision, advances
+reaches RTF `78.8741` for 3000 steps with DART-native collision, advances
 `3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
 `3003 / 3003` mobile skeletons resting with zero final contacts.
 
@@ -231,7 +233,13 @@ The local parallel surface-scan experiment has passed: `pixi run lint`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 (C++ tests `115/115`, Python tests `60/60`), and the fresh exact issue-scene
-benchmark comparison rows above.
+benchmark comparison rows above. After merging #3193, the combined focused
+gate passed `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Joints test_ConstraintSolver contact_benchmark`,
+and
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_Joints|test_ConstraintSolver)$'`;
+the merged-base guardrail matrix is recorded in
+`/tmp/dart-3194-merged-head.aZ9QPT/summary.tsv`.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
