@@ -4,15 +4,15 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, #3172, #3183, #3188, #3190, and #3191 are merged. #3192
-remains open as a draft because its safe cache revision did not beat the #3191
-parent in the fresh comparison run. #3193 is open and ready for review. The
-current local solver candidate is `perf/dart6-parallel-surface-scan`, rebuilt
-directly on the merged `release-6.20` head. Remaining local follow-up slices
-must stay unpublished until each is ready to publish directly against
-`release-6.20`; do not open them against another PR branch. Opening stacked PRs
-against parent PR branches lets GitHub close or supersede child PRs when the
-parent branch is merged or deleted.
+#3170, #3171, #3172, #3183, #3188, #3190, #3191, and #3193 are merged.
+#3192 remains open with broadened anti-overfitting evidence: it improves the
+active issue scene but is not a universal guardrail win. The current local
+solver candidate is `perf/dart6-parallel-surface-scan`, rebuilt directly on the
+merged `release-6.20` head. Remaining local follow-up slices must stay
+unpublished until each is ready to publish directly against `release-6.20`; do
+not open them against another PR branch. Opening stacked PRs against parent PR
+branches lets GitHub close or supersede child PRs when the parent branch is
+merged or deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -49,6 +49,13 @@ keeps the two orthogonal AABB ranges unchanged and collapses only the plane
 axis to the plane point. The proof also stores only projected min/max bounds in
 scratch instead of copying full broadphase entries through the sort. Non-axis
 planes keep the original corner-projection path.
+
+The merged #3193 integration follow-up narrows `FreeJoint` hot paths for the
+root-joint shape used by the SDF issue scene: identity child joint frames and
+translation-only parent model poses. Position integration, relative-transform
+refresh, and relative-Jacobian refresh skip the general child-frame inverse and
+full transform products in those cases. Non-identity child joint frames and
+rotated parent joint frames keep the general path.
 
 The newest local solver follow-up parallelizes the default-surface-property
 scan that remains before contact-constraint rebuild. The shared-body/body
@@ -120,16 +127,17 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3172 merged baseline, no profile | DART native | `0.172600` parallel-surface comparison rerun; `0.179381` prior rerun | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3172 merged baseline, no profile | DART native | `0.172600` parallel-surface comparison rerun; `0.161033` FreeJoint comparison rerun; `0.179381` prior rerun | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, no profile | DART native | `0.127794` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
 | Local skip-flags/body-set experiment, no profile | DART native | `0.192959` current rerun; `0.196971`, `0.196594` post-rebase reruns; `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
-| Local axis-plane contact-bounds experiment, no profile | DART native | `0.189566` parallel-surface parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local axis-plane contact-bounds experiment, no profile | DART native | `0.189566` parallel-surface parent comparison rerun; `0.185536` FreeJoint parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
-| Local parallel surface-scan experiment, no profile | DART native | `0.221884` clean SDF guardrail rerun after raising the threaded prepass cutoff; `0.217070` earlier race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local FreeJoint root-integration experiment, no profile | DART native | `0.189437` direct PR-head comparison rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local parallel surface-scan experiment, no profile | DART native | `0.221884` clean SDF guardrail rerun after raising the threaded prepass cutoff before merging the #3193 base; `0.217070` earlier race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -164,11 +172,16 @@ to `268.50 ms`. The current post-rebase no-profile repeat reached RTF
 `0.203003`. Treat this as a later collision follow-up after the
 contact-construction slices.
 
-The parallel surface-scan experiment has been restacked directly on the current
-#3191 release head. The clean post-cutoff SDF guardrail rerun recorded active
-3k RTF `0.221884` for the PR head, versus `0.120256` for the landed #3191 head
-in the same retrospective SDF audit and `0.179023` for the landed #3172 active
-peak. All rows kept the same final hash, contact count, and pair count.
+The merged FreeJoint root-integration experiment recorded RTF `0.189437` for
+the PR head, versus `0.185536` for the #3191 parent and `0.161033` for the
+#3172 baseline in that comparison run. All three rows kept the same final hash,
+contact count, and pair count.
+
+Before merging the #3193 base, the parallel surface-scan experiment recorded a
+clean post-cutoff active 3k SDF guardrail RTF `0.221884` for the PR head,
+versus `0.120256` for the landed #3191 head in the same retrospective SDF audit
+and `0.179023` for the landed #3172 active peak. All rows kept the same final
+hash, contact count, and pair count.
 
 On the original default-sleeping target command, the same current local head
 reaches RTF `74.7945` for 3000 steps with DART-native collision, advances
@@ -204,6 +217,14 @@ The local axis-plane contact-bounds experiment has passed:
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 (C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
 no-profile/profile benchmark runs above.
+
+The local FreeJoint root-integration experiment passed: `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Joints contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_Joints$'`,
+and the fresh exact issue-scene benchmark comparison rows above. The focused
+regression compares `Skeleton::integratePositions()` against the public
+stateless integration overload for identity-frame, translated-parent, and fully
+offset FreeJoint frame configurations.
 
 The local parallel surface-scan experiment has passed: `pixi run lint`,
 `cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
