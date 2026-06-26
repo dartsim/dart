@@ -708,7 +708,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
 //==============================================================================
 TEST(ConstraintSolver, ThreadedSurfacePrepassMatchesSerialForLargeBatches)
 {
-  constexpr std::size_t kNumBoxes = 520u;
+  constexpr std::size_t kNumBoxes = 1040u;
 
   const auto runCase = [](bool useNonDefaultSurfaceParams) {
     auto serialWorld = createManySingleFreeBodyContactWorld(

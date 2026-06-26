@@ -1343,6 +1343,8 @@ void ConstraintSolver::updateConstraints()
           }
         };
 
+    constexpr std::size_t kParallelDefaultSurfacePrepassMinPairs = 1024u;
+
     bool parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
     const auto canBuildDefaultContactsByPairInParallel = [&]() {
       parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
@@ -1464,9 +1466,7 @@ void ConstraintSolver::updateConstraints()
         return {recordSharedBodyIfUnique(bodyNode), false};
       };
 
-      {
-        DART_PROFILE_SCOPED_N(
-            "build contact constraints - shared-body body scan");
+      if (contactPairCounts.size() < kParallelDefaultSurfacePrepassMinPairs) {
         for (auto& contactPairCount : contactPairCounts) {
           const auto body1Check
               = checkBodyForParallelDefaultContact(contactPairCount.bodyNode1);
@@ -1477,13 +1477,30 @@ void ConstraintSolver::updateConstraints()
 
           contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
           contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
-        }
-      }
 
-      {
-        DART_PROFILE_SCOPED_N(
-            "build contact constraints - shared-body surface scan");
-        if (contactPairCounts.size() >= 512u) {
+          if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
+            needsSurfaceParamsPrepass = true;
+        }
+      } else {
+        {
+          DART_PROFILE_SCOPED_N(
+              "build contact constraints - shared-body body scan");
+          for (auto& contactPairCount : contactPairCounts) {
+            const auto body1Check = checkBodyForParallelDefaultContact(
+                contactPairCount.bodyNode1);
+            const auto body2Check = checkBodyForParallelDefaultContact(
+                contactPairCount.bodyNode2);
+            if (!body1Check.canBuild || !body2Check.canBuild)
+              return false;
+
+            contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
+            contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
+          }
+        }
+
+        {
+          DART_PROFILE_SCOPED_N(
+              "build contact constraints - shared-body surface scan");
           static thread_local std::vector<char> surfaceParamsPrepassScratch;
           surfaceParamsPrepassScratch.resize(contactPairCounts.size());
 
@@ -1516,11 +1533,6 @@ void ConstraintSolver::updateConstraints()
               needsSurfaceParamsPrepass = true;
               break;
             }
-          }
-        } else {
-          for (auto& contactPairCount : contactPairCounts) {
-            if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
-              needsSurfaceParamsPrepass = true;
           }
         }
       }
