@@ -76,6 +76,43 @@ DART-native improvements are not considered complete on this workload unless
 the evidence shows native collision ahead of all three backends on the same
 DART 6 dynamics and solver pipeline.
 
+Anti-overfitting rule: every new performance PR in this stack must include a
+real-number comparison for the baseline commit, the immediate parent, and the
+PR head on more than the single issue scene. At minimum, include the active
+3k issue scene, the default-sleeping 3k scene, one non-default-surface SDF
+scene, and one generated medium/large scene when the compared commits support
+that generated geometry. Preserve and report final-state hashes, contact
+counts, and pair counts for every row.
+
+Retrospective SDF audit across the landed issue-3056 chain used three
+sequential DART-native guardrails:
+
+- Active issue scene:
+  `.deps/gz-sim/examples/worlds/3k_shapes.sdf --steps 300 --warmup 0 --checkpoint 0 --quiet --collision dart --sdf-plane-shapes --world-threads 16 --max-contacts 12000 --max-contacts-per-pair 4 --disable-deactivation`
+- Default-sleeping issue scene: same command, but `--steps 3000` and no
+  `--disable-deactivation`.
+- Non-default-surface SDF:
+  `.deps/gz-sim/examples/worlds/diff_drive_skid.sdf --steps 3000 --warmup 0 --checkpoint 0 --quiet --collision dart --sdf-plane-shapes --world-threads 16 --max-contacts 12000 --max-contacts-per-pair 4 --disable-deactivation`
+
+All retrospective SDF rows preserved their per-scenario final hash, contact
+count, and pair count across the landed commits. The full landed-chain scan
+identified real tradeoffs that were hidden by the single issue-scene table:
+
+| Checkpoint | Active 3k RTF | Settled 3k RTF | `diff_drive_skid` RTF | Notes |
+| --- | ---: | ---: | ---: | --- |
+| #3144 parent `39aada80472` | `0.104916` | `3.59748` | `46.2657` | Start of comparable SDF audit window |
+| Best landed active row, #3172 `382254394d7` | `0.179023` | `69.0482` | `35.4684` | Active issue scene peak before later regressions |
+| Best landed settled row, #3154 `0748544d6a7` | `0.157291` | `85.8344` | `37.5185` | Settled issue scene peak |
+| Best landed non-default-surface row, #3147 `f72966f7ebf` | `0.128060` | `30.0080` | `47.7164` | `diff_drive_skid` peak |
+| Current landed #3191 `6137899a0f8` | `0.120256` | `55.8996` | `32.8497` | Only `0.67x` of best active, `0.65x` of best settled, and `0.69x` of best non-default-surface row |
+| Current #3194 head `8a42e8db747` | `0.221884` | `74.7945` | `38.1284` | Clean rerun after host build pressure cleared; recovers active and improves the two guardrails versus #3191, but does not fully recover historical settled/non-default-surface peaks |
+
+Follow-up implication: #3194 addresses the active issue-scene regression from
+the merged #3183/#3188/#3190/#3191 tail and improves the SDF guardrails versus
+the current landed head. Later follow-ups should explicitly target the remaining
+settled-scene and non-default-surface gaps instead of optimizing only the active
+3k scene.
+
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
 dynamics, deactivation disabled, `--world-threads 16`,
@@ -92,7 +129,7 @@ dynamics, deactivation disabled, `--world-threads 16`,
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
 | Local axis-plane contact-bounds experiment, no profile | DART native | `0.189566` parallel-surface parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
-| Local parallel surface-scan experiment, no profile | DART native | `0.217070` current race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local parallel surface-scan experiment, no profile | DART native | `0.221884` clean SDF guardrail rerun after raising the threaded prepass cutoff; `0.217070` earlier race-free PR-head rerun; `0.231146` pre-review shared-cache rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
 | #3183 local candidate, no profile | Bullet | `0.144310` | finite, hash `0x11fdd70a9952f98e`, contacts `5005`, pairs `3003` |
 | #3183 local candidate, no profile | ODE | `0.0100767` | finite, hash `0x2a3d53060f661c4c`, contacts `9009`, pairs `3003` |
@@ -128,13 +165,13 @@ to `268.50 ms`. The current post-rebase no-profile repeat reached RTF
 contact-construction slices.
 
 The parallel surface-scan experiment has been restacked directly on the current
-#3191 release head. The fresh race-free comparison run recorded RTF `0.217070`
-for the PR head, versus `0.189566` for the #3191 parent and `0.172600` for the
-#3172 baseline. All three rows kept the same final hash, contact count, and
-pair count.
+#3191 release head. The clean post-cutoff SDF guardrail rerun recorded active
+3k RTF `0.221884` for the PR head, versus `0.120256` for the landed #3191 head
+in the same retrospective SDF audit and `0.179023` for the landed #3172 active
+peak. All rows kept the same final hash, contact count, and pair count.
 
 On the original default-sleeping target command, the same current local head
-reaches RTF `61.1724` for 3000 steps with DART-native collision, advances
+reaches RTF `74.7945` for 3000 steps with DART-native collision, advances
 `3000 / 3000` frames, ends finite with hash `0x131b6af79a44ff90`, and has all
 `3003 / 3003` mobile skeletons resting with zero final contacts.
 
