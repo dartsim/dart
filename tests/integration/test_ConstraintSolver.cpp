@@ -542,6 +542,34 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
 }
 
 //==============================================================================
+void setManySingleFreeBodyContactSurfaceParams(
+    const std::shared_ptr<World>& world, std::size_t numBoxes)
+{
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    const auto name = "box_" + std::to_string(i);
+    auto box = world->getSkeleton(name);
+    ASSERT_NE(nullptr, box) << name;
+
+    auto* body = box->getBodyNode(0);
+    ASSERT_NE(nullptr, body) << name;
+    auto* shapeNode = body->getShapeNode(0);
+    ASSERT_NE(nullptr, shapeNode) << name;
+    auto* dynamics = shapeNode->getDynamicsAspect();
+    ASSERT_NE(nullptr, dynamics) << name;
+
+    dynamics->setPrimaryFrictionCoeff(0.75);
+    dynamics->setSecondaryFrictionCoeff(0.5);
+    dynamics->setPrimarySlipCompliance(0.005);
+    dynamics->setSecondarySlipCompliance(0.01);
+    dynamics->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+
+    auto* joint = static_cast<dynamics::FreeJoint*>(body->getParentJoint());
+    ASSERT_NE(nullptr, joint) << name;
+    joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.0, 0.0));
+  }
+}
+
+//==============================================================================
 void expectManySingleFreeBodyContactWorldsMatch(
     const std::shared_ptr<World>& expectedWorld,
     const std::shared_ptr<World>& actualWorld,
@@ -727,6 +755,36 @@ TEST(ConstraintSolver, ThreadedSurfacePrepassMatchesSerialForLargeBatches)
 
   runCase(false);
   runCase(true);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DefaultSurfaceCacheInvalidatesAfterDynamicsUpdate)
+{
+  constexpr std::size_t kNumBoxes = 192u;
+  auto cachedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
+  auto referenceWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
+
+  for (std::size_t i = 0u; i < 5u; ++i) {
+    cachedWorld->step();
+    referenceWorld->step();
+  }
+
+  ASSERT_NO_FATAL_FAILURE(
+      setManySingleFreeBodyContactSurfaceParams(cachedWorld, kNumBoxes));
+  ASSERT_NO_FATAL_FAILURE(
+      setManySingleFreeBodyContactSurfaceParams(referenceWorld, kNumBoxes));
+
+  for (std::size_t i = 0u; i < 40u; ++i)
+    cachedWorld->step();
+
+  std::thread referenceThread([&]() {
+    for (std::size_t i = 0u; i < 40u; ++i)
+      referenceWorld->step();
+  });
+  referenceThread.join();
+
+  ASSERT_NO_FATAL_FAILURE(expectManySingleFreeBodyContactWorldsMatch(
+      referenceWorld, cachedWorld, kNumBoxes));
 }
 
 //==============================================================================

@@ -1186,9 +1186,23 @@ void ConstraintSolver::updateConstraints()
     struct DefaultSurfaceCacheEntry
     {
       const dynamics::ShapeNode* shapeNode{nullptr};
+      std::size_t shapeNodeVersion{std::numeric_limits<std::size_t>::max()};
+      std::size_t updateEpoch{0u};
       bool hasDefaultProperties{false};
     };
-    std::array<DefaultSurfaceCacheEntry, 256u> defaultSurfaceCache{};
+    static thread_local std::array<DefaultSurfaceCacheEntry, 8192u>
+        defaultSurfaceCache{};
+    static thread_local std::size_t defaultSurfaceCacheEpoch = 0u;
+    ++defaultSurfaceCacheEpoch;
+    // LCOV_EXCL_START: requires wrapping size_t solver-update epochs.
+    if (defaultSurfaceCacheEpoch == 0u) {
+      std::fill(
+          defaultSurfaceCache.begin(),
+          defaultSurfaceCache.end(),
+          DefaultSurfaceCacheEntry{});
+      ++defaultSurfaceCacheEpoch;
+    }
+    // LCOV_EXCL_STOP
 
     const auto queryDefaultContactSurfacePropertiesUncached
         = [&](const dynamics::ShapeNode* shapeNode) {
@@ -1210,24 +1224,48 @@ void ConstraintSolver::updateConstraints()
                           < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
           };
 
-    const auto queryDefaultContactSurfaceProperties =
-        [&](const dynamics::ShapeNode* shapeNode) {
-          if (shapeNode == nullptr)
-            return false;
+    const auto queryDefaultContactSurfaceProperties
+        = [&](const dynamics::ShapeNode* shapeNode) {
+            if (shapeNode == nullptr)
+              return false;
 
-          const auto shapeNodeKey
-              = reinterpret_cast<std::uintptr_t>(shapeNode) >> 4u;
-          auto& entry
-              = defaultSurfaceCache[shapeNodeKey % defaultSurfaceCache.size()];
-          if (entry.shapeNode == shapeNode)
-            return entry.hasDefaultProperties;
+            const auto shapeNodeVersion = shapeNode->getVersion();
+            auto shapeNodeKey = static_cast<std::uint64_t>(
+                reinterpret_cast<std::uintptr_t>(shapeNode) >> 4u);
+            shapeNodeKey ^= shapeNodeKey >> 33u;
+            shapeNodeKey *= 0xff51afd7ed558ccdULL;
+            shapeNodeKey ^= shapeNodeKey >> 33u;
+            auto& entry = defaultSurfaceCache
+                [static_cast<std::size_t>(shapeNodeKey)
+                 % defaultSurfaceCache.size()];
+            if (entry.updateEpoch == defaultSurfaceCacheEpoch
+                && entry.shapeNode == shapeNode
+                && entry.shapeNodeVersion == shapeNodeVersion) {
+              return entry.hasDefaultProperties;
+            }
 
-          const bool hasDefaultProperties
-              = queryDefaultContactSurfacePropertiesUncached(shapeNode);
+            const auto* dynamicAspect = shapeNode->getDynamicsAspect();
+            const bool hasDefaultProperties
+                = dynamicAspect != nullptr
+                  && dynamicAspect->getRestitutionCoeff()
+                         == DART_DEFAULT_RESTITUTION_COEFF
+                  && dynamicAspect->getPrimaryFrictionCoeff()
+                         == DART_DEFAULT_FRICTION_COEFF
+                  && dynamicAspect->getSecondaryFrictionCoeff()
+                         == DART_DEFAULT_FRICTION_COEFF
+                  && dynamicAspect->getPrimarySlipCompliance() == -1.0
+                  && dynamicAspect->getSecondarySlipCompliance() == -1.0
+                  && dynamicAspect->getFirstFrictionDirectionFrame() == nullptr
+                  && dynamicAspect->getFirstFrictionDirection().squaredNorm()
+                         < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
 
-          entry = {shapeNode, hasDefaultProperties};
-          return hasDefaultProperties;
-        };
+            entry
+                = {shapeNode,
+                   shapeNodeVersion,
+                   defaultSurfaceCacheEpoch,
+                   hasDefaultProperties};
+            return hasDefaultProperties;
+          };
     const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
     const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
     bool lastContactShapeNode1HasDefaultProperties = false;
@@ -1467,19 +1505,29 @@ void ConstraintSolver::updateConstraints()
       };
 
       if (contactPairCounts.size() < kParallelDefaultSurfacePrepassMinPairs) {
-        for (auto& contactPairCount : contactPairCounts) {
-          const auto body1Check
-              = checkBodyForParallelDefaultContact(contactPairCount.bodyNode1);
-          const auto body2Check
-              = checkBodyForParallelDefaultContact(contactPairCount.bodyNode2);
-          if (!body1Check.canBuild || !body2Check.canBuild)
-            return false;
+        {
+          DART_PROFILE_SCOPED_N(
+              "build contact constraints - shared-body body scan");
+          for (auto& contactPairCount : contactPairCounts) {
+            const auto body1Check = checkBodyForParallelDefaultContact(
+                contactPairCount.bodyNode1);
+            const auto body2Check = checkBodyForParallelDefaultContact(
+                contactPairCount.bodyNode2);
+            if (!body1Check.canBuild || !body2Check.canBuild)
+              return false;
 
-          contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
-          contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
+            contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
+            contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
+          }
+        }
 
-          if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
-            needsSurfaceParamsPrepass = true;
+        {
+          DART_PROFILE_SCOPED_N(
+              "build contact constraints - shared-body surface scan");
+          for (auto& contactPairCount : contactPairCounts) {
+            if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
+              needsSurfaceParamsPrepass = true;
+          }
         }
       } else {
         {
