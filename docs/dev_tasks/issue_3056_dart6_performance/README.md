@@ -105,7 +105,7 @@ identified real tradeoffs that were hidden by the single issue-scene table:
 | Best landed settled row, #3154 `0748544d6a7` | `0.157291` | `85.8344` | `37.5185` | Settled issue scene peak |
 | Best landed non-default-surface row, #3147 `f72966f7ebf` | `0.128060` | `30.0080` | `47.7164` | `diff_drive_skid` peak |
 | Current landed #3191 `6137899a0f8` | `0.120256` | `55.8996` | `32.8497` | Only `0.67x` of best active, `0.65x` of best settled, and `0.69x` of best non-default-surface row |
-| Current #3194 head `8a42e8db747` | `0.221884` | `74.7945` | `38.1284` | Clean rerun after host build pressure cleared; recovers active and improves the two guardrails versus #3191, but does not fully recover historical settled/non-default-surface peaks |
+| Current #3194 branch `bec682c9655` | `0.221884` | `74.7945` | `38.1284` | Clean rerun after host build pressure cleared on code commit `8a42e8db747`; the branch head only records this audit. Recovers active and improves the two guardrails versus #3191, but does not fully recover historical settled/non-default-surface peaks |
 
 Follow-up implication: #3194 addresses the active issue-scene regression from
 the merged #3183/#3188/#3190/#3191 tail and improves the SDF guardrails versus
