@@ -2,7 +2,8 @@ set(target_name ${PROJECT_NAME}-external-imgui)
 set(component_name external-imgui)
 set(component_dependency_packages OpenGL)
 
-set(imgui_header_names
+set(
+  imgui_header_names
   imconfig.h
   imgui.h
   imgui_internal.h
@@ -18,11 +19,13 @@ function(dart_find_imgui_header out_var header_name)
       continue()
     endif()
 
-    foreach(candidate_dir
-        "${search_dir}"
-        "${search_dir}/imgui"
-        "${search_dir}/imgui/backends"
-        "${search_dir}/backends")
+    foreach(
+      candidate_dir
+      "${search_dir}"
+      "${search_dir}/imgui"
+      "${search_dir}/imgui/backends"
+      "${search_dir}/backends"
+    )
       if(EXISTS "${candidate_dir}/${header_name}")
         set(${out_var} "${candidate_dir}/${header_name}" PARENT_SCOPE)
         return()
@@ -32,7 +35,8 @@ function(dart_find_imgui_header out_var header_name)
 
   string(MAKE_C_IDENTIFIER "${header_name}" header_cache_name)
   set(resolved_header_var "resolved_${header_cache_name}")
-  find_file(${resolved_header_var}
+  find_file(
+    ${resolved_header_var}
     NAMES "${header_name}"
     PATH_SUFFIXES imgui imgui/backends backends
   )
@@ -49,11 +53,13 @@ function(dart_try_find_imgui_header out_var header_name)
       continue()
     endif()
 
-    foreach(candidate_dir
-        "${search_dir}"
-        "${search_dir}/imgui"
-        "${search_dir}/imgui/backends"
-        "${search_dir}/backends")
+    foreach(
+      candidate_dir
+      "${search_dir}"
+      "${search_dir}/imgui"
+      "${search_dir}/imgui/backends"
+      "${search_dir}/backends"
+    )
       if(EXISTS "${candidate_dir}/${header_name}")
         set(${out_var} "${candidate_dir}/${header_name}" PARENT_SCOPE)
         return()
@@ -70,21 +76,23 @@ function(dart_find_imgui_source out_var source_name)
       continue()
     endif()
 
-    foreach(candidate_dir
-        "${search_dir}"
-        "${search_dir}/imgui"
-        "${search_dir}/imgui/backends"
-        "${search_dir}/backends"
-        "${search_dir}/../share/imgui"
-        "${search_dir}/../share/imgui/backends"
-        "${search_dir}/../share/imgui/examples"
-        "${search_dir}/../share/imgui/examples/backends"
-        "${search_dir}/../share/doc/imgui/examples"
-        "${search_dir}/../share/doc/imgui/examples/backends"
-        "${search_dir}/../share/doc/libimgui-dev/examples/backends"
-        "${search_dir}/../../share/doc/imgui/examples"
-        "${search_dir}/../../share/doc/imgui/examples/backends"
-        "${search_dir}/../../share/doc/libimgui-dev/examples/backends")
+    foreach(
+      candidate_dir
+      "${search_dir}"
+      "${search_dir}/imgui"
+      "${search_dir}/imgui/backends"
+      "${search_dir}/backends"
+      "${search_dir}/../share/imgui"
+      "${search_dir}/../share/imgui/backends"
+      "${search_dir}/../share/imgui/examples"
+      "${search_dir}/../share/imgui/examples/backends"
+      "${search_dir}/../share/doc/imgui/examples"
+      "${search_dir}/../share/doc/imgui/examples/backends"
+      "${search_dir}/../share/doc/libimgui-dev/examples/backends"
+      "${search_dir}/../../share/doc/imgui/examples"
+      "${search_dir}/../../share/doc/imgui/examples/backends"
+      "${search_dir}/../../share/doc/libimgui-dev/examples/backends"
+    )
       if(EXISTS "${candidate_dir}/${source_name}")
         set(${out_var} "${candidate_dir}/${source_name}" PARENT_SCOPE)
         return()
@@ -94,7 +102,8 @@ function(dart_find_imgui_source out_var source_name)
 
   string(MAKE_C_IDENTIFIER "${source_name}" source_cache_name)
   set(resolved_source_var "resolved_${source_cache_name}")
-  find_file(${resolved_source_var}
+  find_file(
+    ${resolved_source_var}
     NAMES "${source_name}"
     HINTS ${ARGN}
     PATH_SUFFIXES
@@ -130,20 +139,24 @@ endfunction()
 
 function(dart_patch_imgui_opengl2_backend out_var source_path)
   file(READ "${source_path}" imgui_opengl2_contents)
-  string(FIND
-    "${imgui_opengl2_contents}"
+  string(
+    FIND "${imgui_opengl2_contents}"
     "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
     imgui_opengl2_push_marker
   )
-  string(FIND
-    "${imgui_opengl2_contents}"
+  string(
+    FIND "${imgui_opengl2_contents}"
     "glPopClientAttrib()"
     imgui_opengl2_pop_marker
   )
 
   if(imgui_opengl2_push_marker EQUAL -1)
-    message(STATUS "Applying DART ImGui OpenGL2 client-state patch: ${source_path}")
-    string(REPLACE
+    message(
+      STATUS
+      "Applying DART ImGui OpenGL2 client-state patch: ${source_path}"
+    )
+    string(
+      REPLACE
       "    glEnableClientState(GL_VERTEX_ARRAY);"
       "    glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY);\n    glEnableClientState(GL_VERTEX_ARRAY);"
       imgui_opengl2_contents
@@ -151,7 +164,8 @@ function(dart_patch_imgui_opengl2_backend out_var source_path)
     )
   endif()
   if(imgui_opengl2_pop_marker EQUAL -1)
-    string(REPLACE
+    string(
+      REPLACE
       "    glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);"
       "    glPopClientAttrib();\n    glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);"
       imgui_opengl2_contents
@@ -159,13 +173,13 @@ function(dart_patch_imgui_opengl2_backend out_var source_path)
     )
   endif()
 
-  string(FIND
-    "${imgui_opengl2_contents}"
+  string(
+    FIND "${imgui_opengl2_contents}"
     "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
     imgui_opengl2_push_marker
   )
-  string(FIND
-    "${imgui_opengl2_contents}"
+  string(
+    FIND "${imgui_opengl2_contents}"
     "glPopClientAttrib()"
     imgui_opengl2_pop_marker
   )
@@ -193,7 +207,10 @@ function(dart_configure_imgui_compat_headers out_var)
       "${imgui_compat_header_dir}/${imgui_header_name}"
       COPYONLY
     )
-    list(APPEND compat_headers "${imgui_compat_header_dir}/${imgui_header_name}")
+    list(
+      APPEND compat_headers
+      "${imgui_compat_header_dir}/${imgui_header_name}"
+    )
   endforeach()
 
   set(${out_var} ${compat_headers} PARENT_SCOPE)
@@ -212,31 +229,31 @@ macro(dart_try_find_system_imgui)
       pkg_check_modules(PC_imgui imgui QUIET)
     endif()
 
-    find_path(_dart_imgui_include_dir
+    find_path(
+      _dart_imgui_include_dir
       NAMES imgui.h
       HINTS ${PC_imgui_INCLUDEDIR}
       PATHS
         "${CMAKE_INSTALL_PREFIX}/include"
         "${CMAKE_INSTALL_PREFIX}/include/imgui"
     )
-    find_path(_dart_imgui_backends_include_dir
+    find_path(
+      _dart_imgui_backends_include_dir
       NAMES imgui_impl_opengl2.h
-      HINTS
-        ${PC_imgui_INCLUDEDIR}
-        ${PC_imgui_INCLUDEDIR}/backends
+      HINTS ${PC_imgui_INCLUDEDIR} ${PC_imgui_INCLUDEDIR}/backends
       PATHS
         "${CMAKE_INSTALL_PREFIX}/include"
         "${CMAKE_INSTALL_PREFIX}/include/imgui/backends"
     )
-    find_library(_dart_imgui_library
-      NAMES imgui
-      HINTS ${PC_imgui_LIBDIR}
-    )
+    find_library(_dart_imgui_library NAMES imgui HINTS ${PC_imgui_LIBDIR})
 
-    if(_dart_imgui_include_dir
-        AND _dart_imgui_backends_include_dir
-        AND _dart_imgui_library)
-      set(imgui_INCLUDE_DIRS
+    if(
+      _dart_imgui_include_dir
+      AND _dart_imgui_backends_include_dir
+      AND _dart_imgui_library
+    )
+      set(
+        imgui_INCLUDE_DIRS
         ${_dart_imgui_include_dir}
         ${_dart_imgui_backends_include_dir}
       )
@@ -247,9 +264,11 @@ macro(dart_try_find_system_imgui)
 
   if(imgui_FOUND AND NOT TARGET imgui::imgui)
     add_library(imgui::imgui INTERFACE IMPORTED)
-    set_target_properties(imgui::imgui PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
+    set_target_properties(
+      imgui::imgui
+      PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${imgui_INCLUDE_DIRS}"
+        INTERFACE_LINK_LIBRARIES "${imgui_LIBRARIES}"
     )
   endif()
 endmacro()
@@ -277,7 +296,9 @@ if(DART_USE_SYSTEM_IMGUI)
 
   set(imgui_header_search_dirs ${imgui_INCLUDE_DIRS})
   get_target_property(
-    imgui_target_include_dirs imgui::imgui INTERFACE_INCLUDE_DIRECTORIES
+    imgui_target_include_dirs
+    imgui::imgui
+    INTERFACE_INCLUDE_DIRECTORIES
   )
   if(imgui_target_include_dirs)
     list(APPEND imgui_header_search_dirs ${imgui_target_include_dirs})
@@ -295,10 +316,15 @@ if(DART_USE_SYSTEM_IMGUI)
     endif()
   endforeach()
   if(imgui_missing_compat_headers AND NOT DART_BUILD_GUI_OSG)
-    string(REPLACE ";" ", " imgui_missing_compat_headers_text
+    string(
+      REPLACE
+      ";"
+      ", "
+      imgui_missing_compat_headers_text
       "${imgui_missing_compat_headers}"
     )
-    message(STATUS
+    message(
+      STATUS
       "Skipping dart-external-imgui: system ImGui compatibility headers were "
       "not found (${imgui_missing_compat_headers_text})"
     )
@@ -308,8 +334,12 @@ if(DART_USE_SYSTEM_IMGUI)
   dart_configure_imgui_compat_headers(
     imgui_compat_headers ${imgui_header_search_dirs}
   )
-  set(imgui_compat_source "${CMAKE_CURRENT_BINARY_DIR}/external_imgui_compat.cpp")
-  file(WRITE "${imgui_compat_source}"
+  set(
+    imgui_compat_source
+    "${CMAKE_CURRENT_BINARY_DIR}/external_imgui_compat.cpp"
+  )
+  file(
+    WRITE "${imgui_compat_source}"
     "namespace dart_external_imgui { void keep_component() {} }\n"
   )
 
@@ -346,7 +376,8 @@ if(DART_USE_SYSTEM_IMGUI)
 
   if(NOT DART_SYSTEM_IMGUI_HAS_OPENGL2_BACKEND)
     if(NOT DART_BUILD_GUI_OSG)
-      message(STATUS
+      message(
+        STATUS
         "Skipping dart-external-imgui: system ImGui OpenGL2 backend was not found"
       )
       return()
@@ -365,10 +396,9 @@ if(DART_USE_SYSTEM_IMGUI)
   endif()
 
   dart_add_library(${target_name} ${imgui_compat_sources} ${imgui_compat_headers})
-  target_include_directories(${target_name}
-    PUBLIC
-      $<BUILD_INTERFACE:${DART_BINARY_DIR}>
-      $<INSTALL_INTERFACE:include>
+  target_include_directories(
+    ${target_name}
+    PUBLIC $<BUILD_INTERFACE:${DART_BINARY_DIR}> $<INSTALL_INTERFACE:include>
   )
   target_link_libraries(${target_name} PUBLIC imgui::imgui OpenGL::GL)
 else()
@@ -384,7 +414,7 @@ else()
 
   include(FetchContent)
 
-  set(IMGUI_TARGET_VERSION "v1.91.9")
+  set(IMGUI_TARGET_VERSION "v1.92.8")
   message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
   FetchContent_Declare(
@@ -392,7 +422,8 @@ else()
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG ${IMGUI_TARGET_VERSION}
     GIT_SHALLOW TRUE
-    SOURCE_DIR "${DART_BINARY_DIR}/_deps/imgui-src"
+    SOURCE_DIR
+    "${DART_BINARY_DIR}/_deps/imgui-src"
   )
 
   FetchContent_GetProperties(dart_imgui)
@@ -401,9 +432,7 @@ else()
   endif()
 
   find_package(Git REQUIRED)
-  set(imgui_patch_files
-    "${CMAKE_CURRENT_LIST_DIR}/../imgui_patches/dart-compat.patch"
-  )
+  set(imgui_patch_files "${CMAKE_CURRENT_LIST_DIR}/dart-compat.patch")
   foreach(imgui_patch IN LISTS imgui_patch_files)
     execute_process(
       COMMAND
@@ -416,7 +445,9 @@ else()
     if(imgui_patch_check_result EQUAL 0)
       message(STATUS "Applying DART ImGui compatibility patch: ${imgui_patch}")
       execute_process(
-        COMMAND "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply "${imgui_patch}"
+        COMMAND
+          "${GIT_EXECUTABLE}" -C "${dart_imgui_SOURCE_DIR}" apply
+          "${imgui_patch}"
         RESULT_VARIABLE imgui_patch_result
         OUTPUT_VARIABLE imgui_patch_output
         ERROR_VARIABLE imgui_patch_error
@@ -429,54 +460,63 @@ else()
       endif()
     else()
       file(READ "${dart_imgui_SOURCE_DIR}/imgui_draw.cpp" imgui_draw_contents)
-      file(READ "${dart_imgui_SOURCE_DIR}/imgui_internal.h" imgui_internal_contents)
-      file(READ "${dart_imgui_SOURCE_DIR}/imgui_widgets.cpp" imgui_widgets_contents)
-      file(READ
-        "${dart_imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
+      file(
+        READ "${dart_imgui_SOURCE_DIR}/imgui_internal.h"
+        imgui_internal_contents
+      )
+      file(
+        READ "${dart_imgui_SOURCE_DIR}/imgui_widgets.cpp"
+        imgui_widgets_contents
+      )
+      file(
+        READ "${dart_imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp"
         imgui_opengl2_contents
       )
-      string(FIND
-        "${imgui_draw_contents}"
+      string(
+        FIND "${imgui_draw_contents}"
         "Guard against null/empty input (issue #2516)"
         imgui_draw_ttf_patch_marker
       )
-      string(FIND
-        "${imgui_draw_contents}"
+      string(
+        FIND "${imgui_draw_contents}"
         "Guard against null/empty input to prevent SEGV in stb_decompress (issue #2516)"
         imgui_draw_compressed_ttf_patch_marker
       )
-      string(FIND
-        "${imgui_draw_contents}"
+      string(
+        FIND "${imgui_draw_contents}"
         "Guard against null input (issue #2516)"
         imgui_draw_base85_patch_marker
       )
-      string(FIND
-        "${imgui_internal_contents}"
+      string(
+        FIND "${imgui_internal_contents}"
         "IMGUI_INTERNAL_FORMAT_API"
         imgui_internal_patch_marker
       )
-      string(FIND
-        "${imgui_widgets_contents}"
+      string(
+        FIND "${imgui_widgets_contents}"
         "issue #2668"
         imgui_widgets_patch_marker
       )
-      string(FIND
-        "${imgui_opengl2_contents}"
+      string(
+        FIND "${imgui_opengl2_contents}"
         "glPushClientAttrib(GL_VERTEX_ARRAY | GL_TEXTURE_COORD_ARRAY | GL_COLOR_ARRAY)"
         imgui_opengl2_patch_marker
       )
-      if(imgui_draw_ttf_patch_marker EQUAL -1
-          OR imgui_draw_compressed_ttf_patch_marker EQUAL -1
-          OR imgui_draw_base85_patch_marker EQUAL -1
-          OR imgui_internal_patch_marker EQUAL -1
-          OR imgui_widgets_patch_marker EQUAL -1
-          OR imgui_opengl2_patch_marker EQUAL -1)
+      if(
+        imgui_draw_ttf_patch_marker EQUAL -1
+        OR imgui_draw_compressed_ttf_patch_marker EQUAL -1
+        OR imgui_draw_base85_patch_marker EQUAL -1
+        OR imgui_internal_patch_marker EQUAL -1
+        OR imgui_widgets_patch_marker EQUAL -1
+        OR imgui_opengl2_patch_marker EQUAL -1
+      )
         message(FATAL_ERROR "DART ImGui patch is incompatible: ${imgui_patch}")
       endif()
     endif()
   endforeach()
 
-  set(imgui_core_sources
+  set(
+    imgui_core_sources
     "${dart_imgui_SOURCE_DIR}/imgui.cpp"
     "${dart_imgui_SOURCE_DIR}/imgui_draw.cpp"
     "${dart_imgui_SOURCE_DIR}/imgui_tables.cpp"
@@ -490,7 +530,8 @@ else()
   )
 
   dart_add_library(${target_name} ${imgui_core_sources} ${imgui_compat_headers})
-  target_include_directories(${target_name}
+  target_include_directories(
+    ${target_name}
     PUBLIC
       $<BUILD_INTERFACE:${DART_BINARY_DIR}>
       $<BUILD_INTERFACE:${dart_imgui_SOURCE_DIR}>
@@ -508,7 +549,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(${target_name} PRIVATE -w)
 endif()
 if(NOT DART_USE_SYSTEM_IMGUI)
-  target_compile_definitions(${target_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+  target_compile_definitions(
+    ${target_name}
+    PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+  )
 endif()
 
 add_component(${PROJECT_NAME} ${component_name})

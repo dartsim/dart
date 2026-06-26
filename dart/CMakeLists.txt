@@ -1,5 +1,3 @@
-add_subdirectory(external)
-
 # Enable multi-threaded compilation.
 # We do this here and not in the root folder since the examples and the
 # tutorials do not have enough source files to benefit from this.
