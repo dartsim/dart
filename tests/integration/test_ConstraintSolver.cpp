@@ -734,6 +734,30 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ThreadedSurfacePrepassMatchesSerialForLargeBatches)
+{
+  constexpr std::size_t kNumBoxes = 1040u;
+
+  const auto runCase = [](bool useNonDefaultSurfaceParams) {
+    auto serialWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 1u, useNonDefaultSurfaceParams);
+    auto threadedWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 4u, useNonDefaultSurfaceParams);
+
+    for (std::size_t i = 0u; i < 6u; ++i) {
+      serialWorld->step();
+      threadedWorld->step();
+    }
+
+    ASSERT_NO_FATAL_FAILURE(expectManySingleFreeBodyContactWorldsMatch(
+        serialWorld, threadedWorld, kNumBoxes));
+  };
+
+  runCase(false);
+  runCase(true);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, DefaultSurfaceCacheInvalidatesAfterDynamicsUpdate)
 {
   constexpr std::size_t kNumBoxes = 192u;
