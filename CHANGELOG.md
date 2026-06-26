@@ -135,6 +135,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
+- Fixed per-DoF actuator override storage in `JointProperties` so worlds can
+  create and destroy joint properties across translation-unit and
+  shared-library boundaries without heap corruption (the override map is now a
+  sorted, compact vector of index/type pairs).
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional

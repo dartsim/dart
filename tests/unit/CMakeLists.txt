@@ -230,6 +230,7 @@ dart_add_test("unit" UNIT_constraint_NonFiniteContact constraint/test_nonfinite_
 # Dynamics Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
+dart_add_test("unit" UNIT_dynamics_Joint dynamics/test_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_BallJoint dynamics/test_ball_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_UniversalJoint dynamics/test_universal_joint.cpp)
