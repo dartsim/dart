@@ -4,20 +4,14 @@
 
 Bottom line: #3129, #3133, #3135, #3139, #3140, #3141, #3142, #3143,
 #3144, #3146, #3147, #3148, #3149, #3150, #3151, #3152, #3153, #3154,
-#3170, #3171, #3172, and #3183 are merged. There are no open performance PRs.
-The active PR-ready local slice is `perf/dart6-contact-pair-metadata-cache`,
-rebuilt directly on the merged `release-6.20` head. The further local-only
-experiment, `perf/dart6-contact-pair-skip-flags`, is stacked above that slice
-and must stay unpublished until the metadata-cache PR lands separately. The
-next local-only branch, `perf/dart6-axis-plane-contact-bounds`, is stacked
-above skip-flags and must remain unpublished until the earlier slices land in
-order. The latest local-only branch,
-`perf/dart6-default-surface-version-cache`, is stacked above the axis-plane
-slice and must also remain unpublished until the earlier slices land in order.
-Remaining local follow-up slices must also stay unpublished until each is ready
-to publish directly against `release-6.20`; do not open them against another PR
-branch. Opening stacked PRs against parent PR branches lets GitHub close or
-supersede child PRs when the parent branch is merged or deleted.
+#3170, #3171, #3172, #3183, #3188, #3190, #3191, and #3193 are merged.
+#3192 and #3194 remain open performance PRs. The current local branch is
+`perf/dart6-default-surface-version-cache`, rebuilt directly on the merged
+`release-6.20` head. Remaining local follow-up slices must stay unpublished
+until each is ready to publish directly against `release-6.20`; do not open
+them against another PR branch. Opening stacked PRs against parent PR branches
+lets GitHub close or supersede child PRs when the parent branch is merged or
+deleted.
 
 The merged #3172 slice adds a narrow native broadphase setup fast path.
 DART-native collision objects cache local bounds center/half-extents when their
@@ -55,14 +49,21 @@ axis to the plane point. The proof also stores only projected min/max bounds in
 scratch instead of copying full broadphase entries through the sort. Non-axis
 planes keep the original corner-projection path.
 
-The newest local solver follow-up keeps the per-step `ContactPairCount` surface
-decision cache, then extends the lower-level default-surface-property cache into
-a larger thread-local, versioned direct-mapped cache. Each entry keys on the
-`ShapeNode` pointer and `ShapeNode::getVersion()`, so friction, slip,
-restitution, or friction-direction updates invalidate cached default-material
-decisions while steady-state default scenes avoid repeated dynamics-aspect
-queries. The branch also splits the shared-body profiling scope into body-scan
-and surface-scan subscopes.
+The merged #3193 integration follow-up narrows `FreeJoint` hot paths for the
+root-joint shape used by the SDF issue scene: identity child joint frames and
+translation-only parent model poses. Position integration, relative-transform
+refresh, and relative-Jacobian refresh skip the general child-frame inverse and
+full transform products in those cases. Non-identity child joint frames and
+rotated parent joint frames keep the general path.
+
+The current local solver follow-up keeps the per-step `ContactPairCount`
+surface decision cache, then extends the lower-level default-surface-property
+cache into a larger thread-local, versioned direct-mapped cache. Each entry
+keys on the `ShapeNode` pointer and `ShapeNode::getVersion()`, so friction,
+slip, restitution, or friction-direction updates invalidate cached
+default-material decisions while steady-state default scenes avoid repeated
+dynamics-aspect queries. The branch also splits the shared-body profiling scope
+into body-scan and surface-scan subscopes.
 
 The #3183 candidate folds default contact-surface parameter
 initialization into the existing per-pair parallel default-contact rebuild. The
@@ -82,6 +83,14 @@ DART-native improvements are not considered complete on this workload unless
 the evidence shows native collision ahead of all three backends on the same
 DART 6 dynamics and solver pipeline.
 
+Anti-overfitting rule: every new performance PR in this stack must include a
+real-number comparison for the baseline commit, the immediate parent, and the
+PR head on more than the single issue scene. At minimum, include the active
+3k issue scene, the default-sleeping 3k scene, one non-default-surface SDF
+scene, and one generated medium/large scene when the compared commits support
+that generated geometry. Preserve and report final-state hashes, contact
+counts, and pair counts for every row.
+
 Active issue-scene evidence,
 `.deps/gz-sim/examples/worlds/3k_shapes.sdf`, DART-native collision, DART 6
 dynamics, deactivation disabled, `--world-threads 16`,
@@ -89,15 +98,16 @@ dynamics, deactivation disabled, `--world-threads 16`,
 
 | Run | Collision backend | RTF | Final state |
 | --- | --- | ---: | --- |
-| #3172 merged baseline, no profile | DART native | `0.179381` | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
+| #3172 merged baseline, no profile | DART native | `0.161033` FreeJoint comparison rerun; `0.179381` prior rerun | finite, hash `0x6a043ac1e7558218`, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, no profile | DART native | `0.127794` | finite, same hash, contacts `5005`, pairs `3003` |
 | #3183 head `0b158d44126`, text profile | DART native | `0.128960` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `605.13 ms`, `shared-body check` `388.96 ms`, `parallel reset` `108.10 ms`, `solveConstrainedGroups` `318.56 ms`, `collide` `477.22 ms` |
 | Metadata-cache candidate rebased on #3185 base, no profile | DART native | `0.186148`; pre-#3184 rerun `0.182836`; earlier repeats `0.202726`, `0.187945`, `0.204494`, `0.204368`, `0.212991`, `0.195666` | finite, same hash, contacts `5005`, pairs `3003` |
 | Metadata-cache candidate rebased on #3185 base, text profile | DART native | `0.185689`; pre-#3184 rerun `0.203355` | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `266.09 ms`, `shared-body check` `150.77 ms`, `parallel reset` `74.14 ms`, `solveConstrainedGroups` `271.31 ms`, `collide` `377.69 ms` |
 | Local skip-flags/body-set experiment, no profile | DART native | `0.192959` current rerun; `0.196971`, `0.196594` post-rebase reruns; `0.185274` retained-bucket rerun; `0.213820`, `0.215162`, `0.199266`, `0.198770` prior repeats | finite, same hash, contacts `5005`, pairs `3003` |
 | Local skip-flags/body-set experiment, text profile | DART native | `0.171489` current noisy rerun; `0.205666` retained-bucket rerun; `0.189984`, `0.165932` noisy reruns; `0.212505`, `0.215980` prior runs | finite, same hash, contacts `5005`, pairs `3003`; current `build contact constraints` `307.89 ms`, `shared-body check` `193.68 ms`, `parallel reset` `73.30 ms`, `solveConstrainedGroups` `283.68 ms`, `collide` `406.00 ms`; retained-bucket profile had `build contact constraints` `239.58 ms`, `shared-body check` `138.92 ms`, `parallel reset` `68.59 ms` |
-| Local axis-plane contact-bounds experiment, no profile | DART native | `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
+| Local axis-plane contact-bounds experiment, no profile | DART native | `0.185536` FreeJoint parent comparison rerun; `0.203003` current post-rebase rerun; `0.223206` compact-bound rerun; `0.213167` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local axis-plane contact-bounds experiment, text profile | DART native | `0.227034` compact-bound rerun; `0.207763` prior axis-only rerun | finite, same hash, contacts `5005`, pairs `3003`; latest projected contact-bound separation `16.32 ms`, finite-plane pairs `113.66 ms`, `collide` `268.50 ms`, `build contact constraints` `225.11 ms`, `solveConstrainedGroups` `245.09 ms` |
+| Local FreeJoint root-integration experiment, no profile | DART native | `0.189437` direct PR-head comparison rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local default-surface version-cache experiment, no profile | DART native | `0.181107` fresh comparison rerun; `0.173761` immediate repeat; `0.205759` earlier post-review-fix rerun; `0.209501` post-rebase rerun; `0.230490` prior rerun | finite, same hash, contacts `5005`, pairs `3003` |
 | Local default-surface version-cache experiment, text profile | DART native | `0.227376` | finite, same hash, contacts `5005`, pairs `3003`; `build contact constraints` `183.10 ms`, `shared-body check` `85.97 ms`, `shared-body surface scan` `54.71 ms`, `shared-body body scan` `26.36 ms`, `parallel reset` `65.45 ms`, `collide` `278.13 ms` |
 | #3183 local candidate, no profile | FCL primitive | `0.145341` | finite, hash `0x6088ea0177efa6a`, contacts `3003`, pairs `3003` |
@@ -133,6 +143,11 @@ cutting the projected contact-bound separation proof from the prior local
 to `268.50 ms`. The current post-rebase no-profile repeat reached RTF
 `0.203003`. Treat this as a later collision follow-up after the
 contact-construction slices.
+
+The merged FreeJoint root-integration experiment recorded RTF `0.189437` for
+the PR head, versus `0.185536` for the #3191 parent and `0.161033` for the
+#3172 baseline in that comparison run. All three rows kept the same final hash,
+contact count, and pair count.
 
 The default-surface version-cache experiment keeps the same final hash, contact
 count, and pair count while reducing the measured surface portion of the
@@ -180,15 +195,23 @@ The local axis-plane contact-bounds experiment has passed:
 (C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
 no-profile/profile benchmark runs above.
 
+The local FreeJoint root-integration experiment passed: `pixi run lint`,
+`cmake --build build/default/cpp/Release --parallel 5 --target test_Joints contact_benchmark`,
+`ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_Joints$'`,
+and the fresh exact issue-scene benchmark comparison rows above. The focused
+regression compares `Skeleton::integratePositions()` against the public
+stateless integration overload for identity-frame, translated-parent, and fully
+offset FreeJoint frame configurations.
+
 The local default-surface version-cache experiment has passed: `pixi run lint`,
 `cmake --build build/default/cpp/Release --parallel 5 --target test_ConstraintSolver contact_benchmark`,
 `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_ConstraintSolver$'`,
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 (C++ tests `115/115`, Python tests `60/60`), and the exact issue-scene
-no-profile/profile benchmark runs above. The focused
-solver regression heats the default-surface cache, mutates the contact dynamics,
-and verifies the versioned cache tracks the same state as a cold-cache reference
-after the mutation.
+no-profile/profile benchmark runs above. The focused solver regression heats
+the default-surface cache, mutates the contact dynamics, and verifies the
+versioned cache tracks the same state as a cold-cache reference after the
+mutation.
 
 An earlier fixed-support contact-build relaxation crashed because the parallel
 worker indexed `thread_local` contact-pair scratch storage from the worker
