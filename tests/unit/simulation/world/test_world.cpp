@@ -1114,7 +1114,8 @@ template <typename ConfigureScene>
 HeapAllocationSnapshot countRawHeapAllocationsDuringFirstPostBakeSteps(
     std::string_view scene,
     ConfigureScene&& configureScene,
-    bool requireInitialContact = false)
+    bool requireInitialContact = false,
+    int postBakeSteps = 4)
 {
   namespace sx = dart::simulation;
 
@@ -1128,7 +1129,7 @@ HeapAllocationSnapshot countRawHeapAllocationsDuringFirstPostBakeSteps(
   world.enterSimulationMode();
 
   ScopedRawHeapAllocationCounter rawCounter;
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < postBakeSteps; ++i) {
     world.step();
   }
   rawCounter.stop();
@@ -1140,13 +1141,15 @@ template <typename ConfigureScene>
 void expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
     std::string_view scene,
     ConfigureScene&& configureScene,
-    bool requireInitialContact = false)
+    bool requireInitialContact = false,
+    int postBakeSteps = 4)
 {
   SCOPED_TRACE(scene);
   const auto rawCounter = countRawHeapAllocationsDuringFirstPostBakeSteps(
       scene,
       std::forward<ConfigureScene>(configureScene),
-      requireInitialContact);
+      requireInitialContact,
+      postBakeSteps);
 
   EXPECT_EQ(rawCounter.allocationCount, 0u)
       << "raw heap (malloc) bytes allocated during first post-bake steps: "
@@ -7867,21 +7870,6 @@ TEST(World, BakedBasicDeformableRowsDoNotMallocOnHeap)
       });
 
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
-      "deformable self-contact friction patch",
-      configureDeformableSelfContactFrictionPatchScene);
-  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
-      "deformable iterative FEM ground friction block",
-      configureDeformableIterativeFemGroundFrictionBlockScene);
-  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
-      "deformable matrix-free self-contact production grid",
-      configureDeformableSelfContactFrictionLargerMatrixFreeProductionGridScene);
-  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
-      "deformable static obstacle barriers",
-      configureDeformableStaticObstacleBarrierScene);
-  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
-      "deformable static obstacle friction matrix-free production patch",
-      configureDeformableStaticObstacleFrictionMatrixFreeProductionScene);
-  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "small mixed deformable storage paths", [](sx::World& world) {
         configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
             world,
@@ -7902,6 +7890,77 @@ TEST(World, BakedBasicDeformableRowsDoNotMallocOnHeap)
             true,
             Eigen::Vector3d(3.0, 0.0, 0.0));
       });
+#endif
+}
+
+// The deformable raw-malloc allocation gates below were split out of a single
+// monolithic BakedBasicDeformableRowsDoNotMallocOnHeap test so that each scene
+// is its own focused gate, matching the one-scene-per-gate convention used by
+// the surrounding deformable allocation gates. Splitting also isolates the
+// matrix-free self-contact production grid -- the single dominant cost of the
+// test_world_raw_malloc shard under the Debug + gcov Coverage job -- so its
+// coverage-specific step reduction (see the TEST below) stays self-contained.
+// The set of scenes exercised is unchanged.
+TEST(World, BakedDeformableFrictionPatchStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable self-contact friction patch",
+      configureDeformableSelfContactFrictionPatchScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable iterative FEM ground friction block",
+      configureDeformableIterativeFemGroundFrictionBlockScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable static obstacle barriers",
+      configureDeformableStaticObstacleBarrierScene);
+#endif
+}
+
+TEST(World, BakedDeformableMatrixFreeProductionGridStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#elif defined(DART_CODECOV)
+  // A single step of the full 17x17 matrix-free self-contact production grid
+  // costs ~850s under the Debug + gcov build, so the usual four-step gate ran
+  // ~3400s and on its own overran the test_world_raw_malloc shard. Keep the
+  // full production grid here -- so the Coverage job retains gcov line coverage
+  // of the matrix-free self-contact solver at production scale -- but assert
+  // the no-raw-malloc property over a single post-bake step. The full four-step
+  // assertion still runs at this size in normal Release/Debug CI. This gate is
+  // the only place the scene runs under coverage: the sibling no-growth and
+  // global-heap monolith gates GTEST_SKIP it, and the *...IsActive correctness
+  // test compiles out, under DART_CODECOV.
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable matrix-free self-contact production grid",
+      configureDeformableSelfContactFrictionLargerMatrixFreeProductionGridScene,
+      /*requireInitialContact=*/false,
+      /*postBakeSteps=*/1);
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable matrix-free self-contact production grid",
+      configureDeformableSelfContactFrictionLargerMatrixFreeProductionGridScene);
+#endif
+}
+
+TEST(World, BakedDeformableStaticObstacleProductionStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable static obstacle friction matrix-free production patch",
+      configureDeformableStaticObstacleFrictionMatrixFreeProductionScene);
+#endif
+}
+
+TEST(World, BakedDeformableSurfaceCcdCrossingStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "deformable moving rigid surface CCD crossing",
       configureDeformableMovingRigidSurfaceCcdCrossingScene);
