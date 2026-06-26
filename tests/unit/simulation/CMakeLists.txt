@@ -339,7 +339,10 @@ if(DART_SIMULATION_BUILD_TESTS)
       test_world_rest
     )
       if(TEST ${_dart_world_shard})
-        set_tests_properties(${_dart_world_shard} PROPERTIES TIMEOUT 3600)
+        # The gcov-instrumented build runs these allocation-gate corpora close to
+        # the 3600s ctest limit; test_world_raw_malloc has timed out at ~3600.1s on
+        # loaded Coverage (Debug) runners. Give the shards extra coverage headroom.
+        set_tests_properties(${_dart_world_shard} PROPERTIES TIMEOUT 5400)
       endif()
     endforeach()
     if(TARGET test_compute_graph)
