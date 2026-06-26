@@ -117,6 +117,12 @@
     velocity work, and avoiding threaded contact allocation on cold starts:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up ODE-backed settled cylinder workloads by falling back from native
+    ODE cylinders when exact support contacts are unreliable and by
+    supplementing exact cylinder-vs-plane support contacts that ODE's broadphase
+    can skip:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up DART-native collision transform setup for identity-relative
     `ShapeNode` collision objects by reusing the owning `BodyNode` world
     transform while refreshing the fast path when shape-node geometry changes:

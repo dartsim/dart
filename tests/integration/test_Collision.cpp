@@ -3759,6 +3759,94 @@ TEST_F(Collision, Factory)
 
 #if HAVE_ODE
 //==============================================================================
+TEST(Issue3056, OdeReportsTangentCylinderPlaneContact)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto cylinderFrame
+      = std::make_shared<SimpleFrame>(Frame::World(), "cylinder");
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+  auto horizontalCylinderFrame
+      = std::make_shared<SimpleFrame>(Frame::World(), "horizontal_cylinder");
+
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  horizontalCylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+
+  Eigen::Isometry3d horizontalTf = Eigen::Isometry3d::Identity();
+  horizontalTf.linear()
+      = Eigen::AngleAxisd(0.5 * constantsd::pi(), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  horizontalTf.translation() = Eigen::Vector3d(2.0, 0.0, 0.5);
+  horizontalCylinderFrame->setTransform(horizontalTf);
+
+  group->addShapeFrame(cylinderFrame.get());
+  group->addShapeFrame(planeFrame.get());
+  group->addShapeFrame(horizontalCylinderFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 8u;
+  option.maxNumContactsPerPair = 4u;
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_GE(result.getNumContacts(), 2u);
+
+  auto sawVerticalCylinder = false;
+  auto sawHorizontalCylinder = false;
+  for (const auto& contact : result.getContacts()) {
+    const auto* frame1 = contact.collisionObject1->getShapeFrame();
+    const auto* frame2 = contact.collisionObject2->getShapeFrame();
+    if (frame1 == cylinderFrame.get() || frame2 == cylinderFrame.get()) {
+      sawVerticalCylinder = true;
+      EXPECT_NEAR(0.0, contact.point.z(), 1e-12);
+    } else if (
+        frame1 == horizontalCylinderFrame.get()
+        || frame2 == horizontalCylinderFrame.get()) {
+      sawHorizontalCylinder = true;
+      EXPECT_NEAR(0.0, contact.point.z(), 1e-12);
+    }
+    EXPECT_NEAR(0.0, contact.penetrationDepth, 1e-12);
+    EXPECT_NEAR(
+        1.0, std::abs(contact.normal.dot(Eigen::Vector3d::UnitZ())), 1e-12);
+  }
+
+  EXPECT_TRUE(sawVerticalCylinder);
+  EXPECT_TRUE(sawHorizontalCylinder);
+
+  auto cylinderGroup = detector->createCollisionGroup(cylinderFrame.get());
+  auto planeGroup = detector->createCollisionGroup(planeFrame.get());
+
+  result.clear();
+  ASSERT_TRUE(planeGroup->collide(cylinderGroup.get(), option, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_EQ(
+      planeFrame.get(), result.getContact(0).collisionObject1->getShapeFrame());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+
+  result.clear();
+  ASSERT_TRUE(cylinderGroup->collide(planeGroup.get(), option, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_EQ(
+      cylinderFrame.get(),
+      result.getContact(0).collisionObject1->getShapeFrame());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5001));
+  horizontalTf.translation() = Eigen::Vector3d(2.0, 0.0, 0.5001);
+  horizontalCylinderFrame->setTransform(horizontalTf);
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
 TEST(Issue1654, OdeContactHistoryClearsOnObjectRemoval)
 {
   auto detector = OdeCollisionDetector::create();
