@@ -126,6 +126,12 @@
     velocity work, and avoiding threaded contact allocation on cold starts:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up ODE-backed settled cylinder workloads by falling back from native
+    ODE cylinders when exact support contacts are unreliable and by
+    supplementing exact cylinder-vs-plane support contacts that ODE's broadphase
+    can skip:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up DART-native collision transform setup for identity-relative
     `ShapeNode` collision objects by reusing the owning `BodyNode` world
     transform while refreshing the fast path when shape-node geometry changes:
@@ -237,6 +243,16 @@
     and fidelity coverage against the always-active path, improving resting
     contact-heavy scenes while preserving an explicit deactivation opt-out:
     [#3086](https://github.com/dartsim/dart/pull/3086)
+
+  * Complete the 3003-body resting-scene performance target from issue #3056:
+    the maintained `contact_benchmark` path for `3k_shapes.sdf` with
+    DART-native collision records RTF `81.0689` in the final
+    anti-overfitting matrix, final hash `0x131b6af79a44ff90`, zero final
+    contacts, and `3003 / 3003` mobile skeletons resting. Completion reruns
+    preserve the same final state and remain far above the original RTF `1.0`
+    target. Active no-deactivation scenes remain covered by the benchmark
+    guardrails rather than this settled-scene completion claim:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Keep opt-in parallel constraint-island solving on the serial path for
     manual constraints, custom contact constraints, custom LCP solvers, and

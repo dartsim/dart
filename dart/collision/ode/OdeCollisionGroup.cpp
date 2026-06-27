@@ -35,11 +35,38 @@
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 
+#include <algorithm>
 #include <memory>
 
 namespace dart {
 namespace collision {
+
+namespace {
+
+//==============================================================================
+void eraseCollisionObject(
+    std::vector<OdeCollisionObject*>& objects, OdeCollisionObject* object)
+{
+  objects.erase(
+      std::remove(objects.begin(), objects.end(), object), objects.end());
+}
+
+//==============================================================================
+bool isCylinderCollisionObject(const OdeCollisionObject* object)
+{
+  return object && object->getShape()->as<dynamics::CylinderShape>();
+}
+
+//==============================================================================
+bool isPlaneCollisionObject(const OdeCollisionObject* object)
+{
+  return object && object->getShape()->as<dynamics::PlaneShape>();
+}
+
+} // namespace
 
 //==============================================================================
 OdeCollisionGroup::OdeCollisionGroup(
@@ -82,6 +109,11 @@ void OdeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
   auto geomId = casted->getOdeGeomId();
   dSpaceAdd(mSpaceId, geomId);
 
+  if (isCylinderCollisionObject(casted))
+    mCylinderCollisionObjects.push_back(casted);
+  else if (isPlaneCollisionObject(casted))
+    mPlaneCollisionObjects.push_back(casted);
+
   initializeEngineData();
 }
 
@@ -93,6 +125,11 @@ void OdeCollisionGroup::addCollisionObjectsToEngine(
     auto casted = static_cast<OdeCollisionObject*>(collObj);
     auto geomId = casted->getOdeGeomId();
     dSpaceAdd(mSpaceId, geomId);
+
+    if (isCylinderCollisionObject(casted))
+      mCylinderCollisionObjects.push_back(casted);
+    else if (isPlaneCollisionObject(casted))
+      mPlaneCollisionObjects.push_back(casted);
   }
 
   initializeEngineData();
@@ -108,6 +145,8 @@ void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 
   auto casted = static_cast<OdeCollisionObject*>(object);
   auto geomId = casted->getOdeGeomId();
+  eraseCollisionObject(mCylinderCollisionObjects, casted);
+  eraseCollisionObject(mPlaneCollisionObjects, casted);
   dSpaceRemove(mSpaceId, geomId);
 
   initializeEngineData();
@@ -122,6 +161,8 @@ void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
   }
 
   dSpaceClean(mSpaceId);
+  mCylinderCollisionObjects.clear();
+  mPlaneCollisionObjects.clear();
 
   initializeEngineData();
 }
@@ -136,6 +177,20 @@ void OdeCollisionGroup::updateCollisionGroupEngineData()
 dSpaceID OdeCollisionGroup::getOdeSpaceId() const
 {
   return mSpaceId;
+}
+
+//==============================================================================
+const std::vector<OdeCollisionObject*>&
+OdeCollisionGroup::getCylinderCollisionObjects() const
+{
+  return mCylinderCollisionObjects;
+}
+
+//==============================================================================
+const std::vector<OdeCollisionObject*>&
+OdeCollisionGroup::getPlaneCollisionObjects() const
+{
+  return mPlaneCollisionObjects;
 }
 
 } // namespace collision

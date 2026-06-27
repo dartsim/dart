@@ -542,6 +542,74 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
 }
 
 //==============================================================================
+void setManySingleFreeBodyContactSurfaceParams(
+    const std::shared_ptr<World>& world, std::size_t numBoxes)
+{
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    const auto name = "box_" + std::to_string(i);
+    auto box = world->getSkeleton(name);
+    ASSERT_NE(nullptr, box) << name;
+
+    auto* body = box->getBodyNode(0);
+    ASSERT_NE(nullptr, body) << name;
+    auto* shapeNode = body->getShapeNode(0);
+    ASSERT_NE(nullptr, shapeNode) << name;
+    auto* dynamics = shapeNode->getDynamicsAspect();
+    ASSERT_NE(nullptr, dynamics) << name;
+
+    dynamics->setPrimaryFrictionCoeff(0.75);
+    dynamics->setSecondaryFrictionCoeff(0.5);
+    dynamics->setPrimarySlipCompliance(0.005);
+    dynamics->setSecondarySlipCompliance(0.01);
+    dynamics->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+
+    auto* joint = static_cast<dynamics::FreeJoint*>(body->getParentJoint());
+    ASSERT_NE(nullptr, joint) << name;
+    joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.0, 0.0));
+  }
+}
+
+//==============================================================================
+void expectManySingleFreeBodyContactWorldsMatch(
+    const std::shared_ptr<World>& expectedWorld,
+    const std::shared_ptr<World>& actualWorld,
+    std::size_t numBoxes)
+{
+  const auto& expectedContacts
+      = expectedWorld->getConstraintSolver()->getLastCollisionResult();
+  const auto& actualContacts
+      = actualWorld->getConstraintSolver()->getLastCollisionResult();
+  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes * 3u);
+  EXPECT_EQ(expectedContacts.getNumContacts(), actualContacts.getNumContacts());
+
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    const auto name = "box_" + std::to_string(i);
+    const auto expectedBox = expectedWorld->getSkeleton(name);
+    const auto actualBox = actualWorld->getSkeleton(name);
+    ASSERT_NE(nullptr, expectedBox) << name;
+    ASSERT_NE(nullptr, actualBox) << name;
+
+    EXPECT_TRUE(
+        expectedBox->getPositions().isApprox(actualBox->getPositions(), 1e-12))
+        << name;
+    EXPECT_TRUE(expectedBox->getVelocities().isApprox(
+        actualBox->getVelocities(), 1e-12))
+        << name;
+
+    const auto* expectedBody = expectedBox->getBodyNode(0);
+    const auto* actualBody = actualBox->getBodyNode(0);
+    ASSERT_NE(nullptr, expectedBody) << name;
+    ASSERT_NE(nullptr, actualBody) << name;
+    EXPECT_TRUE(expectedBody->getWorldTransform().matrix().isApprox(
+        actualBody->getWorldTransform().matrix(), 1e-12))
+        << name;
+    EXPECT_TRUE(expectedBody->getSpatialVelocity().isApprox(
+        actualBody->getSpatialVelocity(), 1e-12))
+        << name;
+  }
+}
+
+//==============================================================================
 TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
 {
   auto directWorld = createSingleFreeBodyContactWorld(false);
@@ -663,6 +731,60 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
         threadedBox->getVelocities(), 1e-12))
         << name;
   }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ThreadedSurfacePrepassMatchesSerialForLargeBatches)
+{
+  constexpr std::size_t kNumBoxes = 1040u;
+
+  const auto runCase = [](bool useNonDefaultSurfaceParams) {
+    auto serialWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 1u, useNonDefaultSurfaceParams);
+    auto threadedWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 4u, useNonDefaultSurfaceParams);
+
+    for (std::size_t i = 0u; i < 6u; ++i) {
+      serialWorld->step();
+      threadedWorld->step();
+    }
+
+    ASSERT_NO_FATAL_FAILURE(expectManySingleFreeBodyContactWorldsMatch(
+        serialWorld, threadedWorld, kNumBoxes));
+  };
+
+  runCase(false);
+  runCase(true);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DefaultSurfaceCacheInvalidatesAfterDynamicsUpdate)
+{
+  constexpr std::size_t kNumBoxes = 192u;
+  auto cachedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
+  auto referenceWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
+
+  for (std::size_t i = 0u; i < 5u; ++i) {
+    cachedWorld->step();
+    referenceWorld->step();
+  }
+
+  ASSERT_NO_FATAL_FAILURE(
+      setManySingleFreeBodyContactSurfaceParams(cachedWorld, kNumBoxes));
+  ASSERT_NO_FATAL_FAILURE(
+      setManySingleFreeBodyContactSurfaceParams(referenceWorld, kNumBoxes));
+
+  for (std::size_t i = 0u; i < 40u; ++i)
+    cachedWorld->step();
+
+  std::thread referenceThread([&]() {
+    for (std::size_t i = 0u; i < 40u; ++i)
+      referenceWorld->step();
+  });
+  referenceThread.join();
+
+  ASSERT_NO_FATAL_FAILURE(expectManySingleFreeBodyContactWorldsMatch(
+      referenceWorld, cachedWorld, kNumBoxes));
 }
 
 //==============================================================================

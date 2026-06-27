@@ -37,8 +37,12 @@
 
 #include <ode/ode.h>
 
+#include <vector>
+
 namespace dart {
 namespace collision {
+
+class OdeCollisionObject;
 
 class OdeCollisionGroup : public CollisionGroup
 {
@@ -76,9 +80,21 @@ protected:
   /// Returns ODE space id associated with this collision group
   dSpaceID getOdeSpaceId() const;
 
+  /// Returns the ODE cylinder collision objects in this group.
+  const std::vector<OdeCollisionObject*>& getCylinderCollisionObjects() const;
+
+  /// Returns the ODE plane collision objects in this group.
+  const std::vector<OdeCollisionObject*>& getPlaneCollisionObjects() const;
+
 protected:
   /// Top-level space for all sub-spaces/collisions
   dSpaceID mSpaceId;
+
+  /// ODE cylinder collision objects in this group.
+  std::vector<OdeCollisionObject*> mCylinderCollisionObjects;
+
+  /// ODE plane collision objects in this group.
+  std::vector<OdeCollisionObject*> mPlaneCollisionObjects;
 };
 
 } // namespace collision

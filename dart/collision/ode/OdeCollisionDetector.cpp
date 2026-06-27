@@ -55,8 +55,11 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -79,6 +82,13 @@ Contact convertContact(
     OdeCollisionObject* b1,
     OdeCollisionObject* b2,
     const CollisionOption& option);
+
+std::size_t reportCylinderPlaneSupportContacts(
+    const std::vector<OdeCollisionObject*>& cylinders,
+    const std::vector<OdeCollisionObject*>& planes,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool cylinderFirst = true);
 
 #if DART_ODE_HAS_LIBCCD_BOX_CYL
 void alignBoxCylinderNormal(Contact& contact);
@@ -270,6 +280,12 @@ bool OdeCollisionDetector::collide(
   data.history = &mContactHistory;
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
+  data.numContacts += reportCylinderPlaneSupportContacts(
+      odeGroup->getCylinderCollisionObjects(),
+      odeGroup->getPlaneCollisionObjects(),
+      option,
+      result,
+      true);
 
   if (result) {
     pruneContactHistory(*result);
@@ -300,6 +316,18 @@ bool OdeCollisionDetector::collide(
       reinterpret_cast<dGeomID>(odeGroup2->getOdeSpaceId()),
       &data,
       CollisionCallback);
+  data.numContacts += reportCylinderPlaneSupportContacts(
+      odeGroup1->getCylinderCollisionObjects(),
+      odeGroup2->getPlaneCollisionObjects(),
+      option,
+      result,
+      true);
+  data.numContacts += reportCylinderPlaneSupportContacts(
+      odeGroup2->getCylinderCollisionObjects(),
+      odeGroup1->getPlaneCollisionObjects(),
+      option,
+      result,
+      false);
 
   if (result) {
     pruneContactHistory(*result);
@@ -617,6 +645,140 @@ Contact convertContact(
   }
 
   return contact;
+}
+
+//==============================================================================
+bool resultHasContactForPair(
+    const CollisionResult* result,
+    const OdeCollisionObject* object1,
+    const OdeCollisionObject* object2)
+{
+  if (!result)
+    return false;
+
+  for (const auto& contact : result->getContacts()) {
+    if ((contact.collisionObject1 == object1
+         && contact.collisionObject2 == object2)
+        || (contact.collisionObject1 == object2
+            && contact.collisionObject2 == object1)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool reportCylinderPlaneSupportContact(
+    OdeCollisionObject* cylinderObject,
+    OdeCollisionObject* planeObject,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool cylinderFirst)
+{
+  const auto* cylinderShape
+      = cylinderObject->getShape()->as<dynamics::CylinderShape>();
+  const auto* planeShape = planeObject->getShape()->as<dynamics::PlaneShape>();
+
+  if (!(cylinderShape && planeShape))
+    return false;
+
+  const auto& filter = option.collisionFilter;
+  if (filter && filter->ignoresCollision(cylinderObject, planeObject))
+    return false;
+
+  if (option.getEffectiveMaxNumContactsPerPair() == 0u)
+    return false;
+
+  if (resultHasContactForPair(result, cylinderObject, planeObject))
+    return false;
+
+  const Eigen::Vector3d rawNormal
+      = planeObject->getTransform().linear() * planeShape->getNormal();
+  const double normalNorm = rawNormal.norm();
+  if (!std::isfinite(normalNorm)
+      || normalNorm <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  const Eigen::Vector3d worldNormal = rawNormal / normalNorm;
+  const double planeOffset
+      = planeShape->getOffset()
+        + planeObject->getTransform().translation().dot(worldNormal);
+
+  const Eigen::Isometry3d& cylinderTf = cylinderObject->getTransform();
+  const Eigen::Vector3d rawAxis
+      = cylinderTf.linear() * Eigen::Vector3d::UnitZ();
+  const double axisNorm = rawAxis.norm();
+  if (!std::isfinite(axisNorm)
+      || axisNorm <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  const Eigen::Vector3d axis = rawAxis / axisNorm;
+  const Eigen::Vector3d center = cylinderTf.translation();
+  const double centerDistance = worldNormal.dot(center) - planeOffset;
+  const double axisProjection = worldNormal.dot(axis);
+  const double perpendicularProjection
+      = std::sqrt(std::max(0.0, 1.0 - axisProjection * axisProjection));
+  const double radius = cylinderShape->getRadius();
+  const double halfHeight = 0.5 * cylinderShape->getHeight();
+  const double supportDistance = halfHeight * std::abs(axisProjection)
+                                 + radius * perpendicularProjection;
+  const double clearance = centerDistance - supportDistance;
+  const double tolerance
+      = 1e-9 * std::max({1.0, radius, cylinderShape->getHeight()});
+
+  if (!std::isfinite(clearance) || clearance > tolerance)
+    return false;
+
+  const double axisOffset = axisProjection >= 0.0 ? -halfHeight : halfHeight;
+  Eigen::Vector3d radialOffset = Eigen::Vector3d::Zero();
+  if (perpendicularProjection > std::numeric_limits<double>::epsilon()) {
+    const Eigen::Vector3d radialDirection
+        = (worldNormal - axisProjection * axis) / perpendicularProjection;
+    radialOffset = -radius * radialDirection;
+  }
+
+  if (!result || result->getNumContacts() >= option.maxNumContacts)
+    return true;
+
+  Contact contact;
+  contact.collisionObject1 = cylinderFirst ? cylinderObject : planeObject;
+  contact.collisionObject2 = cylinderFirst ? planeObject : cylinderObject;
+
+  if (option.enableContact) {
+    contact.point = center + axisOffset * axis + radialOffset;
+    contact.normal = cylinderFirst ? worldNormal : -worldNormal;
+    contact.penetrationDepth = std::max(0.0, -clearance);
+  }
+
+  result->addContact(contact);
+  return true;
+}
+
+//==============================================================================
+std::size_t reportCylinderPlaneSupportContacts(
+    const std::vector<OdeCollisionObject*>& cylinders,
+    const std::vector<OdeCollisionObject*>& planes,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool cylinderFirst)
+{
+  if (cylinders.empty() || planes.empty())
+    return 0u;
+
+  std::size_t reported = 0u;
+  for (auto* cylinder : cylinders) {
+    for (auto* plane : planes) {
+      if (reportCylinderPlaneSupportContact(
+              cylinder, plane, option, result, cylinderFirst)) {
+        ++reported;
+      }
+    }
+  }
+
+  return reported;
 }
 
 #if DART_ODE_HAS_LIBCCD_BOX_CYL

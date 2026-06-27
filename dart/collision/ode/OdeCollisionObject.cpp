@@ -106,6 +106,45 @@ bool hasAlignedContactNormal(
   return false;
 }
 
+struct ProbeCollisionData
+{
+  dContactGeom contacts[4];
+  int numContacts = 0;
+};
+
+void ProbeCollisionCallback(void* data, dGeomID o1, dGeomID o2)
+{
+  auto* probeData = static_cast<ProbeCollisionData*>(data);
+  const int remaining
+      = static_cast<int>(
+            sizeof(probeData->contacts) / sizeof(probeData->contacts[0]))
+        - probeData->numContacts;
+  if (remaining <= 0)
+    return;
+
+  probeData->numContacts += dCollide(
+      o1,
+      o2,
+      remaining,
+      &probeData->contacts[probeData->numContacts],
+      sizeof(probeData->contacts[0]));
+}
+
+ProbeCollisionData probeBroadphaseCollision(dGeomID geom1, dGeomID geom2)
+{
+  ProbeCollisionData data;
+  dSpaceID space = dHashSpaceCreate(0);
+  DART_ASSERT(space);
+  dHashSpaceSetLevels(space, -2, 8);
+  dSpaceAdd(space, geom1);
+  dSpaceAdd(space, geom2);
+  dSpaceCollide(space, &data, ProbeCollisionCallback);
+  dSpaceRemove(space, geom1);
+  dSpaceRemove(space, geom2);
+  dSpaceDestroy(space);
+  return data;
+}
+
 // Some ODE builds report cylinder contacts with incorrect normals.
 bool probeCylinderCollisionSupport()
 {
@@ -149,7 +188,47 @@ bool probeCylinderCollisionSupport()
     dGeomDestroy(plane);
   }
 
-  return cylinderCylinderOk && cylinderPlaneOk;
+  bool tangentCylinderPlaneOk = false;
+  {
+    dGeomID cylinder = dCreateCylinder(0, 1.0, 1.0);
+    dGeomID plane = dCreatePlane(0, 0.0, 0.0, 1.0, 0.0);
+
+    dGeomSetPosition(cylinder, 0.0, 0.0, 0.5);
+
+    const auto data = probeBroadphaseCollision(cylinder, plane);
+    tangentCylinderPlaneOk = hasAlignedContactNormal(
+        data.contacts,
+        data.numContacts,
+        2,
+        kMinAxisAlignment,
+        kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder);
+    dGeomDestroy(plane);
+  }
+
+  bool tangentCylinderBoxOk = false;
+  {
+    dGeomID cylinder = dCreateCylinder(0, 0.5, 1.0);
+    dGeomID box = dCreateBox(0, 10.0, 10.0, 0.002);
+
+    dGeomSetPosition(cylinder, 0.0, 0.0, 0.5);
+    dGeomSetPosition(box, 0.0, 0.0, -0.001);
+
+    const auto data = probeBroadphaseCollision(cylinder, box);
+    tangentCylinderBoxOk = hasAlignedContactNormal(
+        data.contacts,
+        data.numContacts,
+        2,
+        kMinAxisAlignment,
+        kMaxOtherAlignment);
+
+    dGeomDestroy(cylinder);
+    dGeomDestroy(box);
+  }
+
+  return cylinderCylinderOk && cylinderPlaneOk && tangentCylinderPlaneOk
+         && tangentCylinderBoxOk;
 }
 
 bool cylinderCollisionSupported()
