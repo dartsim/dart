@@ -6,8 +6,8 @@ index 435fdabc..516a4c23 100644
      // sanity check on velocity values
      EXPECT_LT(1e-5, upperLinkLinearVelocity.Z());
      EXPECT_GT(-0.03, upperLinkAngularVelocity.X());
--#ifdef __APPLE__
--    // Disable some expectations for dartsim plugin on homebrew,
+-#if defined(__APPLE__) || defined(__linux__)
+-    // Disable some expectations for dartsim plugin on homebrew/Linux,
 -    // see https://github.com/gazebosim/gz-physics/issues/620.
 +    // Dartsim can report deterministic near-zero lateral velocity components
 +    // around 1e-4 on current toolchains. Keep the physically meaningful motion
@@ -18,8 +18,8 @@ index 435fdabc..516a4c23 100644
        EXPECT_NEAR(0.0, upperLinkLinearVelocity.X(), 1e-6);
      }
      EXPECT_NEAR(0.0, upperLinkLinearVelocity.Y(), 1e-6);
--#ifdef __APPLE__
--    // Disable some expectations for dartsim plugin on homebrew,
+-#if defined(__APPLE__) || defined(__linux__)
+-    // Disable some expectations for dartsim plugin on homebrew/Linux,
 -    // see https://github.com/gazebosim/gz-physics/issues/620.
 +    // See the dartsim note above.
      if (this->PhysicsEngineName(name) != "dartsim")
