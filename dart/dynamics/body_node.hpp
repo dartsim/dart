@@ -1276,6 +1276,14 @@ public:
   /// \}
 
 private:
+  /// Non-owning cache of the Skeleton this BodyNode belongs to. Mirrors
+  /// mSkeleton (the weak_ptr in SkeletonRefCountingBase) as a raw pointer so
+  /// the hot articulated-inertia accessors can reach the tree's dirty flags
+  /// without a weak_ptr::lock() (an atomic refcount operation) on every call.
+  /// Set in init(); the owning Skeleton outlives its BodyNodes, so the pointer
+  /// stays valid for as long as this BodyNode is alive.
+  Skeleton* mSkeletonRawPtr{nullptr};
+
   /// Hold onto a reference to this BodyNode's own Destructor to make sure that
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;

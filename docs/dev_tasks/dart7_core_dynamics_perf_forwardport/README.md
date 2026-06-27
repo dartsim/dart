@@ -14,16 +14,16 @@ dynamics; multi-core CPU first-class).
 
 ## Scope (candidates from the forward-port audit)
 
-| Sub-opt | Source PR/commit | Target on main | Bit-exact | Freeze status |
-| --- | --- | --- | --- | --- |
-| isNan/isInf templated on `MatrixBase` | #3028 `32081a2b81b` | `dart/math/helpers.hpp` | yes | out-of-scope dir (clean) |
-| `!X.allFinite()` in art-inertia paths | #3028 | `dart/dynamics/detail/generic_joint.hpp` | yes | body-only (clean) |
-| `mSkeletonRawPtr` cache (skip weak_ptr::lock) | #3028 | `dart/dynamics/body_node.{hpp,cpp}` | yes | add as **private** member (clean) |
-| force-aggregation `noalias()` | #3037 `16632b39902` | `dart/dynamics/body_node.cpp` | yes | .cpp (clean) |
-| ContactConstraint `noalias()` | #3033 `346e315958e` | `dart/constraint/contact_constraint.cpp` | yes | .cpp (clean) |
-| fixed-cap `mSpatialNormal` storage | #3040 `ec8b3a6a5d3` (4b only) | `dart/constraint/contact_constraint.hpp` | yes | member is **private** (clean) |
-| ContactConstraint skeleton/reactive/tangent cache | #3023 `fab90e3da41` (5a) | `dart/constraint/contact_constraint.{hpp,cpp}` | yes | new members **private** (clean) |
-| contact-pair map → unordered/thread_local | #3023 (5c) | `dart/constraint/constraint_solver.cpp` | yes | .cpp (clean) |
+| Sub-opt                                           | Source PR/commit              | Target on main                                 | Bit-exact | Freeze status                     |
+| ------------------------------------------------- | ----------------------------- | ---------------------------------------------- | --------- | --------------------------------- |
+| isNan/isInf templated on `MatrixBase`             | #3028 `32081a2b81b`           | `dart/math/helpers.hpp`                        | yes       | out-of-scope dir (clean)          |
+| `!X.allFinite()` in art-inertia paths             | #3028                         | `dart/dynamics/detail/generic_joint.hpp`       | yes       | body-only (clean)                 |
+| `mSkeletonRawPtr` cache (skip weak_ptr::lock)     | #3028                         | `dart/dynamics/body_node.{hpp,cpp}`            | yes       | add as **private** member (clean) |
+| force-aggregation `noalias()`                     | #3037 `16632b39902`           | `dart/dynamics/body_node.cpp`                  | yes       | .cpp (clean)                      |
+| ContactConstraint `noalias()`                     | #3033 `346e315958e`           | `dart/constraint/contact_constraint.cpp`       | yes       | .cpp (clean)                      |
+| fixed-cap `mSpatialNormal` storage                | #3040 `ec8b3a6a5d3` (4b only) | `dart/constraint/contact_constraint.hpp`       | yes       | member is **private** (clean)     |
+| ContactConstraint skeleton/reactive/tangent cache | #3023 `fab90e3da41` (5a)      | `dart/constraint/contact_constraint.{hpp,cpp}` | yes       | new members **private** (clean)   |
+| contact-pair map → unordered/thread_local         | #3023 (5c)                    | `dart/constraint/constraint_solver.cpp`        | yes       | .cpp (clean)                      |
 
 **Excluded:** #3028 `isInf` loop→vectorized half (already on main); #3023 5b
 (already on main via span-based assembly); #3040 4a (`hasExternalDisturbance` —
@@ -43,12 +43,29 @@ private avoids the gate legitimately.
 
 ## Status
 
-- [ ] Workflow: derive + adversarially verify exact patches per sub-opt
-- [ ] Apply patches (sequential — overlapping files), build incrementally
-- [ ] Run dynamics + constraint unit/integration tests
-- [ ] Lint (freeze gate must pass clean, no tags)
-- [ ] CHANGELOG entry
+- [x] Workflow: derive + adversarially verify exact patches per sub-opt
+      (6 verified `apply`; `spatialnormal-fixedcap` derived from direct reading
+      after a workflow agent retry-capped; `contact-cache-5a` dropped/deferred)
+- [x] Apply patches (7 sub-opts, 17 edits across 7 files)
+- [x] Build dart + run dynamics + constraint unit/integration tests
+      (11/11 pass incl. ArticulatedDynamicsAlgorithms, BoxedLcpConstraintSolver,
+      ContactSurface, NonFiniteContact, ForwardKinematics, AtlasIK)
+- [x] Lint — `pixi run lint` clean; DART 7 legacy freeze check passed (no tags)
+- [x] CHANGELOG entry (Simulation and Solvers)
 - [ ] Open PR to `main`, milestone DART 7.0
+
+### Applied (this PR)
+
+`isnan-isinf-template`, `allfinite-art-inertia` (9 sites), `skeleton-rawptr-cache`
+(private member), `force-agg-noalias` (3), `contact-noalias` (2),
+`spatialnormal-fixedcap` (private member type), `contactpair-unordered-5c`.
+
+### Deferred (follow-up)
+
+- `#3023` 5a — ContactConstraint skeleton/reactive/tangent caching: medium-risk
+  and entangled with `#3033`'s conditions; warrants its own PR.
+- `#3193` FreeJoint identity fast-path: NOT byte-exact; needs its equivalence
+  test ported alongside.
 
 ## Verification bar
 

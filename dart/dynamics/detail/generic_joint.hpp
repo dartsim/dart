@@ -1919,7 +1919,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
-  if (math::isNan(PI) || math::isInf(PI)) {
+  if (!PI.allFinite()) {
     DART_WARN(
         "[GenericJoint::addChildArtInertiaToDynamic] Non-finite articulated "
         "inertia detected for joint [{}]. Skipping child inertia "
@@ -1932,7 +1932,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   // Note that mT should be updated.
   const Eigen::Matrix6d contribution
       = math::transformInertia(this->getRelativeTransform().inverse(), PI);
-  if (math::isNan(contribution) || math::isInf(contribution)) {
+  if (!contribution.allFinite()) {
     DART_WARN_ONCE(
         "[GenericJoint::addChildArtInertiaToDynamic] Non-finite transformed "
         "inertia detected for joint [{}]. Skipping child inertia contribution.",
@@ -1951,7 +1951,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
   // Note that mT should be updated.
   const Eigen::Matrix6d contribution = math::transformInertia(
       this->getRelativeTransform().inverse(), childArtInertia);
-  if (math::isNan(contribution) || math::isInf(contribution)) {
+  if (!contribution.allFinite()) {
     DART_WARN_ONCE(
         "[GenericJoint::addChildArtInertiaToKinematic] Non-finite transformed "
         "inertia detected for joint [{}]. Skipping child inertia contribution.",
@@ -1985,7 +1985,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
-  if (math::isNan(PI) || math::isInf(PI)) {
+  if (!PI.allFinite()) {
     DART_WARN(
         "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
         "articulated inertia detected for joint [{}]. Skipping child inertia "
@@ -1998,7 +1998,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   // Note that mT should be updated.
   const Eigen::Matrix6d contribution
       = math::transformInertia(this->getRelativeTransform().inverse(), PI);
-  if (math::isNan(contribution) || math::isInf(contribution)) {
+  if (!contribution.allFinite()) {
     DART_WARN_ONCE(
         "[GenericJoint::addChildArtInertiaImplicitToDynamic] Non-finite "
         "transformed inertia detected for joint [{}]. Skipping child inertia "
@@ -2018,7 +2018,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
   // Note that mT should be updated.
   const Eigen::Matrix6d contribution = math::transformInertia(
       this->getRelativeTransform().inverse(), childArtInertia);
-  if (math::isNan(contribution) || math::isInf(contribution)) {
+  if (!contribution.allFinite()) {
     DART_WARN_ONCE(
         "[GenericJoint::addChildArtInertiaImplicitToKinematic] Non-finite "
         "transformed inertia detected for joint [{}]. Skipping child inertia "
@@ -2057,7 +2057,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
   mInvProjArtInertia = math::inverse<ConfigSpaceT>(projAI);
 
   // Verification
-  if (math::isNan(mInvProjArtInertia) || math::isInf(mInvProjArtInertia)) {
+  if (!mInvProjArtInertia.allFinite()) {
     DART_WARN(
         "[GenericJoint::updateInvProjArtInertiaDynamic] Non-finite inverse "
         "projected articulated inertia detected for joint [{}]. Setting "
@@ -2171,7 +2171,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
   //    getInvProjArtInertiaImplicit() * mTotalForce;
 
   // Verification
-  if (math::isNan(beta) || math::isInf(beta)) {
+  if (!beta.allFinite()) {
     DART_WARN(
         "[GenericJoint::addChildBiasForceToDynamic] Non-finite bias force "
         "detected for joint [{}]. Skipping bias force contribution.",
@@ -2420,7 +2420,7 @@ void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
 
   // Guard: Check for non-finite values BEFORE calling setter to avoid
   // assertFiniteState assertion failure
-  if (math::isNan(accelerations) || math::isInf(accelerations)) {
+  if (!accelerations.allFinite()) {
     DART_WARN(
         "[GenericJoint::updateAccelerationDynamic] Non-finite joint "
         "accelerations detected for joint [{}]. Setting accelerations to zero "

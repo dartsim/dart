@@ -621,12 +621,14 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 
   if (mBodyNodeA->getSkeleton()->isImpulseApplied()
       && mBodyNodeA->isReactive()) {
-    velMap += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
+    velMap.noalias()
+        += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
   }
 
   if (mBodyNodeB->getSkeleton()->isImpulseApplied()
       && mBodyNodeB->isReactive()) {
-    velMap += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
+    velMap.noalias()
+        += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
   }
 
   // Add small values to the diagnal to keep it away from singular, similar to
@@ -807,8 +809,10 @@ void ContactConstraint::getRelVelocity(double* relVel)
 
   Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
-  relVelMap -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
-  relVelMap -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
+  relVelMap.noalias()
+      -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
+  relVelMap.noalias()
+      -= mSpatialNormalB.transpose() * mBodyNodeB->getSpatialVelocity();
 }
 
 //==============================================================================
