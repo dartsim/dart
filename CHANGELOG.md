@@ -139,9 +139,8 @@ compatibility remains on the active DART 6 LTS branch._
   optimizations from the DART 6 LTS line: a cached raw `Skeleton` pointer that
   avoids a `weak_ptr::lock()` per articulated-inertia access, allocation-free
   finiteness guards (templated `math::isNan`/`isInf` plus `Eigen::allFinite()`),
-  `noalias()` force-aggregation and contact-normal products, fixed-capacity
-  contact spatial-normal storage, and an order-independent reused contact-pair
-  map. Behavior is unchanged.
+  `noalias()` force-aggregation and contact-normal products, and fixed-capacity
+  contact spatial-normal storage. Behavior is unchanged.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional

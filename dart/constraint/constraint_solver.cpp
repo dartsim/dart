@@ -64,11 +64,8 @@
 #include <iterator>
 #include <memory>
 #include <ranges>
-#include <unordered_map>
-#include <utility>
 
 #include <cmath>
-#include <cstdint>
 
 namespace dart {
 namespace constraint {
@@ -505,46 +502,25 @@ void ConstraintSolver::updateConstraints()
   using ContactPair
       = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
 
-  // Hash and equality that ignore the order within a contact pair, so that the
-  // (objA, objB) and (objB, objA) orderings map to the same entry. This matches
-  // the order-independent counting the previous std::map comparator provided,
-  // but with O(1) average lookups instead of O(log n) tree operations.
-  struct ContactPairHash
+  // Compare contact pairs while ignoring their order in the pair.
+  struct ContactPairCompare
   {
-    std::size_t operator()(const ContactPair& pair) const
+    ContactPair getSortedPair(const ContactPair& a) const
     {
-      auto a = reinterpret_cast<std::uintptr_t>(pair.first);
-      auto b = reinterpret_cast<std::uintptr_t>(pair.second);
-      if (a > b) {
-        std::swap(a, b);
+      if (a.first < a.second) {
+        return std::make_pair(a.second, a.first);
       }
-      const std::size_t h1 = std::hash<std::uintptr_t>()(a);
-      const std::size_t h2 = std::hash<std::uintptr_t>()(b);
-      return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
+      return a;
     }
-  };
-  struct ContactPairEqual
-  {
-    bool operator()(const ContactPair& x, const ContactPair& y) const
+
+    bool operator()(const ContactPair& a, const ContactPair& b) const
     {
-      return (x.first == y.first && x.second == y.second)
-             || (x.first == y.second && x.second == y.first);
+      // Sort each pair and then do a lexicographical comparison
+      return getSortedPair(a) < getSortedPair(b);
     }
   };
 
-  // Reused across steps to cut per-step contact-bookkeeping cost versus the
-  // previous per-step std::map: clear() frees the per-entry nodes but retains
-  // the bucket array, so steady-state stepping avoids the bucket-array
-  // (re)allocation and rehash plus the per-step map construction, and lookups
-  // are O(1) average instead of O(log n). (Node storage for distinct pairs is
-  // still reacquired each step; a fully node-reusing flat counter is a possible
-  // further refinement.) thread_local keeps concurrent solves on different
-  // threads independent while leaving the solver's class layout (ABI)
-  // untouched.
-  static thread_local std::
-      unordered_map<ContactPair, size_t, ContactPairHash, ContactPairEqual>
-          contactPairMap;
-  contactPairMap.clear();
+  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
   mContactPtrs.clear();
   mContactPtrs.reserve(mCollisionResult.getNumContacts());
 

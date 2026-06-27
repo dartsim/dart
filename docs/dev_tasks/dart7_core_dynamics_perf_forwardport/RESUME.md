@@ -4,26 +4,29 @@
 
 `perf/core-dynamics-forwardport` (from `origin/main`).
 
-## How to continue
+## How to continue (remaining work only — see README "Remaining")
 
-1. Read [README.md](README.md) for scope + the verified freeze-policy rules.
-2. Derive exact patches per sub-opt from the source release-6.20 commits
-   (`git show <commit>`), re-expressed against main's snake_case tree:
-   - `#3028` `32081a2b81b`, `#3037` `16632b39902`, `#3033` `346e315958e`,
-     `#3040` `ec8b3a6a5d3` (sub-opt 4b only), `#3023` `fab90e3da41` (5a + 5c only).
-3. Apply sequentially (contact_constraint.{cpp,hpp} is touched by #3033/#3040/#3023
-   — apply in that order to avoid conflicts). Keep new header members **private**.
-4. Build incrementally: `cmake -S . -B build/default/cpp/Release` then
-   `cmake --build build/default/cpp/Release --target dart UNIT_dynamics_<X> ...`.
-   Note: dynamics/constraint unit tests are registered explicitly via
-   `dart_add_test(...)` in `tests/unit/CMakeLists.txt` (NOT globbed).
-5. Run affected tests; then `pixi run check-lint` (freeze gate must pass with no
-   tags); update `CHANGELOG.md`; open PR (milestone DART 7.0).
+Do these on fresh `main` AFTER #3205 merges (both touch files #3205 changed):
+
+1. **`#3023` 5a** — ContactConstraint skeleton/reactive/tangent caching from
+   `fab90e3da41`, re-expressed against `contact_constraint.{hpp,cpp}`; keep new
+   members **private**; reconcile with #3033's already-landed conditions.
+2. **`#3023` 5c** — contact-pair counting in `constraint_solver.cpp`. Do NOT use a
+   `static thread_local` map (reentrancy hazard — see README). Use a per-call /
+   per-solver reentrancy-safe, allocation-free flat counter (the release used a
+   vector-backed open-addressed structure), or drop the sub-opt.
+3. Build (`cmake -S . -B build/default/cpp/Release` then
+   `--target dart UNIT_constraint_* UNIT_dynamics_*`); dynamics/constraint unit
+   tests are registered explicitly via `dart_add_test(...)` in
+   `tests/unit/CMakeLists.txt` (NOT globbed). Run them; `pixi run check-lint`
+   (freeze gate clean, no tags); update `CHANGELOG.md`; open PR (milestone DART 7.0).
 
 ## Done so far
 
-- Audit complete; freeze feasibility verified (all sub-opts stay private/.cpp/math
-  → clean). Branch created.
+- Audit + freeze feasibility verified. Shipped: #3204 (actuator fix), #3205
+  (bit-exact batch — 6 sub-opts), #3206 (FreeJoint fast-path).
+- `#3023` 5c's first cut (static thread_local unordered_map) was reverted from
+  #3205 per Codex (bucket-only reuse + reentrancy hazard); redo per step 2 above.
 
 ## Pitfalls
 
