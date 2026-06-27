@@ -36,14 +36,60 @@
 #include <dart/common/Logging.hpp>
 
 #if DART_HAVE_spdlog
+  #include <fmt/format.h>
   #include <spdlog/spdlog.h>
-  #define DART_SPDLOG_RUNTIME(str) SPDLOG_FMT_RUNTIME(str)
+
+  #include <exception>
 #else
   #include <iostream>
   #include <string>
 #endif
 
 namespace dart::common {
+
+#if DART_HAVE_spdlog
+namespace detail {
+
+//==============================================================================
+/// Logs a runtime-formatted message through spdlog without handing spdlog the
+/// format string. spdlog's variadic log() funnels the format string through
+/// spdlog::details::to_string_view(), whose implicit fmt::format_string ->
+/// string_view conversion was deprecated in fmt 12.2.0 ("use
+/// format_string::get() instead"). Because DART's logging templates are
+/// header-only and instantiated by downstreams, that deprecation warning
+/// surfaces in every consumer built against fmt >= 12.2.0 (e.g. gz-physics,
+/// see https://github.com/gazebosim/gz-physics/issues/1018). Pre-formatting
+/// with fmt and handing spdlog a ready-made string sidesteps the deprecated
+/// conversion entirely.
+template <typename S, typename... Args>
+void logToSpdlog(
+    spdlog::level::level_enum level, const S& format_str, Args&&... args)
+{
+  auto* const logger = spdlog::default_logger_raw();
+
+  // Skip all work for a fully disabled message. should_backtrace() preserves
+  // the behaviour of the prior spdlog::*() calls, which still recorded
+  // below-level messages into spdlog's backtrace ring when one is enabled.
+  if (!logger->should_log(level) && !logger->should_backtrace()) {
+    return;
+  }
+
+  // A logging call must never throw, so a malformed format string (only caught
+  // at runtime, since the format is not a compile-time constant) falls back to
+  // logging the raw format string instead of propagating the fmt error.
+  // fmt::vformat takes a runtime format string directly, so it works across
+  // every fmt version DART supports (unlike fmt::runtime, which is fmt 8+ only)
+  // and independent of spdlog's formatting backend.
+  try {
+    logger->log(level, fmt::vformat(format_str, fmt::make_format_args(args...)));
+  } catch (const std::exception& e) {
+    logger->log(
+        level, fmt::format("[log format error: {}] {}", e.what(), format_str));
+  }
+}
+
+} // namespace detail
+#endif
 
 #if !DART_HAVE_spdlog
 namespace detail {
@@ -81,7 +127,8 @@ template <typename S, typename... Args>
 void trace(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::trace(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::trace, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[trace]", format_str, 38, std::forward<Args>(args)...);
@@ -93,7 +140,8 @@ template <typename S, typename... Args>
 void debug(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::debug(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::debug, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[debug]", format_str, 36, std::forward<Args>(args)...);
@@ -105,7 +153,8 @@ template <typename S, typename... Args>
 void info(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::info(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::info, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cout, "[info]", format_str, 32, std::forward<Args>(args)...);
@@ -117,7 +166,8 @@ template <typename S, typename... Args>
 void warn(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::warn(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::warn, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[warn]", format_str, 33, std::forward<Args>(args)...);
@@ -129,7 +179,8 @@ template <typename S, typename... Args>
 void error(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::error(DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::err, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[error]", format_str, 31, std::forward<Args>(args)...);
@@ -141,8 +192,8 @@ template <typename S, typename... Args>
 void fatal(const S& format_str, [[maybe_unused]] Args&&... args)
 {
 #if DART_HAVE_spdlog
-  spdlog::critical(
-      DART_SPDLOG_RUNTIME(format_str), std::forward<Args>(args)...);
+  detail::logToSpdlog(
+      spdlog::level::critical, format_str, std::forward<Args>(args)...);
 #else
   detail::print(
       std::cerr, "[fatal]", format_str, 35, std::forward<Args>(args)...);
