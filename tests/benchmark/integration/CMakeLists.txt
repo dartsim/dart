@@ -65,7 +65,7 @@ if(TARGET dart-collision-ode)
     SOURCES
       bm_contact_container.cpp
     INCLUDE_DIRS
-      ${CMAKE_SOURCE_DIR}/examples/contact_benchmark
+      ${DART_SOURCE_DIR}/examples/contact_benchmark
     LINK_LIBRARIES
       dart
       dart-collision-ode
