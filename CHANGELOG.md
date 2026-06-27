@@ -139,6 +139,10 @@ compatibility remains on the active DART 6 LTS branch._
   create and destroy joint properties across translation-unit and
   shared-library boundaries without heap corruption (the override map is now a
   sorted, compact vector of index/type pairs).
+- Added identity-joint-frame fast paths to `FreeJoint` position integration,
+  relative transform, and Jacobian updates (forward-ported from the DART 6 LTS
+  line), skipping the general inverse/compose when the child (and optionally
+  parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional
