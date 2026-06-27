@@ -53,7 +53,12 @@ jobs:
         'ubuntu-latest' ||
         'ubuntu-latest-gpu'
       }}
-    timeout-minutes: 60
+    # A cold build of the CUDA library + kernels + tests runs ~60 min and used to
+    # land right on a 60-minute cap. With the persistent self-hosted ccache dir
+    # (configure-compiler-cache action) warm builds finish in a fraction of this;
+    # 90 minutes is a safety net for genuinely-cold runs (e.g. the first run after
+    # the runner image is recreated and the cache is empty).
+    timeout-minutes: 90
     env:
       DART_PARALLEL_JOBS: "8"
       CTEST_PARALLEL_LEVEL: "8"
