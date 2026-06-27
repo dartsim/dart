@@ -135,6 +135,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
+- Added identity-joint-frame fast paths to `FreeJoint` position integration,
+  relative transform, and Jacobian updates (forward-ported from the DART 6 LTS
+  line), skipping the general inverse/compose when the child (and optionally
+  parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional
