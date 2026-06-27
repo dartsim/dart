@@ -897,7 +897,10 @@ download-gz-sim = { cmd = """
 patch-gz-physics = { cmd = """
     bash -lc '
     set -euo pipefail
-    mapfile -t patch_files < <(find "$PWD/tools/gazebo/patches" -maxdepth 1 -type f -name "*.patch" | sort)
+    patch_files=()
+    while IFS= read -r patch_file; do
+        patch_files+=("$patch_file")
+    done < <(find "$PWD/tools/gazebo/patches" -maxdepth 1 -type f -name "*.patch" | sort)
     if ((${#patch_files[@]} == 0)); then
         exit 0
     fi
