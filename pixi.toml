@@ -892,13 +892,14 @@ download-gz-sim = { cmd = """
 
 patch-gz-physics = { cmd = """
     bash -lc '
-    patch_file=$PWD/tools/gazebo/patches/gz-physics8-changed-world-poses.patch
-    if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
-        echo "gz-physics changed-world-poses patch already applied"
-    else
-        git -C .deps/gz-physics apply --check "$patch_file"
-        git -C .deps/gz-physics apply "$patch_file"
-    fi
+    for patch_file in "$PWD"/tools/gazebo/patches/*.patch; do
+        if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
+            echo "$patch_file already applied"
+        else
+            git -C .deps/gz-physics apply --check "$patch_file"
+            git -C .deps/gz-physics apply "$patch_file"
+        fi
+    done
     '
 """, depends-on = [
   "download-gz",
