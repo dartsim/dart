@@ -805,7 +805,9 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_INCLUDE_PATH "${PROJECT_SOURCE_DIR}")
   set(DOXYGEN_INPUT_ROOT "${PROJECT_SOURCE_DIR}/dart")
   set(DOXYGEN_EXTRA_INPUTS "${PROJECT_SOURCE_DIR}/docs/doxygen/mainpage.dox")
-  set(DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/dart/external")
+  # No in-tree third-party sources to exclude: the bundled ImGui is fetched into
+  # the build tree (or taken from the system package), not vendored under dart/.
+  set(DOXYGEN_EXCLUDE "")
   set(DOXYGEN_STRIP_FROM_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
   # Generate a Doxyfile. This uses the variables:

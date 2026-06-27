@@ -61,6 +61,16 @@
     an explicit system ImGui opt-in path:
     [#3081](https://github.com/dartsim/dart/pull/3081)
 
+  * Relocate the bundled `external-imgui` build from `dart/external/imgui` to
+    `dart/gui/imgui` and remove the now-empty `dart/external` source directory,
+    update the bundled FetchContent ImGui to `v1.92.8`, and rebase the DART
+    compatibility patch onto it. Source builds default to the FetchContent copy
+    (`DART_USE_SYSTEM_IMGUI=OFF`) so building from source needs no system ImGui
+    package; Pixi and the conda-forge recipe opt into the system ImGui. The
+    `external-imgui` component and the installed `include/dart/external/imgui`
+    compatibility include path are unchanged:
+    [#3198](https://github.com/dartsim/dart/pull/3198)
+
   * Update the math user-defined literal declarations to the C++23 spelling
     accepted by newer AppleClang warning-as-error builds.
 
