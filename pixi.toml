@@ -897,29 +897,40 @@ download-gz-sim = { cmd = """
 patch-gz-physics = { cmd = """
     bash -lc '
     set -euo pipefail
-    patch_files=()
-    while IFS= read -r patch_file; do
-        patch_files+=("$patch_file")
-    done < <(find "$PWD/tools/gazebo/patches" -maxdepth 1 -type f -name "*.patch" | sort)
-    if ((${#patch_files[@]} == 0)); then
-        exit 0
-    fi
-
-    reverse_patch_files=()
-    for ((i=${#patch_files[@]} - 1; i >= 0; --i)); do
-        reverse_patch_files+=("${patch_files[i]}")
-    done
-
-    if git -C .deps/gz-physics apply --reverse --check "${reverse_patch_files[@]}" >/dev/null 2>&1; then
+    patch_dir="$PWD/tools/gazebo/patches"
+    applied_marker=".deps/gz-physics/.dart-patches-applied"
+    if [ -f "$applied_marker" ]; then
         echo "gz-physics patches already applied"
         exit 0
     fi
 
-    for patch_file in "${patch_files[@]}"; do
+    found_patch=0
+    all_applied=1
+    while IFS= read -r patch_file; do
+        found_patch=1
+        if ! git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
+            all_applied=0
+            break
+        fi
+    done < <(find "$patch_dir" -maxdepth 1 -type f -name "*.patch" | sort)
+
+    if [ "$found_patch" -eq 0 ]; then
+        exit 0
+    fi
+
+    if [ "$all_applied" -eq 1 ]; then
+        echo "gz-physics patches already applied"
+        touch "$applied_marker"
+        exit 0
+    fi
+
+    while IFS= read -r patch_file; do
         git -C .deps/gz-physics apply --check "$patch_file"
         git -C .deps/gz-physics apply "$patch_file"
         echo "$patch_file applied"
-    done
+    done < <(find "$patch_dir" -maxdepth 1 -type f -name "*.patch" | sort)
+
+    touch "$applied_marker"
     '
 """, depends-on = [
   "download-gz",
