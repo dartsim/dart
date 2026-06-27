@@ -2,7 +2,12 @@
 # All rights reserved.
 
 [build-system]
-requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12"]
+# Pin cmake below 4.3.4: that release regressed GLUT/OpenGL detection in the
+# manylinux_2_28 wheel container, so find_package(GLUT) fails, the dart-gui
+# target is skipped, and dartpy aborts with "Cannot find the library dart-gui".
+# 4.3.2 (the last version used by a green wheel build) works. Relax once a fixed
+# cmake ships.
+requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12,<4.3.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
