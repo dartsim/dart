@@ -113,4 +113,93 @@ TEST(FreeJoint, IntegratePositionsMatchesVectorOverload)
 
   expectMatchesVectorOverload(
       parentBodyToJoint, childBodyToJoint, "offset joint frames");
+
+  // Identity child frame but a rotated parent frame exercises the
+  // identity-child / non-identity-parent-rotation fast-path branch.
+  expectMatchesVectorOverload(
+      parentBodyToJoint,
+      Eigen::Isometry3d::Identity(),
+      "rotated parent + identity child");
+}
+
+//==============================================================================
+// Identity child frame selects the fast paths in updateRelativeTransform(),
+// updateRelativeJacobian(), and updateRelativeJacobianTimeDeriv(). Verify those
+// paths run for both identity and rotated parent frames and produce the
+// expected block-diagonal Jacobian structure (R^T on the diagonal 3x3 blocks,
+// zero off-diagonal blocks).
+TEST(FreeJoint, IdentityChildFrameFastPaths)
+{
+  auto makeJoint = [](const Eigen::Isometry3d& parent) {
+    auto skel = Skeleton::create("fj_fastpath");
+    auto [joint, body] = skel->createJointAndBodyNodePair<FreeJoint>();
+    (void)body;
+    joint->setTransformFromParentBodyNode(parent);
+    joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+
+    Eigen::Vector6d q;
+    q << 0.2, -0.1, 0.05, 0.4, -0.2, 0.3;
+    Eigen::Vector6d v;
+    v << 0.17, -0.11, 0.07, 0.4, -0.2, 0.1;
+    joint->setPositions(q);
+    joint->setVelocities(v);
+    return std::make_pair(skel, joint);
+  };
+
+  Eigen::Isometry3d rotatedParent = Eigen::Isometry3d::Identity();
+  rotatedParent.linear()
+      = Eigen::AngleAxisd(0.21, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  rotatedParent.translation() = Eigen::Vector3d(0.05, -0.03, 0.02);
+
+  for (const auto& parent : {Eigen::Isometry3d::Identity(), rotatedParent}) {
+    auto [skel, joint] = makeJoint(parent);
+    (void)skel;
+
+    const Eigen::Isometry3d T = joint->getRelativeTransform();
+    EXPECT_TRUE(T.matrix().allFinite());
+
+    const Eigen::Matrix3d Rt = T.linear().transpose();
+
+    const Eigen::Matrix6d J = joint->getRelativeJacobian();
+    EXPECT_TRUE(J.allFinite());
+    // Extra parens: the comma in topLeftCorner<3, 3> would otherwise split the
+    // gtest macro argument.
+    EXPECT_TRUE((J.topLeftCorner<3, 3>().isApprox(Rt, 1e-12)));
+    EXPECT_TRUE((J.bottomRightCorner<3, 3>().isApprox(Rt, 1e-12)));
+    EXPECT_TRUE((J.topRightCorner<3, 3>().isZero()));
+    EXPECT_TRUE((J.bottomLeftCorner<3, 3>().isZero()));
+
+    const Eigen::Matrix6d Jdot = joint->getRelativeJacobianTimeDeriv();
+    EXPECT_TRUE(Jdot.allFinite());
+    EXPECT_TRUE((Jdot.topRightCorner<3, 3>().isZero()));
+    EXPECT_TRUE((Jdot.bottomLeftCorner<3, 3>().isZero()));
+  }
+}
+
+//==============================================================================
+// The identity-child integratePositions fast path supports non-EXP_MAP
+// coordinate charts via its convertToPositions() branch. Exercise that branch
+// and confirm the integration stays finite.
+TEST(FreeJoint, IntegratePositionsFastPathNonExpMapChart)
+{
+  for (auto chart :
+       {FreeJoint::CoordinateChart::EULER_XYZ,
+        FreeJoint::CoordinateChart::EULER_ZYX}) {
+    auto skel = Skeleton::create("fj_chart");
+    auto [joint, body] = skel->createJointAndBodyNodePair<FreeJoint>();
+    (void)body;
+    joint->setCoordinateChart(chart);
+    joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+    joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+
+    Eigen::Vector6d q;
+    q << 0.15, -0.07, 0.04, 0.2, -0.1, 0.05;
+    Eigen::Vector6d v;
+    v << 0.1, -0.05, 0.03, 0.2, -0.1, 0.05;
+    joint->setPositions(q);
+    joint->setVelocities(v);
+
+    skel->integratePositions(0.003);
+    EXPECT_TRUE(joint->getPositions().allFinite());
+  }
 }
