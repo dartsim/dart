@@ -291,6 +291,8 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Restored Performance Dashboard benchmark builds in Pixi environments that use
+  the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment
   label selection, and fixed CUDA Debug nanobind configuration so
   `pixi run test-all` and `pixi run -e cuda test-all` spend less time tail-bound

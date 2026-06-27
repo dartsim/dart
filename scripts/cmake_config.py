@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from cmake_host_linker_flags import cmake_host_linker_flags
+
 
 def get_compiler_launcher():
     """Check if sccache is available and return launcher definitions."""
@@ -98,6 +100,8 @@ def configure_cmake(
     # Add codecov flag if enabled
     if codecov == "ON":
         cmake_cmd.append("-DDART_CODECOV=ON")
+
+    cmake_cmd.extend(cmake_host_linker_flags())
 
     # Add compiler launcher flags
     cmake_cmd.extend(launcher_defs)

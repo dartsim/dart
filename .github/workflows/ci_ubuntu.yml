@@ -582,6 +582,7 @@ jobs:
             set -euo pipefail
             BUILD_TYPE=None
             DART_VERBOSE=ON
+            read -r -a HOST_LINKER_DEFS <<< "$(python scripts/cmake_host_linker_flags.py)"
             cmake \
               -G Ninja \
               -S . \
@@ -598,7 +599,8 @@ jobs:
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_USE_SYSTEM_IMGUI=ON \
               -DDART_USE_SYSTEM_TRACY=OFF \
-              -DDART_VERBOSE=$DART_VERBOSE
+              -DDART_VERBOSE=$DART_VERBOSE \
+              "${HOST_LINKER_DEFS[@]}"
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j
           '
 

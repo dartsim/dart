@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from cmake_host_linker_flags import cmake_host_linker_flags
+
 
 def _is_false(value: str | None) -> bool:
     if value is None:
@@ -71,6 +73,7 @@ def main(argv: list[str]) -> int:
         "-DDART_FETCH_FILAMENT=ON",
         f"-DDART_DISABLE_COMPILER_CACHE={disable_compiler_cache}",
     ]
+    cmake_args.extend(cmake_host_linker_flags())
 
     os.environ["DART_DISABLE_COMPILER_CACHE"] = disable_compiler_cache
     os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
