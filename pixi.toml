@@ -30,7 +30,6 @@ sphinx-intl = "*"
 sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
 taplo = ">=0.9.0,<1"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 assimp = ">=5.4.3,<7"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
@@ -45,7 +44,6 @@ octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
-tracy-profiler-client = ">=0.11.1,<0.12"
 urdfdom = ">=4.0.1,<5"
 
 [tasks]
@@ -540,8 +538,6 @@ config-install = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
-tracy = { cmd = "tracy-profiler" }
-
 docs-build = { cmd = """
     cd docs/readthedocs && sphinx-build -b html . _build/html
 """ }
@@ -849,8 +845,6 @@ config-install = { cmd = """
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
-tracy = { cmd = "tracy-profiler.exe" }
-
 #=================
 # Feature: Gazebo
 #=================
@@ -977,6 +971,19 @@ test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
+# Profiling: the Tracy client (linked only when -DDART_PROFILE_TRACY=ON) plus the
+# standalone Tracy viewer. Kept out of the default environment because Tracy is
+# off by default; opt in with `pixi run -e profile <task>`.
+[feature.profile.dependencies]
+tracy-profiler-client = ">=0.11.1,<0.12"
+tracy-profiler-gui = ">=0.11.1,<0.12"
+
+[feature.profile.tasks]
+tracy = { cmd = "tracy-profiler" }
+
+[feature.profile.target.win-64.tasks]
+tracy = { cmd = "tracy-profiler.exe" }
+
 #==============
 # Environments
 #==============
@@ -984,3 +991,4 @@ assimp = ">=6.0.4,<7"
 [environments]
 default = ["assimp6"]
 gazebo = ["gazebo"]
+profile = ["profile", "assimp6"]
