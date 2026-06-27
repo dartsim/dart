@@ -532,11 +532,15 @@ void ConstraintSolver::updateConstraints()
     }
   };
 
-  // Reused across steps so the per-step contact bookkeeping does not allocate.
-  // thread_local keeps concurrent solves on different threads independent while
-  // leaving the solver's class layout (ABI) untouched. unordered_map::clear()
-  // retains its buckets/capacity, so steady-state stepping performs no
-  // contact-pair allocation at all.
+  // Reused across steps to cut per-step contact-bookkeeping cost versus the
+  // previous per-step std::map: clear() frees the per-entry nodes but retains
+  // the bucket array, so steady-state stepping avoids the bucket-array
+  // (re)allocation and rehash plus the per-step map construction, and lookups
+  // are O(1) average instead of O(log n). (Node storage for distinct pairs is
+  // still reacquired each step; a fully node-reusing flat counter is a possible
+  // further refinement.) thread_local keeps concurrent solves on different
+  // threads independent while leaving the solver's class layout (ABI)
+  // untouched.
   static thread_local std::
       unordered_map<ContactPair, size_t, ContactPairHash, ContactPairEqual>
           contactPairMap;
