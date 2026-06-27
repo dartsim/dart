@@ -43,13 +43,11 @@
   #include <concepts>
   #include <type_traits>
   #include <utility>
-  // Check if spdlog is using fmt or std::format backend
-  #if defined(SPDLOG_USE_STD_FORMAT)
-    // spdlog uses std::format - no need for runtime wrapper
-    #define DART_SPDLOG_RUNTIME(str) str
-  #else
-    // spdlog uses fmt - need its compatibility macro for non-compile-time
-    // strings across supported fmt versions.
+  // These fmt helpers back normalize() below and are needed for the fmt
+  // backend, which is the configuration DART builds against. spdlog's
+  // std::format backend is not currently supported here (normalize() is
+  // referenced unconditionally at the call site below).
+  #if !defined(SPDLOG_USE_STD_FORMAT)
     #include <fmt/ostream.h>
     #include <spdlog/fmt/fmt.h>
     #include <spdlog/fmt/ostr.h>
@@ -109,7 +107,6 @@ auto normalize(T&& arg)
 
 } // namespace detail_log_arg
 
-    #define DART_SPDLOG_RUNTIME(str) SPDLOG_FMT_RUNTIME(str)
   #endif
 #else
   #include <iostream>
@@ -268,6 +265,30 @@ void log(
     const S& format_str,
     Args&&... args)
 {
+#if DART_HAVE_spdlog
+  // Hand spdlog a ready-made string rather than a format string: format with
+  // fmt up front. spdlog's variadic log() funnels the format string through
+  // spdlog::details::to_string_view(), whose implicit fmt::format_string ->
+  // string_view conversion was deprecated in fmt 12.2.0 ("use
+  // format_string::get() instead"). Routing through it makes that deprecation
+  // warning surface in every downstream that instantiates DART's logging
+  // templates against fmt >= 12.2.0 (e.g. gz-physics, see
+  // https://github.com/gazebosim/gz-physics/issues/1018). Pre-formatting
+  // sidesteps the deprecated conversion entirely.
+  //
+  // Skip all work for a fully disabled message: no prefix, no allocation and
+  // no formatting (cheaper than the previous code path, which always built the
+  // format string before spdlog's internal level check). should_backtrace()
+  // preserves the behaviour of the prior spdlog::*() calls, which still
+  // recorded below-level messages into spdlog's backtrace ring when one is
+  // enabled.
+  auto* const logger = spdlog::default_logger_raw();
+  const spdlog::level::level_enum spdlog_level = toSpdlogLevel(level);
+  if (!logger->should_log(spdlog_level) && !logger->should_backtrace()) {
+    return;
+  }
+#endif
+
   const std::string prefix = makeLogPrefix(file, line, function);
   fmt::basic_string_view<char> fmt_view(format_str);
   std::string final_format;
@@ -280,10 +301,20 @@ void log(
   }
 
 #if DART_HAVE_spdlog
-  spdlog::log(
-      toSpdlogLevel(level),
-      DART_SPDLOG_RUNTIME(final_format),
-      detail_log_arg::normalize(std::forward<Args>(args))...);
+  // A logging call must never throw, so a malformed format string (only caught
+  // at runtime, since the format is not a compile-time constant) falls back to
+  // logging the raw format string instead of propagating the fmt error.
+  try {
+    logger->log(
+        spdlog_level,
+        fmt::format(
+            fmt::runtime(final_format),
+            detail_log_arg::normalize(std::forward<Args>(args))...));
+  } catch (const std::exception& e) {
+    logger->log(
+        spdlog_level,
+        fmt::format("[log format error: {}] {}", e.what(), final_format));
+  }
 #else
   auto& stream = (level == LogLevel::Error || level == LogLevel::Fatal)
                      ? std::cerr
