@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "ContactContainerScene.hpp"
+
 #include <dart/gui/osg/ImGuiHandler.hpp>
 #include <dart/gui/osg/ImGuiViewer.hpp>
 #include <dart/gui/osg/ImGuiWidget.hpp>
@@ -94,8 +96,20 @@
 
 namespace {
 
+namespace contact_scene = dart::examples::contact_benchmark;
+
 constexpr std::size_t kDefaultGeneratedObjects = 30;
 constexpr double kDefaultGeneratedSpacing = 1.1;
+constexpr double kDefaultGeneratedContainerSpacing
+    = contact_scene::kDefaultContactContainerSpacing;
+constexpr std::size_t kDefaultGeneratedContainerLayers
+    = contact_scene::kDefaultContactContainerLayers;
+constexpr double kDefaultGeneratedContainerJitter
+    = contact_scene::kDefaultContactContainerJitter;
+constexpr double kDefaultGeneratedContainerWallThickness
+    = contact_scene::kDefaultContactContainerWallThickness;
+constexpr std::uint32_t kDefaultGeneratedContainerSeed
+    = contact_scene::kDefaultContactContainerSeed;
 constexpr double kDefaultDropHeight = 0.2;
 
 enum class CollisionEngine
@@ -140,7 +154,18 @@ struct Options
   std::optional<double> sleepTimeUntilSleep;
   std::optional<std::size_t> generatedObjects;
   bool generateCapsules = false;
+  bool generateContainer = false;
   double generatedSpacing = kDefaultGeneratedSpacing;
+  bool generatedSpacingSpecified = false;
+  std::size_t generatedContainerLayers = kDefaultGeneratedContainerLayers;
+  std::optional<double> generatedContainerSize;
+  std::optional<double> generatedContainerWallHeight;
+  double generatedContainerWallThickness
+      = kDefaultGeneratedContainerWallThickness;
+  double generatedContainerJitter = kDefaultGeneratedContainerJitter;
+  std::uint32_t generatedContainerSeed = kDefaultGeneratedContainerSeed;
+  double generatedContainerInitialSpeed = 0.0;
+  double generatedContainerInitialAngularSpeed = 0.0;
   std::optional<std::string> dumpFinalScenePath;
   std::optional<std::size_t> maxContacts;
   std::optional<std::size_t> maxContactsPerPair;
@@ -278,8 +303,29 @@ void printUsage(const std::string& programName)
          "sphere/box/cylinder scene instead of loading SDF.\n"
       << "  --generate-capsules N     Generate an in-memory capsule-only "
          "scene instead of loading SDF.\n"
+      << "  --generate-container N    Generate a dense mixed-shape open-box "
+         "scene for active contact benchmarking.\n"
       << "  --generated-spacing X     Center spacing for generated objects; "
          "default 1.1 m.\n"
+      << "  --container-layers N      Target vertical layers for "
+         "--generate-container; default 4.\n"
+      << "  --container-size X        Inner square side length for "
+         "--generate-container; default fits generated grid.\n"
+      << "  --container-wall-height Z Wall height for --generate-container; "
+         "default fits generated layers.\n"
+      << "  --container-wall-thickness X\n"
+      << "                            Wall and floor thickness for "
+         "--generate-container; default 0.2 m.\n"
+      << "  --container-jitter X      Deterministic placement jitter for "
+         "--generate-container; default 0.08 m.\n"
+      << "  --container-seed N        Deterministic seed for "
+         "--generate-container; default 3056.\n"
+      << "  --container-initial-speed V\n"
+      << "                            Deterministic horizontal initial speed "
+         "for container bodies.\n"
+      << "  --container-initial-angular-speed V\n"
+      << "                            Deterministic initial angular speed for "
+         "container bodies.\n"
       << "  --dump-final-scene PATH   Write final collision geometry JSONL "
          "for visual verification.\n";
 }
@@ -316,6 +362,19 @@ double parsePositiveDouble(const std::string& value, const std::string& name)
     std::size_t consumed = 0;
     const double parsed = std::stod(value, &consumed);
     if (consumed != value.size() || !std::isfinite(parsed) || parsed <= 0.0)
+      throw std::invalid_argument("invalid value");
+    return parsed;
+  } catch (const std::exception&) {
+    throw std::invalid_argument("Invalid " + name + ": " + value);
+  }
+}
+
+double parseNonNegativeDouble(const std::string& value, const std::string& name)
+{
+  try {
+    std::size_t consumed = 0;
+    const double parsed = std::stod(value, &consumed);
+    if (consumed != value.size() || !std::isfinite(parsed) || parsed < 0.0)
       throw std::invalid_argument("invalid value");
     return parsed;
   } catch (const std::exception&) {
@@ -444,11 +503,43 @@ Options parseOptions(int argc, char* argv[])
     } else if (arg == "--generate-objects" || arg == "--num-objects") {
       options.generatedObjects = parseSize(needValue(arg), arg);
       options.generateCapsules = false;
+      options.generateContainer = false;
     } else if (arg == "--generate-capsules") {
       options.generatedObjects = parseSize(needValue(arg), arg);
       options.generateCapsules = true;
+      options.generateContainer = false;
+    } else if (arg == "--generate-container") {
+      options.generatedObjects = parseSize(needValue(arg), arg);
+      options.generateCapsules = false;
+      options.generateContainer = true;
     } else if (arg == "--generated-spacing") {
       options.generatedSpacing = parsePositiveDouble(needValue(arg), arg);
+      options.generatedSpacingSpecified = true;
+    } else if (arg == "--container-layers") {
+      options.generatedContainerLayers = parseSize(needValue(arg), arg);
+    } else if (arg == "--container-size") {
+      options.generatedContainerSize = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--container-wall-height") {
+      options.generatedContainerWallHeight
+          = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--container-wall-thickness") {
+      options.generatedContainerWallThickness
+          = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--container-jitter") {
+      options.generatedContainerJitter
+          = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (arg == "--container-seed") {
+      const auto seed = parseSize(needValue(arg), arg);
+      if (seed > std::numeric_limits<std::uint32_t>::max()) {
+        throw std::invalid_argument("--container-seed exceeds uint32_t range");
+      }
+      options.generatedContainerSeed = static_cast<std::uint32_t>(seed);
+    } else if (arg == "--container-initial-speed") {
+      options.generatedContainerInitialSpeed
+          = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (arg == "--container-initial-angular-speed") {
+      options.generatedContainerInitialAngularSpeed
+          = parseNonNegativeDouble(needValue(arg), arg);
     } else if (arg == "--dump-final-scene") {
       options.dumpFinalScenePath = needValue(arg);
     } else if (arg == "--max-contacts") {
@@ -490,6 +581,13 @@ Options parseOptions(int argc, char* argv[])
   if (options.generatedObjects.has_value() && *options.generatedObjects == 0) {
     throw std::invalid_argument("Generated object count must be positive");
   }
+
+  if (options.generateContainer && options.generatedContainerLayers == 0) {
+    throw std::invalid_argument("--container-layers must be positive");
+  }
+
+  if (options.generateContainer && !options.generatedSpacingSpecified)
+    options.generatedSpacing = kDefaultGeneratedContainerSpacing;
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
@@ -572,6 +670,23 @@ void setShapeInertia(
   body->setInertia(inertia);
 }
 
+void addStaticBox(
+    dart::dynamics::BodyNode* body,
+    const Eigen::Vector3d& dimensions,
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector4d& color)
+{
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(dimensions);
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = translation;
+  shapeNode->setRelativeTransform(transform);
+  shapeNode->getVisualAspect()->setColor(color);
+}
+
 GeneratedShapeSpec makeGeneratedShape(std::size_t index, bool capsulesOnly)
 {
   if (capsulesOnly) {
@@ -605,8 +720,53 @@ GeneratedShapeSpec makeGeneratedShape(std::size_t index, bool capsulesOnly)
   }
 }
 
+void addGeneratedGroundPlane(
+    dart::simulation::WorldPtr world,
+    double floorLength,
+    double floorWidth,
+    double floorCenterX)
+{
+  auto ground = dart::dynamics::Skeleton::create("ground");
+  auto* groundBody
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
+            .second;
+
+  addStaticBox(
+      groundBody,
+      Eigen::Vector3d(floorLength, floorWidth, 0.002),
+      Eigen::Vector3d(floorCenterX, 0.0, -0.001),
+      Eigen::Vector4d(0.55, 0.55, 0.55, 1.0));
+  ground->setMobile(false);
+  world->addSkeleton(ground);
+}
+
+contact_scene::ContactContainerOptions makeContactContainerOptions(
+    const Options& options)
+{
+  contact_scene::ContactContainerOptions contactOptions;
+  contactOptions.objects = *options.generatedObjects;
+  contactOptions.spacing = options.generatedSpacing;
+  contactOptions.layers = options.generatedContainerLayers;
+  contactOptions.containerSize = options.generatedContainerSize;
+  contactOptions.wallHeight = options.generatedContainerWallHeight;
+  contactOptions.containerWallThickness
+      = options.generatedContainerWallThickness;
+  contactOptions.jitter = options.generatedContainerJitter;
+  contactOptions.seed = options.generatedContainerSeed;
+  contactOptions.initialSpeed = options.generatedContainerInitialSpeed;
+  contactOptions.initialAngularSpeed
+      = options.generatedContainerInitialAngularSpeed;
+  contactOptions.collisionDetector = makeCollisionDetector(options);
+  return contactOptions;
+}
+
 dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
 {
+  if (options.generateContainer) {
+    return contact_scene::createContactContainerWorld(
+        makeContactContainerOptions(options));
+  }
+
   const std::size_t numObjects = *options.generatedObjects;
   const std::size_t lanes = options.generateCapsules ? 1u : 3u;
 
@@ -626,24 +786,7 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
                                              * options.generatedSpacing
                                        : 0.0;
 
-  auto ground = dart::dynamics::Skeleton::create("ground");
-  auto* groundBody
-      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr)
-            .second;
-
-  auto groundShape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(floorLength, floorWidth, 0.002));
-  auto* shapeNode = groundBody->createShapeNodeWith<
-      dart::dynamics::VisualAspect,
-      dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(groundShape);
-  Eigen::Isometry3d groundTransform = Eigen::Isometry3d::Identity();
-  groundTransform.translation() = Eigen::Vector3d(floorCenterX, 0.0, -0.001);
-  shapeNode->setRelativeTransform(groundTransform);
-  shapeNode->getVisualAspect()->setColor(
-      Eigen::Vector4d(0.55, 0.55, 0.55, 1.0));
-  ground->setMobile(false);
-  world->addSkeleton(ground);
+  addGeneratedGroundPlane(world, floorLength, floorWidth, floorCenterX);
 
   for (std::size_t i = 0; i < numObjects; ++i) {
     const std::size_t row = i / lanes;
@@ -1306,11 +1449,39 @@ void printWorldSummary(
     std::cout << "  Generated mobile objects: " << *options.generatedObjects
               << "\n";
     std::cout << "  Generated scene: "
-              << (options.generateCapsules ? "capsule-only"
-                                           : "sphere/box/cylinder")
+              << (options.generateContainer  ? "contact container"
+                  : options.generateCapsules ? "capsule-only"
+                                             : "sphere/box/cylinder")
               << "\n";
     std::cout << "  Generated object spacing: " << options.generatedSpacing
               << " m\n";
+    if (options.generateContainer) {
+      std::cout << "  Contact container layers: "
+                << options.generatedContainerLayers << "\n";
+      if (options.generatedContainerSize.has_value()) {
+        std::cout << "  Contact container size: "
+                  << *options.generatedContainerSize << " m\n";
+      }
+      if (options.generatedContainerWallHeight.has_value()) {
+        std::cout << "  Contact container wall height: "
+                  << *options.generatedContainerWallHeight << " m\n";
+      }
+      std::cout << "  Contact container wall thickness: "
+                << options.generatedContainerWallThickness << " m\n";
+      std::cout << "  Contact container jitter: "
+                << options.generatedContainerJitter << " m\n";
+      std::cout << "  Contact container seed: "
+                << options.generatedContainerSeed << "\n";
+      if (options.generatedContainerInitialSpeed > 0.0) {
+        std::cout << "  Contact container initial speed: "
+                  << options.generatedContainerInitialSpeed << " m/s\n";
+      }
+      if (options.generatedContainerInitialAngularSpeed > 0.0) {
+        std::cout << "  Contact container initial angular speed: "
+                  << options.generatedContainerInitialAngularSpeed
+                  << " rad/s\n";
+      }
+    }
   }
   if (options.dropHeight > 0.0)
     std::cout << "  Initial drop height: " << options.dropHeight << " m\n";
@@ -1637,10 +1808,13 @@ private:
         << "  dwell " << sleep.maxRestDwellTime << " s\n";
     out << "pipeline DART 6, collision detector "
         << collisionEngineName(mOptions.collisionEngine);
-    if (mOptions.generatedObjects.has_value())
+    if (mOptions.generatedObjects.has_value()) {
       out << ", generated "
-          << (mOptions.generateCapsules ? "capsules " : "objects ")
+          << (mOptions.generateContainer  ? "container "
+              : mOptions.generateCapsules ? "capsules "
+                                          : "objects ")
           << *mOptions.generatedObjects;
+    }
     if (mOptions.dropHeight > 0.0)
       out << ", drop height " << mOptions.dropHeight << " m";
     out << "\n";
@@ -1808,6 +1982,8 @@ private:
     mGeneratedObjects = static_cast<int>(
         options.generatedObjects.value_or(kDefaultGeneratedObjects));
     mGeneratedSpacing = static_cast<float>(options.generatedSpacing);
+    mGenerateContainer = options.generateContainer;
+    mContainerLayers = static_cast<int>(options.generatedContainerLayers);
     mDropHeight = static_cast<float>(options.dropHeight);
     mTargetRtf = static_cast<float>(options.guiTargetRtf);
     mSleepStateColors = options.sleepStateColors;
@@ -1823,6 +1999,11 @@ private:
     options.sdfPath.reset();
     options.generatedObjects
         = static_cast<std::size_t>(std::max(1, mGeneratedObjects));
+    options.generateContainer = mGenerateContainer;
+    if (mGenerateContainer)
+      options.generateCapsules = false;
+    options.generatedContainerLayers
+        = static_cast<std::size_t>(std::max(1, mContainerLayers));
     options.generatedSpacing
         = std::max(0.05, static_cast<double>(mGeneratedSpacing));
     options.dropHeight = std::max(0.0, static_cast<double>(mDropHeight));
@@ -1941,6 +2122,12 @@ private:
 
     ImGui::SetNextItemWidth(-1.0f);
     ImGui::SliderFloat("Spacing", &mGeneratedSpacing, 0.6f, 3.0f, "%.2f m");
+    ImGui::Checkbox("Contact container", &mGenerateContainer);
+    if (mGenerateContainer) {
+      ImGui::SetNextItemWidth(-1.0f);
+      ImGui::InputInt("Container layers", &mContainerLayers, 1, 2);
+      mContainerLayers = std::clamp(mContainerLayers, 1, 1000);
+    }
     ImGui::SetNextItemWidth(-1.0f);
     ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 2.0f, "%.2f m");
 
@@ -1977,6 +2164,8 @@ private:
   ContactBenchmarkGuiEventHandler* mEventHandler = nullptr;
   int mGeneratedObjects = static_cast<int>(kDefaultGeneratedObjects);
   float mGeneratedSpacing = static_cast<float>(kDefaultGeneratedSpacing);
+  bool mGenerateContainer = false;
+  int mContainerLayers = static_cast<int>(kDefaultGeneratedContainerLayers);
   float mDropHeight = static_cast<float>(kDefaultDropHeight);
   float mTargetRtf = 1.0f;
   int mCollisionIndex = 0;
@@ -2285,7 +2474,9 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr world;
   if (options.generatedObjects.has_value()) {
     std::cout << "Generating in-memory "
-              << (options.generateCapsules ? "capsule-only" : "3-lane shape")
+              << (options.generateContainer  ? "contact-container"
+                  : options.generateCapsules ? "capsule-only"
+                                             : "3-lane shape")
               << " world with " << *options.generatedObjects
               << " mobile objects\n";
     world = createGeneratedWorld(options);

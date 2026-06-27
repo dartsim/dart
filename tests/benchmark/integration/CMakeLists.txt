@@ -59,6 +59,19 @@ if(TARGET dart-collision-bullet)
   target_link_libraries(boxes_headless PRIVATE dart dart-collision-bullet)
 endif()
 
+if(TARGET dart-collision-ode)
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_contact_container.cpp
+    INCLUDE_DIRS
+      ${CMAKE_SOURCE_DIR}/examples/contact_benchmark
+    LINK_LIBRARIES
+      dart
+      dart-collision-ode
+  )
+endif()
+
 # Headless contact-aware inverse-dynamics driver (checksum oracle + stepping-
 # loop timer + text-profiler dump). Core dynamics only; no collision backend
 # needed. Not a Google Benchmark target.
