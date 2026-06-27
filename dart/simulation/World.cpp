@@ -49,7 +49,9 @@
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -61,6 +63,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -146,6 +149,116 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
       "available. Keeping the world's default collision detector.",
       requestedKey);
   return nullptr;
+}
+
+std::vector<char> findShallowSupportedFreeRoots(
+    const std::vector<dynamics::SkeletonPtr>& skeletons,
+    const collision::CollisionResult& contacts,
+    const Eigen::Vector3d& gravity)
+{
+  std::vector<char> supported(skeletons.size(), false);
+
+  const double gravityNorm = gravity.norm();
+  if (contacts.getNumContacts() == 0u || gravityNorm <= 0.0)
+    return supported;
+
+  const Eigen::Vector3d up = -gravity / gravityNorm;
+  constexpr double kSupportContactPenetrationTolerance = 1e-4;
+  constexpr double kSupportNormalMinVerticalComponent = 0.5;
+
+  std::unordered_map<const dynamics::Skeleton*, std::size_t> skeletonToIndex;
+  skeletonToIndex.reserve(skeletons.size());
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    if (skeletons[i])
+      skeletonToIndex.emplace(skeletons[i].get(), i);
+  }
+
+  auto markIfSupportedRoot = [&](const auto& bodyNode,
+                                 const auto& supportBodyNode,
+                                 const Eigen::Vector3d& normal,
+                                 double penetrationDepth) {
+    if (!bodyNode || !supportBodyNode
+        || penetrationDepth > kSupportContactPenetrationTolerance) {
+      return;
+    }
+
+    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+    if (skeleton == nullptr || !skeleton->isMobile())
+      return;
+
+    if (bodyNode != skeleton->getRootBodyNode())
+      return;
+
+    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
+    const bool supportInactive = supportSkeleton == nullptr
+                                 || !supportSkeleton->isMobile()
+                                 || supportSkeleton->isResting();
+    if (!supportInactive)
+      return;
+
+    const double normalNorm = normal.norm();
+    if (normalNorm <= 0.0)
+      return;
+
+    const double verticalComponent = std::abs(normal.dot(up)) / normalNorm;
+    if (verticalComponent < kSupportNormalMinVerticalComponent)
+      return;
+
+    const auto it = skeletonToIndex.find(skeleton);
+    if (it != skeletonToIndex.end())
+      supported[it->second] = true;
+  };
+
+  for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
+    const auto& contact = contacts.getContact(i);
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    markIfSupportedRoot(
+        bodyNode1, bodyNode2, contact.normal, contact.penetrationDepth);
+    markIfSupportedRoot(
+        bodyNode2, bodyNode1, contact.normal, contact.penetrationDepth);
+  }
+
+  return supported;
+}
+
+// DART 6 keeps Baumgarte contact correction in the velocity solve by default.
+// On shallow support contacts, small contact-manifold asymmetry can leak that
+// vertical correction into lateral free-root velocity or roll/pitch drift. Keep
+// the observable upward correction and yaw, but remove only tiny lateral/tilt
+// components for roots directly supported by an inactive body.
+void suppressShallowSupportedFreeRootDrift(
+    const dynamics::SkeletonPtr& skeleton, const Eigen::Vector3d& gravity)
+{
+  if (!skeleton || !skeleton->isMobile() || gravity.squaredNorm() <= 0.0)
+    return;
+
+  auto* rootBody = skeleton->getRootBodyNode();
+  if (rootBody == nullptr)
+    return;
+
+  auto* freeJoint
+      = dynamic_cast<dynamics::FreeJoint*>(rootBody->getParentJoint());
+  if (freeJoint == nullptr)
+    return;
+
+  const Eigen::Vector3d up = -gravity.normalized();
+  constexpr double kRootLinearDriftSpeed = 1e-5;
+  constexpr double kRootAngularDriftSpeed = 5e-4;
+
+  Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
+  const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
+  if ((linearVelocity - verticalVelocity).norm() <= kRootLinearDriftSpeed) {
+    freeJoint->setLinearVelocity(
+        verticalVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+  }
+
+  Eigen::Vector3d angularVelocity = rootBody->getAngularVelocity();
+  const Eigen::Vector3d yawVelocity = up * angularVelocity.dot(up);
+  if ((angularVelocity - yawVelocity).norm() <= kRootAngularDriftSpeed) {
+    freeJoint->setAngularVelocity(
+        yawVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+  }
 }
 
 } // namespace
@@ -552,6 +665,10 @@ void World::step(bool _resetCommand)
       mConstraintSolver->solve();
     }
 
+    const std::vector<char> shallowSupportedFreeRoots
+        = findShallowSupportedFreeRoots(
+            mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+
     {
       DART_PROFILE_SCOPED_N("World::step - Integrate positions");
       parallelForIndexRange(
@@ -566,6 +683,11 @@ void World::step(bool _resetCommand)
             if (skel->isImpulseApplied()) {
               skel->computeImpulseForwardDynamics();
               skel->setImpulseApplied(false);
+            }
+
+            if (i < shallowSupportedFreeRoots.size()
+                && shallowSupportedFreeRoots[i]) {
+              suppressShallowSupportedFreeRootDrift(skel, mGravity);
             }
 
             if (skel->isPositionImpulseApplied()) {
@@ -698,6 +820,10 @@ void World::step(bool _resetCommand)
     mConstraintSolver->solve();
   }
 
+  const std::vector<char> shallowSupportedFreeRoots
+      = findShallowSupportedFreeRoots(
+          mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate positions");
     parallelForIndexRange(
@@ -741,6 +867,11 @@ void World::step(bool _resetCommand)
           if (skel->isImpulseApplied()) {
             skel->computeImpulseForwardDynamics();
             skel->setImpulseApplied(false);
+          }
+
+          if (i < shallowSupportedFreeRoots.size()
+              && shallowSupportedFreeRoots[i]) {
+            suppressShallowSupportedFreeRootDrift(skel, mGravity);
           }
 
           if (!preservingFinalSleepSolve) {

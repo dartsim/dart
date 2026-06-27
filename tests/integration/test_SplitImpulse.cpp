@@ -32,8 +32,10 @@
 
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
@@ -52,6 +54,7 @@ constexpr double kFloorSize = 10.0;
 constexpr double kBoxSize = 0.2;
 constexpr double kPenetration = 0.01;
 constexpr std::size_t kCorrectionSteps = 50;
+constexpr double kHalfPi = 1.57079632679489661923;
 
 SkeletonPtr createFloor()
 {
@@ -122,6 +125,80 @@ simulation::WorldPtr createPenetratingWorld(bool splitImpulse)
   world->addSkeleton(box);
 
   return world;
+}
+
+SkeletonPtr createSupportedPendulumBase(
+    BodyNode** baseBodyOut,
+    BodyNode** upperLinkOut,
+    RevoluteJoint** upperJointOut)
+{
+  auto skeleton = Skeleton::create("supported_pendulum_base");
+  skeleton->disableSelfCollisionCheck();
+
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  auto* rootJoint = rootPair.first;
+  auto* baseBody = rootPair.second;
+  baseBody->setName("base");
+
+  Inertia baseInertia;
+  baseInertia.setMass(100.0);
+  baseInertia.setMoment(Eigen::Matrix3d::Identity());
+  baseBody->setInertia(baseInertia);
+
+  auto plateShape = std::make_shared<CylinderShape>(0.8, 0.02);
+  auto* plateNode
+      = baseBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          plateShape);
+  Eigen::Isometry3d plateTf = Eigen::Isometry3d::Identity();
+  plateTf.translation().z() = 0.01;
+  plateNode->setRelativeTransform(plateTf);
+
+  auto poleShape = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 2.2));
+  auto* poleNode
+      = baseBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          poleShape);
+  Eigen::Isometry3d poleTf = Eigen::Isometry3d::Identity();
+  poleTf.translation() = Eigen::Vector3d(-0.275, 0.0, 1.1);
+  poleNode->setRelativeTransform(poleTf);
+
+  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
+  rootTf.translation().x() = 1.0;
+  FreeJoint::setTransformOf(rootJoint, rootTf);
+
+  GenericJoint<math::R1Space>::Properties upperGeneric(
+      Joint::Properties("upper_joint"));
+  upperGeneric.mDampingCoefficients[0] = 3.0;
+  RevoluteJoint::Properties upperProperties(
+      upperGeneric, RevoluteJoint::UniqueProperties(Eigen::Vector3d::UnitX()));
+  upperProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.0, 2.1);
+
+  BodyNode::Properties upperBodyProperties(
+      BodyNode::AspectProperties("upper_link"));
+  Inertia upperInertia;
+  upperInertia.setMass(1.0);
+  upperInertia.setLocalCOM(Eigen::Vector3d(0.0, 0.0, 0.5));
+  upperInertia.setMoment(Eigen::Matrix3d::Identity());
+  upperBodyProperties.mInertia = upperInertia;
+
+  auto upperPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      baseBody, upperProperties, upperBodyProperties);
+  auto* upperJoint = upperPair.first;
+  auto* upperLink = upperPair.second;
+  upperJoint->setPosition(0, -kHalfPi);
+
+  auto upperShape = std::make_shared<CylinderShape>(0.1, 0.9);
+  auto* upperNode
+      = upperLink->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          upperShape);
+  Eigen::Isometry3d upperTf = Eigen::Isometry3d::Identity();
+  upperTf.translation().z() = 0.5;
+  upperNode->setRelativeTransform(upperTf);
+
+  *baseBodyOut = baseBody;
+  *upperLinkOut = upperLink;
+  *upperJointOut = upperJoint;
+  return skeleton;
 }
 
 } // namespace
@@ -201,4 +278,36 @@ TEST(Issue201, DefaultPathReproducesBaumgarteBehavior)
   auto box = worldStep->getSkeleton("box");
   worldStep->step();
   EXPECT_GT(box->getRootBodyNode()->getLinearVelocity().z(), 0.0);
+}
+
+//==============================================================================
+// The default Baumgarte velocity correction should keep its observable upward
+// separation velocity, but a shallow resting support contact must not leak that
+// correction into tiny lateral or tilt velocities on the free root.
+TEST(Issue201, ShallowSupportedFreeRootDoesNotDriftSideways)
+{
+  auto world = simulation::World::create();
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  BodyNode* baseBody = nullptr;
+  BodyNode* upperLink = nullptr;
+  RevoluteJoint* upperJoint = nullptr;
+  world->addSkeleton(
+      createSupportedPendulumBase(&baseBody, &upperLink, &upperJoint));
+
+  ASSERT_NE(baseBody, nullptr);
+  ASSERT_NE(upperLink, nullptr);
+  ASSERT_NE(upperJoint, nullptr);
+
+  for (std::size_t i = 0; i < 10; ++i)
+    world->step();
+
+  EXPECT_LT(upperJoint->getVelocity(0), 0.0);
+  EXPECT_GT(baseBody->getLinearVelocity().z(), 1e-5);
+  EXPECT_NEAR(baseBody->getLinearVelocity().x(), 0.0, 1e-6);
+  EXPECT_NEAR(baseBody->getLinearVelocity().y(), 0.0, 1e-6);
+  EXPECT_NEAR(baseBody->getAngularVelocity().x(), 0.0, 1e-6);
+  EXPECT_NEAR(baseBody->getAngularVelocity().y(), 0.0, 1e-6);
 }

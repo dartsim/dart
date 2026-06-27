@@ -249,6 +249,11 @@
     [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
+  * Suppress tiny lateral and tilt velocity drift introduced by shallow static
+    support contacts on free-root bodies while preserving DART 6's default
+    Baumgarte upward separation velocity:
+    [gazebosim/gz-physics#620](https://github.com/gazebosim/gz-physics/issues/620)
+
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
     contact-heavy scenes while preserving an explicit deactivation opt-out:
