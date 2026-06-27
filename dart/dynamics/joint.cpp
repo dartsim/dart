@@ -302,17 +302,15 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
     return;
   }
 
-  const auto it = findActuatorOverride(overrides, index);
-  if (it != overrides.end() && it->second == actuatorType) {
+  // Joint::MIMIC is the only permitted per-DoF override value (enforced above),
+  // so any existing override already equals the requested type and there is
+  // nothing to change; otherwise insert a new, sorted override.
+  if (findActuatorOverride(overrides, index) != overrides.end()) {
     return;
   }
 
-  if (it != overrides.end()) {
-    it->second = actuatorType;
-  } else {
-    overrides.emplace_back(index, actuatorType);
-    sortActuatorOverrides(overrides);
-  }
+  overrides.emplace_back(index, actuatorType);
+  sortActuatorOverrides(overrides);
   resetCommands();
 }
 
