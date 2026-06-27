@@ -36,7 +36,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Include the event name so a manual workflow_dispatch (used to publish a
+  # release) is not cancelled by the push-triggered build of the same ref, and
+  # vice versa. Same-event runs on a ref still supersede each other.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 # This workflow will install Python dependencies, run tests and lint with a
