@@ -886,6 +886,7 @@ download-gz-sim = { cmd = """
 
 patch-gz-physics = { cmd = """
     bash -lc '
+    set -euo pipefail
     for patch_file in "$PWD"/tools/gazebo/patches/*.patch; do
         if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
             echo "$patch_file already applied"
