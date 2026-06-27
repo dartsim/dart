@@ -141,6 +141,10 @@ compatibility remains on the active DART 6 LTS branch._
   finiteness guards (templated `math::isNan`/`isInf` plus `Eigen::allFinite()`),
   `noalias()` force-aggregation and contact-normal products, and fixed-capacity
   contact spatial-normal storage. Behavior is unchanged.
+- Added identity-joint-frame fast paths to `FreeJoint` position integration,
+  relative transform, and Jacobian updates (forward-ported from the DART 6 LTS
+  line), skipping the general inverse/compose when the child (and optionally
+  parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
 - Added compute-executor and backend-boundary work so CPU threading, optional

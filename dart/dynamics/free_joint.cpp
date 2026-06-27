@@ -44,6 +44,16 @@
 namespace dart {
 namespace dynamics {
 
+namespace {
+
+//==============================================================================
+bool isIdentityTransform(const Eigen::Isometry3d& transform)
+{
+  return transform.matrix().isIdentity(0.0);
+}
+
+} // namespace
+
 //==============================================================================
 FreeJoint::~FreeJoint()
 {
@@ -701,6 +711,33 @@ void FreeJoint::integratePositions(double _dt)
   const Eigen::Isometry3d& childBodyToJoint
       = Joint::mAspectProperties.mT_ChildBodyToJoint;
 
+  if (isIdentityTransform(childBodyToJoint)) {
+    Eigen::Isometry3d nextQ = Eigen::Isometry3d::Identity();
+    if (parentBodyToJoint.linear().isIdentity(0.0)) {
+      nextQ.linear() = nextRelativeTransform.linear();
+      nextQ.translation() = nextRelativeTransform.translation()
+                            - parentBodyToJoint.translation();
+    } else {
+      const Eigen::Matrix3d parentRotationTranspose
+          = parentBodyToJoint.linear().transpose();
+      nextQ.linear().noalias()
+          = parentRotationTranspose * nextRelativeTransform.linear();
+      nextQ.translation().noalias() = parentRotationTranspose
+                                      * (nextRelativeTransform.translation()
+                                         - parentBodyToJoint.translation());
+    }
+
+    if (getCoordinateChart() == CoordinateChart::EXP_MAP) {
+      Eigen::Vector6d nextPositions;
+      nextPositions.head<3>() = math::logMap(nextQ.linear());
+      nextPositions.tail<3>() = nextQ.translation();
+      setPositionsStatic(nextPositions);
+    } else {
+      setPositionsStatic(convertToPositions(nextQ, getCoordinateChart()));
+    }
+    return;
+  }
+
   const Eigen::Isometry3d nextQ
       = parentBodyToJoint.inverse() * nextRelativeTransform * childBodyToJoint;
 
@@ -801,8 +838,21 @@ void FreeJoint::updateRelativeTransform() const
 {
   mQ = convertToTransform(getPositionsStatic(), getCoordinateChart());
 
-  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
-       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+  const Eigen::Isometry3d& parentBodyToJoint
+      = Joint::mAspectProperties.mT_ParentBodyToJoint;
+  const Eigen::Isometry3d& childBodyToJoint
+      = Joint::mAspectProperties.mT_ChildBodyToJoint;
+
+  if (isIdentityTransform(childBodyToJoint)) {
+    if (parentBodyToJoint.linear().isIdentity(0.0)) {
+      mT = mQ;
+      mT.translation() += parentBodyToJoint.translation();
+    } else {
+      mT = parentBodyToJoint * mQ;
+    }
+  } else {
+    mT = parentBodyToJoint * mQ * childBodyToJoint.inverse();
+  }
 
   if (!math::verifyTransform(mT)) {
     DART_WARN_ONCE(
@@ -818,8 +868,17 @@ void FreeJoint::updateRelativeJacobian(bool) const
 {
   const Eigen::Matrix3d rotationTranspose
       = getRelativeTransform().linear().transpose();
-  const Eigen::Matrix6d baseJac
-      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+  const Eigen::Isometry3d& childBodyToJoint
+      = Joint::mAspectProperties.mT_ChildBodyToJoint;
+
+  if (isIdentityTransform(childBodyToJoint)) {
+    mJacobian.setZero();
+    mJacobian.topLeftCorner<3, 3>() = rotationTranspose;
+    mJacobian.bottomRightCorner<3, 3>() = rotationTranspose;
+    return;
+  }
+
+  const Eigen::Matrix6d baseJac = math::getAdTMatrix(childBodyToJoint);
 
   mJacobian.topRows<3>() = rotationTranspose * baseJac.topRows<3>();
   mJacobian.bottomRows<3>() = rotationTranspose * baseJac.bottomRows<3>();
@@ -830,14 +889,22 @@ void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
   const Eigen::Matrix3d rotationTranspose
       = getRelativeTransform().linear().transpose();
-  const Eigen::Matrix6d baseJac
-      = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
+  const Eigen::Isometry3d& childBodyToJoint
+      = Joint::mAspectProperties.mT_ChildBodyToJoint;
 
   const Eigen::Vector3d omega = getRelativeSpatialVelocity().head<3>();
   const Eigen::Matrix3d rotationDeriv
       = -math::makeSkewSymmetric(omega) * rotationTranspose;
 
   mJacobianDeriv.setZero();
+  if (isIdentityTransform(childBodyToJoint)) {
+    mJacobianDeriv.topLeftCorner<3, 3>() = rotationDeriv;
+    mJacobianDeriv.bottomRightCorner<3, 3>() = rotationDeriv;
+    return;
+  }
+
+  const Eigen::Matrix6d baseJac = math::getAdTMatrix(childBodyToJoint);
+
   mJacobianDeriv.topRows<3>() = rotationDeriv * baseJac.topRows<3>();
   mJacobianDeriv.bottomRows<3>() = rotationDeriv * baseJac.bottomRows<3>();
 }
