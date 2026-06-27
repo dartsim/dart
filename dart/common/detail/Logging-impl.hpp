@@ -77,10 +77,11 @@ void logToSpdlog(
   // A logging call must never throw, so a malformed format string (only caught
   // at runtime, since the format is not a compile-time constant) falls back to
   // logging the raw format string instead of propagating the fmt error.
+  // fmt::vformat takes a runtime format string directly, so it works across
+  // every fmt version DART supports (unlike fmt::runtime, which is fmt 8+ only)
+  // and independent of spdlog's formatting backend.
   try {
-    logger->log(
-        level,
-        fmt::format(fmt::runtime(format_str), std::forward<Args>(args)...));
+    logger->log(level, fmt::vformat(format_str, fmt::make_format_args(args...)));
   } catch (const std::exception& e) {
     logger->log(
         level, fmt::format("[log format error: {}] {}", e.what(), format_str));
