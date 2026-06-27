@@ -17,6 +17,17 @@
     or corrupting the LCP solve with NaN/Inf:
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
+* Build
+
+  * Stop a deprecation warning from leaking out of DART's header-only logging
+    templates when building against fmt 12.2.0 or newer. spdlog's variadic
+    `log()` routes the format string through a `fmt::format_string` ->
+    `string_view` conversion deprecated in fmt 12.2.0, so the warning surfaced
+    in every downstream that instantiates DART's logging. DART now pre-formats
+    messages and hands spdlog a ready-made string, sidestepping the deprecated
+    conversion:
+    [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
