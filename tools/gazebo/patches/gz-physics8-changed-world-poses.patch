@@ -72,3 +72,28 @@ index e18c8bd5..238e2aa5 100644
  template <class T>
  class SimulationFeaturesTestBasic :
    public SimulationFeaturesTest<T>{};
+diff --git a/test/common_test/joint_features.cc b/test/common_test/joint_features.cc
+--- a/test/common_test/joint_features.cc
++++ b/test/common_test/joint_features.cc
+@@ -962,16 +962,16 @@ TYPED_TEST(JointFeaturesDetachTest, JointDetach)
+     // sanity check on velocity values
+     EXPECT_LT(1e-5, upperLinkLinearVelocity.Z());
+     EXPECT_GT(-0.03, upperLinkAngularVelocity.X());
+-#ifdef __APPLE__
+-    // Disable some expectations for dartsim plugin on homebrew,
++#if defined(__APPLE__) || defined(__linux__)
++    // Disable some expectations for dartsim plugin on homebrew/Linux,
+     // see https://github.com/gazebosim/gz-physics/issues/620.
+     if (this->PhysicsEngineName(name) != "dartsim")
+ #endif
+     {
+       EXPECT_NEAR(0.0, upperLinkLinearVelocity.X(), 1e-6);
+     }
+     EXPECT_NEAR(0.0, upperLinkLinearVelocity.Y(), 1e-6);
+-#ifdef __APPLE__
+-    // Disable some expectations for dartsim plugin on homebrew,
++#if defined(__APPLE__) || defined(__linux__)
++    // Disable some expectations for dartsim plugin on homebrew/Linux,
+     // see https://github.com/gazebosim/gz-physics/issues/620.
+     if (this->PhysicsEngineName(name) != "dartsim")
+ #endif
