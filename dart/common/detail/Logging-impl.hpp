@@ -81,7 +81,8 @@ void logToSpdlog(
   // every fmt version DART supports (unlike fmt::runtime, which is fmt 8+ only)
   // and independent of spdlog's formatting backend.
   try {
-    logger->log(level, fmt::vformat(format_str, fmt::make_format_args(args...)));
+    logger->log(
+        level, fmt::vformat(format_str, fmt::make_format_args(args...)));
   } catch (const std::exception& e) {
     logger->log(
         level, fmt::format("[log format error: {}] {}", e.what(), format_str));
