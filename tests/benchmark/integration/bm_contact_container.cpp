@@ -111,6 +111,7 @@ void BM_ContactContainerActive(benchmark::State& state)
         ++finalResting;
     }
     benchmark::DoNotOptimize(world->getTime());
+    world.reset();
     state.ResumeTiming();
   }
 
