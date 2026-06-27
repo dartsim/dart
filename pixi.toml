@@ -897,13 +897,25 @@ download-gz-sim = { cmd = """
 patch-gz-physics = { cmd = """
     bash -lc '
     set -euo pipefail
-    for patch_file in "$PWD"/tools/gazebo/patches/*.patch; do
-        if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
-            echo "$patch_file already applied"
-        else
-            git -C .deps/gz-physics apply --check "$patch_file"
-            git -C .deps/gz-physics apply "$patch_file"
-        fi
+    mapfile -t patch_files < <(find "$PWD/tools/gazebo/patches" -maxdepth 1 -type f -name "*.patch" | sort)
+    if ((${#patch_files[@]} == 0)); then
+        exit 0
+    fi
+
+    reverse_patch_files=()
+    for ((i=${#patch_files[@]} - 1; i >= 0; --i)); do
+        reverse_patch_files+=("${patch_files[i]}")
+    done
+
+    if git -C .deps/gz-physics apply --reverse --check "${reverse_patch_files[@]}" >/dev/null 2>&1; then
+        echo "gz-physics patches already applied"
+        exit 0
+    fi
+
+    for patch_file in "${patch_files[@]}"; do
+        git -C .deps/gz-physics apply --check "$patch_file"
+        git -C .deps/gz-physics apply "$patch_file"
+        echo "$patch_file applied"
     done
     '
 """, depends-on = [
