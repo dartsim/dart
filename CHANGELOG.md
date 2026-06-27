@@ -141,6 +141,10 @@ compatibility remains on the active DART 6 LTS branch._
   finiteness guards (templated `math::isNan`/`isInf` plus `Eigen::allFinite()`),
   `noalias()` force-aggregation and contact-normal products, and fixed-capacity
   contact spatial-normal storage. Behavior is unchanged.
+- Fixed per-DoF actuator override storage in `JointProperties` so worlds can
+  create and destroy joint properties across translation-unit and
+  shared-library boundaries without heap corruption (the override map is now a
+  sorted, compact vector of index/type pairs).
 - Added identity-joint-frame fast paths to `FreeJoint` position integration,
   relative transform, and Jacobian updates (forward-ported from the DART 6 LTS
   line), skipping the general inverse/compose when the child (and optionally

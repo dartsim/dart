@@ -40,7 +40,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <map>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -137,8 +137,13 @@ struct DART_API JointProperties
   ActuatorType mActuatorType;
 
   /// Actuator types for specific DoFs that override the joint-wide actuator
-  /// type.
-  std::map<std::size_t, ActuatorType> mActuatorTypes;
+  /// type. Stored as a sorted (by DoF index) vector of pairs rather than a
+  /// std::map so the Properties struct stays trivially copyable across
+  /// translation-unit and shared-library boundaries (a std::map member in an
+  /// Aspect Properties struct could corrupt the heap when worlds create and
+  /// destroy joint properties across those boundaries).
+  // dart7-legacy-freeze: bugfix-port (forward-port of release-6.* fix)
+  std::vector<std::pair<std::size_t, ActuatorType>> mActuatorTypes;
 
   /// Vector of MimicDofProperties for each dependent DoF in the joint.
   std::vector<MimicDofProperties> mMimicDofProps;

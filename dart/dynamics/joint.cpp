@@ -39,6 +39,7 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 
@@ -90,6 +91,39 @@ JointProperties::JointProperties(
 }
 
 } // namespace detail
+
+namespace {
+
+using ActuatorOverride = std::pair<std::size_t, Joint::ActuatorType>;
+using ActuatorOverrides = std::vector<ActuatorOverride>;
+
+auto findActuatorOverride(ActuatorOverrides& overrides, std::size_t index)
+{
+  return std::find_if(
+      overrides.begin(),
+      overrides.end(),
+      [index](const ActuatorOverride& entry) { return entry.first == index; });
+}
+
+auto findActuatorOverride(const ActuatorOverrides& overrides, std::size_t index)
+{
+  return std::find_if(
+      overrides.begin(),
+      overrides.end(),
+      [index](const ActuatorOverride& entry) { return entry.first == index; });
+}
+
+void sortActuatorOverrides(ActuatorOverrides& overrides)
+{
+  std::sort(
+      overrides.begin(),
+      overrides.end(),
+      [](const ActuatorOverride& lhs, const ActuatorOverride& rhs) {
+        return lhs.first < rhs.first;
+      });
+}
+
+} // namespace
 
 //==============================================================================
 Joint::ExtendedProperties::ExtendedProperties(
@@ -258,7 +292,7 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
   auto& overrides = mAspectProperties.mActuatorTypes;
 
   if (actuatorType == mAspectProperties.mActuatorType) {
-    const auto it = overrides.find(index);
+    const auto it = findActuatorOverride(overrides, index);
     if (it == overrides.end()) {
       return;
     }
@@ -268,12 +302,15 @@ void Joint::setActuatorType(std::size_t index, ActuatorType actuatorType)
     return;
   }
 
-  const auto it = overrides.find(index);
-  if (it != overrides.end() && it->second == actuatorType) {
+  // Joint::MIMIC is the only permitted per-DoF override value (enforced above),
+  // so any existing override already equals the requested type and there is
+  // nothing to change; otherwise insert a new, sorted override.
+  if (findActuatorOverride(overrides, index) != overrides.end()) {
     return;
   }
 
-  overrides[index] = actuatorType;
+  overrides.emplace_back(index, actuatorType);
+  sortActuatorOverrides(overrides);
   resetCommands();
 }
 
@@ -299,7 +336,7 @@ void Joint::setActuatorTypes(std::span<const ActuatorType> actuatorTypes)
   }
 
   ActuatorType newDefault = actuatorTypes.front();
-  std::map<std::size_t, ActuatorType> newOverrides;
+  ActuatorOverrides newOverrides;
   const bool newDefaultDynamic = isDynamicActuatorType(newDefault);
 
   for (std::size_t i = 1; i < actuatorTypes.size(); ++i) {
@@ -325,9 +362,10 @@ void Joint::setActuatorTypes(std::span<const ActuatorType> actuatorTypes)
             getName());
         return;
       }
-      newOverrides.emplace(i, type);
+      newOverrides.emplace_back(i, type);
     }
   }
+  sortActuatorOverrides(newOverrides);
 
   if (mAspectProperties.mActuatorType == newDefault
       && mAspectProperties.mActuatorTypes == newOverrides) {
@@ -358,7 +396,7 @@ Joint::ActuatorType Joint::getActuatorType(std::size_t index) const
     return mAspectProperties.mActuatorType;
   }
 
-  const auto it = mAspectProperties.mActuatorTypes.find(index);
+  const auto it = findActuatorOverride(mAspectProperties.mActuatorTypes, index);
   if (it != mAspectProperties.mActuatorTypes.end()) {
     return it->second;
   }
