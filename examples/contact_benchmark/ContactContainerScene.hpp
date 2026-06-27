@@ -65,6 +65,7 @@ constexpr double kDefaultContactContainerSpacing = 1.02;
 constexpr std::size_t kDefaultContactContainerLayers = 4;
 constexpr double kDefaultContactContainerJitter = 0.08;
 constexpr double kDefaultContactContainerWallThickness = 0.2;
+constexpr double kDefaultContactContainerDropHeight = 1.75;
 constexpr std::uint32_t kDefaultContactContainerSeed = 3056u;
 
 struct ContactContainerOptions
@@ -76,6 +77,7 @@ struct ContactContainerOptions
   std::optional<double> wallHeight;
   double containerWallThickness = kDefaultContactContainerWallThickness;
   double jitter = kDefaultContactContainerJitter;
+  double dropHeight = 0.0;
   std::uint32_t seed = kDefaultContactContainerSeed;
   double initialSpeed = 0.0;
   double initialAngularSpeed = 0.0;
@@ -298,7 +300,8 @@ inline void addContainer(
                      + jitterDist(rng);
     const double z = spec.centerHeight
                      + static_cast<double>(layer) * verticalSpacing
-                     + 0.05 * static_cast<double>((row + column) % 2u);
+                     + 0.05 * static_cast<double>((row + column) % 2u)
+                     + std::max(0.0, options.dropHeight);
 
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
     transform.linear()

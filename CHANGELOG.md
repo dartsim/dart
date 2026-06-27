@@ -264,10 +264,12 @@
     guardrails rather than this settled-scene completion claim:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Add a parameterized `contact_benchmark --generate-container` scene and a
-    matching `BM_INTEGRATION_contact_container` benchmark so active
-    mixed-shape contact workloads can be measured with the DART-native and ODE
-    collision detectors across single-threaded and multi-threaded simulation:
+  * Add a parameterized `contact_benchmark --generate-container` scene with
+    GUI scaling and live rebuild controls, plus a matching
+    `BM_INTEGRATION_contact_container` benchmark, so active mixed-shape
+    contact workloads can be inspected visually and measured with the
+    DART-native and ODE collision detectors across single-threaded and
+    multi-threaded simulation:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Keep opt-in parallel constraint-island solving on the serial path for

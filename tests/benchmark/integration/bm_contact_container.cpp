@@ -78,6 +78,8 @@ void BM_ContactContainerActive(benchmark::State& state)
         = dart::examples::contact_benchmark::kDefaultContactContainerSpacing;
     options.jitter
         = dart::examples::contact_benchmark::kDefaultContactContainerJitter;
+    options.dropHeight
+        = dart::examples::contact_benchmark::kDefaultContactContainerDropHeight;
     options.seed
         = dart::examples::contact_benchmark::kDefaultContactContainerSeed;
     options.collisionDetector = makeDetector(engine);

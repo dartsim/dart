@@ -92,6 +92,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -108,6 +109,8 @@ constexpr double kDefaultGeneratedContainerJitter
     = contact_scene::kDefaultContactContainerJitter;
 constexpr double kDefaultGeneratedContainerWallThickness
     = contact_scene::kDefaultContactContainerWallThickness;
+constexpr double kDefaultGeneratedContainerDropHeight
+    = contact_scene::kDefaultContactContainerDropHeight;
 constexpr std::uint32_t kDefaultGeneratedContainerSeed
     = contact_scene::kDefaultContactContainerSeed;
 constexpr double kDefaultDropHeight = 0.2;
@@ -145,6 +148,7 @@ struct Options
   bool guiStart = false;
   bool guiCaptureExerciseWidget = false;
   double guiTargetRtf = 1.0;
+  double guiScale = dart::gui::osg::getDefaultGuiScale();
   std::optional<std::string> guiCapturePath;
   std::size_t guiCaptureSteps = 0;
   std::size_t worldThreads = 1;
@@ -171,6 +175,7 @@ struct Options
   std::optional<std::size_t> maxContactsPerPair;
   CollisionEngine collisionEngine = CollisionEngine::Default;
   BoxedLcpSolverKind boxedLcpSolver = BoxedLcpSolverKind::Default;
+  bool dropHeightSpecified = false;
 };
 
 struct ContactPair
@@ -277,6 +282,10 @@ void printUsage(const std::string& programName)
       << "  --sleep-state-colors      In GUI mode, color mobile objects by "
          "sleep state.\n"
       << "  --gui-target-rtf N        Target GUI playback RTF; default 1.0.\n"
+      << "  --gui-scale N             Scale the GUI panel, HUD, and initial "
+         "viewer window.\n"
+      << "  --gui-scale=N             Same as --gui-scale N; DART_GUI_SCALE "
+         "is also honored.\n"
       << "  --gui-start               Start GUI simulation immediately; "
          "default is paused.\n"
       << "  --gui-capture PATH        Run the OSG GUI path, save a PNG, and "
@@ -284,14 +293,13 @@ void printUsage(const std::string& programName)
       << "  --gui-capture-steps N     Simulation steps before --gui-capture; "
          "default uses --steps.\n"
       << "  --gui-capture-exercise-widget\n"
-      << "                            With --gui-capture, rebuild the "
-         "generated "
-         "scene once before capture.\n"
+      << "                            With --gui-capture, exercise generated "
+         "scene rebuild controls before capture.\n"
       << "  --world-threads N         Worker threads for independent "
          "simulation "
          "work; 0 uses hardware concurrency.\n"
       << "  --drop-height Z           Raise mobile objects by Z meters before "
-         "simulation.\n"
+         "simulation; 0 is allowed.\n"
       << "  --sleep-linear-threshold V\n"
       << "                            Override automatic sleep linear speed "
          "threshold.\n"
@@ -318,6 +326,8 @@ void printUsage(const std::string& programName)
          "--generate-container; default 0.2 m.\n"
       << "  --container-jitter X      Deterministic placement jitter for "
          "--generate-container; default 0.08 m.\n"
+      << "  --container-drop-height Z Default drop height for "
+         "--generate-container; same as --drop-height.\n"
       << "  --container-seed N        Deterministic seed for "
          "--generate-container; default 3056.\n"
       << "  --container-initial-speed V\n"
@@ -447,8 +457,13 @@ void normalizeGeneratedCapsuleCollisionOptions(Options& options)
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
+  if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
+    options.guiScale = dart::gui::osg::parseGuiScale(
+        envScale, dart::gui::osg::getDefaultGuiScale(), &std::cerr);
+  }
 
   bool consumedPositionalSteps = false;
+  const std::string guiScalePrefix = "--gui-scale=";
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
 
@@ -482,6 +497,12 @@ Options parseOptions(int argc, char* argv[])
       options.sleepStateColors = true;
     } else if (arg == "--gui-target-rtf") {
       options.guiTargetRtf = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--gui-scale") {
+      options.guiScale = dart::gui::osg::parseGuiScale(
+          needValue(arg), options.guiScale, &std::cerr);
+    } else if (arg.compare(0, guiScalePrefix.size(), guiScalePrefix) == 0) {
+      options.guiScale = dart::gui::osg::parseGuiScale(
+          arg.substr(guiScalePrefix.size()), options.guiScale, &std::cerr);
     } else if (arg == "--gui-start") {
       options.guiStart = true;
     } else if (arg == "--gui-capture") {
@@ -493,7 +514,11 @@ Options parseOptions(int argc, char* argv[])
     } else if (arg == "--world-threads") {
       options.worldThreads = parseSize(needValue(arg), arg);
     } else if (arg == "--drop-height") {
-      options.dropHeight = parsePositiveDouble(needValue(arg), arg);
+      options.dropHeight = parseNonNegativeDouble(needValue(arg), arg);
+      options.dropHeightSpecified = true;
+    } else if (arg == "--container-drop-height") {
+      options.dropHeight = parseNonNegativeDouble(needValue(arg), arg);
+      options.dropHeightSpecified = true;
     } else if (arg == "--sleep-linear-threshold") {
       options.sleepLinearThreshold = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--sleep-angular-threshold") {
@@ -572,7 +597,7 @@ Options parseOptions(int argc, char* argv[])
   if (usingDefaultScene) {
     options.generatedObjects = kDefaultGeneratedObjects;
     options.sleepStateColors = true;
-    if (options.dropHeight == 0.0)
+    if (!options.dropHeightSpecified)
       options.dropHeight = kDefaultDropHeight;
     if (!options.quiet && !options.guiCapturePath.has_value())
       options.gui = true;
@@ -588,6 +613,9 @@ Options parseOptions(int argc, char* argv[])
 
   if (options.generateContainer && !options.generatedSpacingSpecified)
     options.generatedSpacing = kDefaultGeneratedContainerSpacing;
+
+  if (options.generateContainer && !options.dropHeightSpecified)
+    options.dropHeight = kDefaultGeneratedContainerDropHeight;
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
@@ -752,6 +780,7 @@ contact_scene::ContactContainerOptions makeContactContainerOptions(
   contactOptions.containerWallThickness
       = options.generatedContainerWallThickness;
   contactOptions.jitter = options.generatedContainerJitter;
+  contactOptions.dropHeight = options.dropHeight;
   contactOptions.seed = options.generatedContainerSeed;
   contactOptions.initialSpeed = options.generatedContainerInitialSpeed;
   contactOptions.initialAngularSpeed
@@ -1483,7 +1512,7 @@ void printWorldSummary(
       }
     }
   }
-  if (options.dropHeight > 0.0)
+  if (options.dropHeight > 0.0 || options.dropHeightSpecified)
     std::cout << "  Initial drop height: " << options.dropHeight << " m\n";
 
   std::size_t totalDofs = 0;
@@ -1749,16 +1778,21 @@ private:
 
   void createHud()
   {
-    mHudCamera = dart::gui::osg::createHudCamera(0.0, 1360.0, 0.0, 768.0);
+    const double guiScale = dart::gui::osg::sanitizeGuiScale(mOptions.guiScale);
+    mHudCamera = dart::gui::osg::createHudCamera(
+        0.0, 1360.0 * guiScale, 0.0, 768.0 * guiScale);
 
     ::osg::ref_ptr<::osg::Geode> hudGeode = new ::osg::Geode;
     mHudText = new ::osgText::Text;
     mHudText->setDataVariance(::osg::Object::DYNAMIC);
     mHudText->setCharacterSizeMode(::osgText::TextBase::SCREEN_COORDS);
-    mHudText->setCharacterSize(18.0f);
+    mHudText->setCharacterSize(static_cast<float>(18.0 * guiScale));
     mHudText->setAxisAlignment(::osgText::TextBase::SCREEN);
     mHudText->setAlignment(::osgText::TextBase::LEFT_TOP);
-    mHudText->setPosition(::osg::Vec3(18.0f, 748.0f, 0.0f));
+    mHudText->setPosition(::osg::Vec3(
+        static_cast<float>(18.0 * guiScale),
+        static_cast<float>(748.0 * guiScale),
+        0.0f));
     mHudText->setColor(::osg::Vec4(0.02f, 0.02f, 0.02f, 1.0f));
     mHudText->setBackdropType(::osgText::Text::OUTLINE);
     mHudText->setBackdropColor(::osg::Vec4(1.0f, 1.0f, 1.0f, 0.85f));
@@ -1910,8 +1944,12 @@ public:
   ContactBenchmarkGuiWidget(
       dart::gui::osg::ImGuiViewer* viewer,
       ContactBenchmarkGuiWorldNode* node,
-      ContactBenchmarkGuiEventHandler* eventHandler)
-    : mViewer(viewer), mNode(node), mEventHandler(eventHandler)
+      ContactBenchmarkGuiEventHandler* eventHandler,
+      double guiScale)
+    : mViewer(viewer),
+      mNode(node),
+      mEventHandler(eventHandler),
+      mGuiScale(static_cast<float>(dart::gui::osg::sanitizeGuiScale(guiScale)))
   {
     syncFromNode();
   }
@@ -1922,9 +1960,15 @@ public:
       return;
 
     const ImGuiIO& io = ImGui::GetIO();
-    const float margin = 12.0f;
-    const float width = std::min(360.0f, std::max(280.0f, io.DisplaySize.x));
-    const float height = std::min(560.0f, std::max(240.0f, io.DisplaySize.y));
+    const float margin = 12.0f * mGuiScale;
+    const float preferredWidth = 380.0f * mGuiScale;
+    const float preferredHeight = 660.0f * mGuiScale;
+    const float minWidth = 280.0f * mGuiScale;
+    const float minHeight = 240.0f * mGuiScale;
+    const float width
+        = std::min(preferredWidth, std::max(minWidth, io.DisplaySize.x));
+    const float height
+        = std::min(preferredHeight, std::max(minHeight, io.DisplaySize.y));
     ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowBgAlpha(0.94f);
@@ -1960,10 +2004,32 @@ public:
         original.generatedObjects.value_or(kDefaultGeneratedObjects) + 3u,
         2u * kDefaultGeneratedObjects);
     changed.generatedSpacing = original.generatedSpacing + 0.05;
-    changed.dropHeight = std::max(original.dropHeight, kDefaultDropHeight);
+    changed.dropHeight
+        = std::max(original.dropHeight, kDefaultGeneratedContainerDropHeight);
+
+    if (!replaceGeneratedScene(changed, error))
+      return false;
+
+    changed.generateContainer = true;
+    changed.generateCapsules = false;
+    changed.generatedContainerLayers
+        = std::max<std::size_t>(2u, changed.generatedContainerLayers + 1u);
+    changed.generatedContainerJitter
+        = std::min(0.25, changed.generatedContainerJitter + 0.04);
+    changed.generatedContainerInitialSpeed = 0.35;
+    changed.generatedContainerInitialAngularSpeed = 1.0;
+    if (!replaceGeneratedScene(changed, error))
+      return false;
+
+    changed.dropHeight = 0.0;
+    changed.dropHeightSpecified = true;
+    changed.generatedContainerInitialSpeed = 0.0;
+    changed.generatedContainerInitialAngularSpeed = 0.0;
     const bool rebuilt = replaceGeneratedScene(changed, error);
-    if (rebuilt)
+    if (rebuilt) {
       syncFromNode();
+      mPendingSceneDirty = false;
+    }
     return rebuilt;
   }
 
@@ -1983,7 +2049,13 @@ private:
         options.generatedObjects.value_or(kDefaultGeneratedObjects));
     mGeneratedSpacing = static_cast<float>(options.generatedSpacing);
     mGenerateContainer = options.generateContainer;
+    mGenerateCapsules = options.generateCapsules;
     mContainerLayers = static_cast<int>(options.generatedContainerLayers);
+    mContainerJitter = static_cast<float>(options.generatedContainerJitter);
+    mContainerInitialSpeed
+        = static_cast<float>(options.generatedContainerInitialSpeed);
+    mContainerInitialAngularSpeed
+        = static_cast<float>(options.generatedContainerInitialAngularSpeed);
     mDropHeight = static_cast<float>(options.dropHeight);
     mTargetRtf = static_cast<float>(options.guiTargetRtf);
     mSleepStateColors = options.sleepStateColors;
@@ -2000,13 +2072,23 @@ private:
     options.generatedObjects
         = static_cast<std::size_t>(std::max(1, mGeneratedObjects));
     options.generateContainer = mGenerateContainer;
-    if (mGenerateContainer)
+    options.generateCapsules = mGenerateCapsules && !mGenerateContainer;
+    if (mGenerateContainer) {
       options.generateCapsules = false;
+      options.generatedContainerJitter
+          = std::max(0.0, static_cast<double>(mContainerJitter));
+      options.generatedContainerInitialSpeed
+          = std::max(0.0, static_cast<double>(mContainerInitialSpeed));
+      options.generatedContainerInitialAngularSpeed
+          = std::max(0.0, static_cast<double>(mContainerInitialAngularSpeed));
+    }
     options.generatedContainerLayers
         = static_cast<std::size_t>(std::max(1, mContainerLayers));
     options.generatedSpacing
         = std::max(0.05, static_cast<double>(mGeneratedSpacing));
     options.dropHeight = std::max(0.0, static_cast<double>(mDropHeight));
+    options.dropHeightSpecified = true;
+    options.generatedSpacingSpecified = true;
     options.guiTargetRtf = std::max(0.05, static_cast<double>(mTargetRtf));
     options.sleepStateColors = mSleepStateColors;
     options.collisionEngine = collisionEngineFromIndex(mCollisionIndex);
@@ -2028,7 +2110,7 @@ private:
       normalizeGeneratedCapsuleCollisionOptions(options);
       auto newWorld = createGeneratedWorld(options);
       applyOptions(newWorld, options);
-      if (options.dropHeight > 0.0)
+      if (options.dropHeight > 0.0 && !options.generateContainer)
         raiseMobileObjects(newWorld, options.dropHeight);
       wakeMobileObjects(newWorld);
       replaceGuiPlaneVisualsWithFloorBoxes(newWorld);
@@ -2113,49 +2195,94 @@ private:
       return;
     }
 
+    bool edited = false;
+    auto noteEdit = [&](bool changed) {
+      edited = edited || changed;
+      mPendingSceneDirty = mPendingSceneDirty || changed;
+    };
+
     mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
     ImGui::SetNextItemWidth(-1.0f);
-    ImGui::SliderInt("Objects", &mGeneratedObjects, 3, 300);
+    noteEdit(ImGui::SliderInt("Objects", &mGeneratedObjects, 3, 300));
     ImGui::SetNextItemWidth(-1.0f);
-    ImGui::InputInt("Object count", &mGeneratedObjects, 3, 30);
+    noteEdit(ImGui::InputInt("Object count", &mGeneratedObjects, 3, 30));
     mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
 
     ImGui::SetNextItemWidth(-1.0f);
-    ImGui::SliderFloat("Spacing", &mGeneratedSpacing, 0.6f, 3.0f, "%.2f m");
-    ImGui::Checkbox("Contact container", &mGenerateContainer);
+    noteEdit(ImGui::SliderFloat(
+        "Spacing", &mGeneratedSpacing, 0.6f, 3.0f, "%.2f m"));
+    noteEdit(ImGui::Checkbox("Contact container", &mGenerateContainer));
+    if (!mGenerateContainer) {
+      noteEdit(ImGui::Checkbox("Capsule-only", &mGenerateCapsules));
+    } else {
+      mGenerateCapsules = false;
+    }
     if (mGenerateContainer) {
       ImGui::SetNextItemWidth(-1.0f);
-      ImGui::InputInt("Container layers", &mContainerLayers, 1, 2);
+      noteEdit(ImGui::InputInt("Container layers", &mContainerLayers, 1, 2));
       mContainerLayers = std::clamp(mContainerLayers, 1, 1000);
+      ImGui::SetNextItemWidth(-1.0f);
+      noteEdit(ImGui::SliderFloat(
+          "Container jitter", &mContainerJitter, 0.0f, 0.35f, "%.2f m"));
+      ImGui::SetNextItemWidth(-1.0f);
+      noteEdit(ImGui::SliderFloat(
+          "Initial speed", &mContainerInitialSpeed, 0.0f, 4.0f, "%.2f m/s"));
+      ImGui::SetNextItemWidth(-1.0f);
+      noteEdit(ImGui::SliderFloat(
+          "Initial spin",
+          &mContainerInitialAngularSpeed,
+          0.0f,
+          8.0f,
+          "%.2f rad/s"));
     }
     ImGui::SetNextItemWidth(-1.0f);
-    ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 2.0f, "%.2f m");
+    noteEdit(
+        ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 4.0f, "%.2f m"));
 
     static const char* kCollisionItems[]
         = {"default", "dart", "fcl", "bullet", "ode"};
     ImGui::SetNextItemWidth(-1.0f);
-    if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 5)
-        && !collisionEngineAllowsPrimitiveShapes(mCollisionIndex)) {
-      mPrimitiveShapes = false;
+    if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 5)) {
+      if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
+        mPrimitiveShapes = false;
+      noteEdit(true);
     }
 
     if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
       ImGui::BeginDisabled();
-    ImGui::Checkbox("FCL primitive shapes", &mPrimitiveShapes);
+    noteEdit(ImGui::Checkbox("FCL primitive shapes", &mPrimitiveShapes));
     if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex)) {
       mPrimitiveShapes = false;
       ImGui::EndDisabled();
     }
 
-    if (ImGui::Button("Apply scene")) {
-      std::string error;
-      Options pending = makePendingOptions();
-      if (replaceGeneratedScene(pending, &error)) {
-        syncFromNode();
-        mStatusMessage = "Scene rebuilt.";
-      } else {
-        mStatusMessage = "Scene rebuild failed: " + error;
-      }
+    ImGui::Checkbox("Auto-apply edits", &mAutoApplySceneEdits);
+
+    const bool canAutoApply = mAutoApplySceneEdits && mPendingSceneDirty
+                              && !ImGui::IsAnyItemActive();
+    if (canAutoApply) {
+      applyPendingScene("Scene rebuilt from live edit.");
+    }
+
+    if (mPendingSceneDirty)
+      ImGui::SameLine();
+    if (ImGui::Button("Apply scene"))
+      applyPendingScene("Scene rebuilt.");
+    else if (edited && !mAutoApplySceneEdits)
+      mStatusMessage = mPendingSceneDirty ? "Scene edits pending." : "";
+  }
+
+  void applyPendingScene(const char* successMessage)
+  {
+    std::string error;
+    Options pending = makePendingOptions();
+    if (replaceGeneratedScene(pending, &error)) {
+      syncFromNode();
+      mPendingSceneDirty = false;
+      mStatusMessage = successMessage;
+    } else {
+      mPendingSceneDirty = false;
+      mStatusMessage = "Scene rebuild failed: " + error;
     }
   }
 
@@ -2165,12 +2292,19 @@ private:
   int mGeneratedObjects = static_cast<int>(kDefaultGeneratedObjects);
   float mGeneratedSpacing = static_cast<float>(kDefaultGeneratedSpacing);
   bool mGenerateContainer = false;
+  bool mGenerateCapsules = false;
   int mContainerLayers = static_cast<int>(kDefaultGeneratedContainerLayers);
+  float mContainerJitter = static_cast<float>(kDefaultGeneratedContainerJitter);
+  float mContainerInitialSpeed = 0.0f;
+  float mContainerInitialAngularSpeed = 0.0f;
   float mDropHeight = static_cast<float>(kDefaultDropHeight);
   float mTargetRtf = 1.0f;
   int mCollisionIndex = 0;
   bool mPrimitiveShapes = false;
   bool mSleepStateColors = true;
+  bool mAutoApplySceneEdits = true;
+  bool mPendingSceneDirty = false;
+  float mGuiScale = 1.0f;
   std::string mStatusMessage;
 };
 
@@ -2189,6 +2323,7 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
   std::cout << "GUI HUD: RTF, simulation time, contacts, and sleep state. "
                "Press r to reset to t=0/drop state.\n";
   std::cout << "GUI target RTF: " << options.guiTargetRtf << "\n";
+  std::cout << "GUI scale: " << options.guiScale << "\n";
   std::cout << "GUI starts " << (options.guiStart ? "running" : "paused")
             << ".\n";
   if (options.sleepStateColors) {
@@ -2201,12 +2336,17 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
   ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
       = new ContactBenchmarkGuiEventHandler(node.get());
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.guiScale);
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<ContactBenchmarkGuiWidget>(
-          viewer.get(), node.get(), eventHandler.get()));
+          viewer.get(), node.get(), eventHandler.get(), options.guiScale));
   viewer->addEventHandler(eventHandler);
   viewer->simulate(options.guiStart);
-  viewer->setUpViewInWindow(0, 0, 1360, 768);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1360, options.guiScale),
+      dart::gui::osg::scaleWindowExtent(768, options.guiScale));
   applyCameraPose(*viewer, world);
   viewer->run();
 }
@@ -2240,13 +2380,18 @@ int runGuiCapture(
   ::osg::ref_ptr<ContactBenchmarkGuiEventHandler> eventHandler
       = new ContactBenchmarkGuiEventHandler(node.get());
   auto widget = std::make_shared<ContactBenchmarkGuiWidget>(
-      viewer.get(), node.get(), eventHandler.get());
+      viewer.get(), node.get(), eventHandler.get(), options.guiScale);
   viewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
   viewer->addWorldNode(node);
+  viewer->getImGuiHandler()->setGuiScale(options.guiScale);
   viewer->getImGuiHandler()->addWidget(widget);
   viewer->addEventHandler(eventHandler);
   viewer->simulate(false);
-  viewer->setUpViewInWindow(0, 0, 1360, 768);
+  viewer->setUpViewInWindow(
+      0,
+      0,
+      dart::gui::osg::scaleWindowExtent(1360, options.guiScale),
+      dart::gui::osg::scaleWindowExtent(768, options.guiScale));
   applyCameraPose(*viewer, world);
   viewer->realize();
   if (!viewer->isRealized()) {
@@ -2508,7 +2653,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  if (options.dropHeight > 0.0) {
+  if (options.dropHeight > 0.0 && !options.generateContainer) {
     try {
       const auto raised = raiseMobileObjects(world, options.dropHeight);
       std::cout << "Raised mobile root bodies by " << options.dropHeight
