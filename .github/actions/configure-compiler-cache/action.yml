@@ -89,8 +89,19 @@ runs:
         echo "CMAKE_C_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> "${GITHUB_ENV}"
         echo "CMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER_VALUE}" >> "${GITHUB_ENV}"
 
+        # Self-hosted runners are long-lived but the Actions runner wipes
+        # RUNNER_TEMP every job, so a ccache there is always cold and each build
+        # compiles from scratch. Keep the cache on the persistent per-runner
+        # tool-cache directory instead. GitHub-hosted runners are ephemeral, so
+        # RUNNER_TEMP is correct there (and avoids leaking cache across images).
+        CCACHE_DIR_VALUE="${RUNNER_TEMP}/ccache"
+        case "${RUNNER_NAME_VALUE}" in
+          GitHub\ Actions*) ;;
+          *) CCACHE_DIR_VALUE="${RUNNER_TOOL_CACHE}/dart-ccache" ;;
+        esac
+
         echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> "${GITHUB_ENV}"
-        echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
+        echo "CCACHE_DIR=${CCACHE_DIR_VALUE}" >> "${GITHUB_ENV}"
         echo "CCACHE_COMPRESS=true" >> "${GITHUB_ENV}"
         echo "CCACHE_MAXSIZE=5G" >> "${GITHUB_ENV}"
-        mkdir -p "${RUNNER_TEMP}/ccache"
+        mkdir -p "${CCACHE_DIR_VALUE}"
