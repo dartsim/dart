@@ -76,7 +76,7 @@ def main(argv: list[str]) -> int:
     cmake_args.extend(cmake_host_linker_flags())
 
     os.environ["DART_DISABLE_COMPILER_CACHE"] = disable_compiler_cache
-    os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
+    os.environ["CMAKE_ARGS"] = shlex.join(cmake_args)
 
     Path("dist").mkdir(parents=True, exist_ok=True)
 
