@@ -600,7 +600,7 @@ jobs:
               -DDART_USE_SYSTEM_IMGUI=ON \
               -DDART_USE_SYSTEM_TRACY=OFF \
               -DDART_VERBOSE=$DART_VERBOSE \
-              "${HOST_LINKER_DEFS[@]}"
+              ${HOST_LINKER_DEFS[@]+"${HOST_LINKER_DEFS[@]}"}
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j
           '
 
