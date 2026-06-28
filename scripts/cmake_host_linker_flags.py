@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -29,6 +30,15 @@ def _inside(path: Path, parent: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _linker_flag_value(name: str) -> str:
+    values = [
+        os.environ.get(name, ""),
+        os.environ.get("LDFLAGS", ""),
+        "-B/usr/bin",
+    ]
+    return " ".join(value for value in values if value)
 
 
 def cmake_host_linker_flags() -> list[str]:
@@ -61,11 +71,11 @@ def cmake_host_linker_flags() -> list[str]:
     if not Path("/usr/bin/ld").is_file():
         return []
 
-    return [f"-D{name}=-B/usr/bin" for name in _LINKER_FLAG_VARS]
+    return [f"-D{name}:STRING={_linker_flag_value(name)}" for name in _LINKER_FLAG_VARS]
 
 
 def main() -> int:
-    print(" ".join(cmake_host_linker_flags()))
+    print(shlex.join(cmake_host_linker_flags()))
     return 0
 
 
