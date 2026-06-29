@@ -23,6 +23,8 @@ except ImportError:  # pragma: no cover
         return os.cpu_count() or 1
 
 
+from cmake_host_linker_flags import cmake_host_linker_flags
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -175,6 +177,7 @@ def configure(build_dir: Path, args: argparse.Namespace) -> None:
         "-DDART_USE_SYSTEM_TRACY=ON",
         f"-DDART_VERBOSE={os.environ.get('DART_VERBOSE', 'OFF')}",
     ]
+    cmake_args.extend(cmake_host_linker_flags())
     cmake_args.extend(compiler_launcher_defs())
     run(cmake_args)
 

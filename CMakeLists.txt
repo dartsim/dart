@@ -744,7 +744,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}"
   )
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+  set(
+    CMAKE_SHARED_LINKER_FLAGS
+    "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined"
+  )
 
   # Enforce to colorize compilation output
   if(DART_FORCE_COLORED_OUTPUT)

@@ -18,6 +18,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from cmake_host_linker_flags import cmake_host_linker_flags
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_INSTALLED_HEADERS = (
@@ -232,6 +234,7 @@ def configure_build(
         "-DDART_USE_SYSTEM_TRACY=OFF",
         "-DDART_VERBOSE=OFF",
     ]
+    cmd.extend(cmake_host_linker_flags())
     if shutil.which("sccache") and os.environ.get("SCCACHE_GHA_ENABLED") != "false":
         cmd.extend(
             [
