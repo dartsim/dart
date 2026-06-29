@@ -312,6 +312,373 @@ compatibility remains on the active DART 6 LTS branch._
 
 ## DART 6
 
+### [DART 6.19.3 (2026-06-27)](https://github.com/dartsim/dart/milestone/101?closed=1)
+
+DART 6.19.3 is a patch release on the DART 6 LTS line. It hardens contact
+handling against invalid geometry and silences an fmt 12.2 deprecation warning
+that leaked through DART's logging headers, both addressing issues reported
+through gz-physics. It also recovers from two upstream toolchain regressions,
+restoring the Linux Python wheels and compilation on the latest Clang.
+
+- Simulation
+
+  - Reject invalid shape geometry and non-finite contacts instead of crashing.
+    `BoxShape`, `CylinderShape`, `CapsuleShape`, `EllipsoidShape`, `ConeShape`,
+    and `PyramidShape` now reject non-finite (NaN/Inf) or non-positive
+    dimensions, matching `SphereShape`, and `ConstraintSolver` drops any contact
+    whose point, normal, or penetration depth is non-finite before building a
+    contact constraint. Together these keep a bad shape dimension or a
+    non-finite contact (from a mesh or a collision backend) from tripping the
+    `ContactConstraint` `mSpatialNormalA` assertion or feeding NaN/Inf into the
+    LCP solve:
+    [#3117](https://github.com/dartsim/dart/pull/3117),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+
+- Build
+
+  - Stop an fmt 12.2 deprecation warning from leaking out of DART's header-only
+    logging. spdlog's variadic `log()` routes the format string through a
+    `fmt::format_string` -> `string_view` conversion that fmt 12.2.0 deprecated,
+    so the warning surfaced in every downstream that instantiates DART logging.
+    DART now pre-formats the message and hands spdlog a ready-made string:
+    [#3201](https://github.com/dartsim/dart/pull/3201),
+    [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
+
+  - Restore the Linux `manylinux` Python wheels. The wheel build installs the
+    newest CMake at build time, and CMake 4.3.4 stopped detecting `freeglut3`
+    in the build container, which dropped the `dart-gui` target the dartpy wheel
+    links and broke configuration. The build now caps CMake below 4.3.4 until a
+    fixed release ships:
+    [#3197](https://github.com/dartsim/dart/pull/3197)
+
+  - Compile cleanly on the latest Clang. Recent Clang (such as the current
+    `macos-latest` image) rejects the deprecated whitespace form of
+    user-defined-literal operators under `-Werror`, so the `_pi`, `_rad`, and
+    `_deg` suffixes now use the non-deprecated `operator""_x` spelling:
+    [#3197](https://github.com/dartsim/dart/pull/3197)
+
+### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
+
+DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
+sleeping enabled while adding regression coverage for the gz-sim wheel-command
+path and extending Gazebo validation to cover the downstream gz-sim failure
+reported against DART 6.19.1.
+
+- Tests
+
+  - Cover servo-commanded sleeping bodies against an always-awake baseline, and
+    extend the Gazebo validation task to apply the gz-physics
+    `ChangedWorldPoses` root-cause patch before running gz-sim's
+    `INTEGRATION_entity_system` regression against the source-built DART 6
+    plugin:
+    [#3068](https://github.com/dartsim/dart/pull/3068),
+    [gazebosim/gz-sim#3697](https://github.com/gazebosim/gz-sim/issues/3697)
+
+### [DART 6.19.1 (2026-06-17)](https://github.com/dartsim/dart/milestone/98?closed=1)
+
+- Simulation
+
+  - Preserve the last solved contact body-force cache when an island first
+    transitions into automatic deactivation, so joint transmitted-wrench
+    queries continue to include contact forces while the island is asleep:
+    [#3051](https://github.com/dartsim/dart/pull/3051),
+    [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
+
+- Performance
+
+  - Speed up the articulated-body forward-dynamics hot path by caching the
+    owning `Skeleton` pointer in `BodyNode` and avoiding fixed-size to dynamic
+    Eigen temporaries in `math::isNan` and `math::isInf`, improving the
+    `BM_Dynamics` benchmark by about 18% while preserving bit-exact results:
+    [#3028](https://github.com/dartsim/dart/pull/3028)
+
+  - Remove per-pivot heap allocations in `ContactConstraint` by evaluating
+    spatial-normal matrix-vector products directly into the solver buffers,
+    reducing contact-heavy `boxes` per-step heap allocations by about 58% and
+    improving wall-clock time by about 6% with bit-exact results:
+    [#3033](https://github.com/dartsim/dart/pull/3033)
+
+  - Avoid heap temporaries in `BodyNode` force-aggregation routines by writing
+    Jacobian-transpose products directly into Skeleton tree-cache segments:
+    [#3037](https://github.com/dartsim/dart/pull/3037)
+
+  - Reduce remaining contact-heavy per-step heap allocations by scanning
+    external disturbances per DOF and storing contact spatial normals inline,
+    cutting `boxes` heap allocations by about 38% on top of the earlier
+    allocation reductions while preserving bit-exact finite-state results:
+    [#3040](https://github.com/dartsim/dart/pull/3040)
+
+- Tests
+
+  - Build and run the pinned gz-physics test suite in the DART 6 Gazebo CI gate
+    instead of only checking that the plugin links, and add macOS x64/arm64
+    coverage so downstream Homebrew regressions are caught before release:
+    [#3050](https://github.com/dartsim/dart/pull/3050),
+    [gazebosim/gz-physics#1007](https://github.com/gazebosim/gz-physics/issues/1007)
+
+  - Cover the sleep-transition wrench-cache regression paths, including the
+    final contact impulse before sleep, non-candidate wakeup, and stale
+    constraint-island index handling:
+    [#3055](https://github.com/dartsim/dart/pull/3055)
+
+  - Loosen the `Issue1184` resting-accuracy regression tolerance from `1e-3` to
+    `2e-3` so it is not flipped by micrometer-scale cross-platform
+    floating-point differences in the steady-state contact penetration (~1 mm),
+    which sat exactly on the old bound; fixes the macOS build of the
+    conda-forge feedstock:
+    [#3031](https://github.com/dartsim/dart/pull/3031)
+
+### [DART 6.19.0 (2026-06-14)](https://github.com/dartsim/dart/milestone/97?closed=1)
+
+DART 6.19.0 is a minor release on the DART 6 LTS line. It adds automatic body
+deactivation ("sleeping"), contact-aware inverse dynamics, and a cylindrical
+dynamic joint constraint, together with a constraint-solver hot-path
+optimization and build/example fixes for modern toolchains.
+
+- Build
+
+  - Include `<cassert>` before the FCL headers in the FCL compatibility shim so
+    DART builds against Eigen 5 and current GCC/Clang toolchains, which no
+    longer pull `<cassert>` in transitively (FCL's shape headers call `assert`
+    without including it): [#3021](https://github.com/dartsim/dart/pull/3021)
+
+- Constraint
+
+  - Add `CylindricalJointConstraint` for runtime slide-and-rotate attachments
+    that leave translation along an axis and rotation about that axis free,
+    with headless and GUI examples covering DART 6.x dynamic joint constraints:
+    [#2923](https://github.com/dartsim/dart/pull/2923)
+
+  - Optimize the DART 6 constraint-solver hot path (box-stacking benchmarks
+    ~1.28x faster) with bit-exact results, adding a lightweight profiling-scope
+    helper used to measure it:
+    [#3023](https://github.com/dartsim/dart/pull/3023)
+
+- Dynamics
+
+  - Add `ContactInverseDynamics` and `math::solveNonNegativeLeastSquares` to
+    compute joint torques together with friction-cone-consistent contact
+    forces for tracked motions with contacts, so floating-base inverse
+    dynamics no longer requires an external QP solver, with unit tests,
+    benchmarks, dartpy bindings for `ContactInverseDynamics` (the
+    `math::solveNonNegativeLeastSquares` solver is C++-only), and an ImGui-based
+    GUI example: [#2985](https://github.com/dartsim/dart/pull/2985)
+
+- Examples and Tutorials
+
+  - Enlarge the floor and add an FPS / physics real-time-factor HUD to the
+    `glut_add_delete_skels` example, so spawned cubes keep room on the ground
+    and the effect of adding skeletons on real-time performance is visible:
+    [#3019](https://github.com/dartsim/dart/pull/3019)
+
+- GUI
+
+  - Fix every GLUT example failing to open a window on modern Mesa/Xwayland:
+    the shared GLUT window no longer requests a legacy, now-unavailable
+    accumulation buffer, selecting the framebuffer with a relaxable
+    `glutInitDisplayString` instead, while `MotionBlurSimWindow` opts back into
+    an accumulation buffer on its own:
+    [#3017](https://github.com/dartsim/dart/pull/3017)
+
+- Simulation
+
+  - Add automatic body deactivation ("sleeping") for resting solver islands,
+    including wake-on-contact/force handling and island-index diagnostics. It is
+    enabled by default, so resting bodies now freeze automatically; the
+    detection is a deterministic no-op while bodies are active, and it can be
+    turned off via `World::setDeactivationOptions` to retain the previous
+    always-active behavior: [#2920](https://github.com/dartsim/dart/pull/2920)
+
+### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
+
+DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and
+constraint robustness improvements surfaced through gz-physics, so resting
+capsules/cylinders and non-axis-aligned closed kinematic chains behave correctly
+on the classic DART 6 API.
+
+- Collision
+
+  - Stabilize ODE capsule and cylinder resting contacts with a per-pair contact-history manifold (invalidated on sliding and kinematic pose changes) so they no longer sink through the supporting surface: [#2902](https://github.com/dartsim/dart/pull/2902), [gazebosim/gz-physics#692](https://github.com/gazebosim/gz-physics/issues/692)
+
+- Constraint
+
+  - Regularize rank-deficient closed-loop constraints with an additive Constraint Force Mixing floor on the `BallJointConstraint`/`WeldJointConstraint` loop-closure constraints, so non-axis-aligned closed kinematic chains stay enforced instead of drifting open: [#2903](https://github.com/dartsim/dart/pull/2903), [gazebosim/gz-physics#719](https://github.com/gazebosim/gz-physics/issues/719)
+
+### [DART 6.17.1 (2026-06-05)](https://github.com/dartsim/dart/milestone/95?closed=1)
+
+DART 6.17.1 is a patch release on the DART 6 LTS line. It hardens the classic
+DART 6 API against non-finite and degenerate inputs surfaced through gz-physics,
+so invalid SDF data degrades gracefully (with a warning) instead of aborting.
+
+- Collision
+
+  - Clamp the ODE heightfield extents, vertical scale, and bounds so an extreme `HeightmapShape` scale no longer aborts `dCollideHeightfield`: [#2894](https://github.com/dartsim/dart/pull/2894), [gazebosim/gz-physics#847](https://github.com/gazebosim/gz-physics/issues/847)
+
+- Dynamics
+
+  - Validate `HeightmapShape` scale and height-field values, rejecting non-finite and non-positive inputs: [#2884](https://github.com/dartsim/dart/pull/2884), [gazebosim/gz-physics#847](https://github.com/gazebosim/gz-physics/issues/847)
+  - Reject non-finite mass and moment of inertia at the `Inertia` ingest boundary: [#2885](https://github.com/dartsim/dart/pull/2885), [gazebosim/gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854)
+  - Initialize `Inertia` to a valid state before applying a rejected moment, and check only the consumed inertia entries: [#2898](https://github.com/dartsim/dart/pull/2898)
+
+- Common
+
+  - Demote the duplicate-name auto-rename message to debug verbosity: [#2895](https://github.com/dartsim/dart/pull/2895), [gazebosim/gz-physics#725](https://github.com/gazebosim/gz-physics/issues/725)
+
+- Build
+
+  - Use pixi for the DART 6 Windows wheel dependencies: [#2882](https://github.com/dartsim/dart/pull/2882)
+
+### [DART 6.17.0 (2026-06-03)](https://github.com/dartsim/dart/milestone/85?closed=1)
+
+DART 6.17.0 is a maintenance release on the DART 6 LTS compatibility line. It
+backports bug fixes and additive improvements to the classic DART 6 API that were
+made on `main` during DART 7 development, so that DART 6 and gz-physics users
+receive them before the DART 7 clean break removes the legacy API from `main`.
+
+- GUI
+
+  - Fix `RealTimeWorldNode` stalling when the viewer lags behind real time: [#2088](https://github.com/dartsim/dart/pull/2088)
+
+- Collision
+
+  - Preserve the minimum pair distance in FCL distance queries: [#2243](https://github.com/dartsim/dart/pull/2243), [#1539](https://github.com/dartsim/dart/issues/1539)
+  - Fix plane collision handling for the Bullet and FCL backends: [#2246](https://github.com/dartsim/dart/pull/2246)
+  - Fix an FCL mesh contact regression: [#2258](https://github.com/dartsim/dart/pull/2258)
+  - Fix Bullet ellipsoid rolling by using primitive sphere/ellipsoid shapes: [#2274](https://github.com/dartsim/dart/pull/2274)
+  - Handle non-`Skeleton` `MetaSkeleton` subscriptions in `CollisionGroup` without crashing: [#2277](https://github.com/dartsim/dart/pull/2277)
+  - Stabilize FCL contact normals and make collision ordering deterministic: [#2282](https://github.com/dartsim/dart/pull/2282)
+  - Guard the body-node collision filter against missing body nodes: [#2343](https://github.com/dartsim/dart/pull/2343)
+  - Add `Contact` accessors for the shape frame, shape node, and body node: [#2245](https://github.com/dartsim/dart/pull/2245)
+  - Fix memory leaks and a use-after-free in the Bullet collision backend: [#2101](https://github.com/dartsim/dart/pull/2101)
+  - Fix a Bullet collision-detection correctness issue: [#2091](https://github.com/dartsim/dart/pull/2091)
+  - Fix ODE `HeightmapShape` visual/collision mismatch and a dangling-pointer bug: [#2305](https://github.com/dartsim/dart/pull/2305)
+
+- Constraint
+
+  - Recover finite Dantzig LCP solutions instead of zeroing the result when only some entries are NaN: [#2253](https://github.com/dartsim/dart/pull/2253)
+
+- Dynamics
+
+  - Compute `BodyNode` potential energy from the center of mass: [#2224](https://github.com/dartsim/dart/pull/2224)
+  - Add `BodyNode` world-transform derivative APIs: [#2131](https://github.com/dartsim/dart/pull/2131)
+  - Preserve Collada unit scaling in `MeshShape`: [#2152](https://github.com/dartsim/dart/pull/2152)
+  - Add debug assertions for non-finite joint inputs: [#2273](https://github.com/dartsim/dart/pull/2273)
+  - Emit collision-shape added/removed signals on shape changes: [#2250](https://github.com/dartsim/dart/pull/2250)
+  - Deep-copy shapes when cloning skeletons: [#2239](https://github.com/dartsim/dart/pull/2239), [#896](https://github.com/dartsim/dart/issues/896)
+  - Add `PlanarJoint` SE(2) conversion helpers: [#2231](https://github.com/dartsim/dart/pull/2231)
+  - Fix joint impulse statefulness by moving impulse state into `GenericJointState`: [#2308](https://github.com/dartsim/dart/pull/2308)
+  - Add a state-independent `Joint::integratePositions` overload: [#2309](https://github.com/dartsim/dart/pull/2309)
+  - Validate negative physics parameters at runtime instead of asserting: [#2431](https://github.com/dartsim/dart/pull/2431)
+  - Clear stale joint commands when the actuator type changes: [#2098](https://github.com/dartsim/dart/pull/2098)
+  - Fix the `FreeJoint` world Jacobian translation: [#2298](https://github.com/dartsim/dart/pull/2298)
+
+- Parsers
+
+  - Enforce SDF joint position limits when finite: [#2232](https://github.com/dartsim/dart/pull/2232)
+  - Handle tiny/degenerate SDF inertial data and warn on missing `<inertial>`: [#2284](https://github.com/dartsim/dart/pull/2284)
+
+- Common
+
+  - Fix `Signal` thread-safety regressions: [#2181](https://github.com/dartsim/dart/pull/2181)
+  - Add `StlAllocator::max_size` and make `deallocate` `noexcept`: [#2287](https://github.com/dartsim/dart/pull/2287)
+  - Fix `Aspect` lifecycle when an aspect is replaced: [#2304](https://github.com/dartsim/dart/pull/2304)
+  - Make `CloneableMap` copy null-safe: [#2358](https://github.com/dartsim/dart/pull/2358)
+
+- Build
+
+  - Prefer the prefix-local Vulkan loader for the ImGui example: [#2085](https://github.com/dartsim/dart/pull/2085)
+  - Allow configuring (or disabling) the examples install destination: [#2100](https://github.com/dartsim/dart/pull/2100)
+  - Register `dart::utils` parser sources correctly in CMake: [#2314](https://github.com/dartsim/dart/pull/2314)
+
+### [DART 6.16.8 (2026-05-31)](https://github.com/dartsim/dart/milestone/93?closed=1)
+
+- GUI
+
+  - Fix SEGV in ImFontAtlas::AddFontFromMemoryCompressedTTF when null pointer is passed as compressed font data: [#2516](https://github.com/dartsim/dart/issues/2516)
+  - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window: [#2668](https://github.com/dartsim/dart/issues/2668)
+  - Use modern ImGui modifier key names in the OSG ImGui handler for newer ImGui builds. ([#2526](https://github.com/dartsim/dart/pull/2526))
+
+- Constraint
+
+  - Ignore malformed contacts with null collision objects instead of dereferencing them while creating `ContactConstraint`: [#2669](https://github.com/dartsim/dart/issues/2669)
+
+  - Hide bundled ImGui internal formatting helpers from shared library exports: [#2671](https://github.com/dartsim/dart/issues/2671)
+
+- Parsers
+
+  - Return safe defaults from XML attribute helpers when callers pass a null element: [#2678](https://github.com/dartsim/dart/issues/2678)
+
+- Utils
+
+  - Reject mismatched C3D frame or marker counts in `saveC3DFile()` instead of indexing past point data: [#2681](https://github.com/dartsim/dart/issues/2681)
+
+- Common
+
+  - Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds
+
+  - Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2540](https://github.com/dartsim/dart/pull/2540), [#2538](https://github.com/dartsim/dart/issues/2538))
+
+  - Fix PoolAllocator leaking old memory block tables when the table grows. ([#2646](https://github.com/dartsim/dart/pull/2646))
+
+- Simulation
+
+  - Reject NaN, infinite, zero, and negative `World::setTimeStep()` values to prevent invalid timesteps from reaching the ODE LCP solver. ([#2532](https://github.com/dartsim/dart/pull/2532), [#2531](https://github.com/dartsim/dart/issues/2531))
+
+- Tooling and Docs
+
+  - Improve FreeBSD VM CI startup resilience with a release image URL, fallback image downloads, a longer SSH readiness window, fresh VM container startup, KVM group propagation, retry handling, and startup diagnostics. ([#2532](https://github.com/dartsim/dart/pull/2532))
+  - Remove duplicate `.gitignore` entries. ([#2735](https://github.com/dartsim/dart/pull/2735))
+  - Update Pixi lockfiles for current conda-forge package builds. ([#2766](https://github.com/dartsim/dart/pull/2766), [#2780](https://github.com/dartsim/dart/pull/2780))
+
+### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
+
+- Build
+
+  - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x: [#2510](https://github.com/dartsim/dart/pull/2510)
+
+- Dynamics
+
+  - Reject non-finite transforms at Joint public API entry points and guard inertia propagation in kinematic joint variants: [#2497](https://github.com/dartsim/dart/pull/2497)
+
+- Math
+
+  - Enhance verifyTransform to also reject infinity values (previously only checked NaN): [#2497](https://github.com/dartsim/dart/pull/2497)
+
+- Optimizer
+
+  - Validate Problem and MultiObjectiveProblem dimension to prevent excessive allocation from huge inputs: [#2503](https://github.com/dartsim/dart/pull/2503)
+
+- Parsers
+
+  - Replace MJCF parser DART_ASSERT with DART_WARN + identity fallback for non-finite transforms and rotations: [#2497](https://github.com/dartsim/dart/pull/2497)
+
+### [DART 6.16.6 (2026-01-28)](https://github.com/dartsim/dart/milestone/91?closed=1)
+
+- Constraint
+
+  - Fix slip compliance validation to silently handle the -1.0 sentinel value (meaning "use default") instead of logging spurious warnings: [gz-sim#3289](https://github.com/gazebosim/gz-sim/issues/3289)
+
+- Dynamics
+
+  - Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
+
+### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
+
+- Constraint
+
+  - Fix crash when joint limits are invalid (lower > upper) by emitting a warning and skipping limit enforcement: [gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846)
+
+  - Validate contact surface parameters to prevent LCP solver crashes: [#2435](https://github.com/dartsim/dart/pull/2435)
+
+  - Warn and continue when the boxed LCP matrix is non-symmetric to avoid assertion failures with invalid contacts: [gz-physics#848](https://github.com/gazebosim/gz-physics/issues/848)
+
+- Dynamics
+
+  - Validate SphereShape radius to prevent assertion failures with NaN/Inf/non-positive values: [#2441](https://github.com/dartsim/dart/pull/2441)
+
+- Parsers
+  - Fix null pointer dereference in XmlHelpers getValue\* functions: [#2429](https://github.com/dartsim/dart/pull/2429)
+
 ### [DART 6.16.4 (2026-01-06)](https://github.com/dartsim/dart/milestone/89?closed=1)
 
 - Physics
