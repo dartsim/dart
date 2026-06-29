@@ -135,6 +135,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
+- Forward-ported bit-exact core articulated-body and constraint hot-path
+  optimizations from the DART 6 LTS line: a cached raw `Skeleton` pointer that
+  avoids a `weak_ptr::lock()` per articulated-inertia access, allocation-free
+  finiteness guards (templated `math::isNan`/`isInf` plus `Eigen::allFinite()`),
+  `noalias()` force-aggregation and contact-normal products, and fixed-capacity
+  contact spatial-normal storage. Behavior is unchanged.
 - Fixed per-DoF actuator override storage in `JointProperties` so worlds can
   create and destroy joint properties across translation-unit and
   shared-library boundaries without heap corruption (the override map is now a

@@ -658,7 +658,10 @@ const Inertia& BodyNode::getInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  const ConstSkeletonPtr& skel = getSkeleton();
+  // Use the cached raw Skeleton pointer (see mSkeletonRawPtr) rather than
+  // getSkeleton(), which locks a weak_ptr (atomic refcount) on every call. This
+  // accessor is on the articulated-body forward-dynamics hot path.
+  const Skeleton* skel = mSkeletonRawPtr;
   if (skel && CHECK_FLAG(mArticulatedInertia)) {
     skel->updateArticulatedInertia(mTreeIndex);
   }
@@ -669,7 +672,7 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  const ConstSkeletonPtr& skel = getSkeleton();
+  const Skeleton* skel = mSkeletonRawPtr;
   if (skel && CHECK_FLAG(mArticulatedInertia)) {
     skel->updateArticulatedInertia(mTreeIndex);
   }
@@ -1484,6 +1487,7 @@ Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
 void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
+  mSkeletonRawPtr = _skeleton.get();
   DART_ASSERT(_skeleton);
   if (mReferenceCount > 0) {
     mReferenceSkeleton = mSkeleton.lock();
@@ -2262,12 +2266,14 @@ void BodyNode::aggregateGravityForceVector(
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mG_F);
   }
 
-  std::size_t nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd g
-        = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
-    std::size_t iStart = mParentJoint->getIndexInTree(0);
-    _g.segment(iStart, nGenCoords) = g;
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    // noalias() into the destination, then negate in place: bit-identical to
+    // -(J^T * mG_F) (IEEE-754 negation is exact) with no heap temporary.
+    auto seg = _g.segment(iStart, nGenCoords);
+    seg.noalias() = mParentJoint->getRelativeJacobian().transpose() * mG_F;
+    seg = -seg;
   }
 }
 
@@ -2307,12 +2313,12 @@ void BodyNode::aggregateCombinedVector(
     mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
-  std::size_t nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd Cg
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    // noalias(): see aggregateExternalForces -- no heap temporary.
+    _Cg.segment(iStart, nGenCoords).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
-    std::size_t iStart = mParentJoint->getIndexInTree(0);
-    _Cg.segment(iStart, nGenCoords) = Cg;
   }
 }
 
@@ -2328,12 +2334,14 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mFext_F);
   }
 
-  std::size_t nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd Fext
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    // noalias(): evaluate the J^T * F product directly into the destination
+    // segment rather than a heap-allocated Eigen temporary. The destination
+    // (a Skeleton tree-cache view) cannot alias mFext_F or the joint Jacobian.
+    _Fext.segment(iStart, nGenCoords).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
-    std::size_t iStart = mParentJoint->getIndexInTree(0);
-    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 

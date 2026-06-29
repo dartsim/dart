@@ -568,3 +568,36 @@ TEST(ArticulatedDynamicsAlgorithms, ZeroDofSkeletonPathsAreNoOps)
   EXPECT_EQ(skeleton->getForces().size(), 0);
   EXPECT_EQ(skeleton->getAccelerations().size(), 0);
 }
+
+//==============================================================================
+// A kinematic child joint (ACCELERATION actuator) makes its parent fold the
+// child's articulated inertia in through GenericJoint's
+// addChildArtInertia*ToKinematic paths -- the non-implicit variant via
+// getArticulatedInertia() and the implicit variant via forward dynamics. The
+// dynamic-joint tests above never reach those branches. Verify both run and
+// stay finite.
+TEST(ArticulatedDynamicsAlgorithms, KinematicChildJointArtInertiaPathsAreFinite)
+{
+  auto skeleton = Skeleton::create("algorithms_kinematic_child");
+  auto root = addBody<RevoluteJoint>(
+      skeleton, nullptr, "kin_root", 0, Eigen::Vector3d(0.0, 0.0, 0.1));
+  auto child = addBody<RevoluteJoint>(
+      skeleton, root.second, "kin_child", 1, Eigen::Vector3d(0.2, 0.0, 0.0));
+
+  // Root stays dynamic (FORCE); the child becomes kinematic (ACCELERATION).
+  child.first->setActuatorType(Joint::ACCELERATION);
+
+  skeleton->setPositions((Eigen::VectorXd(2) << 0.3, -0.2).finished());
+  skeleton->setVelocities((Eigen::VectorXd(2) << 0.1, -0.05).finished());
+  // Force command for the dynamic root DoF; acceleration command for the
+  // kinematic child DoF.
+  skeleton->setCommands((Eigen::VectorXd(2) << 0.4, 0.7).finished());
+
+  // Non-implicit kinematic articulated-inertia path.
+  EXPECT_TRUE(root.second->getArticulatedInertia().allFinite());
+
+  // Implicit kinematic articulated-inertia path (forward dynamics).
+  skeleton->computeForwardDynamics();
+  EXPECT_TRUE(skeleton->getAccelerations().allFinite());
+  EXPECT_TRUE(skeleton->getForces().allFinite());
+}
