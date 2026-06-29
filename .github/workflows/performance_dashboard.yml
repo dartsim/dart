@@ -54,7 +54,7 @@ jobs:
           install-args: -e collision-reference
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2

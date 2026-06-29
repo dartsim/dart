@@ -108,7 +108,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
@@ -170,7 +170,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
@@ -256,7 +256,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
@@ -342,7 +342,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
@@ -423,7 +423,7 @@ jobs:
           install-args: -e collision-reference
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
@@ -499,7 +499,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: 3
@@ -564,7 +564,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
@@ -681,7 +681,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev xvfb mesa-utils
           version: 3
@@ -763,7 +763,7 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.1
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.2
         with:
           packages: g++ clang libgl1-mesa-dev libglu1-mesa-dev mesa-utils xvfb
           version: 2
