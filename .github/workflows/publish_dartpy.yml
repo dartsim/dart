@@ -16,7 +16,9 @@ name: Publish dartpy
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Include the event name so a manual workflow_dispatch publish is not
+  # cancelled by a push-triggered wheel build of the same ref.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
@@ -73,7 +75,7 @@ jobs:
           {
             "include": [
               {"os":"ubuntu-latest","python-version":"314"},
-              {"os":"macos-latest","python-version":"314"},
+              {"os":"macos-15","python-version":"314"},
               {"os":"windows-2025-vs2026","python-version":"314"}
             ]
           }
@@ -85,7 +87,7 @@ jobs:
           {
             "include": [
               {"os":"ubuntu-latest","python-version":"314"},
-              {"os":"macos-latest","python-version":"314"},
+              {"os":"macos-15","python-version":"314"},
               {"os":"windows-2025-vs2026","python-version":"314"}
             ]
           }

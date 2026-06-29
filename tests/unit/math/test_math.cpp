@@ -1287,6 +1287,25 @@ TEST(Math, Utils)
 }
 
 //==============================================================================
+TEST(Math, UserDefinedLiterals)
+{
+  using namespace dart::math::suffixes;
+
+  const double pi = pi_v<double>;
+
+  EXPECT_NEAR(1.0_pi, pi, MATH_EPS);
+  EXPECT_NEAR(0.5_pi, 0.5 * pi, MATH_EPS);
+  EXPECT_NEAR(2_pi, 2.0 * pi, MATH_EPS);
+
+  EXPECT_NEAR(1.5_rad, 1.5, MATH_EPS);
+  EXPECT_NEAR(3_rad, 3.0, MATH_EPS);
+
+  EXPECT_NEAR(180.0_deg, pi, MATH_EPS);
+  EXPECT_NEAR(90_deg, 0.5 * pi, MATH_EPS);
+  EXPECT_NEAR(360_deg, 2.0 * pi, MATH_EPS);
+}
+
+//==============================================================================
 Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
