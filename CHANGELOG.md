@@ -377,6 +377,51 @@
     `test_Issue1193` timeouts under Debug coverage instrumentation:
     [#3120](https://github.com/dartsim/dart/pull/3120)
 
+### [DART 6.19.3 (2026-06-27)](https://github.com/dartsim/dart/milestone/101?closed=1)
+
+DART 6.19.3 is a patch release on the DART 6 LTS line. It hardens contact
+handling against invalid geometry and silences an fmt 12.2 deprecation warning
+that leaked through DART's logging headers, both addressing issues reported
+through gz-physics. It also recovers from two upstream toolchain regressions,
+restoring the Linux Python wheels and compilation on the latest Clang.
+
+* Simulation
+
+  * Reject invalid shape geometry and non-finite contacts instead of crashing.
+    `BoxShape`, `CylinderShape`, `CapsuleShape`, `EllipsoidShape`, `ConeShape`,
+    and `PyramidShape` now reject non-finite (NaN/Inf) or non-positive
+    dimensions, matching `SphereShape`, and `ConstraintSolver` drops any contact
+    whose point, normal, or penetration depth is non-finite before building a
+    contact constraint. Together these keep a bad shape dimension or a
+    non-finite contact (from a mesh or a collision backend) from tripping the
+    `ContactConstraint` `mSpatialNormalA` assertion or feeding NaN/Inf into the
+    LCP solve:
+    [#3117](https://github.com/dartsim/dart/pull/3117),
+    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+
+* Build
+
+  * Stop an fmt 12.2 deprecation warning from leaking out of DART's header-only
+    logging. spdlog's variadic `log()` routes the format string through a
+    `fmt::format_string` -> `string_view` conversion that fmt 12.2.0 deprecated,
+    so the warning surfaced in every downstream that instantiates DART logging.
+    DART now pre-formats the message and hands spdlog a ready-made string:
+    [#3201](https://github.com/dartsim/dart/pull/3201),
+    [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
+
+  * Restore the Linux `manylinux` Python wheels. The wheel build installs the
+    newest CMake at build time, and CMake 4.3.4 stopped detecting `freeglut3`
+    in the build container, which dropped the `dart-gui` target the dartpy wheel
+    links and broke configuration. The build now caps CMake below 4.3.4 until a
+    fixed release ships:
+    [#3197](https://github.com/dartsim/dart/pull/3197)
+
+  * Compile cleanly on the latest Clang. Recent Clang (such as the current
+    `macos-latest` image) rejects the deprecated whitespace form of
+    user-defined-literal operators under `-Werror`, so the `_pi`, `_rad`, and
+    `_deg` suffixes now use the non-deprecated `operator""_x` spelling:
+    [#3197](https://github.com/dartsim/dart/pull/3197)
+
 ### [DART 6.19.2 (2026-06-19)](https://github.com/dartsim/dart/milestone/100?closed=1)
 
 DART 6.19.2 is a patch release on the DART 6 LTS line. It keeps automatic
