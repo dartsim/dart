@@ -94,6 +94,15 @@ parity reference and avoid carrying the DART 6 world beside the promoted API.
 Durable API-shape rationale for this surface lives in
 [simulation_python_api.md](../design/simulation_python_api.md).
 
+Do not add a Python-visible `SimulationMode` enum or lifecycle properties to
+legacy `dartpy.Skeleton` / `dartpy.BodyNode` for editor workflows. Python
+lifecycle control belongs on the DART 7 `World` surface
+(`is_simulation_mode`, `enter_simulation_mode`, and `step()`), and legacy
+Skeleton parsing remains a load/translate step through `dartpy.io` and
+`dartpy.add_skeleton` into a DART 7 World. The `dartsim` editor's Edit vs
+Simulation mode is app-internal unless engine promotion to a public dartpy
+surface is separately approved.
+
 ### Eigen ↔ NumPy Integration
 
 **Key Design**: nanobind's Eigen support enables seamless conversion
