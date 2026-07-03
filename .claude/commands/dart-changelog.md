@@ -39,6 +39,29 @@ Interpret `$ARGUMENTS` as one of these modes when present:
 
 If no mode is given, infer the smallest mode that satisfies the caller's need.
 
+## Output Contract
+
+Every run must leave the caller with a concise, pasteable decision note. Use
+this shape in the response, PR body draft, or handoff text:
+
+```markdown
+Changelog decision:
+
+- Mode: decide | draft | finalize | audit | release-audit
+- Base evidence: <base ref or PR/release inspected>
+- Scope evidence: <diff, PR, issue, or release section inspected>
+- Decision: entry required | no entry required | entry deferred | audit only
+- Target section: <release/category, or N/A>
+- Entry text: <final or draft bullet, or N/A>
+- PR-body note: <exact no-entry reason or follow-up, or N/A>
+- Follow-up: <PR link, maintainer approval, release audit, or none>
+```
+
+For `no entry required`, the PR-body note must name the evidence-backed reason
+rather than just saying "not needed." For `entry deferred`, say exactly what is
+missing, usually the PR number or release target. For `finalize`, confirm the
+entry still matches nearby `CHANGELOG.md` style after adding the PR link.
+
 ## Workflow
 
 1. Inspect the change and target:
@@ -76,20 +99,23 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
      entry;
    - typo-only, formatting-only, generated-only, and tiny internal refactors
      usually do not.
-4. When writing, start with the reader-visible outcome, not the implementation
+4. Record the decision with the Output Contract before modifying
+   `CHANGELOG.md` or telling a caller to skip it. The decision must cite the
+   diff, PR, issue, release section, or target branch that was inspected.
+5. When writing, start with the reader-visible outcome, not the implementation
    chore. Use one concise bullet, merge closely related changes, avoid author
    credits, and avoid one-bullet-per-PR diary style.
-5. Place the entry under the target branch's release section and nearest
+6. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release
    shape genuinely needs it.
-6. Add the best evidence link:
+7. Add the best evidence link:
    - if a PR number exists, use `([#1234](https://github.com/dartsim/dart/pull/1234))`;
    - if no PR number exists yet, draft without the link and leave the follow-up
      local until explicit approval permits another push or PR update.
-7. For release audits, consolidate noisy implementation ledgers, confirm
+8. For release audits, consolidate noisy implementation ledgers, confirm
    breaking/removal/deprecation bullets name a migration or support lane, and
    preserve human-readable release notes over exhaustive history.
-8. Validate with the gate appropriate to the caller. For changelog-only edits,
+9. Validate with the gate appropriate to the caller. For changelog-only edits,
    run the docs-only checks from `docs/ai/verification.md`; before any commit,
    run `pixi run lint`.
 
@@ -98,4 +124,6 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
 Other workflows should call this routine whenever they touch behavior or docs
 that may need release notes. The caller keeps ownership of the overall task,
 validation, PR body, and approval boundary; `dart-changelog` owns the changelog
-decision, wording, placement, and evidence-link hygiene.
+decision, wording, placement, evidence-link hygiene, and the pasteable decision
+note that lets Claude, Codex, OpenCode, and manual contributors record the same
+outcome.
