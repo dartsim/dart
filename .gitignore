@@ -9,6 +9,10 @@ coverage_html/
 build/
 .build/
 
+# Stray compiled gettext catalogs at repo root (intentional .mo files live
+# next to their .po sources under docs/readthedocs/locales/)
+/*.mo
+
 # Vim swap files
 *.swp
 *.swo
