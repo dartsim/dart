@@ -8,10 +8,10 @@ Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
   this installer detects it and rewrites the hook in place, so the command is
   safe to run any number of times.
 * If a *foreign* (non-DART) ``pre-commit`` hook already exists it is preserved,
-  not clobbered: it is moved to ``pre-commit.local`` and chained from the
-  managed hook so its checks still run before the lint gate. If a
-  ``pre-commit.local`` is already present the installer refuses with a clear
-  message rather than lose an existing local hook.
+  not clobbered: it is moved to ``pre-commit.local`` with its mode unchanged
+  and chained from the managed hook when executable. If a ``pre-commit.local``
+  is already present the installer refuses with a clear message rather than
+  lose an existing local hook.
 * Worktrees are handled via ``git rev-parse --git-path hooks``, which resolves
   to the shared common hooks directory, so a single install covers all linked
   worktrees of the repository.
@@ -154,7 +154,6 @@ def main() -> int:
                 "  remove pre-commit, then re-run `pixi run install-hooks`."
             )
         shutil.move(str(pre_commit), str(local))
-        local.chmod(local.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         print(
             f"Preserved existing pre-commit hook as {local} (chained from the DART hook)."
         )

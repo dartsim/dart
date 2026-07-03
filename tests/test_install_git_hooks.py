@@ -111,6 +111,7 @@ def test_foreign_hook_is_preserved_and_chained(tmp_path):
     local = hook.parent / "pre-commit.local"
     assert local.exists()
     assert "exit 7" in local.read_text()
+    assert os.access(local, os.X_OK)
 
     # The chained foreign hook still runs and its failure propagates before
     # the lint gate is reached (so no dry-run flag is needed here).
@@ -122,6 +123,38 @@ def test_foreign_hook_is_preserved_and_chained(tmp_path):
         text=True,
     )
     assert run.returncode == 7
+
+
+def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    hook = _hook(repo)
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text("#!/bin/sh\nexit 7\n")
+    hook.chmod(0o644)
+
+    result = _install(repo, env)
+    assert result.returncode == 0, result.stderr
+    local = hook.parent / "pre-commit.local"
+    assert local.exists()
+    assert "exit 7" in local.read_text()
+    assert not os.access(local, os.X_OK)
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    pixi = bin_dir / "pixi"
+    pixi.write_text("#!/bin/sh\necho pixi:$* >&2\nexit 0\n")
+    pixi.chmod(0o755)
+
+    run = subprocess.run(
+        [str(hook)],
+        cwd=repo,
+        env={**env, "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}"},
+        capture_output=True,
+        text=True,
+    )
+
+    assert run.returncode == 0
+    assert "pixi:run check-lint-quick" in run.stderr
 
 
 def test_refuses_when_foreign_hook_and_local_both_exist(tmp_path):
