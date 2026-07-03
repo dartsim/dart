@@ -359,6 +359,20 @@ is an implementation detail behind the controller. The DART 7 World's
 default synchronous stepping is the reference behavior; async stepping is not
 used (it is deferred in the DART 7 API).
 
+### Skeleton/BodyNode Lifecycle Placement
+
+The retired `SimulationMode { Design, Simulation }` proposal for legacy
+`dart::dynamics::Skeleton` / `BodyNode` does not become a new public dynamics
+API. Lifecycle ownership is split between the DART 7 World and the editor
+engine: `dart::simulation::World` owns the public design-to-simulation
+transition through `enterSimulationMode()` / `isSimulationMode()`, while
+`dartsim::SimulationController` owns the app-internal Edit vs Simulation UI
+state, captures the authored `SceneModel`, and restores it on Reset. Legacy
+Skeletons remain parser/translation inputs for `dart::simulation::io::addSkeleton`
+and related import bridges only; future loader, shape, or project-import work
+should extend the DART 7 World / `ObjectManager` scene-model surfaces rather
+than adding lifecycle flags to `Skeleton` or `BodyNode`.
+
 ### Recorder / Player (record and replay)
 
 - **Recorder**: while in Simulation Mode, captures a per-step **frame snapshot**
