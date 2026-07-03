@@ -319,8 +319,8 @@ TEST(Issue201, ShallowSupportedFreeRootDoesNotDriftSideways)
 
 //==============================================================================
 // The drift suppression removes only tiny lateral/tilt motion introduced by the
-// contact solve. It must preserve intentional low-speed motion that existed
-// before the shallow support contact was solved.
+// contact solve. It must preserve intentional passive low-speed motion that
+// existed before the shallow support contact was solved.
 TEST(Issue201, ShallowSupportPreservesIntentionalLowSpeedMotion)
 {
   auto world = simulation::World::create();
@@ -343,10 +343,9 @@ TEST(Issue201, ShallowSupportPreservesIntentionalLowSpeedMotion)
       Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
   rootJoint->setAngularVelocity(
       Eigen::Vector3d(0.0, tiltSpeed, 0.0), Frame::World(), Frame::World());
-  // Mark this as user-actuated motion rather than passive solver drift.
-  rootJoint->setForce(0, 1e-8);
 
-  world->step();
+  for (std::size_t i = 0; i < 3; ++i)
+    world->step();
 
   ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
   EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
