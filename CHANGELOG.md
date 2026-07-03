@@ -309,6 +309,12 @@ compatibility remains on the active DART 6 LTS branch._
   ([#3053](https://github.com/dartsim/dart/pull/3053))
 - Added optional CUDA smoke and benchmark packet paths while keeping default
   Pixi environments and dartpy wheels free of GPU runtime dependencies.
+- Cut the PR CI critical path roughly in half by moving the compile-dominated
+  ASAN suite, CodeQL C++ analysis, and Alt Linux repro to continuous/scheduled
+  coverage, parallelizing the Coverage (Debug) lcov capture, and skipping the
+  redundant branch-push core tier once a PR is open; branch protection now
+  requires the stable aggregate `Wheels` check instead of stale per-leg wheel
+  names.
 
 ## DART 6
 
