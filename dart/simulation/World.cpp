@@ -814,8 +814,18 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // quiet candidate bodies whose static support contact produced no active
   // constraint on this step.
   constexpr double kSleepContactPenetrationTolerance = 1e-5;
-  constexpr double kFinalSleepLinearSpeed = 1e-3;
-  constexpr double kFinalSleepAngularSpeed = 1e-2;
+  // Final-quiet gate for sleep candidacy, expressed as fixed fractions of the
+  // configured thresholds. At the default thresholds (0.01 m/s, 0.05 rad/s)
+  // these evaluate to the previous hardcoded 1e-3 m/s and 1e-2 rad/s, so
+  // default behavior is unchanged. Deriving the gate from the configured
+  // thresholds keeps them effective: raising the thresholds for scenes with a
+  // higher contact-solver jitter floor (e.g. dense mixed-shape piles) widens
+  // the gate proportionally instead of being silently overridden by a hidden
+  // stricter constant.
+  constexpr double kFinalSleepLinearRatio = 0.1;
+  constexpr double kFinalSleepAngularRatio = 0.2;
+  const double finalSleepLinearSpeed = kFinalSleepLinearRatio * linSleep;
+  const double finalSleepAngularSpeed = kFinalSleepAngularRatio * angSleep;
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   const double gravityNorm = mGravity.norm();
@@ -927,8 +937,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const bool quiet = canAccumulateDwell && (linSpeed < linSleep)
                          && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
-        const bool finalQuiet = linSpeed < kFinalSleepLinearSpeed
-                                && angSpeed < kFinalSleepAngularSpeed;
+        const bool finalQuiet = linSpeed < finalSleepLinearSpeed
+                                && angSpeed < finalSleepAngularSpeed;
         double dwell = skel->getRestDwellTime() + mTimeStep;
         const bool deepInitialContact
             = deepInitialContactSkeletons.find(skel.get())

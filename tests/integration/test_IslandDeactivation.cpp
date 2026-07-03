@@ -2088,6 +2088,67 @@ WorldPtr makeRestingGrid(int n, bool enabled)
   return world;
 }
 
+//==============================================================================
+// The final-quiet gate that guards sleep candidacy is derived from the
+// configured thresholds (10% of the linear threshold, 20% of the angular
+// threshold). Raising the thresholds for scenes whose contact solve leaves a
+// higher velocity jitter floor must widen the gate too; a hardcoded gate at
+// the default-derived values would make raised thresholds silently
+// ineffective.
+TEST(IslandDeactivation, FinalQuietGateScalesWithThresholds)
+{
+  // A frictionless box sliding on the floor at a constant 0.02 m/s: the
+  // contact keeps it islanded while nothing decays the motion.
+  auto makeSlidingWorld = [](SkeletonPtr* boxOut) {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "slider",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf));
+    auto* dynamics
+        = box->getBodyNode(0)->getShapeNode(0)->get<DynamicsAspect>();
+    dynamics->setFrictionCoeff(0.0);
+    world->addSkeleton(box);
+    *boxOut = box;
+    return world;
+  };
+
+  const double slideSpeed = 0.02;
+
+  // Default thresholds: 0.02 m/s exceeds the 0.01 m/s sleep band, so the
+  // slider stays awake. This pins the unchanged default behavior.
+  {
+    SkeletonPtr box;
+    auto world = makeSlidingWorld(&box);
+    box->getDof(3)->setVelocity(slideSpeed);
+    const std::size_t maxSteps = 2000;
+    const std::size_t steps
+        = stepUntil(world.get(), maxSteps, [&]() { return box->isResting(); });
+    EXPECT_EQ(steps, maxSteps) << "slider slept despite default thresholds";
+    EXPECT_FALSE(box->isResting());
+  }
+
+  // Raised thresholds: the 1.0 m/s band admits the slide, and the scaled gate
+  // (10% of 1.0 m/s = 0.1 m/s) must admit it too, so the island freezes after
+  // the quiet dwell. A gate fixed at 1e-3 m/s would keep this awake forever.
+  {
+    SkeletonPtr box;
+    auto world = makeSlidingWorld(&box);
+    auto opts = world->getDeactivationOptions();
+    opts.mLinearSpeedThreshold = 1.0;
+    opts.mAngularSpeedThreshold = 5.0;
+    world->setDeactivationOptions(opts);
+    box->getDof(3)->setVelocity(slideSpeed);
+    const std::size_t maxSteps = 2000;
+    const std::size_t steps
+        = stepUntil(world.get(), maxSteps, [&]() { return box->isResting(); });
+    EXPECT_LT(steps, maxSteps)
+        << "raised thresholds remained gated by the old hardcoded 1e-3 m/s";
+    EXPECT_TRUE(box->isResting());
+  }
+}
+
 } // namespace
 
 TEST(IslandDeactivation, DISABLED_BenchmarkRestingGrid)
