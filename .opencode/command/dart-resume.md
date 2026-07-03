@@ -73,6 +73,7 @@ $dart-resume PR 2991
 @docs/ai/verification.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
+@docs/onboarding/changelog.md
 
 ## Step 1: Recon (no changes)
 
@@ -109,6 +110,8 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 - which A/B tests, benchmarks, resource searches, GUI checks, or textual checks
   are needed to support consequential decisions;
 - which durable docs will own any surviving decision or deferred work;
+- whether the resumed change may need a changelog entry and how the
+  `dart-changelog` decision will be recorded;
 - which verification commands prove the result.
 
 ## Step 3: Continue
@@ -158,6 +161,13 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   decisions. Record the final decision or parked follow-up in the durable owner
   doc, then delete or update the dev-task folder according to
   `docs/dev_tasks/README.md`.
+- Before finalizing a resumed task that changes behavior, public API, packaging,
+  CI, docs workflow, AI-infra workflow, release process, or user-visible docs,
+  invoke the `dart-changelog` routine in `decide` or `finalize` mode. If no
+  entry is needed, keep the reason in the local PR body/checklist draft or task
+  evidence; if an entry is needed, prepare the local `CHANGELOG.md` edit and PR
+  link when available. Pushing the changelog edit or updating the PR body still
+  requires explicit maintainer/user approval.
 - If remaining work is real but blocked by a substantial design decision,
   maintainer direction, external dependency, or scope boundary that should not
   be resolved in the current session, ask the human before retiring the folder
