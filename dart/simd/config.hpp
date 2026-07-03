@@ -378,21 +378,33 @@ class ScopedFlushDenormals
 {
 public:
   explicit ScopedFlushDenormals(bool enable) noexcept
+#if defined(DART_SIMD_SSE42)
+    : previous_mxcsr_(_mm_getcsr())
+#else
     : previous_state_(flush_denormals())
+#endif
   {
     set_flush_denormals(enable);
   }
 
   ~ScopedFlushDenormals() noexcept
   {
+#if defined(DART_SIMD_SSE42)
+    _mm_setcsr(previous_mxcsr_);
+#else
     set_flush_denormals(previous_state_);
+#endif
   }
 
   ScopedFlushDenormals(const ScopedFlushDenormals&) = delete;
   ScopedFlushDenormals& operator=(const ScopedFlushDenormals&) = delete;
 
 private:
+#if defined(DART_SIMD_SSE42)
+  unsigned int previous_mxcsr_;
+#else
   bool previous_state_;
+#endif
 };
 
 } // namespace dart::simd

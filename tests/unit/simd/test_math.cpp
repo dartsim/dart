@@ -40,6 +40,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace dart::simd {
 
@@ -714,6 +715,42 @@ TYPED_TEST(MathTest, Ldexp)
     scalar_type expected
         = std::ldexp(mantissas[i], static_cast<int>(exponents[i]));
     this->expectNear(result[i], expected);
+  }
+}
+
+TYPED_TEST(MathTest, LdexpSimdFloatExponentEdges)
+{
+  using vec_type = typename TestFixture::vec_type;
+  using scalar_type = typename TestFixture::scalar_type;
+  constexpr auto width = TestFixture::width;
+
+  if constexpr (std::is_same_v<scalar_type, float>) {
+    using int_vec_type = Vec<std::int32_t, width>;
+    constexpr auto alignment = detail::math::alignment_v<scalar_type, width>;
+    alignas(alignment) scalar_type mantissas[width];
+    alignas(alignment) scalar_type results[width];
+    alignas(alignment) std::int32_t exponents[width];
+    const std::int32_t exponentCases[]
+        = {200, -200, 128, -127, 127, -126, 0, 8};
+
+    for (std::size_t i = 0; i < width; ++i) {
+      mantissas[i] = (i % 2 == 0) ? scalar_type{1.0f} : scalar_type{-0.75f};
+      exponents[i] = exponentCases[i % 8];
+    }
+
+    auto result
+        = ldexpSimd(vec_type::load(mantissas), int_vec_type::load(exponents));
+    result.store(results);
+
+    for (std::size_t i = 0; i < width; ++i) {
+      const scalar_type expected = std::ldexp(mantissas[i], exponents[i]);
+      if (std::isinf(expected)) {
+        EXPECT_TRUE(std::isinf(results[i]));
+        EXPECT_EQ(std::signbit(results[i]), std::signbit(expected));
+      } else {
+        EXPECT_FLOAT_EQ(results[i], expected);
+      }
+    }
   }
 }
 

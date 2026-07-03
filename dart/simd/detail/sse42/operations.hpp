@@ -36,6 +36,7 @@
 #include <dart/simd/detail/sse42/vec.hpp>
 #include <dart/simd/detail/sse42/vec_mask.hpp>
 
+#include <cmath>
 #include <cstddef>
 
 #if defined(DART_SIMD_SSE42)
@@ -595,6 +596,19 @@ template <>
 [[nodiscard]] DART_SIMD_INLINE Vec<float, 4> ldexpSimd(
     const Vec<float, 4>& x, const Vec<std::int32_t, 4>& exp)
 {
+  __m128i tooLow = _mm_cmplt_epi32(exp.data, _mm_set1_epi32(-126));
+  __m128i tooHigh = _mm_cmpgt_epi32(exp.data, _mm_set1_epi32(127));
+  if (_mm_movemask_epi8(_mm_or_si128(tooLow, tooHigh)) != 0) {
+    alignas(16) float xArr[4], rArr[4];
+    alignas(16) std::int32_t expArr[4];
+    x.store(xArr);
+    exp.store(expArr);
+    for (std::size_t i = 0; i < 4; ++i) {
+      rArr[i] = std::ldexp(xArr[i], expArr[i]);
+    }
+    return Vec<float, 4>::load(rArr);
+  }
+
   // Fast path: x * 2^exp = x * reinterpret(shiftLeft<23>(exp + 127))
   // This is much faster than extracting/recombining exponent bits
   __m128i biasedExp = _mm_add_epi32(exp.data, _mm_set1_epi32(0x7f));

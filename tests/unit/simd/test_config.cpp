@@ -66,6 +66,18 @@ struct NonConstMask
   }
 };
 
+#if defined(DART_SIMD_SSE42)
+struct MxcsrGuard
+{
+  unsigned int value;
+
+  ~MxcsrGuard()
+  {
+    _mm_setcsr(value);
+  }
+};
+#endif
+
 } // namespace
 
 static_assert(is_vec_v<Vec4f>, "Vec4f must satisfy is_vec_v");
@@ -164,6 +176,9 @@ TEST(SimdConfig, ScalarFallback)
 
 TEST(SimdConfig, FlushDenormals)
 {
+#if defined(DART_SIMD_SSE42)
+  MxcsrGuard guard{_mm_getcsr()};
+#endif
   bool original = flush_denormals();
 
   set_flush_denormals(true);
@@ -181,6 +196,9 @@ TEST(SimdConfig, FlushDenormals)
 
 TEST(SimdConfig, ScopedFlushDenormals)
 {
+#if defined(DART_SIMD_SSE42)
+  MxcsrGuard guard{_mm_getcsr()};
+#endif
   bool original = flush_denormals();
   set_flush_denormals(false);
 
@@ -197,3 +215,25 @@ TEST(SimdConfig, ScopedFlushDenormals)
 
   set_flush_denormals(original);
 }
+
+#if defined(DART_SIMD_SSE42)
+TEST(SimdConfig, ScopedFlushDenormalsRestoresMxcsrModes)
+{
+  constexpr unsigned int denormalsZeroMask = 0x0040u;
+  constexpr unsigned int flushZeroMask = 0x8000u;
+  constexpr unsigned int denormalModeMask = denormalsZeroMask | flushZeroMask;
+  MxcsrGuard guard{_mm_getcsr()};
+
+  const unsigned int base = guard.value & ~denormalModeMask;
+  const unsigned int states[]
+      = {base | flushZeroMask, base | denormalsZeroMask};
+  for (const unsigned int expected : states) {
+    _mm_setcsr(expected);
+    {
+      ScopedFlushDenormals scoped(true);
+      EXPECT_EQ(_mm_getcsr() & denormalModeMask, denormalModeMask);
+    }
+    EXPECT_EQ(_mm_getcsr() & denormalModeMask, expected & denormalModeMask);
+  }
+}
+#endif
