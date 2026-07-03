@@ -264,6 +264,14 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Hardened the AI-native contributor workflow: `pixi run install-hooks` now
+  installs a pre-commit hook running the Tier-0 lint gate (with a tracked
+  Claude Code commit guard as fallback), the plan dashboard is bounded by
+  enforced entry budgets with completed plans archived to
+  `docs/plans/archive.md`, and the `dart-*` workflow catalog was consolidated
+  (`dart-fix-ci` absorbs the release-branch CI lane, `dart-manage-pr` absorbs
+  merge with milestone and independent-review gates) with new `dart-deps` and
+  `dart-benchmark-packet` workflows.
 - Modernized CMake target setup, package exports, symbol visibility, build/test
   toggles, and installed-package smoke coverage for the DART 7 component model.
   ([#2060](https://github.com/dartsim/dart/pull/2060),
