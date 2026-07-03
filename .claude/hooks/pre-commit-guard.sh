@@ -80,6 +80,19 @@ def skip_env_prefix(tokens, i):
     return i, bypass
 
 
+def strip_outer_quotes(value):
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'\''":
+        return value[1:-1], value[0]
+    return value, ""
+
+
+def shell_expand_path_token(value):
+    path, quote = strip_outer_quotes(value)
+    if quote != "'\''":
+        path = os.path.expandvars(path)
+    return os.path.expanduser(path)
+
+
 def is_git_commit(text):
     for part in re.split(r"&&|\|\||[;|\n]", text):
         part = part.strip().lstrip("({").strip()
@@ -112,9 +125,9 @@ def is_git_commit(text):
             t = tokens[i]
             if t in OPTS_WITH_ARG:
                 if t == "-C" and i + 1 < len(tokens):
-                    target_dir = tokens[i + 1].strip("\"'\''")
+                    target_dir = shell_expand_path_token(tokens[i + 1])
                 if t == "-c" and i + 1 < len(tokens):
-                    option = tokens[i + 1].strip("\"'\''")
+                    option, _ = strip_outer_quotes(tokens[i + 1])
                     if option.startswith("core.hooksPath="):
                         hooks_path_override = True
                 i += 2

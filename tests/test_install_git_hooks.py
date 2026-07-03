@@ -225,6 +225,25 @@ def test_guard_detects_git_c_commits_inside_this_repo(tmp_path, use_absolute):
     assert "would run 'pixi run check-lint-quick'" in stderr
 
 
+@pytest.mark.parametrize(
+    "target",
+    [
+        "$CLAUDE_PROJECT_DIR",
+        "${CLAUDE_PROJECT_DIR}",
+        '"$CLAUDE_PROJECT_DIR"',
+        '"${CLAUDE_PROJECT_DIR}"',
+    ],
+)
+def test_guard_expands_git_c_env_var_paths_inside_this_repo(tmp_path, target):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"git -C {target} commit -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
 def test_guard_skips_git_c_commits_in_another_repo(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
@@ -233,6 +252,25 @@ def test_guard_skips_git_c_commits_in_another_repo(tmp_path):
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, f"git -C {other} commit -m x")
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_expands_git_c_env_var_paths_before_other_repo_skip(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "DART_HOOK_DRY_RUN": "1",
+            "OTHER_REPO": str(other),
+        }
+    )
+
+    returncode, stderr = _run_guard(repo, env, 'git -C "$OTHER_REPO" commit -m x')
 
     assert returncode == 0
     assert "would run" not in stderr
