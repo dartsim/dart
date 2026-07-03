@@ -1,0 +1,67 @@
+# Scheduled Gazebo compatibility canary for the DART 6 LTS lane.
+#
+# GitHub only runs `schedule:` triggers from the default branch, so the cron
+# entries inside the release-6.* workflows never fire. This workflow lives on
+# main and checks out each active DART 6 release branch, then runs that
+# branch's own `test-gz` task (gz-physics + gz-sim built from source against
+# the branch's DART build). It revalidates downstream Gazebo compatibility
+# between release-line merges — e.g. after upstream gz movement or dependency
+# drift — without adding anything to PR CI.
+#
+# The per-PR gz gate on the release branches themselves is unchanged; this is
+# the continuous/scheduled tier for the same coverage.
+
+name: CI DART 6 Gazebo Canary
+
+on:
+  schedule:
+    # Weekly, offset from the other Monday crons (FreeBSD 04:00, Alt Linux
+    # 05:00, CodeQL 06:00) to avoid stampeding the runner pool.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  gz-canary:
+    name: gz-physics + gz-sim (${{ matrix.branch }})
+    runs-on: ubuntu-latest
+    # DART build + gz-physics + gz-sim from source; observed 30-130 min on the
+    # release-line PR gate depending on runner load.
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - release-6.19
+          - release-6.20
+    env:
+      DART_PARALLEL_JOBS: 8
+    steps:
+      - name: Checkout ${{ matrix.branch }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+
+      # The release branches predate the setup-pixi-ci composite action, and
+      # this job runs their checkout, so use setup-pixi directly like the
+      # release-line workflows do.
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          cache: true
+          environments: gazebo
+
+      - name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 1.0
+
+      - name: Test gz-physics and gz-sim against ${{ matrix.branch }}
+        run: pixi run -e gazebo test-gz

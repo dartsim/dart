@@ -1,6 +1,5 @@
 code:
   - "**"
-  - "!.github/workflows/cache_*.yml"
   - "!.github/workflows/update_lockfiles.yml"
   - "!docker/dev/**"
   - "!docs/**"

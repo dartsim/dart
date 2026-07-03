@@ -41,8 +41,49 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
+  matrix_prep:
+    name: Security | CodeQL matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        run: |
+          # The C++ analysis needs a manual Debug build plus CodeQL database
+          # extraction (~100 min), which is too heavy to repeat on every PR
+          # push. It runs on main pushes, the weekly schedule, and manual
+          # dispatch; scanning main right after merge keeps alert coverage
+          # without gating PR feedback. The Python analysis (build-mode:
+          # none) is cheap and stays on PRs.
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            cat >> "$GITHUB_OUTPUT" <<'EOF'
+          matrix<<JSON
+          {
+            "include": [
+              {"language": "python", "build_mode": "none", "run_build": false,
+               "dartpy": "ON", "gui": "ON", "cmake_build_type": "Release"}
+            ]
+          }
+          JSON
+          EOF
+          else
+            cat >> "$GITHUB_OUTPUT" <<'EOF'
+          matrix<<JSON
+          {
+            "include": [
+              {"language": "cpp", "build_mode": "manual", "run_build": true,
+               "dartpy": "OFF", "gui": "OFF", "cmake_build_type": "Debug"},
+              {"language": "python", "build_mode": "none", "run_build": false,
+               "dartpy": "ON", "gui": "ON", "cmake_build_type": "Release"}
+            ]
+          }
+          JSON
+          EOF
+          fi
+
   analyze:
     name: Security | CodeQL (${{ matrix.language }})
+    needs: matrix_prep
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -50,20 +91,7 @@ jobs:
       DART_VERBOSE: ON
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - language: cpp
-            build_mode: manual
-            run_build: true
-            dartpy: "OFF"
-            gui: "OFF"
-            cmake_build_type: Debug
-          - language: python
-            build_mode: none
-            run_build: false
-            dartpy: "ON"
-            gui: "ON"
-            cmake_build_type: Release
+      matrix: ${{ fromJSON(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'

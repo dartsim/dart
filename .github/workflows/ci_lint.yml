@@ -7,13 +7,9 @@ on:
     branches:
       - "main"
       - "release-*"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
   workflow_dispatch:
 
 concurrency:
