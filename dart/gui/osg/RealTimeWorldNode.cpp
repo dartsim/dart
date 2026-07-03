@@ -52,6 +52,8 @@ RealTimeWorldNode::RealTimeWorldNode(
     mTargetRealTimeLapse(1.0 / targetFrequency),
     mTargetSimTimeLapse(targetRealTimeFactor * mTargetRealTimeLapse),
     mLastRealTimeFactor(0.0),
+    mSmoothedRealTimeFactor(0.0),
+    mHasSmoothedRealTimeFactor(false),
     mSimTimeBudget(0.0),
     mLowestRealTimeFactor(std::numeric_limits<double>::infinity()),
     mHighestRealTimeFactor(0.0)
@@ -89,6 +91,12 @@ double RealTimeWorldNode::getTargetRealTimeFactor() const
 double RealTimeWorldNode::getLastRealTimeFactor() const
 {
   return mLastRealTimeFactor;
+}
+
+//==============================================================================
+double RealTimeWorldNode::getSmoothedRealTimeFactor() const
+{
+  return mSmoothedRealTimeFactor;
 }
 
 //==============================================================================
@@ -167,6 +175,15 @@ void RealTimeWorldNode::refresh()
         = std::min(mLastRealTimeFactor, mLowestRealTimeFactor);
     mHighestRealTimeFactor
         = std::max(mLastRealTimeFactor, mHighestRealTimeFactor);
+
+    // Exponential moving average over roughly the last second of refresh
+    // cycles (about 50 cycles at the default 60 Hz refresh rate).
+    constexpr double alpha = 0.02;
+    mSmoothedRealTimeFactor = mHasSmoothedRealTimeFactor
+                                  ? (1.0 - alpha) * mSmoothedRealTimeFactor
+                                        + alpha * mLastRealTimeFactor
+                                  : mLastRealTimeFactor;
+    mHasSmoothedRealTimeFactor = true;
 
     mRefreshTimer.setStartTick();
   } else {
