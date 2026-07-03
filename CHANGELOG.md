@@ -272,6 +272,7 @@ compatibility remains on the active DART 6 LTS branch._
   (`dart-fix-ci` absorbs the release-branch CI lane, `dart-manage-pr` absorbs
   merge with milestone and independent-review gates) with new `dart-deps` and
   `dart-benchmark-packet` workflows.
+  ([#3228](https://github.com/dartsim/dart/pull/3228))
 - Modernized CMake target setup, package exports, symbol visibility, build/test
   toggles, and installed-package smoke coverage for the DART 7 component model.
   ([#2060](https://github.com/dartsim/dart/pull/2060),
