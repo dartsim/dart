@@ -946,7 +946,17 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         const bool supportedInitialContact
             = supportedInitialContactSkeletons.find(skel.get())
               != supportedInitialContactSkeletons.end();
-        if (mFrame == 0 && islanded && finalQuiet && !deepInitialContact
+        // The first-frame shortcut credits the full dwell only to bodies that
+        // are essentially stationary at load time (pre-settled imported
+        // scenes). It deliberately keeps these near-zero fixed bounds instead
+        // of the threshold-scaled candidacy gate above, so raising the
+        // thresholds cannot skip the configured dwell for a supported body
+        // with real initial motion.
+        constexpr double kInitialRestMaxLinearSpeed = 1e-3;
+        constexpr double kInitialRestMaxAngularSpeed = 1e-2;
+        const bool initialRestQuiet = linSpeed < kInitialRestMaxLinearSpeed
+                                      && angSpeed < kInitialRestMaxAngularSpeed;
+        if (mFrame == 0 && islanded && initialRestQuiet && !deepInitialContact
             && supportedInitialContact) {
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }

@@ -2146,6 +2146,14 @@ TEST(IslandDeactivation, FinalQuietGateScalesWithThresholds)
     EXPECT_LT(steps, maxSteps)
         << "raised thresholds remained gated by the old hardcoded 1e-3 m/s";
     EXPECT_TRUE(box->isResting());
+
+    // The slider has real initial motion, so the first-frame supported-rest
+    // shortcut must not credit the full dwell: sleeping still requires the
+    // configured quiet duration to elapse.
+    const std::size_t minDwellSteps
+        = static_cast<std::size_t>(opts.mTimeUntilSleep / world->getTimeStep());
+    EXPECT_GE(steps, minDwellSteps)
+        << "moving slider slept before the configured dwell elapsed";
   }
 }
 
