@@ -31,9 +31,10 @@ Resume unfinished work: $ARGUMENTS
 `dart-resume` is a completion-oriented task manager, not a status lookup or a
 single-slice helper by default. Resume the named or reconstructed work, build or
 refresh the execution plan, track progress in the repo-owned task surface, split
-independent work across subagents/sub-sessions when the current AI surface
-supports it, verify every result, and keep going until the whole task is
-complete or a real blocker or approval boundary remains.
+independent work into verifiable packets, use subagents/sub-sessions only when
+the user explicitly requested delegation and the current AI surface permits it,
+verify every result, and keep going until the whole task is complete or a real
+blocker or approval boundary remains.
 
 Decisions must be evidence-based. Before choosing between meaningful options,
 first improve or define the verification/debugging method so it can catch false
@@ -56,8 +57,10 @@ modifiers. Interpret arguments in this order:
    state it in the plan. Without one of these limiters, do not downscope the
    session to a single slice.
 2. **Execution modifiers**: if arguments include `no-subagents`, run serially
-   but keep the same whole-task completion objective. Tool-use modifiers do not
-   limit scope unless paired with an explicit scope-limited mode.
+   but keep the same whole-task completion objective. If arguments explicitly
+   request `subagents`, `parallel`, `delegation`, or `workers`, use available
+   AI-native delegation when the current surface permits it. Tool-use modifiers
+   do not limit scope unless paired with an explicit scope-limited mode.
 3. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
    file under that folder, treat that dev task as the target and read its
    `README.md` and `RESUME.md` after recon. Resolve relative paths from the repo
@@ -115,8 +118,9 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 - what exact dev-task folder, branch, PR, issue, or topic is being completed;
 - which remaining checklist items, decisions, or evidence must be resolved;
 - how progress will be tracked during this session and across any handoff;
-- which independent subtasks, if any, can be delegated to subagents or separate
-  sessions without creating conflicting edits;
+- which independent subtasks, if any, can be delegated when explicitly
+  authorized or run as separate serial sessions without creating conflicting
+  edits;
 - which verification/debugging method will make false positives and false
   negatives unlikely before implementation decisions are made;
 - which A/B tests, benchmarks, resource searches, GUI checks, or textual checks
@@ -144,10 +148,12 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   the source-backed conclusion in the task docs, durable owner doc, or PR
   evidence. Prefer primary sources.
 - If the task is large, decompose it into independently verifiable work items.
-  Use available AI-native subagent, sub-session, or parallel-worker support when
-  it can improve quality or throughput without conflicting edits. Validate and
-  integrate every delegated result yourself; repo-tracked docs remain the source
-  of truth even when agent-specific orchestration is available.
+  Use available AI-native subagent, sub-session, or parallel-worker support only
+  when the user explicitly requested delegation and the current surface permits
+  it. Otherwise, keep the decomposition as a serial plan or explicit handoff
+  packets. Validate and integrate every delegated result yourself; repo-tracked
+  docs remain the source of truth even when agent-specific orchestration is
+  available.
 - Keep progress tracking current in the task's `README.md`, `RESUME.md`, or
   durable owner doc after meaningful progress. If the current session cannot
   finish because of context, environment, approval, or a real blocker, leave the
