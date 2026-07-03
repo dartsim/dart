@@ -1,0 +1,101 @@
+# SIMD-level matrix for the header-only dart/simd module. Backend selection is
+# compile-time (dart/simd/config.hpp), so each instruction-set level needs its
+# own build to be exercised; default CI only covers the scalar backend on x86
+# (and NEON via the macOS arm64 jobs).
+
+name: CI SIMD Multi-Arch
+
+on:
+  push:
+    # Branch validation happens via pull_request; only run on push for the
+    # mainline refs to avoid duplicate push+PR runs on feature branches.
+    branches:
+      - "main"
+      - "release-*"
+    paths:
+      - "dart/simd/**"
+      - "tests/unit/simd/**"
+      - "tests/benchmark/simd/**"
+      - ".github/workflows/ci_simd.yml"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - "dart/simd/**"
+      - "tests/unit/simd/**"
+      - "tests/benchmark/simd/**"
+      - ".github/workflows/ci_simd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release-') }}
+
+jobs:
+  simd-x86-levels:
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        simd_level:
+          - name: scalar
+            cmake_flags: "-DDART_SIMD_FORCE_SCALAR=ON"
+          - name: sse42
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-msse4.2"
+          - name: avx
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-mavx -mno-avx2"
+          - name: avx2
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-mavx2 -mfma"
+    name: x86_64 ${{ matrix.simd_level.name }}
+    env:
+      SIMD_CMAKE_FLAGS: ${{ matrix.simd_level.cmake_flags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: "2"
+
+      - name: Configure
+        run: |
+          pixi run bash -c 'cmake \
+            -G Ninja \
+            -S . \
+            -B build/simd \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+            -DDART_BUILD_DARTPY=OFF \
+            -DDART_BUILD_GUI_OSG=OFF \
+            -DDART_USE_SYSTEM_GOOGLETEST=ON \
+            -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+            "$SIMD_CMAKE_FLAGS"'
+
+      - name: Build SIMD tests
+        run: |
+          pixi run bash -c 'cmake --build build/simd --target \
+            UNIT_simd_vec_scalar \
+            UNIT_simd_vec_mask_scalar \
+            UNIT_simd_operations_scalar \
+            UNIT_simd_config \
+            UNIT_simd_edge_cases \
+            UNIT_simd_eigen_interop \
+            UNIT_simd_batch_soa \
+            UNIT_simd_dynamic \
+            UNIT_simd_geometry \
+            UNIT_simd_math'
+
+      - name: Run SIMD tests
+        run: |
+          pixi run bash -c 'ctest --test-dir build/simd -R "UNIT_simd" --output-on-failure'
