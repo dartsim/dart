@@ -27,8 +27,8 @@
 - Architecture rationale:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Research references: [`../readthedocs/papers.md`](../readthedocs/papers.md)
   (`chen-2024-vbd`, `tinyvbd`, `gaia`, `ogc-2025`, `avbd-2025`).
 - VBD paper/reference gap audit:

@@ -87,7 +87,7 @@ These map onto two distribution surfaces:
   ships as a runtime executable (via package managers), not as a library, so it
   is not consumed by downstream code and keeps minimal runtime dependencies.
 
-<!-- docs-policy: evidence-last-verified=2026-06-16 -->
+<!-- docs-policy: evidence-last-verified=2026-07-03 -->
 
 ## Current State
 
@@ -102,7 +102,7 @@ These map onto two distribution surfaces:
 | Algorithm extensibility  | Modular foundations exist, and PLAN-091 retired the June 2026 architecture-hardening packet plan after landing its planned guardrails, evidence, and ownership cleanup; the architecture assessment remains the current owner for unresolved implementation gaps.                                    | `docs/design/dart7_architecture_assessment.md`, `docs/plans/solver-family-intake.md`, `docs/plans/dashboard.md`                                                                   |
 | Scalable computation     | The codebase includes SIMD and allocator work, CI covers major host platforms, and build options already separate optional accelerator modules; the scalable-compute decision framework and backend evidence survey now exist, while multi-core and GPU implementation is sequenced under PLAN-030.  | `dart/simd/`, `docs/design/scalable_compute_decisions.md`, `docs/design/compute_backend_research.md`, `docs/plans/dashboard.md`, `dart/simulation/compute/`, `.github/workflows/` |
 | Build, test, and CI      | Pixi tasks provide the contributor path; CI spans Linux, macOS, Windows, FreeBSD, Alt Linux, SIMD, lint, CodeQL, gz-physics, and wheel publishing workflows.                                                                                                                                         | `pixi.toml`, `.github/workflows/`, `docs/onboarding/building.md`, `docs/onboarding/testing.md`, `docs/onboarding/ci-cd.md`                                                        |
-| AI-native substrate      | Root instructions, AI-infra principles, workflow maps, session rules, verification policy, `dart-next` task selection, generated Codex/OpenCode adapters, and sync checks are in place.                                                                                                              | `AGENTS.md`, `docs/ai/`, `.claude/commands/`, `.claude/skills/`, `scripts/sync_ai_commands.py`                                                                                    |
+| AI-native substrate      | Root instructions, AI-infra principles, workflow maps, session rules, verification policy, `dart-next` task selection, generated Codex/OpenCode adapters, sync checks, commit-time lint enforcement (`pixi run install-hooks` plus the tracked Claude Code guard), and enforced dashboard entry budgets with a plan archive are in place.                                                                                                              | `AGENTS.md`, `docs/ai/`, `.claude/commands/`, `.claude/skills/`, `scripts/sync_ai_commands.py`, `scripts/install_git_hooks.py`, `docs/plans/archive.md`                                                                                    |
 | Active large tasks       | World split is no longer tracked as an active dev-task folder. DART 7 World promotion now lives in PLAN-040/041/042 plus the durable API/design docs; active algorithm and GUI work remains in focused `docs/dev_tasks/` folders until each task is completed and retired.                           | `docs/plans/dashboard.md`, `docs/plans/041-official-simulation-api-promotion.md`, `docs/plans/042-dart7-public-api-and-source-layout.md`, `docs/dev_tasks/README.md`              |
 
 ## What Is Missing
@@ -124,7 +124,9 @@ These map onto two distribution surfaces:
 Use one planning surface for each kind of state:
 
 - `docs/plans/dashboard.md` owns current priority, status, horizon, north-star
-  dimension, next step, and gate.
+  dimension, next step, and gate for operating plans, within enforced entry
+  budgets; completed plans move to `docs/plans/archive.md` in the PR that
+  completes them.
 - `docs/plans/north-star-roadmap.md` owns strategic framing and sequencing
   principles.
 - Detailed numbered initiative files in `docs/plans/` own scope, workstreams,

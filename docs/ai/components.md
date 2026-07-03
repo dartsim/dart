@@ -110,6 +110,8 @@ faster; it must not be the only path.
 - machine-readable capability manifest coverage;
 - effective capability parity across Claude Code, OpenCode, and Codex;
 - command and skill frontmatter, descriptions, and size budgets;
+- required command structure: an `argument-hint` frontmatter key plus
+  `## Required Reading`, `## Workflow`, and `## Output` sections in order;
 - required `docs/ai/` policy documents exist;
 - `AGENTS.md` and `docs/README.md` point to the AI entrypoint;
 - `AGENTS.md` points to the workflow catalog and generated surfaces;
@@ -122,7 +124,11 @@ faster; it must not be the only path.
 
 `pixi run check-docs-policy` also enforces documentation lifecycle rules that
 are outside generated-adapter sync, including docs bucket visibility,
-dev-task shape, plan cleanup invariants, the `docs/ai/` frontmatter pilot, and
+dev-task shape, plan cleanup invariants, dashboard entry budgets (at most 40
+lines per `### PLAN-` block and 15 lines per `- Next step:` field), the
+no-`Complete`-entries rule for `docs/plans/dashboard.md` (completed plans move
+to `docs/plans/archive.md`, whose entry shape is also checked), the
+`docs/ai/` frontmatter pilot, and
 the `docs/readthedocs/papers.md` catalog schema. It also reports advisory
 signals for pilot-scoped internal Markdown links, conservative owner-index
 discoverability, and north-star evidence freshness while those checks are in
