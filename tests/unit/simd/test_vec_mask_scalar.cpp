@@ -34,6 +34,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+#include <type_traits>
+#include <vector>
+
 namespace dart::simd {
 
 template <typename MaskType>
@@ -252,6 +256,31 @@ TYPED_TEST(VecMaskScalarTest, FromVecComparison)
   auto mask = (a == b);
   for (std::size_t i = 0; i < width; ++i) {
     EXPECT_EQ(mask[i], data_a[i] == data_b[i]);
+  }
+}
+
+TYPED_TEST(VecMaskScalarTest, FloatingNaNInequality)
+{
+  using scalar_type = typename TestFixture::scalar_type;
+  constexpr auto width = TestFixture::width;
+
+  if constexpr (std::is_floating_point_v<scalar_type>) {
+    using vec_type = Vec<scalar_type, width>;
+
+    std::vector<scalar_type> data_a(width, scalar_type{1});
+    std::vector<scalar_type> data_b(width, scalar_type{1});
+    data_a[0] = std::numeric_limits<scalar_type>::quiet_NaN();
+    if (width > 1) {
+      data_b[1] = std::numeric_limits<scalar_type>::quiet_NaN();
+    }
+
+    auto a = vec_type::loadu(data_a.data());
+    auto b = vec_type::loadu(data_b.data());
+    auto mask = (a != b);
+
+    for (std::size_t i = 0; i < width; ++i) {
+      EXPECT_EQ(mask[i], data_a[i] != data_b[i]);
+    }
   }
 }
 

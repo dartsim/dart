@@ -376,7 +376,7 @@ DART_SIMD_INLINE VecMask<float, 8> Vec<float, 8>::operator==(
 DART_SIMD_INLINE VecMask<float, 8> Vec<float, 8>::operator!=(
     const Vec& other) const
 {
-  return VecMask<float, 8>(_mm256_cmp_ps(data, other.data, _CMP_NEQ_OQ));
+  return VecMask<float, 8>(_mm256_cmp_ps(data, other.data, _CMP_NEQ_UQ));
 }
 
 DART_SIMD_INLINE VecMask<float, 8> Vec<float, 8>::operator<(
@@ -412,7 +412,7 @@ DART_SIMD_INLINE VecMask<double, 4> Vec<double, 4>::operator==(
 DART_SIMD_INLINE VecMask<double, 4> Vec<double, 4>::operator!=(
     const Vec& other) const
 {
-  return VecMask<double, 4>(_mm256_cmp_pd(data, other.data, _CMP_NEQ_OQ));
+  return VecMask<double, 4>(_mm256_cmp_pd(data, other.data, _CMP_NEQ_UQ));
 }
 
 DART_SIMD_INLINE VecMask<double, 4> Vec<double, 4>::operator<(
