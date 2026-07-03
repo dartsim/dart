@@ -114,7 +114,9 @@ def main() -> int:
         existing = pre_commit.read_text(errors="replace")
         if SENTINEL in existing:
             write_hook(pre_commit)
-            print(f"DART pre-commit hook already installed; refreshed in place: {pre_commit}")
+            print(
+                f"DART pre-commit hook already installed; refreshed in place: {pre_commit}"
+            )
             return 0
 
         # A foreign hook is present — preserve it rather than clobber.
@@ -128,7 +130,9 @@ def main() -> int:
             )
         shutil.move(str(pre_commit), str(local))
         local.chmod(local.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        print(f"Preserved existing pre-commit hook as {local} (chained from the DART hook).")
+        print(
+            f"Preserved existing pre-commit hook as {local} (chained from the DART hook)."
+        )
 
     write_hook(pre_commit)
     print(f"Installed DART pre-commit hook: {pre_commit}")

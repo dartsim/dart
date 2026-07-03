@@ -767,8 +767,8 @@ when nothing is pending, any check fails, or the head SHA moves.
 
 ## Changelog
 
-| Date     | Change                                                              |
-| -------- | ------------------------------------------------------------------- |
-| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support |
-| Jan 2025 | Added collaborator guide and maintenance conventions                |
+| Date     | Change                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------- |
+| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support                       |
+| Jan 2025 | Added collaborator guide and maintenance conventions                                      |
 | Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane |

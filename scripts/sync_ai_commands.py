@@ -452,9 +452,12 @@ def validate_command_structure(repo_root: Path) -> bool:
             "were not detected"
         )
 
-    bad_missing = '---\nargument-hint: "<x>"\n---\n\n## Required Reading\n\n## Workflow\n'
+    bad_missing = (
+        '---\nargument-hint: "<x>"\n---\n\n## Required Reading\n\n## Workflow\n'
+    )
     if not any(
-        "## Output" in error for error in command_structure_errors("internal", bad_missing)
+        "## Output" in error
+        for error in command_structure_errors("internal", bad_missing)
     ):
         errors.append(
             "internal command-structure self-check failed: missing Output section "

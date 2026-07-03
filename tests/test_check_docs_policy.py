@@ -198,9 +198,7 @@ def test_oversized_dashboard_entry_is_rejected(tmp_path):
 
     failures = module.check_dashboard_structure(tmp_path)
 
-    assert any(
-        "PLAN-001 entry is" in f and "at most 40 lines" in f for f in failures
-    )
+    assert any("PLAN-001 entry is" in f and "at most 40 lines" in f for f in failures)
 
 
 def test_oversized_next_step_is_rejected(tmp_path):
@@ -233,8 +231,7 @@ def test_dashboard_complete_entry_is_rejected(tmp_path):
     failures = module.check_dashboard_structure(tmp_path)
 
     assert any(
-        "PLAN-001 has `Status: Complete`" in f and "archive.md" in f
-        for f in failures
+        "PLAN-001 has `Status: Complete`" in f and "archive.md" in f for f in failures
     )
 
 

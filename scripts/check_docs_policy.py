@@ -502,9 +502,7 @@ def check_dashboard_structure(repo_root: Path) -> list[str]:
                 "history to the owner plan file's `## Progress log` section)"
             )
 
-        status_match = re.search(
-            r"^- Status:\s*(?P<status>.+)$", block, re.MULTILINE
-        )
+        status_match = re.search(r"^- Status:\s*(?P<status>.+)$", block, re.MULTILINE)
         if status_match and status_match.group("status").strip() == "Complete":
             failures.append(
                 "docs/plans/dashboard.md: "
