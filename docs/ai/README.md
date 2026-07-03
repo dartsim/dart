@@ -87,13 +87,14 @@ that a contributor can run without any AI tool.
 ## Safety Boundary
 
 AI agents may inspect files, make local edits requested by the user, and run
-local verification. GitHub mutations require explicit maintainer or user
-approval, including pushes, PR comments, review-thread resolution, reviewer
-requests, merges, and review re-triggers such as `@codex review`.
+local verification. GitHub mutations require explicit maintainer/user approval,
+including pushes, PR comments, review-thread resolution, reviewer requests,
+merges, and review re-triggers such as `@codex review`.
 
-For automated review comments from bot accounts, make code fixes locally and do
-not reply inline. After explicit approval to update the PR, push the fix
-silently and use the approved top-level re-trigger path.
+For automated review comments from bot accounts: never reply inline, verify each
+claim locally, and treat any push, comment, thread resolution, or re-trigger as
+an external mutation needing explicit maintainer/user approval. See
+`docs/onboarding/ai-tools.md` § "Handling Automated Reviews" for the full loop.
 
 ## Required Gates
 

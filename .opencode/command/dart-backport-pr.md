@@ -1,5 +1,6 @@
 ---
 description: backport a merged main PR to a release branch
+argument-hint: "<source-pr> base=<release-branch>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

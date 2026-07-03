@@ -1,5 +1,6 @@
 ---
 description: draft and optionally post a GitHub issue closing message
+argument-hint: "<issue-number> [post]"
 agent: build
 ---
 

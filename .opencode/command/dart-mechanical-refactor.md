@@ -1,5 +1,6 @@
 ---
 description: perform a behavior-preserving mechanical refactor
+argument-hint: "<transformation-description>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

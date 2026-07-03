@@ -111,13 +111,10 @@ Missing or vague acceptance evidence means the task is not ready for execution.
 
 ## Review Safety Evidence
 
-When review feedback comes from an AI bot account:
-
-- Do not reply inline to the bot.
-- Verify the claim with code inspection or tests.
-- Add or update tests when a false positive should be permanently refuted.
-- Do not push, resolve threads, comment, or re-trigger review without explicit
-  maintainer/user approval.
-
-The final response should state which of those actions were local-only and which
-external mutations, if any, were explicitly approved.
+When review feedback comes from an AI bot account, never reply inline, verify
+each claim with code inspection or tests, and treat any push, comment, thread
+resolution, or re-trigger as an external mutation needing explicit
+maintainer/user approval; add or update a test when a false positive should be
+permanently refuted. See `docs/onboarding/ai-tools.md` § "Handling Automated
+Reviews" for the full loop. The final response should state which actions were
+local-only and which external mutations, if any, were explicitly approved.

@@ -90,3 +90,10 @@ Read these files first:
   `docs/dev_tasks/<task>/README.md` and `RESUME.md` explicit about the latest
   completed slice, the next missing paper-parity gap, and why focused green
   tests are not a full solver/paper completion claim.
+
+## Output
+
+- Task type, scope, and whether a `docs/dev_tasks/<task>/` folder was created
+- Files changed and gates run
+- Dev-task promotion and cleanup status when the task completed
+- PR readiness, noting any external mutation that was explicitly approved

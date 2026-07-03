@@ -1,5 +1,6 @@
 ---
 description: discuss or update DART living plans
+argument-hint: "<plan-topic-or-request>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -66,3 +67,10 @@ Discuss or update DART living plans: $ARGUMENTS
    generated adapters change.
 8. Do not perform GitHub or remote mutations without explicit maintainer/user
    approval.
+
+## Output
+
+- Request classification (discussion, plan edit, or task derivation)
+- Plan files changed and the operating-state updates made
+- Verification gate run
+- Any routed follow-up task or `Decision needed` block recorded

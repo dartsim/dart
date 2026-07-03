@@ -150,3 +150,11 @@ owner-local `Decision needed` block.
   `docs/plans/solver-family-intake.md`.
 - The author of a packet's implementation does not approve it; acceptance is
   the orchestrator's or an independent reviewer's call.
+
+## Output
+
+- Selected packet ID and owning plan
+- Scope implemented and acceptance evidence recorded
+- Gates run and their results
+- Hand-back state (the `[claimed]` marker left for the orchestrator) and any blocker
+- Any external mutation that was explicitly approved

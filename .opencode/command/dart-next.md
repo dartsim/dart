@@ -1,5 +1,6 @@
 ---
 description: select and execute the next bounded DART task
+argument-hint: "[mode=select|execute|pr] [size=...] [focus=...]"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -49,7 +50,7 @@ Interpret `$ARGUMENTS` as optional constraints:
 If constraints conflict or make the task unsafe to select, stop and ask one
 clarifying question.
 
-## Selection Workflow
+## Workflow
 
 1. Inspect local state before choosing work:
    ```bash
