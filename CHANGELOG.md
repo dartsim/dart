@@ -299,6 +299,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
+  and manual PR authors can record the inspected evidence, target release
+  section, entry text, no-entry reason, and PR-link follow-up consistently.
+  ([#3224](https://github.com/dartsim/dart/pull/3224))
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
   active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
   `DART 6.19.4` patch lane.
@@ -324,6 +328,12 @@ compatibility remains on the active DART 6 LTS branch._
   ([#3053](https://github.com/dartsim/dart/pull/3053))
 - Added optional CUDA smoke and benchmark packet paths while keeping default
   Pixi environments and dartpy wheels free of GPU runtime dependencies.
+- Cut the PR CI critical path roughly in half by moving the compile-dominated
+  ASAN suite, CodeQL C++ analysis, and Alt Linux repro to continuous/scheduled
+  coverage, parallelizing the Coverage (Debug) lcov capture, and skipping the
+  redundant branch-push core tier once a PR is open; branch protection now
+  requires the stable aggregate `Wheels` check instead of stale per-leg wheel
+  names.
 
 ## DART 6
 

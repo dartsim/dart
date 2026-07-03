@@ -114,12 +114,16 @@ shared decision/writing path for PR, docs, issue-fix, resume, and release
 workflows.
 
 1. Decide whether an entry is required using this guide.
-2. If no entry is required, record the reason in the PR description or checklist.
-3. If an entry is required before the PR number exists, draft the entry without
+2. Record the reusable `Changelog decision` note from `dart-changelog`,
+   including the inspected base/diff evidence, target release section, entry
+   text or exact no-entry reason, and any PR-link follow-up.
+3. If no entry is required, record the evidence-backed reason in the PR
+   description or checklist.
+4. If an entry is required before the PR number exists, draft the entry without
    a PR link or leave it for the PR-number follow-up.
-4. After the PR exists, add the PR link in the same entry. Keep this follow-up
+5. After the PR exists, add the PR link in the same entry. Keep this follow-up
    local until explicit maintainer/user approval allows another push.
-5. For AI-generated draft entries, curate aggressively: summarize the outcome,
+6. For AI-generated draft entries, curate aggressively: summarize the outcome,
    remove implementation noise, merge related bullets, and link to the owner
    doc for details.
 

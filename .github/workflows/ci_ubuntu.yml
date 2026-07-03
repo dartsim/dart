@@ -25,6 +25,7 @@ jobs:
       core_branch_push: ${{ steps.scope.outputs.core_branch_push }}
       code: ${{ steps.filter.outputs.code }}
       full_ci: ${{ steps.scope.outputs.full_ci }}
+      open_pr: ${{ steps.open_pr.outputs.open_pr }}
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'
@@ -49,6 +50,38 @@ jobs:
         id: filter
         with:
           filters: .github/filters/ci-code.yml
+      - name: Check for an open PR from this branch
+        id: open_pr
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The branch-push core tier exists for pre-PR feedback. Once a PR is
+          # open, the pull_request event already runs the full tier for every
+          # push, so the push-tier core build would be redundant work. (Fork
+          # pushes query the fork's own PR list and keep their fork-side push
+          # CI, which runs on the fork's Actions quota.)
+          #
+          # Fail open: if gh is unavailable (e.g. a self-hosted parity runner)
+          # or the query fails, fall back to running the core tier as before.
+          # The headRepositoryOwner filter matters: --head matches by ref name
+          # only, and a fork PR whose head branch shares this branch's name
+          # must not suppress the upstream branch's core tier.
+          count=0
+          if command -v gh >/dev/null 2>&1; then
+            count=$(gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --head "$GITHUB_REF_NAME" \
+              --state open \
+              --json headRepositoryOwner \
+              --jq "[.[] | select(.headRepositoryOwner.login == \"${GITHUB_REPOSITORY_OWNER}\")] | length" \
+              2>/dev/null || echo 0)
+          fi
+          if [ "${count}" -gt 0 ] 2>/dev/null; then
+            echo "open_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "open_pr=false" >> "$GITHUB_OUTPUT"
+          fi
 
   coverage:
     needs: changes
@@ -135,7 +168,10 @@ jobs:
 
   build-core:
     needs: changes
-    if: needs.changes.outputs.core_branch_push == 'true' && needs.changes.outputs.code == 'true'
+    if: >-
+      needs.changes.outputs.core_branch_push == 'true' &&
+      needs.changes.outputs.code == 'true' &&
+      needs.changes.outputs.open_pr != 'true'
     name: Core Tests (Linux)
     runs-on: ubuntu-latest
     # Cap runaway/hung jobs well below the ~6h GitHub default.
@@ -211,10 +247,12 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Release Tests
     runs-on: ubuntu-latest
-    # This job is build-bound (Release build + dartpy + examples + install +
-    # a full ASAN build/test) and runs ~150-180min; cap above that but well
-    # below the ~6h default so a genuine hang still fails fast.
-    timeout-minutes: 210
+    # This job is build-bound (Release build + dartpy + examples + install)
+    # and runs ~60-70min warm, ~120-140min with fully cold caches; cap above
+    # the cold case but well below the ~6h default so a genuine hang still
+    # fails fast. The AddressSanitizer phase that used to run here serially
+    # now lives in the separate ASAN Tests job below.
+    timeout-minutes: 150
     env:
       DART_PARALLEL_JOBS: 8
       # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
@@ -237,9 +275,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # The Release job builds a normal tree, dartpy, examples, and then a
-      # separate ASAN tree in the same workspace. Reclaim unused hosted-runner
-      # toolchains up front so the ASAN object files do not exhaust disk.
+      # The Release tree plus dartpy and examples runs close to the hosted
+      # runner's free space. Reclaim unused preinstalled toolchains up front
+      # so the build does not exhaust disk.
       - name: Free up disk space
         run: |
           set -x
@@ -288,19 +326,78 @@ jobs:
           BUILD_TYPE=Release \
           pixi run install
 
-      - name: Free Release build before ASAN
+  build-asan:
+    needs: changes
+    # The ASAN suite is compile-dominated: ~2h to build the instrumented tree
+    # for ~2min of ctest. That cost gates no PR-local signal worth 2h per
+    # push, so it runs as continuous coverage on protected branch pushes, the
+    # scheduled runs, and manual dispatch. Need ASAN evidence on a branch
+    # before merge? Trigger this workflow via workflow_dispatch on the branch.
+    if: >-
+      needs.changes.outputs.full_ci == 'true' &&
+      github.event_name != 'pull_request' &&
+      (github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.code == 'true')
+    name: ASAN Tests
+    runs-on: ubuntu-latest
+    # Sized above the observed ~2h cold build so a genuine hang still fails
+    # well before the ~6h default kill.
+    timeout-minutes: 210
+    env:
+      # ASAN builds use materially more memory than a normal Release build;
+      # keep parallelism lower to avoid hosted-runner OOM kills.
+      DART_PARALLEL_JOBS: 4
+      # Parallelize the ctest phase (see Core Tests). ctest honors this natively.
+      CTEST_PARALLEL_LEVEL: 4
+    steps:
+      - name: Clean stale Linux workspace
+        if: runner.os == 'Linux'
+        run: |
+          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
+            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
+              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
+                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
+              else
+                echo "::warning::Unable to clean stale workspace entries before checkout."
+              fi
+            }
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The instrumented ASAN tree keeps sanitizer metadata and debug info for
+      # every test target; reclaim unused preinstalled toolchains so the build
+      # does not exhaust the hosted runner's disk.
+      - name: Free up disk space
         run: |
           set -x
           df -h /
-          rm -rf build/default/cpp/Release
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
           df -h /
 
-      - name: Test with AddressSanitizer
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
+          version: 3
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Build and test with AddressSanitizer
         run: |
-          # ASAN builds use materially more memory than the normal Release
-          # build; keep parallelism lower to avoid hosted-runner OOM kills.
           DART_VERBOSE=ON \
-          DART_PARALLEL_JOBS=4 \
           pixi run test-asan
 
   native-collision-no-legacy:

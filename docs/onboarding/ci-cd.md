@@ -12,9 +12,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
   - Eigen over-alignment CI build: see [Eigen Over-Alignment CI Build](#eigen-over-alignment-ci-build)
-  - ASAN testing (memory errors): `pixi run test-asan`; the Linux
-    `Release Tests` CI job runs it after the Release C++ tests, Python tests,
-    and examples.
+  - ASAN testing (memory errors): `pixi run test-asan`; the Linux `ASAN Tests`
+    CI job runs it on protected branch pushes, scheduled runs, and manual
+    dispatch. Trigger `CI Linux` via workflow_dispatch on a branch when a PR
+    needs ASAN evidence before merge.
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
@@ -28,9 +29,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
   - FreeBSD VM tests can take over 1 hour to complete; this is expected, not a sign of failure.
-  - Linux `Release Tests` can be the last PR blocker because its
-    AddressSanitizer phase is long-running. Check the job step state and recent
-    successful `main` run durations before treating it as stuck.
+  - The Linux `ASAN Tests` job is compile-dominated (~2h of instrumented build
+    for ~2min of ctest) and runs on protected branch pushes, schedules, and
+    manual dispatch rather than on PRs. Check recent successful `main` run
+    durations before treating it as stuck.
   - FreeBSD VM startup can timeout (~5 min); this is transient—re-run the job.
   - `dynamic_cast` can fail silently on FreeBSD across shared library boundaries; use type enums + `static_cast`.
   - macOS ARM64 sporadic SEGFAULT from `alloca`/VLA alignment; use `std::vector<T>` instead.
@@ -92,12 +94,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 ## Common CI Failure Modes
 
 - Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
-- Linux `Release Tests` ASAN compile fails with `No space left on device`:
-  treat this as hosted-runner disk exhaustion, not a failing DART test. The job
-  builds a normal Release tree, dartpy, examples, and then a separate ASAN tree
-  in the same workspace; keep disk cleanup at the start of that job and free
-  the already-installed Release build tree before the ASAN phase, then rerun the
-  failed check.
+- Linux `ASAN Tests` compile fails with `No space left on device`: treat this
+  as hosted-runner disk exhaustion, not a failing DART test. The instrumented
+  ASAN tree is large; keep the disk cleanup step at the start of the job, then
+  rerun the failed check.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
 - Example or test links fail with `cannot find -ldart-<component>`: inspect the
@@ -271,9 +271,10 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule       | Yes           |
 | `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule       | Yes           |
 | `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                      | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                  | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | Schedule, manual                      | N/A           |
 | `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | Path-scoped PR; trusted GPU runtime   | N/A           |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Release-branch push/PR; manual canary | Yes           |
+| `ci_gz_dart6.yml`    | DART 6 Gazebo canary  | Ubuntu         | Weekly schedule + manual (on main)    | N/A           |
 | `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual         | N/A           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule   | Yes           |
 
@@ -282,25 +283,36 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 Use CI tiers to reduce PR feedback cost without removing coverage from the
 project's continuous validation surface.
 
-| Tier                      | Required before merge | Examples                                                                                           |
-| ------------------------- | --------------------- | -------------------------------------------------------------------------------------------------- |
-| Core branch push          | No                    | Lint, Ubuntu core release tests, path-scoped SIMD                                                  |
-| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                      |
-| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                        |
-| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                  |
-| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags               |
-| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
+| Tier                      | Required before merge | Examples                                                                                                                        |
+| ------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Core branch push          | No                    | Lint, Ubuntu core release tests (skipped once the branch has an open PR), path-scoped SIMD                                      |
+| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                                                   |
+| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                                                     |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                                               |
+| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags; ASAN suite; CodeQL C++ analysis           |
+| Scheduled/manual coverage | No                    | FreeBSD VM, Alt Linux repro, ASAN suite, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
 
 Guardrails:
 
 - Keep gz-physics compatibility required for release-line PRs that maintain the
   DART 6 support lane. On `main`/DART 7, use `ci_gz_physics.yml` as a manual
   migration canary when downstream compatibility evidence is needed.
+- GitHub only fires `schedule:` triggers from the default branch, so cron
+  entries inside `release-6.*` workflows never run. `ci_gz_dart6.yml` on main
+  fills that gap: it checks out each active DART 6 release branch weekly and
+  runs the branch's own `test-gz` (gz-physics + gz-sim from source) so
+  downstream drift is caught between release-line merges.
 - Treat core branch-push CI as early feedback only. It should be useful enough
   before a PR exists, but it is not a substitute for the required PR tier.
 - Do not move a job from required PR coverage to continuous-only coverage
   without evidence that it is expensive, redundant for most PRs, or better
   suited to scheduled validation.
+- The ASAN suite, CodeQL C++ analysis, and Alt Linux repro moved off the PR
+  tier in July 2026 with that evidence recorded: ASAN spends ~2h of
+  instrumented compile for ~2min of ctest, CodeQL C++ repeats a ~100min manual
+  build per PR push, and distro-repro breakage is effectively never PR-local.
+  All three keep running on `main` pushes and/or schedules; use
+  workflow_dispatch on a branch when a PR needs that evidence before merge.
 - Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
   version coverage can run on `main`, release tags, schedules, and manual
   dispatch.
@@ -539,7 +551,9 @@ so platform test jobs do not each rebuild docs.
   changes. The documentation build runs on PRs, protected branch pushes, and
   manual dispatch, but is skipped for ordinary feature branch pushes to keep
   the pre-PR tier small.
-- FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
+- FreeBSD CI (`ci_freebsd.yml`) and Alt Linux CI (`ci_altlinux.yml`) run on
+  schedule/manual only to keep PR feedback fast; distro-repro breakage is
+  effectively never PR-local
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
 **Shared code-change filter:** platform and integration workflows that use
@@ -593,16 +607,18 @@ maintenance-workflow-only changes
 
 - Lint
 - Ubuntu core release path: Release C++ tests, Release Python tests, examples,
-  and install
+  and install. Skipped once the branch has an open PR, because the
+  pull_request event already runs the full tier for every push.
 - SIMD multi-arch tests when SIMD paths change
 
 **Release branch pushes and PRs:**
 
 - Gazebo integration: gz-physics compatibility tests for the DART 6 support lane
 
-**Scheduled runs:**
+**Main/release pushes and scheduled runs:**
 
 - Repeat the PR validation on a fixed cadence
+- Run the ASAN suite (`ASAN Tests`), CodeQL C++ analysis, and Alt Linux repro
 - Ensure periodic full validation
 - Run expanded dartpy wheel Python-version coverage
 
@@ -618,6 +634,15 @@ does not repeat local-only validation in every platform job:
   coverage slice
 - Release jobs build examples and install where that platform covers the path
 
+The Coverage (Debug) job's `coverage-report` task parallelizes the lcov
+capture: object directories holding `.gcda` data are pruned so no listed
+directory has a listed ancestor (geninfo scans each `--directory`
+recursively), distributed round-robin across one capture process per job
+slot, and the partial tracefiles are merged with `lcov -a`. Each `.gcda` is
+captured exactly once, so the merged tracefile matches a serial capture. Set
+`DART_PARALLEL_JOBS=1` to fall back to a single capture process when
+debugging capture issues.
+
 Use `pixi run test-all` for local pre-PR validation; avoid adding it to CI jobs
 unless the duplicated lint/docs/build work is intentional.
 On Linux hosts with a visible NVIDIA CUDA runtime, also run
@@ -631,19 +656,23 @@ runtime checks do not depend on PTX JIT compatibility with the installed driver.
 
 ### Expected CI Times
 
-**Without caching (first run):**
+**Typical PR, warm cache (measured July 2026):**
 
-- Ubuntu: 45-60 min
-- macOS: 30-45 min
-- Windows: 25-35 min
-- Total: ~100-150 min
+- Ubuntu Release Tests: ~60-70 min (ASAN now runs as continuous coverage)
+- Ubuntu Coverage (Debug): ~95-105 min (build ~50, ctest ~38, parallel capture)
+- Ubuntu Debug Tests: ~55 min
+- macOS: ~35-50 min
+- Windows: ~75-100 min
+- Wall-clock to all-green: ~100 min (previously ~180 min when the ASAN phase
+  ran inside Release Tests)
 
-**With caching (subsequent runs):**
+**Continuous additions on main/release pushes:**
 
-- Ubuntu: 20-30 min
-- macOS: 15-25 min
-- Windows: 15-20 min
-- Total: ~30-60 min (50-70% reduction)
+- ASAN Tests: ~2h (compile-dominated)
+- CodeQL C++: ~100 min
+
+Cold caches roughly double the build-bound jobs; sccache typically recovers a
+50-70% reduction on subsequent runs.
 
 ### Cache Health
 
