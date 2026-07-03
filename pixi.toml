@@ -440,6 +440,20 @@ bm-kinematics = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
+bm-dashboard-merge = { cmd = """
+    python scripts/merge_benchmark_results.py .benchmark_results \
+      --output .benchmark_results/combined.json --humanize
+""" }
+
+bm-dashboard-preview = { cmd = """
+    python scripts/preview_performance_dashboard.py .benchmark_results \
+      --output-dir build/performance-dashboard
+""" }
+
 tu-biped = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \

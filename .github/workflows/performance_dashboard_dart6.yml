@@ -1,0 +1,129 @@
+name: DART 6 Performance Dashboard
+
+# Runs the bounded DART 6 Google Benchmark slice and publishes the results with
+# benchmark-action/github-action-benchmark. The action stores history on the
+# gh-pages branch and renders an interactive Chart.js dashboard at
+# https://dartsim.github.io/dart/performance/dart6/.
+
+on:
+  push:
+    branches:
+      - "release-6.*"
+    paths:
+      - ".github/workflows/performance_dashboard_dart6.yml"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "dart/**"
+      - "examples/contact_benchmark/**"
+      - "pixi.lock"
+      - "pixi.toml"
+      - "scripts/benchmark_display_names.py"
+      - "scripts/merge_benchmark_results.py"
+      - "scripts/run_cpp_benchmark.py"
+      - "scripts/run_performance_dashboard_benchmarks.py"
+      - "tests/benchmark/**"
+  schedule:
+    - cron: "45 3 * * 0,3"
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: "DART 6 release branch to benchmark; defaults to latest release-6.*"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dart6-performance-dashboard
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish DART 6 performance dashboard
+    runs-on: ubuntu-latest
+    env:
+      BUILD_TYPE: Release
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
+      DART_VERBOSE: ON
+    steps:
+      - name: Resolve DART 6 branch
+        id: dart6-branch
+        shell: bash
+        env:
+          REQUESTED_BRANCH: ${{ github.event.inputs.release_branch || '' }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${REQUESTED_BRANCH:-}" ]; then
+            release_branch="${REQUESTED_BRANCH}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" == release-6.* ]]; then
+            release_branch="${GITHUB_REF_NAME}"
+          else
+            release_branch=$(
+              git ls-remote --heads \
+                "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" "release-6.*" |
+                awk '{ sub("refs/heads/", "", $2); print $2 }' |
+                sort -V |
+                tail -n 1
+            )
+          fi
+
+          if [[ ! "${release_branch}" =~ ^release-6\.[0-9]+$ ]]; then
+            echo "Invalid DART 6 release branch: ${release_branch}" >&2
+            exit 1
+          fi
+
+          printf 'branch=%s\n' "${release_branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.dart6-branch.outputs.branch }}
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: "2"
+
+      - name: Configure build
+        run: |
+          pixi run --locked config
+
+      - name: Run benchmark surfaces
+        # Tolerate a flaky or not-yet-merged optional surface: publish whatever
+        # produced results. The merge step fails only if no benchmark rows were
+        # produced at all.
+        run: |
+          pixi run --locked python \
+            scripts/run_performance_dashboard_benchmarks.py \
+            --continue-on-error || true
+
+      - name: Merge benchmark results
+        run: |
+          pixi run --locked python scripts/merge_benchmark_results.py \
+            .benchmark_results --output .benchmark_results/combined.json \
+            --humanize
+
+      - name: Publish to dashboard
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: DART 6 Performance
+          tool: googlecpp
+          output-file-path: .benchmark_results/combined.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: performance/dart6
+          auto-push: ${{ github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-6.') || github.ref == 'refs/heads/main' }}
+          # GitHub-hosted runners are noisy; alert on a clear 2x regression
+          # and comment on the commit rather than failing the build.
+          alert-threshold: "200%"
+          comment-on-alert: true
+          fail-on-alert: false
+          max-items-in-chart: 250
