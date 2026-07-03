@@ -30,6 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/config.hpp"
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -311,3 +316,126 @@ TEST(Issue201, ShallowSupportedFreeRootDoesNotDriftSideways)
   EXPECT_NEAR(baseBody->getAngularVelocity().x(), 0.0, 1e-6);
   EXPECT_NEAR(baseBody->getAngularVelocity().y(), 0.0, 1e-6);
 }
+
+//==============================================================================
+// A shallow contact with the underside of an immobile ceiling is not support:
+// the drift suppression must not clamp legitimate small lateral motion of a
+// free body touching a ceiling or overhang.
+TEST(Issue201, CeilingContactDoesNotClampFreeRootVelocity)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+
+  auto ceiling = Skeleton::create("ceiling");
+  {
+    auto pair = ceiling->createJointAndBodyNodePair<WeldJoint>(nullptr);
+    auto shape = std::make_shared<BoxShape>(
+        Eigen::Vector3d(kFloorSize, kFloorSize, kFloorHeight));
+    auto* shapeNode
+        = pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+            shape);
+    auto* dynamics = shapeNode->getDynamicsAspect();
+    dynamics->setFrictionCoeff(0.0);
+    dynamics->setRestitutionCoeff(0.0);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    // Ceiling underside at z = 1.0.
+    tf.translation().z() = 1.0 + kFloorHeight / 2.0;
+    pair.first->setTransformFromParentBodyNode(tf);
+  }
+  ceiling->setMobile(false);
+  world->addSkeleton(ceiling);
+
+  // Free box whose top face penetrates the ceiling underside by 5e-5, within
+  // the shallow-support band.
+  const double penetration = 5e-5;
+  auto box = createBox(1.0 - kBoxSize / 2.0 + penetration);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  // Tiny lateral velocity below the drift-suppression threshold.
+  const double lateralSpeed = 5e-6;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
+
+  world->step();
+
+  // Precondition: the box-ceiling contact must be present this step.
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+
+  // The frictionless ceiling contact exerts no lateral impulse, so the small
+  // lateral velocity must survive the step instead of being clamped to zero.
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+}
+
+#if HAVE_BULLET
+//==============================================================================
+// With allowNegativePenetrationDepthContacts enabled, Bullet keeps proximity
+// hits with negative penetration depth in the collision result, but the
+// constraint solver never creates contact constraints for them. Such contacts
+// inject no Baumgarte correction, so they must not mark a hovering free body
+// as supported and clamp its small lateral velocity.
+TEST(Issue201, NegativeDepthProximityContactDoesNotClampFreeRootVelocity)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  auto* solver = world->getConstraintSolver();
+  ASSERT_NE(nullptr, solver);
+  solver->setCollisionDetector(collision::BulletCollisionDetector::create());
+  solver->getCollisionOption().allowNegativePenetrationDepthContacts = true;
+
+  constexpr double kCylinderRadius = 0.5;
+  constexpr double kCylinderHeight = 1.0;
+  constexpr double kProximityGap = 0.01;
+
+  auto support = Skeleton::create("support");
+  {
+    auto pair = support->createJointAndBodyNodePair<WeldJoint>(nullptr);
+    auto shape
+        = std::make_shared<CylinderShape>(kCylinderRadius, kCylinderHeight);
+    pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+  }
+  support->setMobile(false);
+  world->addSkeleton(support);
+
+  auto hoverer = Skeleton::create("hoverer");
+  {
+    auto pair = hoverer->createJointAndBodyNodePair<FreeJoint>(nullptr);
+    auto shape
+        = std::make_shared<CylinderShape>(kCylinderRadius, kCylinderHeight);
+    pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation().z() = kCylinderHeight + kProximityGap;
+    FreeJoint::setTransformOf(pair.first, tf);
+  }
+  world->addSkeleton(hoverer);
+
+  auto* rootBody = hoverer->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  const double lateralSpeed = 5e-6;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
+
+  world->step();
+
+  // Precondition: the proximity contact must be present with negative depth.
+  const auto& result = world->getLastCollisionResult();
+  bool hasNegativeDepthContact = false;
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    if (result.getContact(i).penetrationDepth < 0.0)
+      hasNegativeDepthContact = true;
+  }
+  ASSERT_TRUE(hasNegativeDepthContact);
+
+  // No contact constraint was solved, so the small lateral velocity must
+  // survive the step instead of being clamped to zero.
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+}
+#endif

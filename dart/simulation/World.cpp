@@ -177,7 +177,13 @@ std::vector<char> findShallowSupportedFreeRoots(
                                  const auto& supportBodyNode,
                                  const Eigen::Vector3d& normal,
                                  double penetrationDepth) {
-    if (!bodyNode || !supportBodyNode
+    // Mirror the constraint solver's contact gating: a contact with a
+    // non-finite or negative penetration depth (e.g. a Bullet proximity hit
+    // kept by allowNegativePenetrationDepthContacts) never creates a contact
+    // constraint, so it cannot inject the Baumgarte correction this
+    // suppression compensates for.
+    if (!bodyNode || !supportBodyNode || !std::isfinite(penetrationDepth)
+        || penetrationDepth < 0.0
         || penetrationDepth > kSupportContactPenetrationTolerance) {
       return;
     }
@@ -197,11 +203,22 @@ std::vector<char> findShallowSupportedFreeRoots(
       return;
 
     const double normalNorm = normal.norm();
-    if (normalNorm <= 0.0)
+    if (!normal.allFinite() || normalNorm <= 0.0)
       return;
 
     const double verticalComponent = std::abs(normal.dot(up)) / normalNorm;
     if (verticalComponent < kSupportNormalMinVerticalComponent)
+      return;
+
+    // Same relative-height guard as the resting support check: only a contact
+    // that supports the root from below qualifies. A shallow contact with the
+    // underside of a ceiling or overhang must not clamp legitimate small
+    // lateral or tilt motion.
+    const double bodyHeightAboveSupport
+        = (bodyNode->getTransform().translation()
+           - supportBodyNode->getTransform().translation())
+              .dot(up);
+    if (bodyHeightAboveSupport < -kSupportContactPenetrationTolerance)
       return;
 
     const auto it = skeletonToIndex.find(skeleton);
