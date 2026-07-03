@@ -39,7 +39,8 @@ Update documentation: $ARGUMENTS
 
 1. Create a branch from the target branch: `git checkout -b docs/<topic> origin/main`
 2. Edit docs and AI workflow sources only:
-   - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
+   - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`,
+     and `CHANGELOG.md` when `dart-changelog` requires a release-note entry
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
 4. Update indexes and cross-references that point to changed docs
